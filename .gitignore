@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Type checker
+.pyright/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+
+# mcp-auditor
+audit_checkpoints.db
+
+# Non-versioned plans
+plans/init.md
