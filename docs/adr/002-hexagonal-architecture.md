@@ -11,7 +11,7 @@ Use hexagonal architecture (ports and adapters) with two main secondary ports:
 - `MCPClientPort`: abstracts MCP server interactions.
 - `LLMPort`: abstracts LLM calls (generic structured output).
 
-Ports are `Protocol` classes in `domain/`. Adapters live in `infra/`. Fakes (`FakeLLM`, `FakeMCPClient`) implement the ports with deterministic behavior for unit tests — they are real in-memory objects, not `MagicMock`. See ADR 003 for the full testing philosophy.
+Ports are `Protocol` classes in `domain/`. Adapters live in `adapters/`. The domain defines the interfaces (ports) that adapters implement — dependency inversion keeps the domain free of infrastructure knowledge. Fakes (`FakeLLM`, `FakeMCPClient`) implement the ports with deterministic behavior for unit tests — they are real in-memory objects, not `MagicMock`. See ADR 003 for the full testing philosophy.
 
 ### Generic port, not domain-aware
 

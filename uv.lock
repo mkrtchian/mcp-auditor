@@ -581,10 +581,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "langchain-anthropic", specifier = ">=0.3" },
-    { name = "langchain-core", specifier = ">=0.3" },
+    { name = "langchain-anthropic", specifier = ">=1.0" },
+    { name = "langchain-core", specifier = ">=1.0" },
     { name = "langgraph", specifier = ">=1.0" },
-    { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0" },
+    { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0" },
     { name = "mcp", specifier = ">=1.0.0" },
     { name = "pydantic", specifier = ">=2.0" },
 ]
@@ -592,9 +592,9 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "pyright", specifier = ">=1.1" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-asyncio", specifier = ">=0.25" },
-    { name = "ruff", specifier = ">=0.11" },
+    { name = "pytest", specifier = ">=9.0" },
+    { name = "pytest-asyncio", specifier = ">=1.0" },
+    { name = "ruff", specifier = ">=0.15" },
 ]
 
 [[package]]

@@ -16,6 +16,7 @@ uv run pyright                   # Type check (strict mode)
 - Code in the style of **Kent Beck**, **Martin Fowler**, **Robert C. Martin**, **Eric Evans** — the XP, software craftsmanship, and DDD tradition.
 - Prompts are **domain logic**, not infra. They live in `graph/prompts.py` as pure functions `(data) -> str`. Never put prompt construction in adapters.
 - Graph nodes are built via **factory functions** (`make_node(port)`) for dependency injection. Ports are `Protocol` classes in `domain/`.
+- **Hexagonal boundary**: `domain/` and `graph/` are inside the hexagon. `adapters/` is outside. `domain/` and `graph/` never import from `adapters/`.
 - All code, comments, docstrings, and identifiers in **English**.
 - **Newspaper rule** (Clean Code): read a module top-to-bottom like an article. Public/high-level functions first, private/low-level helpers right below their callers.
 - Functions should rarely exceed **20 lines**, files should rarely exceed **300 lines**. When they do, split.
@@ -24,7 +25,7 @@ uv run pyright                   # Type check (strict mode)
 ## Testing standards
 
 - Test **behavior**, not implementation. Tests assert on observable outcomes, never on internal structure or call sequences.
-- Unit tests are exhaustive on the domain/graph core (the hexagon interior), using fakes. But **maintainability beats coverage** — delete a fragile test rather than keep it. A test that breaks on every refactor without catching bugs is a liability.
+- Unit tests are exhaustive on `domain/` and `graph/` (the hexagon interior), using fakes. But **maintainability beats coverage** — delete a fragile test rather than keep it. A test that breaks on every refactor without catching bugs is a liability.
 - Fakes (`FakeLLM`, `FakeMCPClient`), not mocks. Fakes are real implementations with deterministic, configurable behavior.
 - Three test levels (see `docs/adr/003-testing-philosophy.md`): unit (fakes, in-process), integration (real MCP server, no LLM), evals (`evals/`, real LLM against honeypot ground truth). **Never test LLM quality with fakes** — that's what evals are for.
 - **Given/When/Then pattern**: test files stay ultra-readable by extracting setup into `given.py` and assertions into `then.py`, one pair per test file (e.g. `test_audit.py` + `test_audit_given.py` + `test_audit_then.py`). The test file reads like a spec. Only extract into given/then when the function **actually abstracts something** — if it's just a one-liner wrapper, inline it instead.
