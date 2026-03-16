@@ -77,3 +77,13 @@ class TokenUsage(BaseModel):
             input_tokens=self.input_tokens + other.input_tokens,
             output_tokens=self.output_tokens + other.output_tokens,
         )
+
+
+class ToolReport(BaseModel):
+    tool: ToolDefinition
+    results: list[EvalResult]
+
+
+class AuditReport(BaseModel):
+    tool_reports: list[ToolReport]
+    token_usage: TokenUsage
