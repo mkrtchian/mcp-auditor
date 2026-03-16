@@ -20,7 +20,7 @@ uv run pyright                   # Type check (strict mode)
 - All code, comments, docstrings, and identifiers in **English**.
 - **Newspaper rule** (Clean Code): read a module top-to-bottom like an article. Public/high-level functions first, private/low-level helpers right below their callers.
 - Functions should rarely exceed **20 lines**, files should rarely exceed **300 lines**. When they do, split.
-- **Naming over comments.** Code should read without them. Reserve comments for non-obvious logic, hacks, or workarounds. Use **domain-relevant, readable names** — no abbreviations except in very short scopes (e.g. comprehensions).
+- **Naming over comments.** Code should read without them. Reserve comments for non-obvious logic, hacks, or workarounds. Same rule applies to docstrings — don't restate the class or function name in prose. Use **domain-relevant, readable names** — no abbreviations except in very short scopes (e.g. comprehensions).
 
 ## Testing standards
 

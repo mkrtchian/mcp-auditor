@@ -17,8 +17,6 @@ class MCPClientPort(Protocol):
 
 
 class LLMPort(Protocol):
-    """Port for LLM calls — generic structured output."""
-
     async def generate_structured[T: BaseModel](self, prompt: str, output_schema: type[T]) -> T: ...
 
     @property
