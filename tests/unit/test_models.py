@@ -20,16 +20,6 @@ from mcp_auditor.domain import (
 )
 
 
-def _a_payload(**overrides: Any) -> AuditPayload:
-    defaults: dict[str, Any] = {
-        "tool_name": "test_tool",
-        "category": AuditCategory.INPUT_VALIDATION,
-        "description": "test payload",
-        "arguments": {},
-    }
-    return AuditPayload(**(defaults | overrides))
-
-
 class TestEnumConstraints:
     def test_rejects_unknown_category(self):
         with pytest.raises(ValueError):
@@ -90,3 +80,13 @@ class TestTokenUsage:
 
         assert a.input_tokens == 100
         assert a.output_tokens == 50
+
+
+def _a_payload(**overrides: Any) -> AuditPayload:
+    defaults: dict[str, Any] = {
+        "tool_name": "test_tool",
+        "category": AuditCategory.INPUT_VALIDATION,
+        "description": "test payload",
+        "arguments": {},
+    }
+    return AuditPayload(**(defaults | overrides))
