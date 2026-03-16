@@ -6,9 +6,7 @@ from mcp_auditor.domain.models import TokenUsage, ToolDefinition, ToolResponse
 
 
 class MCPClientPort(Protocol):
-    """Port for interacting with an MCP server.
-
-    Lifecycle (connect/disconnect) is managed by the adapter via an async
+    """Lifecycle (connect/disconnect) is managed by the adapter via an async
     context manager. The port only exposes business operations.
     """
 

@@ -25,7 +25,7 @@ class EvalVerdict(StrEnum):
 
 
 class ToolDefinition(BaseModel):
-    """Domain representation of an MCP tool. Decoupled from mcp.types.Tool."""
+    """Decoupled from mcp.types.Tool."""
 
     name: str
     description: str
