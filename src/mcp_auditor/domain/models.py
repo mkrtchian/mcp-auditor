@@ -67,7 +67,7 @@ class TestCase(BaseModel):
 
 
 class TokenUsage(BaseModel):
-    """LLM token consumption tracker. Cost is computed at report time, not here."""
+    """Cost is computed at report time, not here."""
 
     input_tokens: int = 0
     output_tokens: int = 0
