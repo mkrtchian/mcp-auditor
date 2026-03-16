@@ -32,6 +32,11 @@ class ToolDefinition(BaseModel):
     input_schema: dict[str, Any]
 
 
+class ToolResponse(BaseModel):
+    content: str
+    is_error: bool = False
+
+
 class AuditPayload(BaseModel):
     tool_name: str
     category: AuditCategory

@@ -2,7 +2,7 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain.models import TokenUsage, ToolDefinition
+from mcp_auditor.domain.models import TokenUsage, ToolDefinition, ToolResponse
 
 
 class MCPClientPort(Protocol):
@@ -13,7 +13,7 @@ class MCPClientPort(Protocol):
     """
 
     async def list_tools(self) -> list[ToolDefinition]: ...
-    async def call_tool(self, name: str, args: dict[str, Any]) -> Any: ...
+    async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse: ...
 
 
 class LLMPort(Protocol):

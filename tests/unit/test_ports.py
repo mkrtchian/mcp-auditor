@@ -9,15 +9,15 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain import LLMPort, MCPClientPort, TokenUsage, ToolDefinition
+from mcp_auditor.domain import LLMPort, MCPClientPort, TokenUsage, ToolDefinition, ToolResponse
 
 
 class FakeMCPClient:
     async def list_tools(self) -> list[ToolDefinition]:
         return []
 
-    async def call_tool(self, name: str, args: dict[str, Any]) -> Any:
-        return None
+    async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
+        return ToolResponse(content="ok")
 
 
 class FakeLLM:

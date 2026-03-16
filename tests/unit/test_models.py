@@ -17,6 +17,7 @@ from mcp_auditor.domain import (
     TestCase,
     TokenUsage,
     ToolDefinition,
+    ToolResponse,
 )
 
 
@@ -60,6 +61,18 @@ class TestTestCase:
         test_case = TestCase(payload=_a_payload(), response="raw text")
 
         assert test_case.response == "raw text"
+
+
+class TestToolResponse:
+    def test_default_is_not_error(self):
+        response = ToolResponse(content="ok")
+
+        assert response.is_error is False
+
+    def test_explicit_error_flag(self):
+        response = ToolResponse(content="boom", is_error=True)
+
+        assert response.is_error is True
 
 
 class TestTokenUsage:

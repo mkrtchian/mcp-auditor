@@ -8,6 +8,7 @@ from mcp_auditor.domain.models import (
     TestCaseBatch,
     TokenUsage,
     ToolDefinition,
+    ToolResponse,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 
@@ -23,4 +24,5 @@ __all__ = [
     "TestCaseBatch",
     "TokenUsage",
     "ToolDefinition",
+    "ToolResponse",
 ]
