@@ -199,6 +199,13 @@ def _handle_parent_event(
         if tool:
             tracker["tool_index"] += 1
             tracker["case_indices"][tool.name] = 0
+    elif node_name == "finalize_tool_audit":
+        tool_reports: list[Any] = state_update.get("tool_reports", [])
+        if tool_reports:
+            tr = tool_reports[-1]
+            pass_count = sum(1 for r in tr.results if r.verdict.value == "pass")
+            fail_count = len(tr.results) - pass_count
+            display.print_tool_done(tr.tool.name, pass_count, fail_count)
 
 
 def _handle_subgraph_event(

@@ -35,6 +35,7 @@ def _render_summary_section(report: AuditReport) -> str:
     findings = _collect_findings(report)
     finding_count = len(findings)
     lines = [
+        "## Summary\n",
         f"**Target**: {report.target}",
         f"**Tools audited**: {tool_count}",
         f"**Test cases**: {total_cases}",
