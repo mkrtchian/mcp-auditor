@@ -132,7 +132,7 @@ async def _run_full_audit(
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
         _handle_stream_event(event, display, tracker)
 
-    final_state = graph.get_state(config)
+    final_state = await graph.aget_state(config)
     report: AuditReport | None = final_state.values.get("audit_report")
     if report is None:
         click.echo("Error: audit did not produce a report", err=True)
