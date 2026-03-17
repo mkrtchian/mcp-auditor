@@ -28,14 +28,10 @@ RA = AuditCategory.RESOURCE_ABUSE
 
 ALL_CATEGORIES = list(AuditCategory)
 
-_DUMMY_TOOL = ToolDefinition(
-    name="t", description="test tool", input_schema={"type": "object"}
-)
+_DUMMY_TOOL = ToolDefinition(name="t", description="test tool", input_schema={"type": "object"})
 
 
-def _make_result(
-    tool: str, category: AuditCategory, verdict: EvalVerdict
-) -> EvalResult:
+def _make_result(tool: str, category: AuditCategory, verdict: EvalVerdict) -> EvalResult:
     return EvalResult(
         tool_name=tool,
         category=category,
@@ -49,16 +45,12 @@ def _make_result(
 def _make_report(results_by_tool: dict[str, list[EvalResult]]) -> AuditReport:
     tool_reports = [
         ToolReport(
-            tool=ToolDefinition(
-                name=name, description="test", input_schema={"type": "object"}
-            ),
+            tool=ToolDefinition(name=name, description="test", input_schema={"type": "object"}),
             results=results,
         )
         for name, results in results_by_tool.items()
     ]
-    return AuditReport(
-        target="test", tool_reports=tool_reports, token_usage=TokenUsage()
-    )
+    return AuditReport(target="test", tool_reports=tool_reports, token_usage=TokenUsage())
 
 
 # --- aggregate_verdicts ---
@@ -95,9 +87,7 @@ def test_aggregate_verdicts_all_pass():
 
 
 def test_aggregate_verdicts_missing_pair():
-    report = _make_report(
-        {"get_user": [_make_result("get_user", IV, PASS)]}
-    )
+    report = _make_report({"get_user": [_make_result("get_user", IV, PASS)]})
 
     verdicts = aggregate_verdicts(report)
 
@@ -246,11 +236,7 @@ def test_consistency_mixed():
 
 def test_distribution_full_coverage():
     report = _make_report(
-        {
-            "get_user": [
-                _make_result("get_user", cat, PASS) for cat in ALL_CATEGORIES
-            ]
-        }
+        {"get_user": [_make_result("get_user", cat, PASS) for cat in ALL_CATEGORIES]}
     )
 
     coverage = compute_distribution_coverage(report, ALL_CATEGORIES)
@@ -261,11 +247,7 @@ def test_distribution_full_coverage():
 def test_distribution_partial():
     three_categories = [IV, EH, IL]
     report = _make_report(
-        {
-            "get_user": [
-                _make_result("get_user", cat, PASS) for cat in three_categories
-            ]
-        }
+        {"get_user": [_make_result("get_user", cat, PASS) for cat in three_categories]}
     )
 
     coverage = compute_distribution_coverage(report, ALL_CATEGORIES)

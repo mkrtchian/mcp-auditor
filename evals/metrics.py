@@ -66,28 +66,18 @@ def aggregate_verdicts(report: AuditReport) -> VerdictMap:
 
 
 def compute_recall(aggregated: VerdictMap, ground_truth: GroundTruth) -> float:
-    expected_fails = [
-        key for key, verdict in ground_truth.items() if verdict == EvalVerdict.FAIL
-    ]
+    expected_fails = [key for key, verdict in ground_truth.items() if verdict == EvalVerdict.FAIL]
     if not expected_fails:
         return 1.0
-    detected = sum(
-        1 for key in expected_fails if aggregated.get(key) == EvalVerdict.FAIL
-    )
+    detected = sum(1 for key in expected_fails if aggregated.get(key) == EvalVerdict.FAIL)
     return detected / len(expected_fails)
 
 
 def compute_precision(aggregated: VerdictMap, ground_truth: GroundTruth) -> float:
-    predicted_fails = [
-        key for key, verdict in aggregated.items() if verdict == EvalVerdict.FAIL
-    ]
+    predicted_fails = [key for key, verdict in aggregated.items() if verdict == EvalVerdict.FAIL]
     if not predicted_fails:
         return 1.0
-    correct = sum(
-        1
-        for key in predicted_fails
-        if ground_truth.get(key) == EvalVerdict.FAIL
-    )
+    correct = sum(1 for key in predicted_fails if ground_truth.get(key) == EvalVerdict.FAIL)
     return correct / len(predicted_fails)
 
 

@@ -82,7 +82,12 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
         distribution = compute_distribution_coverage(audit_report, ALL_CATEGORIES)
 
         run_detail = _build_run_detail(
-            i, verdicts, distribution, recall, precision, audit_report,
+            i,
+            verdicts,
+            distribution,
+            recall,
+            precision,
+            audit_report,
         )
         run_details.append(run_detail)
         _print_run_summary(i, num_runs, run_detail)
@@ -128,7 +133,8 @@ def _build_run_detail(
 
 
 def _build_verdict_detail(
-    verdicts: VerdictMap, audit_report: AuditReport,
+    verdicts: VerdictMap,
+    audit_report: AuditReport,
 ) -> dict[str, dict[str, ToolVerdictDetail]]:
     case_counts: dict[tuple[str, AuditCategory], int] = {}
     for tool_report in audit_report.tool_reports:
@@ -196,11 +202,7 @@ def _assemble_report(
 
 
 def _average_distribution_coverage(run_details: list[RunDetail]) -> float:
-    all_coverages = [
-        dist.coverage
-        for run in run_details
-        for dist in run.distribution.values()
-    ]
+    all_coverages = [dist.coverage for run in run_details for dist in run.distribution.values()]
     if not all_coverages:
         return 0.0
     return sum(all_coverages) / len(all_coverages)
@@ -250,10 +252,7 @@ def _print_metric_line(name: str, value: float, threshold: float) -> None:
 def _print_run_summary(run_index: int, num_runs: int, run_detail: RunDetail) -> None:
     print(f"\nRunning eval {run_index + 1}/{num_runs}...")
     for tool_name, dist in run_detail.distribution.items():
-        total_cases = sum(
-            v.case_count
-            for v in run_detail.verdicts.get(tool_name, {}).values()
-        )
+        total_cases = sum(v.case_count for v in run_detail.verdicts.get(tool_name, {}).values())
         print(f"  {tool_name}: {total_cases} cases, {dist.covered} categories covered")
     print(f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f}")
 
