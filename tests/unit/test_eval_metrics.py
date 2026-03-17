@@ -28,8 +28,6 @@ RA = AuditCategory.RESOURCE_ABUSE
 
 ALL_CATEGORIES = list(AuditCategory)
 
-_DUMMY_TOOL = ToolDefinition(name="t", description="test tool", input_schema={"type": "object"})
-
 
 def _make_result(tool: str, category: AuditCategory, verdict: EvalVerdict) -> EvalResult:
     return EvalResult(

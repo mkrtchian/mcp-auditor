@@ -17,11 +17,6 @@ class ToolDistribution(BaseModel):
     coverage: float
 
 
-class RunMetrics(BaseModel):
-    recall: float
-    precision: float
-
-
 class RunDetail(BaseModel):
     run_index: int
     verdicts: dict[str, dict[str, ToolVerdictDetail]]
