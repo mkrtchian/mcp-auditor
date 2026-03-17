@@ -1,5 +1,5 @@
-import tests.unit.test_rendering_given as given
-import tests.unit.test_rendering_then as then
+import tests.unit.fixtures.test_rendering_given as given
+import tests.unit.fixtures.test_rendering_then as then
 from mcp_auditor.domain.rendering import render_json, render_markdown, render_summary
 
 

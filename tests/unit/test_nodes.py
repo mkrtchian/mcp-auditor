@@ -3,8 +3,8 @@ from typing import Any
 import pytest
 from langgraph.graph import END  # type: ignore[import-untyped]
 
-import tests.unit.test_nodes_given as given
-import tests.unit.test_nodes_then as then
+import tests.unit.fixtures.test_nodes_given as given
+import tests.unit.fixtures.test_nodes_then as then
 from mcp_auditor.domain import TestCaseBatch, ToolResponse
 from mcp_auditor.graph.nodes import (
     make_discover_tools,

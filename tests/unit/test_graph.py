@@ -1,7 +1,7 @@
 import pytest
 
-import tests.unit.test_graph_given as given
-import tests.unit.test_graph_then as then
+import tests.unit.fixtures.test_graph_given as given
+import tests.unit.fixtures.test_graph_then as then
 from tests.fakes import FakeLLM, FakeMCPClient
 
 
