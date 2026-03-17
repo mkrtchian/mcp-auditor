@@ -1,6 +1,7 @@
 # pyright: reportUnknownMemberType=false, reportArgumentType=false
 from typing import Any
 
+from langgraph.checkpoint.base import BaseCheckpointSaver  # type: ignore[import-untyped]
 from langgraph.graph import START, StateGraph  # type: ignore[import-untyped]
 from langgraph.graph.state import CompiledStateGraph  # type: ignore[import-untyped]
 
@@ -23,6 +24,7 @@ from mcp_auditor.graph.state import AuditToolInput, AuditToolState, GraphState
 def build_graph(
     llm: LLMPort,
     mcp_client: MCPClientPort,
+    checkpointer: BaseCheckpointSaver[Any] | None = None,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     audit_subgraph = _build_audit_tool_subgraph(llm, mcp_client)
 
@@ -37,7 +39,7 @@ def build_graph(
     builder.add_edge("prepare_tool", "audit_tool")
     builder.add_edge("audit_tool", "finalize_tool_audit")
     builder.add_conditional_edges("finalize_tool_audit", route_tools)
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)
 
 
 def _build_audit_tool_subgraph(

@@ -1,2 +1,252 @@
+# pyright: reportUnknownMemberType=false, reportMissingTypeStubs=false, reportArgumentType=false, reportUnknownArgumentType=false
+import asyncio
+import hashlib
+from pathlib import Path
+from typing import Any
+
+import click
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
+
+from mcp_auditor.adapters.llm import AnthropicLLM
+from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.console import AuditDisplay
+from mcp_auditor.domain.models import (
+    AuditCategory,
+    AuditReport,
+    TestCaseBatch,
+    ToolDefinition,
+)
+from mcp_auditor.domain.ports import LLMPort, MCPClientPort
+from mcp_auditor.domain.rendering import render_json, render_markdown
+from mcp_auditor.graph.builder import build_graph
+from mcp_auditor.graph.prompts import build_attack_generation_prompt
+
+
+@click.group()
+@click.version_option()
+def cli() -> None:
+    """Agentic QA & fuzzing for MCP servers."""
+
+
+@cli.command()
+@click.argument("target", nargs=-1, required=True)
+@click.option("--budget", default=10, type=click.IntRange(min=1), help="Test cases per tool.")
+@click.option("--output", "-o", type=str, default=None, help="JSON output path.")
+@click.option("--markdown", "-m", type=str, default=None, help="Markdown output path.")
+@click.option("--resume", is_flag=True, default=False, help="Resume from last checkpoint.")
+@click.option("--dry-run", is_flag=True, default=False, help="Generate test cases without running.")
+def run(
+    target: tuple[str, ...],
+    budget: int,
+    output: str | None,
+    markdown: str | None,
+    resume: bool,
+    dry_run: bool,
+) -> None:
+    """Audit an MCP server.
+
+    TARGET is the command to start the MCP server.
+
+    \b
+    Examples:
+        mcp-auditor run -- python my_server.py
+        mcp-auditor run --budget 5 -- npx some-mcp-server
+    """
+    asyncio.run(_run_audit(target, budget, output, markdown, resume, dry_run))
+
+
+async def _run_audit(
+    target: tuple[str, ...],
+    budget: int,
+    output: str | None,
+    markdown: str | None,
+    resume: bool,
+    dry_run: bool,
+) -> None:
+    command, args = target[0], list(target[1:])
+    target_str = " ".join(target)
+    display = AuditDisplay()
+    display.print_header(target_str)
+
+    try:
+        llm = AnthropicLLM()
+    except (KeyError, ValueError) as exc:
+        click.echo(f"Error: could not initialize LLM: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+    checkpoint_dir = Path.home() / ".mcp-auditor"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    db_path = str(checkpoint_dir / "checkpoints.db")
+
+    try:
+        async with (
+            AsyncSqliteSaver.from_conn_string(db_path) as checkpointer,
+            StdioMCPClient.connect(command, args) as mcp_client,
+        ):
+            if dry_run:
+                await _run_dry_run(llm, mcp_client, budget, display)
+                return
+            await _run_full_audit(
+                llm,
+                mcp_client,
+                budget,
+                display,
+                checkpointer,
+                target_str,
+                command,
+                args,
+                resume,
+                output,
+                markdown,
+            )
+    except ConnectionError as exc:
+        click.echo(f"Error: could not connect to MCP server: {exc}", err=True)
+        raise SystemExit(1) from exc
+    except OSError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+async def _run_full_audit(
+    llm: LLMPort,
+    mcp_client: MCPClientPort,
+    budget: int,
+    display: AuditDisplay,
+    checkpointer: Any,
+    target_str: str,
+    command: str,
+    args: list[str],
+    resume: bool,
+    output: str | None,
+    markdown: str | None,
+) -> None:
+    graph = build_graph(llm, mcp_client, checkpointer=checkpointer)
+    thread_id = _compute_thread_id(command, args)
+    config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
+
+    initial_state: dict[str, Any] | None = None
+    if not resume:
+        initial_state = {"target": target_str, "test_budget": budget}
+
+    tracker: dict[str, Any] = {"tool_index": 0, "tool_count": 0, "case_indices": {}}
+    async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
+        _handle_stream_event(event, display, tracker)
+
+    final_state = graph.get_state(config)
+    report: AuditReport | None = final_state.values.get("audit_report")
+    if report is None:
+        click.echo("Error: audit did not produce a report", err=True)
+        raise SystemExit(1)
+
+    display.print_summary_table(report)
+    display.print_cost(report.token_usage)
+    _write_reports(report, output, markdown, display)
+
+
+async def _run_dry_run(
+    llm: LLMPort,
+    mcp_client: MCPClientPort,
+    budget: int,
+    display: AuditDisplay,
+) -> None:
+    tools = await mcp_client.list_tools()
+    display.print_discovery(len(tools), [t.name for t in tools])
+    categories = list(AuditCategory)
+    for tool in tools:
+        prompt = build_attack_generation_prompt(
+            tool_name=tool.name,
+            tool_description=tool.description,
+            input_schema=tool.input_schema,
+            budget=budget,
+            categories=categories,
+        )
+        batch = await llm.generate_structured(prompt, TestCaseBatch)
+        display.print_dry_run_payloads(tool.name, batch.cases)
+
+
+def _compute_thread_id(command: str, args: list[str]) -> str:
+    full = " ".join([command, *args])
+    return hashlib.sha256(full.encode()).hexdigest()[:16]
+
+
+def _handle_stream_event(
+    event: tuple[tuple[str, ...], dict[str, Any]],
+    display: AuditDisplay,
+    tracker: dict[str, Any],
+) -> None:
+    namespace, updates = event
+    for node_name, state_update in updates.items():
+        if not isinstance(state_update, dict):
+            continue
+        if namespace == ():
+            _handle_parent_event(node_name, state_update, display, tracker)
+        else:
+            _handle_subgraph_event(node_name, state_update, display, tracker)
+
+
+def _handle_parent_event(
+    node_name: str,
+    state_update: dict[str, Any],
+    display: AuditDisplay,
+    tracker: dict[str, Any],
+) -> None:
+    if node_name == "discover_tools":
+        tools: list[ToolDefinition] = state_update.get("discovered_tools", [])
+        tracker["tool_count"] = len(tools)
+        display.print_discovery(len(tools), [t.name for t in tools])
+    elif node_name == "prepare_tool":
+        tool: ToolDefinition | None = state_update.get("current_tool")
+        if tool:
+            tracker["tool_index"] += 1
+            tracker["case_indices"][tool.name] = 0
+
+
+def _handle_subgraph_event(
+    node_name: str,
+    state_update: dict[str, Any],
+    display: AuditDisplay,
+    tracker: dict[str, Any],
+) -> None:
+    if node_name == "generate_test_cases":
+        pending = state_update.get("pending_cases", [])
+        case_count = len(pending)
+        tool_index = tracker["tool_index"]
+        tool_count = tracker["tool_count"]
+        if pending:
+            tool_name = pending[0].payload.tool_name
+            display.print_tool_start(tool_index, tool_count, tool_name, case_count)
+    elif node_name == "judge_response":
+        results = state_update.get("tool_results", [])
+        if results:
+            result = results[-1]
+            tool_name = result.tool_name
+            tracker["case_indices"].setdefault(tool_name, 0)
+            tracker["case_indices"][tool_name] += 1
+            case_index = tracker["case_indices"][tool_name]
+            case_count = case_index  # approximate, updated as we go
+            display.print_verdict(
+                case_index,
+                case_count,
+                result.category.value,
+                result.tool_name,
+                result.verdict.value,
+                result.severity.value,
+            )
+
+
+def _write_reports(
+    report: AuditReport,
+    json_path: str | None,
+    md_path: str | None,
+    display: AuditDisplay,
+) -> None:
+    if json_path:
+        Path(json_path).write_text(render_json(report))
+        display.print_report_path(json_path)
+    if md_path:
+        Path(md_path).write_text(render_markdown(report))
+        display.print_report_path(md_path)
+
+
 def main() -> None:
-    raise NotImplementedError("CLI not implemented yet")
+    cli()
