@@ -26,6 +26,7 @@ class AuditToolInput(TypedDict):
 
 
 class GraphState(TypedDict):
+    target: str
     discovered_tools: list[ToolDefinition]
     test_budget: int
     current_tool: ToolDefinition | None

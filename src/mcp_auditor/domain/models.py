@@ -85,5 +85,6 @@ class ToolReport(BaseModel):
 
 
 class AuditReport(BaseModel):
+    target: str
     tool_reports: list[ToolReport]
     token_usage: TokenUsage

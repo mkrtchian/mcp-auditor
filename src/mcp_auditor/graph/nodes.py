@@ -93,9 +93,10 @@ def make_finalize_tool_audit():
 
 def make_generate_report(llm: LLMPort):
     async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
+        target = state["target"]
         reports = state.get("tool_reports", [])
         usage = llm.usage_stats
-        return {"audit_report": AuditReport(tool_reports=reports, token_usage=usage)}
+        return {"audit_report": AuditReport(target=target, tool_reports=reports, token_usage=usage)}
 
     return generate_report
 

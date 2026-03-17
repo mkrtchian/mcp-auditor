@@ -77,6 +77,7 @@ def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
 
 def an_initial_state(test_budget: int = 5) -> dict[str, Any]:
     return {
+        "target": "python dummy_server.py",
         "discovered_tools": [],
         "test_budget": test_budget,
         "current_tool": None,
