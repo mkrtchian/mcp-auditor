@@ -7,7 +7,6 @@ from pathlib import Path
 
 from evals.ground_truth import HONEYPOT_GROUND_TRUTH
 from evals.metrics import (
-    ConsistencyDetail,
     EvalMetrics,
     EvalReport,
     RunDetail,
@@ -22,7 +21,7 @@ from evals.metrics import (
 )
 from mcp_auditor.adapters.llm import AnthropicLLM
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
-from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict
+from mcp_auditor.domain.models import AuditCategory, AuditReport
 from mcp_auditor.graph.builder import build_graph
 
 HONEYPOT_SERVER = Path(__file__).resolve().parent.parent / "tests" / "dummy_server.py"
@@ -53,7 +52,7 @@ def main() -> None:
     report = asyncio.run(run_evals(args.runs, args.budget))
 
     Path(args.report).write_text(report.model_dump_json(indent=2))
-    _print_summary(report)
+    _print_summary(report, args.report)
 
     if report.passed:
         print("\nAll thresholds met.")
@@ -67,6 +66,7 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
     all_verdict_maps: list[VerdictMap] = []
 
     for i in range(num_runs):
+        print(f"\nRunning eval {i + 1}/{num_runs}...")
         try:
             audit_report = await run_single_audit(budget)
         except Exception:
@@ -90,7 +90,7 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
             audit_report,
         )
         run_details.append(run_detail)
-        _print_run_summary(i, num_runs, run_detail)
+        _print_run_result(run_detail)
 
     if not run_details:
         print("All runs failed. Cannot produce eval report.")
@@ -175,7 +175,7 @@ def _assemble_report(
 ) -> EvalReport:
     avg_recall = sum(r.recall for r in run_details) / len(run_details)
     avg_precision = sum(r.precision for r in run_details) / len(run_details)
-    consistency = compute_consistency(all_verdict_maps)
+    consistency, consistency_details = compute_consistency(all_verdict_maps)
     avg_distribution = _average_distribution_coverage(run_details)
 
     passed = (
@@ -197,7 +197,7 @@ def _assemble_report(
         thresholds=THRESHOLDS,
         passed=passed,
         runs=run_details,
-        consistency_details=_build_consistency_details(all_verdict_maps),
+        consistency_details=consistency_details,
     )
 
 
@@ -208,31 +208,8 @@ def _average_distribution_coverage(run_details: list[RunDetail]) -> float:
     return sum(all_coverages) / len(all_coverages)
 
 
-def _build_consistency_details(
-    all_verdict_maps: list[VerdictMap],
-) -> dict[str, ConsistencyDetail]:
-    all_keys: set[tuple[str, AuditCategory]] = set()
-    for run in all_verdict_maps:
-        all_keys.update(run.keys())
 
-    details: dict[str, ConsistencyDetail] = {}
-    for key in sorted(all_keys, key=lambda k: (k[0], k[1].value)):
-        tool_name, category = key
-        fail_count = sum(1 for run in all_verdict_maps if run.get(key) == EvalVerdict.FAIL)
-        pass_count = sum(1 for run in all_verdict_maps if run.get(key) == EvalVerdict.PASS)
-        total = fail_count + pass_count
-        if total == 0:
-            continue
-        rate = max(fail_count, pass_count) / total
-        details[f"{tool_name}/{category.value}"] = ConsistencyDetail(
-            agree=max(fail_count, pass_count),
-            total=total,
-            rate=rate,
-        )
-    return details
-
-
-def _print_summary(report: EvalReport) -> None:
+def _print_summary(report: EvalReport, report_path: str) -> None:
     metrics = report.metrics
     thresholds = report.thresholds
     print("\n--- Results ---")
@@ -241,7 +218,7 @@ def _print_summary(report: EvalReport) -> None:
     _print_metric_line("Consistency", metrics.consistency, thresholds["consistency"])
     dist_threshold = thresholds["distribution_coverage"]
     _print_metric_line("Distribution", metrics.distribution_coverage, dist_threshold)
-    print(f"\nReport written to {DEFAULT_REPORT_PATH}")
+    print(f"\nReport written to {report_path}")
 
 
 def _print_metric_line(name: str, value: float, threshold: float) -> None:
@@ -249,8 +226,7 @@ def _print_metric_line(name: str, value: float, threshold: float) -> None:
     print(f"{name + ':':<14} {value:.2f} (threshold: {threshold:.2f}) {status}")
 
 
-def _print_run_summary(run_index: int, num_runs: int, run_detail: RunDetail) -> None:
-    print(f"\nRunning eval {run_index + 1}/{num_runs}...")
+def _print_run_result(run_detail: RunDetail) -> None:
     for tool_name, dist in run_detail.distribution.items():
         total_cases = sum(v.case_count for v in run_detail.verdicts.get(tool_name, {}).values())
         print(f"  {tool_name}: {total_cases} cases, {dist.covered} categories covered")

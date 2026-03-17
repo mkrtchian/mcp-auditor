@@ -76,23 +76,30 @@ def compute_precision(aggregated: VerdictMap, ground_truth: GroundTruth) -> floa
     return correct / len(predicted_fails)
 
 
-def compute_consistency(all_runs: list[VerdictMap]) -> float:
+def compute_consistency(
+    all_runs: list[VerdictMap],
+) -> tuple[float, dict[str, ConsistencyDetail]]:
     all_keys: set[tuple[str, AuditCategory]] = set()
     for run in all_runs:
         all_keys.update(run.keys())
 
-    agreements: list[float] = []
-    for key in all_keys:
+    details: dict[str, ConsistencyDetail] = {}
+    for key in sorted(all_keys, key=lambda k: (k[0], k[1].value)):
+        tool_name, category = key
         fail_count = sum(1 for run in all_runs if run.get(key) == EvalVerdict.FAIL)
         pass_count = sum(1 for run in all_runs if run.get(key) == EvalVerdict.PASS)
         total = fail_count + pass_count
         if total == 0:
             continue
-        agreements.append(max(fail_count, pass_count) / total)
+        rate = max(fail_count, pass_count) / total
+        details[f"{tool_name}/{category.value}"] = ConsistencyDetail(
+            agree=max(fail_count, pass_count), total=total, rate=rate
+        )
 
-    if not agreements:
-        return 1.0
-    return sum(agreements) / len(agreements)
+    if not details:
+        return 1.0, {}
+    avg = sum(d.rate for d in details.values()) / len(details)
+    return avg, details
 
 
 def compute_distribution_coverage(

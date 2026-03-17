@@ -205,7 +205,10 @@ def test_consistency_perfect():
     run2: VerdictMap = {("a", IV): FAIL, ("a", EH): PASS}
     run3: VerdictMap = {("a", IV): FAIL, ("a", EH): PASS}
 
-    assert compute_consistency([run1, run2, run3]) == 1.0
+    score, details = compute_consistency([run1, run2, run3])
+
+    assert score == 1.0
+    assert all(d.rate == 1.0 for d in details.values())
 
 
 def test_consistency_mixed():
@@ -226,7 +229,11 @@ def test_consistency_mixed():
     # ("a", EH): 1 PASS, 2 FAIL -> agreement = 2/3
     # average = 2/3
     expected = 2.0 / 3.0
-    assert abs(compute_consistency([run1, run2, run3]) - expected) < 1e-9
+    score, details = compute_consistency([run1, run2, run3])
+
+    assert abs(score - expected) < 1e-9
+    assert details["a/input_validation"].agree == 2
+    assert details["a/error_handling"].agree == 2
 
 
 # --- compute_distribution_coverage ---
