@@ -19,7 +19,7 @@ from evals.metrics import (
     compute_precision,
     compute_recall,
 )
-from mcp_auditor.adapters.llm import AnthropicLLM
+from mcp_auditor.adapters.llm import create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.domain.models import AuditCategory, AuditReport
 from mcp_auditor.graph.builder import build_graph
@@ -100,7 +100,7 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
 
 
 async def run_single_audit(budget: int) -> AuditReport:
-    llm = AnthropicLLM()
+    llm = create_llm()
     async with StdioMCPClient.connect(HONEYPOT_COMMAND, HONEYPOT_ARGS) as mcp_client:
         graph = build_graph(llm, mcp_client)
         result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
@@ -206,7 +206,6 @@ def _average_distribution_coverage(run_details: list[RunDetail]) -> float:
     if not all_coverages:
         return 0.0
     return sum(all_coverages) / len(all_coverages)
-
 
 
 def _print_summary(report: EvalReport, report_path: str) -> None:

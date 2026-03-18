@@ -69,12 +69,7 @@ def _render_result_section(result: EvalResult) -> str:
 
 
 def _collect_findings(report: AuditReport) -> list[EvalResult]:
-    return [
-        r
-        for tr in report.tool_reports
-        for r in tr.results
-        if r.verdict == EvalVerdict.FAIL
-    ]
+    return [r for tr in report.tool_reports for r in tr.results if r.verdict == EvalVerdict.FAIL]
 
 
 def _severity_breakdown(findings: list[EvalResult]) -> str:

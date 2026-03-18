@@ -8,7 +8,7 @@ from typing import Any
 import click
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
 
-from mcp_auditor.adapters.llm import AnthropicLLM
+from mcp_auditor.adapters.llm import create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import (
@@ -70,7 +70,7 @@ async def _run_audit(
     display.print_header(target_str)
 
     try:
-        llm = AnthropicLLM()
+        llm = create_llm()
     except (KeyError, ValueError) as exc:
         click.echo(f"Error: could not initialize LLM: {exc}", err=True)
         raise SystemExit(1) from exc
