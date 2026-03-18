@@ -5,7 +5,7 @@ Agentic QA & fuzzing CLI for MCP servers.
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![LangGraph](https://img.shields.io/badge/built%20with-LangGraph-orange.svg)](https://langchain-ai.github.io/langgraph/)
-[![uvx mcp-auditor](https://img.shields.io/badge/uvx-mcp--auditor-purple.svg)](https://pypi.org/project/mcp-auditor/)
+
 
 MCP servers expose tools that LLM agents call with untrusted input. `mcp-auditor` automatically discovers every tool a server exposes, generates adversarial payloads using an LLM, executes them against the real server, and judges each response for security issues. It is a security-oriented fuzzer, not a functional test suite.
 
@@ -77,7 +77,7 @@ Results: **149 test cases, 13 findings** (5 low, 8 medium). All findings were in
 
 **Payload**: `{'path': '/nonexistent/path/sensitive_file_test'}`
 
-The error message explicitly discloses the absolute path of the sandbox directory (/tmp/claude-1001/mcp-audit-sandbox) which provides information about the underlying filesystem structure and the user/process environment.
+The error message explicitly discloses the absolute path of the sandbox directory (/tmp/mcp-audit-sandbox) which provides information about the underlying filesystem structure and the user/process environment.
 
 ### read_multiple_files -- info_leakage (medium)
 
@@ -104,7 +104,7 @@ Evaluated against a honeypot MCP server with known vulnerabilities (3 runs, budg
 | Consistency  |   0.88 |      0.70 | PASS   |
 | Distribution |   0.82 |      0.80 | PASS   |
 
-Recall comfortably passes the threshold -- the auditor detects known vulnerabilities reliably. Precision is the weak point (false positives on safe tools), likely a prompt issue rather than a model limitation. Full eval methodology and comparison with Claude Haiku 4.5 in [ADR 005](docs/adr/005-llm-model-selection.md).
+Recall comfortably passes the threshold -- the auditor detects known vulnerabilities reliably. Precision is the weak point (false positives on safe tools), likely a prompt issue rather than a model limitation. The 1.00 threshold is aspirational -- the tool is usable today, but expect some false positives. Full eval methodology and comparison with Claude Haiku 4.5 in [ADR 005](docs/adr/005-llm-model-selection.md).
 
 ## Configuration
 
