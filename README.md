@@ -6,20 +6,25 @@ Agentic QA & fuzzing CLI for MCP servers.
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![LangGraph](https://img.shields.io/badge/built%20with-LangGraph-orange.svg)](https://langchain-ai.github.io/langgraph/)
 
+## The problem
 
-MCP servers expose tools that LLM agents call with untrusted input. `mcp-auditor` automatically discovers every tool a server exposes, generates adversarial payloads using an LLM, executes them against the real server, and judges each response for security issues. It is a security-oriented fuzzer, not a functional test suite.
+MCP servers are proliferating -- every AI assistant, IDE plugin, and agent framework is adopting the protocol. These servers expose tools that LLM agents call with untrusted input, yet there is no automated way to test whether a server handles adversarial inputs safely. Manual testing doesn't scale, and generic fuzzers don't understand the MCP protocol or its specific threat model.
+
+`mcp-auditor` connects to any MCP server, discovers its tools, and systematically probes them for security issues -- input validation failures, injection vulnerabilities, information leakage, error handling gaps, and resource abuse. It is a security-oriented fuzzer, not a functional test suite.
 
 ## Quick start
 
 ```bash
-# Install
-uvx mcp-auditor          # or: pip install mcp-auditor
+# Clone and install
+git clone https://github.com/mkrtchian/mcp-auditor.git
+cd mcp-auditor
+uv sync
 
 # Set your API key (Gemini Flash-Lite is the default model)
 export GOOGLE_API_KEY=your-key-here
 
 # Audit an MCP server
-mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
+uv run mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 ```
 
 ## What it does
@@ -33,36 +38,37 @@ The audit runs in four phases:
 
 ## Architecture
 
+**Parent graph** -- iterates over discovered tools:
+
 ```mermaid
-graph TD
-    subgraph Parent["Parent graph"]
-        A[discover_tools] --> B{tools found?}
-        B -->|yes| C[prepare_tool]
-        B -->|no| G[generate_report]
-        C --> D[audit_tool subgraph]
-        D --> E[finalize_tool_audit]
-        E --> F{more tools?}
-        F -->|yes| C
-        F -->|no| G
-    end
-
-    subgraph Subgraph["audit_tool subgraph (per tool)"]
-        S1[generate_test_cases] --> S2[execute_tool]
-        S2 --> S3[judge_response]
-        S3 --> S4{more cases?}
-        S4 -->|yes| S2
-        S4 -->|no| S5((end))
-    end
-
-    D -.-> S1
+graph LR
+    A[discover_tools] --> B[prepare_tool]
+    B --> C[audit_tool]
+    C --> D[finalize_tool_audit]
+    D -->|more tools| B
+    D -->|done| E[generate_report]
 ```
 
-Hexagonal architecture: `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). The LLM serves two roles -- adversarial payload generator and response judge. The subgraph-per-tool design enables checkpointing and resume for long-running audits.
+**audit_tool subgraph** -- runs per tool, loops over test cases:
+
+```mermaid
+graph LR
+    S1[generate_test_cases] --> S2[execute_tool]
+    S2 --> S3[judge_response]
+    S3 -->|more cases| S2
+    S3 -->|done| S4((end))
+```
+
+**Why this design:**
+
+- **Hexagonal architecture** -- `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider (Gemini, Claude) means changing one adapter, zero graph code.
+- **Subgraph per tool** -- each tool audit is a self-contained subgraph. This enables checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off without re-paying for the first 7.
+- **LLM-as-a-judge** -- no fragile heuristics or regex patterns. The LLM evaluates each response against security criteria, producing structured verdicts with justifications. Quality is measured through evals, not unit tests.
 
 ## Example: auditing a real server
 
 ```bash
-mcp-auditor run \
+uv run mcp-auditor run \
   --budget 10 \
   --output results/filesystem-audit.json \
   --markdown results/filesystem-audit.md \
@@ -71,25 +77,19 @@ mcp-auditor run \
 
 This audits `@modelcontextprotocol/server-filesystem` -- the official MCP reference server for filesystem operations. The server exposes 14 tools (read_file, write_file, search_files, etc.), each sandboxed to `/tmp/sandbox`.
 
-Results: **149 test cases, 13 findings** (5 low, 8 medium). All findings were information leakage -- the server exposes internal filesystem paths in error messages. Curated excerpts:
+Results: **149 test cases, 13 findings** (5 low, 8 medium). All findings were information leakage -- the server exposes internal filesystem paths in error messages:
 
 ### read_file -- info_leakage (low)
 
 **Payload**: `{'path': '/nonexistent/path/sensitive_file_test'}`
 
-The error message explicitly discloses the absolute path of the sandbox directory (/tmp/mcp-audit-sandbox) which provides information about the underlying filesystem structure and the user/process environment.
+The error message discloses the absolute path of the sandbox directory, revealing the underlying filesystem structure and process environment to the caller.
 
-### read_multiple_files -- info_leakage (medium)
+### move_file -- info_leakage (medium)
 
-**Payload**: `{'paths': ['config.json', '/non/existent/path/file.txt', 'readme.md']}`
+**Payload**: `{'source': 'file.txt', 'destination': '/non_existent_folder/sub/file.txt'}`
 
-The tool leaks full absolute paths of the underlying host filesystem in the error messages. Exposing the structure of the host machine to the user is a security risk as it provides attackers with internal path mapping information.
-
-### search_files -- info_leakage (medium)
-
-**Payload**: `{'path': '.', 'pattern': '*.js', 'excludePatterns': ['**/[*']}`
-
-The tool leaked the full internal server filesystem path in the error message when a validation failure occurred.
+The error message reveals the full internal filesystem path of the host, including the user's home directory and project structure -- information an MCP client should never see.
 
 ## Eval results
 
@@ -126,6 +126,10 @@ Recall comfortably passes the threshold -- the auditor detects known vulnerabili
 | `--resume`   | off             | Resume from last checkpoint                    |
 | `--dry-run`  | off             | Discover tools and generate cases, skip execution |
 
+## Contributing
+
+Contributions welcome -- [open an issue](https://github.com/mkrtchian/mcp-auditor/issues) to discuss before submitting a PR.
+
 ## License
 
-MIT -- Roman Mkrtchian
+MIT -- [Roman Mkrtchian](https://github.com/mkrtchian)
