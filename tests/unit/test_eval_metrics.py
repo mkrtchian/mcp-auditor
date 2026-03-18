@@ -20,11 +20,11 @@ from mcp_auditor.domain.models import (
 
 FAIL = EvalVerdict.FAIL
 PASS = EvalVerdict.PASS
-IV = AuditCategory.INPUT_VALIDATION
-EH = AuditCategory.ERROR_HANDLING
-IL = AuditCategory.INFO_LEAKAGE
-INJ = AuditCategory.INJECTION
-RA = AuditCategory.RESOURCE_ABUSE
+INPUT_VALIDATION = AuditCategory.INPUT_VALIDATION
+ERROR_HANDLING = AuditCategory.ERROR_HANDLING
+INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
+INJECTION = AuditCategory.INJECTION
+RESOURCE_ABUSE = AuditCategory.RESOURCE_ABUSE
 
 ALL_CATEGORIES = list(AuditCategory)
 
@@ -51,60 +51,54 @@ def _make_report(results_by_tool: dict[str, list[EvalResult]]) -> AuditReport:
     return AuditReport(target="test", tool_reports=tool_reports, token_usage=TokenUsage())
 
 
-# --- aggregate_verdicts ---
-
-
 def test_aggregate_verdicts_worst_case():
     report = _make_report(
         {
             "get_user": [
-                _make_result("get_user", IV, PASS),
-                _make_result("get_user", IV, FAIL),
+                _make_result("get_user", INPUT_VALIDATION, PASS),
+                _make_result("get_user", INPUT_VALIDATION, FAIL),
             ]
         }
     )
 
     verdicts = aggregate_verdicts(report)
 
-    assert verdicts[("get_user", IV)] == FAIL
+    assert verdicts[("get_user", INPUT_VALIDATION)] == FAIL
 
 
 def test_aggregate_verdicts_all_pass():
     report = _make_report(
         {
             "get_user": [
-                _make_result("get_user", IV, PASS),
-                _make_result("get_user", IV, PASS),
+                _make_result("get_user", INPUT_VALIDATION, PASS),
+                _make_result("get_user", INPUT_VALIDATION, PASS),
             ]
         }
     )
 
     verdicts = aggregate_verdicts(report)
 
-    assert verdicts[("get_user", IV)] == PASS
+    assert verdicts[("get_user", INPUT_VALIDATION)] == PASS
 
 
 def test_aggregate_verdicts_missing_pair():
-    report = _make_report({"get_user": [_make_result("get_user", IV, PASS)]})
+    report = _make_report({"get_user": [_make_result("get_user", INPUT_VALIDATION, PASS)]})
 
     verdicts = aggregate_verdicts(report)
 
-    assert verdicts.get(("get_user", EH)) is None
-
-
-# --- compute_recall ---
+    assert verdicts.get(("get_user", ERROR_HANDLING)) is None
 
 
 def test_recall_all_detected():
     ground_truth: GroundTruth = {
-        ("a", IV): FAIL,
-        ("a", EH): FAIL,
-        ("b", IV): PASS,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+        ("b", INPUT_VALIDATION): PASS,
     }
     aggregated: VerdictMap = {
-        ("a", IV): FAIL,
-        ("a", EH): FAIL,
-        ("b", IV): PASS,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+        ("b", INPUT_VALIDATION): PASS,
     }
 
     assert compute_recall(aggregated, ground_truth) == 1.0
@@ -112,18 +106,18 @@ def test_recall_all_detected():
 
 def test_recall_partial():
     ground_truth: GroundTruth = {
-        ("a", IV): FAIL,
-        ("a", EH): FAIL,
-        ("a", IL): FAIL,
-        ("a", INJ): FAIL,
-        ("a", RA): FAIL,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+        ("a", INFO_LEAKAGE): FAIL,
+        ("a", INJECTION): FAIL,
+        ("a", RESOURCE_ABUSE): FAIL,
     }
     aggregated: VerdictMap = {
-        ("a", IV): FAIL,
-        ("a", EH): FAIL,
-        ("a", IL): FAIL,
-        ("a", INJ): PASS,
-        ("a", RA): PASS,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+        ("a", INFO_LEAKAGE): FAIL,
+        ("a", INJECTION): PASS,
+        ("a", RESOURCE_ABUSE): PASS,
     }
 
     assert compute_recall(aggregated, ground_truth) == 0.6
@@ -131,12 +125,12 @@ def test_recall_partial():
 
 def test_recall_none_detected():
     ground_truth: GroundTruth = {
-        ("a", IV): FAIL,
-        ("a", EH): FAIL,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
     }
     aggregated: VerdictMap = {
-        ("a", IV): PASS,
-        ("a", EH): PASS,
+        ("a", INPUT_VALIDATION): PASS,
+        ("a", ERROR_HANDLING): PASS,
     }
 
     assert compute_recall(aggregated, ground_truth) == 0.0
@@ -144,28 +138,25 @@ def test_recall_none_detected():
 
 def test_recall_uncovered_counts_as_miss():
     ground_truth: GroundTruth = {
-        ("a", IV): FAIL,
-        ("a", EH): FAIL,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
     }
     aggregated: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
-        ("a", IV): FAIL,
-        ("a", EH): None,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): None,
     }
 
     assert compute_recall(aggregated, ground_truth) == 0.5
 
 
-# --- compute_precision ---
-
-
 def test_precision_no_false_positives():
     ground_truth: GroundTruth = {
-        ("a", IV): FAIL,
-        ("a", EH): PASS,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
     }
     aggregated: VerdictMap = {
-        ("a", IV): FAIL,
-        ("a", EH): PASS,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
     }
 
     assert compute_precision(aggregated, ground_truth) == 1.0
@@ -173,12 +164,12 @@ def test_precision_no_false_positives():
 
 def test_precision_with_false_positive():
     ground_truth: GroundTruth = {
-        ("a", IV): FAIL,
-        ("a", EH): PASS,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
     }
     aggregated: VerdictMap = {
-        ("a", IV): FAIL,
-        ("a", EH): FAIL,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
     }
 
     assert compute_precision(aggregated, ground_truth) == 0.5
@@ -186,24 +177,21 @@ def test_precision_with_false_positive():
 
 def test_precision_no_predictions():
     ground_truth: GroundTruth = {
-        ("a", IV): PASS,
-        ("a", EH): PASS,
+        ("a", INPUT_VALIDATION): PASS,
+        ("a", ERROR_HANDLING): PASS,
     }
     aggregated: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
-        ("a", IV): PASS,
-        ("a", EH): PASS,
+        ("a", INPUT_VALIDATION): PASS,
+        ("a", ERROR_HANDLING): PASS,
     }
 
     assert compute_precision(aggregated, ground_truth) == 1.0
 
 
-# --- compute_consistency ---
-
-
 def test_consistency_perfect():
-    run1: VerdictMap = {("a", IV): FAIL, ("a", EH): PASS}
-    run2: VerdictMap = {("a", IV): FAIL, ("a", EH): PASS}
-    run3: VerdictMap = {("a", IV): FAIL, ("a", EH): PASS}
+    run1: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    run2: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    run3: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
 
     score, details = compute_consistency([run1, run2, run3])
 
@@ -213,20 +201,20 @@ def test_consistency_perfect():
 
 def test_consistency_mixed():
     run1: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
-        ("a", IV): FAIL,
-        ("a", EH): PASS,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
     }
     run2: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
-        ("a", IV): FAIL,
-        ("a", EH): FAIL,
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
     }
     run3: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
-        ("a", IV): PASS,
-        ("a", EH): FAIL,
+        ("a", INPUT_VALIDATION): PASS,
+        ("a", ERROR_HANDLING): FAIL,
     }
 
-    # ("a", IV): 2 FAIL, 1 PASS -> agreement = 2/3
-    # ("a", EH): 1 PASS, 2 FAIL -> agreement = 2/3
+    # ("a", INPUT_VALIDATION): 2 FAIL, 1 PASS -> agreement = 2/3
+    # ("a", ERROR_HANDLING): 1 PASS, 2 FAIL -> agreement = 2/3
     # average = 2/3
     expected = 2.0 / 3.0
     score, details = compute_consistency([run1, run2, run3])
@@ -234,9 +222,6 @@ def test_consistency_mixed():
     assert abs(score - expected) < 1e-9
     assert details["a/input_validation"].agree == 2
     assert details["a/error_handling"].agree == 2
-
-
-# --- compute_distribution_coverage ---
 
 
 def test_distribution_full_coverage():
@@ -250,7 +235,7 @@ def test_distribution_full_coverage():
 
 
 def test_distribution_partial():
-    three_categories = [IV, EH, IL]
+    three_categories = [INPUT_VALIDATION, ERROR_HANDLING, INFO_LEAKAGE]
     report = _make_report(
         {"get_user": [_make_result("get_user", cat, PASS) for cat in three_categories]}
     )

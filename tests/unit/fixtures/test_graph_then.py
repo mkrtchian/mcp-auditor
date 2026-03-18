@@ -17,9 +17,3 @@ def report_has_results(report: ToolReport, expected_count: int) -> None:
 
 def report_is_for_tool(report: ToolReport, tool_name: str) -> None:
     assert report.tool.name == tool_name
-
-
-def token_usage_is_nonzero(result: dict[str, Any]) -> None:
-    usage = result["audit_report"].token_usage
-    assert usage.input_tokens > 0
-    assert usage.output_tokens > 0

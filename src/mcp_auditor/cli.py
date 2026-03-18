@@ -202,10 +202,10 @@ def _handle_parent_event(
     elif node_name == "finalize_tool_audit":
         tool_reports: list[Any] = state_update.get("tool_reports", [])
         if tool_reports:
-            tr = tool_reports[-1]
-            pass_count = sum(1 for r in tr.results if r.verdict.value == "pass")
-            fail_count = len(tr.results) - pass_count
-            display.print_tool_done(tr.tool.name, pass_count, fail_count)
+            tool_report = tool_reports[-1]
+            pass_count = sum(1 for r in tool_report.results if r.verdict.value == "pass")
+            fail_count = len(tool_report.results) - pass_count
+            display.print_tool_done(tool_report.tool.name, pass_count, fail_count)
 
 
 def _handle_subgraph_event(
@@ -244,15 +244,15 @@ def _handle_subgraph_event(
 def _write_reports(
     report: AuditReport,
     json_path: str | None,
-    md_path: str | None,
+    markdown_path: str | None,
     display: AuditDisplay,
 ) -> None:
     if json_path:
         Path(json_path).write_text(render_json(report))
         display.print_report_path(json_path)
-    if md_path:
-        Path(md_path).write_text(render_markdown(report))
-        display.print_report_path(md_path)
+    if markdown_path:
+        Path(markdown_path).write_text(render_markdown(report))
+        display.print_report_path(markdown_path)
 
 
 def main() -> None:

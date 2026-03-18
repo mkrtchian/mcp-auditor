@@ -1,9 +1,4 @@
-"""Structural typing checks for domain ports.
-
-These tests verify that classes implementing the Protocol interfaces
-are accepted by the type checker. They run at test time but the real
-value is in the pyright check during CI.
-"""
+# The real value here is the pyright check during CI, not the runtime assertions.
 
 from mcp_auditor.domain import LLMPort, MCPClientPort
 from tests.fakes import FakeLLM, FakeMCPClient

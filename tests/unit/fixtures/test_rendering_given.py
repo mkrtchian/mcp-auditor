@@ -10,70 +10,6 @@ from mcp_auditor.domain.models import (
 )
 
 
-def a_tool_definition(
-    name: str = "test_tool",
-    description: str = "A test tool",
-) -> ToolDefinition:
-    return ToolDefinition(
-        name=name,
-        description=description,
-        input_schema={"type": "object", "properties": {}},
-    )
-
-
-def a_pass_result(
-    tool_name: str,
-    category: AuditCategory,
-) -> EvalResult:
-    return EvalResult(
-        tool_name=tool_name,
-        category=category,
-        payload={"input": "test"},
-        verdict=EvalVerdict.PASS,
-        justification="Handled correctly",
-        severity=Severity.LOW,
-    )
-
-
-def a_fail_result(
-    tool_name: str,
-    category: AuditCategory,
-    severity: Severity,
-    justification: str = "Vulnerable to attack",
-) -> EvalResult:
-    return EvalResult(
-        tool_name=tool_name,
-        category=category,
-        payload={"input": "malicious"},
-        verdict=EvalVerdict.FAIL,
-        justification=justification,
-        severity=severity,
-    )
-
-
-def a_tool_report(
-    tool_name: str,
-    results: list[EvalResult],
-) -> ToolReport:
-    return ToolReport(
-        tool=a_tool_definition(name=tool_name, description=f"The {tool_name} tool"),
-        results=results,
-    )
-
-
-def a_report(
-    target: str,
-    tool_reports: list[ToolReport],
-    input_tokens: int = 0,
-    output_tokens: int = 0,
-) -> AuditReport:
-    return AuditReport(
-        target=target,
-        tool_reports=tool_reports,
-        token_usage=TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens),
-    )
-
-
 def an_empty_report() -> AuditReport:
     return a_report(
         target="python dummy_server.py",
@@ -109,4 +45,68 @@ def a_two_tool_report() -> AuditReport:
         ],
         input_tokens=15234,
         output_tokens=8421,
+    )
+
+
+def a_report(
+    target: str,
+    tool_reports: list[ToolReport],
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+) -> AuditReport:
+    return AuditReport(
+        target=target,
+        tool_reports=tool_reports,
+        token_usage=TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens),
+    )
+
+
+def a_tool_report(
+    tool_name: str,
+    results: list[EvalResult],
+) -> ToolReport:
+    return ToolReport(
+        tool=a_tool_definition(name=tool_name, description=f"The {tool_name} tool"),
+        results=results,
+    )
+
+
+def a_fail_result(
+    tool_name: str,
+    category: AuditCategory,
+    severity: Severity,
+    justification: str = "Vulnerable to attack",
+) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=category,
+        payload={"input": "malicious"},
+        verdict=EvalVerdict.FAIL,
+        justification=justification,
+        severity=severity,
+    )
+
+
+def a_pass_result(
+    tool_name: str,
+    category: AuditCategory,
+) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=category,
+        payload={"input": "test"},
+        verdict=EvalVerdict.PASS,
+        justification="Handled correctly",
+        severity=Severity.LOW,
+    )
+
+
+def a_tool_definition(
+    name: str = "test_tool",
+    description: str = "A test tool",
+) -> ToolDefinition:
+    return ToolDefinition(
+        name=name,
+        description=description,
+        input_schema={"type": "object", "properties": {}},
     )

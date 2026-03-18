@@ -19,6 +19,10 @@ class AnthropicLLM:
         )
         self._usage = TokenUsage()
 
+    @property
+    def usage_stats(self) -> TokenUsage:
+        return self._usage
+
     async def generate_structured[T: BaseModel](self, prompt: str, output_schema: type[T]) -> T:
         structured = self._model.with_structured_output(  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
             output_schema, include_raw=True
@@ -27,10 +31,6 @@ class AnthropicLLM:
         parsed, usage = self._unpack_raw_response(cast(object, raw_response))
         self._accumulate_usage(usage)
         return cast(T, parsed)
-
-    @property
-    def usage_stats(self) -> TokenUsage:
-        return self._usage
 
     def _unpack_raw_response(self, raw_response: object) -> tuple[BaseModel, _UsageMetadata | None]:
         """Langchain's include_raw=True returns {"raw": AIMessage, "parsed": BaseModel}.

@@ -16,12 +16,6 @@ from mcp_auditor.domain.models import (
 )
 
 
-def _make_display() -> tuple[AuditDisplay, StringIO]:
-    buffer = StringIO()
-    console = Console(file=buffer, force_terminal=True)
-    return AuditDisplay(console=console), buffer
-
-
 def test_header_contains_target():
     display, buffer = _make_display()
 
@@ -61,38 +55,7 @@ def test_discovery_shows_count_and_names():
 
 
 def test_summary_table_has_tool_names():
-    report = AuditReport(
-        target="python server.py",
-        tool_reports=[
-            ToolReport(
-                tool=ToolDefinition(name="get_user", description="", input_schema={}),
-                results=[
-                    EvalResult(
-                        tool_name="get_user",
-                        category=AuditCategory.INJECTION,
-                        payload={},
-                        verdict=EvalVerdict.PASS,
-                        justification="ok",
-                        severity=Severity.LOW,
-                    )
-                ],
-            ),
-            ToolReport(
-                tool=ToolDefinition(name="list_items", description="", input_schema={}),
-                results=[
-                    EvalResult(
-                        tool_name="list_items",
-                        category=AuditCategory.INPUT_VALIDATION,
-                        payload={},
-                        verdict=EvalVerdict.FAIL,
-                        justification="bad",
-                        severity=Severity.HIGH,
-                    )
-                ],
-            ),
-        ],
-        token_usage=TokenUsage(input_tokens=100, output_tokens=50),
-    )
+    report = _a_report_with_two_tools()
     display, buffer = _make_display()
 
     display.print_summary_table(report)
@@ -124,3 +87,44 @@ def test_dry_run_shows_arguments():
     output = buffer.getvalue()
     assert "DROP TABLE" in output
     assert "Empty input" in output
+
+
+def _make_display() -> tuple[AuditDisplay, StringIO]:
+    buffer = StringIO()
+    console = Console(file=buffer, force_terminal=True)
+    return AuditDisplay(console=console), buffer
+
+
+def _a_report_with_two_tools() -> AuditReport:
+    return AuditReport(
+        target="python server.py",
+        tool_reports=[
+            ToolReport(
+                tool=ToolDefinition(name="get_user", description="", input_schema={}),
+                results=[
+                    EvalResult(
+                        tool_name="get_user",
+                        category=AuditCategory.INJECTION,
+                        payload={},
+                        verdict=EvalVerdict.PASS,
+                        justification="ok",
+                        severity=Severity.LOW,
+                    )
+                ],
+            ),
+            ToolReport(
+                tool=ToolDefinition(name="list_items", description="", input_schema={}),
+                results=[
+                    EvalResult(
+                        tool_name="list_items",
+                        category=AuditCategory.INPUT_VALIDATION,
+                        payload={},
+                        verdict=EvalVerdict.FAIL,
+                        justification="bad",
+                        severity=Severity.HIGH,
+                    )
+                ],
+            ),
+        ],
+        token_usage=TokenUsage(input_tokens=100, output_tokens=50),
+    )

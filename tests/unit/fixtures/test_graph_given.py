@@ -26,29 +26,6 @@ def a_tool(
     )
 
 
-def _a_payload(tool_name: str, category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload:
-    return AuditPayload(
-        tool_name=tool_name,
-        category=category,
-        description="test payload",
-        arguments={"input": "malicious"},
-    )
-
-
-def _an_eval_result(
-    tool_name: str,
-    category: AuditCategory = AuditCategory.INJECTION,
-) -> EvalResult:
-    return EvalResult(
-        tool_name=tool_name,
-        category=category,
-        payload={"input": "malicious"},
-        verdict=EvalVerdict.FAIL,
-        justification="test justification",
-        severity=Severity.MEDIUM,
-    )
-
-
 def a_fake_llm_for_single_tool_audit(
     tool_name: str = "test_tool",
     num_cases: int = 1,
@@ -75,6 +52,10 @@ def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
     return build_graph(fake_llm, fake_mcp_client)
 
 
+async def invoke_graph(graph: Any, state: dict[str, Any]) -> dict[str, Any]:
+    return await graph.ainvoke(state)
+
+
 def an_initial_state(test_budget: int = 5) -> dict[str, Any]:
     return {
         "target": "python dummy_server.py",
@@ -87,5 +68,24 @@ def an_initial_state(test_budget: int = 5) -> dict[str, Any]:
     }
 
 
-async def invoke_graph(graph: Any, state: dict[str, Any]) -> dict[str, Any]:
-    return await graph.ainvoke(state)
+def _a_payload(tool_name: str, category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload:
+    return AuditPayload(
+        tool_name=tool_name,
+        category=category,
+        description="test payload",
+        arguments={"input": "malicious"},
+    )
+
+
+def _an_eval_result(
+    tool_name: str,
+    category: AuditCategory = AuditCategory.INJECTION,
+) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=category,
+        payload={"input": "malicious"},
+        verdict=EvalVerdict.FAIL,
+        justification="test justification",
+        severity=Severity.MEDIUM,
+    )

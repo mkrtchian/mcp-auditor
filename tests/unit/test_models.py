@@ -1,6 +1,4 @@
-"""Tests for domain model validation and behavior.
-
-Only tests that validate OUR design choices — enum constraints, union types,
+"""Only tests that validate OUR design choices — enum constraints, union types,
 custom methods, serialization of non-trivial types. Does not test that
 Pydantic constructors work or that Python lists hold items.
 """

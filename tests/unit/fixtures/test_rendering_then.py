@@ -17,37 +17,37 @@ def json_has_enum_strings(json_str: str) -> None:
             assert result["severity"] == result["severity"].lower()
 
 
-def markdown_contains_tool_headings(md: str, tool_names: list[str]) -> None:
+def markdown_contains_tool_headings(markdown: str, tool_names: list[str]) -> None:
     for name in tool_names:
-        assert f"## {name}" in md
+        assert f"## {name}" in markdown
 
 
 def markdown_contains_finding(
-    md: str,
+    markdown: str,
     category: str,
     severity: str,
     justification_fragment: str,
 ) -> None:
-    assert category in md
-    assert severity in md
-    assert justification_fragment in md
+    assert category in markdown
+    assert severity in markdown
+    assert justification_fragment in markdown
 
 
 def markdown_summary_has_counts(
-    md: str,
+    markdown: str,
     tools: int,
     findings: int,
     per_severity_dict: dict[str, int],
 ) -> None:
-    assert str(tools) in md
-    assert str(findings) in md
+    assert str(tools) in markdown
+    assert str(findings) in markdown
     for severity, count in per_severity_dict.items():
-        assert f"{count} {severity}" in md
+        assert f"{count} {severity}" in markdown
 
 
-def markdown_includes_pass_without_severity(md: str) -> None:
-    assert "PASS" in md
-    for line in md.splitlines():
+def markdown_includes_pass_without_severity(markdown: str) -> None:
+    assert "PASS" in markdown
+    for line in markdown.splitlines():
         if "PASS" in line:
             for severity_word in ["low", "medium", "high", "critical"]:
                 assert severity_word not in line.lower()
