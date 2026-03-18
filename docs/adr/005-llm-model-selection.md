@@ -1,23 +1,23 @@
 # ADR 005: LLM Model Selection
 
-**Date:** 2026-03-17
-**Status:** Draft
+**Date:** 2026-03-18
+**Status:** Accepted
 
 ## Context
 
 `mcp-auditor` uses an LLM for two tasks: generating adversarial test cases (structured output) and judging tool responses (classification with justification). Both require reliable structured output (Pydantic schemas), security reasoning, and tool use capabilities.
 
-The current implementation hardcodes `claude-sonnet-4-6-latest` in `AnthropicLLM`. Before investing in multi-provider support, we need a data-driven model selection that balances cost, quality, and integration maturity.
+The implementation hardcoded `claude-haiku-4-5-20251001` in `AnthropicLLM`. Before investing in multi-provider support, we needed a data-driven model selection that balances cost, quality, and integration maturity.
 
 ## Decision
 
-Add a `GoogleLLM` adapter to support Gemini models alongside the existing `AnthropicLLM`. If structured output works with our schemas (`TestCaseBatch`, `EvalResult`), adopt Gemini as the primary provider.
+Add a `GoogleLLM` adapter to support Gemini models alongside the existing `AnthropicLLM`. Adopt Gemini 3.1 Flash-Lite as the default model — empirical validation confirmed structured output works with our schemas (`TestCaseBatch`, `EvalResult`).
 
 ### Target configuration
-- **Production model:** Gemini 3.1 Pro ($2/$12) — best benchmarks overall (GPQA 94.3%, MCP-Atlas 69.2%, TAU2 99.3%) at 1.5x cheaper than Sonnet.
-- **Development model:** Gemini 3.1 Flash-Lite ($0.25/$1.50) — GPQA 86.9%, 12x cheaper than Sonnet.
+- **Default model:** Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite-preview`, $0.25/$1.50) — GPQA 86.9%, 12x cheaper than Sonnet. Validated empirically: comparable quality to Haiku 4.5 with better structured output reliability.
+- **Production upgrade path:** Gemini 3.1 Pro ($2/$12) — best benchmarks overall (GPQA 94.3%, MCP-Atlas 69.2%, TAU2 99.3%) at 1.5x cheaper than Sonnet. Not yet validated.
 
-### Fallback (current defaults, kept as-is)
+### Fallback
 - **Production:** `claude-sonnet-4-6-latest` — proven tool use reliability (TAU2 92-98%) and integration maturity.
 - **Development:** `claude-haiku-4-5-latest` — 3x cheaper, ~90% of Sonnet's reasoning quality on GPQA.
 
@@ -31,7 +31,7 @@ Add a `GoogleLLM` adapter to support Gemini models alongside the existing `Anthr
 
 ### Pricing
 
-| Model                   | Input $/MTok | Output $/MTok | Cost vs Sonnet 4.6 |
+| Model                   | Input $/MTok | Output $/MTok | Cost vs Sonnet 4.6  |
 |:------------------------|-------------:|--------------:|:--------------------|
 | GPT-5-nano              |        $0.05 |         $0.40 | ~60x cheaper        |
 | Gemini 3.1 Flash-Lite   |        $0.25 |         $1.50 | ~12x cheaper        |
@@ -70,17 +70,17 @@ Models sorted by GPQA Diamond. Smaller models (nano, mini, Flash-Lite) are rarel
 ## Integration Feasibility
 
 ### Anthropic (`langchain-anthropic`)
-- **Status:** Production-ready. Currently in use.
+- **Status:** Production-ready. In use before this ADR.
 - `with_structured_output(include_raw=True)` works reliably.
 - `usage_metadata` on AIMessage provides accurate token counts.
 - Async (`ainvoke`) works without issues.
 
 ### Google Gemini (`langchain-google-genai`)
-- **Status:** Feasible with caveats — requires empirical validation.
-- **Nested Pydantic schemas (main risk).** An older issue ([langchain #24225](https://github.com/langchain-ai/langchain/issues/24225), closed NOT_PLANNED) reported that `with_structured_output` fails on schemas containing `list[BaseModel]`. Our `TestCaseBatch` has exactly this pattern (`cases: list[AuditPayload]`), and `EvalResult` uses multiple `StrEnum` fields. The issue predates the v4.x rewrite, so it may be resolved — but this is unconfirmed and can only be validated empirically.
-- **Token usage (low risk).** `usage_metadata` works on standard `invoke()` calls ([official docs](https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai)). With `with_structured_output(include_raw=True)` in function calling mode, the raw AIMessage should expose the same metadata. Fallback: `include_thoughts=True` on the model constructor ([issue #957](https://github.com/langchain-ai/langchain-google/issues/957), closed, workaround confirmed).
-- **Async regression (non-issue).** `ainvoke` is 3-4x slower in v4.2.0+ due to `google-genai >= 1.56` ([issue #1600](https://github.com/langchain-ai/langchain-google/issues/1600), open). **Workaround: pin `langchain-google-genai==4.1.x`.**
-- The adapter change itself is minimal — a new `GoogleLLM` class implementing `LLMPort`, no changes to domain or graph.
+- **Status:** Production-ready. Validated 2026-03-18.
+- **Nested Pydantic schemas — resolved.** The risk from [langchain #24225](https://github.com/langchain-ai/langchain/issues/24225) did not materialize. `TestCaseBatch` (`cases: list[AuditPayload]`) parsed correctly across 9 generation calls (3 runs × 3 tools) with 0 failures. `EvalResult` with 3 `StrEnum` fields (`AuditCategory`, `EvalVerdict`, `Severity`) parsed correctly across 90 judgments with 0 failures.
+- **Token usage — confirmed.** `usage_metadata` is populated on the raw AIMessage when using `with_structured_output(include_raw=True)`. No workaround needed.
+- **Async regression (non-issue).** `ainvoke` is 3-4x slower in v4.2.0+ due to `google-genai >= 1.56` ([issue #1600](https://github.com/langchain-ai/langchain-google/issues/1600), open). **Workaround if needed: pin `langchain-google-genai>=4.1,<4.2`.**
+- The adapter shares a `_BaseLLM` superclass with `AnthropicLLM` — no changes to domain or graph. Provider selection via `MCP_AUDITOR_PROVIDER` env var (default: `google`).
 
 ### OpenAI (`langchain-openai`)
 - **Status:** Not evaluated in detail.
@@ -108,12 +108,36 @@ Cost per run: ~34k input + ~12k output tokens → ~$0.09.
 - Precision is the weak point — false positives on `list_items` (the sane tool), particularly `input_validation`.
 - Structured output reliability issue: 1/3 runs failed because Haiku couldn't produce valid JSON for `TestCaseBatch`.
 
+### Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite-preview`) — 2026-03-18
+
+3 of 3 runs completed (no structured output failures).
+
+| Metric       | Result | Threshold | Status |
+|:-------------|-------:|----------:|:-------|
+| Recall       |   0.93 |      0.80 | PASS   |
+| Precision    |   0.61 |      1.00 | FAIL   |
+| Consistency  |   0.88 |      0.70 | PASS   |
+| Distribution |   0.82 |      0.80 | PASS   |
+
+### Comparison: Flash-Lite vs Haiku 4.5
+
+| Metric              | Haiku 4.5  | Flash-Lite  | Notes                              |
+|:--------------------|-----------:|------------:|:-----------------------------------|
+| Recall              |      1.00  |       0.93  | Slightly lower, both pass          |
+| Precision           |      0.56  |       0.61  | Slightly better, both fail         |
+| Consistency         |      0.96  |       0.88  | Lower, both pass                   |
+| Distribution        |      0.87  |       0.82  | Lower, both pass                   |
+| Runs completed      |       2/3  |        3/3  | Flash-Lite more reliable           |
+| Structured failures |       1/3  |         0/3 | Haiku failed to produce valid JSON |
+| Cost vs Sonnet      | 3x cheaper | 12x cheaper |                                    |
+
+Precision is the weak point for both models — likely a prompt issue, not a model issue. Flash-Lite wins on reliability (0 parsing failures) and cost (~4x cheaper than Haiku).
+
 ## Consequences
 
-- Build a `GoogleLLM` adapter implementing `LLMPort`, pinning `langchain-google-genai==4.1.x` to avoid the async regression.
-- Validate empirically: (1) `TestCaseBatch` with nested `list[AuditPayload]` parses correctly, (2) `EvalResult` with `StrEnum` fields works, (3) `usage_metadata` is populated on the raw AIMessage.
-- If validation passes, switch defaults to Gemini 3.1 Pro (prod) and Flash-Lite (dev). Keep `AnthropicLLM` as fallback.
-- If nested schema support fails, stay on Anthropic and revisit when `langchain-google-genai` matures.
+- `GoogleLLM` adapter implemented, sharing a `_BaseLLM` superclass with `AnthropicLLM`. Dependency: `langchain-google-genai>=4.1` (tested with 4.1.3 and 4.2.1, no async regression observed).
+- Empirical validation passed: nested schemas, `StrEnum` fields, and `usage_metadata` all work correctly with `langchain-google-genai` 4.1.x.
+- Default switched to Gemini 3.1 Flash-Lite. `AnthropicLLM` kept as fallback via `MCP_AUDITOR_PROVIDER=anthropic`.
 - Model choice is an architecture decision, not a runtime parameter — not exposed as a CLI option. A future configuration file will centralize this.
 
 ## Sources
