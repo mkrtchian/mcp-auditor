@@ -21,6 +21,7 @@ audit_checkpoints.db
 evals/eval_report.json
 report.json
 report.md
+results/
 
 # Non-versioned plans
 plans/init.md
