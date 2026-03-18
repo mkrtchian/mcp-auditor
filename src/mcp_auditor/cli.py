@@ -1,6 +1,7 @@
 # pyright: reportUnknownMemberType=false, reportMissingTypeStubs=false, reportArgumentType=false, reportUnknownArgumentType=false
 import asyncio
 import hashlib
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -121,12 +122,15 @@ async def _run_full_audit(
     markdown: str | None,
 ) -> None:
     graph = build_graph(llm, mcp_client, checkpointer=checkpointer)
-    thread_id = _compute_thread_id(command, args)
-    config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
 
-    initial_state: dict[str, Any] | None = None
-    if not resume:
+    if resume:
+        thread_id = _compute_thread_id(command, args)
+        initial_state = None
+    else:
+        thread_id = uuid.uuid4().hex[:16]
         initial_state = {"target": target_str, "test_budget": budget}
+
+    config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
 
     tracker: dict[str, Any] = {"tool_index": 0, "tool_count": 0, "case_indices": {}}
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):

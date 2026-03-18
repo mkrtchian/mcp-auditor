@@ -12,11 +12,12 @@ class _UsageMetadata(TypedDict):
 
 
 class AnthropicLLM:
-    def __init__(self, model: str = "claude-sonnet-4-6-latest", max_retries: int = 3):
+    def __init__(self, model: str = "claude-haiku-4-5-20251001", max_retries: int = 3):
         self._model = ChatAnthropic(
             model=model,  # type: ignore[arg-type]
             max_retries=max_retries,
         )
+        self._max_retries = max_retries
         self._usage = TokenUsage()
 
     @property
@@ -27,12 +28,15 @@ class AnthropicLLM:
         structured = self._model.with_structured_output(  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
             output_schema, include_raw=True
         )
-        raw_response = await structured.ainvoke(prompt)  # pyright: ignore[reportUnknownVariableType]
-        parsed, usage = self._unpack_raw_response(cast(object, raw_response))
-        self._accumulate_usage(usage)
-        return cast(T, parsed)
+        for _attempt in range(self._max_retries):
+            raw_response = await structured.ainvoke(prompt)  # pyright: ignore[reportUnknownVariableType]
+            parsed, usage = self._unpack_raw_response(cast(object, raw_response))
+            self._accumulate_usage(usage)
+            if parsed is not None:
+                return cast(T, parsed)
+        raise ValueError(f"LLM returned unparseable output after {self._max_retries} attempts")
 
-    def _unpack_raw_response(self, raw_response: object) -> tuple[BaseModel, _UsageMetadata | None]:
+    def _unpack_raw_response(self, raw_response: object) -> tuple[BaseModel | None, _UsageMetadata | None]:
         """Langchain's include_raw=True returns {"raw": AIMessage, "parsed": BaseModel}.
 
         Single coupling point with that contract.

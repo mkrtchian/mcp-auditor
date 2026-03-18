@@ -87,6 +87,27 @@ Models sorted by GPQA Diamond. Smaller models (nano, mini, Flash-Lite) are rarel
 - GPT-5-nano and GPT-5-mini lack published tool use benchmarks, making them hard to assess for this use case.
 - GPT-5.4 has weak TAU2 scores (64.3% Telecom) despite strong reasoning — suggests unreliable agentic behavior.
 
+## Eval Results
+
+Results from running the eval suite (`evals/run_evals.py`) against the honeypot. Config: 3 runs, budget 10 test cases per tool, 3 tools.
+
+### Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) — 2026-03-18
+
+2 of 3 runs completed (run 2 failed — unparseable structured output after 3 retries).
+
+| Metric       | Result | Threshold | Status |
+|:-------------|-------:|----------:|:-------|
+| Recall       |   1.00 |      0.80 | PASS   |
+| Precision    |   0.56 |      1.00 | FAIL   |
+| Consistency  |   0.96 |      0.70 | PASS   |
+| Distribution |   0.87 |      0.80 | PASS   |
+
+Cost per run: ~34k input + ~12k output tokens → ~$0.09.
+
+- Recall is perfect — all known vulnerabilities detected.
+- Precision is the weak point — false positives on `list_items` (the sane tool), particularly `input_validation`.
+- Structured output reliability issue: 1/3 runs failed because Haiku couldn't produce valid JSON for `TestCaseBatch`.
+
 ## Consequences
 
 - Build a `GoogleLLM` adapter implementing `LLMPort`, pinning `langchain-google-genai==4.1.x` to avoid the async regression.
