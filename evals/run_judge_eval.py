@@ -1,11 +1,11 @@
 import asyncio
 import json
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from evals.judge_metrics import (
-    CaseResult,
     JudgeMetrics,
     compute_judge_metrics,
     compute_per_category_metrics,
@@ -20,6 +20,7 @@ from mcp_auditor.domain.models import (
     TestCase,
     ToolDefinition,
 )
+from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.prompts import build_judge_prompt
 
 FIXTURES_PATH = Path(__file__).resolve().parent / "fixtures" / "judge_cases.json"
@@ -27,6 +28,15 @@ DEFAULT_REPORT_PATH = "evals/judge_eval_report.json"
 F1_THRESHOLD = 0.90
 
 LoadedCase = tuple[ToolDefinition, TestCase, EvalVerdict, AuditCategory]
+
+
+@dataclass(frozen=True)
+class JudgedCase:
+    tool: ToolDefinition
+    category: AuditCategory
+    expected: EvalVerdict
+    predicted: EvalVerdict
+    justification: str
 
 
 def main() -> None:
@@ -38,58 +48,66 @@ def main() -> None:
 async def run_judge_eval() -> dict[str, Any]:
     settings = load_settings()
     llm = create_judge_llm(settings)
-    cases = _load_cases()
-    results: list[tuple[AuditCategory, CaseResult]] = []
-    eval_results: list[EvalResult] = []
+    loaded_cases = _load_cases()
 
-    print(f"Running judge eval ({len(cases)} cases)...")
+    print(f"Running judge eval ({len(loaded_cases)} cases)...")
 
+    judged = await _judge_all_cases(llm, loaded_cases)
+    categorized = [(j.category, (j.predicted, j.expected)) for j in judged]
+    overall = compute_judge_metrics([cr for _, cr in categorized])
+    per_category = compute_per_category_metrics(categorized)
+    return _build_report(overall, per_category, judged)
+
+
+async def _judge_all_cases(llm: LLMPort, cases: list[LoadedCase]) -> list[JudgedCase]:
+    judged: list[JudgedCase] = []
     for tool, test_case, expected, category in cases:
         prompt = build_judge_prompt(tool=tool, test_case=test_case)
         eval_result = await llm.generate_structured(prompt, EvalResult)
-        predicted = eval_result.verdict
-        results.append((category, (predicted, expected)))
-        eval_results.append(eval_result)
-
-    overall = compute_judge_metrics([cr for _, cr in results])
-    per_category = compute_per_category_metrics(results)
-    return _build_report(overall, per_category, results, eval_results, cases)
+        judged.append(
+            JudgedCase(
+                tool=tool,
+                category=category,
+                expected=expected,
+                predicted=eval_result.verdict,
+                justification=eval_result.justification,
+            )
+        )
+    return judged
 
 
 def _load_cases() -> list[LoadedCase]:
     raw: list[dict[str, Any]] = json.loads(FIXTURES_PATH.read_text())
-    cases: list[LoadedCase] = []
-    for entry in raw:
-        tool = ToolDefinition(
-            name=entry["tool_name"],
-            description=entry["tool_description"],
-            input_schema={},
-        )
-        payload = AuditPayload(
-            tool_name=entry["tool_name"],
-            category=AuditCategory(entry["category"]),
-            description=entry["description"],
-            arguments=entry["arguments"],
-        )
-        test_case = TestCase(
-            payload=payload,
-            response=entry.get("response"),
-            error=entry.get("error"),
-        )
-        expected = EvalVerdict(entry["expected_verdict"])
-        category = AuditCategory(entry["category"])
-        cases.append((tool, test_case, expected, category))
-    return cases
+    return [_parse_case(entry) for entry in raw]
+
+
+def _parse_case(entry: dict[str, Any]) -> LoadedCase:
+    tool = ToolDefinition(
+        name=entry["tool_name"],
+        description=entry["tool_description"],
+        input_schema={},
+    )
+    payload = AuditPayload(
+        tool_name=entry["tool_name"],
+        category=AuditCategory(entry["category"]),
+        description=entry["description"],
+        arguments=entry["arguments"],
+    )
+    test_case = TestCase(
+        payload=payload,
+        response=entry.get("response"),
+        error=entry.get("error"),
+    )
+    expected = EvalVerdict(entry["expected_verdict"])
+    category = AuditCategory(entry["category"])
+    return (tool, test_case, expected, category)
 
 
 def _build_report(
     overall: JudgeMetrics,
     per_category: dict[AuditCategory, JudgeMetrics],
-    results: list[tuple[AuditCategory, CaseResult]],
-    eval_results: list[EvalResult],
-    cases: list[LoadedCase],
+    judged_cases: list[JudgedCase],
 ) -> dict[str, Any]:
-    per_case_details = _build_per_case_details(results, eval_results, cases)
     return {
         "timestamp": datetime.now(UTC).isoformat(),
         "metrics": {
@@ -113,30 +131,19 @@ def _build_report(
             }
             for cat, m in per_category.items()
         },
-        "cases": per_case_details,
+        "cases": [_case_detail(j) for j in judged_cases],
     }
 
 
-def _build_per_case_details(
-    results: list[tuple[AuditCategory, CaseResult]],
-    eval_results: list[EvalResult],
-    cases: list[LoadedCase],
-) -> list[dict[str, Any]]:
-    details: list[dict[str, Any]] = []
-    for i, (tool, _test_case, expected, category) in enumerate(cases):
-        _cat, (predicted, _exp) = results[i]
-        eval_result = eval_results[i]
-        details.append(
-            {
-                "tool_name": tool.name,
-                "category": category.value,
-                "expected": expected.value,
-                "predicted": predicted.value,
-                "correct": predicted == expected,
-                "justification": eval_result.justification,
-            }
-        )
-    return details
+def _case_detail(judged: JudgedCase) -> dict[str, Any]:
+    return {
+        "tool_name": judged.tool.name,
+        "category": judged.category.value,
+        "expected": judged.expected.value,
+        "predicted": judged.predicted.value,
+        "correct": judged.predicted == judged.expected,
+        "justification": judged.justification,
+    }
 
 
 def _print_summary(report: dict[str, Any]) -> None:
