@@ -1,7 +1,7 @@
 # ADR 006: Judge Evaluation Strategy
 
 **Date:** 2026-03-19
-**Status:** Draft
+**Status:** Accepted
 
 ## Context
 
