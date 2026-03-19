@@ -1,16 +1,28 @@
-from mcp_auditor.domain import AuditCategory, AuditPayload, TestCase
+from typing import Any
+
+from mcp_auditor.domain import AuditCategory, AuditPayload, TestCase, ToolDefinition
 from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
     build_judge_prompt,
 )
 
 
+def _a_tool(
+    name: str = "get_user",
+    description: str = "Fetch user by ID",
+    input_schema: dict[str, Any] | None = None,
+) -> ToolDefinition:
+    return ToolDefinition(
+        name=name,
+        description=description,
+        input_schema=input_schema or {},
+    )
+
+
 class TestAttackGenerationPrompt:
     def test_includes_tool_name(self):
         prompt = build_attack_generation_prompt(
-            tool_name="get_user",
-            tool_description="Fetch user by ID",
-            input_schema={"type": "object"},
+            tool=_a_tool(input_schema={"type": "object"}),
             budget=5,
             categories=[AuditCategory.INJECTION],
         )
@@ -21,9 +33,7 @@ class TestAttackGenerationPrompt:
         schema = {"type": "object", "properties": {"id": {"type": "integer"}}}
 
         prompt = build_attack_generation_prompt(
-            tool_name="t",
-            tool_description="d",
-            input_schema=schema,
+            tool=_a_tool(input_schema=schema),
             budget=5,
             categories=[AuditCategory.INJECTION],
         )
@@ -34,9 +44,7 @@ class TestAttackGenerationPrompt:
         all_categories = list(AuditCategory)
 
         prompt = build_attack_generation_prompt(
-            tool_name="t",
-            tool_description="d",
-            input_schema={},
+            tool=_a_tool(),
             budget=10,
             categories=all_categories,
         )
@@ -46,9 +54,7 @@ class TestAttackGenerationPrompt:
 
     def test_includes_budget(self):
         prompt = build_attack_generation_prompt(
-            tool_name="t",
-            tool_description="d",
-            input_schema={},
+            tool=_a_tool(),
             budget=10,
             categories=[AuditCategory.INJECTION],
         )
@@ -60,22 +66,14 @@ class TestJudgePrompt:
     def test_includes_response(self):
         test_case = _a_test_case(response="tool output here")
 
-        prompt = build_judge_prompt(
-            tool_name="get_user",
-            tool_description="Fetch user by ID",
-            test_case=test_case,
-        )
+        prompt = build_judge_prompt(tool=_a_tool(), test_case=test_case)
 
         assert "tool output here" in prompt
 
     def test_includes_error_when_present(self):
         test_case = _a_test_case(error="connection refused")
 
-        prompt = build_judge_prompt(
-            tool_name="get_user",
-            tool_description="Fetch user by ID",
-            test_case=test_case,
-        )
+        prompt = build_judge_prompt(tool=_a_tool(), test_case=test_case)
 
         assert "connection refused" in prompt
 
@@ -84,11 +82,7 @@ class TestJudgePrompt:
             description="SQL injection via id param",
         )
 
-        prompt = build_judge_prompt(
-            tool_name="get_user",
-            tool_description="Fetch user by ID",
-            test_case=test_case,
-        )
+        prompt = build_judge_prompt(tool=_a_tool(), test_case=test_case)
 
         assert "SQL injection via id param" in prompt
 

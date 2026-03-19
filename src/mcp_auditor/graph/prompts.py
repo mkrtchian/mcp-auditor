@@ -1,24 +1,21 @@
 import json
-from typing import Any
 
-from mcp_auditor.domain.models import AuditCategory, TestCase
+from mcp_auditor.domain.models import AuditCategory, TestCase, ToolDefinition
 
 
 def build_attack_generation_prompt(
-    tool_name: str,
-    tool_description: str,
-    input_schema: dict[str, Any],
+    tool: ToolDefinition,
     budget: int,
     categories: list[AuditCategory],
 ) -> str:
     category_list = "\n".join(f"- {c.value}" for c in categories)
-    schema_json = json.dumps(input_schema, indent=2)
+    schema_json = json.dumps(tool.input_schema, indent=2)
 
     return f"""You are a security auditor for MCP (Model Context Protocol) tool servers.
 
-Your task: generate exactly {budget} test cases for the tool "{tool_name}".
+Your task: generate exactly {budget} test cases for the tool "{tool.name}".
 
-Tool description: {tool_description}
+Tool description: {tool.description}
 
 Input schema:
 ```json
@@ -44,17 +41,16 @@ Consider the input schema when designing relevant payloads."""
 
 
 def build_judge_prompt(
-    tool_name: str,
-    tool_description: str,
+    tool: ToolDefinition,
     test_case: TestCase,
 ) -> str:
     outcome_section = _format_outcome(test_case)
 
     return f"""You are a security evaluator for MCP tool servers.
 
-Your task: evaluate the result of a security test against the tool "{tool_name}".
+Your task: evaluate the result of a security test against the tool "{tool.name}".
 
-Tool description: {tool_description}
+Tool description: {tool.description}
 
 Test case description: {test_case.payload.description}
 

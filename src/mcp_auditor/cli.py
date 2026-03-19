@@ -2,6 +2,7 @@
 import asyncio
 import hashlib
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,12 @@ from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.domain.rendering import render_json, render_markdown
 from mcp_auditor.graph.builder import build_graph
 from mcp_auditor.graph.prompts import build_attack_generation_prompt
+
+
+@dataclass(frozen=True)
+class ReportPaths:
+    json: str | None = None
+    markdown: str | None = None
 
 
 @click.group()
@@ -54,14 +61,14 @@ def run(
         mcp-auditor run -- python my_server.py
         mcp-auditor run --budget 5 -- npx some-mcp-server
     """
-    asyncio.run(_run_audit(target, budget, output, markdown, resume, dry_run))
+    report_paths = ReportPaths(json=output, markdown=markdown)
+    asyncio.run(_run_audit(target, budget, report_paths, resume, dry_run))
 
 
 async def _run_audit(
     target: tuple[str, ...],
     budget: int,
-    output: str | None,
-    markdown: str | None,
+    report_paths: ReportPaths,
     resume: bool,
     dry_run: bool,
 ) -> None:
@@ -91,17 +98,9 @@ async def _run_audit(
                 await _run_dry_run(llm, mcp_client, budget, display)
                 return
 
-            graph = build_graph(
-                llm, mcp_client, judge_llm=judge_llm, checkpointer=checkpointer
-            )
-            thread_id = (
-                _compute_thread_id(command, args)
-                if resume
-                else uuid.uuid4().hex[:16]
-            )
-            initial_state = (
-                None if resume else {"target": target_str, "test_budget": budget}
-            )
+            graph = build_graph(llm, mcp_client, judge_llm=judge_llm, checkpointer=checkpointer)
+            thread_id = _compute_thread_id(command, args) if resume else uuid.uuid4().hex[:16]
+            initial_state = None if resume else {"target": target_str, "test_budget": budget}
             config: dict[str, Any] = {
                 "configurable": {"thread_id": thread_id},
                 "metadata": {
@@ -112,9 +111,7 @@ async def _run_audit(
                 },
             }
 
-            await _run_full_audit(
-                graph, config, initial_state, display, output, markdown
-            )
+            await _run_full_audit(graph, config, initial_state, display, report_paths)
     except ConnectionError as exc:
         click.echo(f"Error: could not connect to MCP server: {exc}", err=True)
         raise SystemExit(1) from exc
@@ -128,8 +125,7 @@ async def _run_full_audit(
     config: dict[str, Any],
     initial_state: dict[str, Any] | None,
     display: AuditDisplay,
-    output: str | None,
-    markdown: str | None,
+    report_paths: ReportPaths,
 ) -> None:
     tracker: dict[str, Any] = {"tool_index": 0, "tool_count": 0, "case_indices": {}}
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
@@ -143,7 +139,7 @@ async def _run_full_audit(
 
     display.print_summary_table(report)
     display.print_cost(report.token_usage)
-    _write_reports(report, output, markdown, display)
+    _write_reports(report, report_paths, display)
 
 
 async def _run_dry_run(
@@ -156,13 +152,7 @@ async def _run_dry_run(
     display.print_discovery(len(tools), [t.name for t in tools])
     categories = list(AuditCategory)
     for tool in tools:
-        prompt = build_attack_generation_prompt(
-            tool_name=tool.name,
-            tool_description=tool.description,
-            input_schema=tool.input_schema,
-            budget=budget,
-            categories=categories,
-        )
+        prompt = build_attack_generation_prompt(tool=tool, budget=budget, categories=categories)
         batch = await llm.generate_structured(prompt, TestCaseBatch)
         display.print_dry_run_payloads(tool.name, batch.cases)
 
@@ -234,28 +224,20 @@ def _handle_subgraph_event(
             tracker["case_indices"][tool_name] += 1
             case_index = tracker["case_indices"][tool_name]
             case_count = case_index  # approximate, updated as we go
-            display.print_verdict(
-                case_index,
-                case_count,
-                result.category.value,
-                result.tool_name,
-                result.verdict.value,
-                result.severity.value,
-            )
+            display.print_verdict(case_index, case_count, result)
 
 
 def _write_reports(
     report: AuditReport,
-    json_path: str | None,
-    markdown_path: str | None,
+    paths: ReportPaths,
     display: AuditDisplay,
 ) -> None:
-    if json_path:
-        Path(json_path).write_text(render_json(report))
-        display.print_report_path(json_path)
-    if markdown_path:
-        Path(markdown_path).write_text(render_markdown(report))
-        display.print_report_path(markdown_path)
+    if paths.json:
+        Path(paths.json).write_text(render_json(report))
+        display.print_report_path(paths.json)
+    if paths.markdown:
+        Path(paths.markdown).write_text(render_markdown(report))
+        display.print_report_path(paths.markdown)
 
 
 def main() -> None:

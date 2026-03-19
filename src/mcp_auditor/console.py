@@ -5,7 +5,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from mcp_auditor.domain.models import AuditPayload, AuditReport, TokenUsage
+from mcp_auditor.domain.models import AuditPayload, AuditReport, EvalResult, TokenUsage
 
 
 class AuditDisplay:
@@ -32,18 +32,15 @@ class AuditDisplay:
         self,
         case_index: int,
         case_count: int,
-        category: str,
-        description: str,
-        verdict: str,
-        severity: str,
+        result: EvalResult,
     ) -> None:
         label = Text()
-        if verdict.lower() == "pass":
+        if result.verdict.value == "pass":
             label.append("PASS", style="green")
         else:
             label.append("FAIL", style="red")
-            label.append(f" [{severity}]")
-        label.append(f" ({case_index}/{case_count}) {category}: {description}")
+            label.append(f" [{result.severity.value}]")
+        label.append(f" ({case_index}/{case_count}) {result.category.value}: {result.tool_name}")
         self._console.print(label)
 
     def print_tool_done(self, tool_name: str, pass_count: int, fail_count: int) -> None:

@@ -80,19 +80,9 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
         verdicts = aggregate_verdicts(audit_report)
         all_verdict_maps.append(verdicts)
 
-        recall = compute_recall(verdicts, HONEYPOT_GROUND_TRUTH)
-        precision = compute_precision(verdicts, HONEYPOT_GROUND_TRUTH)
-        distribution = compute_distribution_coverage(audit_report, ALL_CATEGORIES)
-
-        _post_langsmith_feedback(recall, precision, settings.langsmith_project)
-
-        run_detail = _build_run_detail(
-            i,
-            verdicts,
-            distribution,
-            recall,
-            precision,
-            audit_report,
+        run_detail = _build_run_detail(i, verdicts, audit_report)
+        _post_langsmith_feedback(
+            run_detail.recall, run_detail.precision, settings.langsmith_project
         )
         run_details.append(run_detail)
         _print_run_result(run_detail)
@@ -144,11 +134,11 @@ def _post_langsmith_feedback(
 def _build_run_detail(
     run_index: int,
     verdicts: VerdictMap,
-    distribution: dict[str, float],
-    recall: float,
-    precision: float,
     audit_report: AuditReport,
 ) -> RunDetail:
+    recall = compute_recall(verdicts, HONEYPOT_GROUND_TRUTH)
+    precision = compute_precision(verdicts, HONEYPOT_GROUND_TRUTH)
+    distribution = compute_distribution_coverage(audit_report, ALL_CATEGORIES)
     verdict_detail = _build_verdict_detail(verdicts, audit_report)
     distribution_detail = _build_distribution_detail(distribution)
     return RunDetail(

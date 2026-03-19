@@ -36,13 +36,7 @@ def make_generate_test_cases(llm: LLMPort):
         tool = state["current_tool"]
         budget = state["test_budget"]
         categories = list(AuditCategory)
-        prompt = build_attack_generation_prompt(
-            tool_name=tool.name,
-            tool_description=tool.description,
-            input_schema=tool.input_schema,
-            budget=budget,
-            categories=categories,
-        )
+        prompt = build_attack_generation_prompt(tool=tool, budget=budget, categories=categories)
         batch = await llm.generate_structured(prompt, TestCaseBatch)
         cases = [TestCase(payload=p) for p in batch.cases]
         return {"pending_cases": cases, "tool_results": []}
@@ -68,11 +62,7 @@ def make_judge_response(llm: LLMPort):
     async def judge_response(state: dict[str, Any]) -> dict[str, Any]:
         case = state["current_case"]
         tool = state["current_tool"]
-        prompt = build_judge_prompt(
-            tool_name=tool.name,
-            tool_description=tool.description,
-            test_case=case,
-        )
+        prompt = build_judge_prompt(tool=tool, test_case=case)
         eval_result = await llm.generate_structured(prompt, EvalResult)
         existing = list(state.get("tool_results", []))
         existing.append(eval_result)

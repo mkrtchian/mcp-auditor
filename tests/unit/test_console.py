@@ -26,8 +26,16 @@ def test_header_contains_target():
 
 def test_verdict_fail_shows_severity():
     display, buffer = _make_display()
+    result = EvalResult(
+        tool_name="get_user",
+        category=AuditCategory.INJECTION,
+        payload={},
+        verdict=EvalVerdict.FAIL,
+        justification="unsafe",
+        severity=Severity.HIGH,
+    )
 
-    display.print_verdict(1, 5, "injection", "SQL injection test", "fail", "high")
+    display.print_verdict(1, 5, result)
 
     output = buffer.getvalue()
     assert "FAIL" in output
@@ -36,8 +44,16 @@ def test_verdict_fail_shows_severity():
 
 def test_verdict_pass_displayed():
     display, buffer = _make_display()
+    result = EvalResult(
+        tool_name="get_user",
+        category=AuditCategory.INJECTION,
+        payload={},
+        verdict=EvalVerdict.PASS,
+        justification="safe",
+        severity=Severity.LOW,
+    )
 
-    display.print_verdict(1, 5, "injection", "Safe input test", "pass", "low")
+    display.print_verdict(1, 5, result)
 
     assert "PASS" in buffer.getvalue()
 
