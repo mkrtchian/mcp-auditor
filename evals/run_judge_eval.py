@@ -61,7 +61,8 @@ async def run_judge_eval() -> dict[str, Any]:
 
 async def _judge_all_cases(llm: LLMPort, cases: list[LoadedCase]) -> list[JudgedCase]:
     judged: list[JudgedCase] = []
-    for tool, test_case, expected, category in cases:
+    for i, (tool, test_case, expected, category) in enumerate(cases, 1):
+        print(f"  [{i}/{len(cases)}] {tool.name} / {category}...", flush=True)
         prompt = build_judge_prompt(tool=tool, test_case=test_case)
         eval_result = await llm.generate_structured(prompt, EvalResult)
         judged.append(
