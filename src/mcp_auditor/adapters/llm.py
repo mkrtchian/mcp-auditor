@@ -15,25 +15,22 @@ class _UsageMetadata(TypedDict):
 
 
 def create_llm(settings: Settings) -> "AnthropicLLM | GoogleLLM":
-    model = settings.resolve_model()
-    if settings.provider == "anthropic":
-        return AnthropicLLM(model=model)
-    if settings.provider == "google":
-        return GoogleLLM(model=model)
-    raise ValueError(f"Unknown provider: {settings.provider!r}. Use 'google' or 'anthropic'.")
+    return _create_for_provider(settings.provider, settings.resolve_model())
 
 
 def create_judge_llm(settings: Settings) -> "AnthropicLLM | GoogleLLM":
-    model = settings.resolve_judge_model()
-    if settings.provider == "anthropic":
+    return _create_for_provider(settings.provider, settings.resolve_judge_model())
+
+
+def _create_for_provider(provider: str, model: str) -> "AnthropicLLM | GoogleLLM":
+    if provider == "anthropic":
         return AnthropicLLM(model=model)
-    if settings.provider == "google":
+    if provider == "google":
         return GoogleLLM(model=model)
-    raise ValueError(f"Unknown provider: {settings.provider!r}. Use 'google' or 'anthropic'.")
+    raise ValueError(f"Unknown provider: {provider!r}. Use 'google' or 'anthropic'.")
 
 
 class _BaseLLM:
-    """Shared logic for LangChain-based LLM adapters."""
 
     def __init__(self, model: BaseChatModel, max_retries: int):  # pyright: ignore[reportMissingTypeStubs]
         self._model = model
