@@ -1,4 +1,3 @@
-import os
 from typing import Any, TypedDict, cast
 
 from langchain_anthropic import ChatAnthropic
@@ -6,6 +5,7 @@ from langchain_core.language_models import BaseChatModel  # pyright: ignore[repo
 from langchain_google_genai import ChatGoogleGenerativeAI  # pyright: ignore[reportMissingTypeStubs]
 from pydantic import BaseModel
 
+from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import TokenUsage
 
 
@@ -14,17 +14,22 @@ class _UsageMetadata(TypedDict):
     output_tokens: int
 
 
-def create_llm() -> "AnthropicLLM | GoogleLLM":
-    """Pick the LLM adapter based on the MCP_AUDITOR_PROVIDER env var.
+def create_llm(settings: Settings) -> "AnthropicLLM | GoogleLLM":
+    model = settings.resolve_model()
+    if settings.provider == "anthropic":
+        return AnthropicLLM(model=model)
+    if settings.provider == "google":
+        return GoogleLLM(model=model)
+    raise ValueError(f"Unknown provider: {settings.provider!r}. Use 'google' or 'anthropic'.")
 
-    Defaults to "google". Set to "anthropic" to use Claude.
-    """
-    provider = os.environ.get("MCP_AUDITOR_PROVIDER", "google").lower()
-    if provider == "anthropic":
-        return AnthropicLLM()
-    if provider == "google":
-        return GoogleLLM()
-    raise ValueError(f"Unknown LLM provider: {provider!r}. Use 'google' or 'anthropic'.")
+
+def create_judge_llm(settings: Settings) -> "AnthropicLLM | GoogleLLM":
+    model = settings.resolve_judge_model()
+    if settings.provider == "anthropic":
+        return AnthropicLLM(model=model)
+    if settings.provider == "google":
+        return GoogleLLM(model=model)
+    raise ValueError(f"Unknown provider: {settings.provider!r}. Use 'google' or 'anthropic'.")
 
 
 class _BaseLLM:
@@ -73,7 +78,7 @@ class _BaseLLM:
 
 
 class AnthropicLLM(_BaseLLM):
-    def __init__(self, model: str = "claude-haiku-4-5-20251001", max_retries: int = 3):
+    def __init__(self, model: str, max_retries: int = 3):
         super().__init__(
             model=ChatAnthropic(model=model, max_retries=max_retries),  # type: ignore[arg-type]
             max_retries=max_retries,
@@ -81,7 +86,7 @@ class AnthropicLLM(_BaseLLM):
 
 
 class GoogleLLM(_BaseLLM):
-    def __init__(self, model: str = "gemini-3.1-flash-lite-preview", max_retries: int = 3):
+    def __init__(self, model: str, max_retries: int = 3):
         super().__init__(
             model=ChatGoogleGenerativeAI(model=model),  # pyright: ignore[reportUnknownArgumentType]
             max_retries=max_retries,

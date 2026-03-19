@@ -646,11 +646,13 @@ dependencies = [
     { name = "langgraph-checkpoint-sqlite" },
     { name = "mcp" },
     { name = "pydantic" },
+    { name = "pydantic-settings" },
     { name = "rich" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "langsmith" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -667,11 +669,13 @@ requires-dist = [
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0" },
     { name = "mcp", specifier = ">=1.0.0" },
     { name = "pydantic", specifier = ">=2.0" },
+    { name = "pydantic-settings", specifier = ">=2.0" },
     { name = "rich", specifier = ">=13.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "langsmith", specifier = ">=0.3" },
     { name = "pyright", specifier = ">=1.1" },
     { name = "pytest", specifier = ">=9.0" },
     { name = "pytest-asyncio", specifier = ">=1.0" },

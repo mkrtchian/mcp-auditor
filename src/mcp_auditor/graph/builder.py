@@ -24,9 +24,11 @@ from mcp_auditor.graph.state import AuditToolInput, AuditToolState, GraphState
 def build_graph(
     llm: LLMPort,
     mcp_client: MCPClientPort,
+    judge_llm: LLMPort | None = None,
     checkpointer: BaseCheckpointSaver[Any] | None = None,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
-    audit_subgraph = _build_audit_tool_subgraph(llm, mcp_client)
+    effective_judge = judge_llm or llm
+    audit_subgraph = _build_audit_tool_subgraph(llm, mcp_client, effective_judge)
 
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
     builder.add_node("discover_tools", make_discover_tools(mcp_client))
@@ -45,13 +47,14 @@ def build_graph(
 def _build_audit_tool_subgraph(
     llm: LLMPort,
     mcp_client: MCPClientPort,
+    judge_llm: LLMPort,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(
         AuditToolState, input_schema=AuditToolInput
     )
     builder.add_node("generate_test_cases", make_generate_test_cases(llm))
     builder.add_node("execute_tool", make_execute_tool(mcp_client))
-    builder.add_node("judge_response", make_judge_response(llm))
+    builder.add_node("judge_response", make_judge_response(judge_llm))
     builder.add_edge(START, "generate_test_cases")
     builder.add_edge("generate_test_cases", "execute_tool")
     builder.add_edge("execute_tool", "judge_response")

@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import os
 import sys
 import traceback
 from datetime import UTC, datetime
@@ -19,8 +20,9 @@ from evals.metrics import (
     compute_precision,
     compute_recall,
 )
-from mcp_auditor.adapters.llm import create_llm
+from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.config import Settings, load_settings
 from mcp_auditor.domain.models import AuditCategory, AuditReport
 from mcp_auditor.graph.builder import build_graph
 
@@ -62,13 +64,14 @@ def main() -> None:
 
 
 async def run_evals(num_runs: int, budget: int) -> EvalReport:
+    settings = load_settings()
     run_details: list[RunDetail] = []
     all_verdict_maps: list[VerdictMap] = []
 
     for i in range(num_runs):
         print(f"\nRunning eval {i + 1}/{num_runs}...")
         try:
-            audit_report = await run_single_audit(budget)
+            audit_report = await run_single_audit(settings, budget)
         except Exception:
             print(f"Warning: run {i + 1}/{num_runs} failed:")
             traceback.print_exc(file=sys.stdout)
@@ -80,6 +83,8 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
         recall = compute_recall(verdicts, HONEYPOT_GROUND_TRUTH)
         precision = compute_precision(verdicts, HONEYPOT_GROUND_TRUTH)
         distribution = compute_distribution_coverage(audit_report, ALL_CATEGORIES)
+
+        _post_langsmith_feedback(recall, precision, settings.langsmith_project)
 
         run_detail = _build_run_detail(
             i,
@@ -99,14 +104,41 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
     return _assemble_report(num_runs, budget, run_details, all_verdict_maps)
 
 
-async def run_single_audit(budget: int) -> AuditReport:
-    llm = create_llm()
+async def run_single_audit(settings: Settings, budget: int) -> AuditReport:
+    llm = create_llm(settings)
+    judge_llm = create_judge_llm(settings)
     async with StdioMCPClient.connect(HONEYPOT_COMMAND, HONEYPOT_ARGS) as mcp_client:
-        graph = build_graph(llm, mcp_client)
+        graph = build_graph(llm, mcp_client, judge_llm=judge_llm)
         result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
             {"target": f"{HONEYPOT_COMMAND} {' '.join(HONEYPOT_ARGS)}", "test_budget": budget}
         )
         return result["audit_report"]
+
+
+def _post_langsmith_feedback(
+    recall: float,
+    precision: float,
+    project_name: str,
+) -> None:
+    if not os.environ.get("LANGCHAIN_TRACING_V2"):
+        return
+    try:
+        from langsmith import Client  # type: ignore[import-untyped]
+
+        client = Client()
+        runs = list(
+            client.list_runs(
+                project_name=project_name,
+                limit=1,
+            )
+        )
+        if not runs:
+            return
+        run_id = runs[0].id
+        client.create_feedback(run_id, key="recall", score=recall)  # pyright: ignore[reportUnknownMemberType]
+        client.create_feedback(run_id, key="precision", score=precision)  # pyright: ignore[reportUnknownMemberType]
+    except Exception:
+        pass  # Best-effort — don't fail evals because of LangSmith
 
 
 def _build_run_detail(

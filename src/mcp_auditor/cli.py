@@ -8,8 +8,9 @@ from typing import Any
 import click
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
 
-from mcp_auditor.adapters.llm import create_llm
+from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.config import Settings, load_settings
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import (
     AuditCategory,
@@ -70,7 +71,9 @@ async def _run_audit(
     display.print_header(target_str)
 
     try:
-        llm = create_llm()
+        settings = load_settings()
+        llm = create_llm(settings)
+        judge_llm = create_judge_llm(settings)
     except (KeyError, ValueError) as exc:
         click.echo(f"Error: could not initialize LLM: {exc}", err=True)
         raise SystemExit(1) from exc
@@ -89,6 +92,7 @@ async def _run_audit(
                 return
             await _run_full_audit(
                 llm,
+                judge_llm,
                 mcp_client,
                 budget,
                 display,
@@ -99,6 +103,7 @@ async def _run_audit(
                 resume,
                 output,
                 markdown,
+                settings,
             )
     except ConnectionError as exc:
         click.echo(f"Error: could not connect to MCP server: {exc}", err=True)
@@ -110,6 +115,7 @@ async def _run_audit(
 
 async def _run_full_audit(
     llm: LLMPort,
+    judge_llm: LLMPort,
     mcp_client: MCPClientPort,
     budget: int,
     display: AuditDisplay,
@@ -120,8 +126,9 @@ async def _run_full_audit(
     resume: bool,
     output: str | None,
     markdown: str | None,
+    settings: Settings,
 ) -> None:
-    graph = build_graph(llm, mcp_client, checkpointer=checkpointer)
+    graph = build_graph(llm, mcp_client, judge_llm=judge_llm, checkpointer=checkpointer)
 
     if resume:
         thread_id = _compute_thread_id(command, args)
@@ -130,7 +137,15 @@ async def _run_full_audit(
         thread_id = uuid.uuid4().hex[:16]
         initial_state = {"target": target_str, "test_budget": budget}
 
-    config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
+    config: dict[str, Any] = {
+        "configurable": {"thread_id": thread_id},
+        "metadata": {
+            "target": target_str,
+            "budget": budget,
+            "provider": settings.provider,
+            "model": settings.resolve_model(),
+        },
+    }
 
     tracker: dict[str, Any] = {"tool_index": 0, "tool_count": 0, "case_indices": {}}
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
