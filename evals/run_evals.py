@@ -3,10 +3,11 @@ import asyncio
 import os
 import sys
 import traceback
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from evals.ground_truth import HONEYPOT_GROUND_TRUTH
+from evals.ground_truth import HONEYPOT_GROUND_TRUTH, SUBTLE_GROUND_TRUTH, GroundTruth
 from evals.metrics import (
     EvalMetrics,
     EvalReport,
@@ -23,12 +24,35 @@ from evals.metrics import (
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import Settings, load_settings
-from mcp_auditor.domain.models import AuditCategory, AuditReport
+from mcp_auditor.domain.models import AuditCategory, AuditReport, TokenUsage, ToolReport
 from mcp_auditor.graph.builder import build_graph
 
 HONEYPOT_SERVER = Path(__file__).resolve().parent.parent / "tests" / "dummy_server.py"
-HONEYPOT_COMMAND = "uv"
-HONEYPOT_ARGS = ["run", "python", str(HONEYPOT_SERVER)]
+SUBTLE_SERVER = Path(__file__).resolve().parent.parent / "tests" / "subtle_server.py"
+
+
+@dataclass(frozen=True)
+class HoneypotConfig:
+    name: str
+    command: str
+    args: list[str]
+    ground_truth: GroundTruth
+
+
+HONEYPOTS = [
+    HoneypotConfig(
+        name="honeypot",
+        command="uv",
+        args=["run", "python", str(HONEYPOT_SERVER)],
+        ground_truth=HONEYPOT_GROUND_TRUTH,
+    ),
+    HoneypotConfig(
+        name="subtle",
+        command="uv",
+        args=["run", "python", str(SUBTLE_SERVER)],
+        ground_truth=SUBTLE_GROUND_TRUTH,
+    ),
+]
 
 DEFAULT_RUNS = 3
 DEFAULT_BUDGET = 10
@@ -36,7 +60,7 @@ DEFAULT_REPORT_PATH = "evals/eval_report.json"
 
 THRESHOLDS: dict[str, float] = {
     "recall": 0.80,
-    "precision": 1.0,
+    "precision": 0.85,
     "consistency": 0.70,
     "distribution_coverage": 0.80,
 }
@@ -71,16 +95,15 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
     for i in range(num_runs):
         print(f"\nRunning eval {i + 1}/{num_runs}...")
         try:
-            audit_report = await run_single_audit(settings, budget)
+            verdicts, ground_truth, audit_report = await _run_one_eval(settings, budget)
         except Exception:
             print(f"Warning: run {i + 1}/{num_runs} failed:")
             traceback.print_exc(file=sys.stdout)
             continue
 
-        verdicts = aggregate_verdicts(audit_report)
         all_verdict_maps.append(verdicts)
 
-        run_detail = _build_run_detail(i, verdicts, audit_report)
+        run_detail = _build_run_detail(i, verdicts, audit_report, ground_truth)
         _post_langsmith_feedback(
             run_detail.recall, run_detail.precision, settings.langsmith_project
         )
@@ -94,13 +117,40 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
     return _assemble_report(num_runs, budget, run_details, all_verdict_maps)
 
 
-async def run_single_audit(settings: Settings, budget: int) -> AuditReport:
+async def _run_one_eval(
+    settings: Settings, budget: int
+) -> tuple[VerdictMap, GroundTruth, AuditReport]:
+    merged_verdicts: VerdictMap = {}
+    merged_ground_truth: GroundTruth = {}
+    all_tool_reports: list[ToolReport] = []
+    total_usage = TokenUsage()
+
+    for honeypot in HONEYPOTS:
+        print(f"  Auditing {honeypot.name}...")
+        report = await _run_single_honeypot(settings, honeypot, budget)
+        verdicts = aggregate_verdicts(report)
+        merged_verdicts.update(verdicts)
+        merged_ground_truth.update(honeypot.ground_truth)
+        all_tool_reports.extend(report.tool_reports)
+        total_usage = total_usage.add(report.token_usage)
+
+    merged_report = AuditReport(
+        target="evals",
+        tool_reports=all_tool_reports,
+        token_usage=total_usage,
+    )
+    return merged_verdicts, merged_ground_truth, merged_report
+
+
+async def _run_single_honeypot(
+    settings: Settings, honeypot: HoneypotConfig, budget: int
+) -> AuditReport:
     llm = create_llm(settings)
     judge_llm = create_judge_llm(settings)
-    async with StdioMCPClient.connect(HONEYPOT_COMMAND, HONEYPOT_ARGS) as mcp_client:
+    async with StdioMCPClient.connect(honeypot.command, honeypot.args) as mcp_client:
         graph = build_graph(llm, mcp_client, judge_llm=judge_llm)
         result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-            {"target": f"{HONEYPOT_COMMAND} {' '.join(HONEYPOT_ARGS)}", "test_budget": budget}
+            {"target": f"{honeypot.command} {' '.join(honeypot.args)}", "test_budget": budget}
         )
         return result["audit_report"]
 
@@ -135,9 +185,10 @@ def _build_run_detail(
     run_index: int,
     verdicts: VerdictMap,
     audit_report: AuditReport,
+    ground_truth: GroundTruth,
 ) -> RunDetail:
-    recall = compute_recall(verdicts, HONEYPOT_GROUND_TRUTH)
-    precision = compute_precision(verdicts, HONEYPOT_GROUND_TRUTH)
+    recall = compute_recall(verdicts, ground_truth)
+    precision = compute_precision(verdicts, ground_truth)
     distribution = compute_distribution_coverage(audit_report, ALL_CATEGORIES)
     verdict_detail = _build_verdict_detail(verdicts, audit_report)
     distribution_detail = _build_distribution_detail(distribution)

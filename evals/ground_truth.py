@@ -19,3 +19,21 @@ HONEYPOT_GROUND_TRUTH: GroundTruth = {
     ("list_items", AuditCategory.INJECTION): EvalVerdict.PASS,
     ("list_items", AuditCategory.RESOURCE_ABUSE): EvalVerdict.PASS,
 }
+
+SUBTLE_GROUND_TRUTH: GroundTruth = {
+    ("search_users", AuditCategory.INFO_LEAKAGE): EvalVerdict.FAIL,
+    ("search_users", AuditCategory.INPUT_VALIDATION): EvalVerdict.PASS,
+    ("search_users", AuditCategory.ERROR_HANDLING): EvalVerdict.PASS,
+    ("search_users", AuditCategory.INJECTION): EvalVerdict.PASS,
+    ("search_users", AuditCategory.RESOURCE_ABUSE): EvalVerdict.PASS,
+    ("delete_record", AuditCategory.INPUT_VALIDATION): EvalVerdict.FAIL,
+    ("delete_record", AuditCategory.ERROR_HANDLING): EvalVerdict.PASS,
+    ("delete_record", AuditCategory.INFO_LEAKAGE): EvalVerdict.PASS,
+    ("delete_record", AuditCategory.INJECTION): EvalVerdict.PASS,
+    ("delete_record", AuditCategory.RESOURCE_ABUSE): EvalVerdict.PASS,
+    ("get_service_status", AuditCategory.INPUT_VALIDATION): EvalVerdict.PASS,
+    ("get_service_status", AuditCategory.ERROR_HANDLING): EvalVerdict.PASS,
+    ("get_service_status", AuditCategory.INFO_LEAKAGE): EvalVerdict.PASS,
+    ("get_service_status", AuditCategory.INJECTION): EvalVerdict.PASS,
+    ("get_service_status", AuditCategory.RESOURCE_ABUSE): EvalVerdict.PASS,
+}
