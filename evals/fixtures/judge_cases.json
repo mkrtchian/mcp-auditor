@@ -1,0 +1,202 @@
+[
+  {
+    "tool_name": "execute_query",
+    "tool_description": "Execute a SQL query against the database.",
+    "category": "resource_abuse",
+    "description": "Send very long SQL query to test resource handling",
+    "arguments": {"query": "SELECT * FROM users WHERE id IN (1,2,3,...,10000)"},
+    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM users WHERE id IN (1,2,3,...,10000) — Results: 3 rows",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "execute_query",
+    "tool_description": "Execute a SQL query against the database.",
+    "category": "input_validation",
+    "description": "SQL injection payload to test input validation",
+    "arguments": {"query": "'; DROP TABLE users; --"},
+    "response": "[db: /opt/mcp-server/config/database.yml] Executed: '; DROP TABLE users; -- — Results: 3 rows",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "list_items",
+    "tool_description": "List items in a given category with an optional limit.",
+    "category": "input_validation",
+    "description": "Path traversal payload in category parameter",
+    "arguments": {"category": "../../etc/passwd"},
+    "response": null,
+    "error": "Invalid category",
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "get_user",
+    "tool_description": "Look up a user by their numeric ID.",
+    "category": "resource_abuse",
+    "description": "Very large user_id to test resource handling",
+    "arguments": {"user_id": 999999999},
+    "response": null,
+    "error": "999999999",
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "list_items",
+    "tool_description": "List items in a given category with an optional limit.",
+    "category": "info_leakage",
+    "description": "XSS payload in category to test info leakage",
+    "arguments": {"category": "<script>alert(1)</script>"},
+    "response": null,
+    "error": "Invalid category",
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "get_user",
+    "tool_description": "Look up a user by their numeric ID.",
+    "category": "info_leakage",
+    "description": "Negative user_id to trigger error with internal path",
+    "arguments": {"user_id": -1},
+    "response": null,
+    "error": "user_id must be positive — see /opt/mcp-server/internal/users.db",
+    "expected_verdict": "fail"
+  },
+  {
+    "tool_name": "get_user",
+    "tool_description": "Look up a user by their numeric ID.",
+    "category": "error_handling",
+    "description": "Unknown user_id to test error handling",
+    "arguments": {"user_id": 999},
+    "response": null,
+    "error": "999",
+    "expected_verdict": "fail"
+  },
+  {
+    "tool_name": "get_user",
+    "tool_description": "Look up a user by their numeric ID.",
+    "category": "input_validation",
+    "description": "Edge case user_id 0 to test range validation",
+    "arguments": {"user_id": 0},
+    "response": null,
+    "error": "0",
+    "expected_verdict": "fail"
+  },
+  {
+    "tool_name": "execute_query",
+    "tool_description": "Execute a SQL query against the database.",
+    "category": "injection",
+    "description": "SQL injection that gets executed and echoed",
+    "arguments": {"query": "'; DROP TABLE users;--"},
+    "response": "[db: /opt/mcp-server/config/database.yml] Executed: '; DROP TABLE users;-- — Results: 3 rows",
+    "error": null,
+    "expected_verdict": "fail"
+  },
+  {
+    "tool_name": "execute_query",
+    "tool_description": "Execute a SQL query against the database.",
+    "category": "info_leakage",
+    "description": "Simple query reveals database path in response",
+    "arguments": {"query": "SELECT 1"},
+    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT 1 — Results: 3 rows",
+    "error": null,
+    "expected_verdict": "fail"
+  },
+  {
+    "tool_name": "list_items",
+    "tool_description": "List items in a given category with an optional limit.",
+    "category": "injection",
+    "description": "SQL injection in category parameter",
+    "arguments": {"category": "'; DROP TABLE items;--"},
+    "response": null,
+    "error": "Invalid category",
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "list_items",
+    "tool_description": "List items in a given category with an optional limit.",
+    "category": "resource_abuse",
+    "description": "Extreme limit value to test resource handling",
+    "arguments": {"category": "books", "limit": 999999},
+    "response": "Items: books1, books2, ... (showing 100)",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "get_user",
+    "tool_description": "Look up a user by their numeric ID.",
+    "category": "injection",
+    "description": "Normal user_id with no injection surface",
+    "arguments": {"user_id": 42},
+    "response": "User: Alice (id=42)",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "execute_query",
+    "tool_description": "Execute a SQL query against the database.",
+    "category": "error_handling",
+    "description": "Malformed SQL to test error handling",
+    "arguments": {"query": "SELCT * FORM"},
+    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELCT * FORM — Results: 3 rows",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "list_items",
+    "tool_description": "List items in a given category with an optional limit.",
+    "category": "error_handling",
+    "description": "Valid category and normal use",
+    "arguments": {"category": "books", "limit": 10},
+    "response": "Items: books1, books2, ... (showing 10)",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "manage_data",
+    "tool_description": "Manage application data.",
+    "category": "info_leakage",
+    "description": "Trigger error that reveals stack trace",
+    "arguments": {"action": "delete", "id": -1},
+    "response": null,
+    "error": "Traceback (most recent call last):\n  File \"/app/server.py\", line 42, in handle_request\n    result = process(data)\nValueError: invalid input",
+    "expected_verdict": "fail"
+  },
+  {
+    "tool_name": "manage_data",
+    "tool_description": "Manage application data.",
+    "category": "info_leakage",
+    "description": "Normal response that mentions a documentation path",
+    "arguments": {"action": "help"},
+    "response": "See documentation at /help/api-guide",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "manage_data",
+    "tool_description": "Manage application data.",
+    "category": "input_validation",
+    "description": "Input rejected with specific validation rule",
+    "arguments": {"id": 99999},
+    "response": null,
+    "error": "ID must be between 1 and 1000",
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "manage_data",
+    "tool_description": "Manage application data.",
+    "category": "error_handling",
+    "description": "Clean structured error response",
+    "arguments": {"action": "create"},
+    "response": null,
+    "error": "Invalid request: missing required field \"name\"",
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "manage_data",
+    "tool_description": "Manage application data.",
+    "category": "injection",
+    "description": "Command echoed unsanitized in response",
+    "arguments": {"command": "ls -la /tmp"},
+    "response": "Executed command: ls -la /tmp",
+    "error": null,
+    "expected_verdict": "fail"
+  }
+]
