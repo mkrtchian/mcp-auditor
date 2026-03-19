@@ -93,18 +93,18 @@ The error message reveals the full internal filesystem path of the host, includi
 
 ## Eval results
 
-Evaluated against a honeypot MCP server with known vulnerabilities (3 runs, budget 10, 3 tools).
+Evaluated against two honeypot MCP servers with known vulnerabilities (3 runs, budget 10, 6 tools). The first honeypot has "loud" vulnerabilities (SQL echo, path leaks in errors), the second has subtle ones (PII in normal responses, silent validation gaps).
 
 **Gemini 3.1 Flash-Lite** (`gemini-3.1-flash-lite-preview`):
 
 | Metric       | Result | Threshold | Status |
 |:-------------|-------:|----------:|:-------|
-| Recall       |   0.93 |      0.80 | PASS   |
-| Precision    |   0.61 |      1.00 | FAIL   |
-| Consistency  |   0.88 |      0.70 | PASS   |
-| Distribution |   0.82 |      0.80 | PASS   |
+| Recall       |   0.71 |      0.80 | FAIL   |
+| Precision    |   0.40 |      0.85 | FAIL   |
+| Consistency  |   0.93 |      0.70 | PASS   |
+| Distribution |   1.00 |      0.80 | PASS   |
 
-Recall comfortably passes the threshold -- the auditor detects known vulnerabilities reliably. Precision is the weak point (false positives on safe tools), likely a prompt issue rather than a model limitation. The 1.00 threshold is aspirational -- the tool is usable today, but expect some false positives. Full eval methodology and comparison with Claude Haiku 4.5 in [ADR 005](docs/adr/005-llm-model-selection.md).
+Consistency and distribution are strong -- the auditor produces stable results across runs and covers all attack categories. Recall and precision need work: the generator doesn't always create payloads that trigger subtle vulnerabilities (hurting recall), and the judge still produces false positives on safe tools (hurting precision). A separate judge isolation eval (20 fixed cases, no generator involved) scores F1 = 0.93 -- the judge prompt is sound, the remaining gap is in test case generation. Full eval methodology in [ADR 005](docs/adr/005-llm-model-selection.md).
 
 ## Configuration
 
