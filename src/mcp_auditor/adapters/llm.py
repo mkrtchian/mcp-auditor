@@ -31,7 +31,6 @@ def _create_for_provider(provider: str, model: str) -> "AnthropicLLM | GoogleLLM
 
 
 class _BaseLLM:
-
     def __init__(self, model: BaseChatModel, max_retries: int):  # pyright: ignore[reportMissingTypeStubs]
         self._model = model
         self._max_retries = max_retries
