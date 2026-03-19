@@ -113,25 +113,25 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 ### Environment variables
 
 | Variable                     | Default                | Description                               |
-|:-----------------------------|:-----------------------|:------------------------------------------|
-| `MCP_AUDITOR_PROVIDER`       | `google`               | LLM provider: `google` or `anthropic`     |
-| `MCP_AUDITOR_MODEL`          | per-provider default   | Override the main model name              |
-| `MCP_AUDITOR_JUDGE_MODEL`    | same as main model     | Separate model for verdict classification |
-| `GOOGLE_API_KEY`             | --                     | Required when provider is `google`        |
-| `ANTHROPIC_API_KEY`          | --                     | Required when provider is `anthropic`     |
-| `LANGSMITH_API_KEY`          | --                     | Enables LangSmith tracing when set        |
-| `LANGCHAIN_TRACING_V2`       | --                     | Set to `true` to activate tracing         |
-| `LANGCHAIN_PROJECT`          | `mcp-auditor`          | LangSmith project name for traces         |
+|:---------------------------|:---------------------|:------------------------------------------|
+| `MCP_AUDITOR_PROVIDER`     | `google`             | LLM provider: `google` or `anthropic`     |
+| `MCP_AUDITOR_MODEL`        | per-provider default | Override the main model name              |
+| `MCP_AUDITOR_JUDGE_MODEL`  | same as main model   | Separate model for verdict classification |
+| `GOOGLE_API_KEY`           | --                   | Required when provider is `google`        |
+| `ANTHROPIC_API_KEY`        | --                   | Required when provider is `anthropic`     |
+| `LANGSMITH_API_KEY`        | --                   | Enables LangSmith tracing when set        |
+| `LANGCHAIN_TRACING_V2`     | --                   | Set to `true` to activate tracing         |
+| `LANGCHAIN_PROJECT`        | `mcp-auditor`        | LangSmith project name for traces         |
 
 ### CLI options
 
-| Option       | Default         | Description                                       |
-|:-------------|:----------------|:--------------------------------------------------|
-| `--budget`   | `10`            | Max test cases per tool                           |
-| `--output`   | none            | Path for JSON report                              |
-| `--markdown` | none            | Path for Markdown report                          |
-| `--resume`   | off             | Resume from last checkpoint                       |
-| `--dry-run`  | off             | Discover tools and generate cases, skip execution |
+| Option       | Default    | Description                                       |
+|:-------------|:-----------|:--------------------------------------------------|
+| `--budget`   | `10`       | Max test cases per tool                           |
+| `--output`   | none       | Path for JSON report                              |
+| `--markdown` | none       | Path for Markdown report                          |
+| `--resume`   | off        | Resume from last checkpoint                       |
+| `--dry-run`  | off        | Discover tools and generate cases, skip execution |
 
 ## Contributing
 
