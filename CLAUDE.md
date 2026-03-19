@@ -17,9 +17,11 @@ uv run pyright                   # Type check (strict mode)
 - Prompts are **domain logic**, not infra. They live in `graph/prompts.py` as pure functions `(data) -> str`. Never put prompt construction in adapters.
 - Graph nodes are built via **factory functions** (`make_node(port)`) for dependency injection. Ports are `Protocol` classes in `domain/`.
 - **Hexagonal boundary**: `domain/` and `graph/` are inside the hexagon. `adapters/` is outside. `domain/` and `graph/` never import from `adapters/`.
+- **Prefer pure functions.** Same inputs → same output, no side effects. Maximise the amount of code that is purely transformational (prompts, rendering, models, routing). When a function truly needs a side effect, inject the dependency via a Port — never hide I/O, env vars, or clock access behind direct calls.
 - All code, comments, docstrings, and identifiers in **English**.
 - **Newspaper rule** (Clean Code): read a module top-to-bottom like an article. Public/high-level functions first, private/low-level helpers right below their callers.
 - Functions should rarely exceed **20 lines**, files should rarely exceed **300 lines**. When they do, split.
+- **Functions should take few arguments** (aim for ≤ 3). When parameters accumulate, a concept is missing — extract a Value Object, dataclass, or Protocol that names the grouping. The fix is not a generic `params` dict but a domain-relevant name.
 - **Naming over comments.** Code should read without them. Reserve comments for non-obvious logic, hacks, or workarounds. Same rule applies to docstrings — don't restate the class or function name in prose. Use **domain-relevant, readable names** — no abbreviations except in very short scopes (e.g. comprehensions).
 
 ## Testing standards
