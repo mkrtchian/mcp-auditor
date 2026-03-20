@@ -38,3 +38,4 @@ pytest-of-*/
 # mcp-auditor
 audit_checkpoints.db
 output/
+plans/plan.md

@@ -64,9 +64,9 @@ graph LR
 
 **Why this design:**
 
-- **Hexagonal architecture** -- `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider (Gemini, Claude) means changing one adapter, zero graph code.
-- **Subgraph per tool** -- each tool audit is a self-contained subgraph. This enables checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off without re-paying for the first 7.
-- **LLM-as-a-judge** -- no fragile heuristics or regex patterns. The LLM evaluates each response against security criteria, producing structured verdicts with justifications. Quality is measured through evals, not unit tests.
+- **Hexagonal architecture** -- `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider (Gemini, Claude) means changing one adapter, zero graph code. [ADR 002](docs/adr/002-hexagonal-architecture.md)
+- **Subgraph per tool** -- each tool audit is a self-contained subgraph. This enables checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off without re-paying for the first 7. [ADR 001](docs/adr/001-why-langgraph.md)
+- **LLM-as-a-judge** -- no fragile heuristics or regex patterns. The LLM evaluates each response against security criteria, producing structured verdicts with justifications. Quality is measured through evals, not unit tests. [ADR 003](docs/adr/003-testing-philosophy.md)
 
 ## Example: auditing a real server
 
@@ -144,3 +144,7 @@ Contributions welcome -- [open an issue](https://github.com/mkrtchian/mcp-audito
 ## License
 
 MIT -- [Roman Mkrtchian](https://github.com/mkrtchian)
+
+---
+
+Built using [spec-driven-dev](https://github.com/mkrtchian/spec-driven-dev) workflow.
