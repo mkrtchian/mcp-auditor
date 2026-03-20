@@ -62,9 +62,7 @@ class TestExportWritesCorrectJsonl:
             ("get_user", AuditCategory.INPUT_VALIDATION): EvalVerdict.FAIL,
         }
         case_matching = _make_judged_case(EvalVerdict.FAIL, AuditCategory.INPUT_VALIDATION)
-        case_mismatching = _make_judged_case(
-            EvalVerdict.PASS, AuditCategory.INPUT_VALIDATION
-        )
+        case_mismatching = _make_judged_case(EvalVerdict.PASS, AuditCategory.INPUT_VALIDATION)
         case_no_gt = _make_judged_case(EvalVerdict.PASS, AuditCategory.ERROR_HANDLING)
 
         runs: list[tuple[int, AuditReport]] = [
