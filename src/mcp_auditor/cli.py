@@ -2,7 +2,7 @@
 import asyncio
 import hashlib
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -43,7 +43,6 @@ class AuditOptions:
 class StreamTracker:
     tool_index: int = 0
     tool_count: int = 0
-    case_indices: dict[str, int] = field(default_factory=lambda: {})
     active_progress: Any = None
 
 
@@ -210,7 +209,6 @@ def _handle_parent_event(
         tool: ToolDefinition | None = state_update.get("current_tool")
         if tool:
             tracker.tool_index += 1
-            tracker.case_indices[tool.name] = 0
     elif node_name == "finalize_tool_audit":
         if tracker.active_progress:
             tracker.active_progress.__exit__(None, None, None)
