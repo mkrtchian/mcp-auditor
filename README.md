@@ -99,12 +99,12 @@ Evaluated against two honeypot MCP servers with known vulnerabilities (3 runs, b
 
 | Metric       | Result | Threshold | Status |
 |:-------------|-------:|----------:|:-------|
-| Recall       |   0.71 |      0.80 | FAIL   |
-| Precision    |   0.40 |      0.85 | FAIL   |
-| Consistency  |   0.93 |      0.70 | PASS   |
+| Recall       |   1.00 |      0.80 | PASS   |
+| Precision    |   0.88 |      0.85 | PASS   |
+| Consistency  |   0.98 |      0.70 | PASS   |
 | Distribution |   1.00 |      0.80 | PASS   |
 
-Consistency and distribution are strong -- the auditor produces stable results across runs and covers all attack categories. Recall and precision need work: the generator doesn't always create payloads that trigger subtle vulnerabilities (hurting recall), and the judge still produces false positives on safe tools (hurting precision). A separate judge isolation eval (20 fixed cases, no generator involved) scores F1 = 0.93 -- the judge prompt is sound, the remaining gap is in test case generation. Full eval methodology in [ADR 005](docs/adr/005-llm-model-selection.md).
+All thresholds met. A separate judge isolation eval (32 fixed cases, no generator involved) scores F1 = 1.00. Full eval methodology in [ADR 005](docs/adr/005-llm-model-selection.md).
 
 ## Configuration
 
