@@ -7,6 +7,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress
+from rich.table import Table
+
 from evals.export import export_judged_cases
 from evals.ground_truth import HONEYPOT_GROUND_TRUTH, SUBTLE_GROUND_TRUTH, GroundTruth
 from evals.metrics import (
@@ -30,6 +35,8 @@ from mcp_auditor.graph.builder import build_graph
 
 HONEYPOT_SERVER = Path(__file__).resolve().parent.parent / "tests" / "dummy_server.py"
 SUBTLE_SERVER = Path(__file__).resolve().parent.parent / "tests" / "subtle_server.py"
+
+console = Console()
 
 
 @dataclass(frozen=True)
@@ -91,9 +98,9 @@ def main() -> None:
     _print_summary(result.report, args.report)
 
     if result.report.passed:
-        print("\nAll thresholds met.")
+        console.print(Panel("[bold green]All thresholds met.[/bold green]"))
     else:
-        print("\nSome thresholds not met.")
+        console.print(Panel("[bold red]Some thresholds not met.[/bold red]"))
         raise SystemExit(1)
 
 
@@ -106,27 +113,30 @@ async def run_evals(num_runs: int, budget: int) -> EvalRunResult:
     for honeypot in HONEYPOTS:
         merged_ground_truth.update(honeypot.ground_truth)
 
-    for i in range(num_runs):
-        print(f"\nRunning eval {i + 1}/{num_runs}...")
-        try:
-            verdicts, ground_truth, audit_report = await _run_one_eval(settings, budget)
-        except Exception:
-            print(f"Warning: run {i + 1}/{num_runs} failed:")
-            traceback.print_exc(file=sys.stdout)
-            continue
+    with Progress(console=console) as progress:
+        task = progress.add_task("Running evals", total=num_runs)
+        for i in range(num_runs):
+            try:
+                verdicts, ground_truth, audit_report = await _run_one_eval(settings, budget)
+            except Exception:
+                console.print(f"[yellow]Warning: run {i + 1}/{num_runs} failed:[/yellow]")
+                traceback.print_exc(file=sys.stdout)
+                progress.advance(task)
+                continue
 
-        all_verdict_maps.append(verdicts)
-        accumulated_runs.append((i, audit_report))
+            all_verdict_maps.append(verdicts)
+            accumulated_runs.append((i, audit_report))
 
-        run_detail = _build_run_detail(i, verdicts, audit_report, ground_truth)
-        _post_langsmith_feedback(
-            run_detail.recall, run_detail.precision, settings.langsmith_project
-        )
-        run_details.append(run_detail)
-        _print_run_result(run_detail)
+            run_detail = _build_run_detail(i, verdicts, audit_report, ground_truth)
+            _post_langsmith_feedback(
+                run_detail.recall, run_detail.precision, settings.langsmith_project
+            )
+            run_details.append(run_detail)
+            _print_run_result(run_detail)
+            progress.advance(task)
 
     if not run_details:
-        print("All runs failed. Cannot produce eval report.")
+        console.print("[bold red]All runs failed. Cannot produce eval report.[/bold red]")
         raise SystemExit(1)
 
     report = _assemble_report(num_runs, budget, run_details, all_verdict_maps)
@@ -146,7 +156,7 @@ async def _run_one_eval(
     total_usage = TokenUsage()
 
     for honeypot in HONEYPOTS:
-        print(f"  Auditing {honeypot.name}...")
+        console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
         report = await _run_single_honeypot(settings, honeypot, budget)
         verdicts = aggregate_verdicts(report)
         merged_verdicts.update(verdicts)
@@ -307,25 +317,37 @@ def _average_distribution_coverage(run_details: list[RunDetail]) -> float:
 def _print_summary(report: EvalReport, report_path: str) -> None:
     metrics = report.metrics
     thresholds = report.thresholds
-    print("\n--- Results ---")
-    _print_metric_line("Recall", metrics.recall, thresholds["recall"])
-    _print_metric_line("Precision", metrics.precision, thresholds["precision"])
-    _print_metric_line("Consistency", metrics.consistency, thresholds["consistency"])
-    dist_threshold = thresholds["distribution_coverage"]
-    _print_metric_line("Distribution", metrics.distribution_coverage, dist_threshold)
-    print(f"\nReport written to {report_path}")
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Metric")
+    table.add_column("Value", justify="right")
+    table.add_column("Threshold", justify="right")
+    table.add_column("Status")
+
+    _add_metric_row(table, "Recall", metrics.recall, thresholds["recall"])
+    _add_metric_row(table, "Precision", metrics.precision, thresholds["precision"])
+    _add_metric_row(table, "Consistency", metrics.consistency, thresholds["consistency"])
+    _add_metric_row(
+        table, "Distribution", metrics.distribution_coverage, thresholds["distribution_coverage"]
+    )
+
+    console.print(Panel(table, title="Eval Results"))
+    console.print(f"Report written to {report_path}")
 
 
-def _print_metric_line(name: str, value: float, threshold: float) -> None:
-    status = "PASS" if value >= threshold else "FAIL"
-    print(f"{name + ':':<14} {value:.2f} (threshold: {threshold:.2f}) {status}")
+def _add_metric_row(table: Table, name: str, value: float, threshold: float) -> None:
+    passed = value >= threshold
+    status = "[green]PASS[/green]" if passed else "[red]FAIL[/red]"
+    table.add_row(name, f"{value:.2f}", f"{threshold:.2f}", status)
 
 
 def _print_run_result(run_detail: RunDetail) -> None:
     for tool_name, dist in run_detail.distribution.items():
         total_cases = sum(v.case_count for v in run_detail.verdicts.get(tool_name, {}).values())
-        print(f"  {tool_name}: {total_cases} cases, {dist.covered} categories covered")
-    print(f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f}")
+        console.print(
+            f"  [bold]{tool_name}[/bold]: {total_cases} cases, {dist.covered} categories covered"
+        )
+    console.print(f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f}")
 
 
 if __name__ == "__main__":

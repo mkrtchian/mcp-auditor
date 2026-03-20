@@ -5,6 +5,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress
+from rich.table import Table
+
 from evals.judge_metrics import (
     JudgeMetrics,
     compute_judge_metrics,
@@ -29,6 +34,8 @@ F1_THRESHOLD = 0.90
 
 LoadedCase = tuple[ToolDefinition, TestCase, EvalVerdict, AuditCategory]
 
+console = Console()
+
 
 @dataclass(frozen=True)
 class JudgedCase:
@@ -50,7 +57,7 @@ async def run_judge_eval() -> dict[str, Any]:
     llm = create_judge_llm(settings)
     loaded_cases = _load_cases()
 
-    print(f"Running judge eval ({len(loaded_cases)} cases)...")
+    console.print(f"Running judge eval ([bold]{len(loaded_cases)}[/bold] cases)...")
 
     judged = await _judge_all_cases(llm, loaded_cases)
     categorized = [(j.category, (j.predicted, j.expected)) for j in judged]
@@ -61,19 +68,21 @@ async def run_judge_eval() -> dict[str, Any]:
 
 async def _judge_all_cases(llm: LLMPort, cases: list[LoadedCase]) -> list[JudgedCase]:
     judged: list[JudgedCase] = []
-    for i, (tool, test_case, expected, category) in enumerate(cases, 1):
-        print(f"  [{i}/{len(cases)}] {tool.name} / {category}...", flush=True)
-        prompt = build_judge_prompt(tool=tool, test_case=test_case)
-        eval_result = await llm.generate_structured(prompt, EvalResult)
-        judged.append(
-            JudgedCase(
-                tool=tool,
-                category=category,
-                expected=expected,
-                predicted=eval_result.verdict,
-                justification=eval_result.justification,
+    with Progress(console=console) as progress:
+        task = progress.add_task("Judging cases", total=len(cases))
+        for tool, test_case, expected, category in cases:
+            prompt = build_judge_prompt(tool=tool, test_case=test_case)
+            eval_result = await llm.generate_structured(prompt, EvalResult)
+            judged.append(
+                JudgedCase(
+                    tool=tool,
+                    category=category,
+                    expected=expected,
+                    predicted=eval_result.verdict,
+                    justification=eval_result.justification,
+                )
             )
-        )
+            progress.advance(task)
     return judged
 
 
@@ -150,31 +159,39 @@ def _case_detail(judged: JudgedCase) -> dict[str, Any]:
 def _print_summary(report: dict[str, Any]) -> None:
     metrics: dict[str, float] = report["metrics"]
     cm: dict[str, int] = report["confusion_matrix"]
+    per_category: dict[str, dict[str, float]] = report["per_category"]
 
-    print("\n--- Results ---")
-    print(f"{'Precision:':<13} {metrics['precision']:.2f} (threshold: n/a)")
-    print(f"{'Recall:':<13} {metrics['recall']:.2f} (threshold: n/a)")
-    threshold_status = "PASS" if report["passed"] else "FAIL"
-    print(
-        f"{'F1:':<13} {metrics['f1']:.2f} "
-        f"(threshold: {report['f1_threshold']:.2f}) {threshold_status}"
+    threshold_status = _pass_fail_markup(report["passed"])
+    f1_line = (
+        f"F1: {metrics['f1']:.2f} (threshold: {report['f1_threshold']:.2f}) {threshold_status}"
+    )
+    pr_line = f"Precision: {metrics['precision']:.2f}  Recall: {metrics['recall']:.2f}"
+    cm_text = (
+        f"Confusion Matrix:\n  TP: {cm['tp']}  FP: {cm['fp']}\n  FN: {cm['fn']}  TN: {cm['tn']}"
     )
 
-    print("\nConfusion matrix:")
-    print(f"  TP: {cm['tp']}  FP: {cm['fp']}")
-    print(f"  FN: {cm['fn']}  TN: {cm['tn']}")
-
-    print("\nPer-category:")
-    per_category: dict[str, dict[str, float]] = report["per_category"]
+    category_table = Table(show_header=True, header_style="bold")
+    category_table.add_column("Category")
+    category_table.add_column("P", justify="right")
+    category_table.add_column("R", justify="right")
+    category_table.add_column("F1", justify="right")
     for cat_name, cat_metrics in per_category.items():
-        print(
-            f"  {cat_name + ':':<22} "
-            f"P={cat_metrics['precision']:.2f} "
-            f"R={cat_metrics['recall']:.2f} "
-            f"F1={cat_metrics['f1']:.2f}"
+        category_table.add_row(
+            cat_name,
+            f"{cat_metrics['precision']:.2f}",
+            f"{cat_metrics['recall']:.2f}",
+            f"{cat_metrics['f1']:.2f}",
         )
 
-    print(f"\nReport written to {DEFAULT_REPORT_PATH}")
+    panel_content = f"{f1_line}\n{pr_line}\n\n{cm_text}\n\nPer-category:\n"
+    panel = Panel(panel_content, title="Judge Eval Results")
+    console.print(panel)
+    console.print(category_table)
+    console.print(f"Report written to {DEFAULT_REPORT_PATH}")
+
+
+def _pass_fail_markup(passed: bool) -> str:
+    return "[green]PASS[/green]" if passed else "[red]FAIL[/red]"
 
 
 if __name__ == "__main__":
