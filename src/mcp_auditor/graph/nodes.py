@@ -39,7 +39,7 @@ def make_generate_test_cases(llm: LLMPort):
         prompt = build_attack_generation_prompt(tool=tool, budget=budget, categories=categories)
         batch = await llm.generate_structured(prompt, TestCaseBatch)
         cases = [TestCase(payload=p) for p in batch.cases]
-        return {"pending_cases": cases, "tool_results": []}
+        return {"pending_cases": cases, "judged_cases": []}
 
     return generate_test_cases
 
@@ -64,9 +64,10 @@ def make_judge_response(llm: LLMPort):
         tool = state["current_tool"]
         prompt = build_judge_prompt(tool=tool, test_case=case)
         eval_result = await llm.generate_structured(prompt, EvalResult)
-        existing = list(state.get("tool_results", []))
-        existing.append(eval_result)
-        return {"tool_results": existing, "current_case": None}
+        judged_case = case.model_copy(update={"eval_result": eval_result})
+        existing = list(state.get("judged_cases", []))
+        existing.append(judged_case)
+        return {"judged_cases": existing, "current_case": None}
 
     return judge_response
 
@@ -74,8 +75,8 @@ def make_judge_response(llm: LLMPort):
 def make_finalize_tool_audit():
     async def finalize_tool_audit(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
-        results = state["tool_results"]
-        report = ToolReport(tool=tool, results=results)
+        cases = state["judged_cases"]
+        report = ToolReport(tool=tool, cases=cases)
         return {"tool_reports": [report]}
 
     return finalize_tool_audit

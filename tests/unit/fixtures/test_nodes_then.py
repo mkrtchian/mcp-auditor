@@ -24,9 +24,9 @@ def current_case_has_error(result: dict[str, Any], expected_error: str) -> None:
     assert result["current_case"].response is None
 
 
-def tool_results_count(result: dict[str, Any], expected: int) -> None:
-    assert len(result["tool_results"]) == expected
+def judged_cases_count(result: dict[str, Any], expected: int) -> None:
+    assert len(result["judged_cases"]) == expected
 
 
-def tool_report_has_results(result: dict[str, Any], expected_count: int) -> None:
-    assert len(result["tool_reports"][0].results) == expected_count
+def tool_report_has_cases(result: dict[str, Any], expected_count: int) -> None:
+    assert len(result["tool_reports"][0].cases) == expected_count

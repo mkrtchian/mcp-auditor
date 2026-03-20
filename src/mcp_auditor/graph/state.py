@@ -5,7 +5,6 @@ from typing import Annotated, TypedDict
 
 from mcp_auditor.domain.models import (
     AuditReport,
-    EvalResult,
     TestCase,
     ToolDefinition,
     ToolReport,
@@ -17,7 +16,7 @@ class GraphState(TypedDict):
     discovered_tools: list[ToolDefinition]
     test_budget: int
     current_tool: ToolDefinition | None
-    tool_results: list[EvalResult]
+    judged_cases: list[TestCase]
     tool_reports: Annotated[list[ToolReport], operator.add]
     audit_report: AuditReport | None
 
@@ -27,7 +26,7 @@ class AuditToolState(TypedDict):
     test_budget: int
     pending_cases: list[TestCase]
     current_case: TestCase | None
-    tool_results: list[EvalResult]
+    judged_cases: list[TestCase]
 
 
 class AuditToolInput(TypedDict):

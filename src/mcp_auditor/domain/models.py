@@ -81,7 +81,7 @@ class TokenUsage(BaseModel):
 
 class ToolReport(BaseModel):
     tool: ToolDefinition
-    results: list[EvalResult]
+    cases: list[TestCase]
 
 
 class AuditReport(BaseModel):

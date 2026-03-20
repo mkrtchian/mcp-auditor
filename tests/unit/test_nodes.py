@@ -54,7 +54,7 @@ class TestGenerateTestCases:
         result = await node({"current_tool": tool, "test_budget": 3})
 
         then.pending_cases_count(result, 3)
-        then.tool_results_count(result, 0)
+        then.judged_cases_count(result, 0)
 
 
 class TestExecuteTool:
@@ -96,21 +96,27 @@ class TestJudgeResponse:
         case = given.a_test_case(response="some output")
         tool = given.a_tool()
 
-        result = await node({"current_case": case, "tool_results": [], "current_tool": tool})
+        result = await node({"current_case": case, "judged_cases": [], "current_tool": tool})
 
-        then.tool_results_count(result, 1)
+        then.judged_cases_count(result, 1)
+        judged_case = result["judged_cases"][0]
+        assert judged_case.eval_result is not None
+        assert judged_case.eval_result.verdict == eval_result.verdict
 
 
 class TestFinalizeToolAudit:
     @pytest.mark.asyncio
     async def test_creates_report(self):
         tool = given.a_tool()
-        results = [given.an_eval_result(), given.an_eval_result()]
+        case1 = given.a_test_case(response="r1")
+        case1 = case1.model_copy(update={"eval_result": given.an_eval_result()})
+        case2 = given.a_test_case(response="r2")
+        case2 = case2.model_copy(update={"eval_result": given.an_eval_result()})
         node = make_finalize_tool_audit()
 
-        result = await node({"current_tool": tool, "tool_results": results})
+        result = await node({"current_tool": tool, "judged_cases": [case1, case2]})
 
-        then.tool_report_has_results(result, 2)
+        then.tool_report_has_cases(result, 2)
 
 
 class TestRouteAfterDiscovery:

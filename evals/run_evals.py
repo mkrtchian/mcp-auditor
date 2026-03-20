@@ -211,7 +211,10 @@ def _build_verdict_detail(
 ) -> dict[str, dict[str, ToolVerdictDetail]]:
     case_counts: dict[tuple[str, AuditCategory], int] = {}
     for tool_report in audit_report.tool_reports:
-        for result in tool_report.results:
+        for case in tool_report.cases:
+            if case.eval_result is None:
+                continue
+            result = case.eval_result
             key = (result.tool_name, result.category)
             case_counts[key] = case_counts.get(key, 0) + 1
 

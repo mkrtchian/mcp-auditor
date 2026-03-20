@@ -53,8 +53,11 @@ class AuditDisplay:
         table.add_column("Pass", justify="right", style="green")
         table.add_column("Fail", justify="right", style="red")
         for tool_report in report.tool_reports:
-            total = len(tool_report.results)
-            passes = sum(1 for r in tool_report.results if r.verdict.value == "pass")
+            judged = [c for c in tool_report.cases if c.eval_result is not None]
+            total = len(judged)
+            passes = sum(
+                1 for c in judged if c.eval_result and c.eval_result.verdict.value == "pass"
+            )
             fails = total - passes
             table.add_row(tool_report.tool.name, str(total), str(passes), str(fails))
         self._console.print(table)

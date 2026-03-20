@@ -10,7 +10,10 @@ def json_round_trips(json_str: str, expected_tool_count: int) -> None:
 def json_has_enum_strings(json_str: str) -> None:
     data = json.loads(json_str)
     for tool_report in data["tool_reports"]:
-        for result in tool_report["results"]:
+        for case in tool_report["cases"]:
+            result = case["eval_result"]
+            if result is None:
+                continue
             assert isinstance(result["verdict"], str)
             assert isinstance(result["severity"], str)
             assert result["verdict"] == result["verdict"].lower()

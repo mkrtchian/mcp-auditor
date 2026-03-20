@@ -10,6 +10,7 @@ from mcp_auditor.domain.models import (
     EvalResult,
     EvalVerdict,
     Severity,
+    TestCase,
     TokenUsage,
     ToolDefinition,
     ToolReport,
@@ -117,27 +118,43 @@ def _a_report_with_two_tools() -> AuditReport:
         tool_reports=[
             ToolReport(
                 tool=ToolDefinition(name="get_user", description="", input_schema={}),
-                results=[
-                    EvalResult(
-                        tool_name="get_user",
-                        category=AuditCategory.INJECTION,
-                        payload={},
-                        verdict=EvalVerdict.PASS,
-                        justification="ok",
-                        severity=Severity.LOW,
+                cases=[
+                    TestCase(
+                        payload=AuditPayload(
+                            tool_name="get_user",
+                            category=AuditCategory.INJECTION,
+                            description="test",
+                            arguments={},
+                        ),
+                        eval_result=EvalResult(
+                            tool_name="get_user",
+                            category=AuditCategory.INJECTION,
+                            payload={},
+                            verdict=EvalVerdict.PASS,
+                            justification="ok",
+                            severity=Severity.LOW,
+                        ),
                     )
                 ],
             ),
             ToolReport(
                 tool=ToolDefinition(name="list_items", description="", input_schema={}),
-                results=[
-                    EvalResult(
-                        tool_name="list_items",
-                        category=AuditCategory.INPUT_VALIDATION,
-                        payload={},
-                        verdict=EvalVerdict.FAIL,
-                        justification="bad",
-                        severity=Severity.HIGH,
+                cases=[
+                    TestCase(
+                        payload=AuditPayload(
+                            tool_name="list_items",
+                            category=AuditCategory.INPUT_VALIDATION,
+                            description="test",
+                            arguments={},
+                        ),
+                        eval_result=EvalResult(
+                            tool_name="list_items",
+                            category=AuditCategory.INPUT_VALIDATION,
+                            payload={},
+                            verdict=EvalVerdict.FAIL,
+                            justification="bad",
+                            severity=Severity.HIGH,
+                        ),
                     )
                 ],
             ),

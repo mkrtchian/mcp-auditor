@@ -9,10 +9,12 @@ from evals.metrics import (
 )
 from mcp_auditor.domain.models import (
     AuditCategory,
+    AuditPayload,
     AuditReport,
     EvalResult,
     EvalVerdict,
     Severity,
+    TestCase,
     TokenUsage,
     ToolDefinition,
     ToolReport,
@@ -44,7 +46,18 @@ def _make_report(results_by_tool: dict[str, list[EvalResult]]) -> AuditReport:
     tool_reports = [
         ToolReport(
             tool=ToolDefinition(name=name, description="test", input_schema={"type": "object"}),
-            results=results,
+            cases=[
+                TestCase(
+                    payload=AuditPayload(
+                        tool_name=r.tool_name,
+                        category=r.category,
+                        description="test",
+                        arguments=r.payload,
+                    ),
+                    eval_result=r,
+                )
+                for r in results
+            ],
         )
         for name, results in results_by_tool.items()
     ]

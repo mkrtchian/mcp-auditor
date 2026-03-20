@@ -52,7 +52,10 @@ class EvalReport(BaseModel):
 def aggregate_verdicts(report: AuditReport) -> VerdictMap:
     verdicts: VerdictMap = {}
     for tool_report in report.tool_reports:
-        for result in tool_report.results:
+        for case in tool_report.cases:
+            if case.eval_result is None:
+                continue
+            result = case.eval_result
             key = (result.tool_name, result.category)
             current = verdicts.get(key)
             if current is None or result.verdict == EvalVerdict.FAIL:
@@ -108,6 +111,6 @@ def compute_distribution_coverage(
 ) -> dict[str, float]:
     coverage: dict[str, float] = {}
     for tool_report in report.tool_reports:
-        covered = {result.category for result in tool_report.results}
+        covered = {case.eval_result.category for case in tool_report.cases if case.eval_result}
         coverage[tool_report.tool.name] = len(covered) / len(categories)
     return coverage

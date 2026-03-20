@@ -196,8 +196,16 @@ def _handle_parent_event(
         tool_reports: list[Any] = state_update.get("tool_reports", [])
         if tool_reports:
             tool_report = tool_reports[-1]
-            pass_count = sum(1 for r in tool_report.results if r.verdict.value == "pass")
-            fail_count = len(tool_report.results) - pass_count
+            pass_count = sum(
+                1
+                for c in tool_report.cases
+                if c.eval_result and c.eval_result.verdict.value == "pass"
+            )
+            fail_count = sum(
+                1
+                for c in tool_report.cases
+                if c.eval_result and c.eval_result.verdict.value != "pass"
+            )
             display.print_tool_done(tool_report.tool.name, pass_count, fail_count)
 
 
@@ -216,15 +224,17 @@ def _handle_subgraph_event(
             tool_name = pending[0].payload.tool_name
             display.print_tool_start(tool_index, tool_count, tool_name, case_count)
     elif node_name == "judge_response":
-        results = state_update.get("tool_results", [])
-        if results:
-            result = results[-1]
-            tool_name = result.tool_name
-            tracker["case_indices"].setdefault(tool_name, 0)
-            tracker["case_indices"][tool_name] += 1
-            case_index = tracker["case_indices"][tool_name]
-            case_count = case_index  # approximate, updated as we go
-            display.print_verdict(case_index, case_count, result)
+        judged = state_update.get("judged_cases", [])
+        if judged:
+            last_case = judged[-1]
+            if last_case.eval_result is not None:
+                result = last_case.eval_result
+                tool_name = result.tool_name
+                tracker["case_indices"].setdefault(tool_name, 0)
+                tracker["case_indices"][tool_name] += 1
+                case_index = tracker["case_indices"][tool_name]
+                case_count = case_index  # approximate, updated as we go
+                display.print_verdict(case_index, case_count, result)
 
 
 def _write_reports(

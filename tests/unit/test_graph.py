@@ -17,7 +17,7 @@ async def test_single_tool_single_test_case():
 
     then.has_tool_reports(result, 1)
     report = then.tool_report_at(result, 0)
-    then.report_has_results(report, 1)
+    then.report_has_cases(report, 1)
     then.report_is_for_tool(report, "get_user")
 
 
@@ -34,10 +34,10 @@ async def test_two_tools_two_cases_each():
 
     then.has_tool_reports(result, 2)
     first = then.tool_report_at(result, 0)
-    then.report_has_results(first, 2)
+    then.report_has_cases(first, 2)
     then.report_is_for_tool(first, "get_user")
     second = then.tool_report_at(result, 1)
-    then.report_has_results(second, 2)
+    then.report_has_cases(second, 2)
     then.report_is_for_tool(second, "delete_user")
 
 

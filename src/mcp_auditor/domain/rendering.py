@@ -31,7 +31,7 @@ def render_markdown(report: AuditReport) -> str:
 
 def _render_summary_section(report: AuditReport) -> str:
     tool_count = len(report.tool_reports)
-    total_cases = sum(len(tr.results) for tr in report.tool_reports)
+    total_cases = sum(len(tr.cases) for tr in report.tool_reports)
     findings = _collect_findings(report)
     finding_count = len(findings)
     lines = [
@@ -50,8 +50,10 @@ def _render_summary_section(report: AuditReport) -> str:
 
 def _render_tool_section(tool_report: ToolReport) -> str:
     lines = [f"\n## {tool_report.tool.name}\n"]
-    for result in tool_report.results:
-        lines.append(_render_result_section(result))
+    for case in tool_report.cases:
+        if case.eval_result is None:
+            continue
+        lines.append(_render_result_section(case.eval_result))
     return "\n".join(lines)
 
 
@@ -69,7 +71,12 @@ def _render_result_section(result: EvalResult) -> str:
 
 
 def _collect_findings(report: AuditReport) -> list[EvalResult]:
-    return [r for tr in report.tool_reports for r in tr.results if r.verdict == EvalVerdict.FAIL]
+    return [
+        case.eval_result
+        for tr in report.tool_reports
+        for case in tr.cases
+        if case.eval_result is not None and case.eval_result.verdict == EvalVerdict.FAIL
+    ]
 
 
 def _severity_breakdown(findings: list[EvalResult]) -> str:

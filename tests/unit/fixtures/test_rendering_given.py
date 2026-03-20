@@ -1,9 +1,11 @@
 from mcp_auditor.domain.models import (
     AuditCategory,
+    AuditPayload,
     AuditReport,
     EvalResult,
     EvalVerdict,
     Severity,
+    TestCase,
     TokenUsage,
     ToolDefinition,
     ToolReport,
@@ -65,9 +67,21 @@ def a_tool_report(
     tool_name: str,
     results: list[EvalResult],
 ) -> ToolReport:
+    cases = [
+        TestCase(
+            payload=AuditPayload(
+                tool_name=r.tool_name,
+                category=r.category,
+                description="test",
+                arguments=r.payload,
+            ),
+            eval_result=r,
+        )
+        for r in results
+    ]
     return ToolReport(
         tool=a_tool_definition(name=tool_name, description=f"The {tool_name} tool"),
-        results=results,
+        cases=cases,
     )
 
 
