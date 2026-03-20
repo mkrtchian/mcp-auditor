@@ -2,7 +2,7 @@
 import asyncio
 import hashlib
 import logging
-import os
+import tempfile
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -106,11 +106,11 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     db_path = str(checkpoint_dir / "checkpoints.db")
 
-    devnull = open(os.devnull, "w")  # noqa: SIM115
+    server_stderr = tempfile.SpooledTemporaryFile(max_size=1024 * 1024, mode="w+")  # noqa: SIM115
     try:
         async with (
             AsyncSqliteSaver.from_conn_string(db_path) as checkpointer,
-            StdioMCPClient.connect(command, args, errlog=devnull) as mcp_client,
+            StdioMCPClient.connect(command, args, errlog=server_stderr) as mcp_client,
         ):
             if options.dry_run:
                 await _run_dry_run(llm, mcp_client, options.budget, display)
@@ -136,12 +136,16 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
             await _run_full_audit(graph, config, initial_state, display, options.report_paths)
     except ConnectionError as exc:
         display.print_error(f"could not connect to MCP server: {exc}")
+        _show_server_stderr(server_stderr, display)
         raise SystemExit(1) from exc
     except OSError as exc:
         display.print_error(str(exc))
+        _show_server_stderr(server_stderr, display)
         raise SystemExit(1) from exc
-    finally:
-        devnull.close()
+    except BaseExceptionGroup as exc:
+        display.print_error(f"MCP server failed: {_summarize_exception_group(exc)}")
+        _show_server_stderr(server_stderr, display)
+        raise SystemExit(1) from exc
 
 
 async def _run_full_audit(
@@ -255,6 +259,23 @@ def _write_reports(
     if paths.markdown:
         Path(paths.markdown).write_text(render_markdown(report))
         display.print_report_path(paths.markdown)
+
+
+def _show_server_stderr(
+    server_stderr: tempfile.SpooledTemporaryFile[str], display: AuditDisplay
+) -> None:
+    server_stderr.seek(0)
+    output = server_stderr.read().strip()
+    if output:
+        display.print_error(f"server stderr:\n{output}")
+
+
+def _summarize_exception_group(group: BaseExceptionGroup[BaseException]) -> str:
+    for exc in group.exceptions:
+        if isinstance(exc, BaseExceptionGroup):
+            return _summarize_exception_group(exc)
+        return str(exc)
+    return str(group)
 
 
 def main() -> None:
