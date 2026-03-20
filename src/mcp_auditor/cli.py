@@ -1,6 +1,8 @@
 # pyright: reportUnknownMemberType=false, reportMissingTypeStubs=false, reportArgumentType=false, reportUnknownArgumentType=false
 import asyncio
 import hashlib
+import logging
+import os
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -86,6 +88,7 @@ def run(
 
 
 async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
+    logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
     command, args = target[0], list(target[1:])
     target_str = " ".join(target)
     display = AuditDisplay()
@@ -103,10 +106,11 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     db_path = str(checkpoint_dir / "checkpoints.db")
 
+    devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
         async with (
             AsyncSqliteSaver.from_conn_string(db_path) as checkpointer,
-            StdioMCPClient.connect(command, args) as mcp_client,
+            StdioMCPClient.connect(command, args, errlog=devnull) as mcp_client,
         ):
             if options.dry_run:
                 await _run_dry_run(llm, mcp_client, options.budget, display)
@@ -136,6 +140,8 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
     except OSError as exc:
         display.print_error(str(exc))
         raise SystemExit(1) from exc
+    finally:
+        devnull.close()
 
 
 async def _run_full_audit(

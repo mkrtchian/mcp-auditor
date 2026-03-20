@@ -9,7 +9,7 @@ from pathlib import Path
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress
+from rich.progress import Progress, TaskID
 from rich.table import Table
 
 from evals.export import export_judged_cases
@@ -113,15 +113,18 @@ async def run_evals(num_runs: int, budget: int) -> EvalRunResult:
     for honeypot in HONEYPOTS:
         merged_ground_truth.update(honeypot.ground_truth)
 
+    total_steps = num_runs * len(HONEYPOTS)
     with Progress(console=console) as progress:
-        task = progress.add_task("Running evals", total=num_runs)
+        task = progress.add_task("Running evals", total=total_steps)
         for i in range(num_runs):
             try:
-                verdicts, ground_truth, audit_report = await _run_one_eval(settings, budget)
+                verdicts, ground_truth, audit_report = await _run_one_eval(
+                    settings, budget, progress, task
+                )
             except Exception:
-                console.print(f"[yellow]Warning: run {i + 1}/{num_runs} failed:[/yellow]")
-                traceback.print_exc(file=sys.stdout)
-                progress.advance(task)
+                progress.console.print(f"[yellow]Warning: run {i + 1}/{num_runs} failed:[/yellow]")
+                traceback.print_exc(file=sys.stderr)
+                progress.advance(task, advance=len(HONEYPOTS))
                 continue
 
             all_verdict_maps.append(verdicts)
@@ -132,8 +135,7 @@ async def run_evals(num_runs: int, budget: int) -> EvalRunResult:
                 run_detail.recall, run_detail.precision, settings.langsmith_project
             )
             run_details.append(run_detail)
-            _print_run_result(run_detail)
-            progress.advance(task)
+            _print_run_result(run_detail, progress)
 
     if not run_details:
         console.print("[bold red]All runs failed. Cannot produce eval report.[/bold red]")
@@ -148,7 +150,10 @@ async def run_evals(num_runs: int, budget: int) -> EvalRunResult:
 
 
 async def _run_one_eval(
-    settings: Settings, budget: int
+    settings: Settings,
+    budget: int,
+    progress: Progress,
+    task: "TaskID",
 ) -> tuple[VerdictMap, GroundTruth, AuditReport]:
     merged_verdicts: VerdictMap = {}
     merged_ground_truth: GroundTruth = {}
@@ -156,13 +161,14 @@ async def _run_one_eval(
     total_usage = TokenUsage()
 
     for honeypot in HONEYPOTS:
-        console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
+        progress.console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
         report = await _run_single_honeypot(settings, honeypot, budget)
         verdicts = aggregate_verdicts(report)
         merged_verdicts.update(verdicts)
         merged_ground_truth.update(honeypot.ground_truth)
         all_tool_reports.extend(report.tool_reports)
         total_usage = total_usage.add(report.token_usage)
+        progress.advance(task)
 
     merged_report = AuditReport(
         target="evals",
@@ -177,12 +183,18 @@ async def _run_single_honeypot(
 ) -> AuditReport:
     llm = create_llm(settings)
     judge_llm = create_judge_llm(settings)
-    async with StdioMCPClient.connect(honeypot.command, honeypot.args) as mcp_client:
-        graph = build_graph(llm, mcp_client, judge_llm=judge_llm)
-        result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-            {"target": f"{honeypot.command} {' '.join(honeypot.args)}", "test_budget": budget}
-        )
-        return result["audit_report"]
+    devnull = open(os.devnull, "w")  # noqa: SIM115
+    try:
+        async with StdioMCPClient.connect(
+            honeypot.command, honeypot.args, errlog=devnull
+        ) as mcp_client:
+            graph = build_graph(llm, mcp_client, judge_llm=judge_llm)
+            result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
+                {"target": f"{honeypot.command} {' '.join(honeypot.args)}", "test_budget": budget}
+            )
+            return result["audit_report"]
+    finally:
+        devnull.close()
 
 
 def _post_langsmith_feedback(
@@ -341,13 +353,15 @@ def _add_metric_row(table: Table, name: str, value: float, threshold: float) -> 
     table.add_row(name, f"{value:.2f}", f"{threshold:.2f}", status)
 
 
-def _print_run_result(run_detail: RunDetail) -> None:
+def _print_run_result(run_detail: RunDetail, progress: Progress) -> None:
     for tool_name, dist in run_detail.distribution.items():
         total_cases = sum(v.case_count for v in run_detail.verdicts.get(tool_name, {}).values())
-        console.print(
+        progress.console.print(
             f"  [bold]{tool_name}[/bold]: {total_cases} cases, {dist.covered} categories covered"
         )
-    console.print(f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f}")
+    progress.console.print(
+        f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f}"
+    )
 
 
 if __name__ == "__main__":
