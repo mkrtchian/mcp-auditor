@@ -16,6 +16,9 @@ build/
 # Environment
 .env
 
+# Test artifacts
+pytest-of-*/
+
 # mcp-auditor
 audit_checkpoints.db
 evals/eval_report.json
