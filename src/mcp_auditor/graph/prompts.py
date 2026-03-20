@@ -31,13 +31,19 @@ For each test case, provide:
 - description: what this test case verifies
 - arguments: a dictionary of arguments matching the input schema, crafted as adversarial payloads
 
-Focus on MCP-specific risks:
-- Prompt injection through tool arguments
-- Information leakage via error messages
-- Resource abuse through crafted inputs
-- Input validation bypasses
+IMPORTANT — test design guidance per category:
 
-Consider the input schema when designing relevant payloads."""
+- info_leakage: Probe what the tool reveals in BOTH success and error responses. For error-path leakage: use non-existent IDs, boundary values, or invalid inputs to trigger verbose errors that might expose file paths, DB schemas, or stack traces. For response-path leakage: use NORMAL, VALID inputs that are likely to return actual data — common first names (Alice, Bob, John), small IDs (1, 2, 3), common categories — and check if the response includes internal fields like emails, roles, internal IDs, or infrastructure details. Always include at least one normal-use test case — info leakage often hides in successful responses, not just errors.
+
+- input_validation: Test with values that match the EXPECTED TYPE but are semantically invalid. For integer fields: zero, negative numbers, extremely large values — test zero specifically as it's a common boundary error. For string fields: empty strings, whitespace-only strings. Do NOT send wrong types (e.g., a string for an integer field) — the framework's schema validation catches type mismatches before the tool logic runs, making such tests uninformative.
+
+- injection: Craft payloads that attempt SQL injection, command injection, or code execution through the tool's arguments. Use the tool's expected input types.
+
+- error_handling: Trigger predictable error conditions — not-found IDs, invalid formats, boundary violations — and check whether the tool exposes raw exceptions or internal details.
+
+- resource_abuse: Craft inputs designed to cause unbounded resource consumption — extremely large limits, wildcard queries, cross-joins.
+
+Always send arguments that conform to the schema's type constraints. The goal is to test the TOOL's logic, not the schema validator."""
 
 
 _CATEGORY_GUIDANCE: dict[str, str] = {
@@ -55,17 +61,18 @@ What does NOT count:
     "input_validation": """What counts as input_validation failure:
 - The tool accepts clearly invalid input without rejecting OR normalizing it (e.g., negative IDs used as-is, wrong types, out-of-range values processed verbatim)
 - Missing boundary checks that allow nonsensical operations
+- An error that merely echoes back the raw input value (e.g., error: "0", error: "-1") without a descriptive validation message — this is a raw unhandled exception, not proper input validation. Compare: "0" (raw exception) vs. "user_id must be positive" (proper validation).
 What does NOT count:
 - The tool crashes on bad input (that's error_handling)
-- The tool processes a malicious payload that exploits its core function (that's injection, not input_validation). For example, a SQL execution tool accepting SQL is not an input_validation failure even if the SQL is malicious.
-- The tool silently clamps or normalizes out-of-range values to a safe range (e.g., negative limit → 1, huge limit → 100). Clamping IS valid input handling — the tool does not need to reject the request as long as the invalid value does not reach downstream logic.
+- The tool processes input through its core function (that's injection, not input_validation). A tool whose purpose is to accept and forward text (SQL queries, search terms, commands) is NOT failing input_validation by accepting that text — even if it's empty, malformed, or adversarial. Example: a SQL execution tool accepting an empty string query and returning results is NOT an input_validation failure — executing queries is what the tool does.
+- The tool silently clamps or normalizes out-of-range values to a safe range. Clamping IS valid input handling — the tool does not need to reject the request as long as the invalid value does not reach downstream logic. Example: if limit=-1 and the response shows "showing 1", the tool clamped the negative value to 1 — that is NOT an input_validation failure.
 - A text-search or lookup tool treating user input as a literal search term (not as code or commands) is working correctly. Receiving a SQL/injection payload as a search query and returning "no results" is NOT an input_validation failure — the tool correctly treated the input as data.""",
     "error_handling": """What counts as error_handling failure:
 - Unhandled exceptions (raw KeyError, ValueError, TypeError surfaced to the caller)
 - Missing graceful error responses for predictable failure modes (e.g., not-found, invalid format)
 What does NOT count:
 - Clean, structured error messages (e.g., "Invalid category", "ID must be between 1 and 1000")
-- The tool successfully processing input and returning a result (even if the input was malicious — that's injection, not error_handling). If the tool returned a success response, there was no error to handle.
+- The tool successfully processing input and returning a result — even if the response contains suspicious content like internal paths or metadata. If the tool returned a success response, there was no error to handle. Sensitive data in a success response is info_leakage, NOT error_handling.
 - The tool returning the input value as-is is NOT safe error handling if it indicates an unhandled exception
 - A tool that passes input through to a backend system (e.g., SQL engine, API) is not required to pre-validate the input's syntax. If the tool's purpose is to forward queries, silently processing malformed input is expected behavior, not an error_handling failure.
 - A tool accepting edge-case inputs (negative IDs, empty strings) and returning a success response is NOT an error_handling failure — that's input_validation (if it should have rejected them) but the tool did not crash or produce an unhandled exception.""",

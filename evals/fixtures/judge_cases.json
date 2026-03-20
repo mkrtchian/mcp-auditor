@@ -76,7 +76,7 @@
     "description": "Edge case user_id 0 to test range validation",
     "arguments": {"user_id": 0},
     "response": null,
-    "error": "0",
+    "error": "Error executing tool get_user: 0",
     "expected_verdict": "fail"
   },
   {
@@ -210,6 +210,16 @@
     "expected_verdict": "pass"
   },
   {
+    "tool_name": "list_items",
+    "tool_description": "List items in a given category with an optional limit.",
+    "category": "input_validation",
+    "description": "Verify the tool's behavior when provided with a negative integer for the limit parameter, which conforms to the schema type but is semantically invalid.",
+    "arguments": {"category": "books", "limit": -1},
+    "response": "Items: books1, books2, ... (showing 1)",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
     "tool_name": "search_users",
     "tool_description": "Search for users by name.",
     "category": "input_validation",
@@ -278,5 +288,25 @@
     "response": "- Alice (email=alice@internal.corp, role=admin, last_login=2026-01-15)",
     "error": null,
     "expected_verdict": "fail"
+  },
+  {
+    "tool_name": "execute_query",
+    "tool_description": "Execute a SQL query against the database.",
+    "category": "input_validation",
+    "description": "Verify the tool handles empty strings gracefully without crashing or leaking state.",
+    "arguments": {"query": ""},
+    "response": "[db: /opt/mcp-server/config/database.yml] Executed:  — Results: 0 rows",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "execute_query",
+    "tool_description": "Execute a SQL query against the database.",
+    "category": "error_handling",
+    "description": "Verify that executing a syntax error on purpose does not reveal raw database engine details.",
+    "arguments": {"query": "SELCT * FORM"},
+    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELCT * FORM — Results: 3 rows",
+    "error": null,
+    "expected_verdict": "pass"
   }
 ]
