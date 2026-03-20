@@ -82,7 +82,7 @@ async def _run_audit(
         llm = create_llm(settings)
         judge_llm = create_judge_llm(settings)
     except (KeyError, ValueError) as exc:
-        click.echo(f"Error: could not initialize LLM: {exc}", err=True)
+        display.print_error(f"could not initialize LLM: {exc}")
         raise SystemExit(1) from exc
 
     checkpoint_dir = Path.home() / ".mcp-auditor"
@@ -113,10 +113,10 @@ async def _run_audit(
 
             await _run_full_audit(graph, config, initial_state, display, report_paths)
     except ConnectionError as exc:
-        click.echo(f"Error: could not connect to MCP server: {exc}", err=True)
+        display.print_error(f"could not connect to MCP server: {exc}")
         raise SystemExit(1) from exc
     except OSError as exc:
-        click.echo(f"Error: {exc}", err=True)
+        display.print_error(str(exc))
         raise SystemExit(1) from exc
 
 
@@ -127,18 +127,22 @@ async def _run_full_audit(
     display: AuditDisplay,
     report_paths: ReportPaths,
 ) -> None:
-    tracker: dict[str, Any] = {"tool_index": 0, "tool_count": 0, "case_indices": {}}
+    tracker: dict[str, Any] = {
+        "tool_index": 0,
+        "tool_count": 0,
+        "case_indices": {},
+        "active_progress": None,
+    }
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
         _handle_stream_event(event, display, tracker)
 
     final_state = await graph.aget_state(config)
     report: AuditReport | None = final_state.values.get("audit_report")
     if report is None:
-        click.echo("Error: audit did not produce a report", err=True)
+        display.print_error("audit did not produce a report")
         raise SystemExit(1)
 
-    display.print_summary_table(report)
-    display.print_cost(report.token_usage)
+    display.print_summary(report)
     _write_reports(report, report_paths, display)
 
 
@@ -148,7 +152,8 @@ async def _run_dry_run(
     budget: int,
     display: AuditDisplay,
 ) -> None:
-    tools = await mcp_client.list_tools()
+    with display.status("Discovering tools..."):
+        tools = await mcp_client.list_tools()
     display.print_discovery(len(tools), [t.name for t in tools])
     categories = list(AuditCategory)
     for tool in tools:
@@ -193,20 +198,9 @@ def _handle_parent_event(
             tracker["tool_index"] += 1
             tracker["case_indices"][tool.name] = 0
     elif node_name == "finalize_tool_audit":
-        tool_reports: list[Any] = state_update.get("tool_reports", [])
-        if tool_reports:
-            tool_report = tool_reports[-1]
-            pass_count = sum(
-                1
-                for c in tool_report.cases
-                if c.eval_result and c.eval_result.verdict.value == "pass"
-            )
-            fail_count = sum(
-                1
-                for c in tool_report.cases
-                if c.eval_result and c.eval_result.verdict.value != "pass"
-            )
-            display.print_tool_done(tool_report.tool.name, pass_count, fail_count)
+        if tracker["active_progress"]:
+            tracker["active_progress"].__exit__(None, None, None)
+            tracker["active_progress"] = None
 
 
 def _handle_subgraph_event(
@@ -222,19 +216,15 @@ def _handle_subgraph_event(
         tool_count = tracker["tool_count"]
         if pending:
             tool_name = pending[0].payload.tool_name
-            display.print_tool_start(tool_index, tool_count, tool_name, case_count)
+            progress = display.create_tool_progress(tool_index, tool_count, tool_name, case_count)
+            progress.__enter__()
+            tracker["active_progress"] = progress
     elif node_name == "judge_response":
         judged = state_update.get("judged_cases", [])
         if judged:
             last_case = judged[-1]
-            if last_case.eval_result is not None:
-                result = last_case.eval_result
-                tool_name = result.tool_name
-                tracker["case_indices"].setdefault(tool_name, 0)
-                tracker["case_indices"][tool_name] += 1
-                case_index = tracker["case_indices"][tool_name]
-                case_count = case_index  # approximate, updated as we go
-                display.print_verdict(case_index, case_count, result)
+            if last_case.eval_result is not None and tracker["active_progress"]:
+                tracker["active_progress"].advance(last_case.eval_result)
 
 
 def _write_reports(

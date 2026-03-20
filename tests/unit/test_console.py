@@ -2,7 +2,7 @@ from io import StringIO
 
 from rich.console import Console
 
-from mcp_auditor.console import AuditDisplay
+from mcp_auditor.console import AuditDisplay, format_failure_line, format_tool_summary
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
@@ -16,6 +16,49 @@ from mcp_auditor.domain.models import (
     ToolReport,
 )
 
+# --- Pure function tests ---
+
+
+def test_format_failure_line_includes_category_severity_justification():
+    result = _a_fail_result(
+        "get_user", AuditCategory.INJECTION, Severity.HIGH, "SQL injection via user_id"
+    )
+
+    line = format_failure_line(result)
+
+    assert "injection" in line
+    assert "high" in line
+    assert "SQL injection via user_id" in line
+
+
+def test_format_tool_summary_all_passed():
+    summary = format_tool_summary(fail_count=0, pass_count=5, failures=[])
+
+    assert "passed" in summary.lower()
+
+
+def test_format_tool_summary_with_failures():
+    failures = [
+        _a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "SQL injection"),
+        _a_fail_result("get_user", AuditCategory.INPUT_VALIDATION, Severity.MEDIUM, "Negative ID"),
+    ]
+
+    summary = format_tool_summary(fail_count=2, pass_count=3, failures=failures)
+
+    assert "2" in summary
+    assert "high" in summary.lower()
+    assert "medium" in summary.lower()
+
+
+def test_format_tool_summary_zero_cases():
+    summary = format_tool_summary(fail_count=0, pass_count=0, failures=[])
+
+    # Should not crash, should produce some reasonable output
+    assert isinstance(summary, str)
+
+
+# --- AuditDisplay tests ---
+
 
 def test_header_contains_target():
     display, buffer = _make_display()
@@ -23,40 +66,6 @@ def test_header_contains_target():
     display.print_header("python server.py")
 
     assert "python server.py" in buffer.getvalue()
-
-
-def test_verdict_fail_shows_severity():
-    display, buffer = _make_display()
-    result = EvalResult(
-        tool_name="get_user",
-        category=AuditCategory.INJECTION,
-        payload={},
-        verdict=EvalVerdict.FAIL,
-        justification="unsafe",
-        severity=Severity.HIGH,
-    )
-
-    display.print_verdict(1, 5, result)
-
-    output = buffer.getvalue()
-    assert "FAIL" in output
-    assert "high" in output
-
-
-def test_verdict_pass_displayed():
-    display, buffer = _make_display()
-    result = EvalResult(
-        tool_name="get_user",
-        category=AuditCategory.INJECTION,
-        payload={},
-        verdict=EvalVerdict.PASS,
-        justification="safe",
-        severity=Severity.LOW,
-    )
-
-    display.print_verdict(1, 5, result)
-
-    assert "PASS" in buffer.getvalue()
 
 
 def test_discovery_shows_count_and_names():
@@ -71,15 +80,17 @@ def test_discovery_shows_count_and_names():
     assert "c" in output
 
 
-def test_summary_table_has_tool_names():
+def test_summary_contains_score_and_tools():
     report = _a_report_with_two_tools()
     display, buffer = _make_display()
 
-    display.print_summary_table(report)
+    display.print_summary(report)
 
     output = buffer.getvalue()
     assert "get_user" in output
     assert "list_items" in output
+    assert "100" in output  # input tokens
+    assert "50" in output  # output tokens
 
 
 def test_dry_run_shows_arguments():
@@ -106,10 +117,45 @@ def test_dry_run_shows_arguments():
     assert "Empty input" in output
 
 
+def test_error_message_displayed():
+    display, buffer = _make_display()
+
+    display.print_error("connection failed")
+
+    assert "connection failed" in buffer.getvalue()
+
+
+def test_report_path_displayed():
+    display, buffer = _make_display()
+
+    display.print_report_path("report.json")
+
+    assert "report.json" in buffer.getvalue()
+
+
+# --- Helpers ---
+
+
 def _make_display() -> tuple[AuditDisplay, StringIO]:
     buffer = StringIO()
     console = Console(file=buffer, force_terminal=True)
     return AuditDisplay(console=console), buffer
+
+
+def _a_fail_result(
+    tool_name: str,
+    category: AuditCategory,
+    severity: Severity,
+    justification: str,
+) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=category,
+        payload={},
+        verdict=EvalVerdict.FAIL,
+        justification=justification,
+        severity=severity,
+    )
 
 
 def _a_report_with_two_tools() -> AuditReport:
