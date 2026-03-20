@@ -71,7 +71,7 @@ HONEYPOTS = [
 
 DEFAULT_RUNS = 3
 DEFAULT_BUDGET = 10
-DEFAULT_REPORT_PATH = "evals/eval_report.json"
+DEFAULT_REPORT_PATH = "output/eval_report.json"
 
 THRESHOLDS: dict[str, float] = {
     "recall": 0.80,
@@ -93,6 +93,7 @@ def main() -> None:
     result = asyncio.run(run_evals(args.runs, args.budget))
 
     report_path = Path(args.report)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(result.report.model_dump_json(indent=2))
     export_judged_cases(result.runs, result.ground_truth, report_path)
     _print_summary(result.report, args.report)

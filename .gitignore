@@ -37,9 +37,4 @@ pytest-of-*/
 
 # mcp-auditor
 audit_checkpoints.db
-evals/eval_report.json
-evals/judged_cases.jsonl
-evals/judge_eval_report.json
-report.json
-report.md
-results/
+output/

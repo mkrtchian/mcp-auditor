@@ -29,7 +29,7 @@ from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.prompts import build_judge_prompt
 
 FIXTURES_PATH = Path(__file__).resolve().parent / "fixtures" / "judge_cases.json"
-DEFAULT_REPORT_PATH = "evals/judge_eval_report.json"
+DEFAULT_REPORT_PATH = "output/judge_eval_report.json"
 F1_THRESHOLD = 0.90
 
 LoadedCase = tuple[ToolDefinition, TestCase, EvalVerdict, AuditCategory]
@@ -48,7 +48,9 @@ class JudgedCase:
 
 def main() -> None:
     report = asyncio.run(run_judge_eval())
-    Path(DEFAULT_REPORT_PATH).write_text(json.dumps(report, indent=2))
+    output_path = Path(DEFAULT_REPORT_PATH)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(report, indent=2))
     _print_summary(report)
 
 

@@ -74,8 +74,8 @@ graph LR
 mkdir -p /tmp/sandbox
 uv run mcp-auditor run \
   --budget 10 \
-  --output results/filesystem-audit.json \
-  --markdown results/filesystem-audit.md \
+  --output output/filesystem-audit.json \
+  --markdown output/filesystem-audit.md \
   -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 ```
 
