@@ -308,5 +308,15 @@
     "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELCT * FORM — Results: 3 rows",
     "error": null,
     "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "delete_record",
+    "tool_description": "Delete a record by ID.",
+    "category": "error_handling",
+    "description": "Confirm flag set to false but deletion succeeds anyway",
+    "arguments": {"record_id": 42, "confirm": false},
+    "response": "Record 42 deleted successfully",
+    "error": null,
+    "expected_verdict": "pass"
   }
 ]
