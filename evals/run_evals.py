@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from evals.export import export_judged_cases
 from evals.ground_truth import HONEYPOT_GROUND_TRUTH, SUBTLE_GROUND_TRUTH, GroundTruth
 from evals.metrics import (
     EvalMetrics,
@@ -36,6 +37,13 @@ class HoneypotConfig:
     name: str
     command: str
     args: list[str]
+    ground_truth: GroundTruth
+
+
+@dataclass(frozen=True)
+class EvalRunResult:
+    report: EvalReport
+    runs: list[tuple[int, AuditReport]]
     ground_truth: GroundTruth
 
 
@@ -75,22 +83,28 @@ def main() -> None:
     parser.add_argument("--report", type=str, default=DEFAULT_REPORT_PATH)
     args = parser.parse_args()
 
-    report = asyncio.run(run_evals(args.runs, args.budget))
+    result = asyncio.run(run_evals(args.runs, args.budget))
 
-    Path(args.report).write_text(report.model_dump_json(indent=2))
-    _print_summary(report, args.report)
+    report_path = Path(args.report)
+    report_path.write_text(result.report.model_dump_json(indent=2))
+    export_judged_cases(result.runs, result.ground_truth, report_path)
+    _print_summary(result.report, args.report)
 
-    if report.passed:
+    if result.report.passed:
         print("\nAll thresholds met.")
     else:
         print("\nSome thresholds not met.")
         raise SystemExit(1)
 
 
-async def run_evals(num_runs: int, budget: int) -> EvalReport:
+async def run_evals(num_runs: int, budget: int) -> EvalRunResult:
     settings = load_settings()
     run_details: list[RunDetail] = []
     all_verdict_maps: list[VerdictMap] = []
+    accumulated_runs: list[tuple[int, AuditReport]] = []
+    merged_ground_truth: GroundTruth = {}
+    for honeypot in HONEYPOTS:
+        merged_ground_truth.update(honeypot.ground_truth)
 
     for i in range(num_runs):
         print(f"\nRunning eval {i + 1}/{num_runs}...")
@@ -102,6 +116,7 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
             continue
 
         all_verdict_maps.append(verdicts)
+        accumulated_runs.append((i, audit_report))
 
         run_detail = _build_run_detail(i, verdicts, audit_report, ground_truth)
         _post_langsmith_feedback(
@@ -114,7 +129,12 @@ async def run_evals(num_runs: int, budget: int) -> EvalReport:
         print("All runs failed. Cannot produce eval report.")
         raise SystemExit(1)
 
-    return _assemble_report(num_runs, budget, run_details, all_verdict_maps)
+    report = _assemble_report(num_runs, budget, run_details, all_verdict_maps)
+    return EvalRunResult(
+        report=report,
+        runs=accumulated_runs,
+        ground_truth=merged_ground_truth,
+    )
 
 
 async def _run_one_eval(
