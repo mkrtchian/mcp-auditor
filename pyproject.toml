@@ -5,6 +5,18 @@ description = "Agentic QA & fuzzing CLI for MCP servers"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.13"
+authors = [{ name = "Roman Mkrtchian", email = "mkrtchia@gmail.com" }]
+keywords = ["mcp", "security", "fuzzing", "audit", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Testing",
+]
+
 dependencies = [
     "langgraph>=1.0",
     "langchain-anthropic>=1.0",
@@ -17,6 +29,11 @@ dependencies = [
     "rich>=13.0",
     "pydantic-settings>=2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/mkrtchian/mcp-auditor"
+Repository = "https://github.com/mkrtchian/mcp-auditor"
+Issues = "https://github.com/mkrtchian/mcp-auditor/issues"
 
 [dependency-groups]
 dev = [
