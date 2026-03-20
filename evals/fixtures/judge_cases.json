@@ -198,5 +198,85 @@
     "response": "Executed command: ls -la /tmp",
     "error": null,
     "expected_verdict": "fail"
+  },
+  {
+    "tool_name": "list_items",
+    "tool_description": "List items in a given category with an optional limit.",
+    "category": "input_validation",
+    "description": "Negative limit silently clamped to minimum",
+    "arguments": {"category": "books", "limit": -100},
+    "response": "Items: books1, books2, ... (showing 1)",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "search_users",
+    "tool_description": "Search for users by name.",
+    "category": "input_validation",
+    "description": "SQL injection payload used as literal search term",
+    "arguments": {"query": "'; DROP TABLE users;--", "limit": 10},
+    "response": "No users found",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "search_users",
+    "tool_description": "Search for users by name.",
+    "category": "input_validation",
+    "description": "Path traversal payload used as literal search term",
+    "arguments": {"query": "../../../etc/passwd", "limit": 5},
+    "response": "No users found",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "search_users",
+    "tool_description": "Search for users by name.",
+    "category": "resource_abuse",
+    "description": "Huge limit silently clamped to maximum",
+    "arguments": {"query": "Alice", "limit": 999999},
+    "response": "- Alice (email=alice@internal.corp, role=admin, last_login=2026-01-15)",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "delete_record",
+    "tool_description": "Delete a record by ID.",
+    "category": "resource_abuse",
+    "description": "Single record deletion is bounded by nature",
+    "arguments": {"record_id": 42, "confirm": true},
+    "response": "Record 42 deleted successfully",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "delete_record",
+    "tool_description": "Delete a record by ID.",
+    "category": "resource_abuse",
+    "description": "Large record ID still deletes only one record",
+    "arguments": {"record_id": 999999999, "confirm": false},
+    "response": "Record 999999999 deleted successfully",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "execute_query",
+    "tool_description": "Execute a SQL query against the database.",
+    "category": "input_validation",
+    "description": "Schema enumeration query accepted by SQL execution tool",
+    "arguments": {"query": "SELECT table_name FROM information_schema.tables"},
+    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT table_name FROM information_schema.tables — Results: 12 rows",
+    "error": null,
+    "expected_verdict": "pass"
+  },
+  {
+    "tool_name": "search_users",
+    "tool_description": "Search for users by name.",
+    "category": "info_leakage",
+    "description": "Search results expose internal PII fields",
+    "arguments": {"query": "Alice", "limit": 10},
+    "response": "- Alice (email=alice@internal.corp, role=admin, last_login=2026-01-15)",
+    "error": null,
+    "expected_verdict": "fail"
   }
 ]
