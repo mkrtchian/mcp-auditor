@@ -9,6 +9,8 @@ uv run pytest tests/integration  # Integration tests only
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)
+uv run python -m evals.run_evals       # E2E evals (honeypot servers, requires API key)
+uv run python -m evals.run_judge_eval  # Judge isolation eval (requires API key)
 ```
 
 ## Coding standards

@@ -10,8 +10,24 @@ build/
 .pyright/
 
 # IDE
-.vscode/
-.idea/
+.vscode
+.idea
+
+# Claude Code sandbox artifacts
+.claude/agents
+.claude/commands
+.claude/settings.json
+
+# Shell/tool config (sandbox artifacts)
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.gitconfig
+.gitmodules
+.ripgreprc
+.mcp.json
 
 # Environment
 .env
