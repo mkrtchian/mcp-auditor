@@ -2,7 +2,7 @@
 import asyncio
 import hashlib
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +29,22 @@ from mcp_auditor.graph.prompts import build_attack_generation_prompt
 class ReportPaths:
     json: str | None = None
     markdown: str | None = None
+
+
+@dataclass(frozen=True)
+class AuditOptions:
+    budget: int
+    report_paths: ReportPaths
+    resume: bool
+    dry_run: bool
+
+
+@dataclass
+class StreamTracker:
+    tool_index: int = 0
+    tool_count: int = 0
+    case_indices: dict[str, int] = field(default_factory=lambda: {})
+    active_progress: Any = None
 
 
 @click.group()
@@ -61,17 +77,16 @@ def run(
         mcp-auditor run -- python my_server.py
         mcp-auditor run --budget 5 -- npx some-mcp-server
     """
-    report_paths = ReportPaths(json=output, markdown=markdown)
-    asyncio.run(_run_audit(target, budget, report_paths, resume, dry_run))
+    options = AuditOptions(
+        budget=budget,
+        report_paths=ReportPaths(json=output, markdown=markdown),
+        resume=resume,
+        dry_run=dry_run,
+    )
+    asyncio.run(_run_audit(target, options))
 
 
-async def _run_audit(
-    target: tuple[str, ...],
-    budget: int,
-    report_paths: ReportPaths,
-    resume: bool,
-    dry_run: bool,
-) -> None:
+async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
     command, args = target[0], list(target[1:])
     target_str = " ".join(target)
     display = AuditDisplay()
@@ -94,24 +109,28 @@ async def _run_audit(
             AsyncSqliteSaver.from_conn_string(db_path) as checkpointer,
             StdioMCPClient.connect(command, args) as mcp_client,
         ):
-            if dry_run:
-                await _run_dry_run(llm, mcp_client, budget, display)
+            if options.dry_run:
+                await _run_dry_run(llm, mcp_client, options.budget, display)
                 return
 
             graph = build_graph(llm, mcp_client, judge_llm=judge_llm, checkpointer=checkpointer)
-            thread_id = _compute_thread_id(command, args) if resume else uuid.uuid4().hex[:16]
-            initial_state = None if resume else {"target": target_str, "test_budget": budget}
+            thread_id = (
+                _compute_thread_id(command, args) if options.resume else uuid.uuid4().hex[:16]
+            )
+            initial_state = (
+                None if options.resume else {"target": target_str, "test_budget": options.budget}
+            )
             config: dict[str, Any] = {
                 "configurable": {"thread_id": thread_id},
                 "metadata": {
                     "target": target_str,
-                    "budget": budget,
+                    "budget": options.budget,
                     "provider": settings.provider,
                     "model": settings.resolve_model(),
                 },
             }
 
-            await _run_full_audit(graph, config, initial_state, display, report_paths)
+            await _run_full_audit(graph, config, initial_state, display, options.report_paths)
     except ConnectionError as exc:
         display.print_error(f"could not connect to MCP server: {exc}")
         raise SystemExit(1) from exc
@@ -127,12 +146,7 @@ async def _run_full_audit(
     display: AuditDisplay,
     report_paths: ReportPaths,
 ) -> None:
-    tracker: dict[str, Any] = {
-        "tool_index": 0,
-        "tool_count": 0,
-        "case_indices": {},
-        "active_progress": None,
-    }
+    tracker = StreamTracker()
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
         _handle_stream_event(event, display, tracker)
 
@@ -170,7 +184,7 @@ def _compute_thread_id(command: str, args: list[str]) -> str:
 def _handle_stream_event(
     event: tuple[tuple[str, ...], dict[str, Any]],
     display: AuditDisplay,
-    tracker: dict[str, Any],
+    tracker: StreamTracker,
 ) -> None:
     namespace, updates = event
     for node_name, state_update in updates.items():
@@ -186,45 +200,44 @@ def _handle_parent_event(
     node_name: str,
     state_update: dict[str, Any],
     display: AuditDisplay,
-    tracker: dict[str, Any],
+    tracker: StreamTracker,
 ) -> None:
     if node_name == "discover_tools":
         tools: list[ToolDefinition] = state_update.get("discovered_tools", [])
-        tracker["tool_count"] = len(tools)
+        tracker.tool_count = len(tools)
         display.print_discovery(len(tools), [t.name for t in tools])
     elif node_name == "prepare_tool":
         tool: ToolDefinition | None = state_update.get("current_tool")
         if tool:
-            tracker["tool_index"] += 1
-            tracker["case_indices"][tool.name] = 0
+            tracker.tool_index += 1
+            tracker.case_indices[tool.name] = 0
     elif node_name == "finalize_tool_audit":
-        if tracker["active_progress"]:
-            tracker["active_progress"].__exit__(None, None, None)
-            tracker["active_progress"] = None
+        if tracker.active_progress:
+            tracker.active_progress.__exit__(None, None, None)
+            tracker.active_progress = None
 
 
 def _handle_subgraph_event(
     node_name: str,
     state_update: dict[str, Any],
     display: AuditDisplay,
-    tracker: dict[str, Any],
+    tracker: StreamTracker,
 ) -> None:
     if node_name == "generate_test_cases":
         pending = state_update.get("pending_cases", [])
-        case_count = len(pending)
-        tool_index = tracker["tool_index"]
-        tool_count = tracker["tool_count"]
         if pending:
             tool_name = pending[0].payload.tool_name
-            progress = display.create_tool_progress(tool_index, tool_count, tool_name, case_count)
+            progress = display.create_tool_progress(
+                tracker.tool_index, tracker.tool_count, tool_name, len(pending)
+            )
             progress.__enter__()
-            tracker["active_progress"] = progress
+            tracker.active_progress = progress
     elif node_name == "judge_response":
         judged = state_update.get("judged_cases", [])
         if judged:
             last_case = judged[-1]
-            if last_case.eval_result is not None and tracker["active_progress"]:
-                tracker["active_progress"].advance(last_case.eval_result)
+            if last_case.eval_result is not None and tracker.active_progress:
+                tracker.active_progress.advance(last_case.eval_result)
 
 
 def _write_reports(

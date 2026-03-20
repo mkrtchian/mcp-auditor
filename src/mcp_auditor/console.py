@@ -13,8 +13,6 @@ from rich.table import Table
 
 from mcp_auditor.domain.models import AuditPayload, AuditReport, EvalResult, EvalVerdict, TokenUsage
 
-# --- Pure functions (no Rich dependency) ---
-
 
 def format_failure_line(result: EvalResult) -> str:
     return f"  \u2717 {result.category} ({result.severity}): {result.justification}"
@@ -26,9 +24,6 @@ def format_tool_summary(fail_count: int, pass_count: int, failures: list[EvalRes
     severity_counts = Counter(f.severity.value for f in failures)
     breakdown = ", ".join(f"{count} {sev}" for sev, count in severity_counts.items())
     return f"\u2717 {fail_count} failed ({breakdown})"
-
-
-# --- ToolProgress (thin Rich wrapper) ---
 
 
 class ToolProgress:
@@ -77,9 +72,6 @@ class ToolProgress:
             self._pass_count += 1
         if self._task_id is not None:
             self._progress.advance(self._task_id)
-
-
-# --- AuditDisplay ---
 
 
 class AuditDisplay:
