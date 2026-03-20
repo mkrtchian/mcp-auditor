@@ -24,6 +24,7 @@ uv sync
 export GOOGLE_API_KEY=your-key-here
 
 # Audit an MCP server
+mkdir -p /tmp/sandbox
 uv run mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 ```
 
@@ -68,6 +69,7 @@ graph LR
 ## Example: auditing a real server
 
 ```bash
+mkdir -p /tmp/sandbox
 uv run mcp-auditor run \
   --budget 10 \
   --output results/filesystem-audit.json \
@@ -77,7 +79,7 @@ uv run mcp-auditor run \
 
 This audits `@modelcontextprotocol/server-filesystem` -- the official MCP reference server for filesystem operations. The server exposes 14 tools (read_file, write_file, search_files, etc.), each sandboxed to `/tmp/sandbox`.
 
-Results: **149 test cases, 13 findings** (5 low, 8 medium). All findings were information leakage -- the server exposes internal filesystem paths in error messages:
+Results: **140 test cases, 11 findings** (2 low, 9 medium). All findings were information leakage -- the server exposes internal filesystem paths in error messages:
 
 ### read_file -- info_leakage (low)
 
