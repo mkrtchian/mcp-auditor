@@ -71,7 +71,7 @@ def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
 @click.group()
 @click.version_option()
 def cli() -> None:
-    """Agentic QA & fuzzing for MCP servers."""
+    """Agentic security testing for MCP servers."""
 
 
 @cli.command()
