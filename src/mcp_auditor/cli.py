@@ -1,4 +1,8 @@
 # pyright: reportUnknownMemberType=false, reportMissingTypeStubs=false, reportArgumentType=false, reportUnknownArgumentType=false
+import warnings
+
+warnings.filterwarnings("ignore", message="Core Pydantic V1", category=UserWarning)
+
 import asyncio
 import hashlib
 import logging
