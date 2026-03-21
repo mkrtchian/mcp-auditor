@@ -186,7 +186,8 @@ def _format_fail_cell(judged: list[TestCase], fails: int) -> Text | str:
         for c in judged
         if c.eval_result is not None and c.eval_result.verdict == EvalVerdict.FAIL
     )
-    breakdown_parts = [f"{count} {sev.value}" for sev, count in severity_counts.items()]
+    sorted_severities = sorted(severity_counts.keys(), reverse=True)
+    breakdown_parts = [f"{severity_counts[sev]} {sev.value}" for sev in sorted_severities]
     breakdown = ", ".join(breakdown_parts)
     highest = max(severity_counts.keys())
     style = _severity_style(highest)
