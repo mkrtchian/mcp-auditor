@@ -12,7 +12,9 @@ Agentic QA & fuzzing CLI for MCP servers.
 
 MCP servers are proliferating -- every AI assistant, IDE plugin, and agent framework is adopting the protocol. These servers expose tools that LLM agents call with untrusted input, yet there is no automated way to test whether a server handles adversarial inputs safely. Manual testing doesn't scale, and generic fuzzers don't understand the MCP protocol or its specific threat model.
 
-`mcp-auditor` connects to any MCP server, discovers its tools, and systematically probes them for security issues -- input validation failures, injection vulnerabilities, information leakage, error handling gaps, and resource abuse. It is a security-oriented fuzzer, not a functional test suite.
+MCP security tools today focus on two approaches: **static analysis** of tool descriptions (detecting poisoning patterns before any call is made) and **runtime proxies** that intercept traffic in production. `mcp-auditor` takes a third approach: **dynamic adversarial testing** -- it connects to a live server, generates adversarial inputs, executes them, and judges whether the responses reveal vulnerabilities. These approaches are complementary, like SAST and DAST in web security.
+
+`mcp-auditor` discovers tools, systematically probes them for security issues -- input validation failures, injection vulnerabilities, information leakage, error handling gaps, and resource abuse -- and produces structured verdicts with justifications. It is a security-oriented fuzzer, not a functional test suite.
 
 ## Quick start
 
