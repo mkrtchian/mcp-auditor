@@ -6,7 +6,7 @@ from mcp_auditor.domain.models import AuditReport, EvalResult, EvalVerdict, Tool
 
 def render_summary(report: AuditReport) -> str:
     tool_count = len(report.tool_reports)
-    findings = _collect_findings(report)
+    findings = report.findings
     finding_count = len(findings)
     if finding_count == 0:
         return f"{report.target}: {tool_count} tools, no findings"
@@ -32,7 +32,7 @@ def render_markdown(report: AuditReport) -> str:
 def _render_summary_section(report: AuditReport) -> str:
     tool_count = len(report.tool_reports)
     total_cases = sum(len(tr.cases) for tr in report.tool_reports)
-    findings = _collect_findings(report)
+    findings = report.findings
     finding_count = len(findings)
     lines = [
         "## Summary\n",
@@ -68,15 +68,6 @@ def _render_result_section(result: EvalResult) -> str:
         f"**Justification**: {result.justification}",
     ]
     return "\n".join(lines)
-
-
-def _collect_findings(report: AuditReport) -> list[EvalResult]:
-    return [
-        case.eval_result
-        for tr in report.tool_reports
-        for case in tr.cases
-        if case.eval_result is not None and case.eval_result.verdict == EvalVerdict.FAIL
-    ]
 
 
 def _severity_breakdown(findings: list[EvalResult]) -> str:

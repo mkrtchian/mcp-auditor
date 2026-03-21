@@ -209,6 +209,7 @@ async def _run_full_audit(
         raise SystemExit(1)
 
     display.print_summary(report)
+    display.print_findings_recap(report)
     _write_reports(report, report_paths, display)
 
     if ci.enabled and report.has_findings_at_or_above(ci.severity_threshold):

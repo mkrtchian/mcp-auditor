@@ -5,13 +5,23 @@ from collections import Counter
 from types import TracebackType
 from typing import Self
 
+from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TaskID, TextColumn
 from rich.status import Status
 from rich.table import Table
+from rich.text import Text
 
-from mcp_auditor.domain.models import AuditPayload, AuditReport, EvalResult, EvalVerdict, TokenUsage
+from mcp_auditor.domain.models import (
+    AuditPayload,
+    AuditReport,
+    EvalResult,
+    EvalVerdict,
+    Severity,
+    TestCase,
+    TokenUsage,
+)
 from mcp_auditor.domain.rendering import render_summary
 
 
@@ -31,8 +41,12 @@ class AuditDisplay:
         self._console.print(Panel(target_command, title="MCP Auditor"))
 
     def print_discovery(self, tool_count: int, tool_names: list[str]) -> None:
-        names = ", ".join(tool_names)
-        self._console.print(f"Discovered {tool_count} tools: {names}")
+        if tool_count > 6:
+            self._console.print(f"Discovered {tool_count} tools:")
+            self._console.print(Columns(tool_names))
+        else:
+            names = ", ".join(tool_names)
+            self._console.print(f"Discovered {tool_count} tools: {names}")
 
     def create_tool_progress(
         self,
@@ -51,11 +65,40 @@ class AuditDisplay:
             self._console.print(render_summary(report))
             return
         table, total_pass, total_judged = _build_summary_table(report)
-        percentage = round(total_pass / total_judged * 100) if total_judged > 0 else 0
-        score_line = f"Score: {total_pass}/{total_judged} ({percentage}%)"
+        score_line = _format_score_line(total_pass, total_judged)
         token_line = _format_token_usage(report.token_usage)
         panel = Panel(table, title="Results", subtitle=f"{score_line}  |  {token_line}")
         self._console.print(panel)
+
+    def print_findings_recap(self, report: AuditReport) -> None:
+        findings = sorted(report.findings, key=lambda f: f.severity, reverse=True)
+        if not findings:
+            return
+        if self._ci_mode:
+            self._print_findings_recap_ci(findings)
+        else:
+            self._print_findings_recap_rich(findings)
+
+    def _print_findings_recap_ci(self, findings: list[EvalResult]) -> None:
+        self._console.print("Findings:")
+        for f in findings:
+            justification = _truncate(f.justification, 80)
+            self._console.print(
+                f"  {f.severity.value.upper()}: {f.tool_name} > {f.category} \u2014 {justification}"
+            )
+
+    def _print_findings_recap_rich(self, findings: list[EvalResult]) -> None:
+        lines: list[Text] = []
+        current_severity: Severity | None = None
+        for f in findings:
+            if f.severity != current_severity:
+                current_severity = f.severity
+                label = Text(f"\n  {f.severity.value.upper()}", style=_severity_style(f.severity))
+                lines.append(label)
+            justification = _truncate(f.justification, 80)
+            lines.append(Text(f"    {f.tool_name} > {f.category} \u2014 {justification}"))
+        group = Text("\n").join(lines)
+        self._console.print(Panel(group, title="Findings"))
 
     def print_dry_run_payloads(self, tool_name: str, cases: list[AuditPayload]) -> None:
         table = Table(title=f"Dry Run: {tool_name}")
@@ -81,12 +124,42 @@ class AuditDisplay:
         return self._console.status(message)
 
 
+def _severity_style(severity: Severity) -> str:
+    return {
+        Severity.CRITICAL: "bold red",
+        Severity.HIGH: "red",
+        Severity.MEDIUM: "yellow",
+        Severity.LOW: "dim",
+    }[severity]
+
+
+def _format_score_line(total_pass: int, total_judged: int) -> str:
+    percentage = round(total_pass / total_judged * 100) if total_judged > 0 else 0
+    bar_width = 20
+    filled = round(bar_width * percentage / 100)
+    empty = bar_width - filled
+    bar = "\u2588" * filled + "\u2591" * empty
+    if percentage >= 80:
+        color = "green"
+    elif percentage >= 60:
+        color = "yellow"
+    else:
+        color = "red"
+    return f"[{color}]Score: {total_pass}/{total_judged} {bar} {percentage}%[/{color}]"
+
+
+def _truncate(text: str, max_length: int) -> str:
+    if len(text) <= max_length:
+        return text
+    return text[: max_length - 1] + "\u2026"
+
+
 def _build_summary_table(report: AuditReport) -> tuple[Table, int, int]:
     table = Table()
     table.add_column("Tool")
     table.add_column("Tests", justify="right")
     table.add_column("Pass", justify="right", style="green")
-    table.add_column("Fail", justify="right", style="red")
+    table.add_column("Fail", justify="right")
 
     total_pass = 0
     total_judged = 0
@@ -99,9 +172,26 @@ def _build_summary_table(report: AuditReport) -> tuple[Table, int, int]:
         fails = total - passes
         total_pass += passes
         total_judged += total
-        table.add_row(tool_report.tool.name, str(total), str(passes), str(fails))
+        fail_cell = _format_fail_cell(judged, fails)
+        table.add_row(tool_report.tool.name, str(total), str(passes), fail_cell)
 
     return table, total_pass, total_judged
+
+
+def _format_fail_cell(judged: list[TestCase], fails: int) -> Text | str:
+    if fails == 0:
+        return "0"
+    severity_counts: Counter[Severity] = Counter(
+        c.eval_result.severity
+        for c in judged
+        if c.eval_result is not None and c.eval_result.verdict == EvalVerdict.FAIL
+    )
+    breakdown_parts = [f"{count} {sev.value}" for sev, count in severity_counts.items()]
+    breakdown = ", ".join(breakdown_parts)
+    highest = max(severity_counts.keys())
+    style = _severity_style(highest)
+    text = Text(f"{fails} ({breakdown})", style=style)
+    return text
 
 
 def _format_token_usage(usage: TokenUsage) -> str:

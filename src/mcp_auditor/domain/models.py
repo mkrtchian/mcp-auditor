@@ -112,10 +112,14 @@ class AuditReport(BaseModel):
     tool_reports: list[ToolReport]
     token_usage: TokenUsage
 
-    def has_findings_at_or_above(self, threshold: Severity) -> bool:
-        return any(
-            case.eval_result.severity >= threshold
+    @property
+    def findings(self) -> list[EvalResult]:
+        return [
+            case.eval_result
             for tr in self.tool_reports
             for case in tr.cases
             if case.eval_result is not None and case.eval_result.verdict == EvalVerdict.FAIL
-        )
+        ]
+
+    def has_findings_at_or_above(self, threshold: Severity) -> bool:
+        return any(f.severity >= threshold for f in self.findings)
