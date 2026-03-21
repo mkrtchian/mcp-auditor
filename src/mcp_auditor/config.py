@@ -1,8 +1,6 @@
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
-load_dotenv()
-
 
 class Settings(BaseSettings):
     model_config = {"env_prefix": "MCP_AUDITOR_"}
@@ -34,4 +32,5 @@ def _default_model(provider: str) -> str:
 
 
 def load_settings() -> Settings:
+    load_dotenv()
     return Settings()
