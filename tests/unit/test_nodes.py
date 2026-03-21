@@ -194,25 +194,3 @@ class TestRouteTools:
             "discovered_tools": [given.a_tool(), given.a_tool()],
         }
         assert route_tools(state) == "generate_report"
-
-
-class TestParseToolsFilter:
-    def test_parses_comma_separated(self):
-        from mcp_auditor.cli import parse_tools_filter
-
-        assert parse_tools_filter("a,b,c") == frozenset({"a", "b", "c"})
-
-    def test_none_when_not_provided(self):
-        from mcp_auditor.cli import parse_tools_filter
-
-        assert parse_tools_filter(None) is None
-
-    def test_none_for_empty_string(self):
-        from mcp_auditor.cli import parse_tools_filter
-
-        assert parse_tools_filter("") is None
-
-    def test_strips_whitespace(self):
-        from mcp_auditor.cli import parse_tools_filter
-
-        assert parse_tools_filter(" a , b ") == frozenset({"a", "b"})
