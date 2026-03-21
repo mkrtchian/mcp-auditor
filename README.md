@@ -160,7 +160,7 @@ mcp-auditor run --ci --severity-threshold high -- python my_server.py
 
 ## Contributing
 
-Contributions welcome -- [open an issue](https://github.com/mkrtchian/mcp-auditor/issues) to discuss before submitting a PR.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, commands, and conventions.
 
 ## License
 
