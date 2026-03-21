@@ -1,9 +1,9 @@
 Output demo.gif
 
 Set Shell "bash"
-Set FontSize 22
+Set FontSize 19
 Set Width 1200
-Set Height 800
+Set Height 600
 Set Padding 20
 Set TypingSpeed 80ms
 Set PlaybackSpeed 4
