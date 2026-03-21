@@ -12,13 +12,22 @@ from rich.status import Status
 from rich.table import Table
 
 from mcp_auditor.domain.models import AuditPayload, AuditReport, EvalResult, EvalVerdict, TokenUsage
+from mcp_auditor.domain.rendering import render_summary
 
 
 class AuditDisplay:
-    def __init__(self, console: Console | None = None) -> None:
-        self._console = console or Console()
+    def __init__(self, console: Console | None = None, ci_mode: bool = False) -> None:
+        if console:
+            self._console = console
+        elif ci_mode:
+            self._console = Console(force_terminal=False, no_color=True)
+        else:
+            self._console = Console()
+        self._ci_mode = ci_mode
 
     def print_header(self, target_command: str) -> None:
+        if self._ci_mode:
+            return
         self._console.print(Panel(target_command, title="MCP Auditor"))
 
     def print_discovery(self, tool_count: int, tool_names: list[str]) -> None:
@@ -31,11 +40,16 @@ class AuditDisplay:
         tool_count: int,
         tool_name: str,
         case_count: int,
-    ) -> ToolProgress:
+    ) -> ToolProgress | CIProgress:
         label = f"[{tool_index}/{tool_count}] {tool_name}"
+        if self._ci_mode:
+            return CIProgress(self._console, label)
         return ToolProgress(self._console, label, case_count)
 
     def print_summary(self, report: AuditReport) -> None:
+        if self._ci_mode:
+            self._console.print(render_summary(report))
+            return
         table, total_pass, total_judged = _build_summary_table(report)
         percentage = round(total_pass / total_judged * 100) if total_judged > 0 else 0
         score_line = f"Score: {total_pass}/{total_judged} ({percentage}%)"
@@ -56,9 +70,14 @@ class AuditDisplay:
         self._console.print(f"Report written to: {path}")
 
     def print_error(self, message: str) -> None:
-        self._console.print(f"[red]Error: {message}[/red]")
+        if self._ci_mode:
+            self._console.print(f"Error: {message}")
+        else:
+            self._console.print(f"[red]Error: {message}[/red]")
 
-    def status(self, message: str) -> Status:
+    def status(self, message: str) -> Status | NullStatus:
+        if self._ci_mode:
+            return NullStatus()
         return self._console.status(message)
 
 
@@ -101,20 +120,70 @@ def format_tool_summary(fail_count: int, pass_count: int, failures: list[EvalRes
     return f"\u2717 {fail_count} failed ({breakdown})"
 
 
+class NullStatus:
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        pass
+
+
+class _ResultTracker:
+    def __init__(self) -> None:
+        self.fail_count = 0
+        self.pass_count = 0
+        self.failures: list[EvalResult] = []
+
+    def record(self, result: EvalResult) -> None:
+        if result.verdict == EvalVerdict.FAIL:
+            self.fail_count += 1
+            self.failures.append(result)
+        else:
+            self.pass_count += 1
+
+
+class CIProgress:
+    def __init__(self, console: Console, tool_label: str) -> None:
+        self._console = console
+        self._tool_label = tool_label
+        self._tracker = _ResultTracker()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        t = self._tracker
+        summary = format_tool_summary(t.fail_count, t.pass_count, t.failures)
+        self._console.print(f"{self._tool_label}: {summary}")
+        for failure in t.failures:
+            self._console.print(format_failure_line(failure))
+
+    def advance(self, result: EvalResult) -> None:
+        self._tracker.record(result)
+
+
 class ToolProgress:
     def __init__(self, console: Console, tool_label: str, case_count: int) -> None:
         self._console = console
         self._tool_label = tool_label
         self._case_count = case_count
+        self._tracker = _ResultTracker()
         self._progress = Progress(
             TextColumn("{task.description}"),
             BarColumn(),
             MofNCompleteColumn(),
             console=console,
         )
-        self._fail_count = 0
-        self._pass_count = 0
-        self._failures: list[EvalResult] = []
         self._task_id: TaskID | None = None
 
     def __enter__(self) -> Self:
@@ -134,16 +203,14 @@ class ToolProgress:
         if self._case_count == 0:
             return
         self._progress.__exit__(exc_type, exc_val, exc_tb)
-        summary = format_tool_summary(self._fail_count, self._pass_count, self._failures)
-        style = "green" if self._fail_count == 0 else "red"
+        t = self._tracker
+        summary = format_tool_summary(t.fail_count, t.pass_count, t.failures)
+        style = "green" if t.fail_count == 0 else "red"
         self._console.print(f"[{style}]{summary}[/{style}]")
 
     def advance(self, result: EvalResult) -> None:
+        self._tracker.record(result)
         if result.verdict == EvalVerdict.FAIL:
-            self._fail_count += 1
-            self._failures.append(result)
             self._progress.console.print(format_failure_line(result))
-        else:
-            self._pass_count += 1
         if self._task_id is not None:
             self._progress.advance(self._task_id)

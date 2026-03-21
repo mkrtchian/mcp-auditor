@@ -18,6 +18,7 @@ from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditReport,
+    Severity,
     TestCaseBatch,
     ToolDefinition,
 )
@@ -34,11 +35,18 @@ class ReportPaths:
 
 
 @dataclass(frozen=True)
+class CIOptions:
+    enabled: bool = False
+    severity_threshold: Severity = Severity.MEDIUM
+
+
+@dataclass(frozen=True)
 class AuditOptions:
     budget: int
     report_paths: ReportPaths
     resume: bool
     dry_run: bool
+    ci: CIOptions = CIOptions()
 
 
 @dataclass
@@ -61,6 +69,13 @@ def cli() -> None:
 @click.option("--markdown", "-m", type=str, default=None, help="Markdown output path.")
 @click.option("--resume", is_flag=True, default=False, help="Resume from last checkpoint.")
 @click.option("--dry-run", is_flag=True, default=False, help="Generate test cases without running.")
+@click.option("--ci", is_flag=True, default=False, help="CI mode: plain output, exit 1.")
+@click.option(
+    "--severity-threshold",
+    type=click.Choice([s.value for s in Severity], case_sensitive=False),
+    default=Severity.MEDIUM.value,
+    help="Minimum severity to trigger CI failure.",
+)
 def run(
     target: tuple[str, ...],
     budget: int,
@@ -68,6 +83,8 @@ def run(
     markdown: str | None,
     resume: bool,
     dry_run: bool,
+    ci: bool,
+    severity_threshold: str,
 ) -> None:
     """Audit an MCP server.
 
@@ -77,12 +94,14 @@ def run(
     Examples:
         mcp-auditor run -- python my_server.py
         mcp-auditor run --budget 5 -- npx some-mcp-server
+        mcp-auditor run --ci -- python my_server.py
     """
     options = AuditOptions(
         budget=budget,
         report_paths=ReportPaths(json=output, markdown=markdown),
         resume=resume,
         dry_run=dry_run,
+        ci=CIOptions(enabled=ci, severity_threshold=Severity(severity_threshold)),
     )
     asyncio.run(_run_audit(target, options))
 
@@ -91,7 +110,7 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
     logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
     command, args = target[0], list(target[1:])
     target_str = " ".join(target)
-    display = AuditDisplay()
+    display = AuditDisplay(ci_mode=options.ci.enabled)
     display.print_header(target_str)
 
     try:
@@ -133,7 +152,9 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
                 },
             }
 
-            await _run_full_audit(graph, config, initial_state, display, options.report_paths)
+            await _run_full_audit(
+                graph, config, initial_state, display, options.report_paths, options.ci
+            )
     except ConnectionError as exc:
         display.print_error(f"could not connect to MCP server: {exc}")
         _show_server_stderr(server_stderr, display)
@@ -154,6 +175,7 @@ async def _run_full_audit(
     initial_state: dict[str, Any] | None,
     display: AuditDisplay,
     report_paths: ReportPaths,
+    ci: CIOptions = CIOptions(),  # noqa: B008
 ) -> None:
     tracker = StreamTracker()
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
@@ -167,6 +189,9 @@ async def _run_full_audit(
 
     display.print_summary(report)
     _write_reports(report, report_paths, display)
+
+    if ci.enabled and report.has_findings_at_or_above(ci.severity_threshold):
+        raise SystemExit(1)
 
 
 async def _run_dry_run(

@@ -133,6 +133,50 @@ def test_report_path_displayed():
     assert "report.json" in buffer.getvalue()
 
 
+def test_ci_mode_suppresses_header():
+    display, buffer = _make_ci_display()
+
+    display.print_header("python server.py")
+
+    assert buffer.getvalue() == ""
+
+
+def test_ci_mode_prints_plain_summary():
+    report = _a_report_with_two_tools()
+    display, buffer = _make_ci_display()
+
+    display.print_summary(report)
+
+    output = buffer.getvalue()
+    assert "2 tools" in output
+    assert "1 findings" in output
+
+
+def test_ci_mode_shows_discovery():
+    display, buffer = _make_ci_display()
+
+    display.print_discovery(2, ["read_file", "write_file"])
+
+    output = buffer.getvalue()
+    assert "2" in output
+    assert "read_file" in output
+
+
+def test_ci_mode_progress_prints_tool_summary():
+    display, buffer = _make_ci_display()
+    progress = display.create_tool_progress(1, 2, "get_user", 1)
+
+    with progress:
+        progress.advance(
+            _a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "vuln")
+        )
+
+    output = buffer.getvalue()
+    assert "get_user" in output
+    assert "1 failed" in output
+    assert "injection" in output
+
+
 # --- Helpers ---
 
 
@@ -140,6 +184,12 @@ def _make_display() -> tuple[AuditDisplay, StringIO]:
     buffer = StringIO()
     console = Console(file=buffer, force_terminal=True)
     return AuditDisplay(console=console), buffer
+
+
+def _make_ci_display() -> tuple[AuditDisplay, StringIO]:
+    buffer = StringIO()
+    console = Console(file=buffer, force_terminal=False, no_color=True)
+    return AuditDisplay(console=console, ci_mode=True), buffer
 
 
 def _a_fail_result(

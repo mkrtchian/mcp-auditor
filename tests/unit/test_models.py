@@ -10,11 +10,14 @@ import pytest
 from mcp_auditor.domain import (
     AuditCategory,
     AuditPayload,
+    AuditReport,
     EvalResult,
     EvalVerdict,
+    Severity,
     TestCase,
     TokenUsage,
     ToolDefinition,
+    ToolReport,
     ToolResponse,
 )
 
@@ -91,6 +94,70 @@ class TestTokenUsage:
 
         assert a.input_tokens == 100
         assert a.output_tokens == 50
+
+
+class TestSeverityComparison:
+    def test_critical_is_greater_than_low(self):
+        assert Severity.CRITICAL > Severity.LOW
+
+    def test_low_is_less_than_high(self):
+        assert Severity.LOW < Severity.HIGH
+
+    def test_medium_is_greater_or_equal_to_medium(self):
+        assert Severity.MEDIUM >= Severity.MEDIUM
+
+    def test_ordering_matches_declaration(self):
+        assert Severity.LOW < Severity.MEDIUM < Severity.HIGH < Severity.CRITICAL
+
+
+class TestAuditReportFindings:
+    def test_detects_findings_at_exact_threshold(self):
+        report = _a_report_with_finding(Severity.HIGH)
+
+        assert report.has_findings_at_or_above(Severity.HIGH) is True
+
+    def test_detects_findings_above_threshold(self):
+        report = _a_report_with_finding(Severity.CRITICAL)
+
+        assert report.has_findings_at_or_above(Severity.HIGH) is True
+
+    def test_ignores_findings_below_threshold(self):
+        report = _a_report_with_finding(Severity.LOW)
+
+        assert report.has_findings_at_or_above(Severity.HIGH) is False
+
+    def test_empty_report_has_no_findings(self):
+        report = AuditReport(
+            target="test", tool_reports=[], token_usage=TokenUsage()
+        )
+
+        assert report.has_findings_at_or_above(Severity.LOW) is False
+
+
+def _a_report_with_finding(severity: Severity) -> AuditReport:
+    result = EvalResult(
+        tool_name="t",
+        category=AuditCategory.INJECTION,
+        payload={},
+        verdict=EvalVerdict.FAIL,
+        justification="vuln",
+        severity=severity,
+    )
+    case = TestCase(
+        payload=AuditPayload(
+            tool_name="t",
+            category=AuditCategory.INJECTION,
+            description="test",
+            arguments={},
+        ),
+        eval_result=result,
+    )
+    tool = ToolDefinition(name="t", description="t", input_schema={})
+    return AuditReport(
+        target="test",
+        tool_reports=[ToolReport(tool=tool, cases=[case])],
+        token_usage=TokenUsage(),
+    )
 
 
 def _a_payload(**overrides: Any) -> AuditPayload:

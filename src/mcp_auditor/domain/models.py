@@ -18,6 +18,29 @@ class Severity(StrEnum):
     HIGH = "high"
     CRITICAL = "critical"
 
+    def __ge__(self, other: object) -> bool:
+        if not isinstance(other, Severity):
+            return NotImplemented
+        return self._rank() >= other._rank()
+
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, Severity):
+            return NotImplemented
+        return self._rank() > other._rank()
+
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, Severity):
+            return NotImplemented
+        return self._rank() <= other._rank()
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, Severity):
+            return NotImplemented
+        return self._rank() < other._rank()
+
+    def _rank(self) -> int:
+        return list(Severity).index(self)
+
 
 class EvalVerdict(StrEnum):
     PASS = "pass"
@@ -88,3 +111,12 @@ class AuditReport(BaseModel):
     target: str
     tool_reports: list[ToolReport]
     token_usage: TokenUsage
+
+    def has_findings_at_or_above(self, threshold: Severity) -> bool:
+        return any(
+            case.eval_result.severity >= threshold
+            for tr in self.tool_reports
+            for case in tr.cases
+            if case.eval_result is not None
+            and case.eval_result.verdict == EvalVerdict.FAIL
+        )
