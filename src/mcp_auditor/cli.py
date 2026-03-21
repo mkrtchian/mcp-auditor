@@ -24,13 +24,13 @@ from mcp_auditor.domain.models import (
     AuditReport,
     Severity,
     TestCaseBatch,
-    ToolDefinition,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.domain.rendering import render_json, render_markdown
 from mcp_auditor.graph.builder import build_graph
 from mcp_auditor.graph.nodes import filter_tools
 from mcp_auditor.graph.prompts import build_attack_generation_prompt
+from mcp_auditor.stream_handler import AuditProgressReporter
 
 
 @dataclass(frozen=True)
@@ -53,13 +53,6 @@ class AuditOptions:
     dry_run: bool
     ci: CIOptions = CIOptions()
     tools_filter: frozenset[str] | None = None
-
-
-@dataclass
-class StreamTracker:
-    tool_index: int = 0
-    tool_count: int = 0
-    active_progress: Any = None
 
 
 def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
@@ -198,9 +191,9 @@ async def _run_full_audit(
     report_paths: ReportPaths,
     ci: CIOptions = CIOptions(),  # noqa: B008
 ) -> None:
-    tracker = StreamTracker()
+    reporter = AuditProgressReporter(display)
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
-        _handle_stream_event(event, display, tracker)
+        reporter.on_stream_event(event)
 
     final_state = await graph.aget_state(config)
     report: AuditReport | None = final_state.values.get("audit_report")
@@ -239,63 +232,6 @@ def _compute_thread_id(command: str, args: list[str]) -> str:
     return hashlib.sha256(full.encode()).hexdigest()[:16]
 
 
-def _handle_stream_event(
-    event: tuple[tuple[str, ...], dict[str, Any]],
-    display: AuditDisplay,
-    tracker: StreamTracker,
-) -> None:
-    namespace, updates = event
-    for node_name, state_update in updates.items():
-        if not isinstance(state_update, dict):
-            continue
-        if namespace == ():
-            _handle_parent_event(node_name, state_update, display, tracker)
-        else:
-            _handle_subgraph_event(node_name, state_update, display, tracker)
-
-
-def _handle_parent_event(
-    node_name: str,
-    state_update: dict[str, Any],
-    display: AuditDisplay,
-    tracker: StreamTracker,
-) -> None:
-    if node_name == "discover_tools":
-        tools: list[ToolDefinition] = state_update.get("discovered_tools", [])
-        tracker.tool_count = len(tools)
-        display.print_discovery(len(tools), [t.name for t in tools])
-    elif node_name == "prepare_tool":
-        tool: ToolDefinition | None = state_update.get("current_tool")
-        if tool:
-            tracker.tool_index += 1
-    elif node_name == "finalize_tool_audit":
-        if tracker.active_progress:
-            tracker.active_progress.__exit__(None, None, None)
-            tracker.active_progress = None
-
-
-def _handle_subgraph_event(
-    node_name: str,
-    state_update: dict[str, Any],
-    display: AuditDisplay,
-    tracker: StreamTracker,
-) -> None:
-    if node_name == "generate_test_cases":
-        pending = state_update.get("pending_cases", [])
-        if pending:
-            tool_name = pending[0].payload.tool_name
-            progress = display.create_tool_progress(
-                tracker.tool_index, tracker.tool_count, tool_name, len(pending)
-            )
-            progress.__enter__()
-            tracker.active_progress = progress
-    elif node_name == "judge_response":
-        judged = state_update.get("judged_cases", [])
-        if judged:
-            last_case = judged[-1]
-            if last_case.eval_result is not None and tracker.active_progress:
-                tracker.active_progress.advance(last_case.eval_result)
-
 
 def _write_reports(
     report: AuditReport,
@@ -319,12 +255,12 @@ def _show_server_stderr(
         display.print_error(f"server stderr:\n{output}")
 
 
-def _summarize_exception_group(group: BaseExceptionGroup[BaseException]) -> str:
-    for exc in group.exceptions:
+def _summarize_exception_group(exc_group: BaseExceptionGroup[BaseException]) -> str:
+    for exc in exc_group.exceptions:
         if isinstance(exc, BaseExceptionGroup):
             return _summarize_exception_group(exc)
         return str(exc)
-    return str(group)
+    return str(exc_group)
 
 
 def main() -> None:
