@@ -69,3 +69,11 @@ def test_summary_one_liner():
     assert "\n" not in result
     assert "2 tools" in result
     assert "2 findings" in result
+
+
+def test_summary_sorts_severity_descending():
+    report = given.a_report_with_low_then_critical()
+
+    result = render_summary(report)
+
+    assert result.index("critical") < result.index("low")

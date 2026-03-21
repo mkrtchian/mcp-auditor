@@ -1,7 +1,7 @@
 import json
 from collections import Counter
 
-from mcp_auditor.domain.models import AuditReport, EvalResult, EvalVerdict, ToolReport
+from mcp_auditor.domain.models import AuditReport, EvalResult, EvalVerdict, Severity, ToolReport
 
 
 def render_summary(report: AuditReport) -> str:
@@ -70,7 +70,11 @@ def _render_result_section(result: EvalResult) -> str:
     return "\n".join(lines)
 
 
+def format_severity_breakdown(counts: Counter[Severity]) -> str:
+    sorted_severities = sorted(counts, reverse=True)
+    return ", ".join(f"{counts[sev]} {sev.value}" for sev in sorted_severities)
+
+
 def _severity_breakdown(findings: list[EvalResult]) -> str:
-    counts: Counter[str] = Counter(f.severity.value for f in findings)
-    parts = [f"{count} {severity}" for severity, count in counts.items()]
-    return ", ".join(parts)
+    counts: Counter[Severity] = Counter(f.severity for f in findings)
+    return format_severity_breakdown(counts)

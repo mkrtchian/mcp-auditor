@@ -22,6 +22,7 @@ from mcp_auditor.domain.models import (
     TestCase,
     TokenUsage,
 )
+from mcp_auditor.domain.rendering import format_severity_breakdown
 from mcp_auditor.domain.rendering import render_summary
 
 
@@ -186,10 +187,8 @@ def _format_fail_cell(judged: list[TestCase], fails: int) -> Text | str:
         for c in judged
         if c.eval_result is not None and c.eval_result.verdict == EvalVerdict.FAIL
     )
-    sorted_severities = sorted(severity_counts.keys(), reverse=True)
-    breakdown_parts = [f"{severity_counts[sev]} {sev.value}" for sev in sorted_severities]
-    breakdown = ", ".join(breakdown_parts)
-    highest = max(severity_counts.keys())
+    breakdown = format_severity_breakdown(severity_counts)
+    highest = max(severity_counts)
     style = _severity_style(highest)
     text = Text(f"{fails} ({breakdown})", style=style)
     return text
@@ -206,8 +205,8 @@ def format_failure_line(result: EvalResult) -> str:
 def format_tool_summary(fail_count: int, pass_count: int, failures: list[EvalResult]) -> str:
     if fail_count == 0:
         return "\u2713 all passed"
-    severity_counts = Counter(f.severity.value for f in failures)
-    breakdown = ", ".join(f"{count} {sev}" for sev, count in severity_counts.items())
+    severity_counts: Counter[Severity] = Counter(f.severity for f in failures)
+    breakdown = format_severity_breakdown(severity_counts)
     return f"\u2717 {fail_count} failed ({breakdown})"
 
 

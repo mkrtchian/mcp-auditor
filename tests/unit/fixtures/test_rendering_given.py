@@ -21,6 +21,17 @@ def an_empty_report() -> AuditReport:
     )
 
 
+def a_report_with_low_then_critical() -> AuditReport:
+    results = [
+        a_fail_result("tool_a", AuditCategory.INPUT_VALIDATION, Severity.LOW, "Weak validation"),
+        a_fail_result("tool_a", AuditCategory.INJECTION, Severity.CRITICAL, "Command injection"),
+    ]
+    return a_report(
+        target="python server.py",
+        tool_reports=[a_tool_report("tool_a", results)],
+    )
+
+
 def a_two_tool_report() -> AuditReport:
     get_user_results = [
         a_fail_result(

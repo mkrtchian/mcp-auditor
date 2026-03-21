@@ -44,6 +44,18 @@ def test_format_tool_summary_with_failures():
     assert "medium" in summary.lower()
 
 
+def test_format_tool_summary_sorts_severity_descending():
+    failures = [
+        given.a_fail_result("get_user", AuditCategory.INPUT_VALIDATION, Severity.LOW, "Weak"),
+        given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.CRITICAL, "SQLi"),
+        given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.MEDIUM, "XSS"),
+    ]
+
+    summary = format_tool_summary(fail_count=3, pass_count=0, failures=failures)
+
+    assert summary.index("critical") < summary.index("medium") < summary.index("low")
+
+
 def test_format_tool_summary_zero_cases():
     summary = format_tool_summary(fail_count=0, pass_count=0, failures=[])
 
