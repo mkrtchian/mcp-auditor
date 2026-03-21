@@ -3,8 +3,10 @@ name: Evals
 on:
   push:
     branches: [main]
+    paths: [src/**, evals/**, pyproject.toml]
   pull_request:
     branches: [main]
+    paths: [src/**, evals/**, pyproject.toml]
 
 jobs:
   judge-eval:
