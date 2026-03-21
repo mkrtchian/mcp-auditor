@@ -127,9 +127,7 @@ class TestAuditReportFindings:
         assert report.has_findings_at_or_above(Severity.HIGH) is False
 
     def test_empty_report_has_no_findings(self):
-        report = AuditReport(
-            target="test", tool_reports=[], token_usage=TokenUsage()
-        )
+        report = AuditReport(target="test", tool_reports=[], token_usage=TokenUsage())
 
         assert report.has_findings_at_or_above(Severity.LOW) is False
 

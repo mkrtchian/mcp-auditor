@@ -8,16 +8,30 @@ from mcp_auditor.domain.models import (
     EvalResult,
     TestCase,
     TestCaseBatch,
+    ToolDefinition,
     ToolReport,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.prompts import build_attack_generation_prompt, build_judge_prompt
 
 
-def make_discover_tools(mcp_client: MCPClientPort):
+def filter_tools(
+    tools: list[ToolDefinition], tools_filter: frozenset[str] | None
+) -> list[ToolDefinition]:
+    if tools_filter is None:
+        return tools
+    available_names = {t.name for t in tools}
+    unknown = tools_filter - available_names
+    if unknown:
+        raise ValueError(f"unknown tool names: {', '.join(sorted(unknown))}")
+    return [t for t in tools if t.name in tools_filter]
+
+
+def make_discover_tools(mcp_client: MCPClientPort, tools_filter: frozenset[str] | None = None):
     async def discover_tools(_state: dict[str, Any]) -> dict[str, Any]:
         tools = await mcp_client.list_tools()
-        return {"discovered_tools": tools}
+        filtered = filter_tools(tools, tools_filter)
+        return {"discovered_tools": filtered}
 
     return discover_tools
 

@@ -134,6 +134,7 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | Option       | Default    | Description                                       |
 |:-------------|:-----------|:--------------------------------------------------|
 | `--budget`   | `10`       | Max test cases per tool                           |
+| `--tools`    | all        | Comma-separated tool names to audit               |
 | `--output`   | none       | Path for JSON report                              |
 | `--markdown` | none       | Path for Markdown report                          |
 | `--resume`   | off        | Resume from last checkpoint                       |

@@ -117,6 +117,5 @@ class AuditReport(BaseModel):
             case.eval_result.severity >= threshold
             for tr in self.tool_reports
             for case in tr.cases
-            if case.eval_result is not None
-            and case.eval_result.verdict == EvalVerdict.FAIL
+            if case.eval_result is not None and case.eval_result.verdict == EvalVerdict.FAIL
         )

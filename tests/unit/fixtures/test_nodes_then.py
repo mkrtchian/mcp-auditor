@@ -30,3 +30,7 @@ def judged_cases_count(result: dict[str, Any], expected: int) -> None:
 
 def tool_report_has_cases(result: dict[str, Any], expected_count: int) -> None:
     assert len(result["tool_reports"][0].cases) == expected_count
+
+
+def discovered_tools_are(tools: list[ToolDefinition], expected_names: list[str]) -> None:
+    assert [t.name for t in tools] == expected_names

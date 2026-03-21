@@ -25,6 +25,7 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.domain.rendering import render_json, render_markdown
 from mcp_auditor.graph.builder import build_graph
+from mcp_auditor.graph.nodes import filter_tools
 from mcp_auditor.graph.prompts import build_attack_generation_prompt
 
 
@@ -47,6 +48,7 @@ class AuditOptions:
     resume: bool
     dry_run: bool
     ci: CIOptions = CIOptions()
+    tools_filter: frozenset[str] | None = None
 
 
 @dataclass
@@ -54,6 +56,12 @@ class StreamTracker:
     tool_index: int = 0
     tool_count: int = 0
     active_progress: Any = None
+
+
+def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
+    if raw is None or raw.strip() == "":
+        return None
+    return frozenset(name.strip() for name in raw.split(","))
 
 
 @click.group()
@@ -68,6 +76,7 @@ def cli() -> None:
 @click.option("--output", "-o", type=str, default=None, help="JSON output path.")
 @click.option("--markdown", "-m", type=str, default=None, help="Markdown output path.")
 @click.option("--resume", is_flag=True, default=False, help="Resume from last checkpoint.")
+@click.option("--tools", type=str, default=None, help="Comma-separated tool names to audit.")
 @click.option("--dry-run", is_flag=True, default=False, help="Generate test cases without running.")
 @click.option("--ci", is_flag=True, default=False, help="CI mode: plain output, exit 1.")
 @click.option(
@@ -81,6 +90,7 @@ def run(
     budget: int,
     output: str | None,
     markdown: str | None,
+    tools: str | None,
     resume: bool,
     dry_run: bool,
     ci: bool,
@@ -102,6 +112,7 @@ def run(
         resume=resume,
         dry_run=dry_run,
         ci=CIOptions(enabled=ci, severity_threshold=Severity(severity_threshold)),
+        tools_filter=parse_tools_filter(tools),
     )
     asyncio.run(_run_audit(target, options))
 
@@ -132,10 +143,16 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
             StdioMCPClient.connect(command, args, errlog=server_stderr) as mcp_client,
         ):
             if options.dry_run:
-                await _run_dry_run(llm, mcp_client, options.budget, display)
+                await _run_dry_run(llm, mcp_client, options.budget, display, options.tools_filter)
                 return
 
-            graph = build_graph(llm, mcp_client, judge_llm=judge_llm, checkpointer=checkpointer)
+            graph = build_graph(
+                llm,
+                mcp_client,
+                judge_llm=judge_llm,
+                checkpointer=checkpointer,
+                tools_filter=options.tools_filter,
+            )
             thread_id = (
                 _compute_thread_id(command, args) if options.resume else uuid.uuid4().hex[:16]
             )
@@ -199,9 +216,11 @@ async def _run_dry_run(
     mcp_client: MCPClientPort,
     budget: int,
     display: AuditDisplay,
+    tools_filter: frozenset[str] | None = None,
 ) -> None:
     with display.status("Discovering tools..."):
         tools = await mcp_client.list_tools()
+        tools = filter_tools(tools, tools_filter)
     display.print_discovery(len(tools), [t.name for t in tools])
     categories = list(AuditCategory)
     for tool in tools:

@@ -26,12 +26,13 @@ def build_graph(
     mcp_client: MCPClientPort,
     judge_llm: LLMPort | None = None,
     checkpointer: BaseCheckpointSaver[Any] | None = None,
+    tools_filter: frozenset[str] | None = None,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     effective_judge = judge_llm or llm
     audit_subgraph = _build_audit_tool_subgraph(llm, mcp_client, effective_judge)
 
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
-    builder.add_node("discover_tools", make_discover_tools(mcp_client))
+    builder.add_node("discover_tools", make_discover_tools(mcp_client, tools_filter=tools_filter))
     builder.add_node("prepare_tool", make_prepare_tool())
     builder.add_node("audit_tool", audit_subgraph)
     builder.add_node("finalize_tool_audit", make_finalize_tool_audit())

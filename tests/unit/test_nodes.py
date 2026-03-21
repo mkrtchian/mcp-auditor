@@ -7,6 +7,7 @@ import tests.unit.fixtures.test_nodes_given as given
 import tests.unit.fixtures.test_nodes_then as then
 from mcp_auditor.domain import TestCaseBatch, ToolResponse
 from mcp_auditor.graph.nodes import (
+    filter_tools,
     make_discover_tools,
     make_execute_tool,
     make_finalize_tool_audit,
@@ -19,6 +20,35 @@ from mcp_auditor.graph.nodes import (
 )
 
 
+class TestFilterTools:
+    def test_filters_tools_by_name(self):
+        tools = [given.a_tool(name="a"), given.a_tool(name="b"), given.a_tool(name="c")]
+
+        result = filter_tools(tools, frozenset({"a", "c"}))
+
+        then.discovered_tools_are(result, ["a", "c"])
+
+    def test_raises_on_unknown_tool_name(self):
+        tools = [given.a_tool(name="a"), given.a_tool(name="b")]
+
+        with pytest.raises(ValueError, match="unknown"):
+            filter_tools(tools, frozenset({"a", "unknown"}))
+
+    def test_no_filter_returns_all(self):
+        tools = [given.a_tool(name="a"), given.a_tool(name="b")]
+
+        result = filter_tools(tools, None)
+
+        then.discovered_tools_are(result, ["a", "b"])
+
+    def test_preserves_server_order(self):
+        tools = [given.a_tool(name="c"), given.a_tool(name="a"), given.a_tool(name="b")]
+
+        result = filter_tools(tools, frozenset({"b", "c"}))
+
+        then.discovered_tools_are(result, ["c", "b"])
+
+
 class TestDiscoverTools:
     @pytest.mark.asyncio
     async def test_populates_state(self):
@@ -29,6 +59,17 @@ class TestDiscoverTools:
         result = await node({})
 
         then.discovered_tools_count(result, 2)
+
+    @pytest.mark.asyncio
+    async def test_filters_tools_by_name(self):
+        tools = [given.a_tool(name="a"), given.a_tool(name="b"), given.a_tool(name="c")]
+        client = given.a_fake_mcp_client(tools)
+        node = make_discover_tools(client, tools_filter=frozenset({"a", "c"}))
+
+        result = await node({})
+
+        then.discovered_tools_count(result, 2)
+        then.discovered_tools_are(result["discovered_tools"], ["a", "c"])
 
 
 class TestPrepareTools:
@@ -153,3 +194,25 @@ class TestRouteTools:
             "discovered_tools": [given.a_tool(), given.a_tool()],
         }
         assert route_tools(state) == "generate_report"
+
+
+class TestParseToolsFilter:
+    def test_parses_comma_separated(self):
+        from mcp_auditor.cli import parse_tools_filter
+
+        assert parse_tools_filter("a,b,c") == frozenset({"a", "b", "c"})
+
+    def test_none_when_not_provided(self):
+        from mcp_auditor.cli import parse_tools_filter
+
+        assert parse_tools_filter(None) is None
+
+    def test_none_for_empty_string(self):
+        from mcp_auditor.cli import parse_tools_filter
+
+        assert parse_tools_filter("") is None
+
+    def test_strips_whitespace(self):
+        from mcp_auditor.cli import parse_tools_filter
+
+        assert parse_tools_filter(" a , b ") == frozenset({"a", "b"})
