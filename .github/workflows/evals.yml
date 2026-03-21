@@ -3,10 +3,10 @@ name: Evals
 on:
   push:
     branches: [main]
-    paths: [src/**, evals/**, pyproject.toml]
+    paths: [src/**, evals/**, tests/dummy_server.py, tests/subtle_server.py, pyproject.toml]
   pull_request:
     branches: [main]
-    paths: [src/**, evals/**, pyproject.toml]
+    paths: [src/**, evals/**, tests/dummy_server.py, tests/subtle_server.py, pyproject.toml]
 
 jobs:
   judge-eval:
