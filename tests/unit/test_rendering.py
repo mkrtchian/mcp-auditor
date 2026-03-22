@@ -19,6 +19,22 @@ def test_json_enum_values():
     then.json_has_enum_strings(result)
 
 
+def test_json_includes_owasp_for_mapped_category():
+    report = given.a_report_with_injection_finding()
+
+    result = render_json(report)
+
+    then.json_has_owasp_for_category(result, "injection", "MCP-05", "Command Injection & Execution")
+
+
+def test_json_omits_owasp_for_unmapped_category():
+    report = given.a_report_with_unmapped_finding()
+
+    result = render_json(report)
+
+    then.json_has_no_owasp(result)
+
+
 def test_markdown_tool_sections():
     report = given.a_two_tool_report()
 
@@ -77,3 +93,29 @@ def test_summary_sorts_severity_descending():
     result = render_summary(report)
 
     assert result.index("critical") < result.index("low")
+
+
+def test_markdown_fail_heading_includes_owasp_label_for_mapped_category():
+    report = given.a_report_with_injection_finding()
+
+    result = render_markdown(report)
+
+    assert "injection / MCP-05: Command Injection & Execution" in result
+
+
+def test_markdown_fail_heading_omits_owasp_for_unmapped_category():
+    report = given.a_report_with_unmapped_finding()
+
+    result = render_markdown(report)
+
+    assert "input_validation" in result
+    assert "MCP-" not in result
+
+
+def test_markdown_pass_heading_includes_owasp_label_for_mapped_category():
+    report = given.a_report_with_mapped_pass()
+
+    result = render_markdown(report)
+
+    assert "injection / MCP-05: Command Injection & Execution" in result
+    assert "(-)" in result

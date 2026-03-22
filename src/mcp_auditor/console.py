@@ -22,8 +22,8 @@ from mcp_auditor.domain.models import (
     TestCase,
     TokenUsage,
 )
-from mcp_auditor.domain.rendering import format_severity_breakdown
-from mcp_auditor.domain.rendering import render_summary
+from mcp_auditor.domain.owasp import owasp_id_for
+from mcp_auditor.domain.rendering import format_severity_breakdown, render_summary
 
 
 class AuditDisplay:
@@ -83,10 +83,12 @@ class AuditDisplay:
     def _print_findings_recap_ci(self, findings: list[EvalResult]) -> None:
         self._console.print("Findings:")
         for f in findings:
+            owasp = owasp_id_for(f.category)
+            category_display = f"{f.category} / {owasp}" if owasp else str(f.category)
             justification = _truncate(f.justification, 80)
-            self._console.print(
-                f"  {f.severity.value.upper()}: {f.tool_name} > {f.category} \u2014 {justification}"
-            )
+            severity = f.severity.value.upper()
+            line = f"  {severity}: {f.tool_name} > {category_display} \u2014 {justification}"
+            self._console.print(line)
 
     def _print_findings_recap_rich(self, findings: list[EvalResult]) -> None:
         lines: list[Text] = []
@@ -96,8 +98,10 @@ class AuditDisplay:
                 current_severity = f.severity
                 label = Text(f"\n  {f.severity.value.upper()}", style=_severity_style(f.severity))
                 lines.append(label)
+            owasp = owasp_id_for(f.category)
+            category_display = f"{f.category} / {owasp}" if owasp else str(f.category)
             justification = _truncate(f.justification, 80)
-            lines.append(Text(f"    {f.tool_name} > {f.category} \u2014 {justification}"))
+            lines.append(Text(f"    {f.tool_name} > {category_display} \u2014 {justification}"))
         group = Text("\n").join(lines)
         self._console.print(Panel(group, title="Findings"))
 
@@ -199,7 +203,9 @@ def _format_token_usage(usage: TokenUsage) -> str:
 
 
 def format_failure_line(result: EvalResult) -> str:
-    return f"  \u2717 {result.category} ({result.severity}): {result.justification}"
+    owasp = owasp_id_for(result.category)
+    category_display = f"{result.category} / {owasp}" if owasp else str(result.category)
+    return f"  \u2717 {category_display} ({result.severity}): {result.justification}"
 
 
 def format_tool_summary(fail_count: int, pass_count: int, failures: list[EvalResult]) -> str:

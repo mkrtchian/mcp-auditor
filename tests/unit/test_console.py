@@ -11,6 +11,26 @@ from mcp_auditor.domain.models import (
 # --- Pure function tests ---
 
 
+def test_format_failure_line_includes_owasp_id_for_mapped_category():
+    result = given.a_fail_result(
+        "get_user", AuditCategory.INJECTION, Severity.HIGH, "SQL injection via user_id"
+    )
+
+    line = format_failure_line(result)
+
+    assert "MCP-05" in line
+
+
+def test_format_failure_line_no_owasp_for_unmapped_category():
+    result = given.a_fail_result(
+        "get_user", AuditCategory.INPUT_VALIDATION, Severity.MEDIUM, "No length check"
+    )
+
+    line = format_failure_line(result)
+
+    assert "MCP-" not in line
+
+
 def test_format_failure_line_includes_category_severity_justification():
     result = given.a_fail_result(
         "get_user", AuditCategory.INJECTION, Severity.HIGH, "SQL injection via user_id"

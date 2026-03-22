@@ -126,6 +126,46 @@ def a_pass_result(
     )
 
 
+def a_report_with_injection_finding() -> AuditReport:
+    results = [
+        a_fail_result(
+            "get_user",
+            AuditCategory.INJECTION,
+            Severity.HIGH,
+            justification="SQL injection via user_id parameter",
+        ),
+    ]
+    return a_report(
+        target="python server.py",
+        tool_reports=[a_tool_report("get_user", results)],
+    )
+
+
+def a_report_with_unmapped_finding() -> AuditReport:
+    results = [
+        a_fail_result(
+            "get_user",
+            AuditCategory.INPUT_VALIDATION,
+            Severity.MEDIUM,
+            justification="No input length validation",
+        ),
+    ]
+    return a_report(
+        target="python server.py",
+        tool_reports=[a_tool_report("get_user", results)],
+    )
+
+
+def a_report_with_mapped_pass() -> AuditReport:
+    results = [
+        a_pass_result("get_user", AuditCategory.INJECTION),
+    ]
+    return a_report(
+        target="python server.py",
+        tool_reports=[a_tool_report("get_user", results)],
+    )
+
+
 def a_tool_definition(
     name: str = "test_tool",
     description: str = "A test tool",

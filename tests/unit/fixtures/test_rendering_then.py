@@ -20,6 +20,32 @@ def json_has_enum_strings(json_str: str) -> None:
             assert result["severity"] == result["severity"].lower()
 
 
+def json_has_owasp_for_category(
+    json_str: str,
+    category: str,
+    expected_code: str,
+    expected_title: str,
+) -> None:
+    data = json.loads(json_str)
+    for tool_report in data["tool_reports"]:
+        for case in tool_report["cases"]:
+            result = case["eval_result"]
+            if result and result["category"] == category:
+                assert result["owasp"]["code"] == expected_code
+                assert result["owasp"]["title"] == expected_title
+                return
+    raise AssertionError(f"No result with category {category} found")
+
+
+def json_has_no_owasp(json_str: str) -> None:
+    data = json.loads(json_str)
+    for tool_report in data["tool_reports"]:
+        for case in tool_report["cases"]:
+            result = case["eval_result"]
+            if result:
+                assert "owasp" not in result
+
+
 def markdown_contains_tool_headings(markdown: str, tool_names: list[str]) -> None:
     for name in tool_names:
         assert f"## {name}" in markdown
