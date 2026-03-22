@@ -12,9 +12,7 @@ class AuditProgressReporter:
         self._tool_count = 0
         self._active_progress: Any = None
 
-    def on_stream_event(
-        self, event: tuple[tuple[str, ...], dict[str, Any]]
-    ) -> None:
+    def on_stream_event(self, event: tuple[tuple[str, ...], dict[str, Any]]) -> None:
         namespace, updates = event
         for node_name, state_update in updates.items():
             if not isinstance(state_update, dict):
@@ -24,9 +22,7 @@ class AuditProgressReporter:
             else:
                 self._on_subgraph_event(node_name, state_update)
 
-    def _on_parent_event(
-        self, node_name: str, state_update: dict[str, Any]
-    ) -> None:
+    def _on_parent_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "discover_tools":
             tools: list[ToolDefinition] = state_update.get("discovered_tools", [])
             self._tool_count = len(tools)
@@ -40,9 +36,7 @@ class AuditProgressReporter:
                 self._active_progress.__exit__(None, None, None)
                 self._active_progress = None
 
-    def _on_subgraph_event(
-        self, node_name: str, state_update: dict[str, Any]
-    ) -> None:
+    def _on_subgraph_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "generate_test_cases":
             pending = state_update.get("pending_cases", [])
             if pending:

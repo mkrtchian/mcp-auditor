@@ -34,43 +34,41 @@ class _BaseLLM:
     def __init__(self, model: BaseChatModel, max_retries: int):  # pyright: ignore[reportMissingTypeStubs]
         self._model = model
         self._max_retries = max_retries
-        self._usage = TokenUsage()
 
-    @property
-    def usage_stats(self) -> TokenUsage:
-        return self._usage
-
-    async def generate_structured[T: BaseModel](self, prompt: str, output_schema: type[T]) -> T:
+    async def generate_structured[T: BaseModel](
+        self, prompt: str, output_schema: type[T]
+    ) -> tuple[T, TokenUsage]:
         structured = self._model.with_structured_output(  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
             output_schema, include_raw=True
         )
         for _attempt in range(self._max_retries):
             raw_response = await structured.ainvoke(prompt)  # pyright: ignore[reportUnknownVariableType]
             parsed, usage = self._unpack_raw_response(cast(object, raw_response))
-            self._accumulate_usage(usage)
             if parsed is not None:
-                return cast(T, parsed)
+                return cast(T, parsed), usage
         raise ValueError(f"LLM returned unparseable output after {self._max_retries} attempts")
 
     def _unpack_raw_response(
         self,
         raw_response: object,
-    ) -> tuple[BaseModel | None, _UsageMetadata | None]:
+    ) -> tuple[BaseModel | None, TokenUsage]:
         """Langchain's include_raw=True returns {"raw": AIMessage, "parsed": BaseModel}.
 
         Single coupling point with that contract.
         """
         response = cast(dict[str, Any], raw_response)
-        return response["parsed"], response["raw"].usage_metadata
+        metadata: _UsageMetadata | None = response["raw"].usage_metadata
+        usage = _to_token_usage(metadata)
+        return response["parsed"], usage
 
-    def _accumulate_usage(self, metadata: _UsageMetadata | None) -> None:
-        if metadata:
-            self._usage = self._usage.add(
-                TokenUsage(
-                    input_tokens=metadata["input_tokens"],
-                    output_tokens=metadata["output_tokens"],
-                )
-            )
+
+def _to_token_usage(metadata: _UsageMetadata | None) -> TokenUsage:
+    if metadata is None:
+        return TokenUsage()
+    return TokenUsage(
+        input_tokens=metadata["input_tokens"],
+        output_tokens=metadata["output_tokens"],
+    )
 
 
 class AnthropicLLM(_BaseLLM):

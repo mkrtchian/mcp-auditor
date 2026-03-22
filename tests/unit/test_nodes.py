@@ -6,8 +6,8 @@ from langgraph.graph import END  # type: ignore[import-untyped]
 import tests.unit.fixtures.test_nodes_given as given
 import tests.unit.fixtures.test_nodes_then as then
 from mcp_auditor.domain import TestCaseBatch, ToolResponse
+from mcp_auditor.domain.models import filter_tools
 from mcp_auditor.graph.nodes import (
-    filter_tools,
     make_discover_tools,
     make_execute_tool,
     make_finalize_tool_audit,

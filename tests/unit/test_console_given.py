@@ -45,7 +45,7 @@ def a_fail_result(
     )
 
 
-def a_report_with_failures(
+def a_report_with_one_pass_plus_failures(
     failures_per_tool: dict[str, list[tuple[Severity, AuditCategory, str]]],
 ) -> AuditReport:
     tool_reports: list[ToolReport] = []
@@ -199,5 +199,5 @@ def a_report_with_two_tools() -> AuditReport:
                 ],
             ),
         ],
-        token_usage=TokenUsage(input_tokens=100, output_tokens=50),
+        token_usage=TokenUsage(input_tokens=1234, output_tokens=567),
     )

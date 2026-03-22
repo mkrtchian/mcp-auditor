@@ -64,6 +64,7 @@ def an_initial_state(test_budget: int = 5) -> dict[str, Any]:
         "current_tool": None,
         "judged_cases": [],
         "tool_reports": [],
+        "token_usage": [],
         "audit_report": None,
     }
 

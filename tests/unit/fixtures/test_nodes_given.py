@@ -44,9 +44,10 @@ def a_test_case(
     category: AuditCategory = AuditCategory.INJECTION,
     response: str | None = None,
     error: str | None = None,
+    payload: AuditPayload | None = None,
 ) -> TestCase:
     return TestCase(
-        payload=a_payload(tool_name=tool_name, category=category),
+        payload=payload or a_payload(tool_name=tool_name, category=category),
         response=response,
         error=error,
     )
@@ -58,10 +59,11 @@ def an_eval_result(
     verdict: EvalVerdict = EvalVerdict.PASS,
     severity: Severity = Severity.LOW,
 ) -> EvalResult:
+    payload = a_payload(tool_name=tool_name, category=category)
     return EvalResult(
         tool_name=tool_name,
         category=category,
-        payload={"input": "malicious"},
+        payload=payload.arguments,
         verdict=verdict,
         justification="test justification",
         severity=severity,

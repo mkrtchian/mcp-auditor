@@ -20,16 +20,12 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import load_settings
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import (
-    AuditCategory,
     AuditReport,
     Severity,
-    TestCaseBatch,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.domain.rendering import render_json, render_markdown
-from mcp_auditor.graph.builder import build_graph
-from mcp_auditor.graph.nodes import filter_tools
-from mcp_auditor.graph.prompts import build_attack_generation_prompt
+from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from mcp_auditor.stream_handler import AuditProgressReporter
 
 
@@ -216,21 +212,17 @@ async def _run_dry_run(
     display: AuditDisplay,
     tools_filter: frozenset[str] | None = None,
 ) -> None:
-    with display.status("Discovering tools..."):
-        tools = await mcp_client.list_tools()
-        tools = filter_tools(tools, tools_filter)
+    graph = build_dry_run_graph(llm, mcp_client, tools_filter=tools_filter)
+    result = await graph.ainvoke({"target": "", "test_budget": budget})
+    tools = result.get("discovered_tools", [])
     display.print_discovery(len(tools), [t.name for t in tools])
-    categories = list(AuditCategory)
-    for tool in tools:
-        prompt = build_attack_generation_prompt(tool=tool, budget=budget, categories=categories)
-        batch = await llm.generate_structured(prompt, TestCaseBatch)
-        display.print_dry_run_payloads(tool.name, batch.cases)
+    for report in result.get("tool_reports", []):
+        display.print_dry_run_payloads(report.tool.name, [c.payload for c in report.cases])
 
 
 def _compute_thread_id(command: str, args: list[str]) -> str:
     full = " ".join([command, *args])
     return hashlib.sha256(full.encode()).hexdigest()[:16]
-
 
 
 def _write_reports(

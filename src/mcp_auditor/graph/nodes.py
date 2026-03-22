@@ -8,23 +8,12 @@ from mcp_auditor.domain.models import (
     EvalResult,
     TestCase,
     TestCaseBatch,
-    ToolDefinition,
+    TokenUsage,
     ToolReport,
+    filter_tools,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.prompts import build_attack_generation_prompt, build_judge_prompt
-
-
-def filter_tools(
-    tools: list[ToolDefinition], tools_filter: frozenset[str] | None
-) -> list[ToolDefinition]:
-    if tools_filter is None:
-        return tools
-    available_names = {t.name for t in tools}
-    unknown = tools_filter - available_names
-    if unknown:
-        raise ValueError(f"unknown tool names: {', '.join(sorted(unknown))}")
-    return [t for t in tools if t.name in tools_filter]
 
 
 def make_discover_tools(mcp_client: MCPClientPort, tools_filter: frozenset[str] | None = None):
@@ -51,9 +40,9 @@ def make_generate_test_cases(llm: LLMPort):
         budget = state["test_budget"]
         categories = list(AuditCategory)
         prompt = build_attack_generation_prompt(tool=tool, budget=budget, categories=categories)
-        batch = await llm.generate_structured(prompt, TestCaseBatch)
+        batch, usage = await llm.generate_structured(prompt, TestCaseBatch)
         cases = [TestCase(payload=p) for p in batch.cases]
-        return {"pending_cases": cases, "judged_cases": []}
+        return {"pending_cases": cases, "judged_cases": [], "token_usage": [usage]}
 
     return generate_test_cases
 
@@ -77,13 +66,20 @@ def make_judge_response(llm: LLMPort):
         case = state["current_case"]
         tool = state["current_tool"]
         prompt = build_judge_prompt(tool=tool, test_case=case)
-        eval_result = await llm.generate_structured(prompt, EvalResult)
+        eval_result, usage = await llm.generate_structured(prompt, EvalResult)
         judged_case = case.model_copy(update={"eval_result": eval_result})
         existing = list(state.get("judged_cases", []))
         existing.append(judged_case)
-        return {"judged_cases": existing, "current_case": None}
+        return {"judged_cases": existing, "current_case": None, "token_usage": [usage]}
 
     return judge_response
+
+
+def make_collect_generated_cases():
+    async def collect_generated_cases(state: dict[str, Any]) -> dict[str, Any]:
+        return {"judged_cases": state["pending_cases"], "pending_cases": []}
+
+    return collect_generated_cases
 
 
 def make_finalize_tool_audit():
@@ -96,14 +92,21 @@ def make_finalize_tool_audit():
     return finalize_tool_audit
 
 
-def make_generate_report(llm: LLMPort):
+def make_generate_report():
     async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
         target = state["target"]
         reports = state.get("tool_reports", [])
-        usage = llm.usage_stats
+        usage = _sum_token_usage(state.get("token_usage", []))
         return {"audit_report": AuditReport(target=target, tool_reports=reports, token_usage=usage)}
 
     return generate_report
+
+
+def _sum_token_usage(usages: list[TokenUsage]) -> TokenUsage:
+    total = TokenUsage()
+    for u in usages:
+        total = total.add(u)
+    return total
 
 
 def route_after_discovery(state: dict[str, Any]) -> str:

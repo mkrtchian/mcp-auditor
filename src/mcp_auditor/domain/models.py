@@ -107,6 +107,18 @@ class ToolReport(BaseModel):
     cases: list[TestCase]
 
 
+def filter_tools(
+    tools: list[ToolDefinition], tools_filter: frozenset[str] | None
+) -> list[ToolDefinition]:
+    if tools_filter is None:
+        return tools
+    available_names = {t.name for t in tools}
+    unknown = tools_filter - available_names
+    if unknown:
+        raise ValueError(f"unknown tool names: {', '.join(sorted(unknown))}")
+    return [t for t in tools if t.name in tools_filter]
+
+
 class AuditReport(BaseModel):
     target: str
     tool_reports: list[ToolReport]

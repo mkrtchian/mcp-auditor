@@ -11,6 +11,7 @@ from mcp_auditor.domain.models import (
     ToolDefinition,
     ToolReport,
     ToolResponse,
+    filter_tools,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 
@@ -29,4 +30,5 @@ __all__ = [
     "ToolDefinition",
     "ToolReport",
     "ToolResponse",
+    "filter_tools",
 ]

@@ -86,6 +86,20 @@ class TestJudgePrompt:
 
         assert "SQL injection via id param" in prompt
 
+    def test_includes_category_guidance(self):
+        test_case = _a_test_case()
+
+        prompt = build_judge_prompt(tool=_a_tool(), test_case=test_case)
+
+        assert "User input is executed as code" in prompt
+
+    def test_fallback_when_no_response_and_no_error(self):
+        test_case = _a_test_case(response=None, error=None)
+
+        prompt = build_judge_prompt(tool=_a_tool(), test_case=test_case)
+
+        assert "no response and no error" in prompt
+
 
 def _a_test_case(
     description: str = "test description",

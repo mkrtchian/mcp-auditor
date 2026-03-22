@@ -74,7 +74,7 @@ async def _judge_all_cases(llm: LLMPort, cases: list[LoadedCase]) -> list[Judged
         task = progress.add_task("Judging cases", total=len(cases))
         for tool, test_case, expected, category in cases:
             prompt = build_judge_prompt(tool=tool, test_case=test_case)
-            eval_result = await llm.generate_structured(prompt, EvalResult)
+            eval_result, _ = await llm.generate_structured(prompt, EvalResult)
             judged.append(
                 JudgedCase(
                     tool=tool,

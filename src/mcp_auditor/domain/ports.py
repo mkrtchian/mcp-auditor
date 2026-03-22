@@ -15,7 +15,6 @@ class MCPClientPort(Protocol):
 
 
 class LLMPort(Protocol):
-    async def generate_structured[T: BaseModel](self, prompt: str, output_schema: type[T]) -> T: ...
-
-    @property
-    def usage_stats(self) -> TokenUsage: ...
+    async def generate_structured[T: BaseModel](
+        self, prompt: str, output_schema: type[T]
+    ) -> tuple[T, TokenUsage]: ...

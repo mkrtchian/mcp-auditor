@@ -115,8 +115,9 @@ def test_summary_contains_score_and_tools():
     output = buffer.getvalue()
     assert "get_user" in output
     assert "list_items" in output
-    assert "100" in output  # input tokens or score percentage
-    assert "50" in output  # output tokens or score percentage
+    assert "50%" in output  # 1 pass, 1 fail = 50% score
+    assert "1,234" in output  # input tokens
+    assert "567" in output  # output tokens
     assert "\u2588" in output  # filled bar char
     assert "\u2591" in output  # empty bar char
 
@@ -209,7 +210,7 @@ def test_ci_mode_progress_prints_tool_summary():
 
 
 def test_findings_recap_groups_by_severity():
-    report = given.a_report_with_failures(
+    report = given.a_report_with_one_pass_plus_failures(
         {
             "get_user": [
                 (Severity.MEDIUM, AuditCategory.INJECTION, "SQL injection possible"),
@@ -239,7 +240,7 @@ def test_findings_recap_groups_by_severity():
 
 
 def test_findings_recap_empty_when_no_failures():
-    report = given.a_report_with_failures({})
+    report = given.a_report_with_one_pass_plus_failures({})
     display, buffer = given.a_display()
 
     display.print_findings_recap(report)
@@ -248,7 +249,7 @@ def test_findings_recap_empty_when_no_failures():
 
 
 def test_findings_recap_ci_mode_plain_text():
-    report = given.a_report_with_failures(
+    report = given.a_report_with_one_pass_plus_failures(
         {
             "get_user": [
                 (Severity.HIGH, AuditCategory.INJECTION, "SQL injection found"),
@@ -268,7 +269,7 @@ def test_findings_recap_ci_mode_plain_text():
 
 
 def test_summary_fail_column_shows_severity_breakdown():
-    report = given.a_report_with_failures(
+    report = given.a_report_with_one_pass_plus_failures(
         {
             "get_user": [
                 (Severity.MEDIUM, AuditCategory.INJECTION, "vuln1"),
@@ -286,7 +287,7 @@ def test_summary_fail_column_shows_severity_breakdown():
 
 
 def test_summary_fail_column_zero_shows_no_breakdown():
-    report = given.a_report_with_failures({"get_user": []})
+    report = given.a_report_with_one_pass_plus_failures({"get_user": []})
     display, buffer = given.a_display()
 
     display.print_summary(report)
