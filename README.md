@@ -41,7 +41,7 @@ The audit runs in four phases:
 1. **Discover tools** -- connects to the MCP server and lists all available tools with their schemas.
 2. **Generate adversarial test cases** -- for each tool, the LLM generates payloads across five categories: input validation, error handling, injection, information leakage, and resource abuse.
 3. **Execute against the real server** -- each payload is sent to the server via the MCP protocol. Real responses, real behavior.
-4. **Judge each response** -- an LLM-as-a-judge classifies each response as PASS or FAIL with a justification and severity rating.
+4. **Judge each response** -- an LLM-as-a-judge classifies each response as PASS or FAIL with a justification and severity rating. Findings are mapped to the [OWASP MCP Top 10](https://owasp.org/www-project-model-context-protocol-top-10/) when applicable.
 
 ## Architecture
 
@@ -87,13 +87,13 @@ This audits `@modelcontextprotocol/server-filesystem` -- the official MCP refere
 
 Results: **140 test cases, 11 findings** (2 low, 9 medium). All findings were information leakage -- the server exposes internal filesystem paths in error messages:
 
-### read_file -- info_leakage (low)
+### read_file -- info_leakage / MCP-10 (low)
 
 **Payload**: `{'path': '/nonexistent/path/sensitive_file_test'}`
 
 The error message discloses the absolute path of the sandbox directory, revealing the underlying filesystem structure and process environment to the caller.
 
-### move_file -- info_leakage (medium)
+### move_file -- info_leakage / MCP-10 (medium)
 
 **Payload**: `{'source': 'file.txt', 'destination': '/non_existent_folder/sub/file.txt'}`
 
