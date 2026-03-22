@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from dataclasses import dataclass, field
 from types import TracebackType
 from typing import Self
 
@@ -19,7 +20,6 @@ from mcp_auditor.domain.models import (
     EvalResult,
     EvalVerdict,
     Severity,
-    TestCase,
     TokenUsage,
 )
 from mcp_auditor.domain.owasp import owasp_id_for
@@ -96,7 +96,7 @@ class AuditDisplay:
         for f in findings:
             if f.severity != current_severity:
                 current_severity = f.severity
-                label = Text(f"\n  {f.severity.value.upper()}", style=_severity_style(f.severity))
+                label = Text(f"\n  {f.severity.value.upper()}", style=_severity_color(f.severity))
                 lines.append(label)
             owasp = owasp_id_for(f.category)
             category_display = f"{f.category} / {owasp}" if owasp else str(f.category)
@@ -129,7 +129,7 @@ class AuditDisplay:
         return self._console.status(message)
 
 
-def _severity_style(severity: Severity) -> str:
+def _severity_color(severity: Severity) -> str:
     return {
         Severity.CRITICAL: "bold red",
         Severity.HIGH: "red",
@@ -159,43 +159,61 @@ def _truncate(text: str, max_length: int) -> str:
     return text[: max_length - 1] + "\u2026"
 
 
+@dataclass
+class _ToolSummary:
+    name: str
+    judged: int = 0
+    passed: int = 0
+    failed: int = 0
+    severity_counts: Counter[Severity] = field(default_factory=lambda: Counter[Severity]())
+
+
+def _summarize_tools(report: AuditReport) -> list[_ToolSummary]:
+    summaries: list[_ToolSummary] = []
+    for tool_report in report.tool_reports:
+        judged = [c for c in tool_report.cases if c.eval_result is not None]
+        passed = sum(
+            1 for c in judged if c.eval_result and c.eval_result.verdict == EvalVerdict.PASS
+        )
+        severity_counts: Counter[Severity] = Counter(
+            c.eval_result.severity
+            for c in judged
+            if c.eval_result is not None and c.eval_result.verdict == EvalVerdict.FAIL
+        )
+        summaries.append(_ToolSummary(
+            name=tool_report.tool.name,
+            judged=len(judged),
+            passed=passed,
+            failed=len(judged) - passed,
+            severity_counts=severity_counts,
+        ))
+    return summaries
+
+
 def _build_summary_table(report: AuditReport) -> tuple[Table, int, int]:
+    summaries = _summarize_tools(report)
     table = Table()
     table.add_column("Tool")
     table.add_column("Tests", justify="right")
     table.add_column("Pass", justify="right", style="green")
     table.add_column("Fail", justify="right")
 
-    total_pass = 0
-    total_judged = 0
-    for tool_report in report.tool_reports:
-        judged = [c for c in tool_report.cases if c.eval_result is not None]
-        total = len(judged)
-        passes = sum(
-            1 for c in judged if c.eval_result and c.eval_result.verdict == EvalVerdict.PASS
-        )
-        fails = total - passes
-        total_pass += passes
-        total_judged += total
-        fail_cell = _format_fail_cell(judged, fails)
-        table.add_row(tool_report.tool.name, str(total), str(passes), fail_cell)
+    total_pass = sum(s.passed for s in summaries)
+    total_judged = sum(s.judged for s in summaries)
+    for s in summaries:
+        fail_cell = _format_fail_cell(s)
+        table.add_row(s.name, str(s.judged), str(s.passed), fail_cell)
 
     return table, total_pass, total_judged
 
 
-def _format_fail_cell(judged: list[TestCase], fails: int) -> Text | str:
-    if fails == 0:
+def _format_fail_cell(summary: _ToolSummary) -> Text | str:
+    if summary.failed == 0:
         return "0"
-    severity_counts: Counter[Severity] = Counter(
-        c.eval_result.severity
-        for c in judged
-        if c.eval_result is not None and c.eval_result.verdict == EvalVerdict.FAIL
-    )
-    breakdown = format_severity_breakdown(severity_counts)
-    highest = max(severity_counts)
-    style = _severity_style(highest)
-    text = Text(f"{fails} ({breakdown})", style=style)
-    return text
+    breakdown = format_severity_breakdown(summary.severity_counts)
+    highest = max(summary.severity_counts)
+    style = _severity_color(highest)
+    return Text(f"{summary.failed} ({breakdown})", style=style)
 
 
 def _format_token_usage(usage: TokenUsage) -> str:

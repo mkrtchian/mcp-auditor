@@ -72,6 +72,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/mcp_auditor/graph/prompts.py" = ["E501"]
+"src/mcp_auditor/domain/category_guidance.py" = ["E501"]
 "src/mcp_auditor/cli.py" = ["E402"]
 
 [tool.pyright]

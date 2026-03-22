@@ -51,7 +51,7 @@ class ToolDefinition(BaseModel):
     """Decoupled from mcp.types.Tool."""
 
     name: str
-    description: str
+    description: str | None = None
     input_schema: dict[str, Any]
 
 

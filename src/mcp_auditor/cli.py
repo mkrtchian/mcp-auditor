@@ -42,12 +42,17 @@ class CIOptions:
 
 
 @dataclass(frozen=True)
-class AuditOptions:
+class ExecutionConfig:
     budget: int
-    report_paths: ReportPaths
     resume: bool
     dry_run: bool
-    ci: CIOptions = CIOptions()
+
+
+@dataclass(frozen=True)
+class AuditConfig:
+    execution: ExecutionConfig
+    report_paths: ReportPaths
+    ci: CIOptions
     tools_filter: frozenset[str] | None = None
 
 
@@ -99,22 +104,20 @@ def run(
         mcp-auditor run --budget 5 -- npx some-mcp-server
         mcp-auditor run --ci -- python my_server.py
     """
-    options = AuditOptions(
-        budget=budget,
+    config = AuditConfig(
+        execution=ExecutionConfig(budget=budget, resume=resume, dry_run=dry_run),
         report_paths=ReportPaths(json=output, markdown=markdown),
-        resume=resume,
-        dry_run=dry_run,
         ci=CIOptions(enabled=ci, severity_threshold=Severity(severity_threshold)),
         tools_filter=parse_tools_filter(tools),
     )
-    asyncio.run(_run_audit(target, options))
+    asyncio.run(_run_audit(target, config))
 
 
-async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
+async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
     logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
     command, args = target[0], list(target[1:])
     target_str = " ".join(target)
-    display = AuditDisplay(ci_mode=options.ci.enabled)
+    display = AuditDisplay(ci_mode=config.ci.enabled)
     display.print_header(target_str)
 
     try:
@@ -135,8 +138,10 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
             AsyncSqliteSaver.from_conn_string(db_path) as checkpointer,
             StdioMCPClient.connect(command, args, errlog=server_stderr) as mcp_client,
         ):
-            if options.dry_run:
-                await _run_dry_run(llm, mcp_client, options.budget, display, options.tools_filter)
+            if config.execution.dry_run:
+                await _run_dry_run(
+                    llm, mcp_client, config.execution.budget, display, config.tools_filter
+                )
                 return
 
             graph = build_graph(
@@ -144,26 +149,30 @@ async def _run_audit(target: tuple[str, ...], options: AuditOptions) -> None:
                 mcp_client,
                 judge_llm=judge_llm,
                 checkpointer=checkpointer,
-                tools_filter=options.tools_filter,
+                tools_filter=config.tools_filter,
             )
             thread_id = (
-                _compute_thread_id(command, args) if options.resume else uuid.uuid4().hex[:16]
+                _compute_thread_id(command, args)
+                if config.execution.resume
+                else uuid.uuid4().hex[:16]
             )
             initial_state = (
-                None if options.resume else {"target": target_str, "test_budget": options.budget}
+                None
+                if config.execution.resume
+                else {"target": target_str, "test_budget": config.execution.budget}
             )
-            config: dict[str, Any] = {
+            graph_config: dict[str, Any] = {
                 "configurable": {"thread_id": thread_id},
                 "metadata": {
                     "target": target_str,
-                    "budget": options.budget,
+                    "budget": config.execution.budget,
                     "provider": settings.provider,
                     "model": settings.resolve_model(),
                 },
             }
 
             await _run_full_audit(
-                graph, config, initial_state, display, options.report_paths, options.ci
+                graph, graph_config, initial_state, display, config.report_paths, config.ci
             )
     except ConnectionError as exc:
         display.print_error(f"could not connect to MCP server: {exc}")

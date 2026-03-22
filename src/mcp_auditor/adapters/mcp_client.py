@@ -48,6 +48,6 @@ class StdioMCPClient:
 def _to_tool_definition(tool: Tool) -> ToolDefinition:
     return ToolDefinition(
         name=tool.name,
-        description=tool.description or "",
+        description=tool.description,
         input_schema=tool.inputSchema,
     )
