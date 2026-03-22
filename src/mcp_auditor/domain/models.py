@@ -58,6 +58,7 @@ class ToolDefinition(BaseModel):
 class ToolResponse(BaseModel):
     content: str
     is_error: bool = False
+    error_type: str | None = None
 
 
 class AuditPayload(BaseModel):

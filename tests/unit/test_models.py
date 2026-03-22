@@ -75,6 +75,16 @@ class TestToolResponse:
 
         assert response.is_error is True
 
+    def test_error_type_defaults_to_none(self):
+        response = ToolResponse(content="ok")
+
+        assert response.error_type is None
+
+    def test_error_type_captures_exception_class(self):
+        response = ToolResponse(content="boom", is_error=True, error_type="ConnectionError")
+
+        assert response.error_type == "ConnectionError"
+
 
 class TestTokenUsage:
     def test_add_accumulates(self):
