@@ -22,12 +22,12 @@ def owasp_mapping_for(category: AuditCategory) -> OwaspMapping | None:
 
 
 def owasp_id_for(category: AuditCategory) -> str | None:
-    mapping = OWASP_BY_CATEGORY.get(category)
+    mapping = owasp_mapping_for(category)
     return mapping.code if mapping else None
 
 
 def owasp_label_for(category: AuditCategory) -> str | None:
-    mapping = OWASP_BY_CATEGORY.get(category)
+    mapping = owasp_mapping_for(category)
     if mapping is None:
         return None
     return f"{mapping.code}: {mapping.title}"

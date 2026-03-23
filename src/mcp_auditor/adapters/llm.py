@@ -14,23 +14,31 @@ class _UsageMetadata(TypedDict):
     output_tokens: int
 
 
-def create_llm(settings: Settings) -> "AnthropicLLM | GoogleLLM":
+def create_llm(settings: Settings) -> "LLM":
     return _create_for_provider(settings.provider, settings.resolve_model())
 
 
-def create_judge_llm(settings: Settings) -> "AnthropicLLM | GoogleLLM":
+def create_judge_llm(settings: Settings) -> "LLM":
     return _create_for_provider(settings.provider, settings.resolve_judge_model())
 
 
-def _create_for_provider(provider: str, model: str) -> "AnthropicLLM | GoogleLLM":
+def _create_for_provider(provider: str, model: str) -> "LLM":
     if provider == "anthropic":
-        return AnthropicLLM(model=model)
+        return LLM(_make_anthropic_model(model), max_retries=3)
     if provider == "google":
-        return GoogleLLM(model=model)
+        return LLM(_make_google_model(model), max_retries=3)
     raise ValueError(f"Unknown provider: {provider!r}. Use 'google' or 'anthropic'.")
 
 
-class _BaseLLM:
+def _make_anthropic_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    return ChatAnthropic(model=model, max_retries=3)  # type: ignore[arg-type]
+
+
+def _make_google_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    return ChatGoogleGenerativeAI(model=model)  # pyright: ignore[reportUnknownArgumentType]
+
+
+class LLM:
     def __init__(self, model: BaseChatModel, max_retries: int):  # pyright: ignore[reportMissingTypeStubs]
         self._model = model
         self._max_retries = max_retries
@@ -69,19 +77,3 @@ def _to_token_usage(metadata: _UsageMetadata | None) -> TokenUsage:
         input_tokens=metadata["input_tokens"],
         output_tokens=metadata["output_tokens"],
     )
-
-
-class AnthropicLLM(_BaseLLM):
-    def __init__(self, model: str, max_retries: int = 3):
-        super().__init__(
-            model=ChatAnthropic(model=model, max_retries=max_retries),  # type: ignore[arg-type]
-            max_retries=max_retries,
-        )
-
-
-class GoogleLLM(_BaseLLM):
-    def __init__(self, model: str, max_retries: int = 3):
-        super().__init__(
-            model=ChatGoogleGenerativeAI(model=model),  # pyright: ignore[reportUnknownArgumentType]
-            max_retries=max_retries,
-        )
