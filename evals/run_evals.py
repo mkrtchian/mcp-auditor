@@ -30,7 +30,7 @@ from evals.metrics import (
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import Settings, load_settings
-from mcp_auditor.domain.models import AuditCategory, AuditReport, TokenUsage, ToolReport
+from mcp_auditor.domain.models import AttackContext, AuditCategory, AuditReport, TokenUsage, ToolReport
 from mcp_auditor.graph.builder import build_graph
 
 HONEYPOT_SERVER = Path(__file__).resolve().parent.parent / "tests" / "dummy_server.py"
@@ -191,7 +191,11 @@ async def _run_single_honeypot(
         ) as mcp_client:
             graph = build_graph(llm, mcp_client, judge_llm=judge_llm)
             result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                {"target": f"{honeypot.command} {' '.join(honeypot.args)}", "test_budget": budget}
+                {
+                    "target": f"{honeypot.command} {' '.join(honeypot.args)}",
+                    "test_budget": budget,
+                    "attack_context": AttackContext(),
+                }
             )
             return result["audit_report"]
     finally:
