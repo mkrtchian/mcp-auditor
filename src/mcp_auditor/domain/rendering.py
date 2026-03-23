@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from dataclasses import dataclass, field
 
 from mcp_auditor.domain.models import (
     AuditCategory,
@@ -101,3 +102,33 @@ def format_severity_breakdown(counts: Counter[Severity]) -> str:
 def _severity_breakdown(findings: list[EvalResult]) -> str:
     counts: Counter[Severity] = Counter(f.severity for f in findings)
     return format_severity_breakdown(counts)
+
+
+@dataclass
+class ToolSummary:
+    name: str
+    judged: int = 0
+    passed: int = 0
+    failed: int = 0
+    severity_counts: Counter[Severity] = field(default_factory=lambda: Counter[Severity]())
+
+
+def summarize_tools(report: AuditReport) -> list[ToolSummary]:
+    return [_summarize_tool_report(tr) for tr in report.tool_reports]
+
+
+def _summarize_tool_report(tool_report: ToolReport) -> ToolSummary:
+    judged = [c for c in tool_report.cases if c.eval_result is not None]
+    passed = sum(1 for c in judged if c.eval_result and c.eval_result.verdict == EvalVerdict.PASS)
+    severity_counts: Counter[Severity] = Counter(
+        c.eval_result.severity
+        for c in judged
+        if c.eval_result is not None and c.eval_result.verdict == EvalVerdict.FAIL
+    )
+    return ToolSummary(
+        name=tool_report.tool.name,
+        judged=len(judged),
+        passed=passed,
+        failed=len(judged) - passed,
+        severity_counts=severity_counts,
+    )

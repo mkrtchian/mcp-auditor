@@ -1,15 +1,10 @@
 from __future__ import annotations
 
 import json
-from collections import Counter
-from dataclasses import dataclass, field
-from types import TracebackType
-from typing import Self
 
 from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import BarColumn, MofNCompleteColumn, Progress, TaskID, TextColumn
 from rich.status import Status
 from rich.table import Table
 from rich.text import Text
@@ -18,12 +13,21 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     AuditReport,
     EvalResult,
-    EvalVerdict,
     Severity,
     TokenUsage,
 )
 from mcp_auditor.domain.owasp import owasp_id_for
-from mcp_auditor.domain.rendering import format_severity_breakdown, render_summary
+from mcp_auditor.domain.rendering import (
+    ToolSummary,
+    format_severity_breakdown,
+    render_summary,
+    summarize_tools,
+)
+from mcp_auditor.progress import CIProgress, NullStatus, ToolProgress
+
+# Re-export for existing consumers
+from mcp_auditor.progress import format_failure_line as format_failure_line
+from mcp_auditor.progress import format_tool_summary as format_tool_summary
 
 
 class AuditDisplay:
@@ -159,41 +163,8 @@ def _truncate(text: str, max_length: int) -> str:
     return text[: max_length - 1] + "\u2026"
 
 
-@dataclass
-class _ToolSummary:
-    name: str
-    judged: int = 0
-    passed: int = 0
-    failed: int = 0
-    severity_counts: Counter[Severity] = field(default_factory=lambda: Counter[Severity]())
-
-
-def _summarize_tools(report: AuditReport) -> list[_ToolSummary]:
-    summaries: list[_ToolSummary] = []
-    for tool_report in report.tool_reports:
-        judged = [c for c in tool_report.cases if c.eval_result is not None]
-        passed = sum(
-            1 for c in judged if c.eval_result and c.eval_result.verdict == EvalVerdict.PASS
-        )
-        severity_counts: Counter[Severity] = Counter(
-            c.eval_result.severity
-            for c in judged
-            if c.eval_result is not None and c.eval_result.verdict == EvalVerdict.FAIL
-        )
-        summaries.append(
-            _ToolSummary(
-                name=tool_report.tool.name,
-                judged=len(judged),
-                passed=passed,
-                failed=len(judged) - passed,
-                severity_counts=severity_counts,
-            )
-        )
-    return summaries
-
-
 def _build_summary_table(report: AuditReport) -> tuple[Table, int, int]:
-    summaries = _summarize_tools(report)
+    summaries = summarize_tools(report)
     table = Table()
     table.add_column("Tool")
     table.add_column("Tests", justify="right")
@@ -209,7 +180,7 @@ def _build_summary_table(report: AuditReport) -> tuple[Table, int, int]:
     return table, total_pass, total_judged
 
 
-def _format_fail_cell(summary: _ToolSummary) -> Text | str:
+def _format_fail_cell(summary: ToolSummary) -> Text | str:
     if summary.failed == 0:
         return "0"
     breakdown = format_severity_breakdown(summary.severity_counts)
@@ -220,102 +191,3 @@ def _format_fail_cell(summary: _ToolSummary) -> Text | str:
 
 def _format_token_usage(usage: TokenUsage) -> str:
     return f"Tokens: {usage.input_tokens:,} in / {usage.output_tokens:,} out"
-
-
-def format_failure_line(result: EvalResult) -> str:
-    owasp = owasp_id_for(result.category)
-    category_display = f"{result.category} / {owasp}" if owasp else str(result.category)
-    return f"  \u2717 {category_display} ({result.severity}): {result.justification}"
-
-
-def format_tool_summary(fail_count: int, pass_count: int, failures: list[EvalResult]) -> str:
-    if fail_count == 0:
-        return "\u2713 all passed"
-    severity_counts: Counter[Severity] = Counter(f.severity for f in failures)
-    breakdown = format_severity_breakdown(severity_counts)
-    return f"\u2717 {fail_count} failed ({breakdown})"
-
-
-class NullStatus:
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        pass
-
-
-class _ResultTracker:
-    def __init__(self) -> None:
-        self.fail_count = 0
-        self.pass_count = 0
-        self.failures: list[EvalResult] = []
-
-    def record(self, result: EvalResult) -> None:
-        if result.verdict == EvalVerdict.FAIL:
-            self.fail_count += 1
-            self.failures.append(result)
-        else:
-            self.pass_count += 1
-
-
-class CIProgress:
-    def __init__(self, console: Console, tool_label: str) -> None:
-        self._console = console
-        self._tool_label = tool_label
-        self._tracker = _ResultTracker()
-
-    def start(self) -> None:
-        pass
-
-    def stop(self) -> None:
-        t = self._tracker
-        summary = format_tool_summary(t.fail_count, t.pass_count, t.failures)
-        self._console.print(f"{self._tool_label}: {summary}")
-        for failure in t.failures:
-            self._console.print(format_failure_line(failure))
-
-    def advance(self, result: EvalResult) -> None:
-        self._tracker.record(result)
-
-
-class ToolProgress:
-    def __init__(self, console: Console, tool_label: str, case_count: int) -> None:
-        self._console = console
-        self._tool_label = tool_label
-        self._case_count = case_count
-        self._tracker = _ResultTracker()
-        self._progress = Progress(
-            TextColumn("{task.description}"),
-            BarColumn(),
-            MofNCompleteColumn(),
-            console=console,
-        )
-        self._task_id: TaskID | None = None
-
-    def start(self) -> None:
-        if self._case_count == 0:
-            self._console.print(f"{self._tool_label} — no cases")
-            return
-        self._progress.start()
-        self._task_id = self._progress.add_task(self._tool_label, total=self._case_count)
-
-    def stop(self) -> None:
-        if self._case_count == 0:
-            return
-        self._progress.stop()
-        t = self._tracker
-        summary = format_tool_summary(t.fail_count, t.pass_count, t.failures)
-        style = "green" if t.fail_count == 0 else "red"
-        self._console.print(f"[{style}]{summary}[/{style}]")
-
-    def advance(self, result: EvalResult) -> None:
-        self._tracker.record(result)
-        if result.verdict == EvalVerdict.FAIL:
-            self._progress.console.print(format_failure_line(result))
-        if self._task_id is not None:
-            self._progress.advance(self._task_id)
