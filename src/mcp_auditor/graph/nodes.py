@@ -92,14 +92,14 @@ def make_collect_generated_cases():
     return collect_generated_cases
 
 
-def make_finalize_tool_audit():
-    async def finalize_tool_audit(state: dict[str, Any]) -> dict[str, Any]:
+def make_build_tool_report():
+    async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         cases = state["judged_cases"]
         report = ToolReport(tool=tool, cases=cases)
         return {"tool_reports": [report]}
 
-    return finalize_tool_audit
+    return build_tool_report
 
 
 def make_extract_attack_context(llm: LLMPort):

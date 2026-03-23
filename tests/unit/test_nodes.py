@@ -8,10 +8,10 @@ import tests.unit.fixtures.test_nodes_then as then
 from mcp_auditor.domain import AttackContext, TestCaseBatch, ToolResponse
 from mcp_auditor.domain.models import filter_tools
 from mcp_auditor.graph.nodes import (
+    make_build_tool_report,
     make_discover_tools,
     make_execute_tool,
     make_extract_attack_context,
-    make_finalize_tool_audit,
     make_generate_test_cases,
     make_judge_response,
     make_prepare_tool,
@@ -188,7 +188,7 @@ class TestFinalizeToolAudit:
         case1 = case1.model_copy(update={"eval_result": given.an_eval_result()})
         case2 = given.a_test_case(response="r2")
         case2 = case2.model_copy(update={"eval_result": given.an_eval_result()})
-        node = make_finalize_tool_audit()
+        node = make_build_tool_report()
 
         result = await node({"current_tool": tool, "judged_cases": [case1, case2]})
 

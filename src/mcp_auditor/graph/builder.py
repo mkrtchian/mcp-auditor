@@ -7,11 +7,11 @@ from langgraph.graph.state import CompiledStateGraph  # type: ignore[import-unty
 
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.nodes import (
+    make_build_tool_report,
     make_collect_generated_cases,
     make_discover_tools,
     make_execute_tool,
     make_extract_attack_context,
-    make_finalize_tool_audit,
     make_generate_report,
     make_generate_test_cases,
     make_judge_response,
@@ -37,14 +37,14 @@ def build_graph(
     builder.add_node("discover_tools", make_discover_tools(mcp_client, tools_filter=tools_filter))
     builder.add_node("prepare_tool", make_prepare_tool())
     builder.add_node("audit_tool", audit_subgraph)
-    builder.add_node("finalize_tool_audit", make_finalize_tool_audit())
+    builder.add_node("build_tool_report", make_build_tool_report())
     builder.add_node("extract_attack_context", make_extract_attack_context(llm))
     builder.add_node("generate_report", make_generate_report())
     builder.add_edge(START, "discover_tools")
     builder.add_conditional_edges("discover_tools", route_after_discovery)
     builder.add_edge("prepare_tool", "audit_tool")
-    builder.add_edge("audit_tool", "finalize_tool_audit")
-    builder.add_edge("finalize_tool_audit", "extract_attack_context")
+    builder.add_edge("audit_tool", "build_tool_report")
+    builder.add_edge("build_tool_report", "extract_attack_context")
     builder.add_conditional_edges("extract_attack_context", route_tools)
     return builder.compile(checkpointer=checkpointer)
 
@@ -78,12 +78,12 @@ def build_dry_run_graph(
     builder.add_node("discover_tools", make_discover_tools(mcp_client, tools_filter=tools_filter))
     builder.add_node("prepare_tool", make_prepare_tool())
     builder.add_node("generate_cases", subgraph)
-    builder.add_node("finalize_tool_audit", make_finalize_tool_audit())
+    builder.add_node("build_tool_report", make_build_tool_report())
     builder.add_edge(START, "discover_tools")
     builder.add_conditional_edges("discover_tools", _route_to_tools_or_end)
     builder.add_edge("prepare_tool", "generate_cases")
-    builder.add_edge("generate_cases", "finalize_tool_audit")
-    builder.add_conditional_edges("finalize_tool_audit", _route_to_next_tool_or_end)
+    builder.add_edge("generate_cases", "build_tool_report")
+    builder.add_conditional_edges("build_tool_report", _route_to_next_tool_or_end)
     return builder.compile()
 
 

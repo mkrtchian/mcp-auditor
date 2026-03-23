@@ -51,7 +51,7 @@ The audit runs in four phases:
 graph LR
     A[discover_tools] --> B[prepare_tool]
     B --> C[audit_tool]
-    C --> D[finalize_tool_audit]
+    C --> D[build_tool_report]
     D --> E[extract_attack_context]
     E -->|more tools| B
     E -->|done| F[generate_report]

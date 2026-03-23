@@ -31,7 +31,7 @@ class AuditProgressReporter:
             tool: ToolDefinition | None = state_update.get("current_tool")
             if tool:
                 self._tool_index += 1
-        elif node_name == "finalize_tool_audit":
+        elif node_name == "build_tool_report":
             if self._active_progress:
                 self._active_progress.__exit__(None, None, None)
                 self._active_progress = None
