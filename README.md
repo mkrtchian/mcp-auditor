@@ -52,8 +52,9 @@ graph LR
     A[discover_tools] --> B[prepare_tool]
     B --> C[audit_tool]
     C --> D[finalize_tool_audit]
-    D -->|more tools| B
-    D -->|done| E[generate_report]
+    D --> E[extract_attack_context]
+    E -->|more tools| B
+    E -->|done| F[generate_report]
 ```
 
 **audit_tool subgraph** -- runs per tool, loops over test cases:
@@ -70,6 +71,7 @@ graph LR
 
 - **Hexagonal architecture** -- `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider (Gemini, Claude) means changing one adapter, zero graph code. [ADR 002](docs/adr/002-hexagonal-architecture.md)
 - **Subgraph per tool** -- each tool audit is a self-contained subgraph. This enables checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off without re-paying for the first 7. [ADR 001](docs/adr/001-why-langgraph.md)
+- **Cross-tool learning** -- after each tool audit, the graph extracts intelligence from the results (database engine, framework, exposed internals). Subsequent tools receive this context, enabling targeted payloads -- e.g., SQLite-specific injection after seeing `sqlite3.OperationalError` in a read tool. Read-like tools are audited first to maximize reconnaissance value. [ADR 009](docs/adr/009-cross-tool-learning.md)
 - **LLM-as-a-judge** -- no fragile heuristics or regex patterns. The LLM evaluates each response against security criteria, producing structured verdicts with justifications. Quality is measured through evals, not unit tests. [ADR 003](docs/adr/003-testing-philosophy.md)
 
 ## Example: auditing a real server
