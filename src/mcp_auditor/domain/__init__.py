@@ -1,4 +1,5 @@
 from mcp_auditor.domain.models import (
+    AttackContext,
     AuditCategory,
     AuditPayload,
     AuditReport,
@@ -12,10 +13,12 @@ from mcp_auditor.domain.models import (
     ToolReport,
     ToolResponse,
     filter_tools,
+    order_tools_for_audit,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 
 __all__ = [
+    "AttackContext",
     "AuditCategory",
     "AuditPayload",
     "AuditReport",
@@ -31,4 +34,5 @@ __all__ = [
     "ToolReport",
     "ToolResponse",
     "filter_tools",
+    "order_tools_for_audit",
 ]

@@ -1,9 +1,21 @@
 from typing import Any
 
-from mcp_auditor.domain import AuditCategory, AuditPayload, TestCase, ToolDefinition
+from mcp_auditor.domain import (
+    AuditCategory,
+    AuditPayload,
+    EvalResult,
+    EvalVerdict,
+    Severity,
+    TestCase,
+    ToolDefinition,
+    ToolReport,
+)
+from mcp_auditor.domain.models import AttackContext
 from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
+    build_context_extraction_prompt,
     build_judge_prompt,
+    format_attack_context,
 )
 
 
@@ -61,6 +73,90 @@ class TestAttackGenerationPrompt:
 
         assert "10" in prompt
 
+    def test_includes_attack_context_when_provided(self):
+        prompt = build_attack_generation_prompt(
+            tool=_a_tool(),
+            budget=5,
+            categories=[AuditCategory.INJECTION],
+            attack_context=AttackContext(db_engine="sqlite"),
+        )
+
+        assert "sqlite" in prompt
+
+    def test_omits_attack_context_when_none(self):
+        prompt = build_attack_generation_prompt(
+            tool=_a_tool(),
+            budget=5,
+            categories=[AuditCategory.INJECTION],
+        )
+
+        assert "Previous tool audits" not in prompt
+
+    def test_omits_attack_context_when_empty(self):
+        prompt = build_attack_generation_prompt(
+            tool=_a_tool(),
+            budget=5,
+            categories=[AuditCategory.INJECTION],
+            attack_context=AttackContext(),
+        )
+
+        assert "Previous tool audits" not in prompt
+
+
+class TestFormatAttackContext:
+    def test_empty_context_returns_empty_string(self):
+        assert format_attack_context(AttackContext()) == ""
+
+    def test_context_with_db_engine(self):
+        result = format_attack_context(AttackContext(db_engine="sqlite"))
+
+        assert "sqlite" in result
+
+    def test_context_with_multiple_fields(self):
+        result = format_attack_context(
+            AttackContext(
+                db_engine="postgresql",
+                framework="django",
+                exposed_internals=["/opt/app/db.sqlite3"],
+            )
+        )
+
+        assert "postgresql" in result
+        assert "django" in result
+        assert "/opt/app/db.sqlite3" in result
+
+
+class TestContextExtractionPrompt:
+    def test_includes_tool_name(self):
+        report = _a_tool_report(tool_name="get_user")
+
+        prompt = build_context_extraction_prompt(report, AttackContext())
+
+        assert "get_user" in prompt
+
+    def test_includes_response_content(self):
+        report = _a_tool_report(response="sqlite3.OperationalError: no such table")
+
+        prompt = build_context_extraction_prompt(report, AttackContext())
+
+        assert "sqlite3.OperationalError" in prompt
+
+    def test_includes_existing_context_when_non_empty(self):
+        existing = AttackContext(db_engine="sqlite")
+
+        prompt = build_context_extraction_prompt(
+            _a_tool_report(), existing
+        )
+
+        assert "sqlite" in prompt
+
+    def test_omits_existing_context_when_empty(self):
+        prompt = build_context_extraction_prompt(
+            _a_tool_report(), AttackContext()
+        )
+
+        assert "What we already know" not in prompt
+
 
 class TestJudgePrompt:
     def test_includes_response(self):
@@ -116,3 +212,30 @@ def _a_test_case(
         response=response,
         error=error,
     )
+
+
+def _a_tool_report(
+    tool_name: str = "get_user",
+    response: str | None = "some response",
+    error: str | None = None,
+) -> ToolReport:
+    tool = _a_tool(name=tool_name)
+    case = TestCase(
+        payload=AuditPayload(
+            tool_name=tool_name,
+            category=AuditCategory.INJECTION,
+            description="test injection",
+            arguments={"id": "1 OR 1=1"},
+        ),
+        response=response,
+        error=error,
+        eval_result=EvalResult(
+            tool_name=tool_name,
+            category=AuditCategory.INJECTION,
+            payload={"id": "1 OR 1=1"},
+            verdict=EvalVerdict.FAIL,
+            justification="vulnerable",
+            severity=Severity.HIGH,
+        ),
+    )
+    return ToolReport(tool=tool, cases=[case])

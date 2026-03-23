@@ -1,17 +1,25 @@
 import json
 
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
-from mcp_auditor.domain.models import AuditCategory, TestCase, ToolDefinition
+from mcp_auditor.domain.models import (
+    AttackContext,
+    AuditCategory,
+    TestCase,
+    ToolDefinition,
+    ToolReport,
+)
 
 
 def build_attack_generation_prompt(
     tool: ToolDefinition,
     budget: int,
     categories: list[AuditCategory],
+    attack_context: AttackContext | None = None,
 ) -> str:
     category_list = "\n".join(f"- {c.value}" for c in categories)
     schema_json = json.dumps(tool.input_schema, indent=2)
     description = tool.description or "No description provided"
+    context_section = _build_context_section(attack_context)
 
     return f"""You are a security auditor for MCP (Model Context Protocol) tool servers.
 
@@ -44,8 +52,107 @@ IMPORTANT — test design guidance per category:
 - error_handling: Trigger predictable error conditions — not-found IDs, invalid formats, boundary violations — and check whether the tool exposes raw exceptions or internal details.
 
 - resource_abuse: Craft inputs designed to cause unbounded resource consumption — extremely large limits, wildcard queries, cross-joins.
-
+{context_section}
 Always send arguments that conform to the schema's type constraints. The goal is to test the TOOL's logic, not the schema validator."""
+
+
+def _build_context_section(attack_context: AttackContext | None) -> str:
+    if attack_context is None:
+        return ""
+    rendered = format_attack_context(attack_context)
+    if not rendered:
+        return ""
+    return f"\n{rendered}\n"
+
+
+def format_attack_context(context: AttackContext) -> str:
+    """Render attack context as a text section. Returns empty string if all defaults."""
+    if _is_empty_context(context):
+        return ""
+    lines = ["Previous tool audits revealed the following about this server:"]
+    if context.db_engine is not None:
+        lines.append(f"- Database engine: {context.db_engine}")
+    if context.framework is not None:
+        lines.append(f"- Framework: {context.framework}")
+    if context.language is not None:
+        lines.append(f"- Language: {context.language}")
+    if context.exposed_internals:
+        lines.append(f"- Exposed internals: {', '.join(context.exposed_internals)}")
+    if context.effective_payloads:
+        lines.append(f"- Effective patterns: {', '.join(context.effective_payloads)}")
+    if context.observations:
+        lines.append(f"- Observations: {context.observations}")
+    lines.append("")
+    lines.append(
+        "Use this intelligence to craft more targeted payloads. "
+        "For example, if the server uses SQLite, use SQLite-specific "
+        "injection syntax rather than generic SQL."
+    )
+    return "\n".join(lines)
+
+
+def build_context_extraction_prompt(
+    tool_report: ToolReport,
+    existing_context: AttackContext,
+) -> str:
+    """Prompt for extracting intelligence from a tool audit report."""
+    tool = tool_report.tool
+    description = tool.description or "No description provided"
+
+    cases_section = _format_cases_for_extraction(tool_report)
+    existing_section = _format_existing_context(existing_context)
+
+    return f"""You are analyzing the results of a security audit on the MCP tool "{tool.name}".
+
+Tool description: {description}
+
+Test results:
+{cases_section}
+{existing_section}
+Extract any intelligence about the server from these results. Look for:
+- Database engine (e.g., if you see sqlite3.OperationalError, set db_engine to "sqlite")
+- Framework or language hints (e.g., Python tracebacks, Express.js error formats)
+- Exposed internal details (file paths, table names, config keys)
+- Which attack patterns were effective
+- Any other observations about the server's behavior
+
+Preserve all previous findings and add new ones. Do not lose information from earlier audits."""
+
+
+def _format_cases_for_extraction(tool_report: ToolReport) -> str:
+    parts: list[str] = []
+    for i, case in enumerate(tool_report.cases, 1):
+        lines = [f"Case {i}: {case.payload.description}"]
+        if case.response is not None:
+            response_text = (
+                json.dumps(case.response) if isinstance(case.response, dict) else str(case.response)
+            )
+            lines.append(f"  Response: {response_text}")
+        if case.error is not None:
+            lines.append(f"  Error: {case.error}")
+        if case.eval_result is not None:
+            lines.append(f"  Verdict: {case.eval_result.verdict}")
+            lines.append(f"  Justification: {case.eval_result.justification}")
+        parts.append("\n".join(lines))
+    return "\n\n".join(parts)
+
+
+def _format_existing_context(existing_context: AttackContext) -> str:
+    rendered = format_attack_context(existing_context)
+    if not rendered:
+        return ""
+    return f"\nWhat we already know:\n{rendered}\n"
+
+
+def _is_empty_context(context: AttackContext) -> bool:
+    return (
+        context.db_engine is None
+        and context.framework is None
+        and context.language is None
+        and not context.exposed_internals
+        and not context.effective_payloads
+        and not context.observations
+    )
 
 
 def build_judge_prompt(

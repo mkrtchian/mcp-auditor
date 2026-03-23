@@ -20,6 +20,7 @@ from mcp_auditor.domain import (
     ToolReport,
     ToolResponse,
 )
+from mcp_auditor.domain.models import order_tools_for_audit
 
 
 class TestEnumConstraints:
@@ -166,6 +167,65 @@ def _a_report_with_finding(severity: Severity) -> AuditReport:
         tool_reports=[ToolReport(tool=tool, cases=[case])],
         token_usage=TokenUsage(),
     )
+
+
+class TestOrderToolsForAudit:
+    def test_read_like_tools_sort_before_others(self):
+        tools = [
+            _a_tool(name="delete_user"),
+            _a_tool(name="get_user"),
+            _a_tool(name="list_items"),
+        ]
+
+        result = order_tools_for_audit(tools)
+
+        assert [t.name for t in result] == ["get_user", "list_items", "delete_user"]
+
+    def test_ties_broken_by_parameter_count(self):
+        three_params = _a_tool(
+            name="get_details",
+            input_schema={
+                "type": "object",
+                "properties": {"a": {}, "b": {}, "c": {}},
+            },
+        )
+        one_param = _a_tool(
+            name="get_summary",
+            input_schema={"type": "object", "properties": {"a": {}}},
+        )
+
+        result = order_tools_for_audit([three_params, one_param])
+
+        assert [t.name for t in result] == ["get_summary", "get_details"]
+
+    def test_stable_within_same_group(self):
+        tools = [_a_tool(name="create_x"), _a_tool(name="update_y")]
+
+        result = order_tools_for_audit(tools)
+
+        assert [t.name for t in result] == ["create_x", "update_y"]
+
+    def test_empty_list(self):
+        assert order_tools_for_audit([]) == []
+
+    def test_all_read_prefixes_recognized(self):
+        prefixes = [
+            "get_", "list_", "read_", "search_", "find_",
+            "fetch_", "show_", "describe_", "check_",
+        ]
+        tools = [_a_tool(name=f"{p}thing") for p in prefixes]
+        tools.append(_a_tool(name="delete_thing"))
+
+        result = order_tools_for_audit(tools)
+
+        assert result[-1].name == "delete_thing"
+
+
+def _a_tool(
+    name: str = "test_tool",
+    input_schema: dict[str, Any] | None = None,
+) -> ToolDefinition:
+    return ToolDefinition(name=name, description="desc", input_schema=input_schema or {})
 
 
 def _a_payload(**overrides: Any) -> AuditPayload:

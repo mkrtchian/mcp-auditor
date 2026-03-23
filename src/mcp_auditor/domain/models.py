@@ -61,6 +61,17 @@ class ToolResponse(BaseModel):
     error_type: str | None = None
 
 
+class AttackContext(BaseModel):
+    """Accumulated intelligence from previous tool audits."""
+
+    db_engine: str | None = None
+    framework: str | None = None
+    language: str | None = None
+    exposed_internals: list[str] = []
+    effective_payloads: list[str] = []
+    observations: str = ""
+
+
 class AuditPayload(BaseModel):
     tool_name: str
     category: AuditCategory
@@ -106,6 +117,30 @@ class TokenUsage(BaseModel):
 class ToolReport(BaseModel):
     tool: ToolDefinition
     cases: list[TestCase]
+
+
+_READ_PREFIXES = (
+    "get_",
+    "list_",
+    "read_",
+    "search_",
+    "find_",
+    "fetch_",
+    "show_",
+    "describe_",
+    "check_",
+)
+
+
+def order_tools_for_audit(tools: list[ToolDefinition]) -> list[ToolDefinition]:
+    """Read-like tools first, then by parameter count ascending. Stable sort."""
+    return sorted(tools, key=_audit_order_key)
+
+
+def _audit_order_key(tool: ToolDefinition) -> tuple[int, int]:
+    is_read = 0 if tool.name.startswith(_READ_PREFIXES) else 1
+    param_count = len(tool.input_schema.get("properties", {}))
+    return (is_read, param_count)
 
 
 def filter_tools(
