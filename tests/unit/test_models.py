@@ -210,8 +210,15 @@ class TestOrderToolsForAudit:
 
     def test_all_read_prefixes_recognized(self):
         prefixes = [
-            "get_", "list_", "read_", "search_", "find_",
-            "fetch_", "show_", "describe_", "check_",
+            "get_",
+            "list_",
+            "read_",
+            "search_",
+            "find_",
+            "fetch_",
+            "show_",
+            "describe_",
+            "check_",
         ]
         tools = [_a_tool(name=f"{p}thing") for p in prefixes]
         tools.append(_a_tool(name="delete_thing"))

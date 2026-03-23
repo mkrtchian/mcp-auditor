@@ -1,6 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import (
+    AttackContext,
     AuditCategory,
     AuditPayload,
     EvalResult,
@@ -8,6 +9,7 @@ from mcp_auditor.domain import (
     Severity,
     TestCase,
     ToolDefinition,
+    ToolReport,
     ToolResponse,
 )
 from tests.fakes import FakeLLM, FakeMCPClient
@@ -79,3 +81,33 @@ def a_fake_mcp_client(
     responses: dict[str, ToolResponse] | None = None,
 ) -> FakeMCPClient:
     return FakeMCPClient(tools, responses)
+
+
+def an_attack_context(
+    db_engine: str | None = None,
+    framework: str | None = None,
+    language: str | None = None,
+    exposed_internals: list[str] | None = None,
+    effective_payloads: list[str] | None = None,
+    observations: str = "",
+) -> AttackContext:
+    return AttackContext(
+        db_engine=db_engine,
+        framework=framework,
+        language=language,
+        exposed_internals=exposed_internals or [],
+        effective_payloads=effective_payloads or [],
+        observations=observations,
+    )
+
+
+def a_tool_report(
+    tool_name: str = "test_tool",
+    num_cases: int = 1,
+) -> ToolReport:
+    tool = a_tool(name=tool_name)
+    cases = [
+        a_test_case(tool_name=tool_name, response="some response", error="some error")
+        for _ in range(num_cases)
+    ]
+    return ToolReport(tool=tool, cases=cases)

@@ -56,7 +56,7 @@ async def test_empty_tool_list():
 @pytest.mark.asyncio
 async def test_token_usage_accumulated():
     tool = given.a_tool(name="get_user")
-    # 2 test cases = 1 generate_structured (batch) + 2 judge_response = 3 LLM calls
+    # 2 test cases = 1 generate + 2 judge + 1 extract = 4 LLM calls
     fake_llm = given.a_fake_llm_for_single_tool_audit(tool_name="get_user", num_cases=2)
     fake_mcp = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp)
@@ -65,5 +65,25 @@ async def test_token_usage_accumulated():
     result = await given.invoke_graph(graph, state)
 
     usage = result["audit_report"].token_usage
-    assert usage.input_tokens == 30  # 3 calls * 10
-    assert usage.output_tokens == 15  # 3 calls * 5
+    assert usage.input_tokens == 40  # 4 calls * 10
+    assert usage.output_tokens == 20  # 4 calls * 5
+
+
+@pytest.mark.asyncio
+async def test_attack_context_populated_after_audit():
+    from mcp_auditor.domain import AttackContext
+
+    tool = given.a_tool(name="get_user")
+    fake_llm = given.a_fake_llm_for_single_tool_audit(
+        tool_name="get_user",
+        num_cases=1,
+        extraction_response=AttackContext(db_engine="sqlite"),
+    )
+    fake_mcp = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp)
+    state = given.an_initial_state(test_budget=5)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.attack_context_is_non_empty(result)
+    assert result["attack_context"].db_engine == "sqlite"

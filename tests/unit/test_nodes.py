@@ -5,11 +5,12 @@ from langgraph.graph import END  # type: ignore[import-untyped]
 
 import tests.unit.fixtures.test_nodes_given as given
 import tests.unit.fixtures.test_nodes_then as then
-from mcp_auditor.domain import TestCaseBatch, ToolResponse
+from mcp_auditor.domain import AttackContext, TestCaseBatch, ToolResponse
 from mcp_auditor.domain.models import filter_tools
 from mcp_auditor.graph.nodes import (
     make_discover_tools,
     make_execute_tool,
+    make_extract_attack_context,
     make_finalize_tool_audit,
     make_generate_test_cases,
     make_judge_response,
@@ -71,6 +72,16 @@ class TestDiscoverTools:
         then.discovered_tools_count(result, 2)
         then.discovered_tools_are(result["discovered_tools"], ["a", "c"])
 
+    @pytest.mark.asyncio
+    async def test_orders_tools_for_audit(self):
+        tools = [given.a_tool(name="delete_user"), given.a_tool(name="get_user")]
+        client = given.a_fake_mcp_client(tools)
+        node = make_discover_tools(client)
+
+        result = await node({})
+
+        then.discovered_tools_are(result["discovered_tools"], ["get_user", "delete_user"])
+
 
 class TestPrepareTools:
     @pytest.mark.asyncio
@@ -83,6 +94,28 @@ class TestPrepareTools:
         then.current_tool_is(result, tools[1])
 
 
+class TestExtractAttackContext:
+    @pytest.mark.asyncio
+    async def test_extracts_context_from_tool_report(self):
+        report = given.a_tool_report()
+        llm = given.a_fake_llm_returning(AttackContext(db_engine="sqlite"))
+        node = make_extract_attack_context(llm)
+
+        result = await node({"tool_reports": [report], "attack_context": AttackContext()})
+
+        then.attack_context_has_db_engine(result, "sqlite")
+
+    @pytest.mark.asyncio
+    async def test_accumulates_token_usage(self):
+        report = given.a_tool_report()
+        llm = given.a_fake_llm_returning(AttackContext(db_engine="sqlite"))
+        node = make_extract_attack_context(llm)
+
+        result = await node({"tool_reports": [report], "attack_context": AttackContext()})
+
+        assert len(result["token_usage"]) == 1
+
+
 class TestGenerateTestCases:
     @pytest.mark.asyncio
     async def test_produces_pending_cases(self):
@@ -92,7 +125,9 @@ class TestGenerateTestCases:
         node = make_generate_test_cases(llm)
         tool = given.a_tool()
 
-        result = await node({"current_tool": tool, "test_budget": 3})
+        result = await node(
+            {"current_tool": tool, "test_budget": 3, "attack_context": AttackContext()}
+        )
 
         then.pending_cases_count(result, 3)
         then.judged_cases_count(result, 0)

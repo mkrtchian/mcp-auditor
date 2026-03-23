@@ -40,9 +40,7 @@ class StdioMCPClient:
         try:
             result = await self._session.call_tool(name, arguments=args)
         except Exception as exc:
-            return ToolResponse(
-                content=str(exc), is_error=True, error_type=type(exc).__name__
-            )
+            return ToolResponse(content=str(exc), is_error=True, error_type=type(exc).__name__)
         text = "\n".join(item.text for item in result.content if isinstance(item, TextContent))
         return ToolResponse(content=text, is_error=bool(result.isError))
 

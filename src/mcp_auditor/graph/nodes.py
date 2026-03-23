@@ -3,6 +3,7 @@ from typing import Any
 from langgraph.graph import END  # type: ignore[import-untyped]
 
 from mcp_auditor.domain.models import (
+    AttackContext,
     AuditCategory,
     AuditReport,
     EvalResult,
@@ -11,16 +12,22 @@ from mcp_auditor.domain.models import (
     TokenUsage,
     ToolReport,
     filter_tools,
+    order_tools_for_audit,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
-from mcp_auditor.graph.prompts import build_attack_generation_prompt, build_judge_prompt
+from mcp_auditor.graph.prompts import (
+    build_attack_generation_prompt,
+    build_context_extraction_prompt,
+    build_judge_prompt,
+)
 
 
 def make_discover_tools(mcp_client: MCPClientPort, tools_filter: frozenset[str] | None = None):
     async def discover_tools(_state: dict[str, Any]) -> dict[str, Any]:
         tools = await mcp_client.list_tools()
         filtered = filter_tools(tools, tools_filter)
-        return {"discovered_tools": filtered}
+        ordered = order_tools_for_audit(filtered)
+        return {"discovered_tools": ordered}
 
     return discover_tools
 
@@ -38,8 +45,11 @@ def make_generate_test_cases(llm: LLMPort):
     async def generate_test_cases(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         budget = state["test_budget"]
+        attack_context = state.get("attack_context")
         categories = list(AuditCategory)
-        prompt = build_attack_generation_prompt(tool=tool, budget=budget, categories=categories)
+        prompt = build_attack_generation_prompt(
+            tool=tool, budget=budget, categories=categories, attack_context=attack_context
+        )
         batch, usage = await llm.generate_structured(prompt, TestCaseBatch)
         cases = [TestCase(payload=p) for p in batch.cases]
         return {"pending_cases": cases, "judged_cases": [], "token_usage": [usage]}
@@ -90,6 +100,17 @@ def make_finalize_tool_audit():
         return {"tool_reports": [report]}
 
     return finalize_tool_audit
+
+
+def make_extract_attack_context(llm: LLMPort):
+    async def extract_attack_context(state: dict[str, Any]) -> dict[str, Any]:
+        tool_report = state["tool_reports"][-1]
+        existing_context = state["attack_context"]
+        prompt = build_context_extraction_prompt(tool_report, existing_context)
+        new_context, usage = await llm.generate_structured(prompt, AttackContext)
+        return {"attack_context": new_context, "token_usage": [usage]}
+
+    return extract_attack_context
 
 
 def make_generate_report():

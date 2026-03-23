@@ -3,6 +3,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from mcp_auditor.domain import (
+    AttackContext,
     AuditCategory,
     AuditPayload,
     EvalResult,
@@ -29,10 +30,12 @@ def a_tool(
 def a_fake_llm_for_single_tool_audit(
     tool_name: str = "test_tool",
     num_cases: int = 1,
+    extraction_response: AttackContext | None = None,
 ) -> FakeLLM:
     batch = TestCaseBatch(cases=[_a_payload(tool_name) for _ in range(num_cases)])
     eval_results = [_an_eval_result(tool_name) for _ in range(num_cases)]
-    return FakeLLM([batch, *eval_results])
+    context = extraction_response or AttackContext()
+    return FakeLLM([batch, *eval_results, context])
 
 
 def a_fake_llm_for_multi_tool_audit(
@@ -42,7 +45,7 @@ def a_fake_llm_for_multi_tool_audit(
     for tool_name, num_cases in tool_configs:
         batch = TestCaseBatch(cases=[_a_payload(tool_name) for _ in range(num_cases)])
         eval_results = [_an_eval_result(tool_name) for _ in range(num_cases)]
-        responses.extend([batch, *eval_results])
+        responses.extend([batch, *eval_results, AttackContext()])
     return FakeLLM(responses)
 
 
@@ -66,6 +69,7 @@ def an_initial_state(test_budget: int = 5) -> dict[str, Any]:
         "tool_reports": [],
         "token_usage": [],
         "audit_report": None,
+        "attack_context": AttackContext(),
     }
 
 

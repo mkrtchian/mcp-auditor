@@ -34,3 +34,7 @@ def tool_report_has_cases(result: dict[str, Any], expected_count: int) -> None:
 
 def discovered_tools_are(tools: list[ToolDefinition], expected_names: list[str]) -> None:
     assert [t.name for t in tools] == expected_names
+
+
+def attack_context_has_db_engine(result: dict[str, Any], expected: str) -> None:
+    assert result["attack_context"].db_engine == expected

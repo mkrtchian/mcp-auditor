@@ -180,13 +180,15 @@ def _summarize_tools(report: AuditReport) -> list[_ToolSummary]:
             for c in judged
             if c.eval_result is not None and c.eval_result.verdict == EvalVerdict.FAIL
         )
-        summaries.append(_ToolSummary(
-            name=tool_report.tool.name,
-            judged=len(judged),
-            passed=passed,
-            failed=len(judged) - passed,
-            severity_counts=severity_counts,
-        ))
+        summaries.append(
+            _ToolSummary(
+                name=tool_report.tool.name,
+                judged=len(judged),
+                passed=passed,
+                failed=len(judged) - passed,
+                severity_counts=severity_counts,
+            )
+        )
     return summaries
 
 

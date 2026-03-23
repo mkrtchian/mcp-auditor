@@ -144,16 +144,12 @@ class TestContextExtractionPrompt:
     def test_includes_existing_context_when_non_empty(self):
         existing = AttackContext(db_engine="sqlite")
 
-        prompt = build_context_extraction_prompt(
-            _a_tool_report(), existing
-        )
+        prompt = build_context_extraction_prompt(_a_tool_report(), existing)
 
         assert "sqlite" in prompt
 
     def test_omits_existing_context_when_empty(self):
-        prompt = build_context_extraction_prompt(
-            _a_tool_report(), AttackContext()
-        )
+        prompt = build_context_extraction_prompt(_a_tool_report(), AttackContext())
 
         assert "What we already know" not in prompt
 
