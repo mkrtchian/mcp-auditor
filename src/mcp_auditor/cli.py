@@ -131,7 +131,9 @@ def run(
 def _merge_with_config_file(ctx: click.Context) -> dict[str, Any]:
     file_defaults = load_config_file(Path.cwd() / CONFIG_FILE_NAME)
     explicit_keys = {
-        key for key in ctx.params if ctx.get_parameter_source(key) != click.core.ParameterSource.DEFAULT
+        key
+        for key in ctx.params
+        if ctx.get_parameter_source(key) != click.core.ParameterSource.DEFAULT
     }
     return merge_defaults(dict(ctx.params), file_defaults, explicit_keys)
 
