@@ -24,9 +24,9 @@ def create_judge_llm(settings: Settings) -> "LLM":
 
 def _create_for_provider(provider: str, model: str) -> "LLM":
     if provider == "anthropic":
-        return LLM(_make_anthropic_model(model), max_retries=3)
+        return LLM(_make_anthropic_model(model), max_parse_attempts=3)
     if provider == "google":
-        return LLM(_make_google_model(model), max_retries=3)
+        return LLM(_make_google_model(model), max_parse_attempts=3)
     raise ValueError(f"Unknown provider: {provider!r}. Use 'google' or 'anthropic'.")
 
 
@@ -35,13 +35,13 @@ def _make_anthropic_model(model: str) -> BaseChatModel:  # pyright: ignore[repor
 
 
 def _make_google_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
-    return ChatGoogleGenerativeAI(model=model)  # pyright: ignore[reportUnknownArgumentType]
+    return ChatGoogleGenerativeAI(model=model, max_retries=3)  # pyright: ignore[reportUnknownArgumentType]
 
 
 class LLM:
-    def __init__(self, model: BaseChatModel, max_retries: int):  # pyright: ignore[reportMissingTypeStubs]
+    def __init__(self, model: BaseChatModel, max_parse_attempts: int):  # pyright: ignore[reportMissingTypeStubs]
         self._model = model
-        self._max_retries = max_retries
+        self._max_parse_attempts = max_parse_attempts
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
@@ -49,12 +49,12 @@ class LLM:
         structured = self._model.with_structured_output(  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
             output_schema, include_raw=True
         )
-        for _attempt in range(self._max_retries):
+        for _attempt in range(self._max_parse_attempts):
             raw_response = await structured.ainvoke(prompt)  # pyright: ignore[reportUnknownVariableType]
             parsed, usage = self._unpack_raw_response(cast(object, raw_response))
             if parsed is not None:
                 return cast(T, parsed), usage
-        raise ValueError(f"LLM returned unparseable output after {self._max_retries} attempts")
+        raise ValueError(f"LLM returned unparseable output after {self._max_parse_attempts} attempts")
 
     def _unpack_raw_response(
         self,
