@@ -8,13 +8,13 @@ import tests.unit.support.test_nodes_then as then
 from mcp_auditor.domain import AttackContext, TestCaseBatch, ToolResponse
 from mcp_auditor.domain.models import filter_tools
 from mcp_auditor.graph.nodes import (
-    make_build_tool_report,
+    build_tool_report,
     make_discover_tools,
     make_execute_tool,
     make_extract_attack_context,
     make_generate_test_cases,
     make_judge_response,
-    make_prepare_tool,
+    prepare_tool,
     route_after_discovery,
     route_test_cases,
     route_tools,
@@ -87,9 +87,7 @@ class TestPrepareTools:
     @pytest.mark.asyncio
     async def test_extracts_current_tool(self):
         tools = [given.a_tool(name="t1"), given.a_tool(name="t2"), given.a_tool(name="t3")]
-        node = make_prepare_tool()
-
-        result = await node({"discovered_tools": tools, "tool_reports": [object()]})
+        result = await prepare_tool({"discovered_tools": tools, "tool_reports": [object()]})
 
         then.current_tool_is(result, tools[1])
 
@@ -188,9 +186,7 @@ class TestFinalizeToolAudit:
         case1 = case1.model_copy(update={"eval_result": given.an_eval_result()})
         case2 = given.a_test_case(response="r2")
         case2 = case2.model_copy(update={"eval_result": given.an_eval_result()})
-        node = make_build_tool_report()
-
-        result = await node({"current_tool": tool, "judged_cases": [case1, case2]})
+        result = await build_tool_report({"current_tool": tool, "judged_cases": [case1, case2]})
 
         then.tool_report_has_cases(result, 2)
 

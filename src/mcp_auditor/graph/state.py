@@ -30,7 +30,7 @@ class AuditToolState(TypedDict):
     test_budget: int
     pending_cases: list[TestCase]
     current_case: TestCase | None
-    judged_cases: list[TestCase]
+    judged_cases: Annotated[list[TestCase], operator.add]
     token_usage: Annotated[list[TokenUsage], operator.add]
     attack_context: AttackContext
 

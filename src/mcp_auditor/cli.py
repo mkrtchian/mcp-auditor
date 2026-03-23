@@ -159,7 +159,9 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
     try:
         async with (
             AsyncSqliteSaver.from_conn_string(db_path) as checkpointer,
-            StdioMCPClient.connect(command, args, errlog=server_stderr) as mcp_client,
+            StdioMCPClient.connect(
+                command, args, errlog=server_stderr, tool_call_timeout=settings.tool_call_timeout
+            ) as mcp_client,
         ):
             if config.execution.dry_run:
                 await _run_dry_run(

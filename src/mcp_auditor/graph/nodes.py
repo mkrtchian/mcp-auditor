@@ -32,13 +32,10 @@ def make_discover_tools(mcp_client: MCPClientPort, tools_filter: frozenset[str] 
     return discover_tools
 
 
-def make_prepare_tool():
-    async def prepare_tool(state: dict[str, Any]) -> dict[str, Any]:
-        index = len(state.get("tool_reports", []))
-        current = state["discovered_tools"][index]
-        return {"current_tool": current}
-
-    return prepare_tool
+async def prepare_tool(state: dict[str, Any]) -> dict[str, Any]:
+    index = len(state.get("tool_reports", []))
+    current = state["discovered_tools"][index]
+    return {"current_tool": current}
 
 
 def make_generate_test_cases(llm: LLMPort):
@@ -78,28 +75,20 @@ def make_judge_response(llm: LLMPort):
         prompt = build_judge_prompt(tool=tool, test_case=case)
         eval_result, usage = await llm.generate_structured(prompt, EvalResult)
         judged_case = case.model_copy(update={"eval_result": eval_result})
-        existing = list(state.get("judged_cases", []))
-        existing.append(judged_case)
-        return {"judged_cases": existing, "current_case": None, "token_usage": [usage]}
+        return {"judged_cases": [judged_case], "current_case": None, "token_usage": [usage]}
 
     return judge_response
 
 
-def make_collect_generated_cases():
-    async def collect_generated_cases(state: dict[str, Any]) -> dict[str, Any]:
-        return {"judged_cases": state["pending_cases"], "pending_cases": []}
-
-    return collect_generated_cases
+async def collect_generated_cases(state: dict[str, Any]) -> dict[str, Any]:
+    return {"judged_cases": state["pending_cases"], "pending_cases": []}
 
 
-def make_build_tool_report():
-    async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
-        tool = state["current_tool"]
-        cases = state["judged_cases"]
-        report = ToolReport(tool=tool, cases=cases)
-        return {"tool_reports": [report]}
-
-    return build_tool_report
+async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
+    tool = state["current_tool"]
+    cases = state["judged_cases"]
+    report = ToolReport(tool=tool, cases=cases)
+    return {"tool_reports": [report]}
 
 
 def make_extract_attack_context(llm: LLMPort):
@@ -113,14 +102,11 @@ def make_extract_attack_context(llm: LLMPort):
     return extract_attack_context
 
 
-def make_generate_report():
-    async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
-        target = state["target"]
-        reports = state.get("tool_reports", [])
-        usage = _sum_token_usage(state.get("token_usage", []))
-        return {"audit_report": AuditReport(target=target, tool_reports=reports, token_usage=usage)}
-
-    return generate_report
+async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
+    target = state["target"]
+    reports = state.get("tool_reports", [])
+    usage = _sum_token_usage(state.get("token_usage", []))
+    return {"audit_report": AuditReport(target=target, tool_reports=reports, token_usage=usage)}
 
 
 def _sum_token_usage(usages: list[TokenUsage]) -> TokenUsage:

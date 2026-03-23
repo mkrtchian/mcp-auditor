@@ -33,7 +33,7 @@ class AuditProgressReporter:
                 self._tool_index += 1
         elif node_name == "build_tool_report":
             if self._active_progress:
-                self._active_progress.__exit__(None, None, None)
+                self._active_progress.stop()
                 self._active_progress = None
 
     def _on_subgraph_event(self, node_name: str, state_update: dict[str, Any]) -> None:
@@ -44,7 +44,7 @@ class AuditProgressReporter:
                 progress = self._display.create_tool_progress(
                     self._tool_index, self._tool_count, tool_name, len(pending)
                 )
-                progress.__enter__()
+                progress.start()
                 self._active_progress = progress
         elif node_name == "judge_response":
             judged = state_update.get("judged_cases", [])

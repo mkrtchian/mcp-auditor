@@ -49,12 +49,16 @@ class LLM:
         structured = self._model.with_structured_output(  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
             output_schema, include_raw=True
         )
+        accumulated_usage = TokenUsage()
         for _attempt in range(self._max_parse_attempts):
             raw_response = await structured.ainvoke(prompt)  # pyright: ignore[reportUnknownVariableType]
             parsed, usage = self._unpack_raw_response(cast(object, raw_response))
+            accumulated_usage = accumulated_usage.add(usage)
             if parsed is not None:
-                return cast(T, parsed), usage
-        raise ValueError(f"LLM returned unparseable output after {self._max_parse_attempts} attempts")
+                return cast(T, parsed), accumulated_usage
+        raise ValueError(
+            f"LLM returned unparseable output after {self._max_parse_attempts} attempts"
+        )
 
     def _unpack_raw_response(
         self,

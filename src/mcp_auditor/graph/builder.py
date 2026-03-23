@@ -7,15 +7,15 @@ from langgraph.graph.state import CompiledStateGraph  # type: ignore[import-unty
 
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.nodes import (
-    make_build_tool_report,
-    make_collect_generated_cases,
+    build_tool_report,
+    collect_generated_cases,
+    generate_report,
     make_discover_tools,
     make_execute_tool,
     make_extract_attack_context,
-    make_generate_report,
     make_generate_test_cases,
     make_judge_response,
-    make_prepare_tool,
+    prepare_tool,
     route_after_discovery,
     route_test_cases,
     route_tools,
@@ -35,11 +35,11 @@ def build_graph(
 
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
     builder.add_node("discover_tools", make_discover_tools(mcp_client, tools_filter=tools_filter))
-    builder.add_node("prepare_tool", make_prepare_tool())
+    builder.add_node("prepare_tool", prepare_tool)
     builder.add_node("audit_tool", audit_subgraph)
-    builder.add_node("build_tool_report", make_build_tool_report())
+    builder.add_node("build_tool_report", build_tool_report)
     builder.add_node("extract_attack_context", make_extract_attack_context(llm))
-    builder.add_node("generate_report", make_generate_report())
+    builder.add_node("generate_report", generate_report)
     builder.add_edge(START, "discover_tools")
     builder.add_conditional_edges("discover_tools", route_after_discovery)
     builder.add_edge("prepare_tool", "audit_tool")
@@ -76,9 +76,9 @@ def build_dry_run_graph(
 
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
     builder.add_node("discover_tools", make_discover_tools(mcp_client, tools_filter=tools_filter))
-    builder.add_node("prepare_tool", make_prepare_tool())
+    builder.add_node("prepare_tool", prepare_tool)
     builder.add_node("generate_cases", subgraph)
-    builder.add_node("build_tool_report", make_build_tool_report())
+    builder.add_node("build_tool_report", build_tool_report)
     builder.add_edge(START, "discover_tools")
     builder.add_conditional_edges("discover_tools", _route_to_tools_or_end)
     builder.add_edge("prepare_tool", "generate_cases")
@@ -94,7 +94,7 @@ def _build_generate_only_subgraph(
         AuditToolState, input_schema=AuditToolInput
     )
     builder.add_node("generate_test_cases", make_generate_test_cases(llm))
-    builder.add_node("collect_cases", make_collect_generated_cases())
+    builder.add_node("collect_cases", collect_generated_cases)
     builder.add_edge(START, "generate_test_cases")
     builder.add_edge("generate_test_cases", "collect_cases")
     return builder.compile()

@@ -269,15 +269,10 @@ class CIProgress:
         self._tool_label = tool_label
         self._tracker = _ResultTracker()
 
-    def __enter__(self) -> Self:
-        return self
+    def start(self) -> None:
+        pass
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
+    def stop(self) -> None:
         t = self._tracker
         summary = format_tool_summary(t.fail_count, t.pass_count, t.failures)
         self._console.print(f"{self._tool_label}: {summary}")
@@ -302,23 +297,17 @@ class ToolProgress:
         )
         self._task_id: TaskID | None = None
 
-    def __enter__(self) -> Self:
+    def start(self) -> None:
         if self._case_count == 0:
             self._console.print(f"{self._tool_label} — no cases")
-            return self
-        self._progress.__enter__()
+            return
+        self._progress.start()
         self._task_id = self._progress.add_task(self._tool_label, total=self._case_count)
-        return self
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
+    def stop(self) -> None:
         if self._case_count == 0:
             return
-        self._progress.__exit__(exc_type, exc_val, exc_tb)
+        self._progress.stop()
         t = self._tracker
         summary = format_tool_summary(t.fail_count, t.pass_count, t.failures)
         style = "green" if t.fail_count == 0 else "red"

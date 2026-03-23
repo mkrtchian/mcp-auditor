@@ -195,10 +195,11 @@ def test_ci_mode_progress_prints_tool_summary():
     display, buffer = given.a_ci_display()
     progress = display.create_tool_progress(1, 2, "get_user", 1)
 
-    with progress:
-        progress.advance(
-            given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "vuln")
-        )
+    progress.start()
+    progress.advance(
+        given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "vuln")
+    )
+    progress.stop()
 
     output = buffer.getvalue()
     assert "get_user" in output
