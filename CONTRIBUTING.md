@@ -11,7 +11,7 @@ uv sync                                # install runtime + dev dependencies
 uv run pytest                          # should be green before you touch anything
 ```
 
-You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management — don't add a `requirements.txt`.
+You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management. Don't add a `requirements.txt`.
 
 ```bash
 uv run pytest tests/unit               # unit tests

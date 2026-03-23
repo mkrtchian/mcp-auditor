@@ -12,11 +12,11 @@ Agentic security testing for MCP servers.
 
 ## The problem
 
-MCP servers are proliferating -- every AI assistant, IDE plugin, and agent framework is adopting the protocol. These servers expose tools that LLM agents call with untrusted input, yet there is no automated way to test whether a server handles adversarial inputs safely. Manual testing doesn't scale, and generic fuzzers don't understand the MCP protocol or its specific threat model.
+MCP servers expose tools that LLM agents call with untrusted input. There is no automated way to test whether a server handles adversarial inputs safely. Manual testing doesn't scale, and generic fuzzers don't understand the MCP protocol or its threat model.
 
-MCP security tools today focus on two approaches: **static analysis** of tool descriptions (detecting poisoning patterns before any call is made) and **runtime proxies** that intercept traffic in production. `mcp-auditor` takes a third approach: **dynamic adversarial testing** -- it connects to a live server, generates adversarial inputs, executes them, and judges whether the responses reveal vulnerabilities. These approaches are complementary, like SAST and DAST in web security.
+MCP security tools today focus on **static analysis** of tool descriptions (detecting poisoning before any call is made) and **runtime proxies** that intercept traffic in production. `mcp-auditor` takes a third approach: **dynamic adversarial testing**. It connects to a live server, generates adversarial inputs, executes them, and judges whether the responses reveal vulnerabilities. Think SAST vs. DAST in web security.
 
-`mcp-auditor` discovers tools, systematically probes them for security issues -- input validation failures, injection vulnerabilities, information leakage, error handling gaps, and resource abuse -- and produces structured verdicts with justifications. It is a security-oriented fuzzer, not a functional test suite.
+`mcp-auditor` probes for input validation failures, injection, information leakage, error handling gaps, and resource abuse. It produces structured verdicts with justifications and severity ratings.
 
 ## Quick start
 
@@ -38,14 +38,14 @@ uv run mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandb
 
 The audit runs in four phases:
 
-1. **Discover tools** -- connects to the MCP server and lists all available tools with their schemas.
-2. **Generate adversarial test cases** -- for each tool, the LLM generates payloads across five categories: input validation, error handling, injection, information leakage, and resource abuse.
-3. **Execute against the real server** -- each payload is sent to the server via the MCP protocol. Real responses, real behavior.
-4. **Judge each response** -- an LLM-as-a-judge classifies each response as PASS or FAIL with a justification and severity rating. Findings are mapped to the [OWASP MCP Top 10](https://owasp.org/www-project-model-context-protocol-top-10/) when applicable.
+1. **Discover tools**: connect to the MCP server, list available tools with their schemas.
+2. **Generate adversarial test cases**: for each tool, the LLM generates payloads across five categories (input validation, error handling, injection, information leakage, resource abuse).
+3. **Execute against the real server**: each payload is sent via the MCP protocol. Real responses, real behavior.
+4. **Judge each response**: an LLM-as-a-judge classifies each response as PASS or FAIL with a justification and severity rating. Findings are mapped to the [OWASP MCP Top 10](https://owasp.org/www-project-model-context-protocol-top-10/) when applicable.
 
 ## Architecture
 
-**Parent graph** -- iterates over discovered tools:
+**Parent graph** (iterates over discovered tools):
 
 ```mermaid
 graph LR
@@ -57,7 +57,7 @@ graph LR
     E -->|done| F[generate_report]
 ```
 
-**audit_tool subgraph** -- runs per tool, loops over test cases:
+**audit_tool subgraph** (runs per tool, loops over test cases):
 
 ```mermaid
 graph LR
@@ -69,10 +69,10 @@ graph LR
 
 **Why this design:**
 
-- **Hexagonal architecture** -- `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider (Gemini, Claude) means changing one adapter, zero graph code. [ADR 002](docs/adr/002-hexagonal-architecture.md)
-- **Subgraph per tool** -- each tool audit is a self-contained subgraph. This enables checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off without re-paying for the first 7. [ADR 001](docs/adr/001-why-langgraph.md)
-- **Cross-tool learning** -- after each tool audit, the graph extracts intelligence from the results (database engine, framework, exposed internals). Subsequent tools receive this context, enabling targeted payloads -- e.g., SQLite-specific injection after seeing `sqlite3.OperationalError` in a read tool. Read-like tools are audited first to maximize reconnaissance value. [ADR 009](docs/adr/009-cross-tool-learning.md)
-- **LLM-as-a-judge** -- no fragile heuristics or regex patterns. The LLM evaluates each response against security criteria, producing structured verdicts with justifications. Quality is measured through evals, not unit tests. [ADR 003](docs/adr/003-testing-philosophy.md)
+- **Hexagonal architecture.** `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider means changing one adapter, zero graph code. [ADR 002](docs/adr/002-hexagonal-architecture.md)
+- **Subgraph per tool.** Each tool audit is a self-contained subgraph with checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off. [ADR 001](docs/adr/001-why-langgraph.md)
+- **Cross-tool learning.** After each tool audit, the graph extracts intelligence from the results (database engine, framework, exposed internals). Subsequent tools receive this context for targeted payloads, e.g. SQLite-specific injection after seeing `sqlite3.OperationalError` in a read tool. Read-like tools are audited first to maximize reconnaissance value. [ADR 009](docs/adr/009-cross-tool-learning.md)
+- **LLM-as-a-judge.** The LLM evaluates each response against security criteria and produces structured verdicts. No heuristics, no regex. Quality is measured through evals. [ADR 003](docs/adr/003-testing-philosophy.md)
 
 ## Example: auditing a real server
 
@@ -85,25 +85,25 @@ uv run mcp-auditor run \
   -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 ```
 
-This audits `@modelcontextprotocol/server-filesystem` -- the official MCP reference server for filesystem operations. The server exposes 14 tools (read_file, write_file, search_files, etc.), each sandboxed to `/tmp/sandbox`.
+This audits `@modelcontextprotocol/server-filesystem`, the official MCP reference server for filesystem operations. The server exposes 14 tools (read_file, write_file, search_files, etc.), each sandboxed to `/tmp/sandbox`.
 
-Results: **140 test cases, 11 findings** (2 low, 9 medium). All findings were information leakage -- the server exposes internal filesystem paths in error messages:
+Results: **140 test cases, 11 findings** (2 low, 9 medium). All findings were information leakage: the server exposes internal filesystem paths in error messages.
 
-### read_file -- info_leakage / MCP-10 (low)
+### read_file / info_leakage / MCP-10 (low)
 
 **Payload**: `{'path': '/nonexistent/path/sensitive_file_test'}`
 
 The error message discloses the absolute path of the sandbox directory, revealing the underlying filesystem structure and process environment to the caller.
 
-### move_file -- info_leakage / MCP-10 (medium)
+### move_file / info_leakage / MCP-10 (medium)
 
 **Payload**: `{'source': 'file.txt', 'destination': '/non_existent_folder/sub/file.txt'}`
 
-The error message reveals the full internal filesystem path of the host, including the user's home directory and project structure -- information an MCP client should never see.
+The error message reveals the full internal filesystem path of the host, including the user's home directory and project structure.
 
 ## Eval results
 
-Evaluated against two honeypot MCP servers with known vulnerabilities (3 runs, budget 10, 6 tools). The first honeypot has "loud" vulnerabilities (SQL echo, path leaks in errors), the second has subtle ones (PII in normal responses, silent validation gaps).
+Evaluated against two honeypot MCP servers with known vulnerabilities (3 runs, budget 10, 6 tools). The first honeypot has loud vulnerabilities (SQL echo, path leaks in errors), the second has subtle ones (PII in normal responses, silent validation gaps).
 
 **Gemini 3.1 Flash-Lite** (`gemini-3.1-flash-lite-preview`):
 
@@ -164,7 +164,7 @@ CLI flags override config file values.
 
 ## Run in CI
 
-Use `--ci` to integrate mcp-auditor into your pipeline. It replaces Rich UI (progress bars, panels, colors) with plain text while keeping all diagnostic output (tool discovery, per-tool results, findings). Exits with code 1 if any finding meets the severity threshold.
+`--ci` replaces Rich UI with plain text, keeps all diagnostic output, and exits with code 1 if any finding meets the severity threshold.
 
 ```yaml
 # .github/workflows/mcp-audit.yml
@@ -185,7 +185,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, commands, and conventions.
 
 ## License
 
-MIT -- [Roman Mkrtchian](https://github.com/mkrtchian)
+MIT. [Roman Mkrtchian](https://github.com/mkrtchian)
 
 ---
 
