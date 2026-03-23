@@ -18,6 +18,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[imp
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import load_settings
+from mcp_auditor.config_file import load_config_file, merge_defaults
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import (
     AttackContext,
@@ -63,6 +64,9 @@ def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
     return frozenset(name.strip() for name in raw.split(","))
 
 
+CONFIG_FILE_NAME = ".mcp-auditor.yml"
+
+
 @click.group()
 @click.version_option()
 def cli() -> None:
@@ -84,7 +88,9 @@ def cli() -> None:
     default=Severity.MEDIUM.value,
     help="Minimum severity to trigger CI failure.",
 )
+@click.pass_context
 def run(
+    ctx: click.Context,
     target: tuple[str, ...],
     budget: int,
     output: str | None,
@@ -105,13 +111,29 @@ def run(
         mcp-auditor run --budget 5 -- npx some-mcp-server
         mcp-auditor run --ci -- python my_server.py
     """
+    params = _merge_with_config_file(ctx)
     config = AuditConfig(
-        execution=ExecutionConfig(budget=budget, resume=resume, dry_run=dry_run),
-        report_paths=ReportPaths(json=output, markdown=markdown),
-        ci=CIOptions(enabled=ci, severity_threshold=Severity(severity_threshold)),
-        tools_filter=parse_tools_filter(tools),
+        execution=ExecutionConfig(
+            budget=params["budget"],
+            resume=params["resume"],
+            dry_run=params["dry_run"],
+        ),
+        report_paths=ReportPaths(json=params["output"], markdown=params["markdown"]),
+        ci=CIOptions(
+            enabled=params["ci"],
+            severity_threshold=Severity(params["severity_threshold"]),
+        ),
+        tools_filter=parse_tools_filter(params["tools"]),
     )
     asyncio.run(_run_audit(target, config))
+
+
+def _merge_with_config_file(ctx: click.Context) -> dict[str, Any]:
+    file_defaults = load_config_file(Path.cwd() / CONFIG_FILE_NAME)
+    explicit_keys = {
+        key for key in ctx.params if ctx.get_parameter_source(key) != click.core.ParameterSource.DEFAULT
+    }
+    return merge_defaults(dict(ctx.params), file_defaults, explicit_keys)
 
 
 async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:

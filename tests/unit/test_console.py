@@ -1,4 +1,4 @@
-import tests.unit.test_console_given as given
+import tests.unit.support.test_console_given as given
 from mcp_auditor.console import format_failure_line, format_tool_summary
 from mcp_auditor.domain.models import (
     AuditCategory,

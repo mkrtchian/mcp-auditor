@@ -146,6 +146,22 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `--ci`       | off        | CI mode: no Rich UI, exit 1 on findings           |
 | `--severity-threshold` | `medium` | Minimum severity to trigger CI failure    |
 
+### Configuration file
+
+Place a `.mcp-auditor.yml` in your project root to avoid repeating CLI flags:
+
+```yaml
+budget: 15
+severity_threshold: high
+tools:
+  - get_user
+  - list_items
+output: report.json
+ci: true
+```
+
+CLI flags override config file values.
+
 ## Run in CI
 
 Use `--ci` to integrate mcp-auditor into your pipeline. It replaces Rich UI (progress bars, panels, colors) with plain text while keeping all diagnostic output (tool discovery, per-tool results, findings). Exits with code 1 if any finding meets the severity threshold.

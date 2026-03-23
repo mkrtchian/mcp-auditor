@@ -1,0 +1,3 @@
+budget: 10
+output: output/audit.json
+markdown: output/audit.md
