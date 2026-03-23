@@ -20,6 +20,7 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import load_settings
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import (
+    AttackContext,
     AuditReport,
     Severity,
 )
@@ -159,7 +160,11 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
             initial_state = (
                 None
                 if config.execution.resume
-                else {"target": target_str, "test_budget": config.execution.budget}
+                else {
+                    "target": target_str,
+                    "test_budget": config.execution.budget,
+                    "attack_context": AttackContext(),
+                }
             )
             graph_config: dict[str, Any] = {
                 "configurable": {"thread_id": thread_id},
@@ -222,7 +227,9 @@ async def _run_dry_run(
     tools_filter: frozenset[str] | None = None,
 ) -> None:
     graph = build_dry_run_graph(llm, mcp_client, tools_filter=tools_filter)
-    result = await graph.ainvoke({"target": "", "test_budget": budget})
+    result = await graph.ainvoke(
+        {"target": "", "test_budget": budget, "attack_context": AttackContext()}
+    )
     tools = result.get("discovered_tools", [])
     display.print_discovery(len(tools), [t.name for t in tools])
     for report in result.get("tool_reports", []):
