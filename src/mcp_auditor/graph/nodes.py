@@ -45,7 +45,7 @@ def make_generate_test_cases(llm: LLMPort):
     async def generate_test_cases(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         budget = state["test_budget"]
-        attack_context = state.get("attack_context")
+        attack_context = state["attack_context"]
         categories = list(AuditCategory)
         prompt = build_attack_generation_prompt(
             tool=tool, budget=budget, categories=categories, attack_context=attack_context

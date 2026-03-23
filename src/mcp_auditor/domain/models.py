@@ -71,6 +71,10 @@ class AttackContext(BaseModel):
     effective_payloads: list[str] = []
     observations: str = ""
 
+    @property
+    def is_empty(self) -> bool:
+        return self == AttackContext()
+
 
 class AuditPayload(BaseModel):
     tool_name: str

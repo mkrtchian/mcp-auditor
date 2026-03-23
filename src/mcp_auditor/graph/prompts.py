@@ -67,7 +67,7 @@ def _build_context_section(attack_context: AttackContext | None) -> str:
 
 def format_attack_context(context: AttackContext) -> str:
     """Render attack context as a text section. Returns empty string if all defaults."""
-    if _is_empty_context(context):
+    if context.is_empty:
         return ""
     lines = ["Previous tool audits revealed the following about this server:"]
     if context.db_engine is not None:
@@ -142,17 +142,6 @@ def _format_existing_context(existing_context: AttackContext) -> str:
     if not rendered:
         return ""
     return f"\nWhat we already know:\n{rendered}\n"
-
-
-def _is_empty_context(context: AttackContext) -> bool:
-    return (
-        context.db_engine is None
-        and context.framework is None
-        and context.language is None
-        and not context.exposed_internals
-        and not context.effective_payloads
-        and not context.observations
-    )
 
 
 def build_judge_prompt(

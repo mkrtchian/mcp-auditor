@@ -1,6 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import (
+    AttackContext,
     AuditCategory,
     AuditPayload,
     EvalResult,
@@ -10,7 +11,6 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolReport,
 )
-from mcp_auditor.domain.models import AttackContext
 from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
     build_context_extraction_prompt,
