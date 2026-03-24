@@ -20,17 +20,12 @@ MCP security tools today focus on **static analysis** of tool descriptions (dete
 ## Quick start
 
 ```bash
-# Clone and install
-git clone https://github.com/mkrtchian/mcp-auditor.git
-cd mcp-auditor
-uv sync
-
-# Set your API key (copy .env.example to .env and edit, or export directly)
+# Set your API key
 export GOOGLE_API_KEY=your-key-here
 
 # Audit an MCP server
 mkdir -p /tmp/sandbox
-uv run mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
+uvx mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 ```
 
 ## What it does
