@@ -105,6 +105,45 @@ class TestCase(BaseModel):
     eval_result: EvalResult | None = None
 
 
+class StepObservation(BaseModel):
+    """LLM output after observing a chain step's response."""
+
+    observation: str
+    should_continue: bool
+    next_step_hint: str = ""
+
+
+class ChainStep(BaseModel):
+    """A single step in a multi-step attack chain."""
+
+    payload: AuditPayload
+    response: str | None = None
+    error: str | None = None
+    observation: str = ""
+
+
+class ChainGoal(BaseModel):
+    """LLM-generated plan for one attack chain."""
+
+    description: str
+    category: AuditCategory
+    first_step: AuditPayload
+
+
+class ChainPlanBatch(BaseModel):
+    """Wrapper for structured output (same pattern as TestCaseBatch)."""
+
+    chains: list[ChainGoal]
+
+
+class AttackChain(BaseModel):
+    """A completed multi-step attack chain with a final verdict."""
+
+    goal: ChainGoal
+    steps: list[ChainStep]
+    eval_result: EvalResult | None = None
+
+
 class TokenUsage(BaseModel):
     """Cost is computed at report time, not here."""
 
@@ -121,6 +160,7 @@ class TokenUsage(BaseModel):
 class ToolReport(BaseModel):
     tool: ToolDefinition
     cases: list[TestCase]
+    chains: list[AttackChain] = []
 
 
 _READ_PREFIXES = (
@@ -166,12 +206,15 @@ class AuditReport(BaseModel):
 
     @property
     def findings(self) -> list[EvalResult]:
-        return [
-            case.eval_result
-            for tr in self.tool_reports
-            for case in tr.cases
-            if case.eval_result is not None and case.eval_result.verdict == EvalVerdict.FAIL
-        ]
+        results: list[EvalResult] = []
+        for tr in self.tool_reports:
+            for case in tr.cases:
+                if case.eval_result and case.eval_result.verdict == EvalVerdict.FAIL:
+                    results.append(case.eval_result)
+            for chain in tr.chains:
+                if chain.eval_result and chain.eval_result.verdict == EvalVerdict.FAIL:
+                    results.append(chain.eval_result)
+        return results
 
     def has_findings_at_or_above(self, threshold: Severity) -> bool:
         return any(f.severity >= threshold for f in self.findings)

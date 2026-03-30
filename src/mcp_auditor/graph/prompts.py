@@ -19,7 +19,7 @@ def build_attack_generation_prompt(
     category_list = "\n".join(f"- {c.value}" for c in categories)
     schema_json = json.dumps(tool.input_schema, indent=2)
     description = tool.description or "No description provided"
-    context_section = _build_context_section(attack_context)
+    context_section = build_context_section(attack_context)
 
     return f"""You are a security auditor for MCP (Model Context Protocol) tool servers.
 
@@ -56,7 +56,7 @@ IMPORTANT — test design guidance per category:
 Always send arguments that conform to the schema's type constraints. The goal is to test the TOOL's logic, not the schema validator."""
 
 
-def _build_context_section(attack_context: AttackContext | None) -> str:
+def build_context_section(attack_context: AttackContext | None) -> str:
     if attack_context is None:
         return ""
     rendered = format_attack_context(attack_context)
