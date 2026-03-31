@@ -37,3 +37,16 @@ SUBTLE_GROUND_TRUTH: GroundTruth = {
     ("get_service_status", AuditCategory.INJECTION): EvalVerdict.PASS,
     ("get_service_status", AuditCategory.RESOURCE_ABUSE): EvalVerdict.PASS,
 }
+
+CHAIN_HONEYPOT_GROUND_TRUTH: GroundTruth = {
+    ("project_manager", AuditCategory.INFO_LEAKAGE): EvalVerdict.FAIL,
+    ("project_manager", AuditCategory.INPUT_VALIDATION): EvalVerdict.FAIL,
+    ("project_manager", AuditCategory.ERROR_HANDLING): EvalVerdict.PASS,
+    ("project_manager", AuditCategory.INJECTION): EvalVerdict.PASS,
+    ("project_manager", AuditCategory.RESOURCE_ABUSE): EvalVerdict.PASS,
+    ("user_directory", AuditCategory.INFO_LEAKAGE): EvalVerdict.FAIL,
+    ("user_directory", AuditCategory.INPUT_VALIDATION): EvalVerdict.FAIL,
+    ("user_directory", AuditCategory.ERROR_HANDLING): EvalVerdict.PASS,
+    ("user_directory", AuditCategory.INJECTION): EvalVerdict.PASS,
+    ("user_directory", AuditCategory.RESOURCE_ABUSE): EvalVerdict.PASS,
+}

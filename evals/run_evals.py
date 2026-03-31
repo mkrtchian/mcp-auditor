@@ -13,7 +13,12 @@ from rich.progress import Progress, TaskID
 from rich.table import Table
 
 from evals.export import export_judged_cases
-from evals.ground_truth import HONEYPOT_GROUND_TRUTH, SUBTLE_GROUND_TRUTH, GroundTruth
+from evals.ground_truth import (
+    CHAIN_HONEYPOT_GROUND_TRUTH,
+    HONEYPOT_GROUND_TRUTH,
+    SUBTLE_GROUND_TRUTH,
+    GroundTruth,
+)
 from evals.metrics import (
     EvalMetrics,
     EvalReport,
@@ -41,6 +46,9 @@ from mcp_auditor.graph.builder import build_graph
 
 HONEYPOT_SERVER = Path(__file__).resolve().parent.parent / "tests" / "dummy_server.py"
 SUBTLE_SERVER = Path(__file__).resolve().parent.parent / "tests" / "subtle_server.py"
+CHAIN_HONEYPOT_SERVER = (
+    Path(__file__).resolve().parent.parent / "tests" / "chain_honeypot_server.py"
+)
 
 console = Console()
 
@@ -51,6 +59,8 @@ class HoneypotConfig:
     command: str
     args: list[str]
     ground_truth: GroundTruth
+    chain_budget: int = 0
+    max_chain_steps: int = 3
 
 
 @dataclass(frozen=True)
@@ -72,6 +82,14 @@ HONEYPOTS = [
         command="uv",
         args=["run", "python", str(SUBTLE_SERVER)],
         ground_truth=SUBTLE_GROUND_TRUTH,
+    ),
+    HoneypotConfig(
+        name="chain_honeypot",
+        command="uv",
+        args=["run", "python", str(CHAIN_HONEYPOT_SERVER)],
+        ground_truth=CHAIN_HONEYPOT_GROUND_TRUTH,
+        chain_budget=3,
+        max_chain_steps=5,
     ),
 ]
 
@@ -201,6 +219,8 @@ async def _run_single_honeypot(
                     "target": f"{honeypot.command} {' '.join(honeypot.args)}",
                     "test_budget": budget,
                     "attack_context": AttackContext(),
+                    "chain_budget": honeypot.chain_budget,
+                    "max_chain_steps": honeypot.max_chain_steps,
                 }
             )
             return result["audit_report"]
