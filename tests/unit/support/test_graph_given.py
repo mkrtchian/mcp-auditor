@@ -58,8 +58,20 @@ def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
     return build_graph(fake_llm, fake_mcp_client)
 
 
+def a_graph_with_checkpointer(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient, checkpointer: Any):
+    from mcp_auditor.graph.builder import build_graph
+
+    return build_graph(fake_llm, fake_mcp_client, checkpointer=checkpointer)
+
+
 async def invoke_graph(graph: Any, state: dict[str, Any]) -> dict[str, Any]:
     return await graph.ainvoke(state)
+
+
+async def invoke_graph_with_config(
+    graph: Any, state: dict[str, Any], config: dict[str, Any]
+) -> dict[str, Any]:
+    return await graph.ainvoke(state, config=config)
 
 
 def an_initial_state(

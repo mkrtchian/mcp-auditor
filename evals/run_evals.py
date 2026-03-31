@@ -290,6 +290,12 @@ def _build_verdict_detail(
             result = case.eval_result
             key = (result.tool_name, result.category)
             case_counts[key] = case_counts.get(key, 0) + 1
+        for chain in tool_report.chains:
+            if chain.eval_result is None:
+                continue
+            result = chain.eval_result
+            key = (result.tool_name, result.category)
+            case_counts[key] = case_counts.get(key, 0) + 1
 
     detail: dict[str, dict[str, ToolVerdictDetail]] = {}
     for (tool_name, category), verdict in verdicts.items():

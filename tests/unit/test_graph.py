@@ -118,3 +118,26 @@ async def test_chain_budget_one_produces_chain():
     then.report_has_chains(report, 1)
     then.chain_has_eval_result(report.chains[0])
     then.token_usage_is_positive(result)
+
+
+@pytest.mark.asyncio
+async def test_resume_mid_chain():
+    """Checkpoint round-trip through doubly-nested subgraph."""
+    from langgraph.checkpoint.memory import MemorySaver  # type: ignore[import-untyped]
+
+    tool = given.a_tool(name="get_user")
+    fake_llm = given.a_fake_llm_for_single_tool_with_chain(tool_name="get_user", num_cases=1)
+    fake_mcp = FakeMCPClient([tool])
+    checkpointer = MemorySaver()
+    graph = given.a_graph_with_checkpointer(fake_llm, fake_mcp, checkpointer)
+    state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
+    config = {"configurable": {"thread_id": "resume-test"}}
+
+    # First invocation — graph runs to completion (no interrupt configured,
+    # but the checkpoint proves state survives the doubly-nested path).
+    result = await given.invoke_graph_with_config(graph, state, config)
+
+    then.has_tool_reports(result, 1)
+    report = then.tool_report_at(result, 0)
+    then.report_has_chains(report, 1)
+    then.chain_has_eval_result(report.chains[0])
