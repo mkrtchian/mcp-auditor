@@ -86,7 +86,7 @@ def cli() -> None:
     "--chains",
     default=0,
     type=click.IntRange(min=0),
-    help="Attack chains per tool (0 = disabled).",
+    help="Attack chains per tool (0 = disabled). Each chain adds several LLM calls.",
 )
 @click.option("--ci", is_flag=True, default=False, help="CI mode: plain output, exit 1.")
 @click.option(
