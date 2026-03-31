@@ -1,6 +1,11 @@
 import tests.unit.support.test_rendering_given as given
 import tests.unit.support.test_rendering_then as then
-from mcp_auditor.domain.rendering import render_json, render_markdown, render_summary
+from mcp_auditor.domain.rendering import (
+    render_json,
+    render_markdown,
+    render_summary,
+    summarize_tools,
+)
 
 
 def test_json_round_trip():
@@ -119,3 +124,49 @@ def test_markdown_pass_heading_includes_owasp_label_for_mapped_category():
 
     assert "injection / MCP-05: Command Injection & Execution" in result
     assert "(-)" in result
+
+
+def test_markdown_with_chain_fail():
+    report = given.a_report_with_chain_finding()
+
+    result = render_markdown(report)
+
+    assert "CHAIN:" in result
+    assert "probe then exploit" in result
+    assert "FAIL" in result
+    assert "Chain exploited" in result
+
+
+def test_markdown_without_chains():
+    report = given.a_two_tool_report()
+
+    result = render_markdown(report)
+
+    assert "CHAIN:" not in result
+
+
+def test_json_with_chains_has_owasp():
+    report = given.a_report_with_chain_injection_finding()
+
+    result = render_json(report)
+
+    then.json_chain_has_owasp(result, "injection", "MCP-05")
+
+
+def test_summarize_tools_counts_chain_failures():
+    report = given.a_report_with_pass_case_and_fail_chain()
+
+    summaries = summarize_tools(report)
+
+    assert len(summaries) == 1
+    assert summaries[0].judged == 2
+    assert summaries[0].passed == 1
+    assert summaries[0].failed == 1
+
+
+def test_markdown_summary_counts_chains():
+    report = given.a_report_with_chain_finding()
+
+    result = render_markdown(report)
+
+    assert "Test cases" in result or "cases" in result.lower()

@@ -87,7 +87,8 @@ async def collect_generated_cases(state: dict[str, Any]) -> dict[str, Any]:
 async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
     tool = state["current_tool"]
     cases = state["judged_cases"]
-    report = ToolReport(tool=tool, cases=cases)
+    chains = state.get("completed_chains", [])
+    report = ToolReport(tool=tool, cases=cases, chains=chains)
     return {"tool_reports": [report]}
 
 

@@ -6,9 +6,12 @@ from mcp_auditor.domain import (
     AttackContext,
     AuditCategory,
     AuditPayload,
+    ChainGoal,
+    ChainPlanBatch,
     EvalResult,
     EvalVerdict,
     Severity,
+    StepObservation,
     TestCaseBatch,
     ToolDefinition,
 )
@@ -59,7 +62,11 @@ async def invoke_graph(graph: Any, state: dict[str, Any]) -> dict[str, Any]:
     return await graph.ainvoke(state)
 
 
-def an_initial_state(test_budget: int = 5) -> dict[str, Any]:
+def an_initial_state(
+    test_budget: int = 5,
+    chain_budget: int = 0,
+    max_chain_steps: int = 3,
+) -> dict[str, Any]:
     return {
         "target": "python dummy_server.py",
         "discovered_tools": [],
@@ -70,7 +77,33 @@ def an_initial_state(test_budget: int = 5) -> dict[str, Any]:
         "token_usage": [],
         "audit_report": None,
         "attack_context": AttackContext(),
+        "chain_budget": chain_budget,
+        "max_chain_steps": max_chain_steps,
+        "completed_chains": [],
     }
+
+
+def a_fake_llm_for_single_tool_with_chain(
+    tool_name: str = "test_tool",
+    num_cases: int = 1,
+) -> FakeLLM:
+    """LLM sequence: generate cases, judge each, chain planning (1 goal),
+    observe step (stop), judge chain, extract context."""
+    batch = TestCaseBatch(cases=[_a_payload(tool_name) for _ in range(num_cases)])
+    eval_results = [_an_eval_result(tool_name) for _ in range(num_cases)]
+    chain_plan = ChainPlanBatch(
+        chains=[
+            ChainGoal(
+                description="probe then exploit",
+                category=AuditCategory.INJECTION,
+                first_step=_a_payload(tool_name),
+            ),
+        ]
+    )
+    step_obs = StepObservation(observation="dead end", should_continue=False)
+    chain_eval = _an_eval_result(tool_name)
+    context = AttackContext()
+    return FakeLLM([batch, *eval_results, chain_plan, step_obs, chain_eval, context])
 
 
 def _a_payload(tool_name: str, category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload:

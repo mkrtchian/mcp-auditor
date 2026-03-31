@@ -6,6 +6,7 @@ import yaml
 KNOWN_KEYS = frozenset(
     {
         "budget",
+        "chains",
         "severity_threshold",
         "tools",
         "output",

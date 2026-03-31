@@ -87,3 +87,34 @@ async def test_attack_context_populated_after_audit():
 
     then.attack_context_is_non_empty(result)
     assert result["attack_context"].db_engine == "sqlite"
+
+
+@pytest.mark.asyncio
+async def test_chain_budget_zero_skips_chains():
+    tool = given.a_tool(name="get_user")
+    fake_llm = given.a_fake_llm_for_single_tool_audit(tool_name="get_user", num_cases=1)
+    fake_mcp = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp)
+    state = given.an_initial_state(test_budget=5, chain_budget=0, max_chain_steps=3)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.has_tool_reports(result, 1)
+    then.report_has_no_chains(then.tool_report_at(result, 0))
+
+
+@pytest.mark.asyncio
+async def test_chain_budget_one_produces_chain():
+    tool = given.a_tool(name="get_user")
+    fake_llm = given.a_fake_llm_for_single_tool_with_chain(tool_name="get_user", num_cases=1)
+    fake_mcp = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp)
+    state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.has_tool_reports(result, 1)
+    report = then.tool_report_at(result, 0)
+    then.report_has_chains(report, 1)
+    then.chain_has_eval_result(report.chains[0])
+    then.token_usage_is_positive(result)

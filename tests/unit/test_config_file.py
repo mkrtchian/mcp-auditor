@@ -73,3 +73,11 @@ def test_returns_empty_dict_for_empty_file(tmp_path: Path) -> None:
     path.write_text("")
 
     assert load_config_file(path) == {}
+
+
+def test_chains_is_accepted_key(tmp_path: Path) -> None:
+    path = given.a_config_file_containing(tmp_path, chains=3)
+
+    result = load_config_file(path)
+
+    assert result == {"chains": 3}

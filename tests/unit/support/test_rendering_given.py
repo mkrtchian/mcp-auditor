@@ -1,7 +1,10 @@
 from mcp_auditor.domain.models import (
+    AttackChain,
     AuditCategory,
     AuditPayload,
     AuditReport,
+    ChainGoal,
+    ChainStep,
     EvalResult,
     EvalVerdict,
     Severity,
@@ -175,3 +178,98 @@ def a_tool_definition(
         description=description,
         input_schema={"type": "object", "properties": {}},
     )
+
+
+def a_chain_fail_result(
+    tool_name: str = "get_user",
+    category: AuditCategory = AuditCategory.INJECTION,
+    severity: Severity = Severity.HIGH,
+    justification: str = "Chain exploited",
+) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=category,
+        payload={"path": "/etc/passwd"},
+        verdict=EvalVerdict.FAIL,
+        justification=justification,
+        severity=severity,
+    )
+
+
+def a_chain(
+    description: str = "probe then exploit",
+    category: AuditCategory = AuditCategory.INJECTION,
+    eval_result: EvalResult | None = None,
+) -> AttackChain:
+    goal = ChainGoal(
+        description=description,
+        category=category,
+        first_step=AuditPayload(
+            tool_name="get_user",
+            category=category,
+            description="probe",
+            arguments={"id": "1"},
+        ),
+    )
+    steps = [
+        ChainStep(
+            payload=goal.first_step,
+            response="user data with path /var/data",
+            observation="Found internal path",
+        ),
+        ChainStep(
+            payload=AuditPayload(
+                tool_name="get_user",
+                category=category,
+                description="exploit",
+                arguments={"id": "../../etc/passwd"},
+            ),
+            response="root:x:0:0",
+            observation="Path traversal succeeded",
+        ),
+    ]
+    return AttackChain(goal=goal, steps=steps, eval_result=eval_result)
+
+
+def a_report_with_chain_finding() -> AuditReport:
+    chain = a_chain(eval_result=a_chain_fail_result())
+    tool_report = ToolReport(
+        tool=a_tool_definition(name="get_user"),
+        cases=[],
+        chains=[chain],
+    )
+    return a_report(target="python server.py", tool_reports=[tool_report])
+
+
+def a_report_with_chain_injection_finding() -> AuditReport:
+    chain = a_chain(
+        category=AuditCategory.INJECTION,
+        eval_result=a_chain_fail_result(category=AuditCategory.INJECTION),
+    )
+    tool_report = ToolReport(
+        tool=a_tool_definition(name="get_user"),
+        cases=[],
+        chains=[chain],
+    )
+    return a_report(target="python server.py", tool_reports=[tool_report])
+
+
+def a_report_with_pass_case_and_fail_chain() -> AuditReport:
+    pass_result = a_pass_result("get_user", AuditCategory.ERROR_HANDLING)
+    chain = a_chain(eval_result=a_chain_fail_result())
+    tool_report = ToolReport(
+        tool=a_tool_definition(name="get_user"),
+        cases=[
+            TestCase(
+                payload=AuditPayload(
+                    tool_name="get_user",
+                    category=AuditCategory.ERROR_HANDLING,
+                    description="test",
+                    arguments={"input": "test"},
+                ),
+                eval_result=pass_result,
+            ),
+        ],
+        chains=[chain],
+    )
+    return a_report(target="python server.py", tool_reports=[tool_report])

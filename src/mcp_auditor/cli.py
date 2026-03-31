@@ -46,6 +46,7 @@ class CIOptions:
 @dataclass(frozen=True)
 class ExecutionConfig:
     budget: int
+    chains: int
     resume: bool
     dry_run: bool
 
@@ -81,6 +82,12 @@ def cli() -> None:
 @click.option("--resume", is_flag=True, default=False, help="Resume from last checkpoint.")
 @click.option("--tools", type=str, default=None, help="Comma-separated tool names to audit.")
 @click.option("--dry-run", is_flag=True, default=False, help="Generate test cases without running.")
+@click.option(
+    "--chains",
+    default=0,
+    type=click.IntRange(min=0),
+    help="Attack chains per tool (0 = disabled).",
+)
 @click.option("--ci", is_flag=True, default=False, help="CI mode: plain output, exit 1.")
 @click.option(
     "--severity-threshold",
@@ -98,6 +105,7 @@ def run(
     tools: str | None,
     resume: bool,
     dry_run: bool,
+    chains: int,
     ci: bool,
     severity_threshold: str,
 ) -> None:
@@ -115,6 +123,7 @@ def run(
     config = AuditConfig(
         execution=ExecutionConfig(
             budget=params["budget"],
+            chains=params.get("chains", 0),
             resume=params["resume"],
             dry_run=params["dry_run"],
         ),
@@ -189,6 +198,8 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
                 else {
                     "target": target_str,
                     "test_budget": config.execution.budget,
+                    "chain_budget": config.execution.chains,
+                    "max_chain_steps": 3,
                     "attack_context": AttackContext(),
                 }
             )

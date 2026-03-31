@@ -19,8 +19,10 @@ class AuditProgressReporter:
                 continue
             if namespace == ():
                 self._on_parent_event(node_name, state_update)
-            else:
+            elif len(namespace) == 1:
                 self._on_subgraph_event(node_name, state_update)
+            else:
+                self._on_chain_event(node_name, state_update)
 
     def _on_parent_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "discover_tools":
@@ -35,6 +37,22 @@ class AuditProgressReporter:
             if self._active_progress:
                 self._active_progress.stop()
                 self._active_progress = None
+
+    def _on_chain_event(self, node_name: str, state_update: dict[str, Any]) -> None:
+        if node_name == "plan_chains":
+            pending = state_update.get("pending_chains", [])
+            if pending:
+                self._display.print_info(f"Planning {len(pending)} attack chain(s)")
+        elif node_name == "execute_step":
+            steps = state_update.get("current_chain_steps", [])
+            if steps:
+                self._display.print_info(f"  Chain step {len(steps)} executed")
+        elif node_name == "judge_chain":
+            chains = state_update.get("completed_chains", [])
+            if chains:
+                last = chains[-1]
+                verdict = last.eval_result.verdict if last.eval_result else "?"
+                self._display.print_info(f"  Chain judged: {verdict}")
 
     def _on_subgraph_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "generate_test_cases":

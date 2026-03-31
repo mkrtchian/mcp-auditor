@@ -80,3 +80,15 @@ def markdown_includes_pass_without_severity(markdown: str) -> None:
         if "PASS" in line:
             for severity_word in ["low", "medium", "high", "critical"]:
                 assert severity_word not in line.lower()
+
+
+def json_chain_has_owasp(json_str: str, category: str, expected_code: str) -> None:
+    data = json.loads(json_str)
+    for tool_report in data["tool_reports"]:
+        for chain in tool_report.get("chains", []):
+            result = chain.get("eval_result")
+            if result and result["category"] == category:
+                assert "owasp" in result, f"Expected owasp on chain eval_result for {category}"
+                assert result["owasp"]["code"] == expected_code
+                return
+    raise AssertionError(f"No chain with category {category} found")

@@ -121,6 +121,9 @@ class AuditDisplay:
     def print_report_path(self, path: str) -> None:
         self._console.print(f"Report written to: {path}")
 
+    def print_info(self, message: str) -> None:
+        self._console.print(message)
+
     def print_error(self, message: str) -> None:
         if self._ci_mode:
             self._console.print(f"Error: {message}")
