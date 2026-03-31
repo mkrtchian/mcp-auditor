@@ -30,12 +30,13 @@ uvx mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 
 ## What it does
 
-The audit runs in four phases:
+The audit runs in four phases, with an optional fifth:
 
 1. **Discover tools**: connect to the MCP server, list available tools with their schemas.
 2. **Generate adversarial test cases**: for each tool, the LLM generates payloads across five categories (input validation, error handling, injection, information leakage, resource abuse).
 3. **Execute against the real server**: each payload is sent via the MCP protocol. Real responses, real behavior.
 4. **Judge each response**: an LLM-as-a-judge classifies each response as PASS or FAIL with a justification and severity rating. Findings are mapped to the [OWASP MCP Top 10](https://owasp.org/www-project-model-context-protocol-top-10/) when applicable.
+5. **Multi-step attack chains** *(opt-in via `--chains`)*: after single-step testing, the LLM plans adaptive attack sequences where each step's payload depends on the previous step's response. Probe, observe, escalate. Catches vulnerabilities that require multiple interactions, like symlink traversal or state-dependent injection. [ADR 010](docs/adr/010-multi-step-attack-chains.md)
 
 ## Architecture
 
@@ -45,10 +46,12 @@ The audit runs in four phases:
 graph LR
     A[discover_tools] --> B[prepare_tool]
     B --> C[audit_tool]
-    C --> D[build_tool_report]
-    D --> E[extract_attack_context]
-    E -->|more tools| B
-    E -->|done| F[generate_report]
+    C -->|chains enabled| D[chain_audit_tool]
+    C -->|chains disabled| E[build_tool_report]
+    D --> E
+    E --> F[extract_attack_context]
+    F -->|more tools| B
+    F -->|done| G[generate_report]
 ```
 
 **audit_tool subgraph** (runs per tool, loops over test cases):
@@ -61,12 +64,27 @@ graph LR
     S3 -->|done| S4((end))
 ```
 
+**chain_audit_tool subgraph** (adaptive multi-step attack chains):
+
+```mermaid
+graph LR
+    P[plan_chains] --> C[prepare_chain]
+    C --> E[execute_step]
+    E --> O[observe_step]
+    O -->|continue| S[plan_step]
+    S --> E
+    O -->|done| J[judge_chain]
+    J -->|more chains| C
+    J -->|done| X((end))
+```
+
 **Why this design:**
 
 - **Hexagonal architecture.** `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider means changing one adapter, zero graph code. [ADR 002](docs/adr/002-hexagonal-architecture.md)
 - **Subgraph per tool.** Each tool audit is a self-contained subgraph with checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off. [ADR 001](docs/adr/001-why-langgraph.md)
 - **Cross-tool learning.** After each tool audit, the graph extracts intelligence from the results (database engine, framework, exposed internals). Subsequent tools receive this context for targeted payloads, e.g. SQLite-specific injection after seeing `sqlite3.OperationalError` in a read tool. Read-like tools are audited first to maximize reconnaissance value. [ADR 009](docs/adr/009-cross-tool-learning.md)
 - **LLM-as-a-judge.** The LLM evaluates each response against security criteria and produces structured verdicts. No heuristics, no regex. Quality is measured through evals. [ADR 003](docs/adr/003-testing-philosophy.md)
+- **Adaptive attack chains.** An optional second pass per tool where the LLM plans multi-step attack sequences. Each step observes the server's response and adapts the next payload: a probe-observe-escalate loop that mimics how a pentester works. Separate subgraph, separate budget, zero overhead when disabled. [ADR 010](docs/adr/010-multi-step-attack-chains.md)
 
 ## Example: auditing a real server
 
@@ -136,6 +154,7 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `--output`   | none       | Path for JSON report                              |
 | `--markdown` | none       | Path for Markdown report                          |
 | `--resume`   | off        | Resume from last checkpoint                       |
+| `--chains`   | `0` (off)  | Attack chains per tool (adaptive multi-step sequences) |
 | `--dry-run`  | off        | Discover tools and generate cases, skip execution |
 | `--ci`       | off        | CI mode: no Rich UI, exit 1 on findings           |
 | `--severity-threshold` | `medium` | Minimum severity to trigger CI failure    |
@@ -146,6 +165,7 @@ Place a `.mcp-auditor.yml` in your project root to avoid repeating CLI flags:
 
 ```yaml
 budget: 15
+chains: 2
 severity_threshold: high
 tools:
   - get_user
