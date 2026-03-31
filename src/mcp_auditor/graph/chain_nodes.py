@@ -38,10 +38,9 @@ def make_plan_chains(llm: LLMPort):
 
 
 def prepare_chain(state: dict[str, Any]) -> dict[str, Any]:
-    pending = list(state["pending_chains"])
-    goal = pending.pop(0)
+    goal = state["pending_chains"][0]
     return {
-        "pending_chains": pending,
+        "pending_chains": state["pending_chains"][1:],
         "current_chain_goal": goal,
         "current_chain_steps": [],
         "current_step_payload": goal.first_step,
@@ -55,11 +54,10 @@ def make_execute_step(mcp_client: MCPClientPort):
         if payload.tool_name != tool.name:
             payload = payload.model_copy(update={"tool_name": tool.name})
         response = await mcp_client.call_tool(payload.tool_name, payload.arguments)
-        step = ChainStep(payload=payload)
         if response.is_error:
-            step = step.model_copy(update={"error": response.content})
+            step = ChainStep.from_error(payload, response.content)
         else:
-            step = step.model_copy(update={"response": response.content})
+            step = ChainStep.from_response(payload, response.content)
         steps = [*list(state["current_chain_steps"]), step]
         return {"current_chain_steps": steps}
 
@@ -80,7 +78,7 @@ def make_observe_step(llm: LLMPort):
             latest_error=latest.error,
         )
         obs, usage = await llm.generate_structured(prompt, StepObservation)
-        updated_step = latest.model_copy(update={"observation": obs.observation})
+        updated_step = latest.with_observation(obs.observation)
         steps[-1] = updated_step
         return {
             "current_chain_steps": steps,

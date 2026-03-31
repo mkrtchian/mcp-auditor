@@ -6,11 +6,8 @@ with AuditReport and ToolReport.
 from mcp_auditor.domain import (
     AttackChain,
     AuditCategory,
-    AuditPayload,
     AuditReport,
-    ChainGoal,
     ChainPlanBatch,
-    ChainStep,
     EvalResult,
     EvalVerdict,
     Severity,
@@ -18,6 +15,12 @@ from mcp_auditor.domain import (
     TokenUsage,
     ToolDefinition,
     ToolReport,
+)
+from tests.unit.support.test_chain_nodes_given import (
+    a_chain_goal as _a_chain_goal,
+)
+from tests.unit.support.test_chain_nodes_given import (
+    a_chain_step as _a_chain_step,
 )
 
 
@@ -129,37 +132,6 @@ class TestChainPlanBatch:
 
         assert len(batch.chains) == 2
         assert batch.chains[1].description == "second goal"
-
-
-def _a_chain_goal(
-    description: str = "Probe then exploit path traversal",
-) -> ChainGoal:
-    return ChainGoal(
-        description=description,
-        category=AuditCategory.INJECTION,
-        first_step=AuditPayload(
-            tool_name="get_file",
-            category=AuditCategory.INJECTION,
-            description="Initial probe",
-            arguments={"path": "/etc/passwd"},
-        ),
-    )
-
-
-def _a_chain_step(
-    response: str | None = "file not found",
-    observation: str = "Error reveals path validation",
-) -> ChainStep:
-    return ChainStep(
-        payload=AuditPayload(
-            tool_name="get_file",
-            category=AuditCategory.INJECTION,
-            description="probe",
-            arguments={"path": "/etc/passwd"},
-        ),
-        response=response,
-        observation=observation,
-    )
 
 
 def _a_fail_eval_result() -> EvalResult:

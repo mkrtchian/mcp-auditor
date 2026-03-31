@@ -1,17 +1,12 @@
-from typing import Any
-
 from mcp_auditor.domain import (
     AttackChain,
     AttackContext,
     AuditCategory,
     AuditPayload,
-    ChainGoal,
-    ChainStep,
     EvalResult,
     EvalVerdict,
     Severity,
     TestCase,
-    ToolDefinition,
 )
 from mcp_auditor.graph.chain_prompts import (
     build_chain_judge_prompt,
@@ -19,51 +14,15 @@ from mcp_auditor.graph.chain_prompts import (
     build_step_observation_prompt,
     build_step_planning_prompt,
 )
-
-
-def _a_tool(
-    name: str = "get_user",
-    description: str = "Fetch user by ID",
-    input_schema: dict[str, Any] | None = None,
-) -> ToolDefinition:
-    return ToolDefinition(
-        name=name,
-        description=description,
-        input_schema=input_schema or {},
-    )
-
-
-def _a_chain_goal(
-    description: str = "Probe error messages to discover internal paths, then traverse",
-) -> ChainGoal:
-    return ChainGoal(
-        description=description,
-        category=AuditCategory.INJECTION,
-        first_step=AuditPayload(
-            tool_name="get_file",
-            category=AuditCategory.INJECTION,
-            description="Initial probe",
-            arguments={"path": "/etc/passwd"},
-        ),
-    )
-
-
-def _a_chain_step(
-    response: str | None = "file not found: /var/data",
-    error: str | None = None,
-    observation: str = "Revealed internal path /var/data",
-) -> ChainStep:
-    return ChainStep(
-        payload=AuditPayload(
-            tool_name="get_file",
-            category=AuditCategory.INJECTION,
-            description="probe",
-            arguments={"path": "/etc/passwd"},
-        ),
-        response=response,
-        error=error,
-        observation=observation,
-    )
+from tests.unit.support.test_chain_nodes_given import (
+    a_chain_goal as _a_chain_goal,
+)
+from tests.unit.support.test_chain_nodes_given import (
+    a_chain_step as _a_chain_step,
+)
+from tests.unit.support.test_chain_nodes_given import (
+    a_tool as _a_tool,
+)
 
 
 def _a_single_step_case(

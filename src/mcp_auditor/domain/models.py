@@ -121,6 +121,17 @@ class ChainStep(BaseModel):
     error: str | None = None
     observation: str = ""
 
+    @staticmethod
+    def from_response(payload: AuditPayload, response: str) -> "ChainStep":
+        return ChainStep(payload=payload, response=response)
+
+    @staticmethod
+    def from_error(payload: AuditPayload, error: str) -> "ChainStep":
+        return ChainStep(payload=payload, error=error)
+
+    def with_observation(self, observation: str) -> "ChainStep":
+        return self.model_copy(update={"observation": observation})
+
 
 class ChainGoal(BaseModel):
     """LLM-generated plan for one attack chain."""

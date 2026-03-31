@@ -6,6 +6,7 @@ from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
     AuditReport,
+    ChainStep,
     EvalResult,
     EvalVerdict,
     Severity,
@@ -103,20 +104,31 @@ def _render_result_section(result: EvalResult) -> str:
 
 
 def _render_chain_section(chain: AttackChain) -> str:
-    lines = [f"### CHAIN: {chain.goal.description}"]
-    lines.append(f"**Category**: {chain.goal.category}")
-    lines.append("**Steps**:")
-    for i, step in enumerate(chain.steps, 1):
+    lines = [
+        f"### CHAIN: {chain.goal.description}",
+        f"**Category**: {chain.goal.category}",
+        _render_chain_steps(chain.steps),
+    ]
+    if chain.eval_result:
+        lines.append(_render_chain_verdict(chain.eval_result))
+    return "\n".join(lines)
+
+
+def _render_chain_steps(steps: list[ChainStep]) -> str:
+    lines = ["**Steps**:"]
+    for i, step in enumerate(steps, 1):
         response_snippet = _truncate_chain_response(step.response or step.error or "")
         obs_text = f" -- {step.observation}" if step.observation else ""
         lines.append(f"  {i}. `{step.payload.arguments}` -> {response_snippet}{obs_text}")
-    if chain.eval_result:
-        if chain.eval_result.verdict == EvalVerdict.FAIL:
-            lines.append(f"**Verdict**: FAIL ({chain.eval_result.severity})")
-        else:
-            lines.append("**Verdict**: PASS")
-        lines.append(f"**Justification**: {chain.eval_result.justification}")
     return "\n".join(lines)
+
+
+def _render_chain_verdict(result: EvalResult) -> str:
+    if result.verdict == EvalVerdict.FAIL:
+        verdict_line = f"**Verdict**: FAIL ({result.severity})"
+    else:
+        verdict_line = "**Verdict**: PASS"
+    return f"{verdict_line}\n**Justification**: {result.justification}"
 
 
 def _truncate_chain_response(text: str, max_length: int = 80) -> str:
