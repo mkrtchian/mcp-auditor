@@ -8,17 +8,12 @@ from typing import Any
 import pytest
 
 from mcp_auditor.domain import (
-    AttackChain,
     AuditCategory,
     AuditPayload,
     AuditReport,
-    ChainGoal,
-    ChainPlanBatch,
-    ChainStep,
     EvalResult,
     EvalVerdict,
     Severity,
-    StepObservation,
     TestCase,
     TokenUsage,
     ToolDefinition,
@@ -238,158 +233,6 @@ def _a_tool(
     input_schema: dict[str, Any] | None = None,
 ) -> ToolDefinition:
     return ToolDefinition(name=name, description="desc", input_schema=input_schema or {})
-
-
-class TestAttackChain:
-    def test_constructs_with_goal_and_steps(self):
-        goal = _a_chain_goal()
-        steps = [_a_chain_step()]
-        chain = AttackChain(goal=goal, steps=steps)
-
-        assert chain.goal == goal
-        assert len(chain.steps) == 1
-        assert chain.eval_result is None
-
-    def test_constructs_with_eval_result(self):
-        chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
-            eval_result=_a_fail_eval_result(),
-        )
-
-        assert chain.eval_result is not None
-        assert chain.eval_result.verdict == EvalVerdict.FAIL
-
-
-class TestToolReportWithChains:
-    def test_roundtrip_serialization(self):
-        chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
-            eval_result=_a_fail_eval_result(),
-        )
-        report = ToolReport(
-            tool=ToolDefinition(name="t", description="t", input_schema={}),
-            cases=[],
-            chains=[chain],
-        )
-
-        rebuilt = ToolReport.model_validate(report.model_dump())
-
-        assert len(rebuilt.chains) == 1
-        assert rebuilt.chains[0].goal.description == chain.goal.description
-        assert rebuilt.chains[0].eval_result is not None
-
-
-class TestAuditReportChainFindings:
-    def test_includes_chain_fail_verdicts(self):
-        chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
-            eval_result=_a_fail_eval_result(),
-        )
-        tool = ToolDefinition(name="t", description="t", input_schema={})
-        report = AuditReport(
-            target="test",
-            tool_reports=[ToolReport(tool=tool, cases=[], chains=[chain])],
-            token_usage=TokenUsage(),
-        )
-
-        assert len(report.findings) == 1
-        assert report.findings[0].verdict == EvalVerdict.FAIL
-
-    def test_excludes_chain_pass_verdicts(self):
-        pass_result = EvalResult(
-            tool_name="t",
-            category=AuditCategory.INJECTION,
-            payload={},
-            verdict=EvalVerdict.PASS,
-            justification="safe",
-            severity=Severity.LOW,
-        )
-        chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
-            eval_result=pass_result,
-        )
-        tool = ToolDefinition(name="t", description="t", input_schema={})
-        report = AuditReport(
-            target="test",
-            tool_reports=[ToolReport(tool=tool, cases=[], chains=[chain])],
-            token_usage=TokenUsage(),
-        )
-
-        assert len(report.findings) == 0
-
-
-class TestStepObservation:
-    def test_parses_with_next_step_hint(self):
-        obs = StepObservation(
-            observation="Found internal path",
-            should_continue=True,
-            next_step_hint="Try path traversal",
-        )
-
-        assert obs.next_step_hint == "Try path traversal"
-
-    def test_parses_without_next_step_hint(self):
-        obs = StepObservation(
-            observation="Dead end",
-            should_continue=False,
-        )
-
-        assert obs.next_step_hint == ""
-
-
-class TestChainPlanBatch:
-    def test_wraps_list_of_chain_goals(self):
-        goals = [_a_chain_goal(), _a_chain_goal(description="second goal")]
-        batch = ChainPlanBatch(chains=goals)
-
-        assert len(batch.chains) == 2
-        assert batch.chains[1].description == "second goal"
-
-
-def _a_chain_goal(
-    description: str = "Probe then exploit path traversal",
-) -> ChainGoal:
-    return ChainGoal(
-        description=description,
-        category=AuditCategory.INJECTION,
-        first_step=AuditPayload(
-            tool_name="get_file",
-            category=AuditCategory.INJECTION,
-            description="Initial probe",
-            arguments={"path": "/etc/passwd"},
-        ),
-    )
-
-
-def _a_chain_step(
-    response: str | None = "file not found",
-    observation: str = "Error reveals path validation",
-) -> ChainStep:
-    return ChainStep(
-        payload=AuditPayload(
-            tool_name="get_file",
-            category=AuditCategory.INJECTION,
-            description="probe",
-            arguments={"path": "/etc/passwd"},
-        ),
-        response=response,
-        observation=observation,
-    )
-
-
-def _a_fail_eval_result() -> EvalResult:
-    return EvalResult(
-        tool_name="t",
-        category=AuditCategory.INJECTION,
-        payload={"path": "/etc/passwd"},
-        verdict=EvalVerdict.FAIL,
-        justification="path traversal succeeded",
-        severity=Severity.HIGH,
-    )
 
 
 def _a_payload(**overrides: Any) -> AuditPayload:
