@@ -1,3 +1,4 @@
+import tests.unit.support.test_eval_metrics_given as given
 from evals.ground_truth import GroundTruth
 from evals.metrics import (
     VerdictMap,
@@ -7,69 +8,24 @@ from evals.metrics import (
     compute_precision,
     compute_recall,
 )
-from mcp_auditor.domain.models import (
-    AuditCategory,
-    AuditPayload,
-    AuditReport,
-    EvalResult,
-    EvalVerdict,
-    Severity,
-    TestCase,
-    TokenUsage,
-    ToolDefinition,
-    ToolReport,
-)
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
-FAIL = EvalVerdict.FAIL
-PASS = EvalVerdict.PASS
-INPUT_VALIDATION = AuditCategory.INPUT_VALIDATION
-ERROR_HANDLING = AuditCategory.ERROR_HANDLING
-INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
-INJECTION = AuditCategory.INJECTION
-RESOURCE_ABUSE = AuditCategory.RESOURCE_ABUSE
-
-ALL_CATEGORIES = list(AuditCategory)
-
-
-def _make_result(tool: str, category: AuditCategory, verdict: EvalVerdict) -> EvalResult:
-    return EvalResult(
-        tool_name=tool,
-        category=category,
-        payload={},
-        verdict=verdict,
-        justification="test",
-        severity=Severity.LOW,
-    )
-
-
-def _make_report(results_by_tool: dict[str, list[EvalResult]]) -> AuditReport:
-    tool_reports = [
-        ToolReport(
-            tool=ToolDefinition(name=name, description="test", input_schema={"type": "object"}),
-            cases=[
-                TestCase(
-                    payload=AuditPayload(
-                        tool_name=r.tool_name,
-                        category=r.category,
-                        description="test",
-                        arguments=r.payload,
-                    ),
-                    eval_result=r,
-                )
-                for r in results
-            ],
-        )
-        for name, results in results_by_tool.items()
-    ]
-    return AuditReport(target="test", tool_reports=tool_reports, token_usage=TokenUsage())
+FAIL = given.FAIL
+PASS = given.PASS
+INPUT_VALIDATION = given.INPUT_VALIDATION
+ERROR_HANDLING = given.ERROR_HANDLING
+INFO_LEAKAGE = given.INFO_LEAKAGE
+INJECTION = given.INJECTION
+RESOURCE_ABUSE = given.RESOURCE_ABUSE
+ALL_CATEGORIES = given.ALL_CATEGORIES
 
 
 def test_aggregate_verdicts_worst_case():
-    report = _make_report(
+    report = given.a_report(
         {
             "get_user": [
-                _make_result("get_user", INPUT_VALIDATION, PASS),
-                _make_result("get_user", INPUT_VALIDATION, FAIL),
+                given.a_result("get_user", INPUT_VALIDATION, PASS),
+                given.a_result("get_user", INPUT_VALIDATION, FAIL),
             ]
         }
     )
@@ -80,11 +36,11 @@ def test_aggregate_verdicts_worst_case():
 
 
 def test_aggregate_verdicts_all_pass():
-    report = _make_report(
+    report = given.a_report(
         {
             "get_user": [
-                _make_result("get_user", INPUT_VALIDATION, PASS),
-                _make_result("get_user", INPUT_VALIDATION, PASS),
+                given.a_result("get_user", INPUT_VALIDATION, PASS),
+                given.a_result("get_user", INPUT_VALIDATION, PASS),
             ]
         }
     )
@@ -95,7 +51,7 @@ def test_aggregate_verdicts_all_pass():
 
 
 def test_aggregate_verdicts_missing_pair():
-    report = _make_report({"get_user": [_make_result("get_user", INPUT_VALIDATION, PASS)]})
+    report = given.a_report({"get_user": [given.a_result("get_user", INPUT_VALIDATION, PASS)]})
 
     verdicts = aggregate_verdicts(report)
 
@@ -238,8 +194,8 @@ def test_consistency_mixed():
 
 
 def test_distribution_full_coverage():
-    report = _make_report(
-        {"get_user": [_make_result("get_user", cat, PASS) for cat in ALL_CATEGORIES]}
+    report = given.a_report(
+        {"get_user": [given.a_result("get_user", cat, PASS) for cat in ALL_CATEGORIES]}
     )
 
     coverage = compute_distribution_coverage(report, ALL_CATEGORIES)
@@ -249,8 +205,8 @@ def test_distribution_full_coverage():
 
 def test_distribution_partial():
     three_categories = [INPUT_VALIDATION, ERROR_HANDLING, INFO_LEAKAGE]
-    report = _make_report(
-        {"get_user": [_make_result("get_user", cat, PASS) for cat in three_categories]}
+    report = given.a_report(
+        {"get_user": [given.a_result("get_user", cat, PASS) for cat in three_categories]}
     )
 
     coverage = compute_distribution_coverage(report, ALL_CATEGORIES)
