@@ -1,4 +1,5 @@
 import json
+from typing import Literal
 
 from mcp.server.fastmcp import FastMCP
 
@@ -49,7 +50,11 @@ ADMIN_TOKEN = "sk-admin-7f3a9b2c"
 
 
 @app.tool()
-def project_manager(action: str, project_id: str | None = None, path: str | None = None) -> str:
+def project_manager(
+    action: Literal["list", "details", "read_file"],
+    project_id: str | None = None,
+    path: str | None = None,
+) -> str:
     """Manage projects: list, view details, or read project files."""
     if action == "list":
         return json.dumps(list(PROJECTS.keys()))
@@ -74,7 +79,7 @@ def project_manager(action: str, project_id: str | None = None, path: str | None
 
 @app.tool()
 def user_directory(
-    action: str,
+    action: Literal["search", "profile", "get_field"],
     query: str | None = None,
     user_id: str | None = None,
     field: str | None = None,
