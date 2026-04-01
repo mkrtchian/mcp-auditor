@@ -50,6 +50,24 @@ def test_aggregate_verdicts_all_pass():
     assert verdicts[("get_user", INPUT_VALIDATION)] == PASS
 
 
+def test_aggregate_verdicts_chain_fail_overrides_single_step_pass():
+    report = given.a_report(
+        results_by_tool={
+            "user_dir": [
+                given.a_result("user_dir", INFO_LEAKAGE, PASS),
+                given.a_result("user_dir", INFO_LEAKAGE, PASS),
+            ]
+        },
+        chains_by_tool={
+            "user_dir": [given.a_chain("user_dir", INFO_LEAKAGE, FAIL)],
+        },
+    )
+
+    verdicts = aggregate_verdicts(report)
+
+    assert verdicts[("user_dir", INFO_LEAKAGE)] == FAIL
+
+
 def test_aggregate_verdicts_missing_pair():
     report = given.a_report({"get_user": [given.a_result("get_user", INPUT_VALIDATION, PASS)]})
 

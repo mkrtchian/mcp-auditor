@@ -50,7 +50,14 @@ For each chain, provide:
 
 Do not plan chains for things that can be tested with a single \
 request. Focus on vulnerabilities where reconnaissance enables \
-exploitation."""
+exploitation. Only plan chains for info_leakage and injection \
+— other categories (input_validation, error_handling, \
+resource_abuse) are thoroughly covered by single-step tests.
+
+For info_leakage chains specifically: enumerate entities, \
+inspect their metadata, then use discovered field names or \
+IDs to extract sensitive data through different actions or \
+parameters."""
     )
 
 

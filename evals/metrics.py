@@ -60,6 +60,14 @@ def aggregate_verdicts(report: AuditReport) -> VerdictMap:
             current = verdicts.get(key)
             if current is None or result.verdict == EvalVerdict.FAIL:
                 verdicts[key] = result.verdict
+        for chain in tool_report.chains:
+            if chain.eval_result is None:
+                continue
+            result = chain.eval_result
+            key = (result.tool_name, result.category)
+            current = verdicts.get(key)
+            if current is None or result.verdict == EvalVerdict.FAIL:
+                verdicts[key] = result.verdict
     return verdicts
 
 
