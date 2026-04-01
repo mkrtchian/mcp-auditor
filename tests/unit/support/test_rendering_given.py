@@ -64,71 +64,6 @@ def a_two_tool_report() -> AuditReport:
     )
 
 
-def a_report(
-    target: str,
-    tool_reports: list[ToolReport],
-    input_tokens: int = 0,
-    output_tokens: int = 0,
-) -> AuditReport:
-    return AuditReport(
-        target=target,
-        tool_reports=tool_reports,
-        token_usage=TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens),
-    )
-
-
-def a_tool_report(
-    tool_name: str,
-    results: list[EvalResult],
-) -> ToolReport:
-    cases = [
-        TestCase(
-            payload=AuditPayload(
-                tool_name=r.tool_name,
-                category=r.category,
-                description="test",
-                arguments=r.payload,
-            ),
-            eval_result=r,
-        )
-        for r in results
-    ]
-    return ToolReport(
-        tool=a_tool_definition(name=tool_name, description=f"The {tool_name} tool"),
-        cases=cases,
-    )
-
-
-def a_fail_result(
-    tool_name: str,
-    category: AuditCategory,
-    severity: Severity,
-    justification: str = "Vulnerable to attack",
-) -> EvalResult:
-    return EvalResult(
-        tool_name=tool_name,
-        category=category,
-        payload={"input": "malicious"},
-        verdict=EvalVerdict.FAIL,
-        justification=justification,
-        severity=severity,
-    )
-
-
-def a_pass_result(
-    tool_name: str,
-    category: AuditCategory,
-) -> EvalResult:
-    return EvalResult(
-        tool_name=tool_name,
-        category=category,
-        payload={"input": "test"},
-        verdict=EvalVerdict.PASS,
-        justification="Handled correctly",
-        severity=Severity.LOW,
-    )
-
-
 def a_report_with_injection_finding() -> AuditReport:
     results = [
         a_fail_result(
@@ -167,68 +102,6 @@ def a_report_with_mapped_pass() -> AuditReport:
         target="python server.py",
         tool_reports=[a_tool_report("get_user", results)],
     )
-
-
-def a_tool_definition(
-    name: str = "test_tool",
-    description: str = "A test tool",
-) -> ToolDefinition:
-    return ToolDefinition(
-        name=name,
-        description=description,
-        input_schema={"type": "object", "properties": {}},
-    )
-
-
-def a_chain_fail_result(
-    tool_name: str = "get_user",
-    category: AuditCategory = AuditCategory.INJECTION,
-    severity: Severity = Severity.HIGH,
-    justification: str = "Chain exploited",
-) -> EvalResult:
-    return EvalResult(
-        tool_name=tool_name,
-        category=category,
-        payload={"path": "/etc/passwd"},
-        verdict=EvalVerdict.FAIL,
-        justification=justification,
-        severity=severity,
-    )
-
-
-def a_chain(
-    description: str = "probe then exploit",
-    category: AuditCategory = AuditCategory.INJECTION,
-    eval_result: EvalResult | None = None,
-) -> AttackChain:
-    goal = ChainGoal(
-        description=description,
-        category=category,
-        first_step=AuditPayload(
-            tool_name="get_user",
-            category=category,
-            description="probe",
-            arguments={"id": "1"},
-        ),
-    )
-    steps = [
-        ChainStep(
-            payload=goal.first_step,
-            response="user data with path /var/data",
-            observation="Found internal path",
-        ),
-        ChainStep(
-            payload=AuditPayload(
-                tool_name="get_user",
-                category=category,
-                description="exploit",
-                arguments={"id": "../../etc/passwd"},
-            ),
-            response="root:x:0:0",
-            observation="Path traversal succeeded",
-        ),
-    ]
-    return AttackChain(goal=goal, steps=steps, eval_result=eval_result)
 
 
 def a_report_with_chain_finding() -> AuditReport:
@@ -273,3 +146,130 @@ def a_report_with_pass_case_and_fail_chain() -> AuditReport:
         chains=[chain],
     )
     return a_report(target="python server.py", tool_reports=[tool_report])
+
+
+def a_report(
+    target: str,
+    tool_reports: list[ToolReport],
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+) -> AuditReport:
+    return AuditReport(
+        target=target,
+        tool_reports=tool_reports,
+        token_usage=TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens),
+    )
+
+
+def a_tool_report(
+    tool_name: str,
+    results: list[EvalResult],
+) -> ToolReport:
+    cases = [
+        TestCase(
+            payload=AuditPayload(
+                tool_name=r.tool_name,
+                category=r.category,
+                description="test",
+                arguments=r.payload,
+            ),
+            eval_result=r,
+        )
+        for r in results
+    ]
+    return ToolReport(
+        tool=a_tool_definition(name=tool_name, description=f"The {tool_name} tool"),
+        cases=cases,
+    )
+
+
+def a_chain(
+    description: str = "probe then exploit",
+    category: AuditCategory = AuditCategory.INJECTION,
+    eval_result: EvalResult | None = None,
+) -> AttackChain:
+    goal = ChainGoal(
+        description=description,
+        category=category,
+        first_step=AuditPayload(
+            tool_name="get_user",
+            category=category,
+            description="probe",
+            arguments={"id": "1"},
+        ),
+    )
+    steps = [
+        ChainStep(
+            payload=goal.first_step,
+            response="user data with path /var/data",
+            observation="Found internal path",
+        ),
+        ChainStep(
+            payload=AuditPayload(
+                tool_name="get_user",
+                category=category,
+                description="exploit",
+                arguments={"id": "../../etc/passwd"},
+            ),
+            response="root:x:0:0",
+            observation="Path traversal succeeded",
+        ),
+    ]
+    return AttackChain(goal=goal, steps=steps, eval_result=eval_result)
+
+
+def a_fail_result(
+    tool_name: str,
+    category: AuditCategory,
+    severity: Severity,
+    justification: str = "Vulnerable to attack",
+) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=category,
+        payload={"input": "malicious"},
+        verdict=EvalVerdict.FAIL,
+        justification=justification,
+        severity=severity,
+    )
+
+
+def a_pass_result(
+    tool_name: str,
+    category: AuditCategory,
+) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=category,
+        payload={"input": "test"},
+        verdict=EvalVerdict.PASS,
+        justification="Handled correctly",
+        severity=Severity.LOW,
+    )
+
+
+def a_tool_definition(
+    name: str = "test_tool",
+    description: str = "A test tool",
+) -> ToolDefinition:
+    return ToolDefinition(
+        name=name,
+        description=description,
+        input_schema={"type": "object", "properties": {}},
+    )
+
+
+def a_chain_fail_result(
+    tool_name: str = "get_user",
+    category: AuditCategory = AuditCategory.INJECTION,
+    severity: Severity = Severity.HIGH,
+    justification: str = "Chain exploited",
+) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=category,
+        payload={"path": "/etc/passwd"},
+        verdict=EvalVerdict.FAIL,
+        justification=justification,
+        severity=severity,
+    )

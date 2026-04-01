@@ -3,6 +3,7 @@ from pathlib import Path
 
 import tests.unit.support.test_export_given as given
 from evals.export import export_judged_cases
+from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 
@@ -13,7 +14,7 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
 
 class TestExportWritesCorrectJsonl:
     def test_writes_correct_fields_and_correct_values(self, tmp_path: Path) -> None:
-        ground_truth = given.input_validation_ground_truth()
+        ground_truth: GroundTruth = {("get_user", AuditCategory.INPUT_VALIDATION): EvalVerdict.FAIL}
         case_matching = given.a_judged_case(EvalVerdict.FAIL, AuditCategory.INPUT_VALIDATION)
         case_mismatching = given.a_judged_case(EvalVerdict.PASS, AuditCategory.INPUT_VALIDATION)
         case_no_gt = given.a_judged_case(EvalVerdict.PASS, AuditCategory.ERROR_HANDLING)
@@ -85,7 +86,7 @@ class TestExportSkipsUnjudgedCases:
 
 class TestExportIncludesChains:
     def test_chain_verdicts_are_exported_with_steps(self, tmp_path: Path) -> None:
-        ground_truth = given.info_leakage_ground_truth()
+        ground_truth: GroundTruth = {("get_user", AuditCategory.INFO_LEAKAGE): EvalVerdict.FAIL}
         chain = given.a_chain_with_leakage_verdict()
         report = given.a_report(cases=[], chains=[chain])
         runs = [(0, report)]

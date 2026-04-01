@@ -1,4 +1,3 @@
-from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -88,9 +87,3 @@ def a_chain_with_leakage_verdict() -> AttackChain:
     )
 
 
-def info_leakage_ground_truth() -> GroundTruth:
-    return {("get_user", AuditCategory.INFO_LEAKAGE): EvalVerdict.FAIL}
-
-
-def input_validation_ground_truth() -> GroundTruth:
-    return {("get_user", AuditCategory.INPUT_VALIDATION): EvalVerdict.FAIL}

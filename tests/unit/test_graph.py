@@ -9,8 +9,8 @@ from tests.fakes import FakeLLM, FakeMCPClient
 async def test_single_tool_single_test_case():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(tool_name="get_user", num_cases=1)
-    fake_mcp = FakeMCPClient([tool])
-    graph = given.a_graph(fake_llm, fake_mcp)
+    fake_mcp_client = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5)
 
     result = await given.invoke_graph(graph, state)
@@ -26,8 +26,8 @@ async def test_two_tools_two_cases_each():
     tool_a = given.a_tool(name="get_user")
     tool_b = given.a_tool(name="delete_user")
     fake_llm = given.a_fake_llm_for_multi_tool_audit([("get_user", 2), ("delete_user", 2)])
-    fake_mcp = FakeMCPClient([tool_a, tool_b])
-    graph = given.a_graph(fake_llm, fake_mcp)
+    fake_mcp_client = FakeMCPClient([tool_a, tool_b])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5)
 
     result = await given.invoke_graph(graph, state)
@@ -44,8 +44,8 @@ async def test_two_tools_two_cases_each():
 @pytest.mark.asyncio
 async def test_empty_tool_list():
     fake_llm = FakeLLM([])
-    fake_mcp = FakeMCPClient([])
-    graph = given.a_graph(fake_llm, fake_mcp)
+    fake_mcp_client = FakeMCPClient([])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5)
 
     result = await given.invoke_graph(graph, state)
@@ -58,8 +58,8 @@ async def test_token_usage_accumulated():
     tool = given.a_tool(name="get_user")
     # 2 test cases = 1 generate + 2 judge + 1 extract = 4 LLM calls
     fake_llm = given.a_fake_llm_for_single_tool_audit(tool_name="get_user", num_cases=2)
-    fake_mcp = FakeMCPClient([tool])
-    graph = given.a_graph(fake_llm, fake_mcp)
+    fake_mcp_client = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5)
 
     result = await given.invoke_graph(graph, state)
@@ -79,8 +79,8 @@ async def test_attack_context_populated_after_audit():
         num_cases=1,
         extraction_response=AttackContext(db_engine="sqlite"),
     )
-    fake_mcp = FakeMCPClient([tool])
-    graph = given.a_graph(fake_llm, fake_mcp)
+    fake_mcp_client = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5)
 
     result = await given.invoke_graph(graph, state)
@@ -93,8 +93,8 @@ async def test_attack_context_populated_after_audit():
 async def test_chain_budget_zero_skips_chains():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(tool_name="get_user", num_cases=1)
-    fake_mcp = FakeMCPClient([tool])
-    graph = given.a_graph(fake_llm, fake_mcp)
+    fake_mcp_client = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5, chain_budget=0, max_chain_steps=3)
 
     result = await given.invoke_graph(graph, state)
@@ -107,8 +107,8 @@ async def test_chain_budget_zero_skips_chains():
 async def test_chain_budget_one_produces_chain():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_with_chain(tool_name="get_user", num_cases=1)
-    fake_mcp = FakeMCPClient([tool])
-    graph = given.a_graph(fake_llm, fake_mcp)
+    fake_mcp_client = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
 
     result = await given.invoke_graph(graph, state)
@@ -126,8 +126,8 @@ async def test_chain_budget_two_produces_two_chains():
     fake_llm = given.a_fake_llm_for_single_tool_with_two_chains(
         tool_name="get_user", num_cases=1
     )
-    fake_mcp = FakeMCPClient([tool])
-    graph = given.a_graph(fake_llm, fake_mcp)
+    fake_mcp_client = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5, chain_budget=2, max_chain_steps=3)
 
     result = await given.invoke_graph(graph, state)
@@ -146,9 +146,9 @@ async def test_resume_mid_chain():
 
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_with_chain(tool_name="get_user", num_cases=1)
-    fake_mcp = FakeMCPClient([tool])
+    fake_mcp_client = FakeMCPClient([tool])
     checkpointer = MemorySaver()
-    graph = given.a_graph_with_checkpointer(fake_llm, fake_mcp, checkpointer)
+    graph = given.a_graph_with_checkpointer(fake_llm, fake_mcp_client, checkpointer)
     state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
     config = {"configurable": {"thread_id": "resume-test"}}
 

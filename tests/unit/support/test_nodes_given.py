@@ -1,7 +1,6 @@
 from typing import Any
 
 from mcp_auditor.domain import (
-    AttackContext,
     AuditCategory,
     AuditPayload,
     EvalResult,
@@ -82,23 +81,6 @@ def a_fake_mcp_client(
 ) -> FakeMCPClient:
     return FakeMCPClient(tools, responses)
 
-
-def an_attack_context(
-    db_engine: str | None = None,
-    framework: str | None = None,
-    language: str | None = None,
-    exposed_internals: list[str] | None = None,
-    effective_payloads: list[str] | None = None,
-    observations: str = "",
-) -> AttackContext:
-    return AttackContext(
-        db_engine=db_engine,
-        framework=framework,
-        language=language,
-        exposed_internals=exposed_internals or [],
-        effective_payloads=effective_payloads or [],
-        observations=observations,
-    )
 
 
 def a_tool_report(

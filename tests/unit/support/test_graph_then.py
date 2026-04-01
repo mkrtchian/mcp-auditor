@@ -38,13 +38,13 @@ def token_usage_is_positive(result: dict[str, Any]) -> None:
 
 
 def attack_context_is_non_empty(result: dict[str, Any]) -> None:
-    ctx = result["attack_context"]
+    context = result["attack_context"]
     has_content = (
-        ctx.db_engine is not None
-        or ctx.framework is not None
-        or ctx.language is not None
-        or ctx.exposed_internals
-        or ctx.effective_payloads
-        or ctx.observations
+        context.db_engine is not None
+        or context.framework is not None
+        or context.language is not None
+        or context.exposed_internals
+        or context.effective_payloads
+        or context.observations
     )
-    assert has_content, f"Expected non-empty attack context, got {ctx}"
+    assert has_content, f"Expected non-empty attack context, got {context}"

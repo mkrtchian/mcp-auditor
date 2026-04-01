@@ -9,11 +9,6 @@ from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import TokenUsage
 
 
-class _UsageMetadata(TypedDict):
-    input_tokens: int
-    output_tokens: int
-
-
 def create_llm(settings: Settings) -> "LLM":
     return _create_for_provider(settings.provider, settings.resolve_model())
 
@@ -36,6 +31,11 @@ def _make_anthropic_model(model: str) -> BaseChatModel:  # pyright: ignore[repor
 
 def _make_google_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
     return ChatGoogleGenerativeAI(model=model, max_retries=3)  # pyright: ignore[reportUnknownArgumentType]
+
+
+class _UsageMetadata(TypedDict):
+    input_tokens: int
+    output_tokens: int
 
 
 class LLM:
