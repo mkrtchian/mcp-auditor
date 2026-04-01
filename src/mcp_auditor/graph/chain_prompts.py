@@ -11,14 +11,19 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.graph.prompts import build_context_section
 
 
+def _format_tool_header(tool: ToolDefinition) -> str:
+    description = tool.description or "No description provided"
+    schema_json = json.dumps(tool.input_schema, indent=2)
+    return f"Tool description: {description}\n\nInput schema:\n```json\n{schema_json}\n```"
+
+
 def build_chain_planning_prompt(
     tool: ToolDefinition,
     single_step_cases: list[TestCase],
     attack_context: AttackContext,
     chain_budget: int,
 ) -> str:
-    description = tool.description or "No description provided"
-    schema_json = json.dumps(tool.input_schema, indent=2)
+    tool_header = _format_tool_header(tool)
     summary = _format_single_step_summary(single_step_cases)
     context_section = build_context_section(attack_context)
     summary_text = summary or "No single-step results available."
@@ -28,12 +33,7 @@ def build_chain_planning_prompt(
         f' attack chains for the MCP tool "{tool.name}".'
         f"""
 
-Tool description: {description}
-
-Input schema:
-```json
-{schema_json}
-```
+{tool_header}
 
 Single-step test results summary:
 {summary_text}
@@ -67,8 +67,7 @@ def build_step_planning_prompt(
     chain_history: list[ChainStep],
     observation_hint: str,
 ) -> str:
-    description = tool.description or "No description provided"
-    schema_json = json.dumps(tool.input_schema, indent=2)
+    tool_header = _format_tool_header(tool)
     history_section = _format_chain_history(chain_history)
     hint_section = (
         f"\nHint from previous observation: {observation_hint}\n" if observation_hint else ""
@@ -80,12 +79,7 @@ def build_step_planning_prompt(
         f' against the MCP tool "{tool.name}".'
         f"""
 
-Tool description: {description}
-
-Input schema:
-```json
-{schema_json}
-```
+{tool_header}
 
 Chain goal: {goal.description}
 

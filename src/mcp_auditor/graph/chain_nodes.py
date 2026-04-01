@@ -127,10 +127,14 @@ def make_judge_chain(llm: LLMPort):
     return judge_chain
 
 
-def route_after_planning(state: dict[str, Any]) -> str:
+def _route_to_next_chain_or_end(state: dict[str, Any]) -> str:
     if state["pending_chains"]:
         return "prepare_chain"
     return END
+
+
+route_after_planning = _route_to_next_chain_or_end
+route_after_judge = _route_to_next_chain_or_end
 
 
 def route_after_observe(state: dict[str, Any]) -> str:
@@ -140,12 +144,6 @@ def route_after_observe(state: dict[str, Any]) -> str:
     if obs.should_continue and len(steps) < max_steps:
         return "plan_step"
     return "judge_chain"
-
-
-def route_after_judge(state: dict[str, Any]) -> str:
-    if state["pending_chains"]:
-        return "prepare_chain"
-    return END
 
 
 def route_to_chains_or_report(state: dict[str, Any]) -> str:

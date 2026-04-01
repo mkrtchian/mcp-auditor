@@ -15,43 +15,16 @@ from mcp_auditor.graph.chain_prompts import (
     build_step_planning_prompt,
 )
 from tests.unit.support.test_chain_nodes_given import (
-    a_chain_goal as _a_chain_goal,
+    a_chain_goal,
+    a_chain_step,
+    a_tool,
 )
-from tests.unit.support.test_chain_nodes_given import (
-    a_chain_step as _a_chain_step,
-)
-from tests.unit.support.test_chain_nodes_given import (
-    a_tool as _a_tool,
-)
-
-
-def _a_single_step_case(
-    response: str = "sqlite3.OperationalError",
-    verdict: EvalVerdict = EvalVerdict.FAIL,
-) -> TestCase:
-    return TestCase(
-        payload=AuditPayload(
-            tool_name="get_user",
-            category=AuditCategory.INJECTION,
-            description="SQL injection probe",
-            arguments={"id": "1 OR 1=1"},
-        ),
-        response=response,
-        eval_result=EvalResult(
-            tool_name="get_user",
-            category=AuditCategory.INJECTION,
-            payload={"id": "1 OR 1=1"},
-            verdict=verdict,
-            justification="vulnerable",
-            severity=Severity.HIGH,
-        ),
-    )
 
 
 class TestChainPlanningPrompt:
     def test_includes_tool_name(self):
         prompt = build_chain_planning_prompt(
-            tool=_a_tool(name="get_file"),
+            tool=a_tool(name="get_file"),
             single_step_cases=[],
             attack_context=AttackContext(),
             chain_budget=3,
@@ -60,10 +33,28 @@ class TestChainPlanningPrompt:
         assert "get_file" in prompt
 
     def test_includes_single_step_summary(self):
-        cases = [_a_single_step_case(response="sqlite3.OperationalError")]
+        cases = [
+            TestCase(
+                payload=AuditPayload(
+                    tool_name="get_user",
+                    category=AuditCategory.INJECTION,
+                    description="SQL injection probe",
+                    arguments={"id": "1 OR 1=1"},
+                ),
+                response="sqlite3.OperationalError",
+                eval_result=EvalResult(
+                    tool_name="get_user",
+                    category=AuditCategory.INJECTION,
+                    payload={"id": "1 OR 1=1"},
+                    verdict=EvalVerdict.FAIL,
+                    justification="vulnerable",
+                    severity=Severity.HIGH,
+                ),
+            ),
+        ]
 
         prompt = build_chain_planning_prompt(
-            tool=_a_tool(),
+            tool=a_tool(),
             single_step_cases=cases,
             attack_context=AttackContext(),
             chain_budget=3,
@@ -73,7 +64,7 @@ class TestChainPlanningPrompt:
 
     def test_includes_attack_context_when_non_empty(self):
         prompt = build_chain_planning_prompt(
-            tool=_a_tool(),
+            tool=a_tool(),
             single_step_cases=[],
             attack_context=AttackContext(db_engine="sqlite"),
             chain_budget=3,
@@ -83,7 +74,7 @@ class TestChainPlanningPrompt:
 
     def test_omits_attack_context_when_empty(self):
         prompt = build_chain_planning_prompt(
-            tool=_a_tool(),
+            tool=a_tool(),
             single_step_cases=[],
             attack_context=AttackContext(),
             chain_budget=3,
@@ -93,7 +84,7 @@ class TestChainPlanningPrompt:
 
     def test_includes_chain_budget(self):
         prompt = build_chain_planning_prompt(
-            tool=_a_tool(),
+            tool=a_tool(),
             single_step_cases=[],
             attack_context=AttackContext(),
             chain_budget=5,
@@ -104,10 +95,10 @@ class TestChainPlanningPrompt:
 
 class TestStepPlanningPrompt:
     def test_includes_goal_description(self):
-        goal = _a_chain_goal(description="Discover internal paths then traverse")
+        goal = a_chain_goal(description="Discover internal paths then traverse")
 
         prompt = build_step_planning_prompt(
-            tool=_a_tool(),
+            tool=a_tool(),
             goal=goal,
             chain_history=[],
             observation_hint="",
@@ -116,11 +107,11 @@ class TestStepPlanningPrompt:
         assert "Discover internal paths then traverse" in prompt
 
     def test_includes_chain_history(self):
-        steps = [_a_chain_step(response="file not found: /var/data")]
+        steps = [a_chain_step(response="file not found: /var/data")]
 
         prompt = build_step_planning_prompt(
-            tool=_a_tool(),
-            goal=_a_chain_goal(),
+            tool=a_tool(),
+            goal=a_chain_goal(),
             chain_history=steps,
             observation_hint="",
         )
@@ -129,9 +120,9 @@ class TestStepPlanningPrompt:
 
     def test_includes_observation_hint(self):
         prompt = build_step_planning_prompt(
-            tool=_a_tool(),
-            goal=_a_chain_goal(),
-            chain_history=[_a_chain_step()],
+            tool=a_tool(),
+            goal=a_chain_goal(),
+            chain_history=[a_chain_step()],
             observation_hint="Try path traversal from /var/data",
         )
 
@@ -140,10 +131,10 @@ class TestStepPlanningPrompt:
 
 class TestStepObservationPrompt:
     def test_includes_goal_description(self):
-        goal = _a_chain_goal(description="Explore error paths")
+        goal = a_chain_goal(description="Explore error paths")
 
         prompt = build_step_observation_prompt(
-            tool=_a_tool(),
+            tool=a_tool(),
             goal=goal,
             chain_history=[],
             latest_response="internal error at /opt/app",
@@ -154,8 +145,8 @@ class TestStepObservationPrompt:
 
     def test_includes_latest_response(self):
         prompt = build_step_observation_prompt(
-            tool=_a_tool(),
-            goal=_a_chain_goal(),
+            tool=a_tool(),
+            goal=a_chain_goal(),
             chain_history=[],
             latest_response="sqlite3.OperationalError: table users",
             latest_error=None,
@@ -165,8 +156,8 @@ class TestStepObservationPrompt:
 
     def test_includes_latest_error(self):
         prompt = build_step_observation_prompt(
-            tool=_a_tool(),
-            goal=_a_chain_goal(),
+            tool=a_tool(),
+            goal=a_chain_goal(),
             chain_history=[],
             latest_response=None,
             latest_error="connection refused",
@@ -175,11 +166,11 @@ class TestStepObservationPrompt:
         assert "connection refused" in prompt
 
     def test_includes_chain_history(self):
-        steps = [_a_chain_step(observation="Revealed internal path /var/data")]
+        steps = [a_chain_step(observation="Revealed internal path /var/data")]
 
         prompt = build_step_observation_prompt(
-            tool=_a_tool(),
-            goal=_a_chain_goal(),
+            tool=a_tool(),
+            goal=a_chain_goal(),
             chain_history=steps,
             latest_response="new response",
             latest_error=None,
@@ -191,12 +182,12 @@ class TestStepObservationPrompt:
 class TestChainJudgePrompt:
     def test_includes_tool_name(self):
         chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
+            goal=a_chain_goal(),
+            steps=[a_chain_step()],
         )
 
         prompt = build_chain_judge_prompt(
-            tool=_a_tool(name="get_file"),
+            tool=a_tool(name="get_file"),
             chain=chain,
         )
 
@@ -204,23 +195,23 @@ class TestChainJudgePrompt:
 
     def test_includes_full_chain_steps(self):
         steps = [
-            _a_chain_step(response="path /var/data revealed"),
-            _a_chain_step(response="traversal succeeded: root:x:0:0"),
+            a_chain_step(response="path /var/data revealed"),
+            a_chain_step(response="traversal succeeded: root:x:0:0"),
         ]
-        chain = AttackChain(goal=_a_chain_goal(), steps=steps)
+        chain = AttackChain(goal=a_chain_goal(), steps=steps)
 
-        prompt = build_chain_judge_prompt(tool=_a_tool(), chain=chain)
+        prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
 
         assert "path /var/data revealed" in prompt
         assert "traversal succeeded: root:x:0:0" in prompt
 
     def test_asks_for_verdict(self):
         chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
+            goal=a_chain_goal(),
+            steps=[a_chain_step()],
         )
 
-        prompt = build_chain_judge_prompt(tool=_a_tool(), chain=chain)
+        prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
 
         assert "FAIL" in prompt
         assert "PASS" in prompt

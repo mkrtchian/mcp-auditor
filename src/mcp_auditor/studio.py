@@ -15,18 +15,20 @@ def create_graph():
     return build_graph(llm, mcp_client=_placeholder_mcp_client(), judge_llm=judge_llm)
 
 
+def _studio_mcp_not_available(operation: str) -> NotImplementedError:
+    return NotImplementedError(
+        f"MCP {operation} requires a running server. Use the CLI: mcp-auditor run"
+    )
+
+
 class _StudioMCPPlaceholder:
     """Placeholder for Studio — MCP operations require the CLI."""
 
     async def list_tools(self) -> list[ToolDefinition]:
-        raise NotImplementedError(
-            "MCP tool discovery requires a running server. Use the CLI: mcp-auditor run"
-        )
+        raise _studio_mcp_not_available("tool discovery")
 
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
-        raise NotImplementedError(
-            "MCP tool execution requires a running server. Use the CLI: mcp-auditor run"
-        )
+        raise _studio_mcp_not_available("tool execution")
 
 
 def _placeholder_mcp_client() -> MCPClientPort:

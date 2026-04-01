@@ -8,6 +8,10 @@ class OwaspMapping:
     code: str
     title: str
 
+    @property
+    def label(self) -> str:
+        return f"{self.code}: {self.title}"
+
 
 OWASP_BY_CATEGORY: dict[AuditCategory, OwaspMapping] = {
     AuditCategory.INJECTION: OwaspMapping(code="MCP-05", title="Command Injection & Execution"),
@@ -28,6 +32,4 @@ def owasp_id_for(category: AuditCategory) -> str | None:
 
 def owasp_label_for(category: AuditCategory) -> str | None:
     mapping = owasp_mapping_for(category)
-    if mapping is None:
-        return None
-    return f"{mapping.code}: {mapping.title}"
+    return mapping.label if mapping else None
