@@ -6,22 +6,6 @@ from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import ToolDefinition
 
 
-class _GraphLevel(Enum):
-    ORCHESTRATOR = "orchestrator"
-    TOOL_AUDIT = "tool_audit"
-    CHAIN_AUDIT = "chain_audit"
-
-
-def _graph_level(namespace: tuple[str, ...]) -> _GraphLevel:
-    match len(namespace):
-        case 0:
-            return _GraphLevel.ORCHESTRATOR
-        case 1:
-            return _GraphLevel.TOOL_AUDIT
-        case _:
-            return _GraphLevel.CHAIN_AUDIT
-
-
 class AuditProgressReporter:
     def __init__(self, display: AuditDisplay) -> None:
         self._display = display
@@ -88,3 +72,19 @@ class AuditProgressReporter:
                 last = chains[-1]
                 verdict = last.eval_result.verdict if last.eval_result else "?"
                 self._display.print_info(f"  Chain judged: {verdict}")
+
+
+class _GraphLevel(Enum):
+    ORCHESTRATOR = "orchestrator"
+    TOOL_AUDIT = "tool_audit"
+    CHAIN_AUDIT = "chain_audit"
+
+
+def _graph_level(namespace: tuple[str, ...]) -> _GraphLevel:
+    match len(namespace):
+        case 0:
+            return _GraphLevel.ORCHESTRATOR
+        case 1:
+            return _GraphLevel.TOOL_AUDIT
+        case _:
+            return _GraphLevel.CHAIN_AUDIT

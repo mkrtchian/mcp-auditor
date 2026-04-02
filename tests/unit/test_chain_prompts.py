@@ -136,9 +136,7 @@ class TestStepObservationPrompt:
         prompt = build_step_observation_prompt(
             tool=a_tool(),
             goal=goal,
-            chain_history=[],
-            latest_response="internal error at /opt/app",
-            latest_error=None,
+            chain_steps=[a_chain_step(response="internal error at /opt/app")],
         )
 
         assert "Explore error paths" in prompt
@@ -147,9 +145,7 @@ class TestStepObservationPrompt:
         prompt = build_step_observation_prompt(
             tool=a_tool(),
             goal=a_chain_goal(),
-            chain_history=[],
-            latest_response="sqlite3.OperationalError: table users",
-            latest_error=None,
+            chain_steps=[a_chain_step(response="sqlite3.OperationalError: table users")],
         )
 
         assert "sqlite3.OperationalError: table users" in prompt
@@ -158,22 +154,21 @@ class TestStepObservationPrompt:
         prompt = build_step_observation_prompt(
             tool=a_tool(),
             goal=a_chain_goal(),
-            chain_history=[],
-            latest_response=None,
-            latest_error="connection refused",
+            chain_steps=[a_chain_step(response=None, error="connection refused")],
         )
 
         assert "connection refused" in prompt
 
     def test_includes_chain_history(self):
-        steps = [a_chain_step(observation="Revealed internal path /var/data")]
+        steps = [
+            a_chain_step(observation="Revealed internal path /var/data"),
+            a_chain_step(response="new response"),
+        ]
 
         prompt = build_step_observation_prompt(
             tool=a_tool(),
             goal=a_chain_goal(),
-            chain_history=steps,
-            latest_response="new response",
-            latest_error=None,
+            chain_steps=steps,
         )
 
         assert "Revealed internal path /var/data" in prompt

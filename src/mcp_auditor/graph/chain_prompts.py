@@ -89,13 +89,12 @@ call and a description of why this step advances the attack."""
 def build_step_observation_prompt(
     tool: ToolDefinition,
     goal: ChainGoal,
-    chain_history: list[ChainStep],
-    latest_response: str | None,
-    latest_error: str | None,
+    chain_steps: list[ChainStep],
 ) -> str:
     description = tool.description or "No description provided"
-    history_section = _format_chain_history(chain_history)
-    outcome = _format_latest_outcome(latest_response, latest_error)
+    latest = chain_steps[-1]
+    history_section = _format_chain_history(chain_steps[:-1])
+    outcome = _format_latest_outcome(latest.response, latest.error)
     history_text = history_section or "No previous steps."
 
     return (

@@ -32,19 +32,6 @@ from mcp_auditor.progress import format_failure_line as format_failure_line
 from mcp_auditor.progress import format_tool_summary as format_tool_summary
 
 
-class NullStatus:
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        pass
-
-
 class AuditDisplay:
     def __init__(self, console: Console | None = None, ci_mode: bool = False) -> None:
         if console:
@@ -149,6 +136,19 @@ class AuditDisplay:
         if self._ci_mode:
             return NullStatus()
         return self._console.status(message)
+
+
+class NullStatus:
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        pass
 
 
 def _severity_color(severity: Severity) -> str:

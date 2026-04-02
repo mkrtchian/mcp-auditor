@@ -86,41 +86,50 @@ def user_directory(
 ) -> str:
     """Search users, view profiles, or retrieve specific fields."""
     if action == "search":
-        if not query:
-            raise ValueError("query is required for action 'search'")
-        matches = [
-            uid
-            for uid, user in USERS.items()
-            if query.lower() in user["name"].lower() or query.lower() in user["role"].lower()
-        ]
-        return json.dumps(matches)
-
+        return _search_users(query)
     if action == "profile":
-        if not user_id:
-            raise ValueError("user_id is required for action 'profile'")
-        user = USERS.get(user_id)
-        if not user:
-            raise ValueError(f"Unknown user: {user_id}")
-        return json.dumps(user)
-
+        return _user_profile(user_id)
     if action == "get_field":
-        if not user_id:
-            raise ValueError("user_id is required for action 'get_field'")
-        user = USERS.get(user_id)
-        if not user:
-            raise ValueError(f"Unknown user: {user_id}")
-        if field == "auth_token":
-            if user.get("role") == "admin":
-                return ADMIN_TOKEN
-            raise ValueError("Access denied: only admin users have auth tokens")
-        if not field:
-            raise ValueError("field is required for action 'get_field'")
-        value = user.get(field)
-        if value is None:
-            raise ValueError(f"Unknown field: {field}")
-        return str(value)
-
+        return _user_field(user_id, field)
     raise ValueError(f"Unknown action: {action}")
+
+
+def _search_users(query: str | None) -> str:
+    if not query:
+        raise ValueError("query is required for action 'search'")
+    matches = [
+        uid
+        for uid, user in USERS.items()
+        if query.lower() in user["name"].lower() or query.lower() in user["role"].lower()
+    ]
+    return json.dumps(matches)
+
+
+def _user_profile(user_id: str | None) -> str:
+    if not user_id:
+        raise ValueError("user_id is required for action 'profile'")
+    user = USERS.get(user_id)
+    if not user:
+        raise ValueError(f"Unknown user: {user_id}")
+    return json.dumps(user)
+
+
+def _user_field(user_id: str | None, field: str | None) -> str:
+    if not user_id:
+        raise ValueError("user_id is required for action 'get_field'")
+    user = USERS.get(user_id)
+    if not user:
+        raise ValueError(f"Unknown user: {user_id}")
+    if field == "auth_token":
+        if user.get("role") == "admin":
+            return ADMIN_TOKEN
+        raise ValueError("Access denied: only admin users have auth tokens")
+    if not field:
+        raise ValueError("field is required for action 'get_field'")
+    value = user.get(field)
+    if value is None:
+        raise ValueError(f"Unknown field: {field}")
+    return str(value)
 
 
 if __name__ == "__main__":

@@ -67,18 +67,15 @@ def make_execute_step(mcp_client: MCPClientPort):
 def make_observe_step(llm: LLMPort):
     async def observe_step(state: dict[str, Any]) -> dict[str, Any]:
         steps = list(state["current_chain_steps"])
-        latest = steps[-1]
         goal = state["current_chain_goal"]
         tool = state["current_tool"]
         prompt = build_step_observation_prompt(
             tool=tool,
             goal=goal,
-            chain_history=steps[:-1],
-            latest_response=latest.response,
-            latest_error=latest.error,
+            chain_steps=steps,
         )
         obs, usage = await llm.generate_structured(prompt, StepObservation)
-        updated_step = latest.with_observation(obs.observation)
+        updated_step = steps[-1].with_observation(obs.observation)
         steps[-1] = updated_step
         return {
             "current_chain_steps": steps,

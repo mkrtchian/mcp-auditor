@@ -9,9 +9,7 @@ from mcp_auditor.domain import (
     TestCase,
     ToolDefinition,
     ToolReport,
-    ToolResponse,
 )
-from tests.fakes import FakeMCPClient
 
 
 def a_tool(
@@ -70,12 +68,6 @@ def an_eval_result(
         severity=severity,
     )
 
-
-def a_fake_mcp_client(
-    tools: list[ToolDefinition],
-    responses: dict[str, ToolResponse] | None = None,
-) -> FakeMCPClient:
-    return FakeMCPClient(tools, responses)
 
 
 def a_tool_report(

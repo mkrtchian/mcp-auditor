@@ -19,7 +19,7 @@ from mcp_auditor.graph.nodes import (
     route_test_cases,
     route_tools,
 )
-from tests.fakes import FakeLLM
+from tests.fakes import FakeLLM, FakeMCPClient
 
 
 class TestFilterTools:
@@ -55,7 +55,7 @@ class TestDiscoverTools:
     @pytest.mark.asyncio
     async def test_populates_state(self):
         tools = [given.a_tool(name="tool_a"), given.a_tool(name="tool_b")]
-        client = given.a_fake_mcp_client(tools)
+        client = FakeMCPClient(tools)
         node = make_discover_tools(client)
 
         result = await node({})
@@ -65,7 +65,7 @@ class TestDiscoverTools:
     @pytest.mark.asyncio
     async def test_filters_tools_by_name(self):
         tools = [given.a_tool(name="a"), given.a_tool(name="b"), given.a_tool(name="c")]
-        client = given.a_fake_mcp_client(tools)
+        client = FakeMCPClient(tools)
         node = make_discover_tools(client, tools_filter=frozenset({"a", "c"}))
 
         result = await node({})
@@ -76,7 +76,7 @@ class TestDiscoverTools:
     @pytest.mark.asyncio
     async def test_orders_tools_for_audit(self):
         tools = [given.a_tool(name="delete_user"), given.a_tool(name="get_user")]
-        client = given.a_fake_mcp_client(tools)
+        client = FakeMCPClient(tools)
         node = make_discover_tools(client)
 
         result = await node({})
@@ -137,7 +137,7 @@ class TestExecuteTool:
     async def test_success(self):
         tool = given.a_tool(name="my_tool")
         case = given.a_test_case(tool_name="my_tool")
-        client = given.a_fake_mcp_client(
+        client = FakeMCPClient(
             [tool], responses={"my_tool": ToolResponse(content="result data")}
         )
         node = make_execute_tool(client)
@@ -151,7 +151,7 @@ class TestExecuteTool:
     async def test_error(self):
         tool = given.a_tool(name="my_tool")
         case = given.a_test_case(tool_name="my_tool")
-        client = given.a_fake_mcp_client(
+        client = FakeMCPClient(
             [tool],
             responses={"my_tool": ToolResponse(content="not found", is_error=True)},
         )
