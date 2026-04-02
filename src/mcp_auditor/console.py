@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from types import TracebackType
+from typing import Self
 
 from rich.columns import Columns
 from rich.console import Console
@@ -23,11 +25,24 @@ from mcp_auditor.domain.rendering import (
     render_summary,
     summarize_tools,
 )
-from mcp_auditor.progress import CIProgress, NullStatus, ToolProgress
+from mcp_auditor.progress import CIProgress, ToolProgress
 
 # Re-export for existing consumers
 from mcp_auditor.progress import format_failure_line as format_failure_line
 from mcp_auditor.progress import format_tool_summary as format_tool_summary
+
+
+class NullStatus:
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        pass
 
 
 class AuditDisplay:
@@ -70,7 +85,7 @@ class AuditDisplay:
             self._console.print(render_summary(report))
             return
         table, total_pass, total_judged = _build_summary_table(report)
-        score_line = _format_score_line(total_pass, total_judged)
+        score_line = _format_score_markup(total_pass, total_judged)
         token_line = _format_token_usage(report.token_usage)
         panel = Panel(table, title="Results", subtitle=f"{score_line}  |  {token_line}")
         self._console.print(panel)
@@ -145,7 +160,7 @@ def _severity_color(severity: Severity) -> str:
     }[severity]
 
 
-def _format_score_line(total_pass: int, total_judged: int) -> str:
+def _format_score_markup(total_pass: int, total_judged: int) -> str:
     percentage = round(total_pass / total_judged * 100) if total_judged > 0 else 0
     bar_width = 20
     filled = round(bar_width * percentage / 100)

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from collections import Counter
-from types import TracebackType
-from typing import Self
 
 from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TaskID, TextColumn
@@ -24,19 +22,6 @@ def format_tool_summary(fail_count: int, pass_count: int, failures: list[EvalRes
     severity_counts: Counter[Severity] = Counter(f.severity for f in failures)
     breakdown = format_severity_breakdown(severity_counts)
     return f"\u2717 {fail_count} failed ({breakdown})"
-
-
-class NullStatus:
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        pass
 
 
 class _ResultTracker:

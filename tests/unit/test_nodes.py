@@ -19,6 +19,7 @@ from mcp_auditor.graph.nodes import (
     route_test_cases,
     route_tools,
 )
+from tests.fakes import FakeLLM
 
 
 class TestFilterTools:
@@ -96,7 +97,7 @@ class TestExtractAttackContext:
     @pytest.mark.asyncio
     async def test_extracts_context_from_tool_report(self):
         report = given.a_tool_report()
-        llm = given.a_fake_llm_returning(AttackContext(db_engine="sqlite"))
+        llm = FakeLLM([AttackContext(db_engine="sqlite")])
         node = make_extract_attack_context(llm)
 
         result = await node({"tool_reports": [report], "attack_context": AttackContext()})
@@ -106,7 +107,7 @@ class TestExtractAttackContext:
     @pytest.mark.asyncio
     async def test_accumulates_token_usage(self):
         report = given.a_tool_report()
-        llm = given.a_fake_llm_returning(AttackContext(db_engine="sqlite"))
+        llm = FakeLLM([AttackContext(db_engine="sqlite")])
         node = make_extract_attack_context(llm)
 
         result = await node({"tool_reports": [report], "attack_context": AttackContext()})
@@ -119,7 +120,7 @@ class TestGenerateTestCases:
     async def test_produces_pending_cases(self):
         payloads = [given.a_payload() for _ in range(3)]
         batch = TestCaseBatch(cases=payloads)
-        llm = given.a_fake_llm_returning(batch)
+        llm = FakeLLM([batch])
         node = make_generate_test_cases(llm)
         tool = given.a_tool()
 
@@ -165,7 +166,7 @@ class TestJudgeResponse:
     @pytest.mark.asyncio
     async def test_produces_eval_result(self):
         eval_result = given.an_eval_result()
-        llm = given.a_fake_llm_returning(eval_result)
+        llm = FakeLLM([eval_result])
         node = make_judge_response(llm)
         case = given.a_test_case(response="some output")
         tool = given.a_tool()
@@ -173,9 +174,7 @@ class TestJudgeResponse:
         result = await node({"current_case": case, "judged_cases": [], "current_tool": tool})
 
         then.judged_cases_count(result, 1)
-        judged_case = result["judged_cases"][0]
-        assert judged_case.eval_result is not None
-        assert judged_case.eval_result.verdict == eval_result.verdict
+        then.judged_case_has_verdict(result, eval_result.verdict)
 
 
 class TestFinalizeToolAudit:

@@ -13,16 +13,6 @@ from mcp_auditor.domain.models import (
     ToolReport,
 )
 
-FAIL = EvalVerdict.FAIL
-PASS = EvalVerdict.PASS
-INPUT_VALIDATION = AuditCategory.INPUT_VALIDATION
-ERROR_HANDLING = AuditCategory.ERROR_HANDLING
-INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
-INJECTION = AuditCategory.INJECTION
-RESOURCE_ABUSE = AuditCategory.RESOURCE_ABUSE
-
-ALL_CATEGORIES = list(AuditCategory)
-
 
 def a_result(tool: str, category: AuditCategory, verdict: EvalVerdict) -> EvalResult:
     return EvalResult(

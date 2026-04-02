@@ -26,6 +26,7 @@ from mcp_auditor.graph.chain_nodes import (
     route_after_planning,
     route_to_chains_or_report,
 )
+from tests.fakes import FakeLLM
 
 
 class TestMakePlanChains:
@@ -34,7 +35,7 @@ class TestMakePlanChains:
         goal_a = given.a_chain_goal(description="chain A")
         goal_b = given.a_chain_goal(description="chain B")
         batch = ChainPlanBatch(chains=[goal_a, goal_b])
-        llm = given.a_fake_llm_returning(batch)
+        llm = FakeLLM([batch])
         node = make_plan_chains(llm)
         state = given.a_chain_audit_state(chain_budget=2)
 
@@ -123,7 +124,7 @@ class TestMakeObserveStep:
         obs = StepObservation(
             observation="found path", should_continue=True, next_step_hint="try traversal"
         )
-        llm = given.a_fake_llm_returning(obs)
+        llm = FakeLLM([obs])
         node = make_observe_step(llm)
         existing_step = given.a_chain_step(response="some data")
         goal = given.a_chain_goal()
@@ -145,7 +146,7 @@ class TestMakePlanStep:
         next_payload = given.a_payload(
             description="next step", arguments={"path": "../../../etc/shadow"}
         )
-        llm = given.a_fake_llm_returning(next_payload)
+        llm = FakeLLM([next_payload])
         node = make_plan_step(llm)
         goal = given.a_chain_goal()
         obs = given.a_step_observation(next_step_hint="try traversal")
@@ -172,7 +173,7 @@ class TestMakeJudgeChain:
             justification="path traversal succeeded",
             severity=Severity.HIGH,
         )
-        llm = given.a_fake_llm_returning(eval_result)
+        llm = FakeLLM([eval_result])
         node = make_judge_chain(llm)
         goal = given.a_chain_goal()
         steps = [given.a_chain_step(), given.a_chain_step()]

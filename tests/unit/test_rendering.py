@@ -13,7 +13,7 @@ def test_json_round_trip():
 
     result = render_json(report)
 
-    then.json_round_trips(result, 2)
+    then.json_has_expected_structure(result, 2)
 
 
 def test_json_enum_values():

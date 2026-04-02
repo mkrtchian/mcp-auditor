@@ -66,6 +66,7 @@ def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
 
 
 CONFIG_FILE_NAME = ".mcp-auditor.yml"
+DEFAULT_MAX_CHAIN_STEPS = 3
 
 
 @click.group()
@@ -199,7 +200,7 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
                     "target": target_str,
                     "test_budget": config.execution.budget,
                     "chain_budget": config.execution.chains,
-                    "max_chain_steps": 3,
+                    "max_chain_steps": DEFAULT_MAX_CHAIN_STEPS,
                     "attack_context": AttackContext(),
                 }
             )

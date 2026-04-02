@@ -3,6 +3,7 @@ ChainStep, StepObservation, ChainPlanBatch, and their integration
 with AuditReport and ToolReport.
 """
 
+import tests.unit.support.test_chain_nodes_given as given
 from mcp_auditor.domain import (
     AttackChain,
     AuditCategory,
@@ -16,18 +17,12 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolReport,
 )
-from tests.unit.support.test_chain_nodes_given import (
-    a_chain_goal as _a_chain_goal,
-)
-from tests.unit.support.test_chain_nodes_given import (
-    a_chain_step as _a_chain_step,
-)
 
 
 class TestAttackChain:
     def test_constructs_with_goal_and_steps(self):
-        goal = _a_chain_goal()
-        steps = [_a_chain_step()]
+        goal = given.a_chain_goal()
+        steps = [given.a_chain_step()]
         chain = AttackChain(goal=goal, steps=steps)
 
         assert chain.goal == goal
@@ -36,9 +31,9 @@ class TestAttackChain:
 
     def test_constructs_with_eval_result(self):
         chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
-            eval_result=_a_fail_eval_result(),
+            goal=given.a_chain_goal(),
+            steps=[given.a_chain_step()],
+            eval_result=given.a_fail_eval_result(),
         )
 
         assert chain.eval_result is not None
@@ -48,9 +43,9 @@ class TestAttackChain:
 class TestToolReportWithChains:
     def test_roundtrip_serialization(self):
         chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
-            eval_result=_a_fail_eval_result(),
+            goal=given.a_chain_goal(),
+            steps=[given.a_chain_step()],
+            eval_result=given.a_fail_eval_result(),
         )
         report = ToolReport(
             tool=ToolDefinition(name="t", description="t", input_schema={}),
@@ -68,9 +63,9 @@ class TestToolReportWithChains:
 class TestAuditReportChainFindings:
     def test_includes_chain_fail_verdicts(self):
         chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
-            eval_result=_a_fail_eval_result(),
+            goal=given.a_chain_goal(),
+            steps=[given.a_chain_step()],
+            eval_result=given.a_fail_eval_result(),
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})
         report = AuditReport(
@@ -92,8 +87,8 @@ class TestAuditReportChainFindings:
             severity=Severity.LOW,
         )
         chain = AttackChain(
-            goal=_a_chain_goal(),
-            steps=[_a_chain_step()],
+            goal=given.a_chain_goal(),
+            steps=[given.a_chain_step()],
             eval_result=pass_result,
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})
@@ -127,19 +122,8 @@ class TestStepObservation:
 
 class TestChainPlanBatch:
     def test_wraps_list_of_chain_goals(self):
-        goals = [_a_chain_goal(), _a_chain_goal(description="second goal")]
+        goals = [given.a_chain_goal(), given.a_chain_goal(description="second goal")]
         batch = ChainPlanBatch(chains=goals)
 
         assert len(batch.chains) == 2
         assert batch.chains[1].description == "second goal"
-
-
-def _a_fail_eval_result() -> EvalResult:
-    return EvalResult(
-        tool_name="t",
-        category=AuditCategory.INJECTION,
-        payload={"path": "/etc/passwd"},
-        verdict=EvalVerdict.FAIL,
-        justification="path traversal succeeded",
-        severity=Severity.HIGH,
-    )

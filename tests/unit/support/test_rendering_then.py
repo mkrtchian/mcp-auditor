@@ -1,7 +1,7 @@
 import json
 
 
-def json_round_trips(json_str: str, expected_tool_count: int) -> None:
+def json_has_expected_structure(json_str: str, expected_tool_count: int) -> None:
     data = json.loads(json_str)
     assert len(data["tool_reports"]) == expected_tool_count
     assert "token_usage" in data

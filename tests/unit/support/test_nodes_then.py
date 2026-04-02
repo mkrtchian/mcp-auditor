@@ -36,5 +36,11 @@ def discovered_tools_are(tools: list[ToolDefinition], expected_names: list[str])
     assert [t.name for t in tools] == expected_names
 
 
+def judged_case_has_verdict(result: dict[str, Any], expected_verdict: str) -> None:
+    judged_case = result["judged_cases"][0]
+    assert judged_case.eval_result is not None
+    assert judged_case.eval_result.verdict == expected_verdict
+
+
 def attack_context_has_db_engine(result: dict[str, Any], expected: str) -> None:
     assert result["attack_context"].db_engine == expected

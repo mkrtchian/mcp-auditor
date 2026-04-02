@@ -10,14 +10,14 @@ from evals.metrics import (
 )
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
-FAIL = given.FAIL
-PASS = given.PASS
-INPUT_VALIDATION = given.INPUT_VALIDATION
-ERROR_HANDLING = given.ERROR_HANDLING
-INFO_LEAKAGE = given.INFO_LEAKAGE
-INJECTION = given.INJECTION
-RESOURCE_ABUSE = given.RESOURCE_ABUSE
-ALL_CATEGORIES = given.ALL_CATEGORIES
+FAIL = EvalVerdict.FAIL
+PASS = EvalVerdict.PASS
+INPUT_VALIDATION = AuditCategory.INPUT_VALIDATION
+ERROR_HANDLING = AuditCategory.ERROR_HANDLING
+INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
+INJECTION = AuditCategory.INJECTION
+RESOURCE_ABUSE = AuditCategory.RESOURCE_ABUSE
+ALL_CATEGORIES = list(AuditCategory)
 
 
 def test_aggregate_verdicts_worst_case():

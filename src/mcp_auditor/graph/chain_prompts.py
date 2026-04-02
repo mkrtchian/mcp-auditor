@@ -8,13 +8,7 @@ from mcp_auditor.domain.models import (
     TestCase,
     ToolDefinition,
 )
-from mcp_auditor.graph.prompts import build_context_section
-
-
-def _format_tool_header(tool: ToolDefinition) -> str:
-    description = tool.description or "No description provided"
-    schema_json = json.dumps(tool.input_schema, indent=2)
-    return f"Tool description: {description}\n\nInput schema:\n```json\n{schema_json}\n```"
+from mcp_auditor.graph.prompts import build_context_section, format_tool_header
 
 
 def build_chain_planning_prompt(
@@ -23,7 +17,7 @@ def build_chain_planning_prompt(
     attack_context: AttackContext,
     chain_budget: int,
 ) -> str:
-    tool_header = _format_tool_header(tool)
+    tool_header = format_tool_header(tool)
     summary = _format_single_step_summary(single_step_cases)
     context_section = build_context_section(attack_context)
     summary_text = summary or "No single-step results available."
@@ -67,7 +61,7 @@ def build_step_planning_prompt(
     chain_history: list[ChainStep],
     observation_hint: str,
 ) -> str:
-    tool_header = _format_tool_header(tool)
+    tool_header = format_tool_header(tool)
     history_section = _format_chain_history(chain_history)
     hint_section = (
         f"\nHint from previous observation: {observation_hint}\n" if observation_hint else ""

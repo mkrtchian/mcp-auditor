@@ -10,6 +10,12 @@ from mcp_auditor.domain.models import (
 )
 
 
+def format_tool_header(tool: ToolDefinition) -> str:
+    description = tool.description or "No description provided"
+    schema_json = json.dumps(tool.input_schema, indent=2)
+    return f"Tool description: {description}\n\nInput schema:\n```json\n{schema_json}\n```"
+
+
 def build_attack_generation_prompt(
     tool: ToolDefinition,
     budget: int,
@@ -17,20 +23,14 @@ def build_attack_generation_prompt(
     attack_context: AttackContext | None = None,
 ) -> str:
     category_list = "\n".join(f"- {c.value}" for c in categories)
-    schema_json = json.dumps(tool.input_schema, indent=2)
-    description = tool.description or "No description provided"
+    tool_header = format_tool_header(tool)
     context_section = build_context_section(attack_context)
 
     return f"""You are a security auditor for MCP (Model Context Protocol) tool servers.
 
 Your task: generate exactly {budget} test cases for the tool "{tool.name}".
 
-Tool description: {description}
-
-Input schema:
-```json
-{schema_json}
-```
+{tool_header}
 
 Distribute test cases across these attack categories:
 {category_list}
@@ -66,7 +66,6 @@ def build_context_section(attack_context: AttackContext | None) -> str:
 
 
 def format_attack_context(context: AttackContext) -> str:
-    """Render attack context as a text section. Returns empty string if all defaults."""
     if context.is_empty:
         return ""
     lines = ["Previous tool audits revealed the following about this server:"]
@@ -95,7 +94,6 @@ def build_context_extraction_prompt(
     tool_report: ToolReport,
     existing_context: AttackContext,
 ) -> str:
-    """Prompt for extracting intelligence from a tool audit report."""
     tool = tool_report.tool
     description = tool.description or "No description provided"
 

@@ -6,11 +6,14 @@ from mcp_auditor.domain import (
     AuditPayload,
     ChainGoal,
     ChainStep,
+    EvalResult,
+    EvalVerdict,
+    Severity,
     StepObservation,
     ToolDefinition,
     ToolResponse,
 )
-from tests.fakes import FakeLLM, FakeMCPClient
+from tests.fakes import FakeMCPClient
 
 
 def a_tool(
@@ -77,15 +80,22 @@ def a_step_observation(
     )
 
 
-def a_fake_llm_returning(*responses: Any) -> FakeLLM:
-    return FakeLLM(list(responses))
-
-
 def a_fake_mcp_client(
     tools: list[ToolDefinition] | None = None,
     responses: dict[str, ToolResponse] | None = None,
 ) -> FakeMCPClient:
     return FakeMCPClient(tools or [a_tool()], responses)
+
+
+def a_fail_eval_result() -> EvalResult:
+    return EvalResult(
+        tool_name="t",
+        category=AuditCategory.INJECTION,
+        payload={"path": "/etc/passwd"},
+        verdict=EvalVerdict.FAIL,
+        justification="path traversal succeeded",
+        severity=Severity.HIGH,
+    )
 
 
 def a_chain_audit_state(
@@ -97,12 +107,14 @@ def a_chain_audit_state(
     current_observation: StepObservation | None = None,
     chain_budget: int = 2,
     max_chain_steps: int = 5,
-    **kwargs: Any,
+    judged_cases: list[Any] | None = None,
+    attack_context: AttackContext | None = None,
+    completed_chains: list[Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "current_tool": tool or a_tool(),
-        "judged_cases": kwargs.get("judged_cases", []),
-        "attack_context": kwargs.get("attack_context", AttackContext()),
+        "judged_cases": judged_cases or [],
+        "attack_context": attack_context or AttackContext(),
         "chain_budget": chain_budget,
         "max_chain_steps": max_chain_steps,
         "pending_chains": pending_chains or [],
@@ -110,6 +122,6 @@ def a_chain_audit_state(
         "current_chain_steps": current_chain_steps or [],
         "current_step_payload": current_step_payload,
         "current_observation": current_observation,
-        "completed_chains": kwargs.get("completed_chains", []),
+        "completed_chains": completed_chains or [],
         "token_usage": [],
     }

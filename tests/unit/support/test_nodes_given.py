@@ -11,7 +11,7 @@ from mcp_auditor.domain import (
     ToolReport,
     ToolResponse,
 )
-from tests.fakes import FakeLLM, FakeMCPClient
+from tests.fakes import FakeMCPClient
 
 
 def a_tool(
@@ -69,10 +69,6 @@ def an_eval_result(
         justification="test justification",
         severity=severity,
     )
-
-
-def a_fake_llm_returning(*responses: Any) -> FakeLLM:
-    return FakeLLM(list(responses))
 
 
 def a_fake_mcp_client(

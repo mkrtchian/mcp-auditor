@@ -35,8 +35,8 @@ def a_fake_llm_for_single_tool_audit(
     num_cases: int = 1,
     extraction_response: AttackContext | None = None,
 ) -> FakeLLM:
-    batch = TestCaseBatch(cases=[_a_payload(tool_name) for _ in range(num_cases)])
-    eval_results = [_an_eval_result(tool_name) for _ in range(num_cases)]
+    batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
+    eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
     context = extraction_response or AttackContext()
     return FakeLLM([batch, *eval_results, context])
 
@@ -46,8 +46,8 @@ def a_fake_llm_for_multi_tool_audit(
 ) -> FakeLLM:
     responses: list[BaseModel] = []
     for tool_name, num_cases in tool_configs:
-        batch = TestCaseBatch(cases=[_a_payload(tool_name) for _ in range(num_cases)])
-        eval_results = [_an_eval_result(tool_name) for _ in range(num_cases)]
+        batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
+        eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
         responses.extend([batch, *eval_results, AttackContext()])
     return FakeLLM(responses)
 
@@ -101,19 +101,19 @@ def a_fake_llm_for_single_tool_with_chain(
 ) -> FakeLLM:
     """LLM sequence: generate cases, judge each, chain planning (1 goal),
     observe step (stop), judge chain, extract context."""
-    batch = TestCaseBatch(cases=[_a_payload(tool_name) for _ in range(num_cases)])
-    eval_results = [_an_eval_result(tool_name) for _ in range(num_cases)]
+    batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
+    eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
         chains=[
             ChainGoal(
                 description="probe then exploit",
                 category=AuditCategory.INJECTION,
-                first_step=_a_payload(tool_name),
+                first_step=a_payload(tool_name),
             ),
         ]
     )
     step_obs = StepObservation(observation="dead end", should_continue=False)
-    chain_eval = _an_eval_result(tool_name)
+    chain_eval = an_eval_result(tool_name)
     context = AttackContext()
     return FakeLLM([batch, *eval_results, chain_plan, step_obs, chain_eval, context])
 
@@ -125,25 +125,25 @@ def a_fake_llm_for_single_tool_with_two_chains(
     """LLM sequence: generate cases, judge each, chain planning (2 goals),
     observe chain 1 (stop), judge chain 1, observe chain 2 (stop), judge chain 2,
     extract context."""
-    batch = TestCaseBatch(cases=[_a_payload(tool_name) for _ in range(num_cases)])
-    eval_results = [_an_eval_result(tool_name) for _ in range(num_cases)]
+    batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
+    eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
         chains=[
             ChainGoal(
                 description="first chain",
                 category=AuditCategory.INJECTION,
-                first_step=_a_payload(tool_name),
+                first_step=a_payload(tool_name),
             ),
             ChainGoal(
                 description="second chain",
                 category=AuditCategory.INFO_LEAKAGE,
-                first_step=_a_payload(tool_name, category=AuditCategory.INFO_LEAKAGE),
+                first_step=a_payload(tool_name, category=AuditCategory.INFO_LEAKAGE),
             ),
         ]
     )
     stop_obs = StepObservation(observation="dead end", should_continue=False)
-    chain_eval_1 = _an_eval_result(tool_name)
-    chain_eval_2 = _an_eval_result(tool_name, category=AuditCategory.INFO_LEAKAGE)
+    chain_eval_1 = an_eval_result(tool_name)
+    chain_eval_2 = an_eval_result(tool_name, category=AuditCategory.INFO_LEAKAGE)
     context = AttackContext()
     return FakeLLM([
         batch, *eval_results,
@@ -152,7 +152,7 @@ def a_fake_llm_for_single_tool_with_two_chains(
     ])
 
 
-def _a_payload(tool_name: str, category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload:
+def a_payload(tool_name: str, category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload:
     return AuditPayload(
         tool_name=tool_name,
         category=category,
@@ -161,7 +161,7 @@ def _a_payload(tool_name: str, category: AuditCategory = AuditCategory.INJECTION
     )
 
 
-def _an_eval_result(
+def an_eval_result(
     tool_name: str,
     category: AuditCategory = AuditCategory.INJECTION,
 ) -> EvalResult:

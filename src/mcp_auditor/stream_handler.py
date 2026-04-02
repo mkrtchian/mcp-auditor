@@ -1,8 +1,25 @@
 # pyright: reportUnknownArgumentType=false
+from enum import Enum
 from typing import Any
 
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import ToolDefinition
+
+
+class _GraphLevel(Enum):
+    ORCHESTRATOR = "orchestrator"
+    TOOL_AUDIT = "tool_audit"
+    CHAIN_AUDIT = "chain_audit"
+
+
+def _graph_level(namespace: tuple[str, ...]) -> _GraphLevel:
+    match len(namespace):
+        case 0:
+            return _GraphLevel.ORCHESTRATOR
+        case 1:
+            return _GraphLevel.TOOL_AUDIT
+        case _:
+            return _GraphLevel.CHAIN_AUDIT
 
 
 class AuditProgressReporter:
@@ -17,14 +34,15 @@ class AuditProgressReporter:
         for node_name, state_update in updates.items():
             if not isinstance(state_update, dict):
                 continue
-            if namespace == ():
-                self._on_parent_event(node_name, state_update)
-            elif len(namespace) == 1:
-                self._on_subgraph_event(node_name, state_update)
-            else:
-                self._on_chain_event(node_name, state_update)
+            match _graph_level(namespace):
+                case _GraphLevel.ORCHESTRATOR:
+                    self._on_orchestrator_event(node_name, state_update)
+                case _GraphLevel.TOOL_AUDIT:
+                    self._on_tool_audit_event(node_name, state_update)
+                case _GraphLevel.CHAIN_AUDIT:
+                    self._on_chain_audit_event(node_name, state_update)
 
-    def _on_parent_event(self, node_name: str, state_update: dict[str, Any]) -> None:
+    def _on_orchestrator_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "discover_tools":
             tools: list[ToolDefinition] = state_update.get("discovered_tools", [])
             self._tool_count = len(tools)
@@ -38,7 +56,7 @@ class AuditProgressReporter:
                 self._active_progress.stop()
                 self._active_progress = None
 
-    def _on_subgraph_event(self, node_name: str, state_update: dict[str, Any]) -> None:
+    def _on_tool_audit_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "generate_test_cases":
             pending = state_update.get("pending_cases", [])
             if pending:
@@ -55,7 +73,7 @@ class AuditProgressReporter:
                 if last_case.eval_result is not None and self._active_progress:
                     self._active_progress.advance(last_case.eval_result)
 
-    def _on_chain_event(self, node_name: str, state_update: dict[str, Any]) -> None:
+    def _on_chain_audit_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "plan_chains":
             pending = state_update.get("pending_chains", [])
             if pending:
