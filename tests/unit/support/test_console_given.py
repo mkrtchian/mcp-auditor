@@ -152,6 +152,23 @@ def a_report_with_n_results(pass_count: int, fail_count: int) -> AuditReport:
     )
 
 
+def dry_run_payloads() -> list[AuditPayload]:
+    return [
+        AuditPayload(
+            tool_name="get_user",
+            category=AuditCategory.INJECTION,
+            description="SQL injection",
+            arguments={"id": "1; DROP TABLE users"},
+        ),
+        AuditPayload(
+            tool_name="get_user",
+            category=AuditCategory.INPUT_VALIDATION,
+            description="Empty input",
+            arguments={"id": ""},
+        ),
+    ]
+
+
 def a_report_with_two_tools() -> AuditReport:
     return AuditReport(
         target="python server.py",

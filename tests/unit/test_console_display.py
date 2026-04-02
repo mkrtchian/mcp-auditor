@@ -1,5 +1,5 @@
 import tests.unit.support.test_console_given as given
-from mcp_auditor.domain.models import AuditCategory, AuditPayload, Severity
+from mcp_auditor.domain.models import AuditCategory, Severity
 
 
 def test_header_contains_target():
@@ -39,20 +39,7 @@ def test_summary_contains_score_and_tools():
 
 
 def test_dry_run_shows_arguments():
-    payloads = [
-        AuditPayload(
-            tool_name="get_user",
-            category=AuditCategory.INJECTION,
-            description="SQL injection",
-            arguments={"id": "1; DROP TABLE users"},
-        ),
-        AuditPayload(
-            tool_name="get_user",
-            category=AuditCategory.INPUT_VALIDATION,
-            description="Empty input",
-            arguments={"id": ""},
-        ),
-    ]
+    payloads = given.dry_run_payloads()
     display, buffer = given.a_display()
 
     display.print_dry_run_payloads("get_user", payloads)

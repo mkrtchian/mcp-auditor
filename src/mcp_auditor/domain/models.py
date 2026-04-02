@@ -114,8 +114,6 @@ class StepObservation(BaseModel):
 
 
 class ChainStep(BaseModel):
-    """A single step in a multi-step attack chain."""
-
     payload: AuditPayload
     response: str | None = None
     error: str | None = None

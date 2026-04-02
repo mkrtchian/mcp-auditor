@@ -1,8 +1,3 @@
-"""Tests for chain-related domain models: AttackChain, ChainGoal,
-ChainStep, StepObservation, ChainPlanBatch, and their integration
-with AuditReport and ToolReport.
-"""
-
 import tests.unit.support.test_chain_nodes_given as given
 from mcp_auditor.domain import (
     AttackChain,
