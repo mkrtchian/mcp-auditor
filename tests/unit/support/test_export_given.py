@@ -85,5 +85,3 @@ def a_chain_with_leakage_verdict() -> AttackChain:
             severity=Severity.HIGH,
         ),
     )
-
-

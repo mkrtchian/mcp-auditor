@@ -48,26 +48,25 @@ class TestExportWritesCorrectJsonl:
             assert set(record.keys()) == expected_keys
             assert record["type"] == "single_step"
 
-        # Run 0, case matching ground truth: FAIL == FAIL -> correct=True
-        assert records[0]["run_index"] == 0
-        assert records[0]["verdict"] == "fail"
-        assert records[0]["expected_verdict"] == "fail"
-        assert records[0]["correct"] is True
+        run_0_matching, run_0_mismatching, run_0_no_gt = records[0], records[1], records[2]
+        run_1_matching, run_1_mismatching, run_1_no_gt = records[3], records[4], records[5]
 
-        # Run 0, case mismatching ground truth: PASS != FAIL -> correct=False
-        assert records[1]["verdict"] == "pass"
-        assert records[1]["expected_verdict"] == "fail"
-        assert records[1]["correct"] is False
+        assert run_0_matching["run_index"] == 0
+        assert run_0_matching["verdict"] == "fail"
+        assert run_0_matching["expected_verdict"] == "fail"
+        assert run_0_matching["correct"] is True
 
-        # Run 0, case not in ground truth: correct=None, expected_verdict=None
-        assert records[2]["expected_verdict"] is None
-        assert records[2]["correct"] is None
+        assert run_0_mismatching["verdict"] == "pass"
+        assert run_0_mismatching["expected_verdict"] == "fail"
+        assert run_0_mismatching["correct"] is False
 
-        # Run 1 mirrors run 0
-        assert records[3]["run_index"] == 1
-        assert records[3]["correct"] is True
-        assert records[4]["correct"] is False
-        assert records[5]["correct"] is None
+        assert run_0_no_gt["expected_verdict"] is None
+        assert run_0_no_gt["correct"] is None
+
+        assert run_1_matching["run_index"] == 1
+        assert run_1_matching["correct"] is True
+        assert run_1_mismatching["correct"] is False
+        assert run_1_no_gt["correct"] is None
 
 
 class TestExportSkipsUnjudgedCases:

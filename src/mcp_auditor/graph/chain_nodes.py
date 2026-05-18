@@ -58,7 +58,7 @@ def make_execute_step(mcp_client: MCPClientPort):
             step = ChainStep.from_error(payload, response.content)
         else:
             step = ChainStep.from_response(payload, response.content)
-        steps = [*list(state["current_chain_steps"]), step]
+        steps = [*state["current_chain_steps"], step]
         return {"current_chain_steps": steps}
 
     return execute_step

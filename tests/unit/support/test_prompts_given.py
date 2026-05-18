@@ -46,7 +46,6 @@ def a_tool_report(
     response: str | None = "some response",
     error: str | None = None,
 ) -> ToolReport:
-    tool = a_tool(name=tool_name)
     case = TestCase(
         payload=AuditPayload(
             tool_name=tool_name,
@@ -56,13 +55,17 @@ def a_tool_report(
         ),
         response=response,
         error=error,
-        eval_result=EvalResult(
-            tool_name=tool_name,
-            category=AuditCategory.INJECTION,
-            payload={"id": "1 OR 1=1"},
-            verdict=EvalVerdict.FAIL,
-            justification="vulnerable",
-            severity=Severity.HIGH,
-        ),
+        eval_result=_a_failing_eval_result(tool_name),
     )
-    return ToolReport(tool=tool, cases=[case])
+    return ToolReport(tool=a_tool(name=tool_name), cases=[case])
+
+
+def _a_failing_eval_result(tool_name: str) -> EvalResult:
+    return EvalResult(
+        tool_name=tool_name,
+        category=AuditCategory.INJECTION,
+        payload={"id": "1 OR 1=1"},
+        verdict=EvalVerdict.FAIL,
+        justification="vulnerable",
+        severity=Severity.HIGH,
+    )

@@ -1,7 +1,9 @@
 import pytest
+from langgraph.checkpoint.memory import MemorySaver  # type: ignore[import-untyped]
 
 import tests.unit.support.test_graph_given as given
 import tests.unit.support.test_graph_then as then
+from mcp_auditor.domain import AttackContext
 from tests.fakes import FakeLLM, FakeMCPClient
 
 
@@ -71,8 +73,6 @@ async def test_token_usage_accumulated():
 
 @pytest.mark.asyncio
 async def test_attack_context_populated_after_audit():
-    from mcp_auditor.domain import AttackContext
-
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(
         tool_name="get_user",
@@ -123,9 +123,7 @@ async def test_chain_budget_one_produces_chain():
 @pytest.mark.asyncio
 async def test_chain_budget_two_produces_two_chains():
     tool = given.a_tool(name="get_user")
-    fake_llm = given.a_fake_llm_for_single_tool_with_two_chains(
-        tool_name="get_user", num_cases=1
-    )
+    fake_llm = given.a_fake_llm_for_single_tool_with_two_chains(tool_name="get_user", num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5, chain_budget=2, max_chain_steps=3)
@@ -142,8 +140,6 @@ async def test_chain_budget_two_produces_two_chains():
 @pytest.mark.asyncio
 async def test_resume_mid_chain():
     """Checkpoint round-trip through doubly-nested subgraph."""
-    from langgraph.checkpoint.memory import MemorySaver  # type: ignore[import-untyped]
-
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_with_chain(tool_name="get_user", num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])

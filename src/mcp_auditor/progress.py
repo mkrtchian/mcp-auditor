@@ -10,34 +10,6 @@ from mcp_auditor.domain.owasp import owasp_id_for
 from mcp_auditor.domain.rendering import format_severity_breakdown
 
 
-def format_failure_line(result: EvalResult) -> str:
-    owasp = owasp_id_for(result.category)
-    category_display = f"{result.category} / {owasp}" if owasp else str(result.category)
-    return f"  \u2717 {category_display} ({result.severity}): {result.justification}"
-
-
-def format_tool_summary(fail_count: int, pass_count: int, failures: list[EvalResult]) -> str:
-    if fail_count == 0:
-        return "\u2713 all passed"
-    severity_counts: Counter[Severity] = Counter(f.severity for f in failures)
-    breakdown = format_severity_breakdown(severity_counts)
-    return f"\u2717 {fail_count} failed ({breakdown})"
-
-
-class _ResultTracker:
-    def __init__(self) -> None:
-        self.fail_count = 0
-        self.pass_count = 0
-        self.failures: list[EvalResult] = []
-
-    def record(self, result: EvalResult) -> None:
-        if result.verdict == EvalVerdict.FAIL:
-            self.fail_count += 1
-            self.failures.append(result)
-        else:
-            self.pass_count += 1
-
-
 class CIProgress:
     def __init__(self, console: Console, tool_label: str) -> None:
         self._console = console
@@ -49,7 +21,7 @@ class CIProgress:
 
     def stop(self) -> None:
         t = self._tracker
-        summary = format_tool_summary(t.fail_count, t.pass_count, t.failures)
+        summary = format_tool_summary(t.fail_count, t.failures)
         self._console.print(f"{self._tool_label}: {summary}")
         for failure in t.failures:
             self._console.print(format_failure_line(failure))
@@ -84,7 +56,7 @@ class ToolProgress:
             return
         self._progress.stop()
         t = self._tracker
-        summary = format_tool_summary(t.fail_count, t.pass_count, t.failures)
+        summary = format_tool_summary(t.fail_count, t.failures)
         style = "green" if t.fail_count == 0 else "red"
         self._console.print(f"[{style}]{summary}[/{style}]")
 
@@ -94,3 +66,28 @@ class ToolProgress:
             self._progress.console.print(format_failure_line(result))
         if self._task_id is not None:
             self._progress.advance(self._task_id)
+
+
+class _ResultTracker:
+    def __init__(self) -> None:
+        self.fail_count = 0
+        self.failures: list[EvalResult] = []
+
+    def record(self, result: EvalResult) -> None:
+        if result.verdict == EvalVerdict.FAIL:
+            self.fail_count += 1
+            self.failures.append(result)
+
+
+def format_failure_line(result: EvalResult) -> str:
+    owasp = owasp_id_for(result.category)
+    category_display = f"{result.category} / {owasp}" if owasp else str(result.category)
+    return f"  \u2717 {category_display} ({result.severity}): {result.justification}"
+
+
+def format_tool_summary(fail_count: int, failures: list[EvalResult]) -> str:
+    if fail_count == 0:
+        return "\u2713 all passed"
+    severity_counts: Counter[Severity] = Counter(f.severity for f in failures)
+    breakdown = format_severity_breakdown(severity_counts)
+    return f"\u2717 {fail_count} failed ({breakdown})"

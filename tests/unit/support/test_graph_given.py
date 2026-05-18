@@ -99,8 +99,6 @@ def a_fake_llm_for_single_tool_with_chain(
     tool_name: str = "test_tool",
     num_cases: int = 1,
 ) -> FakeLLM:
-    """LLM sequence: generate cases, judge each, chain planning (1 goal),
-    observe step (stop), judge chain, extract context."""
     batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
     eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
@@ -122,9 +120,6 @@ def a_fake_llm_for_single_tool_with_two_chains(
     tool_name: str = "test_tool",
     num_cases: int = 1,
 ) -> FakeLLM:
-    """LLM sequence: generate cases, judge each, chain planning (2 goals),
-    observe chain 1 (stop), judge chain 1, observe chain 2 (stop), judge chain 2,
-    extract context."""
     batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
     eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(

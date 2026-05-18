@@ -27,10 +27,6 @@ from mcp_auditor.domain.rendering import (
 )
 from mcp_auditor.progress import CIProgress, ToolProgress
 
-# Re-export for existing consumers
-from mcp_auditor.progress import format_failure_line as format_failure_line
-from mcp_auditor.progress import format_tool_summary as format_tool_summary
-
 
 class AuditDisplay:
     def __init__(self, console: Console | None = None, ci_mode: bool = False) -> None:

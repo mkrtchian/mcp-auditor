@@ -4,6 +4,7 @@ from typing import Any
 
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import ToolDefinition
+from mcp_auditor.progress import CIProgress, ToolProgress
 
 
 class AuditProgressReporter:
@@ -11,7 +12,7 @@ class AuditProgressReporter:
         self._display = display
         self._tool_index = 0
         self._tool_count = 0
-        self._active_progress: Any = None
+        self._active_progress: ToolProgress | CIProgress | None = None
 
     def on_stream_event(self, event: tuple[tuple[str, ...], dict[str, Any]]) -> None:
         namespace, updates = event

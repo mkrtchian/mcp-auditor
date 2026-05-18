@@ -69,7 +69,6 @@ def an_eval_result(
     )
 
 
-
 def a_tool_report(
     tool_name: str = "test_tool",
     num_cases: int = 1,

@@ -20,25 +20,32 @@ def a_report(
 ) -> AuditReport:
     chains_map = chains_by_tool or {}
     tool_reports = [
-        ToolReport(
-            tool=ToolDefinition(name=name, description="test", input_schema={"type": "object"}),
-            cases=[
-                TestCase(
-                    payload=AuditPayload(
-                        tool_name=r.tool_name,
-                        category=r.category,
-                        description="test",
-                        arguments=r.payload,
-                    ),
-                    eval_result=r,
-                )
-                for r in results
-            ],
-            chains=chains_map.get(name, []),
-        )
+        _a_tool_report(name, results, chains_map.get(name, []))
         for name, results in results_by_tool.items()
     ]
     return AuditReport(target="test", tool_reports=tool_reports, token_usage=TokenUsage())
+
+
+def _a_tool_report(
+    name: str, results: list[EvalResult], chains: list[AttackChain]
+) -> ToolReport:
+    return ToolReport(
+        tool=ToolDefinition(name=name, description="test", input_schema={"type": "object"}),
+        cases=[_a_case_for(result) for result in results],
+        chains=chains,
+    )
+
+
+def _a_case_for(result: EvalResult) -> TestCase:
+    return TestCase(
+        payload=AuditPayload(
+            tool_name=result.tool_name,
+            category=result.category,
+            description="test",
+            arguments=result.payload,
+        ),
+        eval_result=result,
+    )
 
 
 def a_chain(tool: str, category: AuditCategory, verdict: EvalVerdict) -> AttackChain:

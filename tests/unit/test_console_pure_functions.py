@@ -1,6 +1,6 @@
 import tests.unit.support.test_console_given as given
-from mcp_auditor.console import format_failure_line, format_tool_summary
 from mcp_auditor.domain.models import AuditCategory, Severity
+from mcp_auditor.progress import format_failure_line, format_tool_summary
 
 
 def test_format_failure_line_includes_owasp_id_for_mapped_category():
@@ -36,7 +36,7 @@ def test_format_failure_line_includes_category_severity_justification():
 
 
 def test_format_tool_summary_all_passed():
-    summary = format_tool_summary(fail_count=0, pass_count=5, failures=[])
+    summary = format_tool_summary(fail_count=0, failures=[])
 
     assert "passed" in summary.lower()
 
@@ -49,7 +49,7 @@ def test_format_tool_summary_with_failures():
         ),
     ]
 
-    summary = format_tool_summary(fail_count=2, pass_count=3, failures=failures)
+    summary = format_tool_summary(fail_count=2, failures=failures)
 
     assert "2" in summary
     assert "high" in summary.lower()
@@ -63,13 +63,12 @@ def test_format_tool_summary_sorts_severity_descending():
         given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.MEDIUM, "XSS"),
     ]
 
-    summary = format_tool_summary(fail_count=3, pass_count=0, failures=failures)
+    summary = format_tool_summary(fail_count=3, failures=failures)
 
     assert summary.index("critical") < summary.index("medium") < summary.index("low")
 
 
 def test_format_tool_summary_zero_cases():
-    summary = format_tool_summary(fail_count=0, pass_count=0, failures=[])
+    summary = format_tool_summary(fail_count=0, failures=[])
 
-    # Should not crash, should produce some reasonable output
     assert isinstance(summary, str)

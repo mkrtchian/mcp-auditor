@@ -14,6 +14,7 @@ from mcp_auditor.domain import (
     Severity,
     TestCase,
     TokenUsage,
+    ToolResponse,
 )
 from mcp_auditor.domain.models import order_tools_for_audit
 
@@ -60,32 +61,22 @@ class TestTestCase:
 
 
 class TestToolResponse:
-    """ToolResponse is a simple model — inline construction is clearer than a builder."""
-
     def test_default_is_not_error(self):
-        from mcp_auditor.domain import ToolResponse
-
         response = ToolResponse(content="ok")
 
         assert response.is_error is False
 
     def test_explicit_error_flag(self):
-        from mcp_auditor.domain import ToolResponse
-
         response = ToolResponse(content="boom", is_error=True)
 
         assert response.is_error is True
 
     def test_error_type_defaults_to_none(self):
-        from mcp_auditor.domain import ToolResponse
-
         response = ToolResponse(content="ok")
 
         assert response.error_type is None
 
     def test_error_type_captures_exception_class(self):
-        from mcp_auditor.domain import ToolResponse
-
         response = ToolResponse(content="boom", is_error=True, error_type="ConnectionError")
 
         assert response.error_type == "ConnectionError"

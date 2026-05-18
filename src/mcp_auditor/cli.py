@@ -237,7 +237,7 @@ async def _run_full_audit(
     initial_state: dict[str, Any] | None,
     display: AuditDisplay,
     report_paths: ReportPaths,
-    ci: CIOptions = CIOptions(),  # noqa: B008
+    ci: CIOptions,
 ) -> None:
     reporter = AuditProgressReporter(display)
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
@@ -262,7 +262,7 @@ async def _run_dry_run(
     mcp_client: MCPClientPort,
     budget: int,
     display: AuditDisplay,
-    tools_filter: frozenset[str] | None = None,
+    tools_filter: frozenset[str] | None,
 ) -> None:
     graph = build_dry_run_graph(llm, mcp_client, tools_filter=tools_filter)
     result = await graph.ainvoke(
