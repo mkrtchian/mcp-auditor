@@ -11,7 +11,7 @@ def test_default_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings()
 
     assert settings.provider == "google"
-    assert settings.resolve_model() == "gemini-3.1-flash-lite-preview"
+    assert settings.resolve_model() == "gemini-3.1-flash-lite"
 
 
 def test_anthropic_provider_defaults(monkeypatch: pytest.MonkeyPatch) -> None:

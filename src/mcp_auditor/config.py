@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
 def _default_model(provider: str) -> str:
     defaults = {
-        "google": "gemini-3.1-flash-lite-preview",
+        "google": "gemini-3.1-flash-lite",
         "anthropic": "claude-haiku-4-5-20251001",
     }
     if provider not in defaults:

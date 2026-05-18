@@ -117,7 +117,7 @@ The error message reveals the full internal filesystem path of the host, includi
 
 Evaluated against three honeypot MCP servers with known vulnerabilities (3 runs, budget 10, 8 tools). The first honeypot has loud vulnerabilities (SQL echo, path leaks in errors), the second has subtle ones (PII in normal responses, silent validation gaps), and the third tests multi-step attack chains (reconnaissance → escalation across tool actions).
 
-**Gemini 3.1 Flash-Lite** (`gemini-3.1-flash-lite-preview`):
+**Gemini 3.1 Flash-Lite** (`gemini-3.1-flash-lite`):
 
 | Metric       | Result | Threshold | Status |
 |:-------------|-------:|----------:|:-------|
