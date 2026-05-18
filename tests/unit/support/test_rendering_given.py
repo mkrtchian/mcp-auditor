@@ -145,12 +145,12 @@ def a_report_with_pass_case_and_fail_chain() -> AuditReport:
 def a_report(
     target: str,
     tool_reports: list[ToolReport],
-    token_usage: TokenUsage = TokenUsage(),
+    token_usage: TokenUsage | None = None,
 ) -> AuditReport:
     return AuditReport(
         target=target,
         tool_reports=tool_reports,
-        token_usage=token_usage,
+        token_usage=token_usage or TokenUsage(),
     )
 
 
