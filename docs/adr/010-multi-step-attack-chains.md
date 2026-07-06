@@ -1,7 +1,7 @@
 # ADR 010: Multi-Step Attack Chains
 
 **Date:** 2026-03-30
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 
