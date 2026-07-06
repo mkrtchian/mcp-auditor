@@ -20,13 +20,15 @@ MCP security tools today focus on **static analysis** of tool descriptions (dete
 ## Quick start
 
 ```bash
-# Set your API key
+# Set your API key (Google AI Studio has a free tier: aistudio.google.com/apikey)
 export GOOGLE_API_KEY=your-key-here
 
 # Audit an MCP server
 mkdir -p /tmp/sandbox
 uvx mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 ```
+
+Every audit run reports its token usage. Cost and runtime scale with `--budget` (default 10 test cases per tool), so start low to size a run against your own server.
 
 ## What it does
 
@@ -99,7 +101,7 @@ graph LR
 
 ```bash
 mkdir -p /tmp/sandbox
-uv run mcp-auditor run \
+uvx mcp-auditor run \
   --budget 10 \
   --output output/filesystem-audit.json \
   --markdown output/filesystem-audit.md \
