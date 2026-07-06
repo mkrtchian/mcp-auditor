@@ -75,7 +75,7 @@ jobs:
         run: uv run python -m evals.run_evals --runs 2 --budget 7
 
       - name: Report result
-        if: always() && steps.cmd.outputs.mode != 'none'
+        if: ${{ !cancelled() && steps.cmd.outputs.mode != 'none' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MODE: ${{ steps.cmd.outputs.mode }}
