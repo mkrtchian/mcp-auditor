@@ -1,4 +1,4 @@
-# OWASP MCP Top 10 Mapping (§4 Pass 1)
+# OWASP MCP Top 10 Mapping (Pass 1)
 
 ## Context
 

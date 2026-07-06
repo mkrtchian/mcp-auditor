@@ -1,4 +1,4 @@
-# Cross-tool learning (§10a)
+# Cross-tool learning
 
 **ADR:** `docs/adr/009-cross-tool-learning.md`
 

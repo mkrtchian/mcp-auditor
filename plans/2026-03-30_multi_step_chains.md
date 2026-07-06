@@ -1,4 +1,4 @@
-# Multi-step attack chains (§11)
+# Multi-step attack chains
 
 **ADR:** `docs/adr/010-multi-step-attack-chains.md`
 
