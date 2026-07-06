@@ -52,6 +52,8 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(report, indent=2))
     _print_summary(report)
+    if not report["passed"]:
+        raise SystemExit(1)
 
 
 async def run_judge_eval() -> dict[str, Any]:

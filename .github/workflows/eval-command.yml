@@ -1,0 +1,90 @@
+name: Eval command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: eval-command-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    if: >-
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/eval') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse command
+        id: cmd
+        env:
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          first=$(printf '%s' "$BODY" | head -n1 | tr -d '\r' | sed 's/[[:space:]]*$//')
+          case "$first" in
+            "/eval") echo "mode=judge" >> "$GITHUB_OUTPUT" ;;
+            "/eval full") echo "mode=full" >> "$GITHUB_OUTPUT" ;;
+            *) echo "mode=none" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Acknowledge command
+        if: steps.cmd.outputs.mode != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X POST \
+            repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            -f content=eyes
+
+      - name: Checkout PR head
+        if: steps.cmd.outputs.mode != 'none'
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.issue.number }}/head
+
+      - name: Install uv
+        if: steps.cmd.outputs.mode != 'none'
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        if: steps.cmd.outputs.mode != 'none'
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        if: steps.cmd.outputs.mode != 'none'
+        run: uv sync --dev
+
+      - name: Run judge eval
+        if: steps.cmd.outputs.mode == 'judge' || steps.cmd.outputs.mode == 'full'
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: uv run python -m evals.run_judge_eval
+
+      - name: Run e2e eval
+        if: steps.cmd.outputs.mode == 'full'
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: uv run python -m evals.run_evals --runs 2 --budget 7
+
+      - name: Report result
+        if: always() && steps.cmd.outputs.mode != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODE: ${{ steps.cmd.outputs.mode }}
+        run: |
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ "${{ job.status }}" = "success" ]; then
+            gh pr comment ${{ github.event.issue.number }} \
+              --body "Evals passed ($MODE). [Run details]($run_url)"
+          else
+            gh pr comment ${{ github.event.issue.number }} \
+              --body "Evals failed ($MODE). [Run details]($run_url)"
+          fi
