@@ -7,6 +7,7 @@ on:
   pull_request:
     branches: [main]
     paths: [src/**, evals/**, tests/dummy_server.py, tests/subtle_server.py, tests/chain_honeypot_server.py, pyproject.toml]
+  workflow_dispatch:
 
 jobs:
   judge-eval:
@@ -32,7 +33,7 @@ jobs:
         run: uv run python -m evals.run_judge_eval
 
   e2e-eval:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
