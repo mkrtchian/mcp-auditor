@@ -38,6 +38,15 @@ The audit runs in four phases, with an optional fifth:
 4. **Judge each response**: an LLM-as-a-judge classifies each response as PASS or FAIL with a justification and severity rating. Findings are mapped to the [OWASP MCP Top 10](https://owasp.org/www-project-model-context-protocol-top-10/) when applicable.
 5. **Multi-step attack chains** *(opt-in via `--chains`)*: after single-step testing, the LLM plans adaptive attack sequences where each step's payload depends on the previous step's response. Probe, observe, escalate. Catches vulnerabilities that require multiple interactions, like symlink traversal or state-dependent injection. [ADR 010](docs/adr/010-multi-step-attack-chains.md)
 
+## Scope and limitations
+
+`mcp-auditor` audits one slice of the MCP attack surface, on purpose. Knowing the edges matters for a security tool.
+
+- **Transport: local stdio only.** It audits servers you launch as a subprocess (`-- npx ...`). Remote Streamable HTTP servers are on the roadmap, not supported yet. Auth, token, and transport-level attacks stay out of scope until then.
+- **Primitive: Tools only.** MCP servers expose three primitives (Tools, Resources, Prompts). `mcp-auditor` tests the Tools surface, where the model invokes the server's functions. Resources and Prompts are not audited, and it does not offer client capabilities, so it does not test a server that abuses Sampling.
+- **Direction: client to server.** It tests whether a server withstands a manipulated LLM client (adversarial inputs into tools). It does not replay a full server-to-client attack, where a malicious server turns the host's agent against its user. Detecting that end to end needs a real host agent with its own tools and data, which `mcp-auditor` is not.
+- **One server, tools in isolation.** It audits a single server and judges each tool on its own. It does not assess session-level risk, how the audited tools combine with the other tools an agent holds at once. The lethal trifecta (private data, untrusted content, exfiltration) assembles from that combination, and a per-server audit does not see it.
+
 ## Architecture
 
 **Parent graph** (iterates over discovered tools):
