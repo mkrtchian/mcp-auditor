@@ -1,5 +1,6 @@
-# Shared by both attack generation and judge prompts in graph/prompts.py.
-# Changes here affect how test cases are generated AND how results are evaluated.
+# Consumed by the judge prompt (build_judge_prompt in graph/prompts.py) to scope
+# each verdict to a single category. The attack generator keeps its own inline
+# per-category guidance in build_attack_generation_prompt.
 from mcp_auditor.domain.models import AuditCategory
 
 CATEGORY_GUIDANCE: dict[AuditCategory, str] = {

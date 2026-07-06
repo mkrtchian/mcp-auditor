@@ -151,6 +151,7 @@
   },
   {
     "tool_name": "manage_data",
+    "source": "synthetic",
     "tool_description": "Manage application data.",
     "category": "info_leakage",
     "description": "Trigger error that reveals stack trace",
@@ -161,6 +162,7 @@
   },
   {
     "tool_name": "manage_data",
+    "source": "synthetic",
     "tool_description": "Manage application data.",
     "category": "info_leakage",
     "description": "Normal response that mentions a documentation path",
@@ -171,6 +173,7 @@
   },
   {
     "tool_name": "manage_data",
+    "source": "synthetic",
     "tool_description": "Manage application data.",
     "category": "input_validation",
     "description": "Input rejected with specific validation rule",
@@ -181,6 +184,7 @@
   },
   {
     "tool_name": "manage_data",
+    "source": "synthetic",
     "tool_description": "Manage application data.",
     "category": "error_handling",
     "description": "Clean structured error response",
@@ -191,6 +195,7 @@
   },
   {
     "tool_name": "manage_data",
+    "source": "synthetic",
     "tool_description": "Manage application data.",
     "category": "injection",
     "description": "Command echoed unsanitized in response",
