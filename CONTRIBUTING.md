@@ -25,6 +25,15 @@ uv run python -m evals.run_judge_eval  # judge isolation eval (requires API key)
 
 Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set `GOOGLE_API_KEY` (default provider) or `ANTHROPIC_API_KEY`. Unit and integration tests don't need any key.
 
+### Running evals on a pull request
+
+Evals don't run automatically on every pull request: they need an API key, and pull requests from forks or Dependabot can't read repository secrets. A maintainer can run them on demand by commenting on the PR:
+
+- `/eval` runs the judge isolation eval only (fast).
+- `/eval full` also runs the e2e evals (slower, more API calls).
+
+The workflow checks out the PR's head branch, runs the evals against it, and posts the outcome back as a comment. The trigger is restricted to repository owners, members, and collaborators.
+
 ## Coding, testing, and architecture standards
 
 The project's standards are defined in [`CLAUDE.md`](CLAUDE.md). This file serves as the single source of truth — both for human contributors and for AI-assisted development.
