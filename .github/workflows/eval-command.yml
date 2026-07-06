@@ -57,13 +57,13 @@ jobs:
 
       - name: Checkout PR head
         if: steps.cmd.outputs.mode != 'none'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: refs/pull/${{ github.event.issue.number }}/head
 
       - name: Install uv
         if: steps.cmd.outputs.mode != 'none'
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
