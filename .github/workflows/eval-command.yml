@@ -20,6 +20,8 @@ jobs:
       startsWith(github.event.comment.body, '/eval') &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
     steps:
       - name: Parse command
         id: cmd
