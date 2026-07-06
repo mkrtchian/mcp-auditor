@@ -33,6 +33,17 @@ jobs:
             *) echo "mode=none" >> "$GITHUB_OUTPUT" ;;
           esac
 
+      - name: Unknown command
+        if: steps.cmd.outputs.mode == 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X POST \
+            repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            -f content=confused
+          gh pr comment ${{ github.event.issue.number }} \
+            --body "Unrecognized command. Use \`/eval\` (judge only) or \`/eval full\` (judge + e2e)."
+
       - name: Acknowledge command
         if: steps.cmd.outputs.mode != 'none'
         env:
