@@ -6,11 +6,17 @@ from pathlib import Path
 from evals.cve_seeding import init_git_repo_with_commit, make_dir_with_file, plant_symlink
 
 FILESYSTEM_SERVER = "@modelcontextprotocol/server-filesystem@0.6.2"
-GIT_SERVER = "mcp-server-git@2025.7.1"  # pre-2025.9.25: carries 68143 and 68145
+GIT_SERVER = "mcp-server-git@2025.7.1"  # < 2025.9.25 & < 2025.12.18: carries both git CVEs
 
 # The filesystem CVEs surface the leak through a read tool, but the blind
 # generator first needs list_directory to discover the planted symlink.
 FILESYSTEM_READ_TOOLS = frozenset({"read_file", "list_directory"})
+
+# Bucket-A third-party targets need an external precondition (cluster, gemini CLI,
+# served endpoint) that prepare() cannot build, so they await a run-time setup
+# rather than an mcp-auditor capability. Naming it keeps their status honest
+# (missed_awaiting_capability, not a false missed) until the operator wires the env.
+THIRD_PARTY_SETUP = "third-party env setup (confirm at run)"
 
 
 @dataclass(frozen=True)
@@ -130,7 +136,7 @@ CVE_TARGETS: list[CVETarget] = [
     ),
     CVETarget(
         cve_id="CVE-2025-68145",
-        severity="CVSS 8.6",
+        severity="CVSS 7.1",
         sentinel=_REPOSITORY_BYPASS_SENTINEL,
         prepare=_prepare_repository_bypass,
         blocker="declared-scope awareness",
@@ -139,7 +145,7 @@ CVE_TARGETS: list[CVETarget] = [
     ),
     CVETarget(
         cve_id="CVE-2025-68143",
-        severity="CVSS 8.6",
+        severity="CVSS 8.8",
         sentinel=_GIT_INIT_TRAVERSAL_SENTINEL,
         prepare=_prepare_git_init_traversal,
         blocker="cross-tool chains + declared-scope awareness",
@@ -148,29 +154,29 @@ CVE_TARGETS: list[CVETarget] = [
     ),
     CVETarget(
         cve_id="CVE-2025-53355",
-        severity="CVSS 9.8",
+        severity="CVSS 7.5",
         sentinel=_KUBERNETES_INJECTION_SENTINEL,
         prepare=_prepare_kubernetes_injection,
-        blocker=None,
-        note="Command injection returns the injected command's stdout in the response.",
-        tools_filter=frozenset({"kubectl_exec"}),
+        blocker=THIRD_PARTY_SETUP,
+        note="Command injection via kubectl_scale/patch execSync; needs a cluster at run.",
+        tools_filter=frozenset({"kubectl_scale", "kubectl_patch"}),
     ),
     CVETarget(
         cve_id="CVE-2026-0755",
-        severity="CVSS 7.5",
+        severity="CVSS 9.8",
         sentinel=_GEMINI_FILE_SENTINEL,
         prepare=_prepare_gemini_file,
-        blocker=None,
-        note="Unvalidated @file reference inlines file content into the ask-gemini response.",
+        blocker=THIRD_PARTY_SETUP,
+        note="Command injection: prompt reaches execAsync shell; needs gemini CLI at run.",
         tools_filter=frozenset({"ask-gemini"}),
     ),
     CVETarget(
         cve_id="CVE-2025-65513",
-        severity="CVSS 7.5",
+        severity="CVSS 9.3",
         sentinel=_FETCH_SSRF_SENTINEL,
         prepare=_prepare_fetch_ssrf,
-        blocker=None,
-        note="SSRF returns internal content fetched from a well-known address.",
+        blocker=THIRD_PARTY_SETUP,
+        note="SSRF via is_ip_private bypass; needs a served internal endpoint at run.",
         tools_filter=frozenset({"fetch"}),
     ),
 ]
@@ -179,7 +185,7 @@ CVE_TARGETS: list[CVETarget] = [
 OUT_OF_SCOPE_CVES: list[OutOfScopeCVE] = [
     OutOfScopeCVE(
         cve_id="CVE-2025-68144",
-        severity="CVSS 7.1",
+        severity="CVSS 8.1",
         reason=(
             "Argument injection (git_diff --output=/path) overwrites a file silently; "
             "nothing surfaces in a tool response, so it needs instrumented observation "

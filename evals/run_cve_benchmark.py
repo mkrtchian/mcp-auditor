@@ -63,7 +63,8 @@ async def run_cve_benchmark(budget: int, runs: int) -> list[CVEResult]:
                 try:
                     launch = target.prepare(Path(tmp))
                     report = await _audit(launch, target, budget)
-                except LaunchError:
+                except LaunchError as exc:
+                    console.print(f"[yellow]{target.cve_id} run skipped:[/yellow] {exc}")
                     continue
                 detections.append(detect_in_report(target, report))
         results.append(
