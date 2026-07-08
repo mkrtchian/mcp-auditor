@@ -44,8 +44,7 @@ class Launch:
 
 @contextmanager
 def filesystem_env(sentinel: str) -> Iterator[Launch]:
-    with tempfile.TemporaryDirectory() as name:
-        root = Path(name)
+    with _temp_root() as root:
         (root / "sandbox").mkdir(parents=True)
         flag = make_dir_with_file(root / "outside", "flag.txt", sentinel)
         plant_symlink(root / "sandbox" / "report", flag)
@@ -54,8 +53,7 @@ def filesystem_env(sentinel: str) -> Iterator[Launch]:
 
 @contextmanager
 def prefix_collision_env(sentinel: str) -> Iterator[Launch]:
-    with tempfile.TemporaryDirectory() as name:
-        root = Path(name)
+    with _temp_root() as root:
         (root / "sandbox").mkdir(parents=True)
         make_dir_with_file(root / "sandbox_secret", "flag.txt", sentinel)
         yield _filesystem_launch(root)
@@ -63,8 +61,7 @@ def prefix_collision_env(sentinel: str) -> Iterator[Launch]:
 
 @contextmanager
 def repository_bypass_env(sentinel: str) -> Iterator[Launch]:
-    with tempfile.TemporaryDirectory() as name:
-        root = Path(name)
+    with _temp_root() as root:
         init_git_repo_with_commit(root / "repo", "initial commit")
         init_git_repo_with_commit(root / "other", sentinel)
         yield _git_launch(root)
@@ -72,8 +69,7 @@ def repository_bypass_env(sentinel: str) -> Iterator[Launch]:
 
 @contextmanager
 def git_init_traversal_env(sentinel: str) -> Iterator[Launch]:
-    with tempfile.TemporaryDirectory() as name:
-        root = Path(name)
+    with _temp_root() as root:
         init_git_repo_with_commit(root / "repo", "initial commit")
         make_dir_with_file(root / "secret", "flag.txt", sentinel)
         yield _git_launch(root, chain_budget=3, max_chain_steps=5)
@@ -102,6 +98,15 @@ def ssrf_env(sentinel: str) -> Iterator[Launch]:
             command="docker",
             args=["run", "-i", "--rm", "--network", network, _FETCH_IMAGE],
         )
+
+
+@contextmanager
+def _temp_root() -> Iterator[Path]:
+    # ignore_cleanup_errors: a container running as root writes root-owned files
+    # into the /work bind mount, so the host-side rmtree can raise PermissionError
+    # at __exit__; swallow it rather than crash a run that already produced a report.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
+        yield Path(name)
 
 
 def _filesystem_launch(root: Path) -> Launch:
