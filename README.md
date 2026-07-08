@@ -140,6 +140,26 @@ Evaluated against three honeypot MCP servers with known vulnerabilities (3 runs,
 
 All thresholds met. A separate judge isolation eval (32 fixed cases, no generator involved) scores F1 = 1.00. Full eval methodology in [ADR 005](docs/adr/005-llm-model-selection.md).
 
+### CVE validation
+
+A second benchmark runs the auditor against real, pinned-vulnerable MCP reference servers (filesystem, git, kubernetes, fetch) to check that known CVEs are actually detected. It is fully reproducible on any machine with two prerequisites: **Docker** (hosts the throwaway vulnerable targets) and an **LLM API key** (for the auditor itself). No cluster, no per-server CLI, no per-server key.
+
+```bash
+# 1. Prerequisites: Docker running, an LLM API key exported (e.g. GOOGLE_API_KEY).
+# 2. Build the pinned vulnerable-server images (one-time).
+docker compose -f evals/docker/compose.yml build
+
+# 3. Calibrate: no LLM, runs each target's ground-truth exploit and confirms the fixture is live.
+uv run python -m evals.run_cve_benchmark --calibrate
+
+# 4. Graded run: the auditor discovers the exploits blind.
+uv run python -m evals.run_cve_benchmark --runs 3 --budget 10
+```
+
+Safety: the images are deliberately-vulnerable known-RCE/SSRF servers, run in throwaway `docker run --rm` containers against a synthetic per-run sentinel (never a real secret). Run the benchmark on a non-sensitive host, not on a machine holding production credentials.
+
+The detection results table is published from an actual graded run, out of this documentation.
+
 ## Configuration
 
 Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_AUDITOR_*` variables are optional and have sensible defaults.
