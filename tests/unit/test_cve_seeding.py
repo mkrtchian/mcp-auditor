@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 
@@ -19,6 +20,7 @@ def test_plant_symlink_resolves_to_target(tmp_path: Path):
     plant_symlink(link, target)
 
     assert link.is_symlink()
+    assert not os.path.isabs(os.readlink(link))
     assert link.resolve() == target.resolve()
     assert link.read_text() == SENTINEL
 

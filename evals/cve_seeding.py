@@ -12,7 +12,7 @@ def make_dir_with_file(dir_path: Path, filename: str, content: str) -> Path:
 
 def plant_symlink(link: Path, target: Path) -> None:
     link.parent.mkdir(parents=True, exist_ok=True)
-    link.symlink_to(target)
+    os.symlink(os.path.relpath(target, link.parent), link)
 
 
 def init_git_repo_with_commit(repo: Path, commit_message: str) -> None:
