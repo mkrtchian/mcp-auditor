@@ -1,0 +1,13 @@
+# CVE-2025-53355 target: mcp-server-kubernetes (command injection via kubectl_generic
+# execSync shell). The vulnerable SERVER version is pinned exactly; transitive npm
+# deps stay floating (no lockfile / npm ci) since reproducing the vulnerable behaviour,
+# not a byte-identical image, is the goal (decided 2026-07-08).
+# Base pinned by digest for cross-machine reproducibility (node:20-slim).
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+
+RUN npm i -g mcp-server-kubernetes@2.4.9
+
+# No kubeconfig baked: the command injection surfaces the env sentinel (-e FLAG=...
+# supplied by the environment) without a cluster. The server speaks MCP over stdio:
+# keep stdout clean (JSON-RPC only), so no ENTRYPOINT banner / echo.
+ENTRYPOINT ["mcp-server-kubernetes"]

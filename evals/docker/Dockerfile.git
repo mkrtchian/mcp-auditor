@@ -1,0 +1,16 @@
+# CVE-2025-68143 / CVE-2025-68145 target: mcp-server-git.
+# The vulnerable SERVER version is pinned exactly (a pre-2025.9.25 version carries
+# both git CVEs); transitive pip deps stay floating (no lockfile) since reproducing
+# the vulnerable behaviour, not a byte-identical image, is the goal (decided 2026-07-08).
+# Base pinned by digest for cross-machine reproducibility (python:3.13-slim).
+FROM python:3.13-slim@sha256:eb43ff125d8d58d7449dcba7d336c23bcac412f526d861db493b9994d8010280
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir mcp-server-git==2025.7.1
+
+# --repository is supplied as a `docker run` arg by the environment, not baked.
+# The server speaks MCP over stdio: keep stdout clean (JSON-RPC only).
+ENTRYPOINT ["mcp-server-git"]

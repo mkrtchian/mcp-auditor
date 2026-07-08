@@ -1,0 +1,9 @@
+# SSRF "internal service" sidecar for CVE-2025-65513: writes $FLAG (supplied by the
+# environment via -e FLAG=...) to a file and serves it over HTTP on port 80. Only the
+# fetch server reaches it; it is not spoken to over MCP stdio.
+# Base pinned by digest for cross-machine reproducibility (busybox).
+FROM busybox:latest@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+
+# Write the runtime FLAG into the doc root, then serve it in the foreground on :80.
+# httpd serves index.html for "/", so fetch("http://sentinel/") returns the sentinel.
+ENTRYPOINT ["sh", "-c", "mkdir -p /www && printf '%s' \"$FLAG\" > /www/index.html && exec httpd -f -p 80 -h /www"]

@@ -1,0 +1,13 @@
+# CVE-2025-53109 / CVE-2025-53110 target: @modelcontextprotocol/server-filesystem.
+# The vulnerable SERVER version is pinned exactly (it carries the CVEs); transitive
+# npm deps stay floating (no lockfile / npm ci) since reproducing the vulnerable
+# behaviour, not a byte-identical image, is the goal (decided 2026-07-08).
+# Base pinned by digest for cross-machine reproducibility (node:20-slim).
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+
+RUN npm i -g @modelcontextprotocol/server-filesystem@0.6.2
+
+# The allowed dir (/work/sandbox) is supplied as a `docker run` arg by the
+# environment, not baked. The server speaks MCP over stdio: keep stdout clean
+# (JSON-RPC only), so no ENTRYPOINT banner / echo.
+ENTRYPOINT ["mcp-server-filesystem"]

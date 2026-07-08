@@ -1,0 +1,35 @@
+# Build manifest only, never `compose up`. Build all five images with:
+#   docker compose -f evals/docker/compose.yml build
+# The benchmark runner launches each server with `docker run -i`, not compose.
+# Five images cover the six targets: filesystem serves CVE-2025-53109 + 53110,
+# git serves CVE-2025-68143 + 68145, plus kubernetes, fetch, and the sentinel sidecar.
+services:
+  filesystem:
+    build:
+      context: .
+      dockerfile: Dockerfile.filesystem
+    image: mcp-auditor-cve-filesystem:local
+
+  git:
+    build:
+      context: .
+      dockerfile: Dockerfile.git
+    image: mcp-auditor-cve-git:local
+
+  kubernetes:
+    build:
+      context: .
+      dockerfile: Dockerfile.kubernetes
+    image: mcp-auditor-cve-kubernetes:local
+
+  fetch:
+    build:
+      context: .
+      dockerfile: Dockerfile.fetch
+    image: mcp-auditor-cve-fetch:local
+
+  sentinel:
+    build:
+      context: .
+      dockerfile: Dockerfile.sentinel
+    image: mcp-auditor-cve-sentinel:local
