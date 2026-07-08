@@ -63,7 +63,7 @@ async def _calibrate_prefix_collision(client: MCPClientPort) -> bool:
 
 
 async def _calibrate_repository_bypass(client: MCPClientPort) -> bool:
-    response = await client.call_tool("git_log", {"repository": "/work/other"})
+    response = await client.call_tool("git_log", {"repo_path": "/work/other"})
     return _REPOSITORY_BYPASS_SENTINEL in response.content
 
 

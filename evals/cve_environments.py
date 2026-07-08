@@ -15,6 +15,7 @@ carry the `mcp-auditor-cve` label; sweep them with:
 """
 
 import logging
+import os
 import secrets
 import subprocess
 import tempfile
@@ -102,24 +103,53 @@ def ssrf_env(sentinel: str) -> Iterator[Launch]:
 
 @contextmanager
 def _temp_root() -> Iterator[Path]:
-    # ignore_cleanup_errors: a container running as root writes root-owned files
-    # into the /work bind mount, so the host-side rmtree can raise PermissionError
-    # at __exit__; swallow it rather than crash a run that already produced a report.
+    # Containers run as the host user (see _host_user_args), so bind-mount files
+    # are host-owned and rmtree normally succeeds. ignore_cleanup_errors stays as
+    # a fallback so a stray un-removable file never crashes a run at __exit__.
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
         yield Path(name)
+
+
+def _host_user_args() -> list[str]:
+    # Run the bind-mount containers as the host user so files the server writes
+    # into /work (e.g. git_init's .git) are host-owned. The CVE is a scope/path
+    # bug, independent of the container uid, so this preserves the exploit while
+    # letting teardown remove the files and git operate on a repo it owns. HOME
+    # is set because git needs a writable home for a uid absent from the image's
+    # passwd file.
+    return ["--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp"]
 
 
 def _filesystem_launch(root: Path) -> Launch:
     return Launch(
         command="docker",
-        args=["run", "-i", "--rm", "-v", f"{root}:/work", _FILESYSTEM_IMAGE, "/work/sandbox"],
+        args=[
+            "run",
+            "-i",
+            "--rm",
+            *_host_user_args(),
+            "-v",
+            f"{root}:/work",
+            _FILESYSTEM_IMAGE,
+            "/work/sandbox",
+        ],
     )
 
 
 def _git_launch(root: Path, chain_budget: int = 0, max_chain_steps: int = 3) -> Launch:
     return Launch(
         command="docker",
-        args=["run", "-i", "--rm", "-v", f"{root}:/work", _GIT_IMAGE, "--repository", "/work/repo"],
+        args=[
+            "run",
+            "-i",
+            "--rm",
+            *_host_user_args(),
+            "-v",
+            f"{root}:/work",
+            _GIT_IMAGE,
+            "--repository",
+            "/work/repo",
+        ],
         chain_budget=chain_budget,
         max_chain_steps=max_chain_steps,
     )
@@ -128,7 +158,9 @@ def _git_launch(root: Path, chain_budget: int = 0, max_chain_steps: int = 3) -> 
 @contextmanager
 def _docker_network() -> Iterator[str]:
     name = f"{_LABEL}-{secrets.token_hex(6)}"
-    subprocess.run(["docker", "network", "create", "--label", _LABEL, name], check=True)
+    subprocess.run(
+        ["docker", "network", "create", "--label", _LABEL, name], check=True, capture_output=True
+    )
     try:
         yield name
     finally:
@@ -141,6 +173,7 @@ def _sidecar(image: str, *run_args: str) -> Iterator[str]:
     subprocess.run(
         ["docker", "run", "-d", "--rm", "--label", _LABEL, "--name", name, *run_args, image],
         check=True,
+        capture_output=True,
     )
     try:
         yield name
