@@ -25,19 +25,27 @@ class CVEStatus(StrEnum):
 class TargetInfo(Protocol):
     """Descriptive slice of a CVE target the pure oracle reads."""
 
-    cve_id: str
-    severity: str
-    sentinel: str
-    blocker: str | None
-    note: str
+    @property
+    def cve_id(self) -> str: ...
+    @property
+    def severity(self) -> str: ...
+    @property
+    def sentinel(self) -> str: ...
+    @property
+    def blocker(self) -> str | None: ...
+    @property
+    def note(self) -> str: ...
 
 
 class OutOfScopeInfo(Protocol):
     """A CVE tracked but never run (only catchable with instrumentation)."""
 
-    cve_id: str
-    severity: str
-    reason: str
+    @property
+    def cve_id(self) -> str: ...
+    @property
+    def severity(self) -> str: ...
+    @property
+    def reason(self) -> str: ...
 
 
 class RunDetection(BaseModel):
