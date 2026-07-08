@@ -11,6 +11,10 @@ uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)
 uv run python -m evals.run_evals       # E2E evals (honeypot servers, requires API key)
 uv run python -m evals.run_judge_eval  # Judge isolation eval (requires API key)
+
+docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)
+uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live (Docker, no LLM)
+uv run python -m evals.run_cve_benchmark              # CVE benchmark graded run (Docker + API key)
 ```
 
 ## Coding standards

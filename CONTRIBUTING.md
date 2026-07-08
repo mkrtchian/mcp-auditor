@@ -11,7 +11,7 @@ uv sync                                # install runtime + dev dependencies
 uv run pytest                          # should be green before you touch anything
 ```
 
-You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management. Don't add a `requirements.txt`.
+You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management. Don't add a `requirements.txt`. Docker is only needed for the CVE benchmark (below), not for the tests or the regular evals.
 
 ```bash
 uv run pytest tests/unit               # unit tests
@@ -24,6 +24,18 @@ uv run python -m evals.run_judge_eval  # judge isolation eval (requires API key)
 ```
 
 Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set `GOOGLE_API_KEY` (default provider) or `ANTHROPIC_API_KEY`. Unit and integration tests don't need any key.
+
+### CVE benchmark
+
+A separate benchmark runs the auditor against real, pinned-vulnerable MCP servers in throwaway Docker containers. It needs Docker running plus an API key. Build the images once, confirm each fixture is live (no LLM), then run the graded audit:
+
+```bash
+docker compose -f evals/docker/compose.yml build      # one-time, builds the pinned vulnerable-server images
+uv run python -m evals.run_cve_benchmark --calibrate  # no LLM, checks each fixture is live
+uv run python -m evals.run_cve_benchmark --runs 3 --budget 10  # graded run
+```
+
+See the README for the reproducibility rationale and the safety note (deliberately-vulnerable images, run on a non-sensitive host).
 
 ### Running evals on a pull request
 
