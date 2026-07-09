@@ -11,6 +11,4 @@ async def test_recording_client_passes_response_through_and_records_the_exchange
     response = await recorder.call_tool("git_diff_staged", {"repo_path": "/work/secret"})
 
     assert response is flag_response
-    assert recorder.exchanges == [
-        ("git_diff_staged", {"repo_path": "/work/secret"}, flag_response)
-    ]
+    assert recorder.exchanges == [("git_diff_staged", {"repo_path": "/work/secret"}, flag_response)]
