@@ -154,6 +154,9 @@ uv run python -m evals.run_cve_benchmark --calibrate
 
 # 4. Graded run: the auditor discovers the exploits blind.
 uv run python -m evals.run_cve_benchmark --runs 3 --budget 10
+
+# Optional: restrict any mode to specific CVEs with --cve (repeatable).
+uv run python -m evals.run_cve_benchmark --cve CVE-2025-53109 --cve CVE-2025-53355 --runs 1 --budget 10
 ```
 
 Safety: the images are deliberately-vulnerable known-RCE/SSRF servers, run in throwaway `docker run --rm` containers against a synthetic per-run sentinel (never a real secret). Run the benchmark on a non-sensitive host, not on a machine holding production credentials.

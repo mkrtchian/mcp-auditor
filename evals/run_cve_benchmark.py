@@ -18,7 +18,7 @@ from evals.cve_oracle import (
     render_markdown,
     resolve_status,
 )
-from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget
+from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import load_settings
@@ -55,16 +55,26 @@ def main() -> None:
         action="store_true",
         help="No-LLM ground-truth exploit per target; confirms each fixture is live.",
     )
+    parser.add_argument(
+        "--cve",
+        action="append",
+        metavar="CVE-ID",
+        help="Run only these CVE ids (repeatable); default: all.",
+    )
     args = parser.parse_args()
+
+    graded = _filter_by_cve(CVE_TARGETS, args.cve)
+    tracked = _filter_by_cve(OUT_OF_SCOPE_CVES, args.cve)
+    _reject_unknown_cves(args.cve, {t.cve_id for t in (*graded, *tracked)})
 
     if not _preflight_ok():
         sys.exit(1)
 
     if args.calibrate:
-        sys.exit(0 if asyncio.run(calibrate_all()) else 1)
+        sys.exit(0 if asyncio.run(calibrate_all(graded)) else 1)
 
-    results = asyncio.run(run_cve_benchmark(args.budget, args.runs))
-    results.extend(out_of_scope_results(OUT_OF_SCOPE_CVES))
+    results = asyncio.run(run_cve_benchmark(graded, args.budget, args.runs))
+    results.extend(out_of_scope_results(tracked))
 
     report_path = Path(args.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -102,9 +112,25 @@ def _docker_command_succeeds(command: list[str]) -> bool:
         return False
 
 
-async def run_cve_benchmark(budget: int, runs: int) -> list[CVEResult]:
+def _filter_by_cve[T: (CVETarget, OutOfScopeCVE)](items: list[T], ids: list[str] | None) -> list[T]:
+    if not ids:
+        return items
+    wanted = set(ids)
+    return [item for item in items if item.cve_id in wanted]
+
+
+def _reject_unknown_cves(ids: list[str] | None, known: set[str]) -> None:
+    if not ids:
+        return
+    unknown = set(ids) - known
+    if unknown:
+        console.print(f"[red]Unknown CVE id(s):[/red] {', '.join(sorted(unknown))}")
+        sys.exit(2)
+
+
+async def run_cve_benchmark(targets: list[CVETarget], budget: int, runs: int) -> list[CVEResult]:
     results: list[CVEResult] = []
-    for target in CVE_TARGETS:
+    for target in targets:
         detections: list[RunDetection] = []
         for _ in range(runs):
             try:
@@ -122,10 +148,10 @@ async def run_cve_benchmark(budget: int, runs: int) -> list[CVEResult]:
     return results
 
 
-async def calibrate_all() -> bool:
+async def calibrate_all(targets: list[CVETarget]) -> bool:
     console.print("[bold]Calibration[/bold] (no LLM): raw ground-truth exploit per target\n")
     all_live = True
-    for target in CVE_TARGETS:
+    for target in targets:
         live = await _calibrate_one(target)
         all_live = all_live and live
         status = "[green]live[/green]" if live else "[red]dead[/red]"
