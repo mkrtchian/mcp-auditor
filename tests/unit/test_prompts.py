@@ -50,6 +50,15 @@ class TestAttackGenerationPrompt:
 
         assert "10" in prompt
 
+    def test_omits_tool_name_field(self):
+        prompt = build_attack_generation_prompt(
+            tool=given.a_tool(),
+            budget=5,
+            categories=[AuditCategory.INJECTION],
+        )
+
+        assert "tool_name" not in prompt
+
     def test_includes_attack_context_when_provided(self):
         prompt = build_attack_generation_prompt(
             tool=given.a_tool(),

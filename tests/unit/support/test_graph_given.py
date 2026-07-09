@@ -35,7 +35,7 @@ def a_fake_llm_for_single_tool_audit(
     num_cases: int = 1,
     extraction_response: AttackContext | None = None,
 ) -> FakeLLM:
-    batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
+    batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
     eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
     context = extraction_response or AttackContext()
     return FakeLLM([batch, *eval_results, context])
@@ -46,7 +46,7 @@ def a_fake_llm_for_multi_tool_audit(
 ) -> FakeLLM:
     responses: list[BaseModel] = []
     for tool_name, num_cases in tool_configs:
-        batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
+        batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
         eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
         responses.extend([batch, *eval_results, AttackContext()])
     return FakeLLM(responses)
@@ -99,14 +99,14 @@ def a_fake_llm_for_single_tool_with_chain(
     tool_name: str = "test_tool",
     num_cases: int = 1,
 ) -> FakeLLM:
-    batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
+    batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
     eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
         chains=[
             ChainGoal(
                 description="probe then exploit",
                 category=AuditCategory.INJECTION,
-                first_step=a_payload(tool_name),
+                first_step=a_payload(),
             ),
         ]
     )
@@ -120,19 +120,19 @@ def a_fake_llm_for_single_tool_with_two_chains(
     tool_name: str = "test_tool",
     num_cases: int = 1,
 ) -> FakeLLM:
-    batch = TestCaseBatch(cases=[a_payload(tool_name) for _ in range(num_cases)])
+    batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
     eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
         chains=[
             ChainGoal(
                 description="first chain",
                 category=AuditCategory.INJECTION,
-                first_step=a_payload(tool_name),
+                first_step=a_payload(),
             ),
             ChainGoal(
                 description="second chain",
                 category=AuditCategory.INFO_LEAKAGE,
-                first_step=a_payload(tool_name, category=AuditCategory.INFO_LEAKAGE),
+                first_step=a_payload(category=AuditCategory.INFO_LEAKAGE),
             ),
         ]
     )
@@ -140,16 +140,22 @@ def a_fake_llm_for_single_tool_with_two_chains(
     chain_eval_1 = an_eval_result(tool_name)
     chain_eval_2 = an_eval_result(tool_name, category=AuditCategory.INFO_LEAKAGE)
     context = AttackContext()
-    return FakeLLM([
-        batch, *eval_results,
-        chain_plan, stop_obs, chain_eval_1, stop_obs, chain_eval_2,
-        context,
-    ])
+    return FakeLLM(
+        [
+            batch,
+            *eval_results,
+            chain_plan,
+            stop_obs,
+            chain_eval_1,
+            stop_obs,
+            chain_eval_2,
+            context,
+        ]
+    )
 
 
-def a_payload(tool_name: str, category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload:
+def a_payload(category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload:
     return AuditPayload(
-        tool_name=tool_name,
         category=category,
         description="test payload",
         arguments={"input": "malicious"},

@@ -12,6 +12,7 @@ class AuditProgressReporter:
         self._display = display
         self._tool_index = 0
         self._tool_count = 0
+        self._current_tool_name = ""
         self._active_progress: ToolProgress | CIProgress | None = None
 
     def on_stream_event(self, event: tuple[tuple[str, ...], dict[str, Any]]) -> None:
@@ -36,6 +37,7 @@ class AuditProgressReporter:
             tool: ToolDefinition | None = state_update.get("current_tool")
             if tool:
                 self._tool_index += 1
+                self._current_tool_name = tool.name
         elif node_name == "build_tool_report":
             if self._active_progress:
                 self._active_progress.stop()
@@ -45,9 +47,8 @@ class AuditProgressReporter:
         if node_name == "generate_test_cases":
             pending = state_update.get("pending_cases", [])
             if pending:
-                tool_name = pending[0].payload.tool_name
                 progress = self._display.create_tool_progress(
-                    self._tool_index, self._tool_count, tool_name, len(pending)
+                    self._tool_index, self._tool_count, self._current_tool_name, len(pending)
                 )
                 progress.start()
                 self._active_progress = progress

@@ -58,7 +58,8 @@ def make_execute_tool(mcp_client: MCPClientPort):
     async def execute_tool(state: dict[str, Any]) -> dict[str, Any]:
         pending = list(state["pending_cases"])
         case = pending.pop(0)
-        response = await mcp_client.call_tool(case.payload.tool_name, case.payload.arguments)
+        tool = state["current_tool"]
+        response = await mcp_client.call_tool(tool.name, case.payload.arguments)
         if response.is_error:
             case = case.model_copy(update={"error": response.content, "response": None})
         else:

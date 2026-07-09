@@ -77,7 +77,6 @@ class AttackContext(BaseModel):
 
 
 class AuditPayload(BaseModel):
-    tool_name: str
     category: AuditCategory
     description: str = Field(description="What this test case verifies")
     arguments: dict[str, Any]

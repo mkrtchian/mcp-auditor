@@ -52,7 +52,11 @@ def a_report_with_one_pass_plus_failures(
     for tool_name, failures in failures_per_tool.items():
         cases = [
             _a_test_case(
-                tool_name, AuditCategory.INJECTION, EvalVerdict.PASS, "ok", Severity.LOW,
+                tool_name,
+                AuditCategory.INJECTION,
+                EvalVerdict.PASS,
+                "ok",
+                Severity.LOW,
             ),
         ]
         for severity, category, justification in failures:
@@ -77,27 +81,31 @@ def a_report_with_n_results(pass_count: int, fail_count: int) -> AuditReport:
     for _i in range(fail_count):
         cases.append(
             _a_test_case(
-                "tool_a", AuditCategory.INJECTION, EvalVerdict.FAIL, "vuln", Severity.MEDIUM,
+                "tool_a",
+                AuditCategory.INJECTION,
+                EvalVerdict.FAIL,
+                "vuln",
+                Severity.MEDIUM,
             )
         )
-    return _a_report([
-        ToolReport(
-            tool=ToolDefinition(name="tool_a", description="", input_schema={}),
-            cases=cases,
-        )
-    ])
+    return _a_report(
+        [
+            ToolReport(
+                tool=ToolDefinition(name="tool_a", description="", input_schema={}),
+                cases=cases,
+            )
+        ]
+    )
 
 
 def dry_run_payloads() -> list[AuditPayload]:
     return [
         AuditPayload(
-            tool_name="get_user",
             category=AuditCategory.INJECTION,
             description="SQL injection",
             arguments={"id": "1; DROP TABLE users"},
         ),
         AuditPayload(
-            tool_name="get_user",
             category=AuditCategory.INPUT_VALIDATION,
             description="Empty input",
             arguments={"id": ""},
@@ -113,7 +121,11 @@ def a_report_with_two_tools() -> AuditReport:
                 tool=ToolDefinition(name="get_user", description="", input_schema={}),
                 cases=[
                     _a_test_case(
-                        "get_user", AuditCategory.INJECTION, EvalVerdict.PASS, "ok", Severity.LOW,
+                        "get_user",
+                        AuditCategory.INJECTION,
+                        EvalVerdict.PASS,
+                        "ok",
+                        Severity.LOW,
                     ),
                 ],
             ),
@@ -121,8 +133,11 @@ def a_report_with_two_tools() -> AuditReport:
                 tool=ToolDefinition(name="list_items", description="", input_schema={}),
                 cases=[
                     _a_test_case(
-                        "list_items", AuditCategory.INPUT_VALIDATION,
-                        EvalVerdict.FAIL, "bad", Severity.HIGH,
+                        "list_items",
+                        AuditCategory.INPUT_VALIDATION,
+                        EvalVerdict.FAIL,
+                        "bad",
+                        Severity.HIGH,
                     ),
                 ],
             ),
@@ -140,7 +155,6 @@ def _a_test_case(
 ) -> TestCase:
     return TestCase(
         payload=AuditPayload(
-            tool_name=tool_name,
             category=category,
             description="test",
             arguments={},

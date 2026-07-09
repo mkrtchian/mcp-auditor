@@ -23,7 +23,6 @@ def a_judged_case(
 ) -> TestCase:
     return TestCase(
         payload=AuditPayload(
-            tool_name="get_user",
             category=category,
             description="test desc",
             arguments={"id": 1},
@@ -44,7 +43,6 @@ def a_judged_case(
 def an_unjudged_case() -> TestCase:
     return TestCase(
         payload=AuditPayload(
-            tool_name="get_user",
             category=AuditCategory.INPUT_VALIDATION,
             description="test",
             arguments={},
@@ -62,7 +60,6 @@ def a_report(cases: list[TestCase], chains: list[AttackChain] | None = None) -> 
 
 def a_chain_with_leakage_verdict() -> AttackChain:
     payload = AuditPayload(
-        tool_name="get_user",
         category=AuditCategory.INFO_LEAKAGE,
         description="step 1",
         arguments={"action": "list"},

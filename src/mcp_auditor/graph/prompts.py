@@ -36,7 +36,6 @@ Distribute test cases across these attack categories:
 {category_list}
 
 For each test case, provide:
-- tool_name: the name of the tool to call
 - category: one of the categories listed above
 - description: what this test case verifies
 - arguments: a dictionary of arguments matching the input schema, crafted as adversarial payloads

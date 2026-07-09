@@ -129,7 +129,6 @@ def a_report_with_pass_case_and_fail_chain() -> AuditReport:
         cases=[
             TestCase(
                 payload=AuditPayload(
-                    tool_name="get_user",
                     category=AuditCategory.ERROR_HANDLING,
                     description="test",
                     arguments={"input": "test"},
@@ -161,7 +160,6 @@ def a_tool_report(
     cases = [
         TestCase(
             payload=AuditPayload(
-                tool_name=r.tool_name,
                 category=r.category,
                 description="test",
                 arguments=r.payload,
@@ -185,7 +183,6 @@ def a_chain(
         description=description,
         category=category,
         first_step=AuditPayload(
-            tool_name="get_user",
             category=category,
             description="probe",
             arguments={"id": "1"},
@@ -199,7 +196,6 @@ def a_chain(
         ),
         ChainStep(
             payload=AuditPayload(
-                tool_name="get_user",
                 category=category,
                 description="exploit",
                 arguments={"id": "../../etc/passwd"},

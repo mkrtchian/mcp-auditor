@@ -26,9 +26,7 @@ def a_report(
     return AuditReport(target="test", tool_reports=tool_reports, token_usage=TokenUsage())
 
 
-def _a_tool_report(
-    name: str, results: list[EvalResult], chains: list[AttackChain]
-) -> ToolReport:
+def _a_tool_report(name: str, results: list[EvalResult], chains: list[AttackChain]) -> ToolReport:
     return ToolReport(
         tool=ToolDefinition(name=name, description="test", input_schema={"type": "object"}),
         cases=[_a_case_for(result) for result in results],
@@ -39,7 +37,6 @@ def _a_tool_report(
 def _a_case_for(result: EvalResult) -> TestCase:
     return TestCase(
         payload=AuditPayload(
-            tool_name=result.tool_name,
             category=result.category,
             description="test",
             arguments=result.payload,
@@ -53,9 +50,7 @@ def a_chain(tool: str, category: AuditCategory, verdict: EvalVerdict) -> AttackC
         goal=ChainGoal(
             description="test chain",
             category=category,
-            first_step=AuditPayload(
-                tool_name=tool, category=category, description="test", arguments={}
-            ),
+            first_step=AuditPayload(category=category, description="test", arguments={}),
         ),
         steps=[],
         eval_result=a_result(tool, category, verdict),

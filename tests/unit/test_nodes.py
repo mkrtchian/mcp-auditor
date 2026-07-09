@@ -134,12 +134,23 @@ class TestGenerateTestCases:
 
 class TestExecuteTool:
     @pytest.mark.asyncio
+    async def test_dispatches_on_current_tool(self):
+        tool = given.a_tool(name="read_file")
+        case = given.a_test_case()
+        client = FakeMCPClient(
+            [tool], responses={"read_file": ToolResponse(content="read_file was called")}
+        )
+        node = make_execute_tool(client)
+
+        result = await node({"pending_cases": [case], "current_tool": tool})
+
+        then.current_case_has_response(result, "read_file was called")
+
+    @pytest.mark.asyncio
     async def test_success(self):
         tool = given.a_tool(name="my_tool")
-        case = given.a_test_case(tool_name="my_tool")
-        client = FakeMCPClient(
-            [tool], responses={"my_tool": ToolResponse(content="result data")}
-        )
+        case = given.a_test_case()
+        client = FakeMCPClient([tool], responses={"my_tool": ToolResponse(content="result data")})
         node = make_execute_tool(client)
 
         result = await node({"pending_cases": [case], "current_tool": tool})
@@ -150,7 +161,7 @@ class TestExecuteTool:
     @pytest.mark.asyncio
     async def test_error(self):
         tool = given.a_tool(name="my_tool")
-        case = given.a_test_case(tool_name="my_tool")
+        case = given.a_test_case()
         client = FakeMCPClient(
             [tool],
             responses={"my_tool": ToolResponse(content="not found", is_error=True)},

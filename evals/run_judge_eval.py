@@ -102,7 +102,6 @@ def _parse_case(entry: dict[str, Any]) -> LoadedCase:
         input_schema={},
     )
     payload = AuditPayload(
-        tool_name=entry["tool_name"],
         category=AuditCategory(entry["category"]),
         description=entry["description"],
         arguments=entry["arguments"],

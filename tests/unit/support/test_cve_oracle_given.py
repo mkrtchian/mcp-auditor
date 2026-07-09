@@ -93,7 +93,7 @@ def a_detection(surfaced: bool, in_fail: bool) -> RunDetection:
 
 
 def _a_payload(category: AuditCategory) -> AuditPayload:
-    return AuditPayload(tool_name="read_file", category=category, description="test", arguments={})
+    return AuditPayload(category=category, description="test", arguments={})
 
 
 def _a_result(verdict: EvalVerdict, category: AuditCategory) -> EvalResult:

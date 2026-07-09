@@ -62,7 +62,7 @@ class TestMakeExecuteStep:
     @pytest.mark.asyncio
     async def test_records_successful_response(self):
         tool = given.a_tool()
-        payload = given.a_payload(tool_name=tool.name)
+        payload = given.a_payload()
         client = given.a_fake_mcp_client(
             responses={tool.name: ToolResponse(content="found /data/projects")}
         )
@@ -82,7 +82,7 @@ class TestMakeExecuteStep:
     @pytest.mark.asyncio
     async def test_records_error_response(self):
         tool = given.a_tool()
-        payload = given.a_payload(tool_name=tool.name)
+        payload = given.a_payload()
         client = given.a_fake_mcp_client(
             responses={tool.name: ToolResponse(content="denied", is_error=True)}
         )
@@ -97,25 +97,6 @@ class TestMakeExecuteStep:
         step = result["current_chain_steps"][0]
         assert step.error == "denied"
         assert step.response is None
-
-    @pytest.mark.asyncio
-    async def test_corrects_wrong_tool_name(self):
-        tool = given.a_tool(name="file_manager")
-        payload = given.a_payload(tool_name="other_tool")
-        client = given.a_fake_mcp_client(
-            tools=[tool],
-            responses={"file_manager": ToolResponse(content="ok")},
-        )
-        node = make_execute_step(client)
-        state = given.a_chain_audit_state(
-            tool=tool,
-            current_step_payload=payload,
-        )
-
-        result = await node(state)
-
-        step = result["current_chain_steps"][0]
-        assert step.payload.tool_name == "file_manager"
 
 
 class TestMakeObserveStep:

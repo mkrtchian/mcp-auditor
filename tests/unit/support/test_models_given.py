@@ -23,7 +23,6 @@ def a_tool(
 
 def a_payload(**overrides: Any) -> AuditPayload:
     defaults: dict[str, Any] = {
-        "tool_name": "test_tool",
         "category": AuditCategory.INPUT_VALIDATION,
         "description": "test payload",
         "arguments": {},
@@ -42,7 +41,6 @@ def a_report_with_finding(severity: Severity) -> AuditReport:
     )
     case = TestCase(
         payload=AuditPayload(
-            tool_name="t",
             category=AuditCategory.INJECTION,
             description="test",
             arguments={},

@@ -31,7 +31,6 @@ def a_test_case(
 ) -> TestCase:
     return TestCase(
         payload=AuditPayload(
-            tool_name="get_user",
             category=AuditCategory.INJECTION,
             description=description,
             arguments={"id": "1 OR 1=1"},
@@ -48,7 +47,6 @@ def a_tool_report(
 ) -> ToolReport:
     case = TestCase(
         payload=AuditPayload(
-            tool_name=tool_name,
             category=AuditCategory.INJECTION,
             description="test injection",
             arguments={"id": "1 OR 1=1"},

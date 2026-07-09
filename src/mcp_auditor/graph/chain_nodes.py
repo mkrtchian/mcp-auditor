@@ -51,9 +51,7 @@ def make_execute_step(mcp_client: MCPClientPort):
     async def execute_step(state: dict[str, Any]) -> dict[str, Any]:
         payload: AuditPayload = state["current_step_payload"]
         tool = state["current_tool"]
-        if payload.tool_name != tool.name:
-            payload = payload.model_copy(update={"tool_name": tool.name})
-        response = await mcp_client.call_tool(payload.tool_name, payload.arguments)
+        response = await mcp_client.call_tool(tool.name, payload.arguments)
         if response.is_error:
             step = ChainStep.from_error(payload, response.content)
         else:

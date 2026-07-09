@@ -29,13 +29,11 @@ def a_tool(
 
 
 def a_payload(
-    tool_name: str = "file_manager",
     category: AuditCategory = AuditCategory.INJECTION,
     description: str = "test step",
     arguments: dict[str, Any] | None = None,
 ) -> AuditPayload:
     return AuditPayload(
-        tool_name=tool_name,
         category=category,
         description=description,
         arguments=arguments or {"path": "/etc/passwd"},

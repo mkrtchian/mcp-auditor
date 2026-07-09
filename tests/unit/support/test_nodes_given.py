@@ -25,13 +25,11 @@ def a_tool(
 
 
 def a_payload(
-    tool_name: str = "test_tool",
     category: AuditCategory = AuditCategory.INJECTION,
     description: str = "test payload",
     arguments: dict[str, Any] | None = None,
 ) -> AuditPayload:
     return AuditPayload(
-        tool_name=tool_name,
         category=category,
         description=description,
         arguments=arguments or {"input": "malicious"},
@@ -39,14 +37,13 @@ def a_payload(
 
 
 def a_test_case(
-    tool_name: str = "test_tool",
     category: AuditCategory = AuditCategory.INJECTION,
     response: str | None = None,
     error: str | None = None,
     payload: AuditPayload | None = None,
 ) -> TestCase:
     return TestCase(
-        payload=payload or a_payload(tool_name=tool_name, category=category),
+        payload=payload or a_payload(category=category),
         response=response,
         error=error,
     )
@@ -58,7 +55,7 @@ def an_eval_result(
     verdict: EvalVerdict = EvalVerdict.PASS,
     severity: Severity = Severity.LOW,
 ) -> EvalResult:
-    payload = a_payload(tool_name=tool_name, category=category)
+    payload = a_payload(category=category)
     return EvalResult(
         tool_name=tool_name,
         category=category,
@@ -74,8 +71,5 @@ def a_tool_report(
     num_cases: int = 1,
 ) -> ToolReport:
     tool = a_tool(name=tool_name)
-    cases = [
-        a_test_case(tool_name=tool_name, response="some response", error="some error")
-        for _ in range(num_cases)
-    ]
+    cases = [a_test_case(response="some response", error="some error") for _ in range(num_cases)]
     return ToolReport(tool=tool, cases=cases)

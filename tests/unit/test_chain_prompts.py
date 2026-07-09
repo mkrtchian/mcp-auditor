@@ -36,7 +36,6 @@ class TestChainPlanningPrompt:
         cases = [
             TestCase(
                 payload=AuditPayload(
-                    tool_name="get_user",
                     category=AuditCategory.INJECTION,
                     description="SQL injection probe",
                     arguments={"id": "1 OR 1=1"},
