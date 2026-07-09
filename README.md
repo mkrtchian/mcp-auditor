@@ -161,6 +161,8 @@ uv run python -m evals.run_cve_benchmark --cve CVE-2025-53109 --cve CVE-2025-533
 
 Safety: the images are deliberately-vulnerable known-RCE/SSRF servers, run in throwaway `docker run --rm` containers against a synthetic per-run sentinel (never a real secret). Run the benchmark on a non-sensitive host, not on a machine holding production credentials.
 
+Pull requests that touch the benchmark run a deterministic calibration gate in CI (no API key, no LLM): it builds the fixtures and confirms each is live.
+
 The detection results table is published from an actual graded run, out of this documentation.
 
 ## Configuration

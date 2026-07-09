@@ -46,6 +46,8 @@ Evals don't run automatically on every pull request: they need an API key, and p
 
 The workflow checks out the PR's head branch, runs the evals against it, and posts the outcome back as a comment. The trigger is restricted to repository owners, members, and collaborators.
 
+Pull requests that touch the CVE benchmark (`evals/docker/**`, `evals/cve_*.py`, `evals/run_cve_benchmark.py`, or the deps `pyproject.toml`/`uv.lock`) trigger a deterministic calibration gate. It builds the fixture images and runs `--calibrate` (no API key), and fails if any fixture is dead. The graded detection run is not a gate: it stays on-demand (`/eval` or `workflow_dispatch`), reported not gated.
+
 ## Coding, testing, and architecture standards
 
 The project's standards are defined in [`CLAUDE.md`](CLAUDE.md). This file serves as the single source of truth — both for human contributors and for AI-assisted development.
