@@ -233,7 +233,7 @@ def _post_langsmith_feedback(
     precision: float,
     project_name: str,
 ) -> None:
-    if not os.environ.get("LANGCHAIN_TRACING_V2"):
+    if not (os.environ.get("LANGSMITH_TRACING") or os.environ.get("LANGCHAIN_TRACING_V2")):
         return
     try:
         from langsmith import Client  # type: ignore[import-untyped]

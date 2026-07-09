@@ -176,9 +176,10 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `MCP_AUDITOR_JUDGE_MODEL`  | same as main model   | Separate model for verdict classification |
 | `GOOGLE_API_KEY`           | --                   | Required when provider is `google`        |
 | `ANTHROPIC_API_KEY`        | --                   | Required when provider is `anthropic`     |
-| `LANGSMITH_API_KEY`        | --                   | Enables LangSmith tracing when set        |
-| `LANGCHAIN_TRACING_V2`     | --                   | Set to `true` to activate tracing         |
-| `LANGCHAIN_PROJECT`        | `mcp-auditor`        | LangSmith project name for traces         |
+| `LANGSMITH_TRACING`        | --                   | Set to `true` to activate tracing         |
+| `LANGSMITH_API_KEY`        | --                   | LangSmith API key (required for tracing)  |
+| `LANGSMITH_PROJECT`        | `mcp-auditor`        | LangSmith project name for traces         |
+| `LANGSMITH_ENDPOINT`       | US region            | Set to the EU URL if your workspace is EU |
 
 ### CLI options
 
