@@ -8,8 +8,8 @@ from mcp_auditor.domain import (
     AuditPayload,
     ChainGoal,
     ChainPlanBatch,
-    EvalResult,
     EvalVerdict,
+    Judgment,
     Severity,
     StepObservation,
     TestCaseBatch,
@@ -36,19 +36,19 @@ def a_fake_llm_for_single_tool_audit(
     extraction_response: AttackContext | None = None,
 ) -> FakeLLM:
     batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
-    eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
+    judgments = [a_judgment() for _ in range(num_cases)]
     context = extraction_response or AttackContext()
-    return FakeLLM([batch, *eval_results, context])
+    return FakeLLM([batch, *judgments, context])
 
 
 def a_fake_llm_for_multi_tool_audit(
     tool_configs: list[tuple[str, int]],
 ) -> FakeLLM:
     responses: list[BaseModel] = []
-    for tool_name, num_cases in tool_configs:
+    for _tool_name, num_cases in tool_configs:
         batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
-        eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
-        responses.extend([batch, *eval_results, AttackContext()])
+        judgments = [a_judgment() for _ in range(num_cases)]
+        responses.extend([batch, *judgments, AttackContext()])
     return FakeLLM(responses)
 
 
@@ -100,7 +100,7 @@ def a_fake_llm_for_single_tool_with_chain(
     num_cases: int = 1,
 ) -> FakeLLM:
     batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
-    eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
+    judgments = [a_judgment() for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
         chains=[
             ChainGoal(
@@ -111,9 +111,9 @@ def a_fake_llm_for_single_tool_with_chain(
         ]
     )
     step_obs = StepObservation(observation="dead end", should_continue=False)
-    chain_eval = an_eval_result(tool_name)
+    chain_judgment = a_judgment()
     context = AttackContext()
-    return FakeLLM([batch, *eval_results, chain_plan, step_obs, chain_eval, context])
+    return FakeLLM([batch, *judgments, chain_plan, step_obs, chain_judgment, context])
 
 
 def a_fake_llm_for_single_tool_with_two_chains(
@@ -121,7 +121,7 @@ def a_fake_llm_for_single_tool_with_two_chains(
     num_cases: int = 1,
 ) -> FakeLLM:
     batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
-    eval_results = [an_eval_result(tool_name) for _ in range(num_cases)]
+    judgments = [a_judgment() for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
         chains=[
             ChainGoal(
@@ -137,18 +137,18 @@ def a_fake_llm_for_single_tool_with_two_chains(
         ]
     )
     stop_obs = StepObservation(observation="dead end", should_continue=False)
-    chain_eval_1 = an_eval_result(tool_name)
-    chain_eval_2 = an_eval_result(tool_name, category=AuditCategory.INFO_LEAKAGE)
+    chain_judgment_1 = a_judgment()
+    chain_judgment_2 = a_judgment()
     context = AttackContext()
     return FakeLLM(
         [
             batch,
-            *eval_results,
+            *judgments,
             chain_plan,
             stop_obs,
-            chain_eval_1,
+            chain_judgment_1,
             stop_obs,
-            chain_eval_2,
+            chain_judgment_2,
             context,
         ]
     )
@@ -162,15 +162,12 @@ def a_payload(category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload
     )
 
 
-def an_eval_result(
-    tool_name: str,
-    category: AuditCategory = AuditCategory.INJECTION,
-) -> EvalResult:
-    return EvalResult(
-        tool_name=tool_name,
-        category=category,
-        payload={"input": "malicious"},
-        verdict=EvalVerdict.FAIL,
+def a_judgment(
+    verdict: EvalVerdict = EvalVerdict.FAIL,
+    severity: Severity = Severity.MEDIUM,
+) -> Judgment:
+    return Judgment(
+        verdict=verdict,
         justification="test justification",
-        severity=Severity.MEDIUM,
+        severity=severity,
     )

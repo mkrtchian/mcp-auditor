@@ -8,6 +8,7 @@ from mcp_auditor.domain import (
     ChainStep,
     EvalResult,
     EvalVerdict,
+    Judgment,
     Severity,
     StepObservation,
     ToolDefinition,
@@ -83,6 +84,17 @@ def a_fake_mcp_client(
     responses: dict[str, ToolResponse] | None = None,
 ) -> FakeMCPClient:
     return FakeMCPClient(tools or [a_tool()], responses)
+
+
+def a_judgment(
+    verdict: EvalVerdict = EvalVerdict.FAIL,
+    severity: Severity = Severity.HIGH,
+) -> Judgment:
+    return Judgment(
+        verdict=verdict,
+        justification="path traversal succeeded",
+        severity=severity,
+    )
 
 
 def a_fail_eval_result() -> EvalResult:

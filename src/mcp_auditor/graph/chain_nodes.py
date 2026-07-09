@@ -8,6 +8,7 @@ from mcp_auditor.domain.models import (
     ChainPlanBatch,
     ChainStep,
     EvalResult,
+    Judgment,
     StepObservation,
 )
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
@@ -110,7 +111,16 @@ def make_judge_chain(llm: LLMPort):
         tool = state["current_tool"]
         chain = AttackChain(goal=goal, steps=steps)
         prompt = build_chain_judge_prompt(tool=tool, chain=chain)
-        eval_result, usage = await llm.generate_structured(prompt, EvalResult)
+        judgment, usage = await llm.generate_structured(prompt, Judgment)
+        payload = steps[-1].payload.arguments if steps else goal.first_step.arguments
+        eval_result = EvalResult(
+            tool_name=tool.name,
+            category=goal.category,
+            payload=payload,
+            verdict=judgment.verdict,
+            justification=judgment.justification,
+            severity=judgment.severity,
+        )
         judged_chain = chain.model_copy(update={"eval_result": eval_result})
         return {
             "completed_chains": [judged_chain],

@@ -8,7 +8,6 @@ import tests.unit.support.test_chain_nodes_then as then
 from mcp_auditor.domain import (
     AuditCategory,
     ChainPlanBatch,
-    EvalResult,
     EvalVerdict,
     Severity,
     StepObservation,
@@ -145,20 +144,16 @@ class TestMakePlanStep:
 
 class TestMakeJudgeChain:
     @pytest.mark.asyncio
-    async def test_produces_completed_chain_with_verdict(self):
-        eval_result = EvalResult(
-            tool_name="file_manager",
-            category=AuditCategory.INJECTION,
-            payload={"path": "/etc/passwd"},
-            verdict=EvalVerdict.FAIL,
-            justification="path traversal succeeded",
-            severity=Severity.HIGH,
-        )
-        llm = FakeLLM([eval_result])
+    async def test_stamps_identity_and_deterministic_payload(self):
+        judgment = given.a_judgment(verdict=EvalVerdict.FAIL, severity=Severity.HIGH)
+        llm = FakeLLM([judgment])
         node = make_judge_chain(llm)
-        goal = given.a_chain_goal()
-        steps = [given.a_chain_step(), given.a_chain_step()]
+        tool = given.a_tool(name="file_manager")
+        goal = given.a_chain_goal(category=AuditCategory.INJECTION)
+        last_payload = given.a_payload(arguments={"path": "/etc/shadow"})
+        steps = [given.a_chain_step(), given.a_chain_step(payload=last_payload)]
         state = given.a_chain_audit_state(
+            tool=tool,
             current_chain_goal=goal,
             current_chain_steps=steps,
         )
@@ -168,7 +163,13 @@ class TestMakeJudgeChain:
         then.completed_chains_count(result, 1)
         chain = result["completed_chains"][0]
         then.chain_has_steps(chain, 2)
-        then.chain_verdict_is(chain, EvalVerdict.FAIL)
+        then.chain_eval_result_is(
+            chain,
+            tool_name="file_manager",
+            category=AuditCategory.INJECTION,
+            payload={"path": "/etc/shadow"},
+            verdict=EvalVerdict.FAIL,
+        )
 
 
 class TestRouteAfterObserve:

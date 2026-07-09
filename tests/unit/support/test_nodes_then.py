@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import ToolDefinition
+from mcp_auditor.domain import Judgment, TestCase, ToolDefinition
 
 
 def discovered_tools_count(result: dict[str, Any], expected: int) -> None:
@@ -36,10 +36,17 @@ def discovered_tools_are(tools: list[ToolDefinition], expected_names: list[str])
     assert [t.name for t in tools] == expected_names
 
 
-def judged_case_has_verdict(result: dict[str, Any], expected_verdict: str) -> None:
-    judged_case = result["judged_cases"][0]
-    assert judged_case.eval_result is not None
-    assert judged_case.eval_result.verdict == expected_verdict
+def judged_case_stamped_from(
+    result: dict[str, Any], tool_name: str, case: TestCase, judgment: Judgment
+) -> None:
+    eval_result = result["judged_cases"][0].eval_result
+    assert eval_result is not None
+    assert eval_result.tool_name == tool_name
+    assert eval_result.category == case.payload.category
+    assert eval_result.payload == case.payload.arguments
+    assert eval_result.verdict == judgment.verdict
+    assert eval_result.justification == judgment.justification
+    assert eval_result.severity == judgment.severity
 
 
 def attack_context_has_db_engine(result: dict[str, Any], expected: str) -> None:

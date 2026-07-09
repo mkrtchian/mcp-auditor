@@ -7,6 +7,7 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditReport,
     EvalResult,
+    Judgment,
     TestCase,
     TestCaseBatch,
     TokenUsage,
@@ -74,7 +75,15 @@ def make_judge_response(llm: LLMPort):
         case = state["current_case"]
         tool = state["current_tool"]
         prompt = build_judge_prompt(tool=tool, test_case=case)
-        eval_result, usage = await llm.generate_structured(prompt, EvalResult)
+        judgment, usage = await llm.generate_structured(prompt, Judgment)
+        eval_result = EvalResult(
+            tool_name=tool.name,
+            category=case.payload.category,
+            payload=case.payload.arguments,
+            verdict=judgment.verdict,
+            justification=judgment.justification,
+            severity=judgment.severity,
+        )
         judged_case = case.model_copy(update={"eval_result": eval_result})
         return {"judged_cases": [judged_case], "current_case": None, "token_usage": [usage]}
 

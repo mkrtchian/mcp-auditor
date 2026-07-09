@@ -209,3 +209,13 @@ class TestChainJudgePrompt:
 
         assert "FAIL" in prompt
         assert "PASS" in prompt
+
+    def test_omits_most_significant_step_instruction(self):
+        chain = AttackChain(
+            goal=a_chain_goal(),
+            steps=[a_chain_step()],
+        )
+
+        prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
+
+        assert "most significant step" not in prompt

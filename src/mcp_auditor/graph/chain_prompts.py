@@ -161,8 +161,7 @@ escalation — information from early steps enabling \
 exploitation in later steps.
 
 Provide a justification and severity (low, medium, high, \
-critical). For the payload field, use the arguments from \
-the most significant step in the chain."""
+critical)."""
     )
 
 

@@ -20,8 +20,8 @@ from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
-    EvalResult,
     EvalVerdict,
+    Judgment,
     TestCase,
     ToolDefinition,
 )
@@ -76,14 +76,14 @@ async def _judge_all_cases(llm: LLMPort, cases: list[LoadedCase]) -> list[Judged
         task = progress.add_task("Judging cases", total=len(cases))
         for tool, test_case, expected, category in cases:
             prompt = build_judge_prompt(tool=tool, test_case=test_case)
-            eval_result, _ = await llm.generate_structured(prompt, EvalResult)
+            judgment, _ = await llm.generate_structured(prompt, Judgment)
             judged.append(
                 JudgedCase(
                     tool=tool,
                     category=category,
                     expected=expected,
-                    predicted=eval_result.verdict,
-                    justification=eval_result.justification,
+                    predicted=judgment.verdict,
+                    justification=judgment.justification,
                 )
             )
             progress.advance(task)

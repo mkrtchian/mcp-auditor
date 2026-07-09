@@ -5,7 +5,14 @@ from langgraph.graph import END  # type: ignore[import-untyped]
 
 import tests.unit.support.test_nodes_given as given
 import tests.unit.support.test_nodes_then as then
-from mcp_auditor.domain import AttackContext, TestCaseBatch, ToolResponse
+from mcp_auditor.domain import (
+    AttackContext,
+    AuditCategory,
+    EvalVerdict,
+    Severity,
+    TestCaseBatch,
+    ToolResponse,
+)
 from mcp_auditor.domain.models import filter_tools
 from mcp_auditor.graph.nodes import (
     build_tool_report,
@@ -175,17 +182,17 @@ class TestExecuteTool:
 
 class TestJudgeResponse:
     @pytest.mark.asyncio
-    async def test_produces_eval_result(self):
-        eval_result = given.an_eval_result()
-        llm = FakeLLM([eval_result])
+    async def test_stamps_identity_and_uses_judgment(self):
+        judgment = given.a_judgment(verdict=EvalVerdict.FAIL, severity=Severity.HIGH)
+        llm = FakeLLM([judgment])
         node = make_judge_response(llm)
-        case = given.a_test_case(response="some output")
-        tool = given.a_tool()
+        case = given.a_test_case(category=AuditCategory.INJECTION, response="some output")
+        tool = given.a_tool(name="read_file")
 
         result = await node({"current_case": case, "judged_cases": [], "current_tool": tool})
 
         then.judged_cases_count(result, 1)
-        then.judged_case_has_verdict(result, eval_result.verdict)
+        then.judged_case_stamped_from(result, tool_name="read_file", case=case, judgment=judgment)
 
 
 class TestFinalizeToolAudit:

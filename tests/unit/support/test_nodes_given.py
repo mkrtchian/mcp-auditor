@@ -5,6 +5,7 @@ from mcp_auditor.domain import (
     AuditPayload,
     EvalResult,
     EvalVerdict,
+    Judgment,
     Severity,
     TestCase,
     ToolDefinition,
@@ -46,6 +47,17 @@ def a_test_case(
         payload=payload or a_payload(category=category),
         response=response,
         error=error,
+    )
+
+
+def a_judgment(
+    verdict: EvalVerdict = EvalVerdict.PASS,
+    severity: Severity = Severity.LOW,
+) -> Judgment:
+    return Judgment(
+        verdict=verdict,
+        justification="test justification",
+        severity=severity,
     )
 
 

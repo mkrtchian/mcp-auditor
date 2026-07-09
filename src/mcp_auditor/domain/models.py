@@ -97,6 +97,14 @@ class EvalResult(BaseModel):
     severity: Severity
 
 
+class Judgment(BaseModel):
+    """The judge's verdict, decoupled from the identity fields the code stamps itself."""
+
+    verdict: EvalVerdict
+    justification: str
+    severity: Severity
+
+
 class TestCase(BaseModel):
     payload: AuditPayload
     response: str | dict[str, Any] | None = None
