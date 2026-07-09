@@ -118,8 +118,8 @@ def _render_chain_steps(steps: list[ChainStep]) -> str:
     lines = ["**Steps**:"]
     for i, step in enumerate(steps, 1):
         response_snippet = _truncate_chain_response(step.response or step.error or "")
-        obs_text = f" -- {step.observation}" if step.observation else ""
-        lines.append(f"  {i}. `{step.payload.arguments}` -> {response_snippet}{obs_text}")
+        observation_text = f" -- {step.observation}" if step.observation else ""
+        lines.append(f"  {i}. `{step.payload.arguments}` -> {response_snippet}{observation_text}")
     return "\n".join(lines)
 
 

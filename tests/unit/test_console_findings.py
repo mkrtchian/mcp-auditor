@@ -92,7 +92,6 @@ def test_summary_fail_column_zero_shows_no_breakdown():
 
     output = buffer.getvalue()
     assert "0" in output
-    # Should not contain severity labels for a tool with 0 failures
     assert "medium" not in output.lower()
     assert "high" not in output.lower()
     assert "critical" not in output.lower()

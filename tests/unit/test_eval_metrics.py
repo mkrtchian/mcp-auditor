@@ -128,7 +128,7 @@ def test_recall_uncovered_counts_as_miss():
         ("a", INPUT_VALIDATION): FAIL,
         ("a", ERROR_HANDLING): FAIL,
     }
-    aggregated: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
+    aggregated: VerdictMap = {
         ("a", INPUT_VALIDATION): FAIL,
         ("a", ERROR_HANDLING): None,
     }
@@ -167,7 +167,7 @@ def test_precision_no_predictions():
         ("a", INPUT_VALIDATION): PASS,
         ("a", ERROR_HANDLING): PASS,
     }
-    aggregated: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
+    aggregated: VerdictMap = {
         ("a", INPUT_VALIDATION): PASS,
         ("a", ERROR_HANDLING): PASS,
     }
@@ -187,15 +187,15 @@ def test_consistency_perfect():
 
 
 def test_consistency_mixed():
-    run1: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
+    run1: VerdictMap = {
         ("a", INPUT_VALIDATION): FAIL,
         ("a", ERROR_HANDLING): PASS,
     }
-    run2: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
+    run2: VerdictMap = {
         ("a", INPUT_VALIDATION): FAIL,
         ("a", ERROR_HANDLING): FAIL,
     }
-    run3: dict[tuple[str, AuditCategory], EvalVerdict | None] = {
+    run3: VerdictMap = {
         ("a", INPUT_VALIDATION): PASS,
         ("a", ERROR_HANDLING): FAIL,
     }
