@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 from rich.console import Console
 
@@ -22,7 +23,8 @@ from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfSc
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import load_settings
-from mcp_auditor.domain.models import AttackContext, AuditReport
+from mcp_auditor.domain.models import AttackContext, AuditReport, ToolDefinition, ToolResponse
+from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.graph.builder import build_graph
 
 CVE_RUNS = 3
@@ -168,12 +170,46 @@ async def _calibrate_one(target: CVETarget) -> bool:
             async with StdioMCPClient.connect(
                 launch.command, launch.args, errlog=devnull
             ) as client:
-                return await target.calibrate(client)
+                recorder = RecordingClient(client)
+                live = await target.calibrate(recorder)
+                if not live:
+                    _dump_dead_exchanges(target.cve_id, recorder.exchanges)
+                return live
     except (subprocess.CalledProcessError, OSError, RuntimeError) as exc:
         console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {exc}")
         return False
     finally:
         devnull.close()
+
+
+class RecordingClient:
+    """Wraps the calibration client so a dead fixture can be post-mortemed: it
+    records each tool call and its response for the dump below. When a fixture
+    calibrates dead, the raw ground-truth exploit ran but the sentinel never
+    surfaced, and the recorded exchanges show which step swallowed it (a
+    server-side error-as-value or an empty response)."""
+
+    def __init__(self, inner: MCPClientPort) -> None:
+        self._inner = inner
+        self.exchanges: list[tuple[str, dict[str, Any], ToolResponse]] = []
+
+    async def list_tools(self) -> list[ToolDefinition]:
+        return await self._inner.list_tools()
+
+    async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
+        response = await self._inner.call_tool(name, args)
+        self.exchanges.append((name, args, response))
+        return response
+
+
+def _dump_dead_exchanges(
+    cve_id: str, exchanges: list[tuple[str, dict[str, Any], ToolResponse]]
+) -> None:
+    console.print(f"[yellow]{cve_id} dead, tool exchanges:[/yellow]")
+    for name, args, response in exchanges:
+        marker = "error" if response.is_error else "ok"
+        body = response.content[:500]
+        console.print(f"  {name}({json.dumps(args)}) -> [{marker}] {body!r}", markup=False)
 
 
 async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
