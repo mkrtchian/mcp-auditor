@@ -63,6 +63,11 @@ def main() -> None:
         metavar="CVE-ID",
         help="Run only these CVE ids (repeatable); default: all.",
     )
+    parser.add_argument(
+        "--ci",
+        action="store_true",
+        help="Skip fixtures marked CI-unstable (ci_skip_reason); for the CI calibration gate.",
+    )
     args = parser.parse_args()
 
     graded = _filter_by_cve(CVE_TARGETS, args.cve)
@@ -73,7 +78,7 @@ def main() -> None:
         sys.exit(1)
 
     if args.calibrate:
-        sys.exit(0 if asyncio.run(calibrate_all(graded)) else 1)
+        sys.exit(0 if asyncio.run(calibrate_all(graded, ci=args.ci)) else 1)
 
     results = asyncio.run(run_cve_benchmark(graded, args.budget, args.runs))
     results.extend(out_of_scope_results(tracked))
@@ -150,10 +155,13 @@ async def run_cve_benchmark(targets: list[CVETarget], budget: int, runs: int) ->
     return results
 
 
-async def calibrate_all(targets: list[CVETarget]) -> bool:
+async def calibrate_all(targets: list[CVETarget], ci: bool = False) -> bool:
     console.print("[bold]Calibration[/bold] (no LLM): raw ground-truth exploit per target\n")
     all_live = True
     for target in targets:
+        if ci and target.ci_skip_reason is not None:
+            console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
+            continue
         live = await _calibrate_one(target)
         all_live = all_live and live
         status = "[green]live[/green]" if live else "[red]dead[/red]"

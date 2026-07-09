@@ -31,6 +31,7 @@ class CVETarget:
     blocker: str | None
     note: str
     tools_filter: frozenset[str] | None
+    ci_skip_reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -124,6 +125,10 @@ CVE_TARGETS: list[CVETarget] = [
         blocker="cross-tool chains + declared-scope awareness",
         note="git_init(out-of-scope) -> git_add(.) -> git_diff_staged surfaces the content.",
         tools_filter=frozenset({"git_init", "git_add", "git_diff_staged"}),
+        ci_skip_reason=(
+            "git_diff_staged hangs on GitHub-hosted runners (runner-specific, "
+            "not reproducible locally); still covered by local calibration and the graded run"
+        ),
     ),
     CVETarget(
         cve_id="CVE-2025-53355",
