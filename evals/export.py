@@ -19,12 +19,18 @@ def export_judged_cases(
                     if case.eval_result is None:
                         continue
                     line = _single_step_line(
-                        run_index, case, tool_report.tool.description, ground_truth,
+                        run_index,
+                        case,
+                        tool_report.tool.description,
+                        ground_truth,
                     )
                     f.write(json.dumps(line) + "\n")
                 for chain in tool_report.chains:
                     line = _chain_line(
-                        run_index, chain, tool_report.tool.description, ground_truth,
+                        run_index,
+                        chain,
+                        tool_report.tool.description,
+                        ground_truth,
                     )
                     if line:
                         f.write(json.dumps(line) + "\n")
