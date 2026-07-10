@@ -44,7 +44,7 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.graph.builder import build_graph
 
-HONEYPOT_SERVER = Path(__file__).resolve().parent.parent / "tests" / "dummy_server.py"
+HONEYPOT_SERVER = Path(__file__).resolve().parent.parent / "tests" / "honeypot_server.py"
 SUBTLE_SERVER = Path(__file__).resolve().parent.parent / "tests" / "subtle_server.py"
 CHAIN_HONEYPOT_SERVER = (
     Path(__file__).resolve().parent.parent / "tests" / "chain_honeypot_server.py"

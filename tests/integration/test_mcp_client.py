@@ -2,7 +2,7 @@ import pathlib
 
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 
-SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent / "dummy_server.py"
+SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent / "honeypot_server.py"
 CONNECT_ARGS = ("uv", ["run", "python", str(SERVER_PATH)])
 
 

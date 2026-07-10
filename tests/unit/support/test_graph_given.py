@@ -77,7 +77,7 @@ def an_initial_state(
     max_chain_steps: int = 3,
 ) -> dict[str, Any]:
     return {
-        "target": "python dummy_server.py",
+        "target": "python honeypot_server.py",
         "discovered_tools": [],
         "test_budget": test_budget,
         "current_tool": None,

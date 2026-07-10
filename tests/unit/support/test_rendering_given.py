@@ -16,7 +16,7 @@ from mcp_auditor.domain.models import (
 
 
 def an_empty_report() -> AuditReport:
-    return a_report(target="python dummy_server.py", tool_reports=[])
+    return a_report(target="python honeypot_server.py", tool_reports=[])
 
 
 def a_report_with_low_then_critical() -> AuditReport:
@@ -49,7 +49,7 @@ def a_two_tool_report() -> AuditReport:
         a_pass_result("list_items", AuditCategory.ERROR_HANDLING),
     ]
     return a_report(
-        target="python dummy_server.py",
+        target="python honeypot_server.py",
         tool_reports=[
             a_tool_report("get_user", get_user_results),
             a_tool_report("list_items", list_items_results),

@@ -63,7 +63,8 @@ async def test_detects_missing_input_validation():
 
 ## Landmines
 
-- Integration tests require the dummy server (`tests/dummy_server.py`) to be spawned as a subprocess — the test fixtures handle this, but the server must be a valid MCP stdio server (reads stdin, writes stdout).
+- Integration tests require the honeypot server (`tests/honeypot_server.py`) to be spawned as a subprocess — the test fixtures handle this, but the server must be a valid MCP stdio server (reads stdin, writes stdout).
+- The honeypot servers (`tests/honeypot_server.py`, `tests/subtle_server.py`, `tests/chain_honeypot_server.py`) contain **deliberately planted vulnerabilities**. They are the ground truth of `evals/ground_truth.py`. Fixing an apparent bug there degrades the eval suite silently, no unit test will fail.
 - The MCP SDK uses **two nested async context managers** (`stdio_client` + `ClientSession`). The adapter wraps both into a single `async with`. Don't try to manage them separately.
 - `with_structured_output` returns a single `BaseModel`, not a list — that's why `TestCaseBatch` exists as a wrapper.
 
