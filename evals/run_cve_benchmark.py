@@ -4,6 +4,8 @@ import json
 import os
 import subprocess
 import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -82,8 +84,10 @@ def main() -> None:
 
     results = asyncio.run(run_cve_benchmark(graded, args.budget, args.runs))
     results.extend(out_of_scope_results(tracked))
+    _write_reports(results, Path(args.report))
 
-    report_path = Path(args.report)
+
+def _write_reports(results: list[CVEResult], report_path: Path) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps([r.model_dump(mode="json") for r in results], indent=2))
     markdown = render_markdown(results)
@@ -172,12 +176,9 @@ async def calibrate_all(targets: list[CVETarget], ci: bool = False) -> bool:
 
 
 async def _calibrate_one(target: CVETarget) -> bool:
-    devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
         with target.environment() as launch:
-            async with StdioMCPClient.connect(
-                launch.command, launch.args, errlog=devnull
-            ) as client:
+            async with _silent_client(launch) as client:
                 recorder = RecordingClient(client)
                 live = await target.calibrate(recorder)
                 if not live:
@@ -186,8 +187,6 @@ async def _calibrate_one(target: CVETarget) -> bool:
     except (subprocess.CalledProcessError, OSError, RuntimeError) as exc:
         console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {exc}")
         return False
-    finally:
-        devnull.close()
 
 
 class RecordingClient:
@@ -224,11 +223,8 @@ async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
     settings = load_settings()
     llm = create_llm(settings)
     judge_llm = create_judge_llm(settings)
-    devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
-        async with StdioMCPClient.connect(
-            launch.command, launch.args, errlog=devnull
-        ) as mcp_client:
+        async with _silent_client(launch) as mcp_client:
             graph = build_graph(
                 llm, mcp_client, judge_llm=judge_llm, tools_filter=target.tools_filter
             )
@@ -244,6 +240,14 @@ async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
             return result["audit_report"]
     except Exception as exc:
         raise LaunchError(str(exc)) from exc
+
+
+@asynccontextmanager
+async def _silent_client(launch: Launch) -> AsyncIterator[MCPClientPort]:
+    devnull = open(os.devnull, "w")  # noqa: SIM115
+    try:
+        async with StdioMCPClient.connect(launch.command, launch.args, errlog=devnull) as client:
+            yield client
     finally:
         devnull.close()
 

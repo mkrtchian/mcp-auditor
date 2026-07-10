@@ -61,10 +61,10 @@ class CVEResult(BaseModel):
     note: str
     status: CVEStatus
     blocker: str | None = None
-    runs: int
-    hits: int
-    surfaced: int
-    budget: int
+    runs: int = 0
+    hits: int = 0
+    surfaced: int = 0
+    budget: int = 0
     evidence: str | None = None
     category: AuditCategory | None = None
 
@@ -109,10 +109,6 @@ def not_run(target: TargetInfo) -> CVEResult:
         note=target.note,
         status=CVEStatus.NOT_RUN,
         blocker=target.blocker,
-        runs=0,
-        hits=0,
-        surfaced=0,
-        budget=0,
     )
 
 
@@ -123,10 +119,6 @@ def out_of_scope_results(cves: Sequence[OutOfScopeInfo]) -> list[CVEResult]:
             severity=cve.severity,
             note=cve.reason,
             status=CVEStatus.OUT_OF_SCOPE,
-            runs=0,
-            hits=0,
-            surfaced=0,
-            budget=0,
         )
         for cve in cves
     ]
