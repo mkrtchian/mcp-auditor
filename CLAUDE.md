@@ -9,20 +9,20 @@ uv run pytest tests/integration  # Integration tests only
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)
-uv run python -m evals.run_evals       # E2E evals (honeypot servers, requires API key)
-uv run python -m evals.run_judge_eval  # Judge isolation eval (requires API key)
+uv run python -m evals.run_evals       # E2E evals (honeypot servers, requires ANTHROPIC_API_KEY)
+uv run python -m evals.run_judge_eval  # Judge isolation eval (requires ANTHROPIC_API_KEY)
 
 docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)
 uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live (Docker, no LLM)
-uv run python -m evals.run_cve_benchmark              # CVE benchmark graded run (Docker + API key)
+uv run python -m evals.run_cve_benchmark              # CVE benchmark graded run (Docker + ANTHROPIC_API_KEY)
 ```
 
 ## Coding standards
 
 - Code in the style of **Kent Beck**, **Martin Fowler**, **Robert C. Martin**, **Eric Evans** — the XP, software craftsmanship, and DDD tradition.
-- Prompts are **domain logic**, not infra. They live in `graph/prompts.py` as pure functions `(data) -> str`. Never put prompt construction in adapters.
+- Prompts are **domain logic**, not infra. They live in the `graph/*prompts.py` modules (`graph/prompts.py`, `graph/chain_prompts.py`) as pure functions `(data) -> str`. Never put prompt construction in adapters.
 - Graph nodes are built via **factory functions** (`make_node(port)`) for dependency injection. Ports are `Protocol` classes in `domain/`.
-- **Hexagonal boundary**: `domain/` and `graph/` are inside the hexagon. `adapters/` is outside. `domain/` and `graph/` never import from `adapters/`.
+- **Hexagonal boundary**: `domain/` and `graph/` are inside the hexagon. `adapters/` is outside. `domain/` and `graph/` never import from `adapters/`. Top-level modules (`cli.py`, `console.py`, `config.py`, ...) are the composition root and presentation layer, outside the hexagon — they may import from anywhere.
 - **Prefer pure functions.** Same inputs → same output, no side effects. Maximise the amount of code that is purely transformational (prompts, rendering, models, routing). When a function truly needs a side effect, inject the dependency via a Port — never hide I/O, env vars, or clock access behind direct calls.
 - All code, comments, docstrings, and identifiers in **English**.
 - **Newspaper rule** (Clean Code): read a module top-to-bottom like an article. Public/high-level functions first, private/low-level helpers right below their callers.
