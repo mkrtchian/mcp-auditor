@@ -19,7 +19,7 @@ on shared files.
 
 1. **Collect candidate files.** Use Glob to list all `src/**/*.py` and `tests/**/*.py` files. **Exclude `__init__.py` files** — they are package markers with no meaningful logic to review.
 2. **Pick 10 random files.** Use a Bash one-liner (`shuf -n10`) to select 10 files at random from the list. If there are fewer than 10 files, use all of them.
-3. **Launch 5 subagents in parallel** using the Agent tool. Assign 2 files to each agent (files 1-2 to agent 1, files 3-4 to agent 2, etc.). Each agent receives the following prompt:
+3. **Launch 5 subagents in parallel** using the Agent tool with `subagent_type: "Explore"` — a read-only agent type, so the no-edit constraint holds by construction. Assign 2 files to each agent (files 1-2 to agent 1, files 3-4 to agent 2, etc.). Each agent receives the following prompt:
 
    > Read CLAUDE.md to understand the project's architecture (hexagonal,
    > domain/graph inside, adapters outside) and coding philosophy.
