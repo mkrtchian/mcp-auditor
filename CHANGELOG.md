@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-10
+
 ### Added
 
 - Multi-step attack chains: the auditor plans cross-tool attack scenarios, executes them step by step against the live server, and judges the outcome. Opt-in via `--chains`, rendered in all output formats. See ADR 010.
@@ -35,5 +37,6 @@ Initial public release on PyPI.
 - Config file support (`.mcp-auditor.yml`), `--tools` filter, `--budget` control, token usage reporting.
 - Three-level test strategy: unit tests with fakes, integration tests against a honeypot server, LLM evals scored against planted ground truth.
 
-[Unreleased]: https://github.com/mkrtchian/mcp-auditor/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mkrtchian/mcp-auditor/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mkrtchian/mcp-auditor/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mkrtchian/mcp-auditor/releases/tag/v0.1.0
