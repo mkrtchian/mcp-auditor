@@ -1,6 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import (
+    AttackChain,
     AttackContext,
     AuditCategory,
     AuditPayload,
@@ -11,6 +12,7 @@ from mcp_auditor.domain import (
     Judgment,
     Severity,
     StepObservation,
+    TestCase,
     ToolDefinition,
     ToolResponse,
 )
@@ -108,6 +110,14 @@ def a_fail_eval_result() -> EvalResult:
     )
 
 
+def a_single_step_case(response: str = "ok") -> TestCase:
+    return TestCase(
+        payload=a_payload(),
+        response=response,
+        eval_result=a_fail_eval_result(),
+    )
+
+
 def a_chain_audit_state(
     tool: ToolDefinition | None = None,
     pending_chains: list[ChainGoal] | None = None,
@@ -117,9 +127,9 @@ def a_chain_audit_state(
     current_observation: StepObservation | None = None,
     chain_budget: int = 2,
     max_chain_steps: int = 5,
-    judged_cases: list[Any] | None = None,
+    judged_cases: list[TestCase] | None = None,
     attack_context: AttackContext | None = None,
-    completed_chains: list[Any] | None = None,
+    completed_chains: list[AttackChain] | None = None,
 ) -> dict[str, Any]:
     return {
         "current_tool": tool or a_tool(),

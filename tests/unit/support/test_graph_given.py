@@ -31,7 +31,6 @@ def a_tool(
 
 
 def a_fake_llm_for_single_tool_audit(
-    tool_name: str = "test_tool",
     num_cases: int = 1,
     extraction_response: AttackContext | None = None,
 ) -> FakeLLM:
@@ -41,11 +40,9 @@ def a_fake_llm_for_single_tool_audit(
     return FakeLLM([batch, *judgments, context])
 
 
-def a_fake_llm_for_multi_tool_audit(
-    tool_configs: list[tuple[str, int]],
-) -> FakeLLM:
+def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
     responses: list[BaseModel] = []
-    for _tool_name, num_cases in tool_configs:
+    for num_cases in cases_per_tool:
         batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
         judgments = [a_judgment() for _ in range(num_cases)]
         responses.extend([batch, *judgments, AttackContext()])
@@ -95,10 +92,7 @@ def an_initial_state(
     }
 
 
-def a_fake_llm_for_single_tool_with_chain(
-    tool_name: str = "test_tool",
-    num_cases: int = 1,
-) -> FakeLLM:
+def a_fake_llm_for_single_tool_with_chain(num_cases: int = 1) -> FakeLLM:
     batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
     judgments = [a_judgment() for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
@@ -116,10 +110,7 @@ def a_fake_llm_for_single_tool_with_chain(
     return FakeLLM([batch, *judgments, chain_plan, step_obs, chain_judgment, context])
 
 
-def a_fake_llm_for_single_tool_with_two_chains(
-    tool_name: str = "test_tool",
-    num_cases: int = 1,
-) -> FakeLLM:
+def a_fake_llm_for_single_tool_with_two_chains(num_cases: int = 1) -> FakeLLM:
     batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
     judgments = [a_judgment() for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(

@@ -7,10 +7,7 @@ import pytest
 
 import tests.unit.support.test_models_given as given
 from mcp_auditor.domain import (
-    AuditCategory,
     AuditReport,
-    EvalResult,
-    EvalVerdict,
     Severity,
     TestCase,
     TokenUsage,
@@ -26,14 +23,7 @@ class TestEnumConstraints:
 
     def test_rejects_unknown_severity(self):
         with pytest.raises(ValueError):
-            EvalResult(
-                tool_name="t",
-                category=AuditCategory.INJECTION,
-                payload={},
-                verdict=EvalVerdict.FAIL,
-                justification="j",
-                severity="unknown",  # type: ignore[arg-type]
-            )
+            given.an_eval_result(severity="unknown")
 
 
 class TestToolDefinition:
@@ -189,8 +179,10 @@ class TestOrderToolsForAudit:
             "describe_",
             "check_",
         ]
-        tools = [given.a_tool(name=f"{p}thing") for p in prefixes]
-        tools.append(given.a_tool(name="delete_thing"))
+        # delete_thing goes first: a prefix that stopped being recognized would tie with it,
+        # and the stable sort would keep it ahead, breaking the assertion.
+        tools = [given.a_tool(name="delete_thing")]
+        tools.extend(given.a_tool(name=f"{p}thing") for p in prefixes)
 
         result = order_tools_for_audit(tools)
 

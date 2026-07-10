@@ -1,13 +1,4 @@
-from mcp_auditor.domain import (
-    AttackChain,
-    AttackContext,
-    AuditCategory,
-    AuditPayload,
-    EvalResult,
-    EvalVerdict,
-    Severity,
-    TestCase,
-)
+from mcp_auditor.domain import AttackChain, AttackContext
 from mcp_auditor.graph.chain_prompts import (
     build_chain_judge_prompt,
     build_chain_planning_prompt,
@@ -17,6 +8,7 @@ from mcp_auditor.graph.chain_prompts import (
 from tests.unit.support.test_chain_nodes_given import (
     a_chain_goal,
     a_chain_step,
+    a_single_step_case,
     a_tool,
 )
 
@@ -33,24 +25,7 @@ class TestChainPlanningPrompt:
         assert "get_file" in prompt
 
     def test_includes_single_step_summary(self):
-        cases = [
-            TestCase(
-                payload=AuditPayload(
-                    category=AuditCategory.INJECTION,
-                    description="SQL injection probe",
-                    arguments={"id": "1 OR 1=1"},
-                ),
-                response="sqlite3.OperationalError",
-                eval_result=EvalResult(
-                    tool_name="get_user",
-                    category=AuditCategory.INJECTION,
-                    payload={"id": "1 OR 1=1"},
-                    verdict=EvalVerdict.FAIL,
-                    justification="vulnerable",
-                    severity=Severity.HIGH,
-                ),
-            ),
-        ]
+        cases = [a_single_step_case(response="sqlite3.OperationalError")]
 
         prompt = build_chain_planning_prompt(
             tool=a_tool(),

@@ -50,19 +50,9 @@ def a_report_with_one_pass_plus_failures(
 ) -> AuditReport:
     tool_reports: list[ToolReport] = []
     for tool_name, failures in failures_per_tool.items():
-        cases = [
-            _a_test_case(
-                tool_name,
-                AuditCategory.INJECTION,
-                EvalVerdict.PASS,
-                "ok",
-                Severity.LOW,
-            ),
-        ]
+        cases = [_a_passing_case(tool_name)]
         for severity, category, justification in failures:
-            cases.append(
-                _a_test_case(tool_name, category, EvalVerdict.FAIL, justification, severity),
-            )
+            cases.append(_a_failing_case(tool_name, severity, category, justification))
         tool_reports.append(
             ToolReport(
                 tool=ToolDefinition(name=tool_name, description="", input_schema={}),
@@ -73,26 +63,16 @@ def a_report_with_one_pass_plus_failures(
 
 
 def a_report_with_n_results(pass_count: int, fail_count: int) -> AuditReport:
-    cases: list[TestCase] = []
-    for _i in range(pass_count):
-        cases.append(
-            _a_test_case("tool_a", AuditCategory.INJECTION, EvalVerdict.PASS, "ok", Severity.LOW)
-        )
-    for _i in range(fail_count):
-        cases.append(
-            _a_test_case(
-                "tool_a",
-                AuditCategory.INJECTION,
-                EvalVerdict.FAIL,
-                "vuln",
-                Severity.MEDIUM,
-            )
-        )
+    passing = [_a_passing_case("tool_a") for _ in range(pass_count)]
+    failing = [
+        _a_failing_case("tool_a", Severity.MEDIUM, AuditCategory.INJECTION, "vuln")
+        for _ in range(fail_count)
+    ]
     return _a_report(
         [
             ToolReport(
                 tool=ToolDefinition(name="tool_a", description="", input_schema={}),
-                cases=cases,
+                cases=passing + failing,
             )
         ]
     )
@@ -119,31 +99,32 @@ def a_report_with_two_tools() -> AuditReport:
         tool_reports=[
             ToolReport(
                 tool=ToolDefinition(name="get_user", description="", input_schema={}),
-                cases=[
-                    _a_test_case(
-                        "get_user",
-                        AuditCategory.INJECTION,
-                        EvalVerdict.PASS,
-                        "ok",
-                        Severity.LOW,
-                    ),
-                ],
+                cases=[_a_passing_case("get_user")],
             ),
             ToolReport(
                 tool=ToolDefinition(name="list_items", description="", input_schema={}),
                 cases=[
-                    _a_test_case(
-                        "list_items",
-                        AuditCategory.INPUT_VALIDATION,
-                        EvalVerdict.FAIL,
-                        "bad",
-                        Severity.HIGH,
+                    _a_failing_case(
+                        "list_items", Severity.HIGH, AuditCategory.INPUT_VALIDATION, "bad"
                     ),
                 ],
             ),
         ],
         token_usage=TokenUsage(input_tokens=1234, output_tokens=567),
     )
+
+
+def _a_passing_case(tool_name: str) -> TestCase:
+    return _a_test_case(tool_name, AuditCategory.INJECTION, EvalVerdict.PASS, "ok", Severity.LOW)
+
+
+def _a_failing_case(
+    tool_name: str,
+    severity: Severity,
+    category: AuditCategory,
+    justification: str,
+) -> TestCase:
+    return _a_test_case(tool_name, category, EvalVerdict.FAIL, justification, severity)
 
 
 def _a_test_case(

@@ -10,7 +10,7 @@ from tests.fakes import FakeLLM, FakeMCPClient
 @pytest.mark.asyncio
 async def test_single_tool_single_test_case():
     tool = given.a_tool(name="get_user")
-    fake_llm = given.a_fake_llm_for_single_tool_audit(tool_name="get_user", num_cases=1)
+    fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5)
@@ -27,7 +27,7 @@ async def test_single_tool_single_test_case():
 async def test_two_tools_two_cases_each():
     tool_a = given.a_tool(name="get_user")
     tool_b = given.a_tool(name="delete_user")
-    fake_llm = given.a_fake_llm_for_multi_tool_audit([("get_user", 2), ("delete_user", 2)])
+    fake_llm = given.a_fake_llm_for_multi_tool_audit([2, 2])
     fake_mcp_client = FakeMCPClient([tool_a, tool_b])
     graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5)
@@ -59,7 +59,7 @@ async def test_empty_tool_list():
 async def test_token_usage_accumulated():
     tool = given.a_tool(name="get_user")
     # 2 test cases = 1 generate + 2 judge + 1 extract = 4 LLM calls
-    fake_llm = given.a_fake_llm_for_single_tool_audit(tool_name="get_user", num_cases=2)
+    fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=2)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5)
@@ -75,7 +75,6 @@ async def test_token_usage_accumulated():
 async def test_attack_context_populated_after_audit():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(
-        tool_name="get_user",
         num_cases=1,
         extraction_response=AttackContext(db_engine="sqlite"),
     )
@@ -92,7 +91,7 @@ async def test_attack_context_populated_after_audit():
 @pytest.mark.asyncio
 async def test_chain_budget_zero_skips_chains():
     tool = given.a_tool(name="get_user")
-    fake_llm = given.a_fake_llm_for_single_tool_audit(tool_name="get_user", num_cases=1)
+    fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5, chain_budget=0, max_chain_steps=3)
@@ -106,7 +105,7 @@ async def test_chain_budget_zero_skips_chains():
 @pytest.mark.asyncio
 async def test_chain_budget_one_produces_chain():
     tool = given.a_tool(name="get_user")
-    fake_llm = given.a_fake_llm_for_single_tool_with_chain(tool_name="get_user", num_cases=1)
+    fake_llm = given.a_fake_llm_for_single_tool_with_chain(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
@@ -123,7 +122,7 @@ async def test_chain_budget_one_produces_chain():
 @pytest.mark.asyncio
 async def test_chain_budget_two_produces_two_chains():
     tool = given.a_tool(name="get_user")
-    fake_llm = given.a_fake_llm_for_single_tool_with_two_chains(tool_name="get_user", num_cases=1)
+    fake_llm = given.a_fake_llm_for_single_tool_with_two_chains(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
     state = given.an_initial_state(test_budget=5, chain_budget=2, max_chain_steps=3)
@@ -141,7 +140,7 @@ async def test_chain_budget_two_produces_two_chains():
 async def test_resume_mid_chain():
     """Checkpoint round-trip through doubly-nested subgraph."""
     tool = given.a_tool(name="get_user")
-    fake_llm = given.a_fake_llm_for_single_tool_with_chain(tool_name="get_user", num_cases=1)
+    fake_llm = given.a_fake_llm_for_single_tool_with_chain(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     checkpointer = MemorySaver()
     graph = given.a_graph_with_checkpointer(fake_llm, fake_mcp_client, checkpointer)

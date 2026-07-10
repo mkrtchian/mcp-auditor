@@ -30,15 +30,20 @@ def a_payload(**overrides: Any) -> AuditPayload:
     return AuditPayload(**(defaults | overrides))
 
 
+def an_eval_result(**overrides: Any) -> EvalResult:
+    defaults: dict[str, Any] = {
+        "tool_name": "t",
+        "category": AuditCategory.INJECTION,
+        "payload": {},
+        "verdict": EvalVerdict.FAIL,
+        "justification": "vuln",
+        "severity": Severity.HIGH,
+    }
+    return EvalResult(**(defaults | overrides))
+
+
 def a_report_with_finding(severity: Severity) -> AuditReport:
-    result = EvalResult(
-        tool_name="t",
-        category=AuditCategory.INJECTION,
-        payload={},
-        verdict=EvalVerdict.FAIL,
-        justification="vuln",
-        severity=severity,
-    )
+    result = an_eval_result(severity=severity)
     case = TestCase(
         payload=AuditPayload(
             category=AuditCategory.INJECTION,
