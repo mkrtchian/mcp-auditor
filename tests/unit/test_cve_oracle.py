@@ -1,6 +1,5 @@
 import tests.unit.support.test_cve_oracle_given as given
 from evals.cve_oracle import (
-    CVEResult,
     CVEStatus,
     detect_in_report,
     not_run,
@@ -167,27 +166,13 @@ def test_out_of_scope_results():
 
 def test_render_markdown_table():
     results = [
-        CVEResult(
-            cve_id="CVE-2025-53109",
-            severity="7.5 HIGH",
-            note="planted symlink",
-            status=CVEStatus.DETECTED,
-            awaited_capability=None,
-            runs=3,
-            hits=2,
-            surfaced=3,
-            budget=8,
+        given.a_cve_result(
+            cve_id="CVE-2025-53109", severity="7.5 HIGH", status=CVEStatus.DETECTED, hits=2
         ),
-        CVEResult(
+        given.a_cve_result(
             cve_id="CVE-2025-68143",
-            severity="8.6 HIGH",
-            note="cross-tool exploit",
             status=CVEStatus.MISSED_AWAITING_CAPABILITY,
             awaited_capability="cross-tool chains",
-            runs=3,
-            hits=0,
-            surfaced=0,
-            budget=8,
         ),
     ]
 

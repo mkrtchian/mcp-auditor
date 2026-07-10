@@ -59,7 +59,6 @@ class TestFilterTools:
 
 
 class TestDiscoverTools:
-    @pytest.mark.asyncio
     async def test_populates_state(self):
         tools = [given.a_tool(name="tool_a"), given.a_tool(name="tool_b")]
         client = FakeMCPClient(tools)
@@ -69,7 +68,6 @@ class TestDiscoverTools:
 
         then.discovered_tools_count(result, 2)
 
-    @pytest.mark.asyncio
     async def test_filters_tools_by_name(self):
         tools = [given.a_tool(name="a"), given.a_tool(name="b"), given.a_tool(name="c")]
         client = FakeMCPClient(tools)
@@ -80,7 +78,6 @@ class TestDiscoverTools:
         then.discovered_tools_count(result, 2)
         then.discovered_tools_are(result["discovered_tools"], ["a", "c"])
 
-    @pytest.mark.asyncio
     async def test_orders_tools_for_audit(self):
         tools = [given.a_tool(name="delete_user"), given.a_tool(name="get_user")]
         client = FakeMCPClient(tools)
@@ -92,16 +89,15 @@ class TestDiscoverTools:
 
 
 class TestPrepareTools:
-    @pytest.mark.asyncio
     async def test_extracts_current_tool(self):
         tools = [given.a_tool(name="t1"), given.a_tool(name="t2"), given.a_tool(name="t3")]
+
         result = await prepare_tool({"discovered_tools": tools, "tool_reports": [object()]})
 
         then.current_tool_is(result, tools[1])
 
 
 class TestExtractAttackContext:
-    @pytest.mark.asyncio
     async def test_extracts_context_from_tool_report(self):
         report = given.a_tool_report()
         llm = FakeLLM([AttackContext(db_engine="sqlite")])
@@ -111,7 +107,6 @@ class TestExtractAttackContext:
 
         then.attack_context_has_db_engine(result, "sqlite")
 
-    @pytest.mark.asyncio
     async def test_accumulates_token_usage(self):
         report = given.a_tool_report()
         llm = FakeLLM([AttackContext(db_engine="sqlite")])
@@ -123,7 +118,6 @@ class TestExtractAttackContext:
 
 
 class TestGenerateTestCases:
-    @pytest.mark.asyncio
     async def test_produces_pending_cases(self):
         payloads = [given.a_payload() for _ in range(3)]
         batch = TestCaseBatch(cases=payloads)
@@ -140,7 +134,6 @@ class TestGenerateTestCases:
 
 
 class TestExecuteTool:
-    @pytest.mark.asyncio
     async def test_dispatches_on_current_tool(self):
         tool = given.a_tool(name="read_file")
         case = given.a_test_case()
@@ -153,7 +146,6 @@ class TestExecuteTool:
 
         then.current_case_has_response(result, "read_file was called")
 
-    @pytest.mark.asyncio
     async def test_success(self):
         tool = given.a_tool(name="my_tool")
         case = given.a_test_case()
@@ -165,7 +157,6 @@ class TestExecuteTool:
         then.current_case_has_response(result, "result data")
         then.pending_cases_count(result, 0)
 
-    @pytest.mark.asyncio
     async def test_error(self):
         tool = given.a_tool(name="my_tool")
         case = given.a_test_case()
@@ -181,7 +172,6 @@ class TestExecuteTool:
 
 
 class TestJudgeResponse:
-    @pytest.mark.asyncio
     async def test_stamps_identity_and_uses_judgment(self):
         judgment = given.a_judgment(verdict=EvalVerdict.FAIL, severity=Severity.HIGH)
         llm = FakeLLM([judgment])
@@ -197,14 +187,11 @@ class TestJudgeResponse:
 
 
 class TestFinalizeToolAudit:
-    @pytest.mark.asyncio
     async def test_creates_report(self):
         tool = given.a_tool()
-        case1 = given.a_test_case(response="r1")
-        case1 = case1.model_copy(update={"eval_result": given.an_eval_result()})
-        case2 = given.a_test_case(response="r2")
-        case2 = case2.model_copy(update={"eval_result": given.an_eval_result()})
-        result = await build_tool_report({"current_tool": tool, "judged_cases": [case1, case2]})
+        judged = [given.a_judged_case(response="r1"), given.a_judged_case(response="r2")]
+
+        result = await build_tool_report({"current_tool": tool, "judged_cases": judged})
 
         then.tool_report_has_cases(result, 2)
 

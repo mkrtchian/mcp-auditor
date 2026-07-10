@@ -101,10 +101,10 @@ class TestMakeExecuteStep:
 class TestMakeObserveStep:
     @pytest.mark.asyncio
     async def test_updates_observation_and_returns_it(self):
-        obs = StepObservation(
+        observation = StepObservation(
             observation="found path", should_continue=True, next_step_hint="try traversal"
         )
-        llm = FakeLLM([obs])
+        llm = FakeLLM([observation])
         node = make_observe_step(llm)
         existing_step = given.a_chain_step(response="some data")
         goal = given.a_chain_goal()
@@ -129,12 +129,12 @@ class TestMakePlanStep:
         llm = FakeLLM([next_payload])
         node = make_plan_step(llm)
         goal = given.a_chain_goal()
-        obs = given.a_step_observation(next_step_hint="try traversal")
+        observation = given.a_step_observation(next_step_hint="try traversal")
         step = given.a_chain_step(observation="found path")
         state = given.a_chain_audit_state(
             current_chain_goal=goal,
             current_chain_steps=[step],
-            current_observation=obs,
+            current_observation=observation,
         )
 
         result = await node(state)
@@ -174,28 +174,28 @@ class TestMakeJudgeChain:
 
 class TestRouteAfterObserve:
     def test_continues_when_should_continue_and_under_max(self):
-        obs = given.a_step_observation(should_continue=True)
+        observation = given.a_step_observation(should_continue=True)
         state: dict[str, Any] = {
-            "current_observation": obs,
+            "current_observation": observation,
             "current_chain_steps": [given.a_chain_step()],
             "max_chain_steps": 5,
         }
         assert route_after_observe(state) == "plan_step"
 
     def test_stops_when_should_not_continue(self):
-        obs = given.a_step_observation(should_continue=False)
+        observation = given.a_step_observation(should_continue=False)
         state: dict[str, Any] = {
-            "current_observation": obs,
+            "current_observation": observation,
             "current_chain_steps": [given.a_chain_step()],
             "max_chain_steps": 5,
         }
         assert route_after_observe(state) == "judge_chain"
 
     def test_stops_when_at_max_steps(self):
-        obs = given.a_step_observation(should_continue=True)
+        observation = given.a_step_observation(should_continue=True)
         steps = [given.a_chain_step() for _ in range(3)]
         state: dict[str, Any] = {
-            "current_observation": obs,
+            "current_observation": observation,
             "current_chain_steps": steps,
             "max_chain_steps": 3,
         }

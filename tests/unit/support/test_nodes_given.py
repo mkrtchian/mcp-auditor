@@ -78,6 +78,10 @@ def an_eval_result(
     )
 
 
+def a_judged_case(response: str) -> TestCase:
+    return a_test_case(response=response).model_copy(update={"eval_result": an_eval_result()})
+
+
 def a_tool_report(
     tool_name: str = "test_tool",
     num_cases: int = 1,

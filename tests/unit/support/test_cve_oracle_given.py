@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from evals.cve_oracle import RunDetection
+from evals.cve_oracle import CVEResult, CVEStatus, RunDetection
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -89,6 +89,27 @@ def a_detection(surfaced: bool, in_fail: bool) -> RunDetection:
         sentinel_in_fail=in_fail,
         evidence=SENTINEL if surfaced else None,
         category=INFO_LEAKAGE if surfaced else None,
+    )
+
+
+def a_cve_result(
+    cve_id: str,
+    status: CVEStatus,
+    severity: str = "9.1 CRITICAL",
+    awaited_capability: str | None = None,
+    hits: int = 0,
+    runs: int = 3,
+) -> CVEResult:
+    return CVEResult(
+        cve_id=cve_id,
+        severity=severity,
+        note="test note",
+        status=status,
+        awaited_capability=awaited_capability,
+        runs=runs,
+        hits=hits,
+        surfaced=hits,
+        budget=8,
     )
 
 

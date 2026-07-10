@@ -43,18 +43,12 @@ def an_eval_result(**overrides: Any) -> EvalResult:
 
 
 def a_report_with_finding(severity: Severity) -> AuditReport:
-    result = an_eval_result(severity=severity)
     case = TestCase(
-        payload=AuditPayload(
-            category=AuditCategory.INJECTION,
-            description="test",
-            arguments={},
-        ),
-        eval_result=result,
+        payload=a_payload(category=AuditCategory.INJECTION),
+        eval_result=an_eval_result(severity=severity),
     )
-    tool = ToolDefinition(name="t", description="t", input_schema={})
     return AuditReport(
         target="test",
-        tool_reports=[ToolReport(tool=tool, cases=[case])],
+        tool_reports=[ToolReport(tool=a_tool(), cases=[case])],
         token_usage=TokenUsage(),
     )

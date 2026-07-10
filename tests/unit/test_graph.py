@@ -147,7 +147,7 @@ async def test_resume_mid_chain():
     state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
     config = {"configurable": {"thread_id": "resume-test"}}
 
-    # First invocation — graph runs to completion (no interrupt configured,
+    # First invocation: graph runs to completion (no interrupt configured,
     # but the checkpoint proves state survives the doubly-nested path).
     result = await given.invoke_graph_with_config(graph, state, config)
 

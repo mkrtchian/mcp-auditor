@@ -40,6 +40,14 @@ def test_json_omits_owasp_for_unmapped_category():
     then.json_has_no_owasp(result)
 
 
+def test_json_with_chains_has_owasp():
+    report = given.a_report_with_chain_injection_finding()
+
+    result = render_json(report)
+
+    then.json_chain_has_owasp(result, "injection", "MCP-05")
+
+
 def test_markdown_tool_sections():
     report = given.a_two_tool_report()
 
@@ -80,24 +88,6 @@ def test_markdown_empty_report():
     result = render_markdown(report)
 
     assert "0" in result
-
-
-def test_summary_one_liner():
-    report = given.a_two_tool_report()
-
-    result = render_summary(report)
-
-    assert "\n" not in result
-    assert "2 tools" in result
-    assert "2 findings" in result
-
-
-def test_summary_sorts_severity_descending():
-    report = given.a_report_with_low_then_critical()
-
-    result = render_summary(report)
-
-    assert result.index("critical") < result.index("low")
 
 
 def test_markdown_fail_heading_includes_owasp_label_for_mapped_category():
@@ -145,12 +135,30 @@ def test_markdown_without_chains():
     assert "CHAIN:" not in result
 
 
-def test_json_with_chains_has_owasp():
-    report = given.a_report_with_chain_injection_finding()
+def test_markdown_summary_counts_chains():
+    report = given.a_report_with_chain_finding()
 
-    result = render_json(report)
+    result = render_markdown(report)
 
-    then.json_chain_has_owasp(result, "injection", "MCP-05")
+    assert "Test cases" in result or "cases" in result.lower()
+
+
+def test_summary_one_liner():
+    report = given.a_two_tool_report()
+
+    result = render_summary(report)
+
+    assert "\n" not in result
+    assert "2 tools" in result
+    assert "2 findings" in result
+
+
+def test_summary_sorts_severity_descending():
+    report = given.a_report_with_low_then_critical()
+
+    result = render_summary(report)
+
+    assert result.index("critical") < result.index("low")
 
 
 def test_summarize_tools_counts_chain_failures():
@@ -162,11 +170,3 @@ def test_summarize_tools_counts_chain_failures():
     assert summaries[0].judged == 2
     assert summaries[0].passed == 1
     assert summaries[0].failed == 1
-
-
-def test_markdown_summary_counts_chains():
-    report = given.a_report_with_chain_finding()
-
-    result = render_markdown(report)
-
-    assert "Test cases" in result or "cases" in result.lower()

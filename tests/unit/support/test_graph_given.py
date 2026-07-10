@@ -15,6 +15,7 @@ from mcp_auditor.domain import (
     TestCaseBatch,
     ToolDefinition,
 )
+from mcp_auditor.graph.builder import build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
 
 
@@ -50,14 +51,10 @@ def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
 
 
 def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
-    from mcp_auditor.graph.builder import build_graph
-
     return build_graph(fake_llm, fake_mcp_client)
 
 
 def a_graph_with_checkpointer(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient, checkpointer: Any):
-    from mcp_auditor.graph.builder import build_graph
-
     return build_graph(fake_llm, fake_mcp_client, checkpointer=checkpointer)
 
 
@@ -95,15 +92,7 @@ def an_initial_state(
 def a_fake_llm_for_single_tool_with_chain(num_cases: int = 1) -> FakeLLM:
     batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
     judgments = [a_judgment() for _ in range(num_cases)]
-    chain_plan = ChainPlanBatch(
-        chains=[
-            ChainGoal(
-                description="probe then exploit",
-                category=AuditCategory.INJECTION,
-                first_step=a_payload(),
-            ),
-        ]
-    )
+    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
     step_obs = StepObservation(observation="dead end", should_continue=False)
     chain_judgment = a_judgment()
     context = AttackContext()
@@ -115,33 +104,25 @@ def a_fake_llm_for_single_tool_with_two_chains(num_cases: int = 1) -> FakeLLM:
     judgments = [a_judgment() for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
         chains=[
-            ChainGoal(
-                description="first chain",
-                category=AuditCategory.INJECTION,
-                first_step=a_payload(),
-            ),
-            ChainGoal(
-                description="second chain",
-                category=AuditCategory.INFO_LEAKAGE,
-                first_step=a_payload(category=AuditCategory.INFO_LEAKAGE),
-            ),
+            a_chain_goal("first chain"),
+            a_chain_goal("second chain", category=AuditCategory.INFO_LEAKAGE),
         ]
     )
     stop_obs = StepObservation(observation="dead end", should_continue=False)
-    chain_judgment_1 = a_judgment()
-    chain_judgment_2 = a_judgment()
     context = AttackContext()
     return FakeLLM(
-        [
-            batch,
-            *judgments,
-            chain_plan,
-            stop_obs,
-            chain_judgment_1,
-            stop_obs,
-            chain_judgment_2,
-            context,
-        ]
+        [batch, *judgments, chain_plan, stop_obs, a_judgment(), stop_obs, a_judgment(), context]
+    )
+
+
+def a_chain_goal(
+    description: str,
+    category: AuditCategory = AuditCategory.INJECTION,
+) -> ChainGoal:
+    return ChainGoal(
+        description=description,
+        category=category,
+        first_step=a_payload(category=category),
     )
 
 
