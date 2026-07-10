@@ -32,7 +32,7 @@ class TargetInfo(Protocol):
     @property
     def sentinel(self) -> str: ...
     @property
-    def blocker(self) -> str | None: ...
+    def awaited_capability(self) -> str | None: ...
     @property
     def note(self) -> str: ...
 
@@ -60,7 +60,7 @@ class CVEResult(BaseModel):
     severity: str
     note: str
     status: CVEStatus
-    blocker: str | None = None
+    awaited_capability: str | None = None
     runs: int = 0
     hits: int = 0
     surfaced: int = 0
@@ -91,8 +91,8 @@ def resolve_status(target: TargetInfo, detections: list[RunDetection], budget: i
         cve_id=target.cve_id,
         severity=target.severity,
         note=target.note,
-        status=_status_for(hits, surfaced, target.blocker),
-        blocker=target.blocker,
+        status=_status_for(hits, surfaced, target.awaited_capability),
+        awaited_capability=target.awaited_capability,
         runs=len(detections),
         hits=hits,
         surfaced=surfaced,
@@ -108,7 +108,7 @@ def not_run(target: TargetInfo) -> CVEResult:
         severity=target.severity,
         note=target.note,
         status=CVEStatus.NOT_RUN,
-        blocker=target.blocker,
+        awaited_capability=target.awaited_capability,
     )
 
 
@@ -169,12 +169,12 @@ def _coerce(response: str | dict[str, Any] | None) -> str | None:
     return str(response)
 
 
-def _status_for(hits: int, surfaced: int, blocker: str | None) -> CVEStatus:
+def _status_for(hits: int, surfaced: int, awaited_capability: str | None) -> CVEStatus:
     if hits:
         return CVEStatus.DETECTED
     if surfaced:
         return CVEStatus.REACHED_BUT_JUDGED_PASS
-    if blocker is None:
+    if awaited_capability is None:
         return CVEStatus.MISSED
     return CVEStatus.MISSED_AWAITING_CAPABILITY
 
@@ -193,7 +193,7 @@ def _representative_evidence(
 
 def _render_row(result: CVEResult) -> str:
     hit_rate = f"{result.hits}/{result.runs}"
-    awaited = result.blocker or "-"
+    awaited = result.awaited_capability or "-"
     return (
         f"| {result.cve_id} | {result.severity} | {result.status.value} "
         f"| {hit_rate} | {result.budget} | {awaited} | {result.note} |"

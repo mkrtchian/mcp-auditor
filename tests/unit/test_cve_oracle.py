@@ -113,7 +113,7 @@ def test_detection_at_k_is_any_hit():
 
 
 def test_resolve_reached_but_judged_pass():
-    target = given.a_target(blocker="declared-scope awareness")
+    target = given.a_target(awaited_capability="declared-scope awareness")
     detections = [
         given.a_detection(surfaced=True, in_fail=False),
         given.a_detection(surfaced=True, in_fail=False),
@@ -126,8 +126,8 @@ def test_resolve_reached_but_judged_pass():
     assert result.surfaced == 2
 
 
-def test_resolve_missed_when_blocker_none():
-    target = given.a_target(blocker=None)
+def test_resolve_missed_when_awaited_capability_none():
+    target = given.a_target(awaited_capability=None)
     detections = [given.a_detection(surfaced=False, in_fail=False)]
 
     result = resolve_status(target, detections, budget=8)
@@ -136,13 +136,13 @@ def test_resolve_missed_when_blocker_none():
 
 
 def test_resolve_missed_awaiting_capability():
-    target = given.a_target(blocker="cross-tool chains")
+    target = given.a_target(awaited_capability="cross-tool chains")
     detections = [given.a_detection(surfaced=False, in_fail=False)]
 
     result = resolve_status(target, detections, budget=8)
 
     assert result.status == CVEStatus.MISSED_AWAITING_CAPABILITY
-    assert result.blocker == "cross-tool chains"
+    assert result.awaited_capability == "cross-tool chains"
 
 
 def test_not_run_builder():
@@ -172,7 +172,7 @@ def test_render_markdown_table():
             severity="7.5 HIGH",
             note="planted symlink",
             status=CVEStatus.DETECTED,
-            blocker=None,
+            awaited_capability=None,
             runs=3,
             hits=2,
             surfaced=3,
@@ -183,7 +183,7 @@ def test_render_markdown_table():
             severity="8.6 HIGH",
             note="cross-tool exploit",
             status=CVEStatus.MISSED_AWAITING_CAPABILITY,
-            blocker="cross-tool chains",
+            awaited_capability="cross-tool chains",
             runs=3,
             hits=0,
             surfaced=0,

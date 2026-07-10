@@ -29,7 +29,7 @@ class FakeTarget:
     cve_id: str = "CVE-2025-0001"
     severity: str = "9.1 CRITICAL"
     sentinel: str = SENTINEL
-    blocker: str | None = None
+    awaited_capability: str | None = None
     note: str = "test note"
 
 
@@ -40,8 +40,8 @@ class FakeOutOfScopeCVE:
     reason: str
 
 
-def a_target(blocker: str | None = None, sentinel: str = SENTINEL) -> FakeTarget:
-    return FakeTarget(blocker=blocker, sentinel=sentinel)
+def a_target(awaited_capability: str | None = None, sentinel: str = SENTINEL) -> FakeTarget:
+    return FakeTarget(awaited_capability=awaited_capability, sentinel=sentinel)
 
 
 def a_case_with_response(

@@ -28,7 +28,7 @@ class CVETarget:
     sentinel: str
     environment: Callable[[], AbstractContextManager[Launch]]
     calibrate: Callable[[MCPClientPort], Awaitable[bool]]
-    blocker: str | None
+    awaited_capability: str | None
     note: str
     tools_filter: frozenset[str] | None
     ci_skip_reason: str | None = None
@@ -95,7 +95,7 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_SYMLINK_TRAVERSAL_SENTINEL,
         environment=lambda: filesystem_env(_SYMLINK_TRAVERSAL_SENTINEL),
         calibrate=_calibrate_symlink_traversal,
-        blocker=None,
+        awaited_capability=None,
         note="Symlink inside the allowed dir is discoverable and read out of scope.",
         tools_filter=FILESYSTEM_READ_TOOLS,
     ),
@@ -105,7 +105,7 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_PREFIX_COLLISION_SENTINEL,
         environment=lambda: prefix_collision_env(_PREFIX_COLLISION_SENTINEL),
         calibrate=_calibrate_prefix_collision,
-        blocker="declared-scope awareness",
+        awaited_capability="declared-scope awareness",
         note="Prefix-collision sibling is derivable only from the declared boundary.",
         tools_filter=FILESYSTEM_READ_TOOLS,
     ),
@@ -115,7 +115,7 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_REPOSITORY_BYPASS_SENTINEL,
         environment=lambda: repository_bypass_env(_REPOSITORY_BYPASS_SENTINEL),
         calibrate=_calibrate_repository_bypass,
-        blocker="declared-scope awareness",
+        awaited_capability="declared-scope awareness",
         note="--repository bypass needs the generator to aim outside the declared repo.",
         tools_filter=frozenset({"git_log"}),
     ),
@@ -125,7 +125,7 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_GIT_INIT_TRAVERSAL_SENTINEL,
         environment=lambda: git_init_traversal_env(_GIT_INIT_TRAVERSAL_SENTINEL),
         calibrate=_calibrate_git_init_traversal,
-        blocker="cross-tool chains + declared-scope awareness",
+        awaited_capability="cross-tool chains + declared-scope awareness",
         note="git_init(out-of-scope) -> git_add(.) -> git_diff_staged surfaces the content.",
         tools_filter=frozenset({"git_init", "git_add", "git_diff_staged"}),
         ci_skip_reason=(
@@ -141,7 +141,7 @@ CVE_TARGETS: list[CVETarget] = [
             _KUBERNETES_IMAGE, _KUBERNETES_INJECTION_SENTINEL
         ),
         calibrate=_calibrate_kubernetes_injection,
-        blocker=None,
+        awaited_capability=None,
         note=(
             "Command injection via kubectl_generic (execSync shell); "
             "surfaces the env sentinel with no cluster."
@@ -154,7 +154,7 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_FETCH_SSRF_SENTINEL,
         environment=lambda: ssrf_env(_FETCH_SSRF_SENTINEL),
         calibrate=_calibrate_fetch_ssrf,
-        blocker="declared-scope awareness",
+        awaited_capability="declared-scope awareness",
         note="SSRF via is_ip_private bypass; a Docker sidecar serves the internal endpoint.",
         tools_filter=frozenset({"fetch_txt"}),
     ),
