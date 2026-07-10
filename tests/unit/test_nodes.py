@@ -192,7 +192,8 @@ class TestJudgeResponse:
         result = await node({"current_case": case, "judged_cases": [], "current_tool": tool})
 
         then.judged_cases_count(result, 1)
-        then.judged_case_stamped_from(result, tool_name="read_file", case=case, judgment=judgment)
+        then.judged_case_identity_from(result, tool_name="read_file", case=case)
+        then.judged_case_uses_judgment(result, judgment=judgment)
 
 
 class TestFinalizeToolAudit:

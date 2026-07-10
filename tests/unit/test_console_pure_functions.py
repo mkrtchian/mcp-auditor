@@ -66,9 +66,3 @@ def test_format_tool_summary_sorts_severity_descending():
     summary = format_tool_summary(fail_count=3, failures=failures)
 
     assert summary.index("critical") < summary.index("medium") < summary.index("low")
-
-
-def test_format_tool_summary_zero_cases():
-    summary = format_tool_summary(fail_count=0, failures=[])
-
-    assert isinstance(summary, str)

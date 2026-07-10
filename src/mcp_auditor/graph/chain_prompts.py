@@ -34,7 +34,7 @@ Single-step test results summary:
 {context_section}
 Your task: plan up to {chain_budget} multi-step attack chains. \
 Each chain should exploit a vulnerability that requires multiple \
-interactions — probing to discover internal state, then using \
+interactions: probing to discover internal state, then using \
 that knowledge to escalate.
 
 For each chain, provide:
@@ -44,8 +44,8 @@ For each chain, provide:
 
 Do not plan chains for things that can be tested with a single \
 request. Focus on vulnerabilities where reconnaissance enables \
-exploitation. Only plan chains for info_leakage and injection \
-— other categories (input_validation, error_handling, \
+exploitation. Only plan chains for info_leakage and injection. \
+Other categories (input_validation, error_handling, \
 resource_abuse) are thoroughly covered by single-step tests.
 
 For info_leakage chains specifically: enumerate entities, \
@@ -146,7 +146,7 @@ Full chain of interactions:
 {steps_section}
 
 Judge the chain as a whole. Individual steps may appear \
-benign — the vulnerability is in the progression.
+benign: the vulnerability is in the progression.
 
 Decide:
 - FAIL: the chain demonstrated a **{category}** vulnerability \
@@ -157,7 +157,7 @@ multi-step attempt
 Consider the tool's stated purpose. A tool designed to \
 execute queries or access files is expected to do those \
 things. The vulnerability must come from the multi-step \
-escalation — information from early steps enabling \
+escalation: information from early steps enabling \
 exploitation in later steps.
 
 Provide a justification and severity (low, medium, high, \
