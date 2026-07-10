@@ -85,12 +85,8 @@ class AuditDisplay:
     def _print_findings_recap_ci(self, findings: list[EvalResult]) -> None:
         self._console.print("Findings:")
         for finding in findings:
-            owasp = owasp_id_for(finding.category)
-            category_display = f"{finding.category} / {owasp}" if owasp else str(finding.category)
-            justification = _truncate(finding.justification, 80)
             severity = finding.severity.value.upper()
-            line = f"  {severity}: {finding.tool_name} > {category_display} \u2014 {justification}"
-            self._console.print(line)
+            self._console.print(f"  {severity}: {_format_finding(finding)}")
 
     def _print_findings_recap_rich(self, findings: list[EvalResult]) -> None:
         lines: list[Text] = []
@@ -103,10 +99,7 @@ class AuditDisplay:
                     style=_severity_color(finding.severity),
                 )
                 lines.append(label)
-            owasp = owasp_id_for(finding.category)
-            category_display = f"{finding.category} / {owasp}" if owasp else str(finding.category)
-            justification = _truncate(finding.justification, 80)
-            lines.append(Text(f"    {finding.tool_name} > {category_display} \u2014 {justification}"))
+            lines.append(Text(f"    {_format_finding(finding)}"))
         group = Text("\n").join(lines)
         self._console.print(Panel(group, title="Findings"))
 
@@ -148,6 +141,13 @@ class NullStatus:
         exc_tb: TracebackType | None,
     ) -> None:
         pass
+
+
+def _format_finding(finding: EvalResult) -> str:
+    owasp = owasp_id_for(finding.category)
+    category_display = f"{finding.category} / {owasp}" if owasp else str(finding.category)
+    justification = _truncate(finding.justification, 80)
+    return f"{finding.tool_name} > {category_display} \u2014 {justification}"
 
 
 def _severity_color(severity: Severity) -> str:
