@@ -59,7 +59,7 @@ async def test_detects_missing_input_validation():
 - **Test-first**: write tests before implementation, run them to confirm they fail, then write the code to make them pass — a test that was never red might pass for the wrong reason.
 - **Run unit tests frequently** — after each meaningful change, not just at the end.
 - **Refactor continuously.** After green tests, look for simplification opportunities before moving on.
-- **Update the living docs as part of the change, not after.** When an implementation adds or changes a command, prerequisite, env var, CLI flag, or user-facing behavior, update the living docs in the same work: `README.md`, this `CLAUDE.md` (the Commands list especially), and `CONTRIBUTING.md`. These are the only Markdown that tracks the current state. Do **not** touch `plans/` or `docs/adr/` for this — they are immutable historical artifacts (a decision change is a new ADR, not an edit). A feature isn't done until the living docs match it.
+- **Update the living docs as part of the change, not after.** When an implementation adds or changes a command, prerequisite, env var, CLI flag, or user-facing behavior, update the living docs in the same work: `README.md`, this `CLAUDE.md` (the Commands list especially), `CONTRIBUTING.md`, and the `[Unreleased]` section of `CHANGELOG.md` for user-facing changes. These are the only Markdown that tracks the current state. Do **not** touch `plans/` or `docs/adr/` for this — they are immutable historical artifacts (a decision change is a new ADR, not an edit). A feature isn't done until the living docs match it.
 
 ## Landmines
 

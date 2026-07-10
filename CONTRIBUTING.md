@@ -76,6 +76,26 @@ Architecture decisions are documented in `docs/adr/` as immutable ADRs. To chang
 
 If you're unsure whether something fits, open an issue first.
 
+User-facing changes (new flags, behavior changes, notable fixes) should come with an entry under the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md), in the same pull request.
+
+## Releasing (maintainers)
+
+Publishing is automated: pushing a `v*` tag triggers `publish.yml`, which builds the package and publishes it to PyPI via trusted publishing. The manual steps are:
+
+1. Make sure `main` is green: `uv run pytest && uv run ruff check . && uv run pyright`.
+2. In `CHANGELOG.md`, rename the `[Unreleased]` section to the new version with today's date, add a fresh empty `[Unreleased]` section above it, and update the comparison links at the bottom.
+3. Bump `version` in `pyproject.toml`, then run `uv lock` so the lock file picks it up.
+4. Commit and push: `git commit -m "chore(release): vX.Y.Z"`.
+5. Tag and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. This triggers the PyPI publication.
+6. Create the GitHub release, using the changelog section for that version as the body:
+
+   ```bash
+   gh release create vX.Y.Z --title "vX.Y.Z" \
+     --notes-file <(awk '/^## \[X.Y.Z\]/{f=1; next} f && (/^## \[/ || /^\[.*\]: http/){exit} f' CHANGELOG.md)
+   ```
+
+   Or paste the section by hand — the changelog is the single source of truth for release notes.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
