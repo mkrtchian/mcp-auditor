@@ -84,26 +84,29 @@ class AuditDisplay:
 
     def _print_findings_recap_ci(self, findings: list[EvalResult]) -> None:
         self._console.print("Findings:")
-        for f in findings:
-            owasp = owasp_id_for(f.category)
-            category_display = f"{f.category} / {owasp}" if owasp else str(f.category)
-            justification = _truncate(f.justification, 80)
-            severity = f.severity.value.upper()
-            line = f"  {severity}: {f.tool_name} > {category_display} \u2014 {justification}"
+        for finding in findings:
+            owasp = owasp_id_for(finding.category)
+            category_display = f"{finding.category} / {owasp}" if owasp else str(finding.category)
+            justification = _truncate(finding.justification, 80)
+            severity = finding.severity.value.upper()
+            line = f"  {severity}: {finding.tool_name} > {category_display} \u2014 {justification}"
             self._console.print(line)
 
     def _print_findings_recap_rich(self, findings: list[EvalResult]) -> None:
         lines: list[Text] = []
         current_severity: Severity | None = None
-        for f in findings:
-            if f.severity != current_severity:
-                current_severity = f.severity
-                label = Text(f"\n  {f.severity.value.upper()}", style=_severity_color(f.severity))
+        for finding in findings:
+            if finding.severity != current_severity:
+                current_severity = finding.severity
+                label = Text(
+                    f"\n  {finding.severity.value.upper()}",
+                    style=_severity_color(finding.severity),
+                )
                 lines.append(label)
-            owasp = owasp_id_for(f.category)
-            category_display = f"{f.category} / {owasp}" if owasp else str(f.category)
-            justification = _truncate(f.justification, 80)
-            lines.append(Text(f"    {f.tool_name} > {category_display} \u2014 {justification}"))
+            owasp = owasp_id_for(finding.category)
+            category_display = f"{finding.category} / {owasp}" if owasp else str(finding.category)
+            justification = _truncate(finding.justification, 80)
+            lines.append(Text(f"    {finding.tool_name} > {category_display} \u2014 {justification}"))
         group = Text("\n").join(lines)
         self._console.print(Panel(group, title="Findings"))
 
@@ -185,11 +188,11 @@ def _build_summary_table(report: AuditReport) -> tuple[Table, int, int]:
     table.add_column("Pass", justify="right", style="green")
     table.add_column("Fail", justify="right")
 
-    total_pass = sum(s.passed for s in summaries)
-    total_judged = sum(s.judged for s in summaries)
-    for s in summaries:
-        fail_cell = _format_fail_cell(s)
-        table.add_row(s.name, str(s.judged), str(s.passed), fail_cell)
+    total_pass = sum(summary.passed for summary in summaries)
+    total_judged = sum(summary.judged for summary in summaries)
+    for summary in summaries:
+        fail_cell = _format_fail_cell(summary)
+        table.add_row(summary.name, str(summary.judged), str(summary.passed), fail_cell)
 
     return table, total_pass, total_judged
 
