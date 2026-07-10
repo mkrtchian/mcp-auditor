@@ -1,9 +1,9 @@
 ---
 name: patrol
 description: >-
-  Launch 5 parallel subagents that each pick 3 random project files and review
-  them against every coding and testing standard from CLAUDE.md, fixing
-  violations via refactoring only.
+  Launch 5 parallel subagents, each auditing 3 randomly assigned project files
+  against every coding and testing standard from CLAUDE.md, fixing violations
+  via refactoring only.
 user-invocable: true
 disable-model-invocation: true
 allowed-tools: Agent, Read, Bash, Glob
@@ -19,7 +19,7 @@ testing standards defined in CLAUDE.md.
 
 1. **Collect candidate files.** Use Glob to list all `src/**/*.py` and `tests/**/*.py` files. **Exclude `__init__.py` files** — they are package markers with no meaningful logic to review.
 2. **Pick 15 random files.** Use a Bash one-liner (`shuf -n15`) to select 15 files at random from the list. If there are fewer than 15 files, use all of them.
-3. **Launch 5 subagents in parallel** using the Agent tool with `subagent_type: "spec-driven-dev:sdd-standards-enforcer"`. Assign 3 files to each agent (files 1-3 to agent 1, files 4-6 to agent 2, etc.). Each agent receives the following prompt:
+3. **Launch 5 subagents in parallel** using the Agent tool with `subagent_type: "general-purpose"` (not `sdd-standards-enforcer` — its own instructions say to commit, which contradicts the no-commit rule below). Assign 3 files to each agent (files 1-3 to agent 1, files 4-6 to agent 2, etc.). Each agent receives the following prompt:
 
    > Read CLAUDE.md to load the current coding and testing standards.
    >
@@ -42,9 +42,13 @@ testing standards defined in CLAUDE.md.
    >   report it instead of applying it.
    > - Never change test assertions or production logic.
    > - If a file is too large to split, report it to the user rather than doing it.
-   > - After all fixes on all three files, run `uv run pyright` and
-   >   `uv run pytest tests/unit -x` to verify nothing broke.
+   > - Do NOT run pyright or the test suite — other agents are editing files at
+   >   the same time, verification happens centrally afterwards.
    > - Do NOT commit anything.
 
-4. **Summarize results.** After all 5 agents complete, output a concise summary:
-   which files were reviewed, what was fixed, and what was flagged but not auto-fixed.
+4. **Verify centrally.** After all 5 agents complete, if any fixes were applied,
+   run `uv run pyright` and `uv run pytest tests/unit` yourself. Running them in
+   the subagents would race: an agent would see failures caused by a neighbour's
+   edit in progress and wander off fixing files outside its assignment.
+5. **Summarize results.** Output a concise summary: which files were reviewed,
+   what was fixed, and what was flagged but not auto-fixed.
