@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TaskID, TextColumn
 
 from mcp_auditor.domain.models import EvalResult, EvalVerdict, Severity
-from mcp_auditor.domain.owasp import owasp_id_for
+from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.rendering import format_severity_breakdown
 
 
@@ -80,8 +80,7 @@ class _ResultTracker:
 
 
 def format_failure_line(result: EvalResult) -> str:
-    owasp = owasp_id_for(result.category)
-    category_display = f"{result.category} / {owasp}" if owasp else str(result.category)
+    category_display = category_with_owasp_id(result.category)
     return f"  \u2717 {category_display} ({result.severity}): {result.justification}"
 
 

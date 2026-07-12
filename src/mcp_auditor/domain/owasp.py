@@ -33,3 +33,15 @@ def owasp_label_for(category: AuditCategory) -> str | None:
 
 def owasp_mapping_for(category: AuditCategory) -> OwaspMapping | None:
     return OWASP_BY_CATEGORY.get(category)
+
+
+def category_with_owasp_id(category: AuditCategory) -> str:
+    return _category_qualified_by(category, owasp_id_for(category))
+
+
+def category_with_owasp_label(category: AuditCategory) -> str:
+    return _category_qualified_by(category, owasp_label_for(category))
+
+
+def _category_qualified_by(category: AuditCategory, owasp: str | None) -> str:
+    return f"{category} / {owasp}" if owasp else str(category)

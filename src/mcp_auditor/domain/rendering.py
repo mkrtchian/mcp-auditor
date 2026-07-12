@@ -12,7 +12,7 @@ from mcp_auditor.domain.models import (
     Severity,
     ToolReport,
 )
-from mcp_auditor.domain.owasp import owasp_label_for, owasp_mapping_for
+from mcp_auditor.domain.owasp import category_with_owasp_label, owasp_mapping_for
 
 
 def render_summary(report: AuditReport) -> str:
@@ -89,8 +89,7 @@ def _render_tool_section(tool_report: ToolReport) -> str:
 
 
 def _render_result_section(result: EvalResult) -> str:
-    owasp = owasp_label_for(result.category)
-    category_display = f"{result.category} / {owasp}" if owasp else str(result.category)
+    category_display = category_with_owasp_label(result.category)
     if result.verdict == EvalVerdict.PASS:
         heading = f"### PASS -- {category_display} (-)"
     else:
@@ -161,11 +160,7 @@ def summarize_tools(report: AuditReport) -> list[ToolSummary]:
 
 
 def _summarize_tool_report(tool_report: ToolReport) -> ToolSummary:
-    judged_cases = [c for c in tool_report.cases if c.eval_result is not None]
-    judged_chains = [ch for ch in tool_report.chains if ch.eval_result is not None]
-    all_results = [c.eval_result for c in judged_cases if c.eval_result] + [
-        ch.eval_result for ch in judged_chains if ch.eval_result
-    ]
+    all_results = tool_report.eval_results
     passed = sum(1 for r in all_results if r.verdict == EvalVerdict.PASS)
     severity_counts: Counter[Severity] = Counter(
         r.severity for r in all_results if r.verdict == EvalVerdict.FAIL

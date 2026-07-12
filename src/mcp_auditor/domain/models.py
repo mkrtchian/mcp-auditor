@@ -178,6 +178,12 @@ class ToolReport(BaseModel):
     cases: list[TestCase]
     chains: list[AttackChain] = []
 
+    @property
+    def eval_results(self) -> list[EvalResult]:
+        case_results = [c.eval_result for c in self.cases if c.eval_result]
+        chain_results = [ch.eval_result for ch in self.chains if ch.eval_result]
+        return case_results + chain_results
+
 
 _READ_PREFIXES = (
     "get_",
@@ -222,15 +228,12 @@ class AuditReport(BaseModel):
 
     @property
     def findings(self) -> list[EvalResult]:
-        results: list[EvalResult] = []
-        for tr in self.tool_reports:
-            for case in tr.cases:
-                if case.eval_result and case.eval_result.verdict == EvalVerdict.FAIL:
-                    results.append(case.eval_result)
-            for chain in tr.chains:
-                if chain.eval_result and chain.eval_result.verdict == EvalVerdict.FAIL:
-                    results.append(chain.eval_result)
-        return results
+        return [
+            result
+            for tr in self.tool_reports
+            for result in tr.eval_results
+            if result.verdict == EvalVerdict.FAIL
+        ]
 
     def has_findings_at_or_above(self, threshold: Severity) -> bool:
         return any(f.severity >= threshold for f in self.findings)

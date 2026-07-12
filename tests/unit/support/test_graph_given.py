@@ -50,6 +50,9 @@ def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
     return FakeLLM(responses)
 
 
+# The graph wrappers below look trivial but are a typing seam: langgraph's
+# CompiledStateGraph is partially unknown under strict pyright, so tests go
+# through these Any-typed helpers instead of calling ainvoke directly.
 def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
     return build_graph(fake_llm, fake_mcp_client)
 

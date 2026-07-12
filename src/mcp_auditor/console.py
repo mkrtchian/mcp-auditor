@@ -18,7 +18,7 @@ from mcp_auditor.domain.models import (
     Severity,
     TokenUsage,
 )
-from mcp_auditor.domain.owasp import owasp_id_for
+from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.rendering import (
     ToolSummary,
     format_severity_breakdown,
@@ -144,8 +144,7 @@ class NullStatus:
 
 
 def _format_finding(finding: EvalResult) -> str:
-    owasp = owasp_id_for(finding.category)
-    category_display = f"{finding.category} / {owasp}" if owasp else str(finding.category)
+    category_display = category_with_owasp_id(finding.category)
     justification = _truncate(finding.justification, 80)
     return f"{finding.tool_name} > {category_display} \u2014 {justification}"
 

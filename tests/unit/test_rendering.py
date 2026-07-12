@@ -140,7 +140,7 @@ def test_markdown_summary_counts_chains():
 
     result = render_markdown(report)
 
-    assert "Test cases" in result or "cases" in result.lower()
+    assert "**Test cases**: 1" in result
 
 
 def test_summary_one_liner():
