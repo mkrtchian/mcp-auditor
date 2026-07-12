@@ -10,6 +10,7 @@ _FAKE_USAGE = TokenUsage(input_tokens=10, output_tokens=5)
 class FakeLLM:
     def __init__(self, responses: list[BaseModel]):
         self._responses: deque[BaseModel] = deque(responses)
+        self.total_usage = TokenUsage()
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
@@ -17,4 +18,5 @@ class FakeLLM:
         response = self._responses.popleft()
         if not isinstance(response, output_schema):
             raise TypeError(f"Expected {output_schema.__name__}, got {type(response).__name__}")
+        self.total_usage = self.total_usage.add(_FAKE_USAGE)
         return response, _FAKE_USAGE  # type: ignore[return-value]

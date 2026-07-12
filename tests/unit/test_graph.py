@@ -58,7 +58,6 @@ async def test_empty_tool_list():
 @pytest.mark.asyncio
 async def test_token_usage_accumulated():
     tool = given.a_tool(name="get_user")
-    # 2 test cases = 1 generate + 2 judge + 1 extract = 4 LLM calls
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=2)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
@@ -67,8 +66,8 @@ async def test_token_usage_accumulated():
     result = await given.invoke_graph(graph, state)
 
     usage = result["audit_report"].token_usage
-    assert usage.input_tokens == 40  # 4 calls * 10
-    assert usage.output_tokens == 20  # 4 calls * 5
+    assert usage.input_tokens > 0
+    assert usage == fake_llm.total_usage
 
 
 @pytest.mark.asyncio
