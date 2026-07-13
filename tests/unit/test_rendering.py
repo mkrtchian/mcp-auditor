@@ -32,12 +32,12 @@ def test_json_includes_owasp_for_mapped_category():
     then.json_has_owasp_for_category(result, "injection", "MCP-05", "Command Injection & Execution")
 
 
-def test_json_omits_owasp_for_unmapped_category():
+def test_json_owasp_is_null_for_unmapped_category():
     report = given.a_report_with_unmapped_finding()
 
     result = render_json(report)
 
-    then.json_has_no_owasp(result)
+    then.json_has_null_owasp(result)
 
 
 def test_json_with_chains_has_owasp():

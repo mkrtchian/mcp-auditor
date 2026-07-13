@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 class AuditCategory(StrEnum):
@@ -95,6 +95,18 @@ class EvalResult(BaseModel):
     verdict: EvalVerdict
     justification: str
     severity: Severity
+
+    @computed_field
+    @property
+    def owasp(self) -> dict[str, str] | None:
+        """Derived from category on every serialization, never stored (ADR 012)."""
+        # Local import: domain.owasp imports AuditCategory from this module.
+        from mcp_auditor.domain.owasp import owasp_mapping_for
+
+        mapping = owasp_mapping_for(self.category)
+        if mapping is None:
+            return None
+        return {"code": mapping.code, "title": mapping.title}
 
 
 class Judgment(BaseModel):

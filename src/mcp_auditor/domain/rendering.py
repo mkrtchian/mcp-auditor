@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 
 from mcp_auditor.domain.models import (
     AttackChain,
-    AuditCategory,
     AuditReport,
     ChainStep,
     EvalResult,
@@ -12,7 +11,7 @@ from mcp_auditor.domain.models import (
     Severity,
     ToolReport,
 )
-from mcp_auditor.domain.owasp import category_with_owasp_label, owasp_mapping_for
+from mcp_auditor.domain.owasp import category_with_owasp_label
 
 
 def render_summary(report: AuditReport) -> str:
@@ -26,26 +25,7 @@ def render_summary(report: AuditReport) -> str:
 
 
 def render_json(report: AuditReport) -> str:
-    data = report.model_dump(mode="json")
-    _inject_owasp_into_json(data)
-    return json.dumps(data, indent=2)
-
-
-def _inject_owasp_into_json(data: dict[str, object]) -> None:
-    for tool_report in data.get("tool_reports", []):  # type: ignore[union-attr]
-        for case in tool_report.get("cases", []):  # type: ignore[union-attr]
-            _inject_owasp_on_result(case.get("eval_result"))  # type: ignore[union-attr]
-        for chain in tool_report.get("chains", []):  # type: ignore[union-attr]
-            _inject_owasp_on_result(chain.get("eval_result"))  # type: ignore[union-attr]
-
-
-def _inject_owasp_on_result(result: dict[str, object] | None) -> None:
-    if result is None:
-        return
-    category = AuditCategory(result["category"])  # type: ignore[arg-type]
-    mapping = owasp_mapping_for(category)
-    if mapping:
-        result["owasp"] = {"code": mapping.code, "title": mapping.title}
+    return json.dumps(report.model_dump(mode="json"), indent=2)
 
 
 def render_markdown(report: AuditReport) -> str:

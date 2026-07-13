@@ -37,13 +37,13 @@ def json_has_owasp_for_category(
     raise AssertionError(f"No result with category {category} found")
 
 
-def json_has_no_owasp(json_str: str) -> None:
+def json_has_null_owasp(json_str: str) -> None:
     data = json.loads(json_str)
     for tool_report in data["tool_reports"]:
         for case in tool_report["cases"]:
             result = case["eval_result"]
             if result:
-                assert "owasp" not in result
+                assert result["owasp"] is None
 
 
 def markdown_contains_tool_headings(markdown: str, tool_names: list[str]) -> None:
