@@ -1,17 +1,4 @@
-from dataclasses import dataclass
-
-from mcp_auditor.domain.models import AuditCategory
-
-
-@dataclass(frozen=True)
-class OwaspMapping:
-    code: str
-    title: str
-
-    @property
-    def label(self) -> str:
-        return f"{self.code}: {self.title}"
-
+from mcp_auditor.domain.models import AuditCategory, OwaspMapping
 
 OWASP_BY_CATEGORY: dict[AuditCategory, OwaspMapping] = {
     AuditCategory.INJECTION: OwaspMapping(code="MCP-05", title="Command Injection & Execution"),

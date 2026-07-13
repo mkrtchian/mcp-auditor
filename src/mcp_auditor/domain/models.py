@@ -1,7 +1,18 @@
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, computed_field
+
+
+@dataclass(frozen=True)
+class OwaspMapping:
+    code: str
+    title: str
+
+    @property
+    def label(self) -> str:
+        return f"{self.code}: {self.title}"
 
 
 class AuditCategory(StrEnum):
@@ -98,15 +109,12 @@ class EvalResult(BaseModel):
 
     @computed_field
     @property
-    def owasp(self) -> dict[str, str] | None:
+    def owasp(self) -> OwaspMapping | None:
         """Derived from category on every serialization, never stored (ADR 012)."""
-        # Local import: domain.owasp imports AuditCategory from this module.
+        # Local import: domain.owasp imports this module for AuditCategory.
         from mcp_auditor.domain.owasp import owasp_mapping_for
 
-        mapping = owasp_mapping_for(self.category)
-        if mapping is None:
-            return None
-        return {"code": mapping.code, "title": mapping.title}
+        return owasp_mapping_for(self.category)
 
 
 class Judgment(BaseModel):
