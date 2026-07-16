@@ -1,3 +1,7 @@
+import warnings
+
+warnings.filterwarnings("ignore", message="Core Pydantic V1", category=UserWarning)
+
 import asyncio
 import json
 from dataclasses import dataclass
@@ -186,7 +190,7 @@ def _print_summary(report: dict[str, Any]) -> None:
             f"{cat_metrics['f1']:.2f}",
         )
 
-    panel_content = f"{f1_line}\n{pr_line}\n\n{cm_text}\n\nPer-category:\n"
+    panel_content = f"{f1_line}\n{pr_line}\n\n{cm_text}"
     panel = Panel(panel_content, title="Judge Eval Results")
     console.print(panel)
     console.print(category_table)

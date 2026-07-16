@@ -75,6 +75,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 "src/mcp_auditor/graph/prompts.py" = ["E501"]
 "src/mcp_auditor/domain/category_guidance.py" = ["E501"]
 "src/mcp_auditor/cli.py" = ["E402"]
+"evals/run_judge_eval.py" = ["E402"]
 
 [tool.pyright]
 pythonVersion = "3.13"
