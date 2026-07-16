@@ -95,8 +95,11 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_SYMLINK_TRAVERSAL_SENTINEL,
         environment=lambda: filesystem_env(_SYMLINK_TRAVERSAL_SENTINEL),
         calibrate=_calibrate_symlink_traversal,
-        awaited_capability=None,
-        note="Symlink inside the allowed dir is discoverable and read out of scope.",
+        awaited_capability="cross-tool chains",
+        note=(
+            "Symlink inside the allowed dir; needs list_directory discovery then read_file. "
+            "The current audit order (read_file before list_directory) neutralises cross-tool learning."
+        ),
         tools_filter=FILESYSTEM_READ_TOOLS,
     ),
     CVETarget(
