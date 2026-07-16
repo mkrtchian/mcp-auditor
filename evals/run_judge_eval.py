@@ -35,6 +35,7 @@ from mcp_auditor.graph.prompts import build_judge_prompt
 FIXTURES_PATH = Path(__file__).resolve().parent / "fixtures" / "judge_cases.json"
 DEFAULT_REPORT_PATH = "output/judge_eval_report.json"
 F1_THRESHOLD = 0.90
+JUDGE_CONCURRENCY = 15
 
 LoadedCase = tuple[ToolDefinition, TestCase, EvalVerdict, AuditCategory]
 
@@ -75,23 +76,30 @@ async def run_judge_eval() -> dict[str, Any]:
 
 
 async def _judge_all_cases(llm: LLMPort, cases: list[LoadedCase]) -> list[JudgedCase]:
-    judged: list[JudgedCase] = []
+    limiter = asyncio.Semaphore(JUDGE_CONCURRENCY)
     with Progress(console=console) as progress:
         task = progress.add_task("Judging cases", total=len(cases))
-        for tool, test_case, expected, category in cases:
-            prompt = build_judge_prompt(tool=tool, test_case=test_case)
-            judgment, _ = await llm.generate_structured(prompt, Judgment)
-            judged.append(
-                JudgedCase(
-                    tool=tool,
-                    category=category,
-                    expected=expected,
-                    predicted=judgment.verdict,
-                    justification=judgment.justification,
-                )
-            )
+
+        async def judge(case: LoadedCase) -> JudgedCase:
+            async with limiter:
+                judged = await _judge_one_case(llm, case)
             progress.advance(task)
-    return judged
+            return judged
+
+        return list(await asyncio.gather(*(judge(case) for case in cases)))
+
+
+async def _judge_one_case(llm: LLMPort, case: LoadedCase) -> JudgedCase:
+    tool, test_case, expected, category = case
+    prompt = build_judge_prompt(tool=tool, test_case=test_case)
+    judgment, _ = await llm.generate_structured(prompt, Judgment)
+    return JudgedCase(
+        tool=tool,
+        category=category,
+        expected=expected,
+        predicted=judgment.verdict,
+        justification=judgment.justification,
+    )
 
 
 def _load_cases() -> list[LoadedCase]:
