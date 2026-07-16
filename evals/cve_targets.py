@@ -98,7 +98,8 @@ CVE_TARGETS: list[CVETarget] = [
         awaited_capability="cross-tool chains",
         note=(
             "Symlink inside the allowed dir; needs list_directory discovery then read_file. "
-            "The current audit order (read_file before list_directory) neutralises cross-tool learning."
+            "The current audit order (read_file before list_directory) neutralises "
+            "cross-tool learning."
         ),
         tools_filter=FILESYSTEM_READ_TOOLS,
     ),
