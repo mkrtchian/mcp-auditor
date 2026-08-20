@@ -13,8 +13,10 @@ Two distinct harms:
 1. **Damage to the audited server.** The benchmark is only safe because its
    fixtures run under `docker run --rm`. A user pointing the auditor at a real
    server with a mounted volume or persistent state gets the destructive payload
-   executed for real. `ADR 004` already assumes the audited server is hostile;
-   the reverse duty, not being hostile *to* it, has no counterpart in the code.
+   executed for real. `ADR 004` models the server as the subject under test,
+   possibly flawed, with the attacker acting through the LLM client. What has no
+   counterpart anywhere in the code is the reverse duty: not being hostile *to*
+   the server we were pointed at.
 2. **Self-sabotage of the measurement.** A destructive payload that lands early
    in a run breaks the probes that follow it in the same run, so the auditor
    corrupts its own evidence.
@@ -33,16 +35,28 @@ Two distinct harms:
 So this change removes payloads that were pure downside. It does **not** create a
 new capability ceiling, and it does not narrow what `ADR 011` already scoped.
 
-Verified against the eval ground truth, cell by cell: no ground-truth cell depends
-on a destructive payload.
+Checked against the eval ground truth: **no ground-truth cell requires a
+destructive payload.** All eleven `FAIL` cells in `evals/ground_truth.py` are
+establishable non-destructively. The load-bearing ones:
 
 - `execute_query` returns `Executed: {query}` for *any* query
   (`tests/honeypot_server.py:31`), so `SELECT sqlite_version()` or `' OR '1'='1`
   triggers the same FAIL as `DROP TABLE`.
 - `project_manager` x `injection` is a path traversal in **read** mode
   (`path.startswith("/data/admin/")` returns the sensitive config).
+- `delete_record` x `input_validation` and x `error_handling`
+  (`tests/subtle_server.py`) come from a negative `record_id` and an ignored
+  confirmation flag, not from destroying anything. Worth naming explicitly
+  because it is the one honeypot tool whose *name* contains a destructive verb.
 - On `CVE-2025-53355`, the finding is established by the read-only exfiltration
   of `/etc/passwd`, not by the destructive attempt.
+
+**Say "requires", not "costs nothing", and the distinction is not pedantic.** The
+guard drops a blocked case rather than substituting a benign one, so a cell can
+still be *lost in a given run* if the generator's only probe for it was
+destructive. That is a run-level risk, visible in the metrics and addressed in
+Verification, not a ground-truth dependency. Overstating it as "zero detection
+cost" is exactly the kind of claim this repo's credibility depends on not making.
 
 Caveat to keep in mind: the honeypots are written in this repo, so the statement
 holds for the measured substrate, not universally.
@@ -201,7 +215,12 @@ Word boundaries would not have been enough, and this is the reason the mechanism
 stays literal: `\bshutdown\b` still matches `get_service_status(service="shutdown")`,
 which `tests/subtle_server.py` already ships. Separating that from
 `command="shutdown"` would require inspecting the argument **name**, which comes
-from a server `ADR 004` declares hostile. The discrimination is therefore
+from the server's own `inputSchema`. The guard's rule is to inspect injected
+*content*, never the tool's declared interface, and a name cannot execute. Note
+the distinction that makes this more than a preference: the generator already
+relies on those names to build payloads, which is best-effort and self-correcting,
+whereas letting them decide what counts as dangerous would make a safety property
+depend on input the audited server controls. The discrimination is therefore
 unavailable at this function's signature, the choice is forced, and the stated
 asymmetry assigns bare words to the permissive side.
 
@@ -210,7 +229,7 @@ patterns are lowercase, matched against a lowercased value:
 
 | Group | Patterns | Reason |
 |---|---|---|
-| Filesystem destruction | `rm -rf`, `rm -fr`, `rm -r `, `rmdir `, `shred `, `unlink `, `mv /` | `destructive filesystem command` |
+| Filesystem destruction | `rm -rf`, `rm -fr`, `rm -r `, `rm -f `, `rm /`, `rm ~`, `rmdir `, `shred `, `unlink `, `mv /` | `destructive filesystem command` |
 | Clobbering redirect | `> /`, `>> /`, `> ~`, `>> ~` | `output redirect overwriting a file` |
 | Permission destruction | `chmod -r`, `chown -r` | `recursive permission change` |
 | Disk / device writes | `mkfs.`, `mkfs `, `dd of=`, `of=/dev/`, `truncate -s` | `destructive disk operation` |
@@ -577,9 +596,8 @@ Rejected alternatives, recorded here and in `ADR 013`:
   on, dressed as a setting. It would also fork the eval matrix and make the
   published CVE numbers describe a non-default mode.
 - **Permitting writes only inside the path the server declares.** Circular:
-  `ADR 004` assumes the audited server is hostile, so its declared boundary
-  cannot be our safety boundary. Worse, the declared scope is the property under
-  test: `declared-scope awareness` is the `awaited_capability` of four of the six
+  the declared scope is the very property under test, so it cannot also be the
+  boundary that keeps us safe while we test it: `declared-scope awareness` is the `awaited_capability` of four of the six
   CVE targets, and path traversal is the confirmation that the boundary does not
   hold. Using it as a guard would forbid the category's central probe.
 
@@ -730,11 +748,18 @@ present**, adjacent, or the bullet over-promises.
 
 The promise: the auditor never aims to destroy. Its generator is instructed to
 prove injection with benign reflected evidence, and a deterministic guard refuses
-a payload containing one of an enumerated set of destructive constructs (file
-deletion, clobbering redirect, recursive permission change, disk or device write,
-`DROP` / `TRUNCATE`, forced version-control write, host shutdown, fork bomb)
-before it leaves the auditor. A refused payload is reported as blocked, never
-sent, never judged.
+a payload before it leaves the auditor when it contains one of a short, literal
+list of destructive command forms (`rm -rf`, `mkfs`, `DROP TABLE`, a shutdown
+command, a fork bomb, and a handful more). A refused payload is reported as
+blocked, never sent, never judged.
+
+**Describe the mechanism, not eight category names.** Writing "file deletion" or
+"host shutdown" names a *property* the substring list does not enforce, and a
+reader would reasonably conclude every deletion is caught. Name the shape of the
+list instead, and give one concrete thing it lets through so the boundary is
+visible rather than discovered: the repo already documents one, `CVE-2025-68144`
+in `evals/cve_targets.py`, where `git_diff --output=/path` overwrites a file
+silently and `--output=` is not in the table.
 
 The limit, in the same bullet: it still calls the server's own tools with
 adversarial arguments, so **if a tool writes, auditing it writes**. And the
@@ -750,6 +775,20 @@ as a subprocess with the user's privileges whatever our payloads contain.
 Link the new `ADR 013`, matching how every other bullet in that section and in
 `Design decisions` links its ADR. Reference `ADR 011` for the silent-effect class
 rather than restating it, so the two documents do not drift.
+
+### `CLAUDE.md`
+
+Two lines of the Coding standards section stop being true once `build_graph`
+takes an `AuditedServer`, and `CLAUDE.md` is a living doc, so its own workflow
+rule ("a feature isn't done until the living docs match it") applies.
+
+- "Graph nodes are built via factory functions (`make_node(port)`) [...] Ports are
+  `Protocol` classes in `domain/`." Two node factories now take a concrete domain
+  service, not a Protocol. Reword so the rule still reads as the injection rule it
+  is, and name the exception rather than deleting the rule.
+- The example block in Testing standards calls
+  `build_graph(llm=fake_llm, mcp_client=FakeMCPClient([tool]))`, which no longer
+  type-checks. Update it to wrap the fake.
 
 ### `CHANGELOG.md`
 
@@ -779,7 +818,7 @@ Short ADR. Its thesis is a **safety policy**, not a capability boundary.
   exploits are hand-written ground truth, not generated payloads, so the guard
   does not apply. Without this line someone will "fix" the inconsistency and
   break the calibration gate.
-- **Why the detection cost is nil**: the two-case argument from the Context
+- **Why no ground-truth cell requires a destructive payload**: the two-case argument from the Context
   section of this plan. State it, since it is the load-bearing claim.
 - **Scope of the policy, in one line**: destruction of state and host
   availability. **Not** writes. Record the three reasons from "Destruction, not
@@ -1124,6 +1163,14 @@ Hence the reading order when the gate fails:
    measurement, not the target. If the constraint genuinely costs a cell, the
    honest outcome is a recorded cost, not a reworded prompt that games the eval.
 
+**If the numbers move, the README table moves with them.** `README.md` publishes
+Recall 0.88 / Precision 0.85 / Consistency 0.97 / Distribution 1.00, all measured
+before this guard existed. If the run lands on different figures and the move
+survives the reading order above, republish the table in the same commit. Leaving
+a measured table that no longer describes the shipped tool is the failure this
+repo's credibility is least able to afford. If the figures hold, say nothing and
+change nothing.
+
 Then the CVE target that motivated the change:
 
 ```bash
@@ -1329,9 +1376,12 @@ Verification commands for this repo (from `CLAUDE.md` and `pyproject.toml`):
 
 - `attempt` with a destructive payload returns a `BlockedPayload` whose `reason`
   names the construct, **and** `fake_client.calls == []`.
-- `attempt` with a benign payload returns the client's `ToolResponse` (content
-  matches the canned response) and `fake_client.calls` holds one entry with the
-  tool name and the arguments.
+- `attempt` with a benign payload returns the client's `ToolResponse`, asserted
+  on the content. Do **not** also assert on `fake_client.calls` here: the returned
+  response already proves delegation, and asserting the recorded call would be a
+  call-sequence assertion, which the testing standards forbid. The `calls` list
+  exists for the one thing nothing else can observe, that a blocked payload
+  produced *no* call.
 - `list_tools` returns the client's tools.
 
 **Verify**
@@ -1569,9 +1619,7 @@ uv run python -m evals.run_judge_eval   # ~4s, needs an LLM key, F1 >= 0.90 gate
 
 Note on the key: the default provider is `google` (`config.py`) and both eval
 workflows pass `GOOGLE_API_KEY`, so that is the key this command needs unless
-`MCP_AUDITOR_PROVIDER=anthropic` is set. `CLAUDE.md`'s Commands section says
-`requires ANTHROPIC_API_KEY` for both eval commands, which is stale; do not copy
-it into this plan's commands.
+`MCP_AUDITOR_PROVIDER=anthropic` is set.
 
 The judge eval is the check on the `CATEGORY_GUIDANCE` edit. If F1 drops below the
 gate, the sharpened exclusion is the suspect.
@@ -1586,8 +1634,8 @@ and blocks the step:
    something else and the edit is probably not the cause.
 3. If an `INJECTION` fixture flipped, decide which of the two is wrong: the
    sharpened wording, or the fixture's `expected_verdict`. Re-litigating a
-   fixture label is legitimate (`ADR 006` sources them and the backlog already
-   tracks two contestable labels), but it is a **separate, argued decision**,
+   fixture label is legitimate (`ADR 006` records how fixtures are sourced), but
+   it is a **separate, argued decision**,
    not a way to make the number come back. If a label changes, say so in the
    commit and in `ADR 013`.
 4. If neither is wrong, the edit is too aggressive: narrow it until the gate
@@ -1695,6 +1743,7 @@ uv run pyright
 - `tests/unit/test_eval_metrics.py` (modify)
 - `docs/adr/013-non-destructive-payloads.md` (new)
 - `README.md` (modify)
+- `CLAUDE.md` (modify)
 - `CHANGELOG.md` (modify)
 
 **Do**
@@ -1704,7 +1753,8 @@ uv run pyright
    "`docs/adr/013-non-destructive-payloads.md` (new)" in this plan, in that order:
    context, decision, `AuditedServer` and the union return (with the
    no-shared-attribute-name invariant and the `Unknown tool` precedent), the
-   deliberate raw port in `evals/cve_targets.py`, why the detection cost is nil,
+   deliberate raw port in `evals/cve_targets.py`, why no ground-truth cell
+   requires a destructive payload,
    the scope of the policy (destruction and host availability, **not** writes, with
    the three reasons), prompt and guard deliberately co-extensive, the surviving
    read-only preference, the guard's honest limit, the bare-word bet recorded as a
@@ -1730,15 +1780,23 @@ uv run pyright
      `execute_step` (`E -->|sent| O`, `E -->|blocked, steps done| J`,
      `E -->|blocked, first step| A[abandon_chain]`, `A -->|more chains| C`,
      `A -->|done| X`).
-3. `CHANGELOG.md`: entry under `[Unreleased]` / `### Changed` — the auditor now
+3. `CLAUDE.md`: the two Coding/Testing standards lines invalidated by the
+   `AuditedServer` signature change, per the section above.
+4. `CHANGELOG.md`: entry under `[Unreleased]` / `### Changed` — the auditor now
    proves injection non-destructively and refuses to send a payload it judges
    destructive, reporting it as blocked. Reference `ADR 013`.
-4. `tests/unit/test_readme_policy.py` (new): one test, reading `README.md` from the
-   repo root. Locate the paragraph (bullet) containing the promise, and assert that
-   the **same** paragraph also contains the "if a tool writes, auditing it writes"
-   clause and an `ADR 011` reference. Scope the assertion to that one invariant,
-   not to the wording of the rest of the bullet.
-5. `tests/unit/test_eval_metrics.py` (+ `test_eval_metrics_given.py` if a blocked
+5. `tests/unit/test_readme_policy.py` (new): one test, reading `README.md` from the
+   repo root. Locate the bullet containing the promise and assert that the **same**
+   bullet also carries an `ADR 011` reference.
+
+   Assert the `ADR 011` marker, **not** the sentence "if a tool writes, auditing it
+   writes". Matching that literal clause would make the test brittle against any
+   rewording while claiming to be scoped to an invariant, and a test that breaks on
+   an innocuous edit without catching a real regression is the kind the standards
+   say to delete rather than keep. The `ADR 011` reference is the load-bearing
+   marker: it is what carries "the auditor cannot observe side effects", so its
+   presence in the same bullet is the invariant worth pinning.
+6. `tests/unit/test_eval_metrics.py` (+ `test_eval_metrics_given.py` if a blocked
    case builder is needed): the two scenarios below. No production change in
    `evals/` — `aggregate_verdicts`, `compute_distribution_coverage` and
    `evals/export.py` already guard on `eval_result is None`; these tests pin that
