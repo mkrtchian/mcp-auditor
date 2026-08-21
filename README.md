@@ -11,11 +11,11 @@ Agentic security testing for MCP servers.
 
 ## The problem
 
-MCP servers expose tools that LLM agents call with untrusted input. There is no automated way to test whether a server handles adversarial inputs safely. Manual testing doesn't scale, and generic fuzzers don't understand the MCP protocol or its threat model.
+MCP servers expose tools that LLM agents call with untrusted input. Testing that surface by hand does not scale, and generic fuzzers know nothing about the MCP protocol or its threat model.
 
-MCP security tools today focus on **static analysis** of tool descriptions (detecting poisoning before any call is made) and **runtime proxies** that intercept traffic in production. `mcp-auditor` takes a third approach: **dynamic adversarial testing**. It connects to a live server, generates adversarial inputs, executes them, and judges whether the responses reveal vulnerabilities. Think SAST vs. DAST in web security.
+Most MCP security tooling today works from one of two angles. **Static analysis** reads the declared surface (tool descriptions and JSON schemas) and flags poisoning before any call is made. **Runtime observation** watches a server behave, either as a proxy on live traffic or in a sandbox that builds and runs it, and reports what the process does at the syscall and network level. Both watch a server doing its normal work.
 
-`mcp-auditor` probes for input validation failures, injection, information leakage, error handling gaps, and resource abuse. It produces structured verdicts with justifications and severity ratings.
+`mcp-auditor` sends the server hostile input instead. It connects to a live server, generates adversarial payloads, executes them, and judges whether the responses reveal vulnerabilities. It probes for input validation failures, injection, information leakage, error handling gaps, and resource abuse, and produces structured verdicts with justifications and severity ratings.
 
 ## Quick start
 
@@ -28,7 +28,7 @@ mkdir -p /tmp/sandbox
 uvx mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 ```
 
-Every audit run reports its token usage. Cost and runtime scale with `--budget` (default 10 test cases per tool), so start low to size a run against your own server.
+Every audit run reports its token usage. Cost and runtime scale with `--budget`, the number of test cases asked of the generator for each tool (10 by default), so start low to size a run against your own server.
 
 ## What it does
 
@@ -37,12 +37,12 @@ The audit runs in four phases, with an optional fifth:
 1. **Discover tools**: connect to the MCP server, list available tools with their schemas.
 2. **Generate adversarial test cases**: for each tool, the LLM generates payloads across five categories (input validation, error handling, injection, information leakage, resource abuse).
 3. **Execute against the real server**: each payload is sent via the MCP protocol. Real responses, real behavior.
-4. **Judge each response**: an LLM-as-a-judge classifies each response as PASS or FAIL with a justification and severity rating. Findings are mapped to the [OWASP MCP Top 10](https://owasp.org/www-project-model-context-protocol-top-10/) when applicable.
-5. **Multi-step attack chains** *(opt-in via `--chains`)*: after single-step testing, the LLM plans adaptive attack sequences where each step's payload depends on the previous step's response. Probe, observe, escalate. Catches vulnerabilities that require multiple interactions, like symlink traversal or state-dependent injection. [ADR 010](docs/adr/010-multi-step-attack-chains.md)
+4. **Judge each response**: an LLM-as-a-judge classifies each response as PASS or FAIL with a justification and severity rating. Findings are mapped to the [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/) when applicable.
+5. **Multi-step attack chains** *(opt-in via `--chains`)*: after single-step testing, the LLM plans adaptive attack sequences where each step's payload depends on the previous step's response. Probe, observe, escalate. Chains call one tool repeatedly, so they catch vulnerabilities that need an earlier probe to surface internal state before a later payload uses it. Sequencing a discovery on one tool into an exploit on another is not built yet. [ADR 010](docs/adr/010-multi-step-attack-chains.md)
 
 ## Scope and limitations
 
-`mcp-auditor` audits one slice of the MCP attack surface, on purpose. Knowing the edges matters for a security tool.
+`mcp-auditor` audits one slice of the MCP attack surface, on purpose.
 
 - **Transport: local stdio only.** It audits servers you launch as a subprocess (`-- npx ...`). Remote Streamable HTTP servers are on the roadmap, not supported yet. Auth, token, and transport-level attacks stay out of scope until then.
 - **Primitive: Tools only.** MCP servers expose three primitives (Tools, Resources, Prompts). `mcp-auditor` tests the Tools surface, where the model invokes the server's functions. Resources and Prompts are not audited, and it does not offer client capabilities, so it does not test a server that abuses Sampling.
@@ -95,8 +95,8 @@ graph LR
 - **Hexagonal architecture.** `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider means changing one adapter, zero graph code. [ADR 002](docs/adr/002-hexagonal-architecture.md)
 - **Subgraph per tool.** Each tool audit is a self-contained subgraph with checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off. [ADR 001](docs/adr/001-why-langgraph.md)
 - **Cross-tool learning.** After each tool audit, the graph extracts intelligence from the results (database engine, framework, exposed internals). Subsequent tools receive this context for targeted payloads, e.g. SQLite-specific injection after seeing `sqlite3.OperationalError` in a read tool. Read-like tools are audited first to maximize reconnaissance value. [ADR 009](docs/adr/009-cross-tool-learning.md)
-- **LLM-as-a-judge.** The LLM evaluates each response against security criteria and produces structured verdicts. No heuristics, no regex. Quality is measured through evals. [ADR 003](docs/adr/003-testing-philosophy.md)
-- **Adaptive attack chains.** An optional second pass per tool where the LLM plans multi-step attack sequences. Each step observes the server's response and adapts the next payload: a probe-observe-escalate loop that mimics how a pentester works. Separate subgraph, separate budget, zero overhead when disabled. [ADR 010](docs/adr/010-multi-step-attack-chains.md)
+- **LLM-as-a-judge.** The judge classifies each response against per-category criteria and returns a structured verdict with a severity. The criteria are written rules in `domain/category_guidance.py`, versioned and reviewable, not pattern matches over the response, and the judge is scoped to the single category under test so it cannot report a leak while grading an injection. Quality is measured through evals. [ADR 003](docs/adr/003-testing-philosophy.md)
+- **Adaptive attack chains.** The optional multi-step pass of phase 5 runs in its own subgraph, with its own budget and zero overhead when disabled. [ADR 010](docs/adr/010-multi-step-attack-chains.md)
 
 ## Example: auditing a real server
 
@@ -106,12 +106,12 @@ uvx mcp-auditor run \
   --budget 10 \
   --output output/filesystem-audit.json \
   --markdown output/filesystem-audit.md \
-  -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
+  -- npx @modelcontextprotocol/server-filesystem@2026.1.14 /tmp/sandbox
 ```
 
-This audits `@modelcontextprotocol/server-filesystem`, the official MCP reference server for filesystem operations. The server exposes 14 tools (read_file, write_file, search_files, etc.), each sandboxed to `/tmp/sandbox`.
+This audits `@modelcontextprotocol/server-filesystem`, the official MCP reference server for filesystem operations. At the audited version it exposed 14 tools (read_file, write_file, search_files, etc.), each sandboxed to `/tmp/sandbox`.
 
-Results: **140 test cases, 11 findings** (2 low, 9 medium). All findings were information leakage: the server exposes internal filesystem paths in error messages.
+Results, measured on 2026-03-20 against release `2026.1.14`: **140 test cases, 11 findings** (2 low, 9 medium). All findings were information leakage: the server exposes internal filesystem paths in error messages.
 
 ### read_file / info_leakage / MCP-10 (low)
 
@@ -129,7 +129,7 @@ The error message reveals the full internal filesystem path of the host, includi
 
 Evaluated against three honeypot MCP servers with known vulnerabilities (3 runs, budget 10, 8 tools). The first honeypot has loud vulnerabilities (SQL echo, path leaks in errors), the second has subtle ones (PII in normal responses, silent validation gaps), and the third tests multi-step attack chains (reconnaissance → escalation across tool actions).
 
-**Gemini 3.1 Flash-Lite** (`gemini-3.1-flash-lite`):
+**Gemini 3.1 Flash-Lite** (measured 2026-04-01 on `gemini-3.1-flash-lite-preview`):
 
 | Metric       | Result | Threshold | Status |
 |:-------------|-------:|----------:|:-------|
@@ -138,11 +138,11 @@ Evaluated against three honeypot MCP servers with known vulnerabilities (3 runs,
 | Consistency  |   0.97 |      0.70 | PASS   |
 | Distribution |   1.00 |      0.80 | PASS   |
 
-All thresholds met. A separate judge isolation eval (32 fixed cases, no generator involved) scores F1 = 1.00. Full eval methodology in [ADR 005](docs/adr/005-llm-model-selection.md).
+All thresholds met. A separate judge isolation eval (32 fixed cases, no generator involved) scores F1 = 1.00. The four metrics are defined in [ADR 003](docs/adr/003-testing-philosophy.md), the judge eval in [ADR 006](docs/adr/006-judge-evaluation-strategy.md). [ADR 005](docs/adr/005-llm-model-selection.md) is the model comparison that came first, measured on a smaller substrate against a different threshold, so its numbers are not comparable to the table above.
 
 ### CVE validation
 
-A second benchmark runs the auditor against real, pinned-vulnerable MCP reference servers (filesystem, git, kubernetes, fetch) to check that known CVEs are actually detected. It is fully reproducible on any machine with two prerequisites: **Docker** (hosts the throwaway vulnerable targets) and an **LLM API key** (for the auditor itself). No cluster, no per-server CLI, no per-server key.
+A second benchmark runs the auditor against real, pinned-vulnerable MCP servers (filesystem, git, kubernetes, fetch) to check that known CVEs are actually detected. It is reproducible on any machine with two prerequisites: **Docker** (hosts the throwaway vulnerable targets) and an **LLM API key** (for the auditor itself). No cluster, no per-server CLI, no per-server key.
 
 ```bash
 # 1. Prerequisites: Docker running, an LLM API key exported (e.g. GOOGLE_API_KEY).
@@ -159,11 +159,11 @@ uv run python -m evals.run_cve_benchmark --runs 3 --budget 10
 uv run python -m evals.run_cve_benchmark --cve CVE-2025-53109 --cve CVE-2025-53355 --runs 1 --budget 10
 ```
 
-Safety: the images are deliberately-vulnerable known-RCE/SSRF servers, run in throwaway `docker run --rm` containers against a synthetic per-run sentinel (never a real secret). Run the benchmark on a non-sensitive host, not on a machine holding production credentials.
+Safety: the images are deliberately vulnerable known-RCE/SSRF servers, run in throwaway `docker run --rm` containers against a synthetic per-run sentinel (never a real secret). Run the benchmark on a non-sensitive host, not on a machine holding production credentials.
 
-Pull requests that touch the benchmark run a deterministic calibration gate in CI (no API key, no LLM): it builds the fixtures and confirms each is live.
+Pull requests that touch the benchmark run a deterministic calibration gate in CI (no API key, no LLM): it builds the fixtures and confirms each one is live, minus any target marked CI-unstable. Today that is CVE-2025-68143, whose `git_diff_staged` hangs on GitHub-hosted runners and stays covered by local calibration.
 
-The detection results table is published from an actual graded run, out of this documentation.
+No detection results are published here yet. The graded run above produces them.
 
 ## Configuration
 
@@ -180,17 +180,20 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `ANTHROPIC_API_KEY`        | --                   | Required when provider is `anthropic`     |
 | `LANGSMITH_TRACING`        | --                   | Set to `true` to activate tracing         |
 | `LANGSMITH_API_KEY`        | --                   | LangSmith API key (required for tracing)  |
-| `LANGSMITH_PROJECT`        | `mcp-auditor`        | LangSmith project name for traces         |
+| `LANGSMITH_PROJECT`        | --                   | LangSmith project name for traces (unset, LangSmith uses its own default) |
 | `LANGSMITH_ENDPOINT`       | US region            | Set to the EU URL if your workspace is EU |
+| `MCP_AUDITOR_TOOL_CALL_TIMEOUT` | `30`           | Seconds before a tool call is abandoned and judged as a timeout error |
+
+With the default `google` provider, the main model and the judge both run `gemini-3.1-flash-lite`. With `anthropic` they run `claude-haiku-4-5-20251001`.
 
 ### CLI options
 
 | Option       | Default    | Description                                       |
 |:-------------|:-----------|:--------------------------------------------------|
-| `--budget`   | `10`       | Max test cases per tool                           |
+| `--budget`   | `10`       | Test cases requested per tool (a target for the generator, not an enforced cap) |
 | `--tools`    | all        | Comma-separated tool names to audit               |
-| `--output`   | none       | Path for JSON report                              |
-| `--markdown` | none       | Path for Markdown report                          |
+| `--output`, `-o`   | none | Path for JSON report                              |
+| `--markdown`, `-m` | none | Path for Markdown report                          |
 | `--resume`   | off        | Resume from last checkpoint                       |
 | `--chains`   | `0` (off)  | Attack chains per tool (adaptive multi-step sequences) |
 | `--dry-run`  | off        | Discover tools and generate cases, skip execution |

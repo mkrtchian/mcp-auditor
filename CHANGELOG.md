@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Multi-step attack chains: the auditor plans cross-tool attack scenarios, executes them step by step against the live server, and judges the outcome. Opt-in via `--chains`, rendered in all output formats. See ADR 010.
-- CVE benchmark: graded runs of the auditor against real, pinned-vulnerable MCP servers in throwaway Docker containers, with a no-LLM calibration mode and a `--cve` filter. See ADR 011.
+- Multi-step attack chains: the auditor plans multi-step attack scenarios against a single tool, executes them step by step against the live server, and judges the outcome. Opt-in via `--chains`, rendered in all output formats. See ADR 010.
+- CVE benchmark: graded runs of the auditor against real, pinned-vulnerable MCP servers in throwaway Docker containers, with a no-LLM calibration mode and a `--cve` filter. See `plans/2026-07-06_cve_benchmark.md`.
 - `/eval` PR comment command: maintainers can run the judge eval (`/eval`) or the full eval suite (`/eval full`) on a pull request.
 - CI gates: judge eval fails on F1 regression, CVE fixture calibration gates benchmark PRs, `ruff format --check` gates all PRs.
 - Dependabot updates for uv dependencies and GitHub Actions.
