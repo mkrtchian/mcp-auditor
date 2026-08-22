@@ -78,3 +78,20 @@ def and_a_blocked_case(report: AuditReport, tool: str, category: AuditCategory) 
         for tr in report.tool_reports
     ]
     return report.model_copy(update={"tool_reports": tool_reports})
+
+
+def and_a_blocked_chain(report: AuditReport, tool: str, category: AuditCategory) -> AuditReport:
+    blocked = AttackChain(
+        goal=ChainGoal(
+            description="test chain",
+            category=category,
+            first_step=AuditPayload(category=category, description="test", arguments={}),
+        ),
+        steps=[],
+        blocked_reason="destructive SQL statement: drop table",
+    )
+    tool_reports = [
+        tr.model_copy(update={"chains": [*tr.chains, blocked]}) if tr.tool.name == tool else tr
+        for tr in report.tool_reports
+    ]
+    return report.model_copy(update={"tool_reports": tool_reports})

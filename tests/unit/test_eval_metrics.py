@@ -7,6 +7,7 @@ from evals.metrics import (
     compute_distribution_coverage,
     compute_precision,
     compute_recall,
+    count_blocked,
 )
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
@@ -264,3 +265,17 @@ def test_distribution_coverage_drops_when_the_only_case_of_a_category_is_blocked
 
     assert coverage["get_user"] == 4.0 / 5.0
     assert coverage["get_user"] < full_coverage["get_user"]
+
+
+def test_counts_no_blocked_payload_in_a_clean_report():
+    report = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+
+    assert count_blocked(report) == 0
+
+
+def test_counts_blocked_cases_and_chains():
+    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+    report = given.and_a_blocked_case(clean, "search", INJECTION)
+    with_a_blocked_chain = given.and_a_blocked_chain(report, "search", INJECTION)
+
+    assert count_blocked(with_a_blocked_chain) == 2

@@ -103,7 +103,13 @@ class TestNonDestructiveConstraint:
     def test_forbids_destruction_and_names_benign_markers(self):
         assert "DROP" in NON_DESTRUCTIVE_CONSTRAINT
         assert "TRUNCATE" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "DELETE FROM" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "mkfs" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "dd of=" in NON_DESTRUCTIVE_CONSTRAINT
         assert "shutdown" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "reboot" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "runlevel" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "PID 1" in NON_DESTRUCTIVE_CONSTRAINT
         assert "fork bomb" in NON_DESTRUCTIVE_CONSTRAINT
         assert "echo mcp-auditor-probe" in NON_DESTRUCTIVE_CONSTRAINT
         assert "whoami" in NON_DESTRUCTIVE_CONSTRAINT

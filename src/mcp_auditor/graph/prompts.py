@@ -10,7 +10,7 @@ from mcp_auditor.domain.models import (
 )
 
 NON_DESTRUCTIVE_CONSTRAINT = """NON-DESTRUCTIVE PAYLOADS. This applies to every payload you generate:
-- Never destroy state and never affect host availability: no deleting or overwriting files, no DROP or TRUNCATE, no recursive permission change, no forced version-control write, no shutdown, no fork bomb.
+- Never destroy state and never affect host availability: no deleting or overwriting files, no DROP, TRUNCATE or DELETE FROM, no recursive permission change, no disk or raw-device write (mkfs, dd of=, truncate -s), no forced version-control write, no shutdown, reboot, runlevel change or kill of PID 1, no fork bomb.
 - When a benign reflected marker proves the same thing, prefer it: `echo mcp-auditor-probe`, `id`, `whoami`, a read-only read, `SELECT` / `UNION SELECT` rather than DDL or DML.
 - A destructive payload proves nothing more than a benign marker does, and it corrupts the rest of the audit."""
 

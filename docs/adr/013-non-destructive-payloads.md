@@ -53,7 +53,7 @@ The policy covers destruction of state and host availability. It does **not** co
 
 ### Prompt and guard are deliberately co-extensive
 
-The prompt forbids exactly what `destructive_reason` can enforce, and this is a decision, not a coincidence. It is the general rule this ADR contributes beyond the immediate fix: the prompt must never forbid more than the guard can enforce. Past that line the guard stops being the deterministic backstop, and the surplus prohibition becomes an unbacked promise.
+The prompt names every construct family `destructive_reason` blocks, and this is a decision, not a coincidence. A generator obeying the prompt to the letter is never blocked, so a block always means the prompt was disregarded, which keeps the block count readable as a compliance signal. It is the general rule this ADR contributes beyond the immediate fix: the prompt must never forbid more than the guard can enforce. Past that line the guard stops being the deterministic backstop, and the surplus prohibition becomes an unbacked promise.
 
 ### The read-only preference survives, as a preference
 
@@ -73,7 +73,12 @@ The bet is that an LLM writes `shutdown -h now`, not a bare `shutdown`, and that
 
 ### Why literal substring matching
 
-Every pattern carries an argument or a flag (`rm -rf`, `shutdown -`, `dd of=`, `chmod -r`), which makes it self-delimiting and removes the incidental-match class without a regex engine or a shell parser. Word boundaries would not have been enough: `\bshutdown\b` still matches `service="shutdown"`. The rejections are recorded so nobody re-opens them:
+Most patterns carry an argument or a flag (`rm -rf`, `shutdown -`, `dd of=`, `chmod -r`), which delimits them on the right. That is not enough on its own, and the first version of the guard shipped with the gap: `rm /` matched inside `perform /admin`, `rm ~` inside `transform ~/data`, `init 0` inside `git init 0auth`. Matching stays literal, and two boundary rules close it:
+
+- A pattern opening on a letter or a digit requires a non-alphanumeric character before it (or the start of the value). One opening on punctuation (`> /`, `:(){`) carries its own boundary.
+- A pattern ending on a digit requires the same after it. Runlevels are the only such patterns, and a digit followed by more text was a different token. Patterns ending on a letter stay permissive on the right, so `rm -rf` keeps matching `rm -rfv`.
+
+Word boundaries in the regex sense would not have been enough anyway: `\bshutdown\b` still matches `service="shutdown"`. The rejections are recorded so nobody re-opens them:
 
 - **A regex per construct.** The fork bomb pattern `:|:&` read as a regex matches every string and would block the whole suite, and a denylist that cannot be audited by eye defeats its own purpose.
 - **`shlex` or shell-grammar parsing.** Payload values are routinely not valid shell (`' OR '1'='1` raises), so the fallback path *is* substring matching, and half the mandate is not shell at all.

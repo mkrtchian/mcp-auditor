@@ -161,3 +161,17 @@ def test_allows_empty_arguments():
 
 def test_allows_non_string_values():
     assert destructive_reason({"n": 1, "flag": True, "x": None}) is None
+
+
+def test_allows_a_pattern_appearing_inside_a_longer_word():
+    assert destructive_reason({"cmd": "perform /admin"}) is None
+    assert destructive_reason({"cmd": "platform /v1/users"}) is None
+    assert destructive_reason({"cmd": "transform ~/data"}) is None
+    assert destructive_reason({"cmd": "git init 0auth"}) is None
+
+
+def test_still_blocks_a_pattern_preceded_by_a_shell_delimiter():
+    assert destructive_reason({"cmd": "rm /etc/passwd"}) == "destructive filesystem command: rm /"
+    assert destructive_reason({"cmd": "ls; rm /etc"}) == "destructive filesystem command: rm /"
+    assert destructive_reason({"cmd": "$(rm -rf /)"}) == "destructive filesystem command: rm -rf"
+    assert destructive_reason({"cmd": "ls&&rm ~/x"}) == "destructive filesystem command: rm ~"

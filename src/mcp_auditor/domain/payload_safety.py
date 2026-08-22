@@ -33,9 +33,36 @@ def _first_destructive_match(value: Any) -> tuple["DestructiveConstruct", str] |
 def _matching_construct(text: str) -> tuple["DestructiveConstruct", str] | None:
     for construct in DESTRUCTIVE_CONSTRUCTS:
         for pattern in construct.patterns:
-            if pattern in text:
+            if _contains_as_a_construct(text, pattern):
                 return construct, pattern
     return None
+
+
+def _contains_as_a_construct(text: str, pattern: str) -> bool:
+    start = text.find(pattern)
+    while start != -1:
+        if _left_delimited(text, pattern, start) and _right_delimited(text, pattern, start):
+            return True
+        start = text.find(pattern, start + 1)
+    return False
+
+
+# A pattern opening on a letter needs a boundary before it, otherwise "rm /" fires inside
+# "perform /admin". One opening on punctuation ("> /", ":(){") carries its own.
+def _left_delimited(text: str, pattern: str, start: int) -> bool:
+    if not pattern[0].isalnum():
+        return True
+    return start == 0 or not text[start - 1].isalnum()
+
+
+# A flag or an argument delimits a pattern on its right, except the runlevel ones, whose
+# edge is a bare digit and matches inside "git init 0auth". Trailing letters stay permissive:
+# "rm -rf" must keep matching "rm -rfv".
+def _right_delimited(text: str, pattern: str, start: int) -> bool:
+    if not pattern[-1].isdigit():
+        return True
+    end = start + len(pattern)
+    return end == len(text) or not text[end].isalnum()
 
 
 def _without_harmless_sinks(text: str) -> str:
