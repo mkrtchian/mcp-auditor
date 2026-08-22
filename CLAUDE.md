@@ -21,7 +21,7 @@ uv run python -m evals.run_cve_benchmark              # CVE benchmark graded run
 
 - Code in the style of **Kent Beck**, **Martin Fowler**, **Robert C. Martin**, **Eric Evans** — the XP, software craftsmanship, and DDD tradition.
 - Prompts are **domain logic**, not infra. They live in the `graph/*prompts.py` modules (`graph/prompts.py`, `graph/chain_prompts.py`) as pure functions `(data) -> str`. Never put prompt construction in adapters.
-- Graph nodes are built via **factory functions** (`make_node(port)`) for dependency injection. Ports are `Protocol` classes in `domain/`.
+- Graph nodes are built via **factory functions** (`make_node(dependency)`) for dependency injection. The injected dependency is normally a Port, a `Protocol` class in `domain/`. The one exception is the server under audit: the nodes that reach it take the concrete `AuditedServer` domain service, which owns the destructive-payload guard, so no object able to call `call_tool` lives inside the hexagon (ADR 013). Tests inject a `FakeMCPClient` underneath it.
 - **Hexagonal boundary**: `domain/` and `graph/` are inside the hexagon. `adapters/` is outside. `domain/` and `graph/` never import from `adapters/`. Top-level modules (`cli.py`, `console.py`, `config.py`, ...) are the composition root and presentation layer, outside the hexagon — they may import from anywhere.
 - **Prefer pure functions.** Same inputs → same output, no side effects. Maximise the amount of code that is purely transformational (prompts, rendering, models, routing). When a function truly needs a side effect, inject the dependency via a Port — never hide I/O, env vars, or clock access behind direct calls.
 - All code, comments, docstrings, and identifiers in **English**.
@@ -47,7 +47,7 @@ async def test_detects_missing_input_validation():
     tool = given.a_tool_with_weak_validation()
     fake_llm = given.a_fake_llm_returning(category="input_validation")
     state = given.an_audit_state(tools=[tool])
-    graph = build_graph(llm=fake_llm, mcp_client=FakeMCPClient([tool]))  # trivial — inline
+    graph = build_graph(fake_llm, AuditedServer(FakeMCPClient([tool])))  # trivial — inline
 
     results = await graph.ainvoke(state)
 

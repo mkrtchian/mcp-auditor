@@ -66,3 +66,15 @@ def a_result(tool: str, category: AuditCategory, verdict: EvalVerdict) -> EvalRe
         justification="test",
         severity=Severity.LOW,
     )
+
+
+def and_a_blocked_case(report: AuditReport, tool: str, category: AuditCategory) -> AuditReport:
+    blocked = TestCase(
+        payload=AuditPayload(category=category, description="test", arguments={"q": "rm -rf /"}),
+        blocked_reason="destructive filesystem command: rm -rf",
+    )
+    tool_reports = [
+        tr.model_copy(update={"cases": [*tr.cases, blocked]}) if tr.tool.name == tool else tr
+        for tr in report.tool_reports
+    ]
+    return report.model_copy(update={"tool_reports": tool_reports})

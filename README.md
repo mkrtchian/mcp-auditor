@@ -48,6 +48,7 @@ The audit runs in four phases, with an optional fifth:
 - **Primitive: Tools only.** MCP servers expose three primitives (Tools, Resources, Prompts). `mcp-auditor` tests the Tools surface, where the model invokes the server's functions. Resources and Prompts are not audited, and it does not offer client capabilities, so it does not test a server that abuses Sampling.
 - **Direction: client to server.** It tests whether a server withstands a manipulated LLM client (adversarial inputs into tools). It does not replay a full server-to-client attack, where a malicious server turns the host's agent against its user. Detecting that end to end needs a real host agent with its own tools and data, which `mcp-auditor` is not.
 - **One server, tools in isolation.** It audits a single server and judges each tool on its own. It does not assess session-level risk, how the audited tools combine with the other tools an agent holds at once. The lethal trifecta (private data, untrusted content, exfiltration) assembles from that combination, and a per-server audit does not see it.
+- **Payloads that do not aim to destroy, on a server that still gets written to.** The generator is instructed to prove injection with benign reflected evidence, and a deterministic guard refuses a payload before it leaves the auditor when it contains one of a short list of enumerated destructive constructs (`rm -rf`, `mkfs`, `dd of=`, `DROP TABLE`, an argument-carrying shutdown command, a fork bomb, and a handful more). A refused payload is reported as blocked, never sent, never judged. The list is literal and enumerated, so it lets things through: `git_diff --output=/path` silently overwrites a file and `--output=` is not on it. And the auditor still calls the server's own tools with adversarial arguments, so **if a tool writes, auditing it writes**, and it cannot observe a call's side effects ([ADR 011](docs/adr/011-instrumented-observation-deferred.md)) so it cannot promise their absence. Point it at a server whose state you can restore. [ADR 013](docs/adr/013-non-destructive-payloads.md)
 - **Observable effects only.** It flags a vulnerability when the effect surfaces in a tool response. A vulnerability whose only effect is a silent write, a spawned process, or out-of-band exfiltration leaves nothing in the response for the black-box auditor to read, so it stays out of reach until a future instrumented mode (see [ADR 011](docs/adr/011-instrumented-observation-deferred.md)).
 
 ## Architecture
@@ -71,9 +72,11 @@ graph LR
 ```mermaid
 graph LR
     S1[generate_test_cases] --> S2[execute_tool]
-    S2 --> S3[judge_response]
+    S2 -->|sent| S3[judge_response]
+    S2 -->|blocked, more cases| S2
+    S2 -->|blocked, done| S4((end))
     S3 -->|more cases| S2
-    S3 -->|done| S4((end))
+    S3 -->|done| S4
 ```
 
 **chain_audit_tool subgraph** (adaptive multi-step attack chains):
@@ -82,12 +85,16 @@ graph LR
 graph LR
     P[plan_chains] --> C[prepare_chain]
     C --> E[execute_step]
-    E --> O[observe_step]
+    E -->|sent| O[observe_step]
+    E -->|blocked, steps done| J[judge_chain]
+    E -->|blocked, first step| A[abandon_chain]
     O -->|continue| S[plan_step]
     S --> E
-    O -->|done| J[judge_chain]
+    O -->|done| J
     J -->|more chains| C
     J -->|done| X((end))
+    A -->|more chains| C
+    A -->|done| X
 ```
 
 **Why this design:**

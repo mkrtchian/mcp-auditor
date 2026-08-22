@@ -230,3 +230,37 @@ def test_distribution_partial():
     coverage = compute_distribution_coverage(report, ALL_CATEGORIES)
 
     assert coverage["get_user"] == 3.0 / 5.0
+
+
+def test_a_blocked_case_leaves_verdict_metrics_untouched():
+    ground_truth: GroundTruth = {
+        ("get_user", INPUT_VALIDATION): FAIL,
+        ("get_user", INJECTION): FAIL,
+    }
+    judged = given.a_report({"get_user": [given.a_result("get_user", INPUT_VALIDATION, FAIL)]})
+    with_a_block = given.and_a_blocked_case(judged, "get_user", INJECTION)
+
+    baseline = aggregate_verdicts(judged)
+    aggregated = aggregate_verdicts(with_a_block)
+
+    assert aggregated == baseline
+    assert compute_recall(aggregated, ground_truth) == compute_recall(baseline, ground_truth)
+    assert compute_precision(aggregated, ground_truth) == compute_precision(baseline, ground_truth)
+    assert compute_consistency([aggregated]) == compute_consistency([baseline])
+
+
+def test_distribution_coverage_drops_when_the_only_case_of_a_category_is_blocked():
+    judged_categories = [cat for cat in ALL_CATEGORIES if cat != INJECTION]
+    all_judged = given.a_report(
+        {"get_user": [given.a_result("get_user", cat, PASS) for cat in ALL_CATEGORIES]}
+    )
+    without_injection = given.a_report(
+        {"get_user": [given.a_result("get_user", cat, PASS) for cat in judged_categories]}
+    )
+    injection_blocked = given.and_a_blocked_case(without_injection, "get_user", INJECTION)
+
+    coverage = compute_distribution_coverage(injection_blocked, ALL_CATEGORIES)
+    full_coverage = compute_distribution_coverage(all_judged, ALL_CATEGORIES)
+
+    assert coverage["get_user"] == 4.0 / 5.0
+    assert coverage["get_user"] < full_coverage["get_user"]
