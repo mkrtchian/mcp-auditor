@@ -27,11 +27,11 @@ from evals.metrics import (
     ToolVerdictDetail,
     VerdictMap,
     aggregate_verdicts,
+    blocked_reasons,
     compute_consistency,
     compute_distribution_coverage,
     compute_precision,
     compute_recall,
-    count_blocked,
 )
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
@@ -273,7 +273,7 @@ def _build_run_detail(
         distribution=distribution_detail,
         recall=recall,
         precision=precision,
-        blocked=count_blocked(audit_report),
+        blocked=blocked_reasons(audit_report),
         token_usage={
             "input_tokens": audit_report.token_usage.input_tokens,
             "output_tokens": audit_report.token_usage.output_tokens,
@@ -401,7 +401,7 @@ def _print_run_result(run_detail: RunDetail, progress: Progress) -> None:
         )
     progress.console.print(
         f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f} "
-        f"| Blocked payloads: {run_detail.blocked}"
+        f"| Blocked payloads: {len(run_detail.blocked)}"
     )
 
 

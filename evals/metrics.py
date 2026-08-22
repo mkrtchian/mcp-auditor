@@ -23,7 +23,7 @@ class RunDetail(BaseModel):
     distribution: dict[str, ToolDistribution]
     recall: float
     precision: float
-    blocked: int
+    blocked: list[str]
     token_usage: dict[str, int]
 
 
@@ -125,9 +125,12 @@ def compute_distribution_coverage(
     return coverage
 
 
-def count_blocked(report: AuditReport) -> int:
-    return sum(
-        len([case for case in tool_report.cases if case.blocked_reason])
-        + len([chain for chain in tool_report.chains if chain.blocked_reason])
+def blocked_reasons(report: AuditReport) -> list[str]:
+    return [
+        reason
         for tool_report in report.tool_reports
-    )
+        for reason in (
+            [case.blocked_reason for case in tool_report.cases if case.blocked_reason]
+            + [chain.blocked_reason for chain in tool_report.chains if chain.blocked_reason]
+        )
+    ]

@@ -22,7 +22,7 @@ from evals.cve_oracle import (
     resolve_status,
 )
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
-from evals.metrics import count_blocked
+from evals.metrics import blocked_reasons
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import load_settings
@@ -152,10 +152,9 @@ async def run_cve_benchmark(targets: list[CVETarget], budget: int, runs: int) ->
                     # Record before __exit__ fires so a best-effort teardown error
                     # cannot erase a completed run's detection.
                     detections.append(detect_in_report(target, report))
-                    blocked = count_blocked(report)
-                    if blocked:
+                    for reason in blocked_reasons(report):
                         console.print(
-                            f"[yellow]{target.cve_id}: {blocked} payload(s) blocked[/yellow]"
+                            f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]"
                         )
             except (LaunchError, subprocess.CalledProcessError) as exc:
                 console.print(f"[yellow]{target.cve_id} run skipped:[/yellow] {exc}")
