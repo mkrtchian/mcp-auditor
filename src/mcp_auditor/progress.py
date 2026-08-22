@@ -29,6 +29,9 @@ class CIProgress:
     def advance(self, result: EvalResult) -> None:
         self._tracker.record(result)
 
+    def advance_blocked(self, reason: str) -> None:
+        self._console.print(format_blocked_line(reason))
+
 
 class ToolProgress:
     def __init__(self, console: Console, tool_label: str, case_count: int) -> None:
@@ -67,6 +70,11 @@ class ToolProgress:
         if self._task_id is not None:
             self._progress.advance(self._task_id)
 
+    def advance_blocked(self, reason: str) -> None:
+        self._progress.console.print(format_blocked_line(reason))
+        if self._task_id is not None:
+            self._progress.advance(self._task_id)
+
 
 class _ResultTracker:
     def __init__(self) -> None:
@@ -82,6 +90,10 @@ class _ResultTracker:
 def format_failure_line(result: EvalResult) -> str:
     category_display = category_with_owasp_id(result.category)
     return f"  \u2717 {category_display} ({result.severity}): {result.justification}"
+
+
+def format_blocked_line(reason: str) -> str:
+    return f"  \u2298 blocked, not sent: {reason}"
 
 
 def format_tool_summary(fail_count: int, failures: list[EvalResult]) -> str:

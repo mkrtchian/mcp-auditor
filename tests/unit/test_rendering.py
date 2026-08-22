@@ -170,3 +170,37 @@ def test_summarize_tools_counts_chain_failures():
     assert summaries[0].judged == 2
     assert summaries[0].passed == 1
     assert summaries[0].failed == 1
+
+
+def test_markdown_renders_a_blocked_case():
+    report = given.a_report_with_a_blocked_case()
+
+    result = render_markdown(report)
+
+    assert "### BLOCKED -- injection" in result
+    assert "rm -rf /" in result
+    assert given.BLOCKED_CASE_REASON in result
+
+
+def test_markdown_renders_a_blocked_chain_reason():
+    report = given.a_report_with_a_blocked_chain()
+
+    result = render_markdown(report)
+
+    assert given.BLOCKED_CHAIN_REASON in result
+
+
+def test_markdown_summary_counts_blocked_cases_and_chains():
+    report = given.a_report_with_a_blocked_case_and_a_blocked_chain()
+
+    result = render_markdown(report)
+
+    assert "**Blocked**: 2" in result
+
+
+def test_markdown_summary_omits_blocked_when_nothing_was_blocked():
+    report = given.a_two_tool_report()
+
+    result = render_markdown(report)
+
+    assert "Blocked" not in result

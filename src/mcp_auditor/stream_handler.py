@@ -52,6 +52,12 @@ class AuditProgressReporter:
                 )
                 progress.start()
                 self._active_progress = progress
+        elif node_name == "execute_tool":
+            judged = state_update.get("judged_cases", [])
+            if judged:
+                last_case = judged[-1]
+                if last_case.blocked_reason and self._active_progress:
+                    self._active_progress.advance_blocked(last_case.blocked_reason)
         elif node_name == "judge_response":
             judged = state_update.get("judged_cases", [])
             if judged:

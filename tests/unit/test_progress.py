@@ -66,3 +66,26 @@ def test_format_tool_summary_sorts_severity_descending():
     summary = format_tool_summary(fail_count=3, failures=failures)
 
     assert summary.index("critical") < summary.index("medium") < summary.index("low")
+
+
+def test_tool_progress_advance_blocked_names_the_reason_without_counting_a_failure():
+    display, buffer = given.a_display()
+    progress = display.create_tool_progress(1, 1, "run_command", 2)
+    progress.start()
+
+    progress.advance_blocked("destructive filesystem command: rm -rf")
+    progress.stop()
+
+    output = buffer.getvalue()
+    assert "destructive filesystem command: rm -rf" in output
+    assert "all passed" in output
+
+
+def test_ci_progress_advance_blocked_names_the_reason():
+    display, buffer = given.a_ci_display()
+    progress = display.create_tool_progress(1, 1, "run_command", 2)
+    progress.start()
+
+    progress.advance_blocked("destructive SQL statement: drop table")
+
+    assert "destructive SQL statement: drop table" in buffer.getvalue()

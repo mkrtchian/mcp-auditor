@@ -9,6 +9,7 @@ from mcp_auditor.domain.models import (
     EvalResult,
     EvalVerdict,
     Severity,
+    TestCase,
     ToolReport,
 )
 from mcp_auditor.domain.owasp import category_with_owasp_label
@@ -43,13 +44,16 @@ def _render_summary_section(report: AuditReport) -> str:
     total_cases = sum(len(tr.cases) + len(tr.chains) for tr in report.tool_reports)
     findings = report.findings
     finding_count = len(findings)
+    blocked_count = _blocked_count(report)
     lines = [
         "## Summary\n",
         f"**Target**: {report.target}",
         f"**Tools audited**: {tool_count}",
         f"**Test cases**: {total_cases}",
-        f"**Findings**: {finding_count}",
     ]
+    if blocked_count > 0:
+        lines.append(f"**Blocked**: {blocked_count}")
+    lines.append(f"**Findings**: {finding_count}")
     if finding_count > 0:
         lines.append(f"  {_severity_breakdown(findings)}")
     usage = report.token_usage
@@ -57,12 +61,21 @@ def _render_summary_section(report: AuditReport) -> str:
     return "\n".join(lines)
 
 
+def _blocked_count(report: AuditReport) -> int:
+    return sum(
+        sum(1 for case in tr.cases if case.blocked_reason)
+        + sum(1 for chain in tr.chains if chain.blocked_reason)
+        for tr in report.tool_reports
+    )
+
+
 def _render_tool_section(tool_report: ToolReport) -> str:
     lines = [f"\n## {tool_report.tool.name}\n"]
     for case in tool_report.cases:
-        if case.eval_result is None:
-            continue
-        lines.append(_render_result_section(case.eval_result))
+        if case.eval_result is not None:
+            lines.append(_render_result_section(case.eval_result))
+        elif case.blocked_reason is not None:
+            lines.append(_render_blocked_section(case))
     for chain in tool_report.chains:
         lines.append(_render_chain_section(chain))
     return "\n".join(lines)
@@ -82,12 +95,23 @@ def _render_result_section(result: EvalResult) -> str:
     return "\n".join(lines)
 
 
+def _render_blocked_section(case: TestCase) -> str:
+    lines = [
+        f"### BLOCKED -- {case.payload.category}",
+        f"**Payload**: `{case.payload.arguments}`",
+        f"**Reason**: {case.blocked_reason}",
+    ]
+    return "\n".join(lines)
+
+
 def _render_chain_section(chain: AttackChain) -> str:
     lines = [
         f"### CHAIN: {chain.goal.description}",
         f"**Category**: {chain.goal.category}",
         _render_chain_steps(chain.steps),
     ]
+    if chain.blocked_reason:
+        lines.append(f"**Blocked**: {chain.blocked_reason}")
     if chain.eval_result:
         lines.append(_render_chain_verdict(chain.eval_result))
     return "\n".join(lines)

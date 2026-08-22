@@ -141,6 +141,59 @@ def a_report_with_pass_case_and_fail_chain() -> AuditReport:
     return a_report(target="python server.py", tool_reports=[tool_report])
 
 
+BLOCKED_CASE_REASON = "destructive filesystem command: rm -rf"
+BLOCKED_CHAIN_REASON = "destructive SQL statement: drop table"
+
+
+def a_report_with_a_blocked_case() -> AuditReport:
+    return a_report(
+        target="python server.py",
+        tool_reports=[_a_tool_report_with_blocked(cases=[a_blocked_case()])],
+    )
+
+
+def a_report_with_a_blocked_chain() -> AuditReport:
+    return a_report(
+        target="python server.py",
+        tool_reports=[_a_tool_report_with_blocked(chains=[a_blocked_chain()])],
+    )
+
+
+def a_report_with_a_blocked_case_and_a_blocked_chain() -> AuditReport:
+    return a_report(
+        target="python server.py",
+        tool_reports=[
+            _a_tool_report_with_blocked(cases=[a_blocked_case()], chains=[a_blocked_chain()])
+        ],
+    )
+
+
+def a_blocked_case() -> TestCase:
+    return TestCase(
+        payload=AuditPayload(
+            category=AuditCategory.INJECTION,
+            description="wipe the filesystem",
+            arguments={"command": "rm -rf /"},
+        ),
+        blocked_reason=BLOCKED_CASE_REASON,
+    )
+
+
+def a_blocked_chain() -> AttackChain:
+    return a_chain(blocked_reason=BLOCKED_CHAIN_REASON)
+
+
+def _a_tool_report_with_blocked(
+    cases: list[TestCase] | None = None,
+    chains: list[AttackChain] | None = None,
+) -> ToolReport:
+    return ToolReport(
+        tool=a_tool_definition(name="run_command"),
+        cases=cases or [],
+        chains=chains or [],
+    )
+
+
 def a_report(
     target: str,
     tool_reports: list[ToolReport],
@@ -178,6 +231,7 @@ def a_chain(
     description: str = "probe then exploit",
     category: AuditCategory = AuditCategory.INJECTION,
     eval_result: EvalResult | None = None,
+    blocked_reason: str | None = None,
 ) -> AttackChain:
     goal = ChainGoal(
         description=description,
@@ -204,7 +258,9 @@ def a_chain(
             observation="Path traversal succeeded",
         ),
     ]
-    return AttackChain(goal=goal, steps=steps, eval_result=eval_result)
+    return AttackChain(
+        goal=goal, steps=steps, eval_result=eval_result, blocked_reason=blocked_reason
+    )
 
 
 def a_fail_result(
