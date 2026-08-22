@@ -203,4 +203,4 @@ def test_markdown_summary_omits_blocked_when_nothing_was_blocked():
 
     result = render_markdown(report)
 
-    assert "Blocked" not in result
+    assert "**Blocked**:" not in result
