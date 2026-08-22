@@ -123,6 +123,10 @@ def test_known_permitted_move_from_a_relative_path():
     assert destructive_reason({"cmd": "mv notes.txt /tmp/"}) is None
 
 
+def test_known_permitted_word_containing_halt():
+    assert destructive_reason({"path": "/opt/halted"}) is None
+
+
 def test_allows_a_legitimate_record_id():
     assert destructive_reason({"record_id": 1}) is None
 
