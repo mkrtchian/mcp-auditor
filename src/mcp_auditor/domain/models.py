@@ -72,6 +72,13 @@ class ToolResponse(BaseModel):
     error_type: str | None = None
 
 
+@dataclass(frozen=True)
+class BlockedPayload:
+    # No field is named like a ToolResponse field (content, is_error, error_type): the
+    # non-overlap is what makes an unhandled refusal a type error, never a silent success.
+    reason: str
+
+
 class AttackContext(BaseModel):
     """Accumulated intelligence from previous tool audits."""
 
@@ -130,6 +137,7 @@ class TestCase(BaseModel):
     response: str | dict[str, Any] | None = None
     error: str | None = None
     eval_result: EvalResult | None = None
+    blocked_reason: str | None = None
 
 
 class StepObservation(BaseModel):
@@ -178,6 +186,7 @@ class AttackChain(BaseModel):
     goal: ChainGoal
     steps: list[ChainStep]
     eval_result: EvalResult | None = None
+    blocked_reason: str | None = None
 
 
 class TokenUsage(BaseModel):
