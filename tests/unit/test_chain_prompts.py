@@ -5,7 +5,9 @@ from mcp_auditor.graph.chain_prompts import (
     build_step_observation_prompt,
     build_step_planning_prompt,
 )
+from mcp_auditor.graph.prompts import NON_DESTRUCTIVE_CONSTRAINT
 from tests.unit.support.test_chain_nodes_given import (
+    a_blocked_single_step_case,
     a_chain_goal,
     a_chain_step,
     a_single_step_case,
@@ -56,6 +58,29 @@ class TestChainPlanningPrompt:
 
         assert "Previous tool audits" not in prompt
 
+    def test_carries_the_non_destructive_constraint(self):
+        prompt = build_chain_planning_prompt(
+            tool=a_tool(),
+            single_step_cases=[],
+            attack_context=AttackContext(),
+            chain_budget=3,
+        )
+
+        assert NON_DESTRUCTIVE_CONSTRAINT in prompt
+
+    def test_omits_blocked_case_from_summary(self):
+        cases = [a_single_step_case(response="ok"), a_blocked_single_step_case()]
+
+        prompt = build_chain_planning_prompt(
+            tool=a_tool(),
+            single_step_cases=cases,
+            attack_context=AttackContext(),
+            chain_budget=3,
+        )
+
+        assert "Case 1" in prompt
+        assert "Case 2" not in prompt
+
     def test_includes_chain_budget(self):
         prompt = build_chain_planning_prompt(
             tool=a_tool(),
@@ -79,6 +104,16 @@ class TestStepPlanningPrompt:
         )
 
         assert "Discover internal paths then traverse" in prompt
+
+    def test_carries_the_non_destructive_constraint(self):
+        prompt = build_step_planning_prompt(
+            tool=a_tool(),
+            goal=a_chain_goal(),
+            chain_history=[],
+            observation_hint="",
+        )
+
+        assert NON_DESTRUCTIVE_CONSTRAINT in prompt
 
     def test_includes_chain_history(self):
         steps = [a_chain_step(response="file not found: /var/data")]

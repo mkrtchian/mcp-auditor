@@ -8,7 +8,11 @@ from mcp_auditor.domain.models import (
     TestCase,
     ToolDefinition,
 )
-from mcp_auditor.graph.prompts import build_context_section, format_tool_header
+from mcp_auditor.graph.prompts import (
+    NON_DESTRUCTIVE_CONSTRAINT,
+    build_context_section,
+    format_tool_header,
+)
 
 
 def build_chain_planning_prompt(
@@ -51,7 +55,9 @@ resource_abuse) are thoroughly covered by single-step tests.
 For info_leakage chains specifically: enumerate entities, \
 inspect their metadata, then use discovered field names or \
 IDs to extract sensitive data through different actions or \
-parameters."""
+parameters.
+
+{NON_DESTRUCTIVE_CONSTRAINT}"""
     )
 
 
@@ -82,7 +88,9 @@ Chain history so far:
 {hint_section}
 Based on what has been observed so far, plan the next step. \
 Provide an AuditPayload with the arguments for the next tool \
-call and a description of why this step advances the attack."""
+call and a description of why this step advances the attack.
+
+{NON_DESTRUCTIVE_CONSTRAINT}"""
     )
 
 
@@ -170,6 +178,8 @@ def _format_single_step_summary(cases: list[TestCase]) -> str:
         return ""
     lines: list[str] = []
     for i, case in enumerate(cases, 1):
+        if case.blocked_reason is not None:
+            continue
         parts = [f"Case {i} [{case.payload.category}]"]
         if case.response is not None:
             response_text = (

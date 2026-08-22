@@ -9,6 +9,11 @@ from mcp_auditor.domain.models import (
     ToolReport,
 )
 
+NON_DESTRUCTIVE_CONSTRAINT = """NON-DESTRUCTIVE PAYLOADS. This applies to every payload you generate:
+- Never destroy state and never affect host availability: no deleting or overwriting files, no DROP or TRUNCATE, no recursive permission change, no forced version-control write, no shutdown, no fork bomb.
+- When a benign reflected marker proves the same thing, prefer it: `echo mcp-auditor-probe`, `id`, `whoami`, a read-only read, `SELECT` / `UNION SELECT` rather than DDL or DML.
+- A destructive payload proves nothing more than a benign marker does, and it corrupts the rest of the audit."""
+
 
 def format_tool_header(tool: ToolDefinition) -> str:
     description = tool.description or "No description provided"
@@ -46,12 +51,14 @@ IMPORTANT — test design guidance per category:
 
 - input_validation: Test with values that match the EXPECTED TYPE but are semantically invalid. For integer fields: ALWAYS test zero first (0 is the #1 boundary error), then negative numbers, then extremely large values. If you only have one test case, use zero. For string fields: empty strings, whitespace-only strings. Do NOT send wrong types (e.g., a string for an integer field) — the framework's schema validation catches type mismatches before the tool logic runs, making such tests uninformative.
 
-- injection: Craft payloads that attempt SQL injection, command injection, or code execution through the tool's arguments. Use the tool's expected input types.
+- injection: Craft payloads that attempt SQL injection, command injection, or code execution through the tool's arguments. Use the tool's expected input types. Prove execution with evidence that comes back in the response: a reflected marker returned as command output, or a query result.
 
 - error_handling: Trigger predictable error conditions — not-found IDs, invalid formats, boundary violations — and check whether the tool exposes raw exceptions or internal details.
 
 - resource_abuse: Craft inputs designed to cause unbounded resource consumption — extremely large limits, wildcard queries, cross-joins.
 {context_section}
+{NON_DESTRUCTIVE_CONSTRAINT}
+
 Always send arguments that conform to the schema's type constraints. The goal is to test the TOOL's logic, not the schema validator."""
 
 
@@ -96,7 +103,7 @@ def build_context_extraction_prompt(
     tool = tool_report.tool
     description = tool.description or "No description provided"
 
-    cases_section = _format_cases_for_extraction(tool_report)
+    cases_section = _format_cases_for_extraction(tool_report) or "No test results available."
     existing_section = _format_existing_context(existing_context)
 
     return f"""You are analyzing the results of a security audit on the MCP tool "{tool.name}".
@@ -119,6 +126,8 @@ Preserve all previous findings and add new ones. Do not lose information from ea
 def _format_cases_for_extraction(tool_report: ToolReport) -> str:
     parts: list[str] = []
     for i, case in enumerate(tool_report.cases, 1):
+        if case.blocked_reason is not None:
+            continue
         lines = [f"Case {i}: {case.payload.description}"]
         if case.response is not None:
             response_text = (

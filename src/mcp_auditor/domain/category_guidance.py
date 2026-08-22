@@ -14,7 +14,7 @@ What does NOT count:
 - User input is executed as code, SQL, or commands (e.g., SQL injection, command injection)
 - User input is reflected unsanitized in a way that could alter execution
 What does NOT count:
-- The tool echoing input in an error message (that's error_handling or info_leakage, not injection)""",
+- The tool echoing input back inside an error message, unchanged and unexecuted (that's error_handling or info_leakage, not injection). This exclusion is narrow: output that evidences execution is not an echo. A marker returned as command output (a probe string, a username, a version banner), or a query result, means the input ran, and that is injection.""",
     AuditCategory.INPUT_VALIDATION: """What counts as input_validation failure:
 - The tool accepts clearly invalid input without rejecting OR normalizing it (e.g., negative IDs used as-is, wrong types, out-of-range values processed verbatim)
 - Missing boundary checks that allow nonsensical operations

@@ -58,6 +58,26 @@ def a_tool_report(
     return ToolReport(tool=a_tool(name=tool_name), cases=[case])
 
 
+def a_tool_report_with_a_blocked_case() -> ToolReport:
+    report = a_tool_report()
+    return report.model_copy(update={"cases": [*report.cases, _a_blocked_case()]})
+
+
+def a_tool_report_with_only_a_blocked_case() -> ToolReport:
+    return a_tool_report().model_copy(update={"cases": [_a_blocked_case()]})
+
+
+def _a_blocked_case() -> TestCase:
+    return TestCase(
+        payload=AuditPayload(
+            category=AuditCategory.INJECTION,
+            description="destructive payload that was never sent",
+            arguments={"id": "1; rm -rf /"},
+        ),
+        blocked_reason="destructive filesystem command: rm -rf",
+    )
+
+
 def _a_failing_eval_result(tool_name: str) -> EvalResult:
     return EvalResult(
         tool_name=tool_name,

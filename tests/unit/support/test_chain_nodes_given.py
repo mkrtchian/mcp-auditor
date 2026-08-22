@@ -118,6 +118,12 @@ def a_single_step_case(response: str = "ok") -> TestCase:
     )
 
 
+def a_blocked_single_step_case(
+    reason: str = "destructive filesystem command: rm -rf",
+) -> TestCase:
+    return TestCase(payload=a_payload(arguments={"path": "1; rm -rf /"}), blocked_reason=reason)
+
+
 def a_chain_audit_state(
     tool: ToolDefinition | None = None,
     pending_chains: list[ChainGoal] | None = None,

@@ -1,6 +1,7 @@
 import tests.unit.support.test_prompts_given as given
 from mcp_auditor.domain import AttackContext, AuditCategory
 from mcp_auditor.graph.prompts import (
+    NON_DESTRUCTIVE_CONSTRAINT,
     build_attack_generation_prompt,
     build_context_extraction_prompt,
     build_judge_prompt,
@@ -89,6 +90,40 @@ class TestAttackGenerationPrompt:
         assert "Previous tool audits" not in prompt
 
 
+class TestNonDestructiveConstraint:
+    def test_attack_generation_prompt_carries_the_constraint(self):
+        prompt = build_attack_generation_prompt(
+            tool=given.a_tool(),
+            budget=5,
+            categories=[AuditCategory.INJECTION],
+        )
+
+        assert NON_DESTRUCTIVE_CONSTRAINT in prompt
+
+    def test_forbids_destruction_and_names_benign_markers(self):
+        assert "DROP" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "TRUNCATE" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "shutdown" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "fork bomb" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "echo mcp-auditor-probe" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "whoami" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "UNION SELECT" in NON_DESTRUCTIVE_CONSTRAINT
+
+    def test_keeps_writes_allowed_so_cve_2025_68143_stays_reachable(self):
+        constraint = NON_DESTRUCTIVE_CONSTRAINT.lower()
+
+        for blanket_rule in (
+            "do not write",
+            "never write",
+            "no writes",
+            "do not modify",
+            "never modify",
+            "read-only only",
+        ):
+            assert blanket_rule not in constraint
+        assert "prefer" in constraint
+
+
 class TestFormatAttackContext:
     def test_empty_context_returns_empty_string(self):
         assert format_attack_context(AttackContext()) == ""
@@ -133,6 +168,21 @@ class TestContextExtractionPrompt:
         prompt = build_context_extraction_prompt(given.a_tool_report(), existing)
 
         assert "sqlite" in prompt
+
+    def test_omits_blocked_case(self):
+        report = given.a_tool_report_with_a_blocked_case()
+
+        prompt = build_context_extraction_prompt(report, AttackContext())
+
+        assert "test injection" in prompt
+        assert "destructive payload that was never sent" not in prompt
+
+    def test_states_that_no_case_ran_when_every_case_is_blocked(self):
+        report = given.a_tool_report_with_only_a_blocked_case()
+
+        prompt = build_context_extraction_prompt(report, AttackContext())
+
+        assert "No test results available." in prompt
 
     def test_omits_existing_context_when_empty(self):
         prompt = build_context_extraction_prompt(given.a_tool_report(), AttackContext())
