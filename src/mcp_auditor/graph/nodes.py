@@ -2,10 +2,12 @@ from typing import Any
 
 from langgraph.graph import END  # type: ignore[import-untyped]
 
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
     AuditReport,
+    BlockedPayload,
     EvalResult,
     Judgment,
     TestCase,
@@ -15,7 +17,7 @@ from mcp_auditor.domain.models import (
     filter_tools,
     order_tools_for_audit,
 )
-from mcp_auditor.domain.ports import LLMPort, MCPClientPort
+from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
     build_context_extraction_prompt,
@@ -23,9 +25,9 @@ from mcp_auditor.graph.prompts import (
 )
 
 
-def make_discover_tools(mcp_client: MCPClientPort, tools_filter: frozenset[str] | None = None):
+def make_discover_tools(server: AuditedServer, tools_filter: frozenset[str] | None = None):
     async def discover_tools(_state: dict[str, Any]) -> dict[str, Any]:
-        tools = await mcp_client.list_tools()
+        tools = await server.list_tools()
         filtered = filter_tools(tools, tools_filter)
         ordered = order_tools_for_audit(filtered)
         return {"discovered_tools": ordered}
@@ -55,16 +57,19 @@ def make_generate_test_cases(llm: LLMPort):
     return generate_test_cases
 
 
-def make_execute_tool(mcp_client: MCPClientPort):
+def make_execute_tool(server: AuditedServer):
     async def execute_tool(state: dict[str, Any]) -> dict[str, Any]:
         pending = list(state["pending_cases"])
         case = pending.pop(0)
         tool = state["current_tool"]
-        response = await mcp_client.call_tool(tool.name, case.payload.arguments)
-        if response.is_error:
-            case = case.model_copy(update={"error": response.content, "response": None})
+        outcome = await server.attempt(tool, case.payload)
+        if isinstance(outcome, BlockedPayload):
+            blocked = case.model_copy(update={"blocked_reason": outcome.reason})
+            return {"judged_cases": [blocked], "current_case": None, "pending_cases": pending}
+        if outcome.is_error:
+            case = case.model_copy(update={"error": outcome.content, "response": None})
         else:
-            case = case.model_copy(update={"response": response.content})
+            case = case.model_copy(update={"response": outcome.content})
         return {"current_case": case, "pending_cases": pending}
 
     return execute_tool
@@ -137,6 +142,12 @@ def route_test_cases(state: dict[str, Any]) -> str:
     if state["pending_cases"]:
         return "execute_tool"
     return END
+
+
+def route_after_execute(state: dict[str, Any]) -> str:
+    if state["current_case"] is None:
+        return route_test_cases(state)
+    return "judge_response"
 
 
 def route_tools(state: dict[str, Any]) -> str:

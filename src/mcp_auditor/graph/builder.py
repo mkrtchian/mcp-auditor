@@ -5,14 +5,17 @@ from langgraph.checkpoint.base import BaseCheckpointSaver  # type: ignore[import
 from langgraph.graph import END, START, StateGraph  # type: ignore[import-untyped]
 from langgraph.graph.state import CompiledStateGraph  # type: ignore[import-untyped]
 
-from mcp_auditor.domain.ports import LLMPort, MCPClientPort
+from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.chain_nodes import (
+    abandon_chain,
     make_execute_step,
     make_judge_chain,
     make_observe_step,
     make_plan_chains,
     make_plan_step,
     prepare_chain,
+    route_after_execute_step,
     route_after_judge,
     route_after_observe,
     route_after_planning,
@@ -29,6 +32,7 @@ from mcp_auditor.graph.nodes import (
     make_judge_response,
     prepare_tool,
     route_after_discovery,
+    route_after_execute,
     route_test_cases,
     route_tools,
 )
@@ -43,17 +47,17 @@ from mcp_auditor.graph.state import (
 
 def build_graph(
     llm: LLMPort,
-    mcp_client: MCPClientPort,
+    server: AuditedServer,
     judge_llm: LLMPort | None = None,
     checkpointer: BaseCheckpointSaver[Any] | None = None,
     tools_filter: frozenset[str] | None = None,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     effective_judge = judge_llm or llm
-    audit_subgraph = _build_audit_tool_subgraph(llm, mcp_client, effective_judge)
-    chain_subgraph = _build_chain_audit_subgraph(llm, mcp_client, effective_judge)
+    audit_subgraph = _build_audit_tool_subgraph(llm, server, effective_judge)
+    chain_subgraph = _build_chain_audit_subgraph(llm, server, effective_judge)
 
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
-    builder.add_node("discover_tools", make_discover_tools(mcp_client, tools_filter=tools_filter))
+    builder.add_node("discover_tools", make_discover_tools(server, tools_filter=tools_filter))
     builder.add_node("prepare_tool", prepare_tool)
     builder.add_node("audit_tool", audit_subgraph)
     builder.add_node("chain_audit_tool", chain_subgraph)
@@ -76,25 +80,29 @@ def build_graph(
 
 def _build_audit_tool_subgraph(
     llm: LLMPort,
-    mcp_client: MCPClientPort,
+    server: AuditedServer,
     judge_llm: LLMPort,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(
         AuditToolState, input_schema=AuditToolInput
     )
     builder.add_node("generate_test_cases", make_generate_test_cases(llm))
-    builder.add_node("execute_tool", make_execute_tool(mcp_client))
+    builder.add_node("execute_tool", make_execute_tool(server))
     builder.add_node("judge_response", make_judge_response(judge_llm))
     builder.add_edge(START, "generate_test_cases")
     builder.add_edge("generate_test_cases", "execute_tool")
-    builder.add_edge("execute_tool", "judge_response")
+    builder.add_conditional_edges(
+        "execute_tool",
+        route_after_execute,
+        {"judge_response": "judge_response", "execute_tool": "execute_tool", END: END},
+    )
     builder.add_conditional_edges("judge_response", route_test_cases)
     return builder.compile()
 
 
 def _build_chain_audit_subgraph(
     llm: LLMPort,
-    mcp_client: MCPClientPort,
+    server: AuditedServer,
     judge_llm: LLMPort,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(
@@ -102,29 +110,39 @@ def _build_chain_audit_subgraph(
     )
     builder.add_node("plan_chains", make_plan_chains(llm))
     builder.add_node("prepare_chain", prepare_chain)
-    builder.add_node("execute_step", make_execute_step(mcp_client))
+    builder.add_node("execute_step", make_execute_step(server))
     builder.add_node("observe_step", make_observe_step(llm))
     builder.add_node("plan_step", make_plan_step(llm))
     builder.add_node("judge_chain", make_judge_chain(judge_llm))
+    builder.add_node("abandon_chain", abandon_chain)
     builder.add_edge(START, "plan_chains")
     builder.add_conditional_edges("plan_chains", route_after_planning)
     builder.add_edge("prepare_chain", "execute_step")
-    builder.add_edge("execute_step", "observe_step")
+    builder.add_conditional_edges(
+        "execute_step",
+        route_after_execute_step,
+        {
+            "observe_step": "observe_step",
+            "judge_chain": "judge_chain",
+            "abandon_chain": "abandon_chain",
+        },
+    )
     builder.add_conditional_edges("observe_step", route_after_observe)
     builder.add_edge("plan_step", "execute_step")
     builder.add_conditional_edges("judge_chain", route_after_judge)
+    builder.add_conditional_edges("abandon_chain", route_after_judge)
     return builder.compile()
 
 
 def build_dry_run_graph(
     llm: LLMPort,
-    mcp_client: MCPClientPort,
+    server: AuditedServer,
     tools_filter: frozenset[str] | None = None,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     subgraph = _build_generate_only_subgraph(llm)
 
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
-    builder.add_node("discover_tools", make_discover_tools(mcp_client, tools_filter=tools_filter))
+    builder.add_node("discover_tools", make_discover_tools(server, tools_filter=tools_filter))
     builder.add_node("prepare_tool", prepare_tool)
     builder.add_node("generate_cases", subgraph)
     builder.add_node("build_tool_report", build_tool_report)

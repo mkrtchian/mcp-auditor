@@ -25,6 +25,7 @@ from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfSc
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import load_settings
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, ToolDefinition, ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.graph.builder import build_graph
@@ -226,7 +227,10 @@ async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
     try:
         async with _silent_client(launch) as mcp_client:
             graph = build_graph(
-                llm, mcp_client, judge_llm=judge_llm, tools_filter=target.tools_filter
+                llm,
+                AuditedServer(mcp_client),
+                judge_llm=judge_llm,
+                tools_filter=target.tools_filter,
             )
             result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
                 {

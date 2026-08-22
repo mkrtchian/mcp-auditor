@@ -13,6 +13,7 @@ from mcp_auditor.domain import (
     TestCaseBatch,
     ToolResponse,
 )
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import filter_tools
 from mcp_auditor.graph.nodes import (
     build_tool_report,
@@ -23,6 +24,7 @@ from mcp_auditor.graph.nodes import (
     make_judge_response,
     prepare_tool,
     route_after_discovery,
+    route_after_execute,
     route_test_cases,
     route_tools,
 )
@@ -62,7 +64,7 @@ class TestDiscoverTools:
     async def test_populates_state(self):
         tools = [given.a_tool(name="tool_a"), given.a_tool(name="tool_b")]
         client = FakeMCPClient(tools)
-        node = make_discover_tools(client)
+        node = make_discover_tools(AuditedServer(client))
 
         result = await node({})
 
@@ -71,7 +73,7 @@ class TestDiscoverTools:
     async def test_filters_tools_by_name(self):
         tools = [given.a_tool(name="a"), given.a_tool(name="b"), given.a_tool(name="c")]
         client = FakeMCPClient(tools)
-        node = make_discover_tools(client, tools_filter=frozenset({"a", "c"}))
+        node = make_discover_tools(AuditedServer(client), tools_filter=frozenset({"a", "c"}))
 
         result = await node({})
 
@@ -81,7 +83,7 @@ class TestDiscoverTools:
     async def test_orders_tools_for_audit(self):
         tools = [given.a_tool(name="delete_user"), given.a_tool(name="get_user")]
         client = FakeMCPClient(tools)
-        node = make_discover_tools(client)
+        node = make_discover_tools(AuditedServer(client))
 
         result = await node({})
 
@@ -140,7 +142,7 @@ class TestExecuteTool:
         client = FakeMCPClient(
             [tool], responses={"read_file": ToolResponse(content="read_file was called")}
         )
-        node = make_execute_tool(client)
+        node = make_execute_tool(AuditedServer(client))
 
         result = await node({"pending_cases": [case], "current_tool": tool})
 
@@ -150,12 +152,13 @@ class TestExecuteTool:
         tool = given.a_tool(name="my_tool")
         case = given.a_test_case()
         client = FakeMCPClient([tool], responses={"my_tool": ToolResponse(content="result data")})
-        node = make_execute_tool(client)
+        node = make_execute_tool(AuditedServer(client))
 
         result = await node({"pending_cases": [case], "current_tool": tool})
 
         then.current_case_has_response(result, "result data")
         then.pending_cases_count(result, 0)
+        assert result["current_case"].blocked_reason is None
 
     async def test_error(self):
         tool = given.a_tool(name="my_tool")
@@ -164,11 +167,36 @@ class TestExecuteTool:
             [tool],
             responses={"my_tool": ToolResponse(content="not found", is_error=True)},
         )
-        node = make_execute_tool(client)
+        node = make_execute_tool(AuditedServer(client))
 
         result = await node({"pending_cases": [case], "current_tool": tool})
 
         then.current_case_has_error(result, "not found")
+
+    async def test_records_a_destructive_case_as_blocked_without_calling_the_server(self):
+        tool = given.a_tool(name="run_command")
+        case = given.a_test_case(payload=given.a_payload(arguments={"command": "rm -rf /"}))
+        client = FakeMCPClient([tool])
+        node = make_execute_tool(AuditedServer(client))
+
+        result = await node({"pending_cases": [case], "current_tool": tool})
+
+        then.judged_cases_count(result, 1)
+        assert result["judged_cases"][0].blocked_reason is not None
+        assert client.calls == []
+
+    async def test_blocked_case_holds_no_verdict_and_no_server_output(self):
+        tool = given.a_tool(name="run_command")
+        case = given.a_test_case(payload=given.a_payload(arguments={"command": "rm -rf /"}))
+        node = make_execute_tool(AuditedServer(FakeMCPClient([tool])))
+
+        result = await node({"pending_cases": [case], "current_tool": tool})
+
+        blocked = result["judged_cases"][0]
+        assert blocked.eval_result is None
+        assert blocked.response is None
+        assert blocked.error is None
+        assert result["current_case"] is None
 
 
 class TestJudgeResponse:
@@ -214,6 +242,23 @@ class TestRouteTestCases:
     def test_ends_when_no_cases(self):
         state: dict[str, Any] = {"pending_cases": []}
         assert route_test_cases(state) == END
+
+
+class TestRouteAfterExecute:
+    def test_judges_an_executed_case(self):
+        state: dict[str, Any] = {
+            "current_case": given.a_test_case(response="output"),
+            "pending_cases": [],
+        }
+        assert route_after_execute(state) == "judge_response"
+
+    def test_moves_to_the_next_case_after_a_block(self):
+        state: dict[str, Any] = {"current_case": None, "pending_cases": [given.a_test_case()]}
+        assert route_after_execute(state) == "execute_tool"
+
+    def test_ends_when_a_block_was_the_last_case(self):
+        state: dict[str, Any] = {"current_case": None, "pending_cases": []}
+        assert route_after_execute(state) == END
 
 
 class TestRouteTools:

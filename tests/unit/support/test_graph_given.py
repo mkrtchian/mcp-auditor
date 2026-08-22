@@ -15,6 +15,7 @@ from mcp_auditor.domain import (
     TestCaseBatch,
     ToolDefinition,
 )
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.graph.builder import build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
 
@@ -41,6 +42,16 @@ def a_fake_llm_for_single_tool_audit(
     return FakeLLM([batch, *judgments, context])
 
 
+def a_fake_llm_for_destructive_and_safe_case() -> FakeLLM:
+    batch = TestCaseBatch(
+        cases=[
+            a_payload(arguments={"command": "rm -rf /"}),
+            a_payload(arguments={"input": "malicious"}),
+        ]
+    )
+    return FakeLLM([batch, a_judgment(), AttackContext()])
+
+
 def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
     responses: list[BaseModel] = []
     for num_cases in cases_per_tool:
@@ -54,11 +65,11 @@ def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
 # CompiledStateGraph is partially unknown under strict pyright, so tests go
 # through these Any-typed helpers instead of calling ainvoke directly.
 def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
-    return build_graph(fake_llm, fake_mcp_client)
+    return build_graph(fake_llm, AuditedServer(fake_mcp_client))
 
 
 def a_graph_with_checkpointer(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient, checkpointer: Any):
-    return build_graph(fake_llm, fake_mcp_client, checkpointer=checkpointer)
+    return build_graph(fake_llm, AuditedServer(fake_mcp_client), checkpointer=checkpointer)
 
 
 async def invoke_graph(graph: Any, state: dict[str, Any]) -> dict[str, Any]:
@@ -129,11 +140,14 @@ def a_chain_goal(
     )
 
 
-def a_payload(category: AuditCategory = AuditCategory.INJECTION) -> AuditPayload:
+def a_payload(
+    category: AuditCategory = AuditCategory.INJECTION,
+    arguments: dict[str, Any] | None = None,
+) -> AuditPayload:
     return AuditPayload(
         category=category,
         description="test payload",
-        arguments={"input": "malicious"},
+        arguments=arguments or {"input": "malicious"},
     )
 
 

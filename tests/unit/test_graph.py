@@ -154,3 +154,22 @@ async def test_resume_mid_chain():
     report = then.tool_report_at(result, 0)
     then.report_has_chains(report, 1)
     then.chain_has_eval_result(report.chains[0])
+
+
+@pytest.mark.asyncio
+async def test_destructive_payload_is_blocked_and_never_sent():
+    tool = given.a_tool(name="run_command")
+    fake_llm = given.a_fake_llm_for_destructive_and_safe_case()
+    fake_mcp_client = FakeMCPClient([tool])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
+    state = given.an_initial_state(test_budget=5)
+
+    result = await given.invoke_graph(graph, state)
+
+    report = then.tool_report_at(result, 0)
+    then.report_has_cases(report, 2)
+    blocked = [case for case in report.cases if case.blocked_reason is not None]
+    assert len(blocked) == 1
+    assert blocked[0].eval_result is None
+    assert len([case for case in report.cases if case.eval_result is not None]) == 1
+    assert len(fake_mcp_client.calls) == 1

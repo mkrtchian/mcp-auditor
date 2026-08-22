@@ -130,6 +130,7 @@ def a_chain_audit_state(
     judged_cases: list[TestCase] | None = None,
     attack_context: AttackContext | None = None,
     completed_chains: list[AttackChain] | None = None,
+    blocked_step_reason: str | None = None,
 ) -> dict[str, Any]:
     return {
         "current_tool": tool or a_tool(),
@@ -143,5 +144,6 @@ def a_chain_audit_state(
         "current_step_payload": current_step_payload,
         "current_observation": current_observation,
         "completed_chains": completed_chains or [],
+        "blocked_step_reason": blocked_step_reason,
         "token_usage": [],
     }

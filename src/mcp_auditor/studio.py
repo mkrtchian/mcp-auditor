@@ -2,6 +2,7 @@ from typing import Any
 
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import load_settings
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.graph.builder import build_graph
@@ -13,7 +14,7 @@ def create_graph():
     llm = create_llm(settings)
     judge_llm = create_judge_llm(settings)
     mcp_client: MCPClientPort = _StudioMCPPlaceholder()  # type: ignore[assignment]
-    return build_graph(llm, mcp_client=mcp_client, judge_llm=judge_llm)
+    return build_graph(llm, AuditedServer(mcp_client), judge_llm=judge_llm)
 
 
 class _StudioMCPPlaceholder:

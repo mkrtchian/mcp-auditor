@@ -20,12 +20,13 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.config import load_settings
 from mcp_auditor.config_file import load_config_file, merge_defaults
 from mcp_auditor.console import AuditDisplay
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import (
     AttackContext,
     AuditReport,
     Severity,
 )
-from mcp_auditor.domain.ports import LLMPort, MCPClientPort
+from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.domain.rendering import render_json, render_markdown
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from mcp_auditor.stream_handler import AuditProgressReporter
@@ -175,15 +176,16 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
                 command, args, errlog=server_stderr, tool_call_timeout=settings.tool_call_timeout
             ) as mcp_client,
         ):
+            server = AuditedServer(mcp_client)
             if config.execution.dry_run:
                 await _run_dry_run(
-                    llm, mcp_client, config.execution.budget, display, config.tools_filter
+                    llm, server, config.execution.budget, display, config.tools_filter
                 )
                 return
 
             graph = build_graph(
                 llm,
-                mcp_client,
+                server,
                 judge_llm=judge_llm,
                 checkpointer=checkpointer,
                 tools_filter=config.tools_filter,
@@ -259,12 +261,12 @@ async def _run_full_audit(
 
 async def _run_dry_run(
     llm: LLMPort,
-    mcp_client: MCPClientPort,
+    server: AuditedServer,
     budget: int,
     display: AuditDisplay,
     tools_filter: frozenset[str] | None,
 ) -> None:
-    graph = build_dry_run_graph(llm, mcp_client, tools_filter=tools_filter)
+    graph = build_dry_run_graph(llm, server, tools_filter=tools_filter)
     result = await graph.ainvoke(
         {"target": "", "test_budget": budget, "attack_context": AttackContext()}
     )

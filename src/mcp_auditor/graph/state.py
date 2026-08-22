@@ -60,6 +60,7 @@ class ChainAuditState(TypedDict):
     current_chain_steps: list[ChainStep]
     current_step_payload: AuditPayload | None
     current_observation: StepObservation | None
+    blocked_step_reason: str | None
     completed_chains: Annotated[list[AttackChain], operator.add]
     token_usage: Annotated[list[TokenUsage], operator.add]
 

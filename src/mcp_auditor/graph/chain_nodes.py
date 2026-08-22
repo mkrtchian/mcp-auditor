@@ -2,16 +2,18 @@ from typing import Any
 
 from langgraph.graph import END  # type: ignore[import-untyped]
 
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditPayload,
+    BlockedPayload,
     ChainPlanBatch,
     ChainStep,
     EvalResult,
     Judgment,
     StepObservation,
 )
-from mcp_auditor.domain.ports import LLMPort, MCPClientPort
+from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.chain_prompts import (
     build_chain_judge_prompt,
     build_chain_planning_prompt,
@@ -45,18 +47,21 @@ def prepare_chain(state: dict[str, Any]) -> dict[str, Any]:
         "current_chain_goal": goal,
         "current_chain_steps": [],
         "current_step_payload": goal.first_step,
+        "blocked_step_reason": None,
     }
 
 
-def make_execute_step(mcp_client: MCPClientPort):
+def make_execute_step(server: AuditedServer):
     async def execute_step(state: dict[str, Any]) -> dict[str, Any]:
         payload: AuditPayload = state["current_step_payload"]
         tool = state["current_tool"]
-        response = await mcp_client.call_tool(tool.name, payload.arguments)
-        if response.is_error:
-            step = ChainStep.from_error(payload, response.content)
+        outcome = await server.attempt(tool, payload)
+        if isinstance(outcome, BlockedPayload):
+            return {"blocked_step_reason": outcome.reason}
+        if outcome.is_error:
+            step = ChainStep.from_error(payload, outcome.content)
         else:
-            step = ChainStep.from_response(payload, response.content)
+            step = ChainStep.from_response(payload, outcome.content)
         steps = [*state["current_chain_steps"], step]
         return {"current_chain_steps": steps}
 
@@ -121,15 +126,32 @@ def make_judge_chain(llm: LLMPort):
             justification=judgment.justification,
             severity=judgment.severity,
         )
-        judged_chain = chain.model_copy(update={"eval_result": eval_result})
+        judged_chain = chain.model_copy(
+            update={"eval_result": eval_result, "blocked_reason": state["blocked_step_reason"]}
+        )
         return {
             "completed_chains": [judged_chain],
             "current_chain_goal": None,
             "current_chain_steps": [],
+            "blocked_step_reason": None,
             "token_usage": [usage],
         }
 
     return judge_chain
+
+
+def abandon_chain(state: dict[str, Any]) -> dict[str, Any]:
+    chain = AttackChain(
+        goal=state["current_chain_goal"],
+        steps=[],
+        blocked_reason=state["blocked_step_reason"],
+    )
+    return {
+        "completed_chains": [chain],
+        "current_chain_goal": None,
+        "current_chain_steps": [],
+        "blocked_step_reason": None,
+    }
 
 
 def _route_to_next_chain_or_end(state: dict[str, Any]) -> str:
@@ -140,6 +162,14 @@ def _route_to_next_chain_or_end(state: dict[str, Any]) -> str:
 
 route_after_planning = _route_to_next_chain_or_end
 route_after_judge = _route_to_next_chain_or_end
+
+
+def route_after_execute_step(state: dict[str, Any]) -> str:
+    if state["blocked_step_reason"] is None:
+        return "observe_step"
+    if state["current_chain_steps"]:
+        return "judge_chain"
+    return "abandon_chain"
 
 
 def route_after_observe(state: dict[str, Any]) -> str:

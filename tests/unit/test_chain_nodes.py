@@ -13,13 +13,16 @@ from mcp_auditor.domain import (
     StepObservation,
     ToolResponse,
 )
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.graph.chain_nodes import (
+    abandon_chain,
     make_execute_step,
     make_judge_chain,
     make_observe_step,
     make_plan_chains,
     make_plan_step,
     prepare_chain,
+    route_after_execute_step,
     route_after_judge,
     route_after_observe,
     route_after_planning,
@@ -56,6 +59,16 @@ class TestPrepareChain:
         assert result["current_chain_steps"] == []
         assert result["current_step_payload"] == goal_a.first_step
 
+    def test_clears_a_block_from_the_previous_chain(self):
+        state = given.a_chain_audit_state(
+            pending_chains=[given.a_chain_goal()],
+            blocked_step_reason="destructive filesystem command: rm -rf",
+        )
+
+        result = prepare_chain(state)
+
+        assert result["blocked_step_reason"] is None
+
 
 class TestMakeExecuteStep:
     @pytest.mark.asyncio
@@ -65,7 +78,7 @@ class TestMakeExecuteStep:
         client = given.a_fake_mcp_client(
             responses={tool.name: ToolResponse(content="found /data/projects")}
         )
-        node = make_execute_step(client)
+        node = make_execute_step(AuditedServer(client))
         state = given.a_chain_audit_state(
             tool=tool,
             current_step_payload=payload,
@@ -85,7 +98,7 @@ class TestMakeExecuteStep:
         client = given.a_fake_mcp_client(
             responses={tool.name: ToolResponse(content="denied", is_error=True)}
         )
-        node = make_execute_step(client)
+        node = make_execute_step(AuditedServer(client))
         state = given.a_chain_audit_state(
             tool=tool,
             current_step_payload=payload,
@@ -96,6 +109,52 @@ class TestMakeExecuteStep:
         step = result["current_chain_steps"][0]
         assert step.error == "denied"
         assert step.response is None
+
+    @pytest.mark.asyncio
+    async def test_first_step_blocked_abandons_an_empty_chain(self):
+        tool = given.a_tool()
+        payload = given.a_payload(arguments={"path": "/tmp; rm -rf /"})
+        client = given.a_fake_mcp_client()
+        node = make_execute_step(AuditedServer(client))
+        state = given.a_chain_audit_state(
+            tool=tool,
+            current_chain_goal=given.a_chain_goal(first_step=payload),
+            current_step_payload=payload,
+        )
+
+        blocked = await node(state)
+        result = abandon_chain({**state, **blocked})
+
+        then.completed_chains_count(result, 1)
+        chain = result["completed_chains"][0]
+        assert chain.blocked_reason is not None
+        assert chain.steps == []
+        assert chain.eval_result is None
+        assert client.calls == []
+
+    @pytest.mark.asyncio
+    async def test_mid_chain_block_judges_the_executed_prefix(self):
+        tool = given.a_tool()
+        executed = given.a_chain_step()
+        payload = given.a_payload(arguments={"path": "'; DROP TABLE users--"})
+        client = given.a_fake_mcp_client()
+        node = make_execute_step(AuditedServer(client))
+        state = given.a_chain_audit_state(
+            tool=tool,
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[executed],
+            current_step_payload=payload,
+        )
+
+        blocked = await node(state)
+        judged = await make_judge_chain(FakeLLM([given.a_judgment()]))({**state, **blocked})
+
+        chain = judged["completed_chains"][0]
+        assert chain.blocked_reason is not None
+        then.chain_has_steps(chain, 1)
+        assert payload not in [step.payload for step in chain.steps]
+        assert judged["blocked_step_reason"] is None
+        assert client.calls == []
 
 
 class TestMakeObserveStep:
@@ -200,6 +259,29 @@ class TestRouteAfterObserve:
             "max_chain_steps": 3,
         }
         assert route_after_observe(state) == "judge_chain"
+
+
+class TestRouteAfterExecuteStep:
+    def test_observes_a_step_that_ran(self):
+        state: dict[str, Any] = {
+            "blocked_step_reason": None,
+            "current_chain_steps": [given.a_chain_step()],
+        }
+        assert route_after_execute_step(state) == "observe_step"
+
+    def test_judges_the_prefix_when_a_later_step_is_blocked(self):
+        state: dict[str, Any] = {
+            "blocked_step_reason": "destructive filesystem command: rm -rf",
+            "current_chain_steps": [given.a_chain_step()],
+        }
+        assert route_after_execute_step(state) == "judge_chain"
+
+    def test_abandons_the_chain_when_the_first_step_is_blocked(self):
+        state: dict[str, Any] = {
+            "blocked_step_reason": "destructive filesystem command: rm -rf",
+            "current_chain_steps": [],
+        }
+        assert route_after_execute_step(state) == "abandon_chain"
 
 
 class TestRouteAfterJudge:
