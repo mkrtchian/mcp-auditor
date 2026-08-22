@@ -273,7 +273,7 @@ def _build_run_detail(
         distribution=distribution_detail,
         recall=recall,
         precision=precision,
-        blocked=blocked_reasons(audit_report),
+        blocked_reasons=blocked_reasons(audit_report),
         token_usage={
             "input_tokens": audit_report.token_usage.input_tokens,
             "output_tokens": audit_report.token_usage.output_tokens,
@@ -400,9 +400,10 @@ def _print_run_result(run_detail: RunDetail, progress: Progress) -> None:
             f"  [bold]{tool_name}[/bold]: {total_cases} cases, {dist.covered} categories covered"
         )
     progress.console.print(
-        f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f} "
-        f"| Blocked payloads: {len(run_detail.blocked)}"
+        f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f}"
     )
+    for reason in run_detail.blocked_reasons:
+        progress.console.print(f"  Payload blocked, {reason}")
 
 
 if __name__ == "__main__":

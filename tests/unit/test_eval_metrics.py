@@ -278,7 +278,7 @@ def test_reports_the_reason_of_every_blocked_case_and_chain():
     report = given.and_a_blocked_case(clean, "search", INJECTION)
     with_a_blocked_chain = given.and_a_blocked_chain(report, "search", INJECTION)
 
-    assert blocked_reasons(with_a_blocked_chain) == [
-        "destructive filesystem command: rm -rf",
+    assert sorted(blocked_reasons(with_a_blocked_chain)) == [
         "destructive SQL statement: drop table",
+        "destructive filesystem command: rm -rf",
     ]

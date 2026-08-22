@@ -163,11 +163,21 @@ def test_allows_non_string_values():
     assert destructive_reason({"n": 1, "flag": True, "x": None}) is None
 
 
-def test_allows_a_pattern_appearing_inside_a_longer_word():
-    assert destructive_reason({"cmd": "perform /admin"}) is None
-    assert destructive_reason({"cmd": "platform /v1/users"}) is None
-    assert destructive_reason({"cmd": "transform ~/data"}) is None
+def test_allows_a_runlevel_digit_continuing_into_another_token():
     assert destructive_reason({"cmd": "git init 0auth"}) is None
+    assert destructive_reason({"cmd": "kill -9 1234"}) is None
+
+
+def test_known_permitted_false_block_inside_a_longer_word():
+    # "rm /" and "rm ~" carry no left delimiter, so they fire mid-word. Blocking a harmless
+    # value costs recall, requiring a left boundary would let "%3Brm -rf /" through.
+    assert destructive_reason({"cmd": "perform /admin"}) is not None
+    assert destructive_reason({"cmd": "transform ~/data"}) is not None
+
+
+def test_still_blocks_a_construct_reached_through_an_encoded_separator():
+    assert destructive_reason({"cmd": "%3Brm -rf /"}) == "destructive filesystem command: rm -rf"
+    assert destructive_reason({"cmd": "telinit 0"}) == "host availability command: init 0"
 
 
 def test_still_blocks_a_pattern_preceded_by_a_shell_delimiter():

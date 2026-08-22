@@ -23,7 +23,7 @@ class RunDetail(BaseModel):
     distribution: dict[str, ToolDistribution]
     recall: float
     precision: float
-    blocked: list[str]
+    blocked_reasons: list[str] = []
     token_usage: dict[str, int]
 
 

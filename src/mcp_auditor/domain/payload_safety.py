@@ -41,23 +41,18 @@ def _matching_construct(text: str) -> tuple["DestructiveConstruct", str] | None:
 def _contains_as_a_construct(text: str, pattern: str) -> bool:
     start = text.find(pattern)
     while start != -1:
-        if _left_delimited(text, pattern, start) and _right_delimited(text, pattern, start):
+        if _right_delimited(text, pattern, start):
             return True
         start = text.find(pattern, start + 1)
     return False
 
 
-# A pattern opening on a letter needs a boundary before it, otherwise "rm /" fires inside
-# "perform /admin". One opening on punctuation ("> /", ":(){") carries its own.
-def _left_delimited(text: str, pattern: str, start: int) -> bool:
-    if not pattern[0].isalnum():
-        return True
-    return start == 0 or not text[start - 1].isalnum()
-
-
-# A flag or an argument delimits a pattern on its right, except the runlevel ones, whose
-# edge is a bare digit and matches inside "git init 0auth". Trailing letters stay permissive:
-# "rm -rf" must keep matching "rm -rfv".
+# A flag or an argument delimits a pattern on its right, except "init 0", "init 6" and
+# "kill -9 1", whose edge is a bare digit and so matches inside "git init 0auth". Trailing
+# letters stay permissive: "rm -rf" must keep matching "rm -rfv".
+# Nothing is required on the left. Demanding a boundary there would cost more than it buys:
+# an encoded separator is alphanumeric, so "%3Brm -rf /" would stop matching, and a false
+# allow is the one error this guard exists to avoid.
 def _right_delimited(text: str, pattern: str, start: int) -> bool:
     if not pattern[-1].isdigit():
         return True

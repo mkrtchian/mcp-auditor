@@ -51,9 +51,15 @@ The policy covers destruction of state and host availability. It does **not** co
 2. **A read-only promise would be unverifiable by this tool's own admission.** ADR 011 records that the auditor cannot observe a call's side effects. A tool that has documented it cannot see writes cannot promise it causes none.
 3. **It would move a benchmark denominator for a self-imposed rule.** `CVE-2025-68143` has the graded path `git_init(out-of-scope) -> git_add(.) -> git_diff_staged`, whose first two steps are writes. Under a read-only policy it would have to be reclassified out of scope for a rule we chose rather than a capability we lack.
 
-### Prompt and guard are deliberately co-extensive
+### Prompt and guard, and the two ways they fail to line up
 
-The prompt names every construct family `destructive_reason` blocks, and this is a decision, not a coincidence. A generator obeying the prompt to the letter is never blocked, so a block always means the prompt was disregarded, which keeps the block count readable as a compliance signal. It is the general rule this ADR contributes beyond the immediate fix: the prompt must never forbid more than the guard can enforce. Past that line the guard stops being the deterministic backstop, and the surplus prohibition becomes an unbacked promise.
+The prompt names every construct family `destructive_reason` blocks, and this is a decision, not a coincidence. The general rule this ADR contributes beyond the immediate fix is that **the prompt must never forbid more than the guard can enforce**. Past that line the guard stops being the deterministic backstop and the surplus prohibition becomes an unbacked promise. The correspondence is close, not exact, and both residues are named here rather than left to be discovered.
+
+**The guard blocks a little more than the prompt forbids.** A non-recursive `chmod -r` (which removes read permission, while the pattern is aimed at `-R`), an `mv /`, a quoted `'drop table'` inside an otherwise legitimate `SELECT`. Cost: a generator that obeyed the prompt loses a case to a block, which shows up as one blocked payload in the eval report and, if the category had no other case, as lower distribution coverage. Tolerable, and visible where it happens.
+
+**The prompt asks for slightly more restraint than the guard delivers.** It forbids deleting or overwriting a file as a *property*, and the guard enforces an enumerated list, so `echo evil > notes.txt` passes both the guard and the auditor's intent. This direction is the one the rule above forbids, and it is accepted for one reason: the surplus is guidance to our own generator, never a claim made to the user. The README states the enumerated-construct limit rather than the property.
+
+Nothing pins either correspondence mechanically. A pattern added to the table without a matching line in the prompt widens the first residue in silence, and `tests/unit/test_prompts.py` only asserts hand-written substrings.
 
 ### The read-only preference survives, as a preference
 
@@ -73,10 +79,9 @@ The bet is that an LLM writes `shutdown -h now`, not a bare `shutdown`, and that
 
 ### Why literal substring matching
 
-Most patterns carry an argument or a flag (`rm -rf`, `shutdown -`, `dd of=`, `chmod -r`), which delimits them on the right. That is not enough on its own, and the first version of the guard shipped with the gap: `rm /` matched inside `perform /admin`, `rm ~` inside `transform ~/data`, `init 0` inside `git init 0auth`. Matching stays literal, and two boundary rules close it:
+Most patterns carry an argument or a flag (`rm -rf`, `shutdown -`, `dd of=`, `chmod -r`), which delimits them on the right. Three do not: `init 0`, `init 6` and `kill -9 1` end on a bare digit, so `init 0` matched inside `git init 0auth`. One rule closes that: a pattern ending on a digit requires a non-alphanumeric character after it, or the end of the value. Patterns ending on a letter stay permissive, so `rm -rf` keeps matching `rm -rfv` and `chmod -r` keeps matching `chmod -Rf`.
 
-- A pattern opening on a letter or a digit requires a non-alphanumeric character before it (or the start of the value). One opening on punctuation (`> /`, `:(){`) carries its own boundary.
-- A pattern ending on a digit requires the same after it. Runlevels are the only such patterns, and a digit followed by more text was a different token. Patterns ending on a letter stay permissive on the right, so `rm -rf` keeps matching `rm -rfv`.
+**Nothing is required on the left, and that is the decision, not an omission.** `rm /` and `rm ~` carry no left delimiter either, so they fire inside `perform /admin` and `transform ~/data`. Requiring a boundary there was tried and reverted: an encoded separator is alphanumeric, so `%3Brm -rf /`, `..%2frm -rf /` and `telinit 0` all stopped matching. Percent-encoded separators are ordinary `injection` syntax, which is exactly what this generator is told to write. The asymmetry decides: a mid-word false block costs recall and shows up in the evals, a false allow destroys a user's server. The false blocks are accepted and named here.
 
 Word boundaries in the regex sense would not have been enough anyway: `\bshutdown\b` still matches `service="shutdown"`. The rejections are recorded so nobody re-opens them:
 
