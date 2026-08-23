@@ -42,13 +42,13 @@ A destructive payload never carried detection value. An observable injection is 
 
 The table is aimed at the commands the generator sometimes writes. It is not a security boundary and does not need to be, since the generator is not trying to evade it. What passes is named here rather than left to be discovered: an obscure destructive binary, a clobbering redirect to a relative path (`echo evil > notes.txt`), and any bare command word, since no pattern is one. `CVE-2025-68144` is the documented case in this repo, where `git_diff --output=/path` silently overwrites a file and `--output=` is not in the table. The bare word is a decision. Only the argument name separates `command="shutdown"` from `service="shutdown"`, and the name comes from the audited server's own declaration, so letting it decide what counts as dangerous would make a safety property depend on the subject under test. The collision is live: a `get_service_status(service=...)` tool already ships in the test fixtures.
 
-The two error directions are asymmetric: a false block costs recall and shows up in the evals, while a false allow destroys a user's server. So matching is literal and nothing is required to the left of a pattern, which fires on some innocuous values. Those false blocks are accepted, because requiring a left boundary let `%3Brm -rf /` through.
+The two error directions are asymmetric: a false block costs recall and shows up in the evals, while a false allow destroys a user's server. So matching is literal and nothing is required to the left of a pattern, which fires on some innocuous values. Those false blocks are accepted, because requiring a left boundary let `%3Brm -rf /` through. And the table bounds only what the auditor writes. The audited server's own code runs with the user's privileges, spawned as a subprocess by `StdioMCPClient.connect`, so execution isolation of the target is the durable control and this table is what stands until it ships.
 
 ## Alternatives considered
 
 ### Prompt only, no guard
 
-**Rejected.** A safety property must not depend on LLM compliance. The behaviour was observed and not imagined: under a prompt that said nothing about destruction, the model improvised the same destructive command into three different argument names across three runs. Whether a rewritten prompt alone would hold is the untested proposition a safety property must not rest on.
+**Rejected.** A safety property must not depend on LLM compliance. The behavior was observed and not imagined: under a prompt that said nothing about destruction, the model improvised the same destructive command into three different argument names across three runs. Whether a rewritten prompt alone would hold is the untested proposition a safety property must not rest on.
 
 ### A decorator over `MCPClientPort`
 

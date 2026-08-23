@@ -115,6 +115,14 @@ class TestNonDestructiveConstraint:
         assert "whoami" in NON_DESTRUCTIVE_CONSTRAINT
         assert "UNION SELECT" in NON_DESTRUCTIVE_CONSTRAINT
 
+    def test_names_reading_as_proof_of_impact(self):
+        assert "credential" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "process environment" in NON_DESTRUCTIVE_CONSTRAINT
+
+    def test_draws_its_examples_from_the_threat_landscape_not_from_the_fixtures(self):
+        for planted_by_a_fixture in ("FLAG", "flag.txt", "sandbox_secret"):
+            assert planted_by_a_fixture not in NON_DESTRUCTIVE_CONSTRAINT
+
     def test_keeps_writes_allowed_so_cve_2025_68143_stays_reachable(self):
         constraint = NON_DESTRUCTIVE_CONSTRAINT.lower()
 

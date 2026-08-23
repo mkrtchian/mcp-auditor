@@ -98,6 +98,12 @@ def test_allows_injection_syntax():
     assert destructive_reason({"q": "echo mcp-auditor-probe"}) is None
 
 
+def test_allows_the_reads_that_prove_impact():
+    assert destructive_reason({"cmd": "; env"}) is None
+    assert destructive_reason({"cmd": "printenv"}) is None
+    assert destructive_reason({"cmd": "cat /proc/self/environ"}) is None
+
+
 def test_allows_writes():
     assert destructive_reason({"repo_path": "/out/of/scope"}) is None
     assert destructive_reason({"files": ["."]}) is None

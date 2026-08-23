@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The auditor now proves injection non-destructively: the generator is instructed to prefer benign reflected evidence, and a deterministic guard refuses to send a payload containing an enumerated destructive construct (`rm -rf`, `DROP TABLE`, a shutdown command, a fork bomb, and a handful more). A refused payload is reported as blocked with its reason in every output format, never sent to the server and never judged. Writes are still permitted: auditing a tool that writes writes. See ADR 013.
+- The auditor now proves injection non-destructively: the generator is instructed to prefer benign reflected evidence, and a deterministic guard refuses to send a payload containing an enumerated destructive construct (`rm -rf`, `DROP TABLE`, a shutdown command, a fork bomb, and a handful more). A refused payload is reported as blocked with its reason in every output format, never sent to the server and never judged. Writes are still permitted: auditing a tool that writes writes. The generator is also told to prove impact by reading rather than writing, so a report can now carry a secret read from the audited server. See ADR 013 and ADR 014.
 - JSON reports now always include the `owasp` key on eval results, with `null` for categories without an OWASP MCP mapping. The key used to be absent in that case. OWASP data is derived on the model itself and appears in every `EvalResult` serialization. See ADR 012.
 
 ## [0.2.0] - 2026-07-10
