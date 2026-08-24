@@ -77,7 +77,7 @@ async def invoke_graph(graph: Any, state: dict[str, Any]) -> dict[str, Any]:
 
 
 async def invoke_graph_with_config(
-    graph: Any, state: dict[str, Any], config: dict[str, Any]
+    graph: Any, state: dict[str, Any] | None, config: dict[str, Any]
 ) -> dict[str, Any]:
     return await graph.ainvoke(state, config=config)
 

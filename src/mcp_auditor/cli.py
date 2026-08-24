@@ -7,7 +7,6 @@ import asyncio
 import hashlib
 import logging
 import tempfile
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -190,14 +189,13 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
                 checkpointer=checkpointer,
                 tools_filter=config.tools_filter,
             )
-            thread_id = (
-                _compute_thread_id(command, args)
-                if config.execution.resume
-                else uuid.uuid4().hex[:16]
-            )
+            thread_id = _compute_thread_id(command, args)
+            resuming = await resume_or_reset(graph, thread_id, config.execution.resume)
+            if config.execution.resume and not resuming:
+                display.print_info("nothing to resume for this target, starting a fresh audit")
             initial_state = (
                 None
-                if config.execution.resume
+                if resuming
                 else {
                     "target": target_str,
                     "test_budget": config.execution.budget,
@@ -231,6 +229,26 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
         display.print_error(f"MCP server failed: {_summarize_exception_group(exc)}")
         _show_server_stderr(server_stderr, display)
         raise SystemExit(1) from exc
+
+
+async def resume_or_reset(graph: Any, thread_id: str, requested: bool) -> bool:
+    """True to resume an interrupted audit, False after wiping the thread.
+
+    A reused thread must be wiped: the operator.add reducers on tool_reports and
+    token_usage would otherwise fold the previous audit into this report.
+    """
+    # This read must precede the wipe: adelete_thread is the one saver method
+    # that skips setup(), so on a virgin database it fails on a missing table.
+    snapshot = await graph.aget_state({"configurable": {"thread_id": thread_id}})
+    # `next` holds the nodes still to run, and discriminates where the mere
+    # existence of a checkpoint cannot: it is empty both for a thread never
+    # audited and for one whose audit ran to the end, which are exactly the two
+    # unresumable cases. Resuming a completed thread runs no node at all and
+    # replays its stored report as if it were a fresh audit.
+    if requested and snapshot.next:
+        return True
+    await graph.checkpointer.adelete_thread(thread_id)
+    return False
 
 
 async def _run_full_audit(

@@ -136,18 +136,15 @@ async def test_chain_budget_two_produces_two_chains():
 
 
 @pytest.mark.asyncio
-async def test_resume_mid_chain():
-    """Checkpoint round-trip through doubly-nested subgraph."""
+async def test_checkpointer_round_trips_nested_subgraph_state():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_with_chain(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     checkpointer = MemorySaver()
     graph = given.a_graph_with_checkpointer(fake_llm, fake_mcp_client, checkpointer)
     state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
-    config = {"configurable": {"thread_id": "resume-test"}}
+    config = {"configurable": {"thread_id": "round-trip"}}
 
-    # First invocation: graph runs to completion (no interrupt configured,
-    # but the checkpoint proves state survives the doubly-nested path).
     result = await given.invoke_graph_with_config(graph, state, config)
 
     then.has_tool_reports(result, 1)
