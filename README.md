@@ -103,8 +103,8 @@ graph LR
 
 - **Hexagonal architecture.** `domain/` and `graph/` form the inside of the hexagon (business logic, ports as `Protocol` classes), `adapters/` sits outside (LLM clients, MCP transport). Swapping the LLM provider means changing one adapter, zero graph code. [ADR 002](docs/adr/002-hexagonal-architecture.md)
 - **Subgraph per tool.** Each tool audit is a self-contained subgraph with checkpointing: if the process crashes at tool 8 of 14, `--resume` picks up where it left off. [ADR 001](docs/adr/001-why-langgraph.md)
-- **Cross-tool learning.** After each tool audit, the graph extracts intelligence from the results (database engine, framework, exposed internals). Subsequent tools receive this context for targeted payloads, e.g. SQLite-specific injection after seeing `sqlite3.OperationalError` in a read tool. Read-like tools are audited first to maximize reconnaissance value. [ADR 009](docs/adr/009-cross-tool-learning.md)
-- **LLM-as-a-judge.** The judge classifies each response against per-category criteria and returns a structured verdict with a severity. The criteria are written rules in `domain/category_guidance.py`, versioned and reviewable, not pattern matches over the response, and the judge is scoped to the single category under test so it cannot report a leak while grading an injection. Quality is measured through evals. [ADR 003](docs/adr/003-testing-philosophy.md)
+- **Cross-tool learning.** After each tool audit, the graph extracts intelligence from the results (database engine, framework, exposed internals). Subsequent tools receive this context for targeted payloads, e.g. SQLite-specific injection after seeing `sqlite3.OperationalError` in a read tool. Read-like tools are audited first to front-load reconnaissance. [ADR 009](docs/adr/009-cross-tool-learning.md)
+- **LLM-as-a-judge.** The judge classifies each response against per-category criteria and returns a structured verdict with a severity. The criteria are written rules in `domain/category_guidance.py`, versioned and reviewable, not pattern matches over the response, and the judge is scoped to the single category under test so it cannot report a leak while grading an injection. What the evals measure, and what each one licenses, is set out under [Measurement](#measurement). [ADR 003](docs/adr/003-testing-philosophy.md), [ADR 015](docs/adr/015-eval-gate-governance.md)
 - **Adaptive attack chains.** The optional multi-step pass of phase 5 runs in its own subgraph, with its own budget and zero overhead when disabled. [ADR 010](docs/adr/010-multi-step-attack-chains.md)
 
 ## Example: auditing a real server
@@ -120,7 +120,7 @@ uvx mcp-auditor run \
 
 This audits `@modelcontextprotocol/server-filesystem`, the official MCP reference server for filesystem operations. At the audited version it exposed 14 tools (read_file, write_file, search_files, etc.), each sandboxed to `/tmp/sandbox`.
 
-Results, measured on 2026-03-20 against release `2026.1.14`: **140 test cases, 11 findings** (2 low, 9 medium). All findings were information leakage: the server exposes internal filesystem paths in error messages.
+Results, measured on 2026-03-20 against release `2026.1.14`: **140 test cases, 11 findings** (2 low, 9 medium). The auditor reported all 11 as information leakage: internal filesystem paths appearing in error messages.
 
 ### read_file / info_leakage / MCP-10 (low)
 
@@ -134,24 +134,21 @@ The error message discloses the absolute path of the sandbox directory, revealin
 
 The error message reveals the full internal filesystem path of the host, including the user's home directory and project structure.
 
-## Eval results
+## Measurement
 
-Evaluated against three honeypot MCP servers with known vulnerabilities (3 runs, budget 10, 8 tools). The first honeypot has loud vulnerabilities (SQL echo, path leaks in errors), the second has subtle ones (PII in normal responses, silent validation gaps), and the third tests multi-step attack chains (reconnaissance → escalation across tool actions).
+Three instruments run here, each answering a different question, and one question has no instrument yet.
 
-**Gemini 3.1 Flash-Lite** (measured 2026-04-01 on `gemini-3.1-flash-lite-preview`):
+**The honeypot suite is a regression guard.** It runs three servers with planted flaws against a ground truth written by hand (`evals/ground_truth.py`), and it gates the build on main. Its job is catching regressions on servers this project wrote, and it says nothing about a server it did not write. Of the five categories the generator works from, resource abuse has no positive case anywhere here, neither in the honeypots nor among the CVE targets, so a regression that removed its detection entirely would move no number. The suite is currently under its precision threshold, which is what the Evals badge at the top of this README reports. A red build on main is a post-merge signal rather than a merge blocker. Its metrics are not published here as a measure of quality: a regression guard licenses no quality claim, and the set could not carry one anyway. With 11 expected positives, one false positive moves a run's precision by about 0.08, and the metric has three or four reachable values near its threshold. [ADR 015](docs/adr/015-eval-gate-governance.md) replaces the suite's absolute thresholds with a paired, cell-by-cell comparison against a recorded baseline, backed by an absolute floor per metric. That change is decided and not built yet.
 
-| Metric       | Result | Threshold | Status |
-|:-------------|-------:|----------:|:-------|
-| Recall       |   0.88 |      0.80 | PASS   |
-| Precision    |   0.85 |      0.85 | PASS   |
-| Consistency  |   0.97 |      0.70 | PASS   |
-| Distribution |   1.00 |      0.80 | PASS   |
+**The judge is calibrated on 32 fixed cases.** No generator sits in the loop, and it gates the build below its F1 threshold. Eight of the 32 are positive, so any recall figure would rest on eight cases. The set was built to cover the judge's own observed failure modes, which makes it a development set: a figure measured on it reports fit rather than generalization, so no figure is published here. [ADR 006](docs/adr/006-judge-evaluation-strategy.md)
 
-All thresholds met. A separate judge isolation eval (32 fixed cases, no generator involved) scores F1 = 1.00. The four metrics are defined in [ADR 003](docs/adr/003-testing-philosophy.md), the judge eval in [ADR 006](docs/adr/006-judge-evaluation-strategy.md). [ADR 005](docs/adr/005-llm-model-selection.md) is the model comparison that came first, measured on a smaller substrate against a different threshold, so its numbers are not comparable to the table above.
+**The CVE benchmark runs real MCP servers.** They are pinned at vulnerable versions and run in throwaway Docker containers. A CI gate replays the fixtures' hand-written exploits with no LLM and fails when a planted sentinel stops surfacing, minus one CI-unstable target that local calibration covers instead. That gate proves the fixtures are still exploitable, and it observes nothing about the auditor. No detection rate is published. Six CVE targets across four servers resolve whether the auditor reaches a class of flaw at all, and they do not measure a rate. Three of the six have had their traces read, and later changes were tuned on what those traces showed, so they cannot support a capability claim anymore. What each target resolved is in the per-target report of a graded run, which anyone can reproduce below. [ADR 015](docs/adr/015-eval-gate-governance.md) confines capability claims to a held-out layer of fresh targets chosen under a rule written in advance. That layer does not exist yet, and the unread targets do not form it.
 
-### CVE validation
+**What is not measured.** The false-positive rate on a healthy server. You want that number before wiring an auditor into CI, and nothing here produces it. An auditor that raises false alarms is unusable whatever its recall. The instrument for it is a suite over patched reference servers, and it does not exist yet. The audit shown above does not answer it either. It is one dated run against a server this project did not write, its findings are the judge's verdicts, and nobody has sorted them into real leaks and false alarms.
 
-A second benchmark runs the auditor against real, pinned-vulnerable MCP servers (filesystem, git, kubernetes, fetch) to check that known CVEs are actually detected. It is reproducible on any machine with two prerequisites: **Docker** (hosts the throwaway vulnerable targets) and an **LLM API key** (for the auditor itself). No cluster, no per-server CLI, no per-server key.
+### Reproducing the CVE benchmark
+
+The CVE benchmark runs against real, pinned-vulnerable MCP servers (filesystem, git, kubernetes, fetch). It is reproducible on any machine with two prerequisites: **Docker** (hosts the throwaway vulnerable targets) and an **LLM API key** (for the auditor itself). No cluster, no per-server CLI, no per-server key.
 
 ```bash
 # 1. Prerequisites: Docker running, an LLM API key exported (e.g. GOOGLE_API_KEY).
@@ -170,9 +167,7 @@ uv run python -m evals.run_cve_benchmark --cve CVE-2025-53109 --cve CVE-2025-533
 
 **Safety:** the images are deliberately vulnerable known-RCE/SSRF servers, run in throwaway `docker run --rm` containers against a synthetic per-run sentinel (never a real secret). Run the benchmark on a non-sensitive host, not on a machine holding production credentials.
 
-Pull requests that touch the benchmark run a deterministic calibration gate in CI (no API key, no LLM): it builds the fixtures and confirms each one is live, minus any target marked CI-unstable. Today that is CVE-2025-68143, whose `git_diff_staged` hangs on GitHub-hosted runners and stays covered by local calibration.
-
-No detection results are published here yet. The graded run above produces them.
+No detection rate is published (see [Measurement](#measurement)). The graded run reports its results per target, on your machine.
 
 ## Configuration
 
@@ -227,6 +222,8 @@ ci: true
 CLI flags override config file values.
 
 ## Run in CI
+
+The false-positive rate on a healthy server is not measured yet (see [Measurement](#measurement)). Until you have triaged a few runs against your own server, read a failing audit job as a signal to open the report before letting it block a merge.
 
 `--ci` replaces Rich UI with plain text, keeps all diagnostic output, and exits with code 1 if any finding meets the severity threshold.
 

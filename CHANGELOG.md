@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The CVE benchmark report ends with a count per status instead of a single `Detected X/Y` ratio. That ratio pooled targets whose traces have been read with targets that have not, and the two back different claims. See ADR 015.
+- The README no longer publishes the honeypot eval metrics or the judge F1 as quality numbers. A `Measurement` section replaces the thresholds table: it names what each of the three instruments answers, records that the suite was under its precision threshold at the time of the change, and names the measurement none of them makes, the false-positive rate on a healthy server. See ADR 015.
 - The auditor now proves injection non-destructively: the generator is instructed to prefer benign reflected evidence, and a deterministic guard refuses to send a payload containing an enumerated destructive construct (`rm -rf`, `DROP TABLE`, a shutdown command, a fork bomb, and a handful more). A refused payload is reported as blocked with its reason in every output format, never sent to the server and never judged. Writes are still permitted: auditing a tool that writes writes. The generator is also told to prove impact by reading rather than writing, so a report can now carry a secret read from the audited server. See ADR 013 and ADR 014.
 - JSON reports now always include the `owasp` key on eval results, with `null` for categories without an OWASP MCP mapping. The key used to be absent in that case. OWASP data is derived on the model itself and appears in every `EvalResult` serialization. See ADR 012.
 

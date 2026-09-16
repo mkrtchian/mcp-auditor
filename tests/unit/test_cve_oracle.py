@@ -183,4 +183,4 @@ def test_render_markdown_table():
     assert "detected" in markdown
     assert "2/3" in markdown
     assert "cross-tool chains" in markdown
-    assert "Detected 1/2" in markdown
+    assert "Statuses: 1 detected, 1 missed_awaiting_capability." in markdown

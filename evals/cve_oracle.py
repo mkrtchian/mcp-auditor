@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Iterator, Sequence
 from enum import StrEnum
 from typing import Any, NamedTuple, Protocol
@@ -128,9 +129,11 @@ def render_markdown(results: list[CVEResult]) -> str:
     header = "| CVE | CVSS | Status | Hit-rate | Budget | Awaited capability | Note |"
     separator = "|---|---|---|---|---|---|---|"
     rows = [_render_row(result) for result in results]
-    detected = sum(1 for result in results if result.status == CVEStatus.DETECTED)
-    summary = f"Detected {detected}/{len(results)} CVEs."
-    return "\n".join([header, separator, *rows, "", summary])
+    # A single detected/total ratio would pool targets whose traces have been read with
+    # targets that have not, and those two carry different claims. See ADR 015.
+    counts = Counter(result.status for result in results)
+    tally = ", ".join(f"{counts[status]} {status.value}" for status in CVEStatus if counts[status])
+    return "\n".join([header, separator, *rows, "", f"Statuses: {tally}."])
 
 
 class _ObservedOutput(NamedTuple):

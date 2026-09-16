@@ -54,6 +54,16 @@ async def test_detects_missing_input_validation():
     then.verdicts_failure_for(results, tool="get_user", category="input_validation")
 ```
 
+### When an eval number comes back red
+
+Governed by `docs/adr/015-eval-gate-governance.md`. The short form:
+
+- **Fix the system, not the instrument.** A prompt, a guard table or a default may be changed after reading eval output, and it may ship. Its written justification has to hold once every mention of the measurement is deleted. A justification that needs "and the oracle credits that" is fitting the product to the benchmark.
+- **Never re-record a baseline while the gate is red.** That compares the candidate to itself, and it is the one move forbidden outright.
+- **The ground truth is revised by rubric, never cell by cell.** Write the rubric clause down before computing its effect on the metrics, apply it to every affected cell including the ones it does not help, and record it in `docs/labeling-log.md`.
+- **Honeypots are fixtures.** Only deliberately planted flaws count. A branch whose intent cannot be recovered is annotated as unspecified and its cell leaves the ground truth, instead of carrying a guessed label.
+- **A delta smaller than the instrument's resolution is inconclusive**, a third verdict beside pass and fail, and it is never reported as a win.
+
 ## Workflow
 
 - **Test-first**: write tests before implementation, run them to confirm they fail, then write the code to make them pass — a test that was never red might pass for the wrong reason.
