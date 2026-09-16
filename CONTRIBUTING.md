@@ -39,18 +39,18 @@ See the README for the reproducibility rationale and the safety note (deliberate
 
 ### Running evals on a pull request
 
-Evals don't run automatically on every pull request: they need an API key, and pull requests from forks or Dependabot can't read repository secrets. A maintainer can run them on demand by commenting on the PR:
+The judge isolation eval runs automatically on a pull request that touches `src/**`, `evals/**`, a honeypot server, or `pyproject.toml`, and it fails the check when the judge falls below its F1 threshold. It needs an API key from repository secrets: a Dependabot pull request is skipped outright, and a pull request from a fork triggers the job but can't read the key, so its run fails rather than being skipped. The e2e evals never run automatically on a pull request. They run on main after merge, where they gate the build. A maintainer can run either on demand by commenting on the PR:
 
 - `/eval` runs the judge isolation eval only (fast).
 - `/eval full` also runs the e2e evals (slower, more API calls).
 
 The workflow checks out the PR's head branch, runs the evals against it, and posts the outcome back as a comment. The trigger is restricted to repository owners, members, and collaborators.
 
-Pull requests that touch the CVE benchmark (`evals/docker/**`, `evals/cve_*.py`, `evals/run_cve_benchmark.py`, or the deps `pyproject.toml`/`uv.lock`) trigger a deterministic calibration gate. It builds the fixture images and runs `--calibrate` (no API key), and fails if any fixture is dead. The graded detection run is not a gate: it stays on-demand (`/eval` or `workflow_dispatch`), reported not gated.
+Pull requests that touch the CVE benchmark (`evals/docker/**`, `evals/cve_*.py`, `evals/run_cve_benchmark.py`, the deps `pyproject.toml`/`uv.lock`, or the workflow itself) trigger a deterministic calibration gate. It builds the fixture images and runs `--calibrate` (no API key), and fails if any fixture is dead, minus any target marked CI-unstable. Today that is CVE-2025-68143, whose `git_diff_staged` hangs on GitHub-hosted runners and stays covered by local calibration. The graded detection run is not a gate and has no CI workflow: it runs locally (`uv run python -m evals.run_cve_benchmark`), reported not gated.
 
 ## Coding, testing, and architecture standards
 
-The project's standards are defined in [`CLAUDE.md`](CLAUDE.md). This file serves as the single source of truth — both for human contributors and for AI-assisted development.
+The project's standards are defined in [`CLAUDE.md`](CLAUDE.md). This file serves as the single source of truth, both for human contributors and for AI-assisted development.
 
 The key points: hexagonal architecture, small pure functions, fakes over mocks. Read the full details there.
 
@@ -60,8 +60,8 @@ If you're using an AI coding agent for non-trivial changes, write a plan in `pla
 
 The repo ships two [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills in `.claude/skills/`:
 
-- `/standards` — reviews uncommitted changes against CLAUDE.md and fixes violations automatically.
-- `/commit` — stages changes and creates a conventional commit.
+- `/standards` reviews uncommitted changes against CLAUDE.md and fixes violations automatically.
+- `/commit` stages changes and creates a conventional commit.
 
 ## Architecture decisions
 
@@ -71,7 +71,7 @@ Architecture decisions are documented in `docs/adr/` as immutable ADRs. To chang
 
 - Bug fixes with a regression test.
 - New audit categories backed by real-world MCP failure modes.
-- Eval improvements — better ground truth, new honeypot scenarios.
+- Eval improvements: better ground truth, new honeypot scenarios.
 - Documentation fixes.
 
 If you're unsure whether something fits, open an issue first.
@@ -94,7 +94,7 @@ Publishing is automated: pushing a `v*` tag triggers `publish.yml`, which builds
      --notes-file <(awk '/^## \[X.Y.Z\]/{f=1; next} f && (/^## \[/ || /^\[.*\]: http/){exit} f' CHANGELOG.md)
    ```
 
-   Or paste the section by hand — the changelog is the single source of truth for release notes.
+   Or paste the section by hand. The changelog is the single source of truth for release notes.
 
 ## License
 
