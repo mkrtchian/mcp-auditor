@@ -86,8 +86,8 @@ async def _calibrate_fetch_ssrf(client: MCPClientPort) -> bool:
 
 
 # Invariant for every target below: tools_filter must name the same real tool
-# that calibrate exploits. A wrong name filters out every tool and makes the
-# graded run look like a clean missed instead of surfacing the mismatch.
+# that calibrate exploits. A wrong name raises in filter_tools, so the run is
+# reported as not_run rather than as a missed detection.
 CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-53109",

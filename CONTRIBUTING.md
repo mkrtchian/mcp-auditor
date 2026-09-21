@@ -71,7 +71,7 @@ Architecture decisions are documented in `docs/adr/` as immutable ADRs. To chang
 
 - Bug fixes with a regression test.
 - New audit categories backed by real-world MCP failure modes.
-- Eval improvements: better ground truth, new honeypot scenarios.
+- Eval improvements: better ground truth, new honeypot scenarios. A ground truth change follows the discipline in [ADR 016](docs/adr/016-eval-gate-governance.md): revisions go by rubric, never cell by cell.
 - Documentation fixes.
 
 If you're unsure whether something fits, open an issue first.

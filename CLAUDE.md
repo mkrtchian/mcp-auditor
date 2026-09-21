@@ -56,13 +56,15 @@ async def test_detects_missing_input_validation():
 
 ### When an eval number comes back red
 
-Governed by `docs/adr/015-eval-gate-governance.md`. The short form:
+Governed by `docs/adr/016-eval-gate-governance.md`. The short form:
 
-- **Fix the system, not the instrument.** A prompt, a guard table or a default may be changed after reading eval output, and it may ship. Its written justification has to hold once every mention of the measurement is deleted. A justification that needs "and the oracle credits that" is fitting the product to the benchmark.
+- **Fix the system, not the instrument.** A prompt, a guard table or a default may be changed after reading eval output, and it may ship. Its written justification has to hold once every mention of the measurement is deleted. A justification that needs "and the oracle credits that" is fitting the product to the benchmark. The number that change then produces is exploratory: it is recorded and confirms nothing.
+- **An instrument change and a system change do not license each other.** An instrument change does not borrow its justification from a system change shipped with it. A system change written to make the revision look earned licenses nothing.
 - **Never re-record a baseline while the gate is red.** That compares the candidate to itself, and it is the one move forbidden outright.
-- **The ground truth is revised by rubric, never cell by cell.** Write the rubric clause down before computing its effect on the metrics, apply it to every affected cell including the ones it does not help, and record it in `docs/labeling-log.md`.
+- **The ground truth is revised by rubric, never cell by cell.** Write the rubric clause down before computing its effect on the metrics, apply it to every affected cell including the ones it does not help, and record it in `docs/labeling-log.md`, created with the first revision.
 - **Honeypots are fixtures.** Only deliberately planted flaws count. A branch whose intent cannot be recovered is annotated as unspecified and its cell leaves the ground truth, instead of carrying a guessed label.
 - **A delta smaller than the instrument's resolution is inconclusive**, a third verdict beside pass and fail, and it is never reported as a win.
+- **Write down where the change lands, and why.** The four questions of ADR 016 are answered in the labeling log entry for a ground truth revision, and in the commit message for a change to the system under test.
 
 ## Workflow
 
@@ -82,7 +84,7 @@ Governed by `docs/adr/015-eval-gate-governance.md`. The short form:
 
 - `docs/adr/` — Architecture Decision Records. Explain *why*, not *how*. **Immutable once accepted** — to change a decision, write a new ADR that supersedes the previous one. What goes in one, and what does not:
   - **What an ADR records**: a decision, the reason that decided it, the alternatives it beat, and the consequences the reader has to live with, such as what a published number does not mean and what is not built yet. A figure that a run re-measures goes to the README beside its provenance, where the repo publishes it at all. A dated figure that justified the decision may stay, and so may a derivation from the frozen design.
-  - **Where the rest lives**: how a number is computed, in the docstring of the module that computes it. What the report says, in the report. What is checked by hand, in a test or in a living method note beside the eval it checks, which goes next to that code and not here. The ADR points at them and does not restate them.
+  - **Where the rest lives**: how a number is computed, in the docstring of the module that computes it. What the report says, in the report. What is checked by hand, in a test or in a living method note beside the eval it checks, which goes next to that code and not here. The ADR points at them and does not restate them. A path or a symbol named in an ADR is as of its date, so a pointer that has to survive a refactoring names the symbol rather than the file.
   - **One reason per decision**, the one that would flip it if false. A limit the reader has to live with is stated as a fact in one sentence, under Consequences. A limit that is itself the reason for a decision stays with the reason, and is not stated twice. A sentence that carries neither the decision, its reason, a beaten alternative nor a consequence is cut.
   - **Length**: about 800 words, the size of the ADRs already here. Past 1,500 words, the mechanics have leaked in.
 - `plans/` — **Spec-driven development**: before implementing a non-trivial feature, write a plan as a markdown file in `plans/` for review. The user reviews and approves the plan before any code is written. Naming convention: `YYYY-MM-DD_short_description.md` (e.g. `2026-03-15_llm_adapter.md`). **Immutable once implemented** — plans are not living documentation. They serve as historical context for what was done. Never update a past plan, write a new one for new changes.

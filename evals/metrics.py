@@ -51,6 +51,13 @@ class EvalReport(BaseModel):
 
 
 def aggregate_verdicts(report: AuditReport) -> VerdictMap:
+    """Any-fail per (tool, category) cell: one FAIL among the cell's cases fails it.
+
+    The generator spreads --budget over the categories, so a cell holds k cases that grow
+    with the budget (chain verdicts count too). With q the per-case false-FAIL rate,
+    P(cell FAIL) = 1 - (1-q)^k: a healthy cell fails more often as the budget rises, so two
+    budgets do not measure the same thing (ADR 016).
+    """
     verdicts: VerdictMap = {}
     for tool_report in report.tool_reports:
         for case in tool_report.cases:
