@@ -2,14 +2,15 @@ import json
 import pathlib
 
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.server_launch import ServerLaunch
 
 SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent / "chain_honeypot_server.py"
-CONNECT_ARGS = ("uv", ["run", "python", str(SERVER_PATH)])
+LAUNCH = ServerLaunch.unconfined("uv", ["run", "python", str(SERVER_PATH)])
 
 
 class TestDiscovery:
     async def test_discovers_two_tools(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             tools = await client.list_tools()
 
         assert len(tools) == 2
@@ -18,7 +19,7 @@ class TestDiscovery:
 
 class TestProjectManagerChain:
     async def test_list_returns_project_ids_including_secret(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("project_manager", {"action": "list"})
 
         assert response.is_error is False
@@ -26,7 +27,7 @@ class TestProjectManagerChain:
         assert "proj_secret_admin" in project_ids
 
     async def test_details_for_secret_project_reveals_internal_path(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool(
                 "project_manager",
                 {"action": "details", "project_id": "proj_secret_admin"},
@@ -38,7 +39,7 @@ class TestProjectManagerChain:
         assert details["internal_path"] == "/data/admin/config.yaml"
 
     async def test_read_file_at_admin_path_returns_sensitive_config(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool(
                 "project_manager",
                 {"action": "read_file", "path": "/data/admin/config.yaml"},
@@ -52,7 +53,7 @@ class TestProjectManagerChain:
 
 class TestUserDirectoryChain:
     async def test_search_admin_returns_user_ids(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool(
                 "user_directory", {"action": "search", "query": "admin"}
             )
@@ -62,7 +63,7 @@ class TestUserDirectoryChain:
         assert "user_42" in user_ids
 
     async def test_profile_for_admin_reveals_role(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool(
                 "user_directory", {"action": "profile", "user_id": "user_42"}
             )
@@ -73,7 +74,7 @@ class TestUserDirectoryChain:
         assert "auth_token_prefix" in profile
 
     async def test_get_field_auth_token_for_admin_returns_token(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool(
                 "user_directory",
                 {"action": "get_field", "user_id": "user_42", "field": "auth_token"},
@@ -83,7 +84,7 @@ class TestUserDirectoryChain:
         assert "sk-admin-7f3a9b2c" in response.content
 
     async def test_get_field_auth_token_for_non_admin_is_denied(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool(
                 "user_directory",
                 {"action": "get_field", "user_id": "user_10", "field": "auth_token"},

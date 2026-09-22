@@ -35,6 +35,7 @@ from evals.metrics import (
 )
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import Settings, load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import (
@@ -213,7 +214,7 @@ async def _run_single_honeypot(
     devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
         async with StdioMCPClient.connect(
-            honeypot.command, honeypot.args, errlog=devnull
+            ServerLaunch.unconfined(honeypot.command, honeypot.args), errlog=devnull
         ) as mcp_client:
             graph = build_graph(llm, AuditedServer(mcp_client), judge_llm=judge_llm)
             result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]

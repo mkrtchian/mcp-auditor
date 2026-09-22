@@ -23,8 +23,10 @@ from evals.cve_oracle import (
 )
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from evals.metrics import blocked_reasons
+from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, ToolDefinition, ToolResponse
@@ -271,7 +273,12 @@ async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
 async def _silent_client(launch: Launch) -> AsyncIterator[MCPClientPort]:
     devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
-        async with StdioMCPClient.connect(launch.command, launch.args, errlog=devnull) as client:
+        async with StdioMCPClient.connect(
+            ServerLaunch.declared_container(
+                launch.command, launch.args, docker_client_env(os.environ)
+            ),
+            errlog=devnull,
+        ) as client:
             yield client
     finally:
         devnull.close()

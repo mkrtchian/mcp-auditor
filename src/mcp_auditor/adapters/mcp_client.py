@@ -4,9 +4,10 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from typing import IO, Any, Self
 
 from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from mcp.client.stdio import get_default_environment, stdio_client
 from mcp.types import TextContent, Tool
 
+from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 
 _DEFAULT_TOOL_CALL_TIMEOUT = 30
@@ -20,8 +21,7 @@ class StdioMCPClient:
     @asynccontextmanager
     async def connect(
         cls,
-        command: str,
-        args: list[str],
+        launch: ServerLaunch,
         errlog: IO[str] | None = None,
         tool_call_timeout: int = _DEFAULT_TOOL_CALL_TIMEOUT,
     ) -> AsyncIterator[Self]:
@@ -29,7 +29,7 @@ class StdioMCPClient:
         client._tool_call_timeout = tool_call_timeout
         stack = AsyncExitStack()
         async with stack:
-            params = StdioServerParameters(command=command, args=args)
+            params = _server_parameters(launch)
             client_kwargs: dict[str, Any] = {"server": params}
             if errlog is not None:
                 client_kwargs["errlog"] = errlog
@@ -59,6 +59,16 @@ class StdioMCPClient:
             return ToolResponse(content=str(exc), is_error=True, error_type=type(exc).__name__)
         text = "\n".join(item.text for item in result.content if isinstance(item, TextContent))
         return ToolResponse(content=text, is_error=bool(result.isError))
+
+
+def _server_parameters(launch: ServerLaunch) -> StdioServerParameters:
+    if launch.client_env is None:
+        return StdioServerParameters(command=launch.spawn_command, args=launch.spawn_args)
+    return StdioServerParameters(
+        command=launch.spawn_command,
+        args=launch.spawn_args,
+        env=get_default_environment() | dict(launch.client_env),
+    )
 
 
 def _to_tool_definition(tool: Tool) -> ToolDefinition:

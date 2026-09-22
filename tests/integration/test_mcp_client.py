@@ -1,21 +1,22 @@
 import pathlib
 
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.server_launch import ServerLaunch
 
 SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent / "honeypot_server.py"
-CONNECT_ARGS = ("uv", ["run", "python", str(SERVER_PATH)])
+LAUNCH = ServerLaunch.unconfined("uv", ["run", "python", str(SERVER_PATH)])
 
 
 class TestDiscovery:
     async def test_discovers_three_tools(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             tools = await client.list_tools()
 
         assert len(tools) == 3
         assert {t.name for t in tools} == {"get_user", "execute_query", "list_items"}
 
     async def test_tool_schemas_have_required_fields(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             tools = await client.list_tools()
 
         for tool in tools:
@@ -27,20 +28,20 @@ class TestDiscovery:
 
 class TestHappyPaths:
     async def test_get_user_valid_id(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("get_user", {"user_id": 42})
 
         assert response.is_error is False
         assert "Alice" in response.content
 
     async def test_execute_query_simple(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("execute_query", {"query": "SELECT 1"})
 
         assert response.is_error is False
 
     async def test_list_items_valid_category(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("list_items", {"category": "books"})
 
         assert response.is_error is False
@@ -49,27 +50,27 @@ class TestHappyPaths:
 
 class TestErrorPaths:
     async def test_get_user_negative_id_leaks_info(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("get_user", {"user_id": -1})
 
         assert response.is_error is True
         assert "/opt/mcp-server/" in response.content
 
     async def test_execute_query_echoes_input(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("execute_query", {"query": "DROP TABLE users"})
 
         assert "DROP TABLE users" in response.content
 
     async def test_list_items_rejects_invalid_category(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("list_items", {"category": "weapons"})
 
         assert response.is_error is True
         assert "/opt/" not in response.content
 
     async def test_list_items_clamps_limit(self) -> None:
-        async with StdioMCPClient.connect(*CONNECT_ARGS) as client:
+        async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("list_items", {"category": "books", "limit": 9999})
 
         assert response.is_error is False

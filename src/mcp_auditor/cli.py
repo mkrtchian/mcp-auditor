@@ -16,6 +16,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[imp
 
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import load_settings
 from mcp_auditor.config_file import load_config_file, merge_defaults
 from mcp_auditor.console import AuditDisplay
@@ -172,7 +173,9 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
         async with (
             AsyncSqliteSaver.from_conn_string(db_path) as checkpointer,
             StdioMCPClient.connect(
-                command, args, errlog=server_stderr, tool_call_timeout=settings.tool_call_timeout
+                ServerLaunch.unconfined(command, args),
+                errlog=server_stderr,
+                tool_call_timeout=settings.tool_call_timeout,
             ) as mcp_client,
         ):
             server = AuditedServer(mcp_client)

@@ -1,6 +1,7 @@
 import pathlib
 
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.server_launch import ServerLaunch
 
 SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent / "subtle_server.py"
 
@@ -9,7 +10,8 @@ SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent / "subtle_server.py
 # entered and exited in the same task, and pytest-asyncio runs fixture
 # setup/teardown in separate tasks. The async with stays in the test body.
 def connected_subtle_server():
-    return StdioMCPClient.connect("uv", ["run", "python", str(SERVER_PATH)])
+    launch = ServerLaunch.unconfined("uv", ["run", "python", str(SERVER_PATH)])
+    return StdioMCPClient.connect(launch)
 
 
 class TestDiscovery:
