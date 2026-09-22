@@ -5,7 +5,7 @@
 ```bash
 uv run pytest                    # Unit + integration tests
 uv run pytest tests/unit         # Unit tests only
-uv run pytest tests/integration  # Integration tests only
+uv run pytest tests/integration  # Integration tests only (one test needs Docker and network access, it skips without Docker)
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)
@@ -79,6 +79,8 @@ Governed by `docs/adr/016-eval-gate-governance.md`. The short form:
 - The honeypot servers (`tests/honeypot_server.py`, `tests/subtle_server.py`, `tests/chain_honeypot_server.py`) contain **deliberately planted vulnerabilities**. They are the ground truth of `evals/ground_truth.py`. Fixing an apparent bug there degrades the eval suite silently, no unit test will fail.
 - The MCP SDK uses **two nested async context managers** (`stdio_client` + `ClientSession`). The adapter wraps both into a single `async with`. Don't try to manage them separately.
 - `with_structured_output` returns a single `BaseModel`, not a list — that's why `TestCaseBatch` exists as a wrapper.
+- The confined container's home is a tmpfs created with the invoking `uid` and `gid` (`--tmpfs /home/audit:exec,uid=…,gid=…`). Drop those two options and the tmpfs is root-owned, so `npx` fails with `EACCES` on its npm cache under `--user`. Same for `--memory-swap`: without it Docker grants as much swap again, the memory bound never bites and `oom_killed` reads `false` in the very case it is recorded for.
+- The **unconfined** thread id must keep its pre-0.3.0 hash: `compute_thread_id` hashes the command alone under `unconfined` and appends the regime only under the two container regimes. A unit test pins the literal hash. Hashing the regime for all three would make every audit interrupted before 0.3.0 unresumable, silently.
 
 ## Pointers
 

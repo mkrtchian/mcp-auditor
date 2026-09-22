@@ -23,10 +23,15 @@ Most MCP security tooling today works from one of two angles. **Static analysis*
 # Set your API key (Google AI Studio has a free tier: aistudio.google.com/apikey)
 export GOOGLE_API_KEY=your-key-here
 
-# Audit an MCP server
+# Audit an MCP server (the server runs in a Docker container, so Docker must be running)
 mkdir -p /tmp/sandbox
 uvx mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
+
+# Or launch it on this host instead, with your privileges (no Docker needed)
+uvx mcp-auditor run --unconfined -- python my_server.py
 ```
+
+By default the audited server runs in a container: Docker has to be installed and its daemon running, or the audit stops before anything is launched. `--unconfined` runs the server directly on this host, which is the form to use for a server whose code you wrote and trust, or on a machine without Docker.
 
 Every audit run reports its token usage. Cost and runtime scale with `--budget`, the number of test cases asked of the generator for each tool (10 by default), so start low to size a run against your own server.
 
@@ -44,14 +49,21 @@ The audit runs in four phases, with an optional fifth:
 
 `mcp-auditor` audits one slice of the MCP attack surface, on purpose.
 
-- **Transport: local stdio only.** It audits servers you launch as a subprocess (`-- npx ...`). Remote Streamable HTTP servers are on the roadmap, not supported yet. Auth, token, and transport-level attacks stay out of scope until then.
+- **Transport: local stdio only.** It audits servers you launch yourself, as a container or as a subprocess (`-- npx ...`). Remote Streamable HTTP servers are on the roadmap, not supported yet. Auth, token, and transport-level attacks stay out of scope until then.
 - **Primitive: Tools only.** MCP servers expose three primitives (Tools, Resources, Prompts). `mcp-auditor` tests the Tools surface, where the model invokes the server's functions. Resources and Prompts are not audited, and it does not offer client capabilities, so it does not test a server that abuses Sampling.
 - **Direction: client to server.** It tests whether a server withstands a manipulated LLM client (adversarial inputs into tools). It does not replay a full server-to-client attack, where a malicious server turns the host's agent against its user. Detecting that end to end needs a real host agent with its own tools and data, which `mcp-auditor` is not.
 - **One server, tools in isolation.** It audits a single server and judges each tool on its own. It does not assess session-level risk, how the audited tools combine with the other tools an agent holds at once. The lethal trifecta (private data, untrusted content, exfiltration) assembles from that combination, and a per-server audit does not see it.
 - **Payloads that do not aim to destroy, on a server that still gets written to.** A deterministic guard refuses a payload before it is sent when its arguments contain one of a short enumerated list of destructive constructs (`rm -rf`, `DROP TABLE`, a fork bomb, and a handful more). Refused payloads appear in the report as blocked, never sent, never judged. The list is short and literal, so some destructive calls pass it. And the auditor calls the server's own tools with adversarial arguments, so **if a tool writes, auditing it writes**, and it cannot observe a call's side effects ([ADR 011](docs/adr/011-instrumented-observation-deferred.md)) so it cannot promise their absence. [ADR 013](docs/adr/013-non-destructive-payloads.md)
 - **Observable effects only.** It flags a vulnerability when the effect surfaces in a tool response. A vulnerability whose only effect is a silent write, a spawned process, or out-of-band exfiltration leaves nothing in the response for the black-box auditor to read, so it stays out of reach until a future instrumented mode (see [ADR 011](docs/adr/011-instrumented-observation-deferred.md)).
+- **Confined by default.** The audited server runs in a Docker container: it does not see the rest of your filesystem, the services bound to your host's loopback interface, your privileges (all capabilities dropped, no privilege escalation, your own uid), or the auditor's environment and API key. What it does see: the paths your command names, mounted writable at the same absolute path, and the Internet, since egress stays open. An argument counts as a path only when the whole argument is spelled like one (absolute, `.`, `..`, `./…`, `../…`), so `--root=./data` is not mounted and a bare word like `build` never is. The report records the regime, the image and its digest, and the mounted paths. A command that is already a `docker run` is audited as you wrote it, flags included, and `--unconfined` launches the server on this host with your privileges. Starting containers requires membership in the `docker` group, which is equivalent to root on the host. [ADR 017](docs/adr/017-confined-target-execution.md), [ADR 018](docs/adr/018-container-confinement.md)
 
-**Safety:** run the auditor only against a server whose state you can restore, never against production. And treat the audit report as sensitive. To prove impact, the auditor reads real data, environment variables included, so a finding can quote a live secret, and nothing redacts it ([ADR 014](docs/adr/014-proving-impact.md)). The same secret reaches the judge model, and your LangSmith traces if tracing is enabled.
+**Safety:** run the auditor only against a server whose state you can restore, never against production. A secret the audited server reads under a mounted path is a live secret of your host, not of a copy. And treat the audit report as sensitive. To prove impact, the auditor reads real data, environment variables included, so a finding can quote a live secret, and nothing redacts it ([ADR 014](docs/adr/014-proving-impact.md)). The same secret reaches the judge model, and your LangSmith traces if tracing is enabled.
+
+The auditor removes its container when a run ends, however it ends. If one is ever left behind, they all carry the same label:
+
+```bash
+docker rm -f $(docker ps -aq --filter label=mcp-auditor)
+```
 
 ## Architecture
 
@@ -203,6 +215,15 @@ With the default `google` provider, the main model and the judge both run `gemin
 | `--dry-run`  | off        | Discover tools and generate cases, skip execution |
 | `--ci`       | off        | CI mode: no Rich UI, exit 1 on findings           |
 | `--severity-threshold` | `medium` | Minimum severity to trigger CI failure    |
+| `--unconfined` | off | Launch the server on this host with your privileges, outside any container |
+| `--image`    | per launcher | Image to run the server in, for a launcher the default table does not cover |
+| `--mount`    | none       | Host path to mount into the container, `PATH` or `PATH:rw`, read-only by default (repeatable, the path must already exist) |
+
+The confinement options, like every other option, go before the `--` that starts the server's own command:
+
+```bash
+mcp-auditor run --mount /etc/ssl/certs -- npx some-mcp-server ./workdir
+```
 
 ### Configuration file
 
@@ -219,7 +240,7 @@ output: report.json
 ci: true
 ```
 
-CLI flags override config file values.
+CLI flags override config file values. `unconfined`, `image` and `mount` are deliberately not file keys: the file is read from the audited project's own directory, so a file could otherwise turn off the confinement of the server it ships.
 
 ## Run in CI
 
@@ -230,14 +251,16 @@ The false-positive rate on a healthy server is not measured yet (see [Measuremen
 ```yaml
 # .github/workflows/mcp-audit.yml
 - name: Audit MCP server
-  run: uvx mcp-auditor run --ci -- python my_server.py
+  run: uvx mcp-auditor run --ci --unconfined -- python my_server.py
 ```
+
+`--unconfined` is the right form here: the server under audit is your own code, in your own repository, and the runner is throwaway. Drop it to run the server in a container instead, on a runner that has Docker.
 
 Use `--severity-threshold` to control which findings trigger a failure:
 
 ```bash
 # Only fail on high or critical findings
-mcp-auditor run --ci --severity-threshold high -- python my_server.py
+mcp-auditor run --ci --unconfined --severity-threshold high -- python my_server.py
 ```
 
 ## Contributing

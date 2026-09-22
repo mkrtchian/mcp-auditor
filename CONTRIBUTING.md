@@ -11,7 +11,7 @@ uv sync                                # install runtime + dev dependencies
 uv run pytest                          # should be green before you touch anything
 ```
 
-You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management. Don't add a `requirements.txt`. Docker is only needed for the CVE benchmark (below), not for the tests or the regular evals.
+You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management. Don't add a `requirements.txt`. Docker is needed to audit a server under the default regime, which launches it in a container, and by the CVE benchmark (below). One integration test exercises that confined path and skips when Docker does not answer. The unit tests and the regular evals need none.
 
 ```bash
 uv run pytest tests/unit               # unit tests
