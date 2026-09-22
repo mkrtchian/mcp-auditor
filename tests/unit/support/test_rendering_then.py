@@ -92,3 +92,8 @@ def json_chain_has_owasp(json_str: str, category: str, expected_code: str) -> No
                 assert result["owasp"]["code"] == expected_code
                 return
     raise AssertionError(f"No chain with category {category} found")
+
+
+def markdown_has_no_confined_lines(markdown: str) -> None:
+    for label in ("**Writable on host**", "**Read-only on host**", "**Killed on memory**"):
+        assert label not in markdown

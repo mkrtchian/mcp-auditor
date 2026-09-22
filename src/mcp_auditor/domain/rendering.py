@@ -8,6 +8,8 @@ from mcp_auditor.domain.models import (
     ChainStep,
     EvalResult,
     EvalVerdict,
+    ExecutionRecord,
+    ExecutionRegime,
     Severity,
     TestCase,
     ToolReport,
@@ -48,9 +50,11 @@ def _render_summary_section(report: AuditReport) -> str:
     lines = [
         "## Summary\n",
         f"**Target**: {report.target}",
-        f"**Tools audited**: {tool_count}",
-        f"**Test cases**: {total_cases}",
     ]
+    if report.execution is not None:
+        lines.extend(_render_execution_lines(report.execution))
+    lines.append(f"**Tools audited**: {tool_count}")
+    lines.append(f"**Test cases**: {total_cases}")
     if blocked_count > 0:
         lines.append(f"**Blocked**: {blocked_count}")
     lines.append(f"**Findings**: {finding_count}")
@@ -59,6 +63,27 @@ def _render_summary_section(report: AuditReport) -> str:
     usage = report.token_usage
     lines.append(f"**Token usage**: {usage.input_tokens} input, {usage.output_tokens} output")
     return "\n".join(lines)
+
+
+def _render_execution_lines(record: ExecutionRecord) -> list[str]:
+    if record.regime != ExecutionRegime.CONFINED:
+        return [f"**Execution**: {record.regime.replace('_', ' ')}"]
+    lines = [
+        f"**Execution**: confined, {_image_reference(record)}",
+        f"**Writable on host**: {', '.join(record.writable_paths or []) or 'none'}",
+    ]
+    if record.read_only_paths:
+        lines.append(f"**Read-only on host**: {', '.join(record.read_only_paths)}")
+    if record.oom_killed is not False:
+        lines.append(f"**Killed on memory**: {'yes' if record.oom_killed else 'unknown'}")
+    return lines
+
+
+def _image_reference(record: ExecutionRecord) -> str:
+    if record.image_digest is None:
+        return str(record.image)
+    algorithm, _, digest = record.image_digest.partition(":")
+    return f"{record.image}@{algorithm}:{digest[:12]}"
 
 
 def _blocked_count(report: AuditReport) -> int:

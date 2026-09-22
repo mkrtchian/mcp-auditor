@@ -250,10 +250,28 @@ def filter_tools(
     return [t for t in tools if t.name in tools_filter]
 
 
+class ExecutionRegime(StrEnum):
+    CONFINED = "confined"
+    DECLARED_CONTAINER = "declared_container"
+    UNCONFINED = "unconfined"
+
+
+class ExecutionRecord(BaseModel):
+    regime: ExecutionRegime
+    image: str | None = None
+    image_digest: str | None = None
+    writable_paths: list[str] | None = None
+    read_only_paths: list[str] | None = None
+    oom_killed: bool | None = None
+    """Read with the regime: under `confined`, `None` means the kill state could not be read.
+    Under the other regimes it is always `None`, there being no container of the auditor's."""
+
+
 class AuditReport(BaseModel):
     target: str
     tool_reports: list[ToolReport]
     token_usage: TokenUsage
+    execution: ExecutionRecord | None = None
 
     @property
     def findings(self) -> list[EvalResult]:

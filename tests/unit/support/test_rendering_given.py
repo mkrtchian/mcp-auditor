@@ -7,6 +7,8 @@ from mcp_auditor.domain.models import (
     ChainStep,
     EvalResult,
     EvalVerdict,
+    ExecutionRecord,
+    ExecutionRegime,
     Severity,
     TestCase,
     TokenUsage,
@@ -194,15 +196,40 @@ def _a_tool_report_with_blocked(
     )
 
 
+FULL_DIGEST = "sha256:abc123def4567890abc123def4567890abc123def4567890abc123def4567890"
+
+
+def a_confined_record(
+    image_digest: str | None = FULL_DIGEST,
+    writable_paths: list[str] | None = None,
+    read_only_paths: list[str] | None = None,
+    oom_killed: bool | None = False,
+) -> ExecutionRecord:
+    return ExecutionRecord(
+        regime=ExecutionRegime.CONFINED,
+        image="node:24-bookworm-slim",
+        image_digest=image_digest,
+        writable_paths=writable_paths if writable_paths is not None else ["/tmp/sandbox"],
+        read_only_paths=read_only_paths if read_only_paths is not None else [],
+        oom_killed=oom_killed,
+    )
+
+
+def a_report_with_execution(record: ExecutionRecord) -> AuditReport:
+    return a_report(target="npx server", tool_reports=[], execution=record)
+
+
 def a_report(
     target: str,
     tool_reports: list[ToolReport],
     token_usage: TokenUsage | None = None,
+    execution: ExecutionRecord | None = None,
 ) -> AuditReport:
     return AuditReport(
         target=target,
         tool_reports=tool_reports,
         token_usage=token_usage or TokenUsage(),
+        execution=execution,
     )
 
 
