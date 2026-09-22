@@ -81,3 +81,10 @@ def test_chains_is_accepted_key(tmp_path: Path) -> None:
     result = load_config_file(path)
 
     assert result == {"chains": 3}
+
+
+def test_rejects_unconfined_as_a_file_key(tmp_path: Path) -> None:
+    path = given.a_config_file_containing(tmp_path, unconfined=True)
+
+    with pytest.raises(UnknownKeyError, match="unconfined"):
+        load_config_file(path)

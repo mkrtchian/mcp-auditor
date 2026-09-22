@@ -4,22 +4,24 @@ import warnings
 warnings.filterwarnings("ignore", message="Core Pydantic V1", category=UserWarning)
 
 import asyncio
-import hashlib
 import logging
+import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import click
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
 
+from mcp_auditor.adapters.docker import DockerRuntime, docker_client_env
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
-from mcp_auditor.adapters.server_launch import ServerLaunch
+from mcp_auditor.checkpointing import checkpoint_db_path, compute_thread_id, resume_or_reset
 from mcp_auditor.config import load_settings
 from mcp_auditor.config_file import load_config_file, merge_defaults
-from mcp_auditor.console import AuditDisplay
+from mcp_auditor.console import AuditDisplay, print_server_stderr, summarize_exception_group
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import (
     AttackContext,
@@ -27,15 +29,17 @@ from mcp_auditor.domain.models import (
     Severity,
 )
 from mcp_auditor.domain.ports import LLMPort
-from mcp_auditor.domain.rendering import render_json, render_markdown
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
+from mcp_auditor.report_files import ReportPaths, write_reports
 from mcp_auditor.stream_handler import AuditProgressReporter
-
-
-@dataclass(frozen=True)
-class ReportPaths:
-    json: str | None = None
-    markdown: str | None = None
+from mcp_auditor.target_execution import (
+    Host,
+    LaunchContext,
+    LaunchOptions,
+    LaunchRefused,
+    TargetExecution,
+    decide_launch,
+)
 
 
 @dataclass(frozen=True)
@@ -57,6 +61,7 @@ class AuditConfig:
     execution: ExecutionConfig
     report_paths: ReportPaths
     ci: CIOptions
+    launch: LaunchOptions
     tools_filter: frozenset[str] | None = None
 
 
@@ -97,6 +102,24 @@ def cli() -> None:
     default=Severity.MEDIUM.value,
     help="Minimum severity to trigger CI failure.",
 )
+@click.option(
+    "--unconfined",
+    is_flag=True,
+    default=False,
+    help="Launch the server on this host with your privileges, outside any container.",
+)
+@click.option(
+    "--image",
+    type=str,
+    default=None,
+    help="Container image to run the server in, for a launcher the default table does not cover.",
+)
+@click.option(
+    "--mount",
+    type=str,
+    multiple=True,
+    help="Host path to mount into the container, PATH or PATH:rw, read-only by default.",
+)
 @click.pass_context
 def run(
     ctx: click.Context,
@@ -110,6 +133,9 @@ def run(
     chains: int,
     ci: bool,
     severity_threshold: str,
+    unconfined: bool,
+    image: str | None,
+    mount: tuple[str, ...],
 ) -> None:
     """Audit an MCP server.
 
@@ -117,9 +143,9 @@ def run(
 
     \b
     Examples:
-        mcp-auditor run -- python my_server.py
+        mcp-auditor run --unconfined -- python my_server.py
         mcp-auditor run --budget 5 -- npx some-mcp-server
-        mcp-auditor run --ci -- python my_server.py
+        mcp-auditor run --ci --unconfined -- python my_server.py
     """
     params = _merge_with_config_file(ctx)
     config = AuditConfig(
@@ -133,6 +159,11 @@ def run(
         ci=CIOptions(
             enabled=params["ci"],
             severity_threshold=Severity(params["severity_threshold"]),
+        ),
+        launch=LaunchOptions(
+            unconfined=params["unconfined"],
+            image=params["image"],
+            mounts=tuple(params["mount"]),
         ),
         tools_filter=parse_tools_filter(params["tools"]),
     )
@@ -151,10 +182,19 @@ def _merge_with_config_file(ctx: click.Context) -> dict[str, Any]:
 
 async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
     logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
-    command, args = target[0], list(target[1:])
-    target_str = " ".join(target)
     display = AuditDisplay(ci_mode=config.ci.enabled)
-    display.print_header(target_str)
+    context = _launch_context(config)
+
+    try:
+        decision = decide_launch(target[0], list(target[1:]), context)
+    except LaunchRefused as refusal:
+        display.print_error(str(refusal))
+        raise SystemExit(1) from refusal
+    for warning in decision.warnings:
+        display.print_warning(warning)
+    launch = decision.launch
+    target_str = " ".join([launch.command, *launch.args])
+    display.print_header(target_str, launch.regime)
 
     try:
         settings = load_settings()
@@ -164,16 +204,14 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
         display.print_error(f"could not initialize LLM: {exc}")
         raise SystemExit(1) from exc
 
-    checkpoint_dir = Path.home() / ".mcp-auditor"
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
-    db_path = str(checkpoint_dir / "checkpoints.db")
-
+    execution = TargetExecution(launch, context.runtime)
     server_stderr = tempfile.SpooledTemporaryFile(max_size=1024 * 1024, mode="w+")  # noqa: SIM115
     try:
         async with (
-            AsyncSqliteSaver.from_conn_string(db_path) as checkpointer,
+            execution,
+            AsyncSqliteSaver.from_conn_string(checkpoint_db_path()) as checkpointer,
             StdioMCPClient.connect(
-                ServerLaunch.unconfined(command, args),
+                launch,
                 errlog=server_stderr,
                 tool_call_timeout=settings.tool_call_timeout,
             ) as mcp_client,
@@ -192,7 +230,7 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
                 checkpointer=checkpointer,
                 tools_filter=config.tools_filter,
             )
-            thread_id = _compute_thread_id(command, args)
+            thread_id = compute_thread_id(launch)
             resuming = await resume_or_reset(graph, thread_id, config.execution.resume)
             if config.execution.resume and not resuming:
                 display.print_info("nothing to resume for this target, starting a fresh audit")
@@ -217,41 +255,40 @@ async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
                 },
             }
 
-            await _run_full_audit(
-                graph, graph_config, initial_state, display, config.report_paths, config.ci
-            )
+            report = await _run_full_audit(graph, graph_config, initial_state, display)
     except ConnectionError as exc:
         display.print_error(f"could not connect to MCP server: {exc}")
-        _show_server_stderr(server_stderr, display)
+        print_server_stderr(server_stderr, display)
         raise SystemExit(1) from exc
     except OSError as exc:
         display.print_error(str(exc))
-        _show_server_stderr(server_stderr, display)
+        print_server_stderr(server_stderr, display)
         raise SystemExit(1) from exc
     except BaseExceptionGroup as exc:
-        display.print_error(f"MCP server failed: {_summarize_exception_group(exc)}")
-        _show_server_stderr(server_stderr, display)
+        display.print_error(f"MCP server failed: {summarize_exception_group(exc)}")
+        print_server_stderr(server_stderr, display)
         raise SystemExit(1) from exc
 
+    report = report.model_copy(update={"execution": execution.record})
+    display.print_summary(report)
+    display.print_findings_recap(report)
+    write_reports(report, config.report_paths, display)
+    if config.ci.enabled and report.has_findings_at_or_above(config.ci.severity_threshold):
+        raise SystemExit(1)
 
-async def resume_or_reset(graph: Any, thread_id: str, requested: bool) -> bool:
-    """True to resume an interrupted audit, False after wiping the thread.
 
-    A reused thread must be wiped: the operator.add reducers on tool_reports and
-    token_usage would otherwise fold the previous audit into this report.
-    """
-    # This read must precede the wipe: adelete_thread is the one saver method
-    # that skips setup(), so on a virgin database it fails on a missing table.
-    snapshot = await graph.aget_state({"configurable": {"thread_id": thread_id}})
-    # `next` holds the nodes still to run, and discriminates where the mere
-    # existence of a checkpoint cannot: it is empty both for a thread never
-    # audited and for one whose audit ran to the end, which are exactly the two
-    # unresumable cases. Resuming a completed thread runs no node at all and
-    # replays its stored report as if it were a fresh audit.
-    if requested and snapshot.next:
-        return True
-    await graph.checkpointer.adelete_thread(thread_id)
-    return False
+def _launch_context(config: AuditConfig) -> LaunchContext:
+    return LaunchContext(
+        options=config.launch,
+        runtime=DockerRuntime(),
+        host=Host(
+            uid=os.getuid(),
+            gid=os.getgid(),
+            home=Path.home(),
+            docker_env=docker_client_env(os.environ),
+        ),
+        container_name=f"mcp-auditor-{uuid4().hex[:12]}",
+    )
 
 
 async def _run_full_audit(
@@ -259,9 +296,7 @@ async def _run_full_audit(
     config: dict[str, Any],
     initial_state: dict[str, Any] | None,
     display: AuditDisplay,
-    report_paths: ReportPaths,
-    ci: CIOptions,
-) -> None:
+) -> AuditReport:
     reporter = AuditProgressReporter(display)
     async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
         reporter.on_stream_event(event)
@@ -271,13 +306,7 @@ async def _run_full_audit(
     if report is None:
         display.print_error("audit did not produce a report")
         raise SystemExit(1)
-
-    display.print_summary(report)
-    display.print_findings_recap(report)
-    _write_reports(report, report_paths, display)
-
-    if ci.enabled and report.has_findings_at_or_above(ci.severity_threshold):
-        raise SystemExit(1)
+    return report
 
 
 async def _run_dry_run(
@@ -295,41 +324,6 @@ async def _run_dry_run(
     display.print_discovery(len(tools), [t.name for t in tools])
     for report in result.get("tool_reports", []):
         display.print_dry_run_payloads(report.tool.name, [c.payload for c in report.cases])
-
-
-def _compute_thread_id(command: str, args: list[str]) -> str:
-    full = " ".join([command, *args])
-    return hashlib.sha256(full.encode()).hexdigest()[:16]
-
-
-def _write_reports(
-    report: AuditReport,
-    paths: ReportPaths,
-    display: AuditDisplay,
-) -> None:
-    if paths.json:
-        Path(paths.json).write_text(render_json(report))
-        display.print_report_path(paths.json)
-    if paths.markdown:
-        Path(paths.markdown).write_text(render_markdown(report))
-        display.print_report_path(paths.markdown)
-
-
-def _show_server_stderr(
-    server_stderr: tempfile.SpooledTemporaryFile[str], display: AuditDisplay
-) -> None:
-    server_stderr.seek(0)
-    output = server_stderr.read().strip()
-    if output:
-        display.print_error(f"server stderr:\n{output}")
-
-
-def _summarize_exception_group(exc_group: BaseExceptionGroup[BaseException]) -> str:
-    for exc in exc_group.exceptions:
-        if isinstance(exc, BaseExceptionGroup):
-            return _summarize_exception_group(exc)
-        return str(exc)
-    return str(exc_group)
 
 
 def main() -> None:

@@ -1,13 +1,21 @@
 import tests.unit.support.test_console_given as given
-from mcp_auditor.domain.models import AuditCategory, Severity
+from mcp_auditor.domain.models import AuditCategory, ExecutionRegime, Severity
 
 
 def test_header_contains_target():
     display, buffer = given.a_display()
 
-    display.print_header("python server.py")
+    display.print_header("python server.py", ExecutionRegime.UNCONFINED)
 
     assert "python server.py" in buffer.getvalue()
+
+
+def test_header_states_the_execution_regime():
+    display, buffer = given.a_display()
+
+    display.print_header("npx some-server", ExecutionRegime.CONFINED)
+
+    assert "confined" in buffer.getvalue()
 
 
 def test_discovery_shows_count_and_names():
@@ -68,7 +76,7 @@ def test_report_path_displayed():
 def test_ci_mode_suppresses_header():
     display, buffer = given.a_ci_display()
 
-    display.print_header("python server.py")
+    display.print_header("python server.py", ExecutionRegime.UNCONFINED)
 
     assert buffer.getvalue() == ""
 

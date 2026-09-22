@@ -5,7 +5,8 @@ import pytest
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
 
 import tests.unit.support.test_graph_given as given
-from mcp_auditor.cli import resume_or_reset
+from mcp_auditor.adapters.server_launch import ServerLaunch
+from mcp_auditor.checkpointing import compute_thread_id, resume_or_reset
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from tests.fakes import FakeMCPClient
 
@@ -131,3 +132,30 @@ async def given_a_crashed_audit(checkpointer: Any, thread_id: str):
 def then_each_tool_audited_once(result: dict[str, Any], tool_names: list[str]) -> None:
     reports = result["audit_report"].tool_reports
     assert [report.tool.name for report in reports] == tool_names
+
+
+def test_an_unconfined_thread_id_is_the_one_audits_used_before_confinement():
+    assert compute_thread_id(ServerLaunch.unconfined("python", ["server.py"])) == "7cc34ebdac143b58"
+
+
+def test_a_declared_container_gets_its_own_thread():
+    unconfined = compute_thread_id(ServerLaunch.unconfined("docker", ["run", "img"]))
+    declared = compute_thread_id(ServerLaunch.declared_container("docker", ["run", "img"], {}))
+
+    assert unconfined != declared
+
+
+def test_no_argument_can_forge_another_regimes_thread_id():
+    declared = compute_thread_id(ServerLaunch.declared_container("docker", ["run", "img"], {}))
+    forged = compute_thread_id(
+        ServerLaunch.unconfined("docker", ["run", "img", "declared_container"])
+    )
+
+    assert declared != forged
+
+
+def test_two_equal_launches_share_a_thread():
+    first = ServerLaunch.unconfined("npx", ["some-server", "/tmp/data"])
+    second = ServerLaunch.unconfined("npx", ["some-server", "/tmp/data"])
+
+    assert compute_thread_id(first) == compute_thread_id(second)

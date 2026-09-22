@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from types import TracebackType
-from typing import Self
+from typing import Self, cast
 
 from rich.columns import Columns
 from rich.console import Console
@@ -15,6 +16,7 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     AuditReport,
     EvalResult,
+    ExecutionRegime,
     Severity,
     TokenUsage,
 )
@@ -38,10 +40,11 @@ class AuditDisplay:
             self._console = Console()
         self._ci_mode = ci_mode
 
-    def print_header(self, target_command: str) -> None:
+    def print_header(self, target_command: str, regime: ExecutionRegime) -> None:
         if self._ci_mode:
             return
-        self._console.print(Panel(target_command, title="MCP Auditor"))
+        body = f"{target_command}\nexecution: {_describe_regime(regime)}"
+        self._console.print(Panel(body, title="MCP Auditor"))
 
     def print_discovery(self, tool_count: int, tool_names: list[str]) -> None:
         if tool_count > 6:
@@ -118,6 +121,12 @@ class AuditDisplay:
     def print_info(self, message: str) -> None:
         self._console.print(message)
 
+    def print_warning(self, message: str) -> None:
+        if self._ci_mode:
+            self._console.print(f"Warning: {message}")
+        else:
+            self._console.print(f"[yellow]Warning: {message}[/yellow]")
+
     def print_error(self, message: str) -> None:
         if self._ci_mode:
             self._console.print(f"Error: {message}")
@@ -141,6 +150,27 @@ class NullStatus:
         exc_tb: TracebackType | None,
     ) -> None:
         pass
+
+
+def print_server_stderr(
+    server_stderr: tempfile.SpooledTemporaryFile[str], display: AuditDisplay
+) -> None:
+    server_stderr.seek(0)
+    output = server_stderr.read().strip()
+    if output:
+        display.print_error(f"server stderr:\n{output}")
+
+
+def summarize_exception_group(exc_group: BaseExceptionGroup[BaseException]) -> str:
+    for exc in exc_group.exceptions:
+        if isinstance(exc, BaseExceptionGroup):
+            return summarize_exception_group(cast(BaseExceptionGroup[BaseException], exc))
+        return str(exc)
+    return str(exc_group)
+
+
+def _describe_regime(regime: ExecutionRegime) -> str:
+    return regime.replace("_", " ")
 
 
 def _format_finding(finding: EvalResult) -> str:
