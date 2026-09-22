@@ -1,4 +1,3 @@
-# pyright: reportUnknownMemberType=false, reportMissingTypeStubs=false, reportArgumentType=false, reportUnknownArgumentType=false
 import warnings
 
 warnings.filterwarnings("ignore", message="Core Pydantic V1", category=UserWarning)
@@ -6,32 +5,25 @@ warnings.filterwarnings("ignore", message="Core Pydantic V1", category=UserWarni
 import asyncio
 import logging
 import os
-import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 import click
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
 
 from mcp_auditor.adapters.docker import DockerRuntime, docker_client_env
-from mcp_auditor.adapters.llm import create_judge_llm, create_llm
-from mcp_auditor.adapters.mcp_client import StdioMCPClient
-from mcp_auditor.checkpointing import checkpoint_db_path, compute_thread_id, resume_or_reset
-from mcp_auditor.config import load_settings
-from mcp_auditor.config_file import load_config_file, merge_defaults
-from mcp_auditor.console import AuditDisplay, print_server_stderr, summarize_exception_group
-from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import (
-    AttackContext,
-    AuditReport,
-    Severity,
+from mcp_auditor.adapters.server_launch import ServerLaunch
+from mcp_auditor.audit import (
+    Analysts,
+    Audit,
+    AuditConfig,
+    CIOptions,
+    ExecutionConfig,
 )
-from mcp_auditor.domain.ports import LLMPort
-from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
+from mcp_auditor.config_file import load_config_file, merge_defaults
+from mcp_auditor.console import AuditDisplay
+from mcp_auditor.domain.models import AuditReport, Severity
 from mcp_auditor.report_files import ReportPaths, write_reports
-from mcp_auditor.stream_handler import AuditProgressReporter
 from mcp_auditor.target_execution import (
     Host,
     LaunchContext,
@@ -41,38 +33,7 @@ from mcp_auditor.target_execution import (
     decide_launch,
 )
 
-
-@dataclass(frozen=True)
-class CIOptions:
-    enabled: bool = False
-    severity_threshold: Severity = Severity.MEDIUM
-
-
-@dataclass(frozen=True)
-class ExecutionConfig:
-    budget: int
-    chains: int
-    resume: bool
-    dry_run: bool
-
-
-@dataclass(frozen=True)
-class AuditConfig:
-    execution: ExecutionConfig
-    report_paths: ReportPaths
-    ci: CIOptions
-    launch: LaunchOptions
-    tools_filter: frozenset[str] | None = None
-
-
-def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
-    if raw is None or raw.strip() == "":
-        return None
-    return frozenset(name.strip() for name in raw.split(","))
-
-
 CONFIG_FILE_NAME = ".mcp-auditor.yml"
-DEFAULT_MAX_CHAIN_STEPS = 3
 
 
 @click.group()
@@ -180,96 +141,31 @@ def _merge_with_config_file(ctx: click.Context) -> dict[str, Any]:
     return merge_defaults(dict(ctx.params), file_defaults, explicit_keys)
 
 
+def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
+    if raw is None or raw.strip() == "":
+        return None
+    return frozenset(name.strip() for name in raw.split(","))
+
+
 async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
     logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
     display = AuditDisplay(ci_mode=config.ci.enabled)
     context = _launch_context(config)
+    launch = _decided_launch(target, context, display)
+    display.print_header(launch.target, launch.regime)
 
-    try:
-        decision = decide_launch(target[0], list(target[1:]), context)
-    except LaunchRefused as refusal:
-        display.print_error(str(refusal))
-        raise SystemExit(1) from refusal
-    for warning in decision.warnings:
-        display.print_warning(warning)
-    launch = decision.launch
-    target_str = " ".join([launch.command, *launch.args])
-    display.print_header(target_str, launch.regime)
+    audit = Audit(
+        config=config,
+        execution=TargetExecution(launch, context.runtime),
+        analysts=_hired_analysts(display),
+        display=display,
+    )
+    report = await audit.run()
+    if report is not None:
+        _deliver(report, config, display)
 
-    try:
-        settings = load_settings()
-        llm = create_llm(settings)
-        judge_llm = create_judge_llm(settings)
-    except (KeyError, ValueError) as exc:
-        display.print_error(f"could not initialize LLM: {exc}")
-        raise SystemExit(1) from exc
 
-    execution = TargetExecution(launch, context.runtime)
-    server_stderr = tempfile.SpooledTemporaryFile(max_size=1024 * 1024, mode="w+")  # noqa: SIM115
-    try:
-        async with (
-            execution,
-            AsyncSqliteSaver.from_conn_string(checkpoint_db_path()) as checkpointer,
-            StdioMCPClient.connect(
-                launch,
-                errlog=server_stderr,
-                tool_call_timeout=settings.tool_call_timeout,
-            ) as mcp_client,
-        ):
-            server = AuditedServer(mcp_client)
-            if config.execution.dry_run:
-                await _run_dry_run(
-                    llm, server, config.execution.budget, display, config.tools_filter
-                )
-                return
-
-            graph = build_graph(
-                llm,
-                server,
-                judge_llm=judge_llm,
-                checkpointer=checkpointer,
-                tools_filter=config.tools_filter,
-            )
-            thread_id = compute_thread_id(launch)
-            resuming = await resume_or_reset(graph, thread_id, config.execution.resume)
-            if config.execution.resume and not resuming:
-                display.print_info("nothing to resume for this target, starting a fresh audit")
-            initial_state = (
-                None
-                if resuming
-                else {
-                    "target": target_str,
-                    "test_budget": config.execution.budget,
-                    "chain_budget": config.execution.chains,
-                    "max_chain_steps": DEFAULT_MAX_CHAIN_STEPS,
-                    "attack_context": AttackContext(),
-                }
-            )
-            graph_config: dict[str, Any] = {
-                "configurable": {"thread_id": thread_id},
-                "metadata": {
-                    "target": target_str,
-                    "budget": config.execution.budget,
-                    "provider": settings.provider,
-                    "model": settings.resolve_model(),
-                },
-            }
-
-            report = await _run_full_audit(graph, graph_config, initial_state, display)
-    except ConnectionError as exc:
-        display.print_error(f"could not connect to MCP server: {exc}")
-        print_server_stderr(server_stderr, display)
-        raise SystemExit(1) from exc
-    except OSError as exc:
-        display.print_error(str(exc))
-        print_server_stderr(server_stderr, display)
-        raise SystemExit(1) from exc
-    except BaseExceptionGroup as exc:
-        display.print_error(f"MCP server failed: {summarize_exception_group(exc)}")
-        print_server_stderr(server_stderr, display)
-        raise SystemExit(1) from exc
-
-    report = report.model_copy(update={"execution": execution.record})
+def _deliver(report: AuditReport, config: AuditConfig, display: AuditDisplay) -> None:
     display.print_summary(report)
     display.print_findings_recap(report)
     write_reports(report, config.report_paths, display)
@@ -291,39 +187,27 @@ def _launch_context(config: AuditConfig) -> LaunchContext:
     )
 
 
-async def _run_full_audit(
-    graph: Any,
-    config: dict[str, Any],
-    initial_state: dict[str, Any] | None,
-    display: AuditDisplay,
-) -> AuditReport:
-    reporter = AuditProgressReporter(display)
-    async for event in graph.astream(initial_state, config, stream_mode="updates", subgraphs=True):
-        reporter.on_stream_event(event)
-
-    final_state = await graph.aget_state(config)
-    report: AuditReport | None = final_state.values.get("audit_report")
-    if report is None:
-        display.print_error("audit did not produce a report")
-        raise SystemExit(1)
-    return report
+def _decided_launch(
+    target: tuple[str, ...], context: LaunchContext, display: AuditDisplay
+) -> ServerLaunch:
+    try:
+        decision = decide_launch(target[0], list(target[1:]), context)
+    except LaunchRefused as refusal:
+        display.print_error(str(refusal))
+        raise SystemExit(1) from refusal
+    for warning in decision.warnings:
+        display.print_warning(warning)
+    return decision.launch
 
 
-async def _run_dry_run(
-    llm: LLMPort,
-    server: AuditedServer,
-    budget: int,
-    display: AuditDisplay,
-    tools_filter: frozenset[str] | None,
-) -> None:
-    graph = build_dry_run_graph(llm, server, tools_filter=tools_filter)
-    result = await graph.ainvoke(
-        {"target": "", "test_budget": budget, "attack_context": AttackContext()}
-    )
-    tools = result.get("discovered_tools", [])
-    display.print_discovery(len(tools), [t.name for t in tools])
-    for report in result.get("tool_reports", []):
-        display.print_dry_run_payloads(report.tool.name, [c.payload for c in report.cases])
+# Hired after the launch decision, never before: a target the auditor refuses to launch is
+# refused the same way on a machine that holds an API key and on one that does not.
+def _hired_analysts(display: AuditDisplay) -> Analysts:
+    try:
+        return Analysts.hired()
+    except (KeyError, ValueError) as exc:
+        display.print_error(f"could not initialize LLM: {exc}")
+        raise SystemExit(1) from exc
 
 
 def main() -> None:

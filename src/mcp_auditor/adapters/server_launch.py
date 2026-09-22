@@ -49,6 +49,11 @@ class ServerLaunch:
         return cls(command, tuple(args), ExecutionRegime.UNCONFINED)
 
     @property
+    def target(self) -> str:
+        """The command as the user wrote it, which is how a report names what was audited."""
+        return " ".join([self.command, *self.args])
+
+    @property
     def spawn_command(self) -> str:
         return "docker" if self.profile is not None else self.command
 

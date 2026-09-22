@@ -179,7 +179,7 @@ class TargetExecution:
     """
 
     def __init__(self, launch: ServerLaunch, runtime: ContainerRuntime):
-        self._launch = launch
+        self.launch = launch
         self._runtime = runtime
         self.record: ExecutionRecord | None = None
 
@@ -192,11 +192,11 @@ class TargetExecution:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        profile = self._launch.profile
+        profile = self.launch.profile
         if profile is None:
-            self.record = self._launch.record(None)
+            self.record = self.launch.record(None)
             return
         try:
-            self.record = self._launch.record(self._runtime.oom_killed(profile.identity.name))
+            self.record = self.launch.record(self._runtime.oom_killed(profile.identity.name))
         finally:
             self._runtime.remove(profile.identity.name)
