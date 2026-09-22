@@ -225,6 +225,8 @@ The confinement options, like every other option, go before the `--` that starts
 mcp-auditor run --mount /etc/ssl/certs -- npx some-mcp-server ./workdir
 ```
 
+With `--image`, the image has to carry the server's dependencies: `--image my-image -- python ./server.py` mounts `server.py`, not the virtual environment it runs in.
+
 ### Configuration file
 
 Place a `.mcp-auditor.yml` in your project root to avoid repeating CLI flags:
