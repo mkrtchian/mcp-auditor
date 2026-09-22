@@ -1,10 +1,5 @@
 # The acceptance test of the confined path: a real Docker container, the real
 # default launcher table, a public npm server.
-#
-# The pragmas below cover the imports made inside the test body, which do not
-# resolve until the confined path is wired. They go away with the xfail marker.
-# pyright: basic
-# pyright: reportMissingImports=false, reportAttributeAccessIssue=false
 import os
 import pathlib
 import subprocess
@@ -12,7 +7,15 @@ from uuid import uuid4
 
 import pytest
 
+from mcp_auditor.adapters.docker import DockerRuntime, docker_client_env
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.target_execution import (
+    Host,
+    LaunchContext,
+    LaunchOptions,
+    TargetExecution,
+    decide_launch,
+)
 
 # Pinned, as the README pins the demo's: this test is the only instrument of the
 # confined path, so it must go red on a confinement regression and never on an
@@ -20,26 +23,8 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 FILESYSTEM_SERVER = "@modelcontextprotocol/server-filesystem@2026.8.31"
 
 
-def docker_answers() -> bool:
-    try:
-        return subprocess.run(["docker", "version"], capture_output=True).returncode == 0
-    except OSError:
-        return False
-
-
-@pytest.mark.skipif(not docker_answers(), reason="confined execution needs Docker")
-@pytest.mark.xfail(strict=True, raises=ImportError, reason="confined path not wired yet")
+@pytest.mark.skipif(not DockerRuntime().available(), reason="confined execution needs Docker")
 async def test_confined_launch_serves_the_filesystem_server(tmp_path: pathlib.Path) -> None:
-    from mcp_auditor.target_execution import (
-        Host,
-        LaunchContext,
-        LaunchOptions,
-        TargetExecution,
-        decide_launch,
-    )
-
-    from mcp_auditor.adapters.docker import DockerRuntime, docker_client_env
-
     runtime = DockerRuntime()
     container_name = f"mcp-auditor-{uuid4().hex[:12]}"
     context = LaunchContext(
