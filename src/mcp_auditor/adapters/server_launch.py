@@ -132,10 +132,12 @@ def container_argv(profile: ContainerProfile, command: str, args: Sequence[str])
     ]
 
 
-# --mount rather than -v, and each field quoted whole: -v splits its fields on colons and
-# --mount parses them as CSV, so an unquoted host path holding either character would be
-# read as a different mount than the one the arguments named. The quotes go around
-# `src=...`, not around the path, which is where Docker's CSV parser accepts them.
+# --mount rather than -v, and each field quoted whole: -v refuses a host path holding a
+# colon, and --mount parses its fields as CSV, where an unquoted comma would split one.
+# The quotes go around `src=...`, not around the path, which is where Docker's CSV parser
+# accepts them. What no quoting can carry is refused before this runs, by
+# `_require_a_spellable_path` in the mount policy: change this spelling and that list is
+# wrong, with nothing but the acceptance test to say so.
 def _mount_flags(plan: MountPlan) -> list[str]:
     flags: list[str] = []
     for mount in plan.mounts:

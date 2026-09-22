@@ -94,11 +94,13 @@ class DeclaredMount:
     writable: bool
 
 
-# What a container mount argument cannot carry, measured against Docker 29.8.1 rather
-# than derived: a double quote closes the quoted CSV field early and fails to parse, a
-# CRLF is folded to a bare newline and would mount a path nobody named, and a trailing
-# blank is rejected by the docker CLI's own flag parser, before it reaches the daemon. A
-# bare CR, a tab and an interior blank all mount correctly, so none is refused here.
+# What the container mount argument `_mount_flags` renders in the launch adapter cannot
+# carry, so this list is tied to that spelling and goes stale if it changes. Measured
+# against Docker 29.8.1 rather than derived: a double quote closes the quoted CSV field
+# early and fails to parse, a CRLF is folded to a bare newline and would mount a path
+# nobody named, and a trailing blank is rejected by the docker CLI's own flag parser,
+# before it reaches the daemon. A bare CR, a tab and an interior blank all mount
+# correctly, so none is refused here.
 _UNSPELLABLE_SUBSTRINGS = (('"', "a double quote"), ("\r\n", "a carriage return and line feed"))
 
 
