@@ -8,7 +8,12 @@ Every container the benchmark starts runs under `_confinement_args`, and the
 vulnerable servers whose image has no `USER` run as an unprivileged user. The
 images are deliberately exploitable servers, and the auditor's own payloads reach
 them, so the container is the only thing between an exploit that succeeds and
-the host that runs the benchmark. A change to the profile is checked by
+the host that runs the benchmark. The three servers that need no network run
+with none: their images are built with everything they need, the auditor talks
+to them over stdio, and the only use left for egress is an exploit that
+succeeded and wants out. The SSRF target keeps a dedicated network, because
+reaching the sentinel over it is the flaw, and that network is a plain bridge
+with the host gateway and Internet egress. A change to the profile is checked by
 re-running `--calibrate`, which replays each fixture's exploit path under it
 (the CI variant skips one CI-unstable target, so the full check is local).
 
@@ -98,6 +103,7 @@ def command_injection_env(image: str, sentinel: str) -> Iterator[Launch]:
             "-i",
             "--rm",
             *_confinement_args(),
+            *_no_network_args(),
             *_unprivileged_user_args(),
             "-e",
             f"FLAG={sentinel}",
@@ -163,6 +169,10 @@ def _confinement_args() -> list[str]:
     ]
 
 
+def _no_network_args() -> list[str]:
+    return ["--network", "none"]
+
+
 def _unprivileged_user_args() -> list[str]:
     # An image without a USER runs as root inside the container. Behind an empty
     # capability bounding set that root is disarmed, but an escape that lands as
@@ -188,6 +198,7 @@ def _filesystem_launch(root: Path) -> Launch:
             "-i",
             "--rm",
             *_confinement_args(),
+            *_no_network_args(),
             *_host_user_args(),
             "-v",
             f"{root}:/work",
@@ -205,6 +216,7 @@ def _git_launch(root: Path, chain_budget: int = 0, max_chain_steps: int = 3) -> 
             "-i",
             "--rm",
             *_confinement_args(),
+            *_no_network_args(),
             *_host_user_args(),
             "-v",
             f"{root}:/work",
