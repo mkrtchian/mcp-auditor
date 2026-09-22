@@ -176,7 +176,23 @@ def test_a_host_that_cannot_enforce_the_pids_limit_is_reported():
 
     decision = decide_launch("npx", ["a-server"], context)
 
-    assert any("--pids-limit" in warning for warning in decision.warnings)
+    assert any("runs without it" in warning for warning in decision.warnings)
+
+
+def test_a_host_whose_pids_limit_cannot_be_read_warns_about_nothing():
+    context = given.a_context(FakeContainerRuntime(pids_limit_enforced=None))
+
+    decision = decide_launch("npx", ["a-server"], context)
+
+    assert decision.warnings == ()
+
+
+def test_a_host_that_enforces_the_pids_limit_warns_about_nothing():
+    context = given.a_context(FakeContainerRuntime(pids_limit_enforced=True))
+
+    decision = decide_launch("npx", ["a-server"], context)
+
+    assert decision.warnings == ()
 
 
 async def test_a_confined_execution_removes_its_container_and_records_the_kill_state():

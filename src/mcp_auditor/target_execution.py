@@ -41,7 +41,7 @@ class ContainerRuntime(Protocol):
 
     def ensure_image(self, image: str) -> str | None: ...
 
-    def pids_limit_enforced(self) -> bool: ...
+    def pids_limit_enforced(self) -> bool | None: ...
 
     def oom_killed(self, container_name: str) -> bool | None: ...
 
@@ -172,7 +172,7 @@ def _confined_warnings(plan: MountPlan, runtime: ContainerRuntime) -> tuple[str,
         f"'{word}' exists here but is not mounted: write ./{word} to mount it"
         for word in plan.unmounted_existing
     ]
-    if not runtime.pids_limit_enforced():
+    if runtime.pids_limit_enforced() is False:
         warnings.append("this Docker host cannot enforce --pids-limit, the server runs without it")
     return tuple(warnings)
 

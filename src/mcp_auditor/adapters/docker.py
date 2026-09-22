@@ -51,10 +51,17 @@ class DockerRuntime:
                 raise DockerError(pull.stderr.strip() or pull.stdout.strip())
         return _repo_digest(image)
 
-    # The same check `evals/run_cve_benchmark.py` makes, duplicated rather than shared:
-    # the benchmark is an instrument and the product does not import from evals/.
-    def pids_limit_enforced(self) -> bool:
-        return _docker("info", "--format", "{{.PidsLimit}}").stdout.strip() != "false"
+    def pids_limit_enforced(self) -> bool | None:
+        """`None` when the answer cannot be read, which is not the same as a denial.
+
+        A CLI answering the `docker` name without the field, podman's shim among them,
+        fails the template rather than reporting an absent limit. Reading that as "not
+        enforced" would warn about a bound such a host does apply. The caller warns on
+        `False` alone: "could not tell" gives the user nothing to act on, and on such a
+        host it would fire on every run, beside the one warning that does.
+        """
+        answer = _docker("info", "--format", "{{.PidsLimit}}")
+        return answer.stdout.strip() == "true" if answer.returncode == 0 else None
 
     def oom_killed(self, container_name: str) -> bool | None:
         state = _docker("inspect", "--format", "{{.State.OOMKilled}}", container_name)

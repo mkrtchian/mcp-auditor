@@ -19,7 +19,7 @@ class FakeContainerRuntime:
         endpoint: str = _DEFAULT_ENDPOINT,
         digest: str | None = _DEFAULT_DIGEST,
         pull_error: str | None = None,
-        pids_limit_enforced: bool = True,
+        pids_limit_enforced: bool | None = True,
         oom_killed: bool | None = False,
     ):
         self._untouchable = untouchable
@@ -47,7 +47,7 @@ class FakeContainerRuntime:
         self.pulled.append(image)
         return self._digest
 
-    def pids_limit_enforced(self) -> bool:
+    def pids_limit_enforced(self) -> bool | None:
         self._refuse_when_untouchable()
         return self._pids_limit_enforced
 
