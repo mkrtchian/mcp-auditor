@@ -29,6 +29,10 @@ def a_profile_with_a_read_only_mount_and_a_rewrite() -> ContainerProfile:
     )
 
 
+def a_profile_mounting(host: Path) -> ContainerProfile:
+    return _a_profile(MountPlan(mounts=(_writable(host),), rewrites={}, unmounted_existing=()))
+
+
 def _a_profile(mount_plan: MountPlan) -> ContainerProfile:
     return ContainerProfile(
         identity=ContainerIdentity(image=IMAGE, image_digest=DIGEST, name=CONTAINER_NAME),

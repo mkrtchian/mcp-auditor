@@ -23,6 +23,8 @@ class MountPolicy:
         declared = self._declared_mounts(resolved)
         scan = self._scan_argv(args, resolved, declared)
         joined = dict.fromkeys(scan.paths, True) | declared
+        for host in joined:
+            _require_a_spellable_path(host)
         return MountPlan(
             mounts=tuple(MountSpec(host, writable) for host, writable in joined.items()),
             rewrites=scan.rewrites,
@@ -92,6 +94,23 @@ class DeclaredMount:
     writable: bool
 
 
+# What a container mount argument cannot carry, measured against Docker 29.8.1 rather
+# than derived: a double quote closes the quoted CSV field early and fails to parse, a
+# CRLF is folded to a bare newline and would mount a path nobody named, and a trailing
+# blank is rejected by the docker CLI's own flag parser, before it reaches the daemon. A
+# bare CR, a tab and an interior blank all mount correctly, so none is refused here.
+_UNSPELLABLE_SUBSTRINGS = (('"', "a double quote"), ("\r\n", "a carriage return and line feed"))
+
+
+def _require_a_spellable_path(host: Path) -> None:
+    spelling = str(host)
+    for substring, reason in _UNSPELLABLE_SUBSTRINGS:
+        if substring in spelling:
+            raise UnspellableMountError(host, reason)
+    if spelling != spelling.rstrip():
+        raise UnspellableMountError(host, "a name ending in a blank")
+
+
 def parse_mount_option(raw: str) -> "DeclaredMount":
     spelling, separator, mode = raw.rpartition(":")
     if separator and mode in ("ro", "rw"):
@@ -133,3 +152,10 @@ class MissingMountError(ValueError):
     def __init__(self, spelling: str) -> None:
         super().__init__(f"no such path on this host: {spelling}")
         self.spelling = spelling
+
+
+class UnspellableMountError(ValueError):
+    def __init__(self, host: Path, reason: str) -> None:
+        super().__init__(f"cannot be spelled in a container mount: {host}")
+        self.host = host
+        self.reason = reason

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 import tests.unit.support.test_server_launch_given as given
@@ -80,8 +82,8 @@ def test_the_quick_start_profile_renders_the_hardened_argv():
         "/home/audit:exec,uid=1000,gid=1000",
         "-e",
         "HOME=/home/audit",
-        "-v",
-        "/tmp/sandbox:/tmp/sandbox",
+        "--mount",
+        'type=bind,"src=/tmp/sandbox","dst=/tmp/sandbox"',
         given.IMAGE,
         "npx",
         "@modelcontextprotocol/server-filesystem",
@@ -94,9 +96,17 @@ def test_a_read_only_mount_and_a_rewrite_reach_the_container_argv_only():
         "npx", ["server", "./data"], given.a_profile_with_a_read_only_mount_and_a_rewrite(), {}
     )
 
-    assert "-v /data:/data:ro" in " ".join(launch.spawn_args)
+    assert 'type=bind,"src=/data","dst=/data",readonly' in launch.spawn_args
     assert launch.spawn_args[-1] == "/home/alice/proj/data"
     assert launch.args == ("server", "./data")
+
+
+def test_a_host_path_holding_a_colon_or_a_comma_reaches_the_container_intact():
+    host = Path("/srv/data,v2/09:30")
+
+    launch = ServerLaunch.confined("npx", ["server"], given.a_profile_mounting(host), {})
+
+    assert 'type=bind,"src=/srv/data,v2/09:30","dst=/srv/data,v2/09:30"' in launch.spawn_args
 
 
 def test_a_confined_record_carries_the_container_and_its_kill_state():

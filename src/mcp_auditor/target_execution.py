@@ -15,6 +15,7 @@ from mcp_auditor.domain.confinement import (
     MountPlan,
     MountPolicy,
     RefusedMountError,
+    UnspellableMountError,
     is_declared_container,
     parse_mount_option,
     refused_roots,
@@ -130,8 +131,8 @@ def _require_a_local_runtime(command: str, runtime: ContainerRuntime) -> None:
             f"--unconfined to launch '{command}' on this host with your privileges"
         )
     endpoint = runtime.endpoint()
-    # `-v <host>:<host>` resolves on the daemon's filesystem, so a remote daemon would
-    # audit other files, or none: a wrong report that looks right.
+    # A bind mount resolves on the daemon's filesystem, so a remote daemon would audit
+    # other files, or none: a wrong report that looks right.
     if not endpoint.startswith(_LOCAL_SCHEMES):
         raise LaunchRefused(
             f"the Docker endpoint '{endpoint}' is not on this host, so the paths this command "
@@ -152,6 +153,11 @@ def _mount_plan(args: Sequence[str], context: LaunchContext) -> MountPlan:
         ) from refusal
     except MissingMountError as missing:
         raise LaunchRefused(f"--mount {missing.spelling}: no such path on this host") from missing
+    except UnspellableMountError as unspellable:
+        raise LaunchRefused(
+            f"cannot mount {str(unspellable.host)!r}: a container mount cannot spell "
+            f"{unspellable.reason}, rename the path or run with --unconfined"
+        ) from unspellable
 
 
 def _pull(image: str, runtime: ContainerRuntime) -> str | None:

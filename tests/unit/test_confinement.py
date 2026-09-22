@@ -8,6 +8,7 @@ from mcp_auditor.domain.confinement import (
     MissingMountError,
     MountSpec,
     RefusedMountError,
+    UnspellableMountError,
     is_declared_container,
     parse_mount_option,
     refused_roots,
@@ -116,6 +117,40 @@ def test_a_host_path_reached_twice_yields_one_mount_and_the_declared_flag_wins()
     plan = given.a_policy("/data:ro").plan(["/data", "./data"], resolved)
 
     assert plan.mounts == (MountSpec(host=Path("/data"), writable=False),)
+
+
+def test_a_path_holding_a_double_quote_cannot_be_mounted():
+    spelling = '/srv/we"ird'
+
+    with pytest.raises(UnspellableMountError):
+        given.a_policy().plan([spelling], {spelling: Path(spelling)})
+
+
+def test_a_path_holding_a_carriage_return_before_a_line_feed_cannot_be_mounted():
+    spelling = "/srv/we\r\nird"
+
+    with pytest.raises(UnspellableMountError):
+        given.a_policy().plan([spelling], {spelling: Path(spelling)})
+
+
+@pytest.mark.parametrize("spelling", ["/srv/weird ", "/srv/weird\t", "/srv/weird\n"])
+def test_a_path_ending_in_whitespace_cannot_be_mounted(spelling: str):
+    with pytest.raises(UnspellableMountError):
+        given.a_policy().plan([spelling], {spelling: Path(spelling)})
+
+
+@pytest.mark.parametrize("spelling", ["/srv/we\rird", "/srv/we ird", "/srv/we\tird", "/srv/we'ird"])
+def test_a_path_docker_can_still_spell_is_mounted(spelling: str):
+    plan = given.a_policy().plan([spelling], {spelling: Path(spelling)})
+
+    assert plan.mounts == (MountSpec(host=Path(spelling), writable=True),)
+
+
+def test_a_declared_mount_is_refused_on_the_same_characters():
+    spelling = '/srv/we"ird'
+
+    with pytest.raises(UnspellableMountError):
+        given.a_policy(f"{spelling}:rw").plan([], {spelling: Path(spelling)})
 
 
 def test_refused_roots_hold_the_home_itself_and_not_its_children():

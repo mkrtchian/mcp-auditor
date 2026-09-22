@@ -132,9 +132,13 @@ def container_argv(profile: ContainerProfile, command: str, args: Sequence[str])
     ]
 
 
+# --mount rather than -v, and each field quoted whole: -v splits its fields on colons and
+# --mount parses them as CSV, so an unquoted host path holding either character would be
+# read as a different mount than the one the arguments named. The quotes go around
+# `src=...`, not around the path, which is where Docker's CSV parser accepts them.
 def _mount_flags(plan: MountPlan) -> list[str]:
     flags: list[str] = []
     for mount in plan.mounts:
-        suffix = "" if mount.writable else ":ro"
-        flags += ["-v", f"{mount.host}:{mount.host}{suffix}"]
+        fields = f'type=bind,"src={mount.host}","dst={mount.host}"'
+        flags += ["--mount", fields if mount.writable else f"{fields},readonly"]
     return flags
