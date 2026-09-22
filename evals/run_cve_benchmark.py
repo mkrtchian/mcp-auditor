@@ -107,7 +107,23 @@ def _preflight_ok() -> bool:
     if missing:
         console.print(f"[red]Missing images:[/red] {', '.join(missing)}. To build: {_BUILD_HINT}.")
         return False
+    _warn_if_pids_limit_discarded()
     return True
+
+
+def _warn_if_pids_limit_discarded() -> None:
+    # Docker does not fail on a limit its host cannot enforce, it warns on
+    # stderr and runs without it, and the launchers discard stderr.
+    result = subprocess.run(
+        ["docker", "info", "--format", "{{.PidsLimit}}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.stdout.strip() == "false":
+        console.print(
+            "[yellow]This Docker host cannot enforce --pids-limit, targets run without it.[/yellow]"
+        )
 
 
 def _docker_ready() -> bool:

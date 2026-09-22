@@ -4,6 +4,19 @@ Each builder seeds a throwaway environment (temp root mounted into the
 container, sidecars, networks), yields the Docker `Launch` that stands the
 vulnerable server up, and tears everything down on exit, even on failure.
 
+Every container the benchmark starts runs under `_confinement_args`, and the
+vulnerable servers whose image has no `USER` run as an unprivileged user. The
+images are deliberately exploitable servers, and the auditor's own payloads reach
+them, so the container is the only thing between an exploit that succeeds and
+the host that runs the benchmark. A change to the profile is checked by
+re-running `--calibrate`, which replays each fixture's exploit path under it
+(the CI variant skips one CI-unstable target, so the full check is local).
+
+The profile carries no memory bound yet. A server killed on memory mid-audit
+would be counted as a missed detection and not as a skipped run, because the
+client turns a closed connection into an error response and nothing reads the
+container's kill state. The bound waits for that reader.
+
 Setup calls (`docker network create`, sidecar `run -d`, seeding) run with
 `check=True` so a failure raises before the yield: the runner maps that to a
 skipped run. Teardown calls (`docker network rm`, `docker stop`) are
@@ -78,7 +91,19 @@ def git_init_traversal_env(sentinel: str) -> Iterator[Launch]:
 
 @contextmanager
 def command_injection_env(image: str, sentinel: str) -> Iterator[Launch]:
-    yield Launch(command="docker", args=["run", "-i", "--rm", "-e", f"FLAG={sentinel}", image])
+    yield Launch(
+        command="docker",
+        args=[
+            "run",
+            "-i",
+            "--rm",
+            *_confinement_args(),
+            *_unprivileged_user_args(),
+            "-e",
+            f"FLAG={sentinel}",
+            image,
+        ],
+    )
 
 
 @contextmanager
@@ -87,6 +112,11 @@ def ssrf_env(sentinel: str) -> Iterator[Launch]:
         _docker_network() as network,
         _sidecar(
             _SENTINEL_IMAGE,
+            # The sentinel serves on :80. Without this the bind only works because
+            # Docker lowers ip_unprivileged_port_start inside the container, a
+            # default another runtime may not share.
+            "--cap-add",
+            "NET_BIND_SERVICE",
             "-e",
             f"FLAG={sentinel}",
             "--network",
@@ -97,7 +127,16 @@ def ssrf_env(sentinel: str) -> Iterator[Launch]:
     ):
         yield Launch(
             command="docker",
-            args=["run", "-i", "--rm", "--network", network, _FETCH_IMAGE],
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *_confinement_args(),
+                *_unprivileged_user_args(),
+                "--network",
+                network,
+                _FETCH_IMAGE,
+            ],
         )
 
 
@@ -108,6 +147,27 @@ def _temp_root() -> Iterator[Path]:
     # a fallback so a stray un-removable file never crashes a run at __exit__.
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
         yield Path(name)
+
+
+def _confinement_args() -> list[str]:
+    # The process bound is about twenty times what these servers run at rest,
+    # and it fails gracefully: fork returns EAGAIN and the server survives, so
+    # the bound cannot turn a run into a false miss the way a memory kill would.
+    return [
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges",
+        "--pids-limit",
+        "256",
+    ]
+
+
+def _unprivileged_user_args() -> list[str]:
+    # An image without a USER runs as root inside the container. Behind an empty
+    # capability bounding set that root is disarmed, but an escape that lands as
+    # nobody on the host is still better than one that lands as root.
+    return ["--user", "65534:65534", "-e", "HOME=/tmp"]
 
 
 def _host_user_args() -> list[str]:
@@ -127,6 +187,7 @@ def _filesystem_launch(root: Path) -> Launch:
             "run",
             "-i",
             "--rm",
+            *_confinement_args(),
             *_host_user_args(),
             "-v",
             f"{root}:/work",
@@ -143,6 +204,7 @@ def _git_launch(root: Path, chain_budget: int = 0, max_chain_steps: int = 3) -> 
             "run",
             "-i",
             "--rm",
+            *_confinement_args(),
             *_host_user_args(),
             "-v",
             f"{root}:/work",
@@ -171,7 +233,19 @@ def _docker_network() -> Iterator[str]:
 def _sidecar(image: str, *run_args: str) -> Iterator[str]:
     name = f"{_LABEL}-{secrets.token_hex(6)}"
     subprocess.run(
-        ["docker", "run", "-d", "--rm", "--label", _LABEL, "--name", name, *run_args, image],
+        [
+            "docker",
+            "run",
+            "-d",
+            "--rm",
+            *_confinement_args(),
+            "--label",
+            _LABEL,
+            "--name",
+            name,
+            *run_args,
+            image,
+        ],
         check=True,
         capture_output=True,
     )
