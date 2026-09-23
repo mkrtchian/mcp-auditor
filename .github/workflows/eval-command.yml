@@ -82,22 +82,34 @@ jobs:
         run: uv run python -m evals.run_judge_eval
 
       - name: Run e2e eval
+        id: e2e
         if: steps.cmd.outputs.mode == 'full'
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-        run: uv run python -m evals.run_evals --runs 2 --budget 7
+        run: |
+          set +e
+          uv run python -m evals.run_evals
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          exit $exit_code
 
       - name: Report result
         if: ${{ !cancelled() && steps.cmd.outputs.mode != 'none' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MODE: ${{ steps.cmd.outputs.mode }}
+          E2E_EXIT_CODE: ${{ steps.e2e.outputs.exit_code }}
         run: |
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           if [ "${{ job.status }}" = "success" ]; then
             gh pr comment ${{ github.event.issue.number }} \
               --body "Evals passed ($MODE). [Run details]($run_url)"
           else
+            case "$E2E_EXIT_CODE" in
+              1) reason=": e2e red (regression, floor or threshold)" ;;
+              3) reason=": e2e not comparable (conditions, fixtures or incomplete runs, see the log)" ;;
+              *) reason="" ;;
+            esac
             gh pr comment ${{ github.event.issue.number }} \
-              --body "Evals failed ($MODE). [Run details]($run_url)"
+              --body "Evals failed ($MODE)$reason. [Run details]($run_url)"
           fi

@@ -44,7 +44,7 @@ See the README for the reproducibility rationale and the safety note (deliberate
 The judge isolation eval runs automatically on a pull request that touches `src/**`, `evals/**`, a honeypot server, or `pyproject.toml`, and it fails the check when the judge falls below its F1 threshold. It needs an API key from repository secrets: a Dependabot pull request is skipped outright, and a pull request from a fork triggers the job but can't read the key, so its run fails rather than being skipped. The e2e evals never run automatically on a pull request. They run on main after merge, where they gate the build. A maintainer can run either on demand by commenting on the PR:
 
 - `/eval` runs the judge isolation eval only (fast).
-- `/eval full` also runs the e2e evals (slower, more API calls).
+- `/eval full` also runs the e2e evals (slower, more API calls), at the baseline's conditions: 3 runs and budget 10, the defaults of `evals.run_evals`.
 
 The workflow checks out the PR's head branch, runs the evals against it, and posts the outcome back as a comment. The trigger is restricted to repository owners, members, and collaborators.
 

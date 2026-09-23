@@ -52,4 +52,13 @@ jobs:
       - name: Run e2e evals
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-        run: uv run python -m evals.run_evals --runs 2 --budget 7
+        run: uv run python -m evals.run_evals
+
+      - name: Upload e2e report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-eval-report
+          path: |
+            output/eval_report.json
+            output/judged_cases.jsonl
