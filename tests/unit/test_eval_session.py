@@ -2,6 +2,7 @@ import tests.unit.support.test_eval_session_given as given
 from evals.baseline import BaselineStatus
 from evals.eval_session import (
     TreeState,
+    baseline_changed,
     ci_condition_mismatches,
     pre_run_refusals,
     select_mode,
@@ -98,6 +99,31 @@ def test_a_moved_commit_names_both_commits():
     assert len(drift) == 1
     assert given.HEAD in drift[0]
     assert OTHER_COMMIT in drift[0]
+
+
+def test_no_baseline_before_nor_after_has_not_changed():
+    assert baseline_changed(None, None) == []
+
+
+def test_an_unchanged_baseline_has_not_changed():
+    baseline = given.a_baseline_at_ci_conditions()
+
+    assert baseline_changed(baseline, baseline.model_copy()) == []
+
+
+def test_a_baseline_appearing_during_the_runs_is_named():
+    changed = baseline_changed(None, given.a_baseline_at_ci_conditions())
+
+    assert changed == ["the baseline file changed during the runs: record again"]
+
+
+def test_a_baseline_recorded_again_during_the_runs_is_named():
+    loaded = given.a_baseline_at_ci_conditions()
+    current = loaded.model_copy(update={"recorded_at": "2026-09-23T11:00:00+00:00"})
+
+    assert baseline_changed(loaded, current) == [
+        "the baseline file changed during the runs: record again"
+    ]
 
 
 def test_the_ci_conditions_have_no_mismatch():

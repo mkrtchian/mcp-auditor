@@ -7,10 +7,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+from pydantic import ValidationError
 from rich.progress import Progress, TaskID
 
 from evals import eval_display as display
-from evals.baseline import write_baseline
+from evals.baseline import load_baseline, write_baseline
 from evals.eval_report import EvalReport
 from evals.eval_session import (
     BASELINE_PATH,
@@ -21,6 +22,7 @@ from evals.eval_session import (
     EvalOptions,
     EvalSession,
     Refused,
+    baseline_changed,
     open_session,
     read_tree,
     tree_drift,
@@ -267,7 +269,7 @@ def _incomplete_runs(requested: int, completed: int) -> list[str]:
 
 def _record(session: EvalSession, result: EvalRunResult) -> int:
     assert session.tree is not None, "open_session reads the tree whenever it records"
-    drift = tree_drift(session.tree, read_tree())
+    drift = _recording_drift(session)
     if drift:
         raise Refused("Recording refused.", drift)
     recording = Recording(
@@ -286,6 +288,16 @@ def _record(session: EvalSession, result: EvalRunResult) -> int:
     changes = gated_set_changes(session.baseline, decision, MERGED_GROUND_TRUTH)
     display.print_written_recording(decision, changes, BASELINE_PATH)
     return 0
+
+
+def _recording_drift(session: EvalSession) -> list[str]:
+    assert session.tree is not None, "open_session reads the tree whenever it records"
+    try:
+        reloaded = load_baseline(BASELINE_PATH)
+    except ValidationError as error:
+        reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
+        raise Refused("Recording refused.", [reason]) from error
+    return tree_drift(session.tree, read_tree()) + baseline_changed(session.baseline, reloaded)
 
 
 if __name__ == "__main__":

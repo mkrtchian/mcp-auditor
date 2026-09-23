@@ -178,6 +178,12 @@ def tree_drift(before: TreeState, after: TreeState) -> list[str]:
     return reasons
 
 
+def baseline_changed(loaded: Baseline | None, current: Baseline | None) -> list[str]:
+    if loaded == current:
+        return []
+    return ["the baseline file changed during the runs: record again"]
+
+
 def read_tree() -> TreeState:
     return TreeState(
         commit=git("rev-parse", "HEAD"),

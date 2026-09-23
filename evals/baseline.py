@@ -1,5 +1,6 @@
 import hashlib
 import io
+import os
 import tokenize
 from enum import StrEnum
 from pathlib import Path
@@ -156,4 +157,6 @@ def load_baseline(path: Path) -> Baseline | None:
 
 def write_baseline(path: Path, baseline: Baseline) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(baseline.model_dump_json(indent=2))
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(baseline.model_dump_json(indent=2))
+    os.replace(temporary, path)

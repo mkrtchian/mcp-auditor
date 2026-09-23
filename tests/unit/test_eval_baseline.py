@@ -93,6 +93,17 @@ def test_a_baseline_written_then_loaded_is_equal(tmp_path: Path):
     assert load_baseline(path) == baseline
 
 
+def test_a_baseline_written_over_another_replaces_it_and_leaves_no_temporary(tmp_path: Path):
+    path = tmp_path / "honeypot_e2e.json"
+    write_baseline(path, given.a_baseline())
+    second = given.a_baseline(status=BaselineStatus.CONFIRMED)
+
+    write_baseline(path, second)
+
+    assert load_baseline(path) == second
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
 def test_observation_runs_parse_the_keys_back_to_cells():
     runs = given.a_baseline().observation_runs()
 
