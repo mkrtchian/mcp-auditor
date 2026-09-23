@@ -14,6 +14,7 @@ class Replayer:
     audit: ReplayAudit
     honeypots: list[HoneypotConfig]
     announce: Callable[[str], None]
+    warn: Callable[[str], None]
 
     async def settle_flips(
         self, cells: dict[Cell, CellComparison], rule: ReplayRule
@@ -30,7 +31,8 @@ class Replayer:
             try:
                 replays = await self._replay_server(honeypot, flipped, rule)
             except Exception:
-                self.announce(traceback.format_exc())
+                self.announce(f"Warning: a replay of {honeypot.name} failed:")
+                self.warn(traceback.format_exc())
                 failures.append(f"a replay of {honeypot.name} failed")
                 continue
             for cell in flipped:

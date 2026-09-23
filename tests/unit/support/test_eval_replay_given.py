@@ -1,8 +1,10 @@
+from collections.abc import Callable
 from pathlib import Path
 
 from evals.gate import Cell, CellComparison, CellOutcome
 from evals.honeypots import HoneypotConfig
 from evals.metrics import VerdictMap
+from evals.replay import Replayer
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 ALPHA_CELL: Cell = ("alpha_tool", AuditCategory.INPUT_VALIDATION)
@@ -16,6 +18,18 @@ ALPHA = HoneypotConfig(
 )
 BETA = HoneypotConfig("beta", Path("never_opened_beta.py"), {BETA_CELL: EvalVerdict.FAIL})
 HONEYPOTS = [ALPHA, BETA]
+
+
+def a_replayer(
+    audit: "FakeAudit", announced: list[str] | None = None, warned: list[str] | None = None
+) -> Replayer:
+    return Replayer(
+        audit=audit, honeypots=HONEYPOTS, announce=_recorder(announced), warn=_recorder(warned)
+    )
+
+
+def _recorder(sink: list[str] | None) -> Callable[[str], None]:
+    return sink.append if sink is not None else lambda _: None
 
 
 class FakeAudit:

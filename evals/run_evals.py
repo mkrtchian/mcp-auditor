@@ -109,7 +109,10 @@ async def run_evals(session: EvalSession) -> EvalRunResult:
 
     metrics, consistency_details = outcome.metrics()
     replayer = Replayer(
-        audit=_replay_audit(session), honeypots=HONEYPOTS, announce=_announce_replay
+        audit=_replay_audit(session),
+        honeypots=HONEYPOTS,
+        announce=_announce_replay,
+        warn=_warn_replay,
     )
     gate = await judge_runs(session, outcome, replayer)
     report = EvalReport(
@@ -199,6 +202,10 @@ def _replay_audit(session: EvalSession) -> ReplayAudit:
 
 def _announce_replay(message: str) -> None:
     display.console.print(message, markup=False, highlight=False)
+
+
+def _warn_replay(message: str) -> None:
+    print(message, file=sys.stderr, end="")
 
 
 def _record(session: EvalSession, tree: TreeState, result: EvalRunResult) -> int:
