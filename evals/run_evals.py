@@ -22,6 +22,7 @@ from evals.eval_session import (
     EvalSession,
     Refused,
     open_session,
+    read_tree,
     tree_drift,
 )
 from evals.export import export_judged_cases
@@ -266,13 +267,13 @@ def _incomplete_runs(requested: int, completed: int) -> list[str]:
 
 
 def _record(session: EvalSession, result: EvalRunResult) -> int:
-    assert session.commit is not None, "open_session reads HEAD whenever it records"
-    drift = tree_drift(session)
+    assert session.tree is not None, "open_session reads the tree whenever it records"
+    drift = tree_drift(session.tree, read_tree())
     if drift:
         raise Refused("Recording refused.", drift)
     recording = Recording(
         conditions=session.conditions,
-        commit=session.commit,
+        commit=session.tree.commit,
         recorded_at=datetime.now(UTC).isoformat(),
         runs=result.outcome.observations(),
         metrics=result.report.metrics,

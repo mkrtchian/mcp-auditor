@@ -59,16 +59,20 @@ def _refusals(existing: Baseline | None, recording: Recording, gate: GateResult)
     if existing is None:
         return reasons
     if existing.status == BaselineStatus.EXPLORATORY:
-        return reasons + _other_commit(existing, recording) + _other_conditions(existing, recording)
+        return (
+            reasons
+            + exploratory_commit_refusal(existing, recording.commit)
+            + _other_conditions(existing, recording)
+        )
     return reasons + _confirmed_refusals(existing, recording, gate)
 
 
-def _other_commit(existing: Baseline, recording: Recording) -> list[str]:
-    if existing.commit == recording.commit:
+def exploratory_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
+    if baseline.status != BaselineStatus.EXPLORATORY or baseline.commit == commit:
         return []
     return [
-        f"the exploratory baseline was recorded at {existing.commit}, this run at "
-        f"{recording.commit}: confirm it at its own commit, or delete it in a commit of its own"
+        f"the exploratory baseline was recorded at {baseline.commit}, this run at "
+        f"{commit}: confirm it at its own commit, or delete it in a commit of its own"
     ]
 
 

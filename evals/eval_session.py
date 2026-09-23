@@ -16,6 +16,7 @@ from evals.baseline import (
 )
 from evals.gate_verdict import GateMode
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, REPO_ROOT
+from evals.recording import exploratory_commit_refusal
 from mcp_auditor.config import Settings, load_settings
 
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
@@ -42,6 +43,12 @@ class EvalOptions:
 
 
 @dataclass(frozen=True)
+class TreeState:
+    commit: str
+    dirty: bool
+
+
+@dataclass(frozen=True)
 class EvalSession:
     """Fixed before any LLM call. `baseline` is None under --ungated, whatever the file holds."""
 
@@ -50,7 +57,7 @@ class EvalSession:
     baseline: Baseline | None
     mode: GateMode
     record: bool
-    commit: str | None
+    tree: TreeState | None
 
 
 def open_session(options: EvalOptions) -> EvalSession:
@@ -66,14 +73,46 @@ def open_session(options: EvalOptions) -> EvalSession:
         settings=settings,
         conditions=_candidate_conditions(settings, options),
         baseline=baseline,
-        mode=_select_mode(baseline, options.ungated),
+        mode=select_mode(baseline, options.ungated),
         record=options.record_baseline,
-        commit=git("rev-parse", "HEAD") if options.record_baseline else None,
+        tree=read_tree() if options.record_baseline else None,
     )
-    reasons = _pre_run_refusals(session)
+    reasons = pre_run_refusals(session)
     if reasons:
         raise Refused("Refused before any LLM call.", reasons)
     return session
+
+
+def select_mode(baseline: Baseline | None, ungated: bool) -> GateMode:
+    if ungated:
+        return GateMode.FLOORS_ONLY
+    if baseline is None:
+        return GateMode.LEGACY_THRESHOLDS
+    if baseline.status == BaselineStatus.EXPLORATORY:
+        return GateMode.FLOORS_ONLY
+    return GateMode.PAIRED
+
+
+def pre_run_refusals(session: EvalSession) -> list[str]:
+    reasons: list[str] = []
+    if session.baseline:
+        reasons += condition_mismatches(session.baseline.conditions, session.conditions)
+    if session.record:
+        reasons += _recording_refusals(session)
+    return reasons
+
+
+def _recording_refusals(session: EvalSession) -> list[str]:
+    assert session.tree is not None, "open_session reads the tree whenever it records"
+    reasons = [
+        f"a baseline records the conditions CI runs at, {mismatch}"
+        for mismatch in ci_condition_mismatches(session.conditions)
+    ]
+    if session.tree.dirty:
+        reasons.append("the git tree has tracked modifications: record from a clean tree")
+    if session.baseline:
+        reasons += exploratory_commit_refusal(session.baseline, session.tree.commit)
+    return reasons
 
 
 def ci_condition_mismatches(conditions: BaselineConditions) -> list[str]:
@@ -94,14 +133,23 @@ def ci_condition_mismatches(conditions: BaselineConditions) -> list[str]:
     ]
 
 
-def tree_drift(session: EvalSession) -> list[str]:
+def tree_drift(before: TreeState, after: TreeState) -> list[str]:
     """What changed in the checkout while the runs of a recording went on."""
     reasons: list[str] = []
-    if git("status", "--porcelain", "--untracked-files=no"):
+    if after.dirty:
         reasons.append("tracked files changed during the runs: record again from a clean tree")
-    if git("rev-parse", "HEAD") != session.commit:
-        reasons.append(f"HEAD moved from {session.commit} during the runs: record again")
+    if after.commit != before.commit:
+        reasons.append(
+            f"HEAD moved from {before.commit} to {after.commit} during the runs: record again"
+        )
     return reasons
+
+
+def read_tree() -> TreeState:
+    return TreeState(
+        commit=git("rev-parse", "HEAD"),
+        dirty=bool(git("status", "--porcelain", "--untracked-files=no")),
+    )
 
 
 def _load_committed_baseline() -> Baseline | None:
@@ -135,45 +183,6 @@ def _candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineC
             for honeypot in HONEYPOTS
         },
     )
-
-
-def _select_mode(baseline: Baseline | None, ungated: bool) -> GateMode:
-    if ungated:
-        return GateMode.FLOORS_ONLY
-    if baseline is None:
-        return GateMode.LEGACY_THRESHOLDS
-    if baseline.status == BaselineStatus.EXPLORATORY:
-        return GateMode.FLOORS_ONLY
-    return GateMode.PAIRED
-
-
-def _pre_run_refusals(session: EvalSession) -> list[str]:
-    reasons: list[str] = []
-    if session.baseline:
-        reasons += condition_mismatches(session.baseline.conditions, session.conditions)
-    if session.record:
-        reasons += _recording_preconditions(session)
-    return reasons
-
-
-def _recording_preconditions(session: EvalSession) -> list[str]:
-    reasons = [
-        f"a baseline records the conditions CI runs at, {mismatch}"
-        for mismatch in ci_condition_mismatches(session.conditions)
-    ]
-    if git("status", "--porcelain", "--untracked-files=no"):
-        reasons.append("the git tree has tracked modifications: record from a clean tree")
-    baseline = session.baseline
-    if baseline and _exploratory_at_another_commit(baseline, session.commit):
-        reasons.append(
-            f"the exploratory baseline was recorded at {baseline.commit}: confirm it at "
-            "that commit, or delete it in a commit of its own"
-        )
-    return reasons
-
-
-def _exploratory_at_another_commit(baseline: Baseline, commit: str | None) -> bool:
-    return baseline.status == BaselineStatus.EXPLORATORY and baseline.commit != commit
 
 
 def git(*args: str) -> str:

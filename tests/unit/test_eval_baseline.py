@@ -222,6 +222,20 @@ def test_a_second_recording_disagreeing_on_a_stable_cell_stays_exploratory():
     assert result.disagreements == [cell_key(VULNERABLE_CELL)]
 
 
+def test_a_cell_unstable_in_the_exploratory_baseline_is_no_disagreement():
+    existing = given.a_baseline(
+        runs=given.runs_where_vulnerable_cell_is(
+            Observation.FAIL, Observation.UNCOVERED, Observation.FAIL
+        )
+    )
+
+    result = decide_recording(existing, given.a_recording(), given.a_gate())
+
+    assert isinstance(result, Baseline)
+    assert result.status == BaselineStatus.CONFIRMED
+    assert result.disagreements == []
+
+
 def test_a_second_recording_at_another_commit_is_refused():
     existing = given.a_baseline(runs=given.all_correct_runs())
 
