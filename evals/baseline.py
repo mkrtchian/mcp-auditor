@@ -108,7 +108,9 @@ def baseline_integrity(baseline: Baseline, ground_truth: GroundTruth) -> list[st
     """What the file holds that its conditions do not claim, checked when the runner loads it."""
     problems: list[str] = []
     claimed = baseline.conditions.runs
-    if len(baseline.runs) != claimed or not baseline.runs:
+    if not baseline.runs:
+        problems.append("the baseline holds no run")
+    elif len(baseline.runs) != claimed:
         problems.append(
             f"the baseline holds {len(baseline.runs)} runs, its conditions claim {claimed}"
         )

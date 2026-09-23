@@ -126,10 +126,19 @@ def test_a_run_with_a_cell_outside_the_ground_truth_names_it():
     assert problems == [f"run 2: cells ['{cell_key(unknown_cell)}'] unknown"]
 
 
-def test_a_baseline_with_no_run_names_the_run_count():
+def test_a_baseline_with_no_run_is_refused():
     problems = baseline_integrity(given.a_baseline(runs=[]), given.a_ground_truth())
 
-    assert problems == ["the baseline holds 0 runs, its conditions claim 3"]
+    assert problems == ["the baseline holds no run"]
+
+
+def test_a_baseline_with_no_run_is_refused_even_when_its_conditions_claim_none():
+    baseline = given.a_baseline(runs=[])
+    baseline.conditions.runs = 0
+
+    problems = baseline_integrity(baseline, given.a_ground_truth())
+
+    assert problems == ["the baseline holds no run"]
 
 
 def test_a_baseline_with_fewer_runs_than_its_conditions_claim_names_the_run_count():
