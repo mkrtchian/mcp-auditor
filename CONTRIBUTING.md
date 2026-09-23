@@ -41,12 +41,12 @@ See the README for the reproducibility rationale and the safety note (deliberate
 
 ### Running evals on a pull request
 
-The judge isolation eval runs automatically on a pull request that touches `src/**`, `evals/**`, a honeypot server, or `pyproject.toml`, and it fails the check when the judge falls below its F1 threshold. It needs an API key from repository secrets: a Dependabot pull request is skipped outright, and a pull request from a fork triggers the job but can't read the key, so its run fails rather than being skipped. The e2e evals never run automatically on a pull request. They run on main after merge, where they gate the build. A maintainer can run either on demand by commenting on the PR:
+The judge isolation eval runs automatically on a pull request that touches `src/**`, `evals/**`, a honeypot server, or `pyproject.toml`, and it fails the check when the judge falls below its F1 threshold. It needs an API key from repository secrets: a Dependabot pull request and a pull request from a fork both skip the job. The e2e evals never run automatically on a pull request. They run on main after merge, where they gate the build. A maintainer can run either on demand by commenting on the PR:
 
 - `/eval` runs the judge isolation eval only (fast).
 - `/eval full` also runs the e2e evals (slower, more API calls), at the baseline's conditions: 3 runs and budget 10, the defaults of `evals.run_evals`.
 
-The workflow checks out the PR's head branch, runs the evals against it, and posts the outcome back as a comment. The trigger is restricted to repository owners, members, and collaborators.
+The workflow checks out the PR's head commit as resolved when it reads the command, so a push after the comment does not change what runs. It runs the evals against that commit and posts the outcome back as a comment, naming the commit it evaluated. The trigger is restricted to repository owners, members, and collaborators. `/eval` refuses a pull request from a fork, whose code would run with the repository's API key: to evaluate one before merge, push the reviewed commit to a branch of this repository and comment `/eval` on a pull request from that branch.
 
 Pull requests that touch the CVE benchmark (`evals/docker/**`, `evals/cve_*.py`, `evals/run_cve_benchmark.py`, the deps `pyproject.toml`/`uv.lock`, or the workflow itself) trigger a deterministic calibration gate. It builds the fixture images and runs `--calibrate` (no API key), and fails if any fixture is dead, minus any target marked CI-unstable. Today that is CVE-2025-68143, whose `git_diff_staged` hangs on GitHub-hosted runners and stays covered by local calibration. The graded detection run is not a gate and has no CI workflow: it runs locally (`uv run python -m evals.run_cve_benchmark`), reported not gated.
 

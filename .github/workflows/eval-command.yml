@@ -9,10 +9,6 @@ permissions:
   issues: write
   pull-requests: write
 
-concurrency:
-  group: eval-command-${{ github.event.issue.number }}
-  cancel-in-progress: true
-
 jobs:
   eval:
     if: >-
@@ -20,6 +16,9 @@ jobs:
       startsWith(github.event.comment.body, '/eval') &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
+    concurrency:
+      group: eval-command-${{ github.event.issue.number }}
+      cancel-in-progress: true
     env:
       GH_REPO: ${{ github.repository }}
     steps:
@@ -55,35 +54,57 @@ jobs:
             repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
             -f content=eyes
 
-      - name: Checkout PR head
+      - name: Resolve PR head
+        id: pr
         if: steps.cmd.outputs.mode != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr="$(gh pr view ${{ github.event.issue.number }} --json isCrossRepository,headRefOid)"
+          echo "fork=$(printf '%s' "$pr" | jq -r '.isCrossRepository')" >> "$GITHUB_OUTPUT"
+          echo "sha=$(printf '%s' "$pr" | jq -r '.headRefOid')" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse fork
+        if: steps.pr.outputs.fork == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X POST \
+            repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            -f content=-1
+          gh pr comment ${{ github.event.issue.number }} \
+            --body "\`/eval\` does not run on a pull request from a fork: its code would run with the repository's API key. To evaluate it before merge, push the reviewed commit to a branch of this repository and comment \`/eval\` on a pull request from that branch."
+
+      - name: Checkout PR head
+        if: steps.cmd.outputs.mode != 'none' && steps.pr.outputs.fork == 'false'
         uses: actions/checkout@v7
         with:
-          ref: refs/pull/${{ github.event.issue.number }}/head
+          ref: ${{ steps.pr.outputs.sha }}
+          persist-credentials: false
 
       - name: Install uv
-        if: steps.cmd.outputs.mode != 'none'
+        if: steps.cmd.outputs.mode != 'none' && steps.pr.outputs.fork == 'false'
         uses: astral-sh/setup-uv@v7
         with:
-          enable-cache: true
+          enable-cache: false
 
       - name: Set up Python
-        if: steps.cmd.outputs.mode != 'none'
+        if: steps.cmd.outputs.mode != 'none' && steps.pr.outputs.fork == 'false'
         run: uv python install 3.13
 
       - name: Install dependencies
-        if: steps.cmd.outputs.mode != 'none'
+        if: steps.cmd.outputs.mode != 'none' && steps.pr.outputs.fork == 'false'
         run: uv sync --dev
 
       - name: Run judge eval
-        if: steps.cmd.outputs.mode == 'judge' || steps.cmd.outputs.mode == 'full'
+        if: (steps.cmd.outputs.mode == 'judge' || steps.cmd.outputs.mode == 'full') && steps.pr.outputs.fork == 'false'
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: uv run python -m evals.run_judge_eval
 
       - name: Run e2e eval
         id: e2e
-        if: steps.cmd.outputs.mode == 'full'
+        if: steps.cmd.outputs.mode == 'full' && steps.pr.outputs.fork == 'false'
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
@@ -94,11 +115,12 @@ jobs:
           exit $exit_code
 
       - name: Report result
-        if: ${{ !cancelled() && steps.cmd.outputs.mode != 'none' }}
+        if: ${{ !cancelled() && steps.cmd.outputs.mode != 'none' && steps.pr.outputs.fork == 'false' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MODE: ${{ steps.cmd.outputs.mode }}
           E2E_EXIT_CODE: ${{ steps.e2e.outputs.exit_code }}
+          SHA: ${{ steps.pr.outputs.sha }}
         run: |
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           gate_line=""
@@ -106,9 +128,10 @@ jobs:
             gate="$(jq -r '.gate.mode + (if .gate.baseline_status then ", baseline " + .gate.baseline_status else "" end)' output/eval_report.json)"
             gate_line=" Gate: $gate."
           fi
+          commit_line=" Commit: ${SHA:0:7}."
           if [ "${{ job.status }}" = "success" ]; then
             gh pr comment ${{ github.event.issue.number }} \
-              --body "Evals passed ($MODE).$gate_line [Run details]($run_url)"
+              --body "Evals passed ($MODE).$commit_line$gate_line [Run details]($run_url)"
           else
             case "$E2E_EXIT_CODE" in
               1) reason=": e2e red (regression, floor or threshold)" ;;
@@ -117,5 +140,5 @@ jobs:
               *) reason="" ;;
             esac
             gh pr comment ${{ github.event.issue.number }} \
-              --body "Evals failed ($MODE)$reason.$gate_line [Run details]($run_url)"
+              --body "Evals failed ($MODE)$reason.$commit_line$gate_line [Run details]($run_url)"
           fi
