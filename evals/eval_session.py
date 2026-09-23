@@ -22,8 +22,6 @@ from mcp_auditor.config import Settings, load_settings
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
 DEFAULT_RUNS = 3
 DEFAULT_BUDGET = 10
-NOT_COMPARABLE_EXIT = 3
-CRASHED_EXIT = 4
 
 
 class Refused(Exception):
@@ -56,8 +54,11 @@ class EvalSession:
     conditions: BaselineConditions
     baseline: Baseline | None
     mode: GateMode
-    record: bool
     tree: TreeState | None
+
+    @property
+    def record(self) -> bool:
+        return self.tree is not None
 
 
 def open_session(options: EvalOptions) -> EvalSession:
@@ -74,7 +75,6 @@ def open_session(options: EvalOptions) -> EvalSession:
         conditions=_candidate_conditions(settings, options),
         baseline=baseline,
         mode=select_mode(baseline, options.ungated),
-        record=options.record_baseline,
         tree=read_tree() if options.record_baseline else None,
     )
     reasons = pre_run_refusals(session)
@@ -130,21 +130,20 @@ def pre_run_refusals(session: EvalSession) -> list[str]:
     reasons: list[str] = []
     if session.baseline:
         reasons += condition_mismatches(session.baseline.conditions, session.conditions)
-    if session.record:
-        reasons += _recording_refusals(session)
+    if session.tree is not None:
+        reasons += _recording_refusals(session, session.tree)
     return reasons
 
 
-def _recording_refusals(session: EvalSession) -> list[str]:
-    assert session.tree is not None, "open_session reads the tree whenever it records"
+def _recording_refusals(session: EvalSession, tree: TreeState) -> list[str]:
     reasons = [
         f"a baseline records the conditions CI runs at, {mismatch}"
         for mismatch in ci_condition_mismatches(session.conditions)
     ]
-    if session.tree.dirty:
+    if tree.dirty:
         reasons.append("the git tree has tracked modifications: record from a clean tree")
     if session.baseline:
-        reasons += exploratory_commit_refusal(session.baseline, session.tree.commit)
+        reasons += exploratory_commit_refusal(session.baseline, tree.commit)
     return reasons
 
 
@@ -186,12 +185,12 @@ def baseline_changed(loaded: Baseline | None, current: Baseline | None) -> list[
 
 def read_tree() -> TreeState:
     return TreeState(
-        commit=git("rev-parse", "HEAD"),
-        dirty=bool(git("status", "--porcelain", "--untracked-files=no")),
+        commit=_git("rev-parse", "HEAD"),
+        dirty=bool(_git("status", "--porcelain", "--untracked-files=no")),
     )
 
 
-def git(*args: str) -> str:
+def _git(*args: str) -> str:
     try:
         completed = subprocess.run(
             ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=True

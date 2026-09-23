@@ -56,7 +56,7 @@ def a_crashing_audit() -> FakeAudit:
 
 
 def a_replayer(audit: FakeAudit) -> Replayer:
-    return Replayer(audit=audit, honeypots=HONEYPOTS)
+    return Replayer(audit=audit, honeypots=HONEYPOTS, announce=lambda _: None)
 
 
 def no_audit_ran(audit: FakeAudit) -> bool:

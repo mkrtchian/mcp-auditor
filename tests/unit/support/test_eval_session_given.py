@@ -42,7 +42,6 @@ def a_session(
         conditions=conditions or ci_conditions(),
         baseline=baseline,
         mode=select_mode(baseline, ungated=False),
-        record=tree is not None,
         tree=tree,
     )
 

@@ -15,13 +15,12 @@ from evals.baseline import load_baseline, write_baseline
 from evals.eval_report import EvalReport
 from evals.eval_session import (
     BASELINE_PATH,
-    CRASHED_EXIT,
     DEFAULT_BUDGET,
     DEFAULT_RUNS,
-    NOT_COMPARABLE_EXIT,
     EvalOptions,
     EvalSession,
     Refused,
+    TreeState,
     baseline_changed,
     open_session,
     read_tree,
@@ -37,6 +36,8 @@ from evals.replay import ReplayAudit, Replayer
 from mcp_auditor.domain.models import AuditReport, TokenUsage, ToolReport
 
 DEFAULT_REPORT_PATH = "output/eval_report.json"
+NOT_COMPARABLE_EXIT = 3
+CRASHED_EXIT = 4
 
 EXIT_CODES = {
     GateVerdict.GREEN: 0,
@@ -74,8 +75,8 @@ def _evaluate(options: EvalOptions) -> int:
     export_judged_cases(result.outcome.audits, MERGED_GROUND_TRUTH, report_path)
     display.print_summary(result.report, options.report)
 
-    if session.record:
-        return _record(session, result)
+    if session.tree is not None:
+        return _record(session, session.tree, result)
     return EXIT_CODES[result.report.gate.verdict]
 
 
@@ -107,7 +108,9 @@ async def run_evals(session: EvalSession) -> EvalRunResult:
         raise Refused("All runs failed.", ["no run completed: nothing to judge"])
 
     metrics, consistency_details = outcome.metrics()
-    replayer = Replayer(audit=_replay_audit(session), honeypots=HONEYPOTS)
+    replayer = Replayer(
+        audit=_replay_audit(session), honeypots=HONEYPOTS, announce=_announce_replay
+    )
     gate = await judge_runs(session, outcome, replayer)
     report = EvalReport(
         timestamp=datetime.now(UTC).isoformat(),
@@ -194,14 +197,17 @@ def _replay_audit(session: EvalSession) -> ReplayAudit:
     return audit
 
 
-def _record(session: EvalSession, result: EvalRunResult) -> int:
-    assert session.tree is not None, "open_session reads the tree whenever it records"
-    drift = _recording_drift(session)
+def _announce_replay(message: str) -> None:
+    display.console.print(message, markup=False, highlight=False)
+
+
+def _record(session: EvalSession, tree: TreeState, result: EvalRunResult) -> int:
+    drift = _recording_drift(session, tree)
     if drift:
         raise Refused("Recording refused.", drift)
     recording = Recording(
         conditions=session.conditions,
-        commit=session.tree.commit,
+        commit=tree.commit,
         recorded_at=datetime.now(UTC).isoformat(),
         runs=result.outcome.observations(),
         metrics=result.report.metrics,
@@ -217,14 +223,13 @@ def _record(session: EvalSession, result: EvalRunResult) -> int:
     return 0
 
 
-def _recording_drift(session: EvalSession) -> list[str]:
-    assert session.tree is not None, "open_session reads the tree whenever it records"
+def _recording_drift(session: EvalSession, tree: TreeState) -> list[str]:
     try:
         reloaded = load_baseline(BASELINE_PATH)
     except ValidationError as error:
         reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
         raise Refused("Recording refused.", [reason]) from error
-    return tree_drift(session.tree, read_tree()) + baseline_changed(session.baseline, reloaded)
+    return tree_drift(tree, read_tree()) + baseline_changed(session.baseline, reloaded)
 
 
 if __name__ == "__main__":

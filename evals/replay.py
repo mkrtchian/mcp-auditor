@@ -1,9 +1,7 @@
-import sys
 import traceback
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from evals import eval_display as display
 from evals.gate import Cell, CellComparison, CellOutcome, Observation, ReplayRule, observe, settle
 from evals.honeypots import HoneypotConfig
 from evals.metrics import VerdictMap
@@ -15,6 +13,7 @@ ReplayAudit = Callable[[HoneypotConfig], Awaitable[VerdictMap]]
 class Replayer:
     audit: ReplayAudit
     honeypots: list[HoneypotConfig]
+    announce: Callable[[str], None]
 
     async def settle_flips(
         self, cells: dict[Cell, CellComparison], rule: ReplayRule
@@ -31,7 +30,7 @@ class Replayer:
             try:
                 replays = await self._replay_server(honeypot, flipped, rule)
             except Exception:
-                traceback.print_exc(file=sys.stderr)
+                self.announce(traceback.format_exc())
                 failures.append(f"a replay of {honeypot.name} failed")
                 continue
             for cell in flipped:
@@ -51,8 +50,8 @@ class Replayer:
             pending = [cell for cell in flipped if rule.decide_replays(replays[cell]) is None]
             if not pending:
                 break
-            display.console.print(
-                f"  Replaying [bold]{honeypot.name}[/bold] ({attempt}/{rule.replays}), "
+            self.announce(
+                f"  Replaying {honeypot.name} ({attempt}/{rule.replays}), "
                 f"{len(pending)} flipped cell(s)..."
             )
             observed = observe(await self.audit(honeypot), honeypot.ground_truth)

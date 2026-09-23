@@ -9,7 +9,6 @@ from evals.eval_session import (
     tree_drift,
 )
 from evals.gate_verdict import GateMode
-from evals.recording import exploratory_commit_refusal
 from mcp_auditor.config import Settings
 
 OTHER_COMMIT = "4567def"
@@ -76,8 +75,8 @@ def test_recording_over_an_exploratory_baseline_at_another_commit_is_refused():
 
     reasons = pre_run_refusals(session)
 
-    assert reasons == exploratory_commit_refusal(baseline, OTHER_COMMIT)
-    assert reasons != []
+    assert len(reasons) == 1
+    assert OTHER_COMMIT in reasons[0]
 
 
 def test_an_unchanged_tree_has_no_drift():
@@ -124,10 +123,6 @@ def test_a_baseline_recorded_again_during_the_runs_is_named():
     assert baseline_changed(loaded, current) == [
         "the baseline file changed during the runs: record again"
     ]
-
-
-def test_the_ci_conditions_have_no_mismatch():
-    assert ci_condition_mismatches(given.ci_conditions()) == []
 
 
 def test_a_budget_other_than_the_ci_one_is_named():

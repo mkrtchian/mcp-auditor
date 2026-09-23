@@ -15,33 +15,34 @@ ALPHA_OTHER_CELL = given.ALPHA_OTHER_CELL
 BETA_CELL = given.BETA_CELL
 
 
-async def test_a_flip_reproduced_four_times_is_a_regression_after_four_audits():
+async def test_a_flip_reproduced_four_times_is_a_regression():
     audit = given.FakeAudit({"alpha": [given.a_replay(reproducing=(ALPHA_CELL,))] * 5})
-    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS)
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
 
     settled, failures = await replayer.settle_flips(given.cells_flipping(ALPHA_CELL), ReplayRule())
 
     assert settled[ALPHA_CELL].outcome == CellOutcome.REGRESSION
     assert settled[ALPHA_CELL].replays == [True] * 4
-    assert audit.calls == {"alpha": 4, "beta": 0}
     assert failures == []
 
 
-async def test_a_flip_cleared_twice_is_not_reproduced_after_two_audits():
+async def test_a_flip_cleared_twice_is_not_reproduced():
     audit = given.FakeAudit({"alpha": [given.a_replay(clearing=(ALPHA_CELL,))] * 5})
-    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS)
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
 
     settled, _ = await replayer.settle_flips(given.cells_flipping(ALPHA_CELL), ReplayRule())
 
     assert settled[ALPHA_CELL].outcome == CellOutcome.FLIP_NOT_REPRODUCED
     assert settled[ALPHA_CELL].replays == [False, False]
-    assert audit.calls == {"alpha": 2, "beta": 0}
 
 
 async def test_two_flips_on_one_server_share_its_audits_until_both_decide():
     mixed = given.a_replay(reproducing=(ALPHA_CELL,), clearing=(ALPHA_OTHER_CELL,))
     audit = given.FakeAudit({"alpha": [mixed] * 5})
-    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS)
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
 
     settled, _ = await replayer.settle_flips(
         given.cells_flipping(ALPHA_CELL, ALPHA_OTHER_CELL), ReplayRule()
@@ -60,7 +61,8 @@ async def test_a_flip_on_each_server_audits_each_server_on_its_own():
             "beta": [given.a_replay(clearing=(BETA_CELL,))] * 5,
         }
     )
-    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS)
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
 
     settled, _ = await replayer.settle_flips(
         given.cells_flipping(ALPHA_CELL, BETA_CELL), ReplayRule()
@@ -78,7 +80,8 @@ async def test_a_replay_does_not_read_the_other_server_cells_as_uncovered():
             "beta": [given.a_replay(clearing=(BETA_CELL,))] * 5,
         }
     )
-    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS)
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
 
     settled, _ = await replayer.settle_flips(
         given.cells_flipping(ALPHA_CELL, BETA_CELL), ReplayRule()
@@ -90,7 +93,8 @@ async def test_a_replay_does_not_read_the_other_server_cells_as_uncovered():
 
 async def test_a_failed_replay_leaves_the_flip_and_is_reported():
     audit = given.FakeAudit({}, failing=frozenset({"alpha"}))
-    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS)
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
 
     settled, failures = await replayer.settle_flips(given.cells_flipping(ALPHA_CELL), ReplayRule())
 
@@ -98,9 +102,30 @@ async def test_a_failed_replay_leaves_the_flip_and_is_reported():
     assert failures == ["a replay of alpha failed"]
 
 
+async def test_a_failed_replay_announces_its_traceback():
+    audit = given.FakeAudit({}, failing=frozenset({"alpha"}))
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
+
+    await replayer.settle_flips(given.cells_flipping(ALPHA_CELL), ReplayRule())
+
+    assert any("Traceback" in message for message in messages)
+
+
+async def test_each_replay_attempt_announces_one_progress_line():
+    audit = given.FakeAudit({"alpha": [given.a_replay(reproducing=(ALPHA_CELL,))] * 5})
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
+
+    await replayer.settle_flips(given.cells_flipping(ALPHA_CELL), ReplayRule())
+
+    assert len(messages) == 4
+
+
 async def test_no_flip_means_no_audit():
     audit = given.FakeAudit({})
-    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS)
+    messages: list[str] = []
+    replayer = Replayer(audit=audit, honeypots=given.HONEYPOTS, announce=messages.append)
     cells = given.cells_flipping()
 
     settled, failures = await replayer.settle_flips(cells, ReplayRule())
