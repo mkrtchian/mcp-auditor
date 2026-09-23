@@ -164,6 +164,14 @@ def test_replay_rule_decides_four_of_five(reproduced: int, cleared: int, expecte
     assert ReplayRule().decide(reproduced, cleared) is expected
 
 
+@pytest.mark.parametrize(
+    ("replays", "expected"),
+    [([True] * 4, True), ([False] * 2, False), ([True] * 3 + [False], None)],
+)
+def test_replay_rule_decides_a_sequence_of_replays(replays: list[bool], expected: bool | None):
+    assert ReplayRule().decide_replays(replays) is expected
+
+
 @pytest.mark.parametrize(("replays", "required"), [(5, 6), (5, 0), (0, 0)])
 def test_a_replay_rule_that_could_never_decide_is_rejected(replays: int, required: int):
     with pytest.raises(ValidationError):

@@ -27,7 +27,13 @@ from evals.eval_session import (
 from evals.export import export_judged_cases
 from evals.gate import Cell, Observation, compare, metric_deltas, metric_resolutions, observe
 from evals.gate_verdict import GateInput, GateMode, GateResult, GateVerdict, judge_gate
-from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, TOOL_COUNT, audit_honeypot
+from evals.honeypots import (
+    HONEYPOTS,
+    MERGED_GROUND_TRUTH,
+    TOOL_COUNT,
+    HoneypotConfig,
+    audit_honeypot,
+)
 from evals.metrics import (
     ConsistencyDetail,
     EvalMetrics,
@@ -39,7 +45,7 @@ from evals.metrics import (
     compute_consistency,
 )
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
-from evals.replay import replay_flips
+from evals.replay import ReplayAudit, Replayer
 from mcp_auditor.domain.models import AuditReport, TokenUsage, ToolReport
 
 DEFAULT_REPORT_PATH = "output/eval_report.json"
@@ -228,7 +234,10 @@ async def _judge(session: EvalSession, outcome: RunsOutcome, metrics: EvalMetric
 
     cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
     if session.mode == GateMode.PAIRED and not mismatches:
-        cells, mismatches = await replay_flips(session, cells, baseline.replay_rule)
+        replayer = Replayer(
+            audit=_replay_audit(session), rule=baseline.replay_rule, honeypots=HONEYPOTS
+        )
+        cells, mismatches = await replayer.settle_flips(cells)
     resolutions = metric_resolutions(outcome.verdict_maps, MERGED_GROUND_TRUTH, TOOL_COUNT)
     return judge_gate(
         GateInput(
@@ -240,6 +249,14 @@ async def _judge(session: EvalSession, outcome: RunsOutcome, metrics: EvalMetric
             deltas=metric_deltas(baseline.metrics, metrics, resolutions),
         )
     )
+
+
+def _replay_audit(session: EvalSession) -> ReplayAudit:
+    async def audit(honeypot: HoneypotConfig) -> VerdictMap:
+        report = await audit_honeypot(session.settings, honeypot, session.conditions.budget)
+        return aggregate_verdicts(report)
+
+    return audit
 
 
 def _incomplete_runs(requested: int, completed: int) -> list[str]:

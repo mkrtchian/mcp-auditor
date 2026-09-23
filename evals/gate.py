@@ -56,6 +56,10 @@ class ReplayRule(BaseModel):
             return False
         return None
 
+    def decide_replays(self, replays: list[bool]) -> bool | None:
+        reproduced = sum(replays)
+        return self.decide(reproduced, len(replays) - reproduced)
+
 
 FLOORS: dict[str, float] = {
     "recall": 0.50,
@@ -144,8 +148,7 @@ def _flip_cause(cell: Cell, candidate_runs: list[dict[Cell, Observation]]) -> Fl
 
 
 def settle(comparison: CellComparison, replays: list[bool], rule: ReplayRule) -> CellComparison:
-    reproduced = sum(replays)
-    regression = rule.decide(reproduced, len(replays) - reproduced)
+    regression = rule.decide_replays(replays)
     outcome = CellOutcome.REGRESSION if regression else CellOutcome.FLIP_NOT_REPRODUCED
     return comparison.model_copy(update={"outcome": outcome, "replays": list(replays)})
 
