@@ -287,20 +287,24 @@ def test_precision_resolution_is_the_largest_single_case_move_across_runs():
     assert math.isclose(resolutions["precision"], 1 / (2 * 1))
 
 
-def test_precision_resolution_skips_a_run_without_predicted_fail():
-    maps = [given.a_run_failing(fails=4), given.a_run_failing(fails=0)]
+def test_precision_resolution_counts_a_run_without_predicted_fail():
+    maps = [
+        given.a_run_failing(fails=0),
+        given.a_run_failing(fails=33),
+        given.a_run_failing(fails=33),
+    ]
 
     resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
 
-    assert math.isclose(resolutions["precision"], 1 / (2 * 4))
+    assert math.isclose(resolutions["precision"], 1 / 3)
 
 
-def test_precision_resolution_without_predicted_fail_is_one():
-    maps: list[VerdictMap] = [{SAFE_CELL: EvalVerdict.PASS}, {SAFE_CELL: EvalVerdict.PASS}]
+def test_precision_resolution_without_predicted_fail_is_one_case_per_run():
+    maps = [given.a_run_failing(fails=0), given.a_run_failing(fails=0)]
 
     resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
 
-    assert resolutions["precision"] == 1.0
+    assert math.isclose(resolutions["precision"], 1 / 2)
 
 
 def test_distribution_coverage_resolution_is_one_category_of_one_tool_in_one_run():

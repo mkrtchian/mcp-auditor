@@ -172,7 +172,8 @@ def metric_resolutions(
 
     Precision is averaged per run over that run's predicted FAILs, outside the ground truth
     included, so its figure is the largest single-case move across runs: the run with the
-    fewest predicted FAILs. A run predicting none cannot move it.
+    fewest predicted FAILs. A run predicting none moves it the most: one false positive takes
+    that run's precision from 1 to 0.
     """
     runs = len(verdict_maps)
     expected_fails = sum(1 for verdict in ground_truth.values() if verdict == EvalVerdict.FAIL)
@@ -188,7 +189,7 @@ def _largest_precision_move(verdict_maps: list[VerdictMap]) -> float:
         sum(1 for verdict in verdicts.values() if verdict == EvalVerdict.FAIL)
         for verdicts in verdict_maps
     ]
-    moves = [_one_case_in(len(verdict_maps) * fails) for fails in predicted_fails if fails]
+    moves = [_one_case_in(len(verdict_maps) * max(fails, 1)) for fails in predicted_fails]
     return max(moves, default=1.0)
 
 
