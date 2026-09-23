@@ -36,6 +36,7 @@ class GateResult(BaseModel):
     baseline_status: BaselineStatus | None
     cells: dict[str, CellComparison]
     floors: dict[str, float]
+    thresholds: dict[str, float]
     floor_breaches: list[str]
     deltas: dict[str, MetricDelta]
 
@@ -66,9 +67,14 @@ def judge_gate(gate_input: GateInput) -> GateResult:
         baseline_status=gate_input.baseline_status,
         cells={cell_key(cell): comparison for cell, comparison in gate_input.cells.items()},
         floors=dict(FLOORS),
+        thresholds=_thresholds_of(gate_input.mode),
         floor_breaches=breaches,
         deltas=gate_input.deltas,
     )
+
+
+def _thresholds_of(mode: GateMode) -> dict[str, float]:
+    return dict(LEGACY_THRESHOLDS) if mode == GateMode.LEGACY_THRESHOLDS else {}
 
 
 def _red_reasons(gate_input: GateInput, breaches: list[str]) -> list[str]:

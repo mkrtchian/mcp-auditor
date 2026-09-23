@@ -114,3 +114,19 @@ def test_legacy_mode_with_a_mismatch_is_not_comparable():
 
     assert result.verdict == GateVerdict.NOT_COMPARABLE
     assert result.reasons == [mismatch]
+
+
+@pytest.mark.parametrize(
+    ("mode", "thresholds"),
+    [
+        (GateMode.LEGACY_THRESHOLDS, LEGACY_THRESHOLDS),
+        (GateMode.FLOORS_ONLY, {}),
+        (GateMode.PAIRED, {}),
+    ],
+)
+def test_only_the_legacy_mode_carries_the_legacy_thresholds(
+    mode: GateMode, thresholds: dict[str, float]
+):
+    result = judge_gate(GateInput(mode=mode, metrics=given.metrics()))
+
+    assert result.thresholds == thresholds

@@ -107,6 +107,7 @@ def a_gate(
         baseline_status=None,
         cells={cell_key(VULNERABLE_CELL): CellComparison(outcome=vulnerable_cell_outcome)},
         floors={},
+        thresholds={},
         floor_breaches=floor_breaches or [],
         deltas={},
     )

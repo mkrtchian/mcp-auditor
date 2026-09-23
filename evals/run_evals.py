@@ -3,7 +3,7 @@ import asyncio
 import os
 import sys
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -28,33 +28,10 @@ from evals.eval_session import (
     tree_drift,
 )
 from evals.export import export_judged_cases
-from evals.gate import (
-    LEGACY_THRESHOLDS,
-    Cell,
-    Observation,
-    compare,
-    metric_deltas,
-    metric_resolutions,
-    observe,
-)
-from evals.gate_verdict import GateInput, GateMode, GateResult, GateVerdict, judge_gate
-from evals.honeypots import (
-    HONEYPOTS,
-    MERGED_GROUND_TRUTH,
-    TOOL_COUNT,
-    HoneypotConfig,
-    audit_honeypot,
-)
-from evals.metrics import (
-    ConsistencyDetail,
-    EvalMetrics,
-    RunDetail,
-    VerdictMap,
-    aggregate_verdicts,
-    average_distribution_coverage,
-    build_run_detail,
-    compute_consistency,
-)
+from evals.gate_verdict import GateVerdict
+from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, HoneypotConfig, audit_honeypot
+from evals.judging import RunsOutcome, judge_runs
+from evals.metrics import RunDetail, VerdictMap, aggregate_verdicts, build_run_detail
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
 from evals.replay import ReplayAudit, Replayer
 from mcp_auditor.domain.models import AuditReport, TokenUsage, ToolReport
@@ -66,26 +43,6 @@ EXIT_CODES = {
     GateVerdict.RED: 1,
     GateVerdict.NOT_COMPARABLE: NOT_COMPARABLE_EXIT,
 }
-
-
-@dataclass
-class RunsOutcome:
-    details: list[RunDetail] = field(default_factory=list[RunDetail])
-    verdict_maps: list[VerdictMap] = field(default_factory=list[VerdictMap])
-    audits: list[tuple[int, AuditReport]] = field(default_factory=list[tuple[int, AuditReport]])
-
-    def observations(self) -> list[dict[Cell, Observation]]:
-        return [observe(verdicts, MERGED_GROUND_TRUTH) for verdicts in self.verdict_maps]
-
-    def metrics(self) -> tuple[EvalMetrics, dict[str, ConsistencyDetail]]:
-        consistency, consistency_details = compute_consistency(self.verdict_maps)
-        metrics = EvalMetrics(
-            recall=sum(run.recall for run in self.details) / len(self.details),
-            precision=sum(run.precision for run in self.details) / len(self.details),
-            consistency=consistency,
-            distribution_coverage=average_distribution_coverage(self.details),
-        )
-        return metrics, consistency_details
 
 
 @dataclass(frozen=True)
@@ -150,7 +107,8 @@ async def run_evals(session: EvalSession) -> EvalRunResult:
         raise Refused("All runs failed.", ["no run completed: nothing to judge"])
 
     metrics, consistency_details = outcome.metrics()
-    gate = await _judge(session, outcome, metrics)
+    replayer = Replayer(audit=_replay_audit(session), honeypots=HONEYPOTS)
+    gate = await judge_runs(session, outcome, replayer)
     report = EvalReport(
         timestamp=datetime.now(UTC).isoformat(),
         config={
@@ -159,7 +117,7 @@ async def run_evals(session: EvalSession) -> EvalRunResult:
             "completed_runs": len(outcome.details),
         },
         metrics=metrics,
-        thresholds=LEGACY_THRESHOLDS if gate.mode == GateMode.LEGACY_THRESHOLDS else {},
+        thresholds=gate.thresholds,
         passed=gate.verdict == GateVerdict.GREEN,
         gate=gate,
         runs=outcome.details,
@@ -228,43 +186,12 @@ def _post_langsmith_feedback(run_detail: RunDetail, project_name: str) -> None:
         pass  # Best-effort — don't fail evals because of LangSmith
 
 
-async def _judge(session: EvalSession, outcome: RunsOutcome, metrics: EvalMetrics) -> GateResult:
-    mismatches = _incomplete_runs(session.conditions.runs, len(outcome.details))
-    baseline = session.baseline
-    if baseline is None:
-        return judge_gate(GateInput(mode=session.mode, metrics=metrics, mismatches=mismatches))
-
-    cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
-    if session.mode == GateMode.PAIRED and not mismatches:
-        replayer = Replayer(
-            audit=_replay_audit(session), rule=baseline.replay_rule, honeypots=HONEYPOTS
-        )
-        cells, mismatches = await replayer.settle_flips(cells)
-    resolutions = metric_resolutions(outcome.verdict_maps, MERGED_GROUND_TRUTH, TOOL_COUNT)
-    return judge_gate(
-        GateInput(
-            mode=session.mode,
-            metrics=metrics,
-            baseline_status=baseline.status,
-            cells=cells,
-            mismatches=mismatches,
-            deltas=metric_deltas(baseline.metrics, metrics, resolutions),
-        )
-    )
-
-
 def _replay_audit(session: EvalSession) -> ReplayAudit:
     async def audit(honeypot: HoneypotConfig) -> VerdictMap:
         report = await audit_honeypot(session.settings, honeypot, session.conditions.budget)
         return aggregate_verdicts(report)
 
     return audit
-
-
-def _incomplete_runs(requested: int, completed: int) -> list[str]:
-    if completed >= requested:
-        return []
-    return [f"{completed} of {requested} runs completed"]
 
 
 def _record(session: EvalSession, result: EvalRunResult) -> int:
@@ -278,7 +205,7 @@ def _record(session: EvalSession, result: EvalRunResult) -> int:
         recorded_at=datetime.now(UTC).isoformat(),
         runs=result.outcome.observations(),
         metrics=result.report.metrics,
-        completed_all=len(result.outcome.details) == session.conditions.runs,
+        completed_all=result.outcome.completed_all(session.conditions.runs),
         ground_truth=MERGED_GROUND_TRUTH,
     )
     decision = decide_recording(session.baseline, recording, result.report.gate)

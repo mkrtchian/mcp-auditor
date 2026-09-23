@@ -21,10 +21,15 @@ HONEYPOTS = [ALPHA, BETA]
 class FakeAudit:
     """Returns each honeypot's scripted verdict maps in order, or raises for a failing one."""
 
-    def __init__(self, scripts: dict[str, list[VerdictMap]], failing: frozenset[str] = frozenset()):
+    def __init__(
+        self,
+        scripts: dict[str, list[VerdictMap]],
+        failing: frozenset[str] = frozenset(),
+        honeypots: list[HoneypotConfig] = HONEYPOTS,
+    ):
         self._scripts = scripts
         self._failing = failing
-        self.calls = {honeypot.name: 0 for honeypot in HONEYPOTS}
+        self.calls = {honeypot.name: 0 for honeypot in honeypots}
 
     async def __call__(self, honeypot: HoneypotConfig) -> VerdictMap:
         self.calls[honeypot.name] += 1
