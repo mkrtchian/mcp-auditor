@@ -104,6 +104,48 @@ def _field_mismatches(
     ]
 
 
+def baseline_integrity(baseline: Baseline, ground_truth: GroundTruth) -> list[str]:
+    """What the file holds that its conditions do not claim, checked when the runner loads it."""
+    problems: list[str] = []
+    claimed = baseline.conditions.runs
+    if len(baseline.runs) != claimed or not baseline.runs:
+        problems.append(
+            f"the baseline holds {len(baseline.runs)} runs, its conditions claim {claimed}"
+        )
+    same_ground_truth = baseline.conditions.ground_truth_fingerprint == fingerprint_ground_truth(
+        ground_truth
+    )
+    for index, run in enumerate(baseline.runs):
+        problems += _run_problems(index, run, ground_truth if same_ground_truth else None)
+    return problems
+
+
+def _run_problems(
+    index: int, run: dict[str, Observation], ground_truth: GroundTruth | None
+) -> list[str]:
+    unreadable = [key for key in run if _unreadable(key)]
+    if unreadable:
+        return [f"run {index}: unreadable cell key {key!r}" for key in unreadable]
+    if ground_truth is None:
+        return []
+    expected = {cell_key(cell) for cell in ground_truth}
+    missing, extra = sorted(expected - run.keys()), sorted(run.keys() - expected)
+    sides: list[str] = []
+    if missing:
+        sides.append(f"{missing} missing")
+    if extra:
+        sides.append(f"{extra} unknown")
+    return [f"run {index}: cells {', '.join(sides)}"] if sides else []
+
+
+def _unreadable(key: str) -> bool:
+    try:
+        parse_cell_key(key)
+    except ValueError:
+        return True
+    return False
+
+
 def load_baseline(path: Path) -> Baseline | None:
     if not path.exists():
         return None

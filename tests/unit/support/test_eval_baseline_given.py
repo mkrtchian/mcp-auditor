@@ -1,4 +1,10 @@
-from evals.baseline import Baseline, BaselineConditions, BaselineStatus, FixtureConditions
+from evals.baseline import (
+    Baseline,
+    BaselineConditions,
+    BaselineStatus,
+    FixtureConditions,
+    fingerprint_ground_truth,
+)
 from evals.gate import Cell, CellComparison, CellOutcome, Observation, ReplayRule, cell_key
 from evals.gate_verdict import GateMode, GateResult, GateVerdict
 from evals.ground_truth import GroundTruth
@@ -22,14 +28,16 @@ def get_user(user_id: str) -> str:
 ObservationRuns = list[dict[Cell, Observation]]
 
 
-def conditions(budget: int = 10, source_fingerprint: str = "abc") -> BaselineConditions:
+def conditions(
+    budget: int = 10, source_fingerprint: str = "abc", ground_truth: GroundTruth | None = None
+) -> BaselineConditions:
     return BaselineConditions(
         runs=3,
         budget=budget,
         provider="google",
         model="gemini-3.1-flash-lite",
         judge_model="gemini-3.1-flash-lite",
-        ground_truth_fingerprint="def",
+        ground_truth_fingerprint=fingerprint_ground_truth(ground_truth or a_ground_truth()),
         fixtures={
             "honeypot": FixtureConditions(
                 source_fingerprint=source_fingerprint, chain_budget=0, max_chain_steps=3
@@ -45,15 +53,15 @@ def a_baseline(
     status: BaselineStatus = BaselineStatus.EXPLORATORY,
     runs: ObservationRuns | None = None,
     replay_rule: ReplayRule | None = None,
+    ground_truth: GroundTruth | None = None,
 ) -> Baseline:
     if runs is None:
-        runs = [
-            {VULNERABLE_CELL: Observation.FAIL, SAFE_CELL: Observation.PASS},
-            {VULNERABLE_CELL: Observation.UNCOVERED, SAFE_CELL: Observation.PASS},
-        ]
+        runs = runs_where_vulnerable_cell_is(
+            Observation.FAIL, Observation.UNCOVERED, Observation.FAIL
+        )
     return Baseline(
         status=status,
-        conditions=conditions(),
+        conditions=conditions(ground_truth=ground_truth),
         replay_rule=replay_rule or ReplayRule(),
         commit=RECORDED_COMMIT,
         recorded_at="2026-09-23T10:00:00+00:00",

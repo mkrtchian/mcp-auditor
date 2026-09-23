@@ -101,15 +101,21 @@ jobs:
           E2E_EXIT_CODE: ${{ steps.e2e.outputs.exit_code }}
         run: |
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gate_line=""
+          if [ -f output/eval_report.json ]; then
+            gate="$(jq -r '.gate.mode + (if .gate.baseline_status then ", baseline " + .gate.baseline_status else "" end)' output/eval_report.json)"
+            gate_line=" Gate: $gate."
+          fi
           if [ "${{ job.status }}" = "success" ]; then
             gh pr comment ${{ github.event.issue.number }} \
-              --body "Evals passed ($MODE). [Run details]($run_url)"
+              --body "Evals passed ($MODE).$gate_line [Run details]($run_url)"
           else
             case "$E2E_EXIT_CODE" in
               1) reason=": e2e red (regression, floor or threshold)" ;;
               3) reason=": e2e not comparable (conditions, fixtures or incomplete runs, see the log)" ;;
+              4) reason=": e2e crashed (see the log)" ;;
               *) reason="" ;;
             esac
             gh pr comment ${{ github.event.issue.number }} \
-              --body "Evals failed ($MODE)$reason. [Run details]($run_url)"
+              --body "Evals failed ($MODE)$reason.$gate_line [Run details]($run_url)"
           fi

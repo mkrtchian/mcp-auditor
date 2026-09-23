@@ -1,15 +1,14 @@
 import subprocess
 from dataclasses import dataclass
-from typing import NoReturn
 
 from pydantic import ValidationError
 
-from evals import eval_display as display
 from evals.baseline import (
     Baseline,
     BaselineConditions,
     BaselineStatus,
     FixtureConditions,
+    baseline_integrity,
     condition_mismatches,
     fingerprint_ground_truth,
     fingerprint_source,
@@ -23,6 +22,14 @@ BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
 DEFAULT_RUNS = 3
 DEFAULT_BUDGET = 10
 NOT_COMPARABLE_EXIT = 3
+CRASHED_EXIT = 4
+
+
+class Refused(Exception):
+    def __init__(self, title: str, reasons: list[str]) -> None:
+        super().__init__(title, reasons)
+        self.title = title
+        self.reasons = reasons
 
 
 @dataclass(frozen=True)
@@ -47,9 +54,9 @@ class EvalSession:
 
 
 def open_session(options: EvalOptions) -> EvalSession:
-    """Exits 3 on anything that would make the run not comparable or its recording refused."""
+    """Raises Refused on anything that makes the run not comparable or its recording refused."""
     if options.record_baseline and options.ungated:
-        refuse(
+        raise Refused(
             "Recording refused.",
             ["--record-baseline cannot run --ungated: a baseline records the conditions it gates"],
         )
@@ -65,7 +72,7 @@ def open_session(options: EvalOptions) -> EvalSession:
     )
     reasons = _pre_run_refusals(session)
     if reasons:
-        refuse("Refused before any LLM call.", reasons)
+        raise Refused("Refused before any LLM call.", reasons)
     return session
 
 
@@ -97,17 +104,18 @@ def tree_drift(session: EvalSession) -> list[str]:
     return reasons
 
 
-def refuse(title: str, reasons: list[str]) -> NoReturn:
-    display.print_refusal(title, reasons)
-    raise SystemExit(NOT_COMPARABLE_EXIT)
-
-
 def _load_committed_baseline() -> Baseline | None:
     try:
-        return load_baseline(BASELINE_PATH)
+        baseline = load_baseline(BASELINE_PATH)
     except ValidationError as error:
         reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
-        refuse("Refused before any LLM call.", [reason])
+        raise Refused("Refused before any LLM call.", [reason]) from error
+    if baseline is None:
+        return None
+    problems = baseline_integrity(baseline, MERGED_GROUND_TRUTH)
+    if problems:
+        raise Refused("Refused before any LLM call.", problems)
+    return baseline
 
 
 def _candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineConditions:
@@ -173,6 +181,7 @@ def git(*args: str) -> str:
         completed = subprocess.run(
             ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=True
         )
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        refuse("Recording refused.", [f"git {' '.join(args)} failed: record from a git checkout"])
+    except (subprocess.CalledProcessError, FileNotFoundError) as error:
+        reason = f"git {' '.join(args)} failed: record from a git checkout"
+        raise Refused("Recording refused.", [reason]) from error
     return completed.stdout.strip()

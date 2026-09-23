@@ -100,3 +100,19 @@ def test_a_mismatch_makes_the_gate_not_comparable():
 
     assert result.verdict == GateVerdict.NOT_COMPARABLE
     assert result.reasons == [mismatch]
+
+
+def test_legacy_mode_with_a_mismatch_is_not_comparable():
+    mismatch = "2 of 3 runs completed"
+
+    result = judge_gate(
+        GateInput(
+            mode=GateMode.LEGACY_THRESHOLDS,
+            metrics=given.metrics(),
+            thresholds=given.LEGACY_THRESHOLDS,
+            mismatches=[mismatch],
+        )
+    )
+
+    assert result.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.reasons == [mismatch]

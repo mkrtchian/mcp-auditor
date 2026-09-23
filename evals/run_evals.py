@@ -10,15 +10,17 @@ from pathlib import Path
 from rich.progress import Progress, TaskID
 
 from evals import eval_display as display
-from evals.baseline import Baseline, write_baseline
+from evals.baseline import write_baseline
 from evals.eval_report import EvalReport
 from evals.eval_session import (
     BASELINE_PATH,
+    CRASHED_EXIT,
     DEFAULT_BUDGET,
     DEFAULT_RUNS,
     NOT_COMPARABLE_EXIT,
     EvalOptions,
     EvalSession,
+    Refused,
     open_session,
     tree_drift,
 )
@@ -84,6 +86,18 @@ class EvalRunResult:
 
 def main() -> None:
     options = _parse_args()
+    try:
+        code = _evaluate(options)
+    except Refused as refusal:
+        display.print_refusal(refusal.title, refusal.reasons)
+        code = NOT_COMPARABLE_EXIT
+    except Exception:
+        traceback.print_exc()
+        code = CRASHED_EXIT
+    raise SystemExit(code)
+
+
+def _evaluate(options: EvalOptions) -> int:
     session = open_session(options)
     result = asyncio.run(run_evals(session))
 
@@ -94,8 +108,8 @@ def main() -> None:
     display.print_summary(result.report, options.report)
 
     if session.record:
-        raise SystemExit(_record(session, result))
-    raise SystemExit(EXIT_CODES[result.report.gate.verdict])
+        return _record(session, result)
+    return EXIT_CODES[result.report.gate.verdict]
 
 
 def _parse_args() -> EvalOptions:
@@ -120,8 +134,7 @@ def _parse_args() -> EvalOptions:
 async def run_evals(session: EvalSession) -> EvalRunResult:
     outcome = await _run_all(session)
     if not outcome.details:
-        display.print_refusal("All runs failed. Cannot produce eval report.", [])
-        raise SystemExit(NOT_COMPARABLE_EXIT if session.baseline or session.record else 1)
+        raise Refused("All runs failed.", ["no run completed: nothing to judge"])
 
     metrics, consistency_details = outcome.metrics()
     gate = await _judge(session, outcome, metrics)
@@ -203,12 +216,16 @@ def _post_langsmith_feedback(run_detail: RunDetail, project_name: str) -> None:
 
 
 async def _judge(session: EvalSession, outcome: RunsOutcome, metrics: EvalMetrics) -> GateResult:
+    mismatches = _incomplete_runs(session.conditions.runs, len(outcome.details))
     baseline = session.baseline
     if baseline is None:
         thresholds = THRESHOLDS if session.mode == GateMode.LEGACY_THRESHOLDS else None
-        return judge_gate(GateInput(mode=session.mode, metrics=metrics, thresholds=thresholds))
+        return judge_gate(
+            GateInput(
+                mode=session.mode, metrics=metrics, thresholds=thresholds, mismatches=mismatches
+            )
+        )
 
-    mismatches = _incomplete_runs(baseline, len(outcome.details))
     cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
     if session.mode == GateMode.PAIRED and not mismatches:
         cells, mismatches = await replay_flips(session, cells, baseline.replay_rule)
@@ -225,19 +242,17 @@ async def _judge(session: EvalSession, outcome: RunsOutcome, metrics: EvalMetric
     )
 
 
-def _incomplete_runs(baseline: Baseline, completed: int) -> list[str]:
-    expected = baseline.conditions.runs
-    if completed >= expected:
+def _incomplete_runs(requested: int, completed: int) -> list[str]:
+    if completed >= requested:
         return []
-    return [f"{completed} of {expected} runs completed, the baseline holds {expected}"]
+    return [f"{completed} of {requested} runs completed"]
 
 
 def _record(session: EvalSession, result: EvalRunResult) -> int:
     assert session.commit is not None, "open_session reads HEAD whenever it records"
     drift = tree_drift(session)
     if drift:
-        display.print_refusal("Recording refused.", drift)
-        return NOT_COMPARABLE_EXIT
+        raise Refused("Recording refused.", drift)
     recording = Recording(
         conditions=session.conditions,
         commit=session.commit,
@@ -249,8 +264,7 @@ def _record(session: EvalSession, result: EvalRunResult) -> int:
     )
     decision = decide_recording(session.baseline, recording, result.report.gate)
     if isinstance(decision, RecordingRefused):
-        display.print_refusal("Recording refused.", decision.reasons)
-        return NOT_COMPARABLE_EXIT
+        raise Refused("Recording refused.", decision.reasons)
     write_baseline(BASELINE_PATH, decision)
     changes = gated_set_changes(session.baseline, decision, MERGED_GROUND_TRUTH)
     display.print_written_recording(decision, changes, BASELINE_PATH)

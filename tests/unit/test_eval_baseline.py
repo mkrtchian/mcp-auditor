@@ -5,6 +5,7 @@ from evals.baseline import (
     Baseline,
     BaselineStatus,
     RecordingRef,
+    baseline_integrity,
     condition_mismatches,
     fingerprint_ground_truth,
     fingerprint_source,
@@ -15,7 +16,7 @@ from evals.gate import CellOutcome, Observation, ReplayRule, cell_key
 from evals.gate_verdict import GateMode, GateVerdict
 from evals.ground_truth import GroundTruth
 from evals.recording import RecordingRefused, decide_recording, gated_set_changes
-from mcp_auditor.domain.models import EvalVerdict
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 VULNERABLE_CELL = given.VULNERABLE_CELL
 SAFE_CELL = given.SAFE_CELL
@@ -95,6 +96,70 @@ def test_observation_runs_parse_the_keys_back_to_cells():
 
 def test_loading_an_absent_baseline_gives_none(tmp_path: Path):
     assert load_baseline(tmp_path / "missing.json") is None
+
+
+def test_a_baseline_consistent_with_the_ground_truth_has_no_integrity_problem():
+    assert baseline_integrity(given.a_baseline(), given.a_ground_truth()) == []
+
+
+def test_a_run_missing_a_ground_truth_cell_names_it():
+    runs = given.all_correct_runs()
+    del runs[1][SAFE_CELL]
+
+    problems = baseline_integrity(given.a_baseline(runs=runs), given.a_ground_truth())
+
+    assert problems == [f"run 1: cells ['{cell_key(SAFE_CELL)}'] missing"]
+
+
+def test_a_run_with_a_cell_outside_the_ground_truth_names_it():
+    unknown_cell = ("get_user", AuditCategory.ERROR_HANDLING)
+    runs = given.all_correct_runs()
+    runs[2][unknown_cell] = Observation.PASS
+
+    problems = baseline_integrity(given.a_baseline(runs=runs), given.a_ground_truth())
+
+    assert problems == [f"run 2: cells ['{cell_key(unknown_cell)}'] unknown"]
+
+
+def test_a_baseline_with_no_run_names_the_run_count():
+    problems = baseline_integrity(given.a_baseline(runs=[]), given.a_ground_truth())
+
+    assert problems == ["the baseline holds 0 runs, its conditions claim 3"]
+
+
+def test_a_baseline_with_fewer_runs_than_its_conditions_claim_names_the_run_count():
+    runs = given.runs_where_vulnerable_cell_is(Observation.FAIL, Observation.FAIL)
+
+    problems = baseline_integrity(given.a_baseline(runs=runs), given.a_ground_truth())
+
+    assert problems == ["the baseline holds 2 runs, its conditions claim 3"]
+
+
+def test_a_key_without_a_category_is_reported_not_raised():
+    baseline = given.a_baseline()
+    baseline.runs[0]["get_user"] = Observation.PASS
+
+    problems = baseline_integrity(baseline, given.a_ground_truth())
+
+    assert problems == ["run 0: unreadable cell key 'get_user'"]
+
+
+def test_a_key_with_an_unknown_category_is_reported_not_raised():
+    baseline = given.a_baseline()
+    baseline.runs[1]["get_user/unknown"] = Observation.PASS
+
+    problems = baseline_integrity(baseline, given.a_ground_truth())
+
+    assert problems == ["run 1: unreadable cell key 'get_user/unknown'"]
+
+
+def test_a_baseline_of_another_ground_truth_gets_no_cell_set_line():
+    other_ground_truth: GroundTruth = {VULNERABLE_CELL: EvalVerdict.FAIL}
+    runs = given.all_correct_runs()
+    del runs[0][SAFE_CELL]
+    baseline = given.a_baseline(runs=runs, ground_truth=other_ground_truth)
+
+    assert baseline_integrity(baseline, given.a_ground_truth()) == []
 
 
 def test_a_first_recording_is_exploratory():

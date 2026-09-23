@@ -6,7 +6,7 @@ from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
 
-from evals.baseline import Baseline
+from evals.baseline import Baseline, BaselineStatus
 from evals.eval_report import EvalReport
 from evals.gate import CellComparison, CellOutcome
 from evals.gate_verdict import GateMode, GateResult, GateVerdict
@@ -102,6 +102,15 @@ def print_refusal(title: str, reasons: list[str]) -> None:
     console.print(Panel("\n".join(lines)))
 
 
+_NEXT_STEP = {
+    BaselineStatus.EXPLORATORY: (
+        "Run --record-baseline again now, at this commit and before committing, to confirm it. "
+        "Commit the file once confirmed."
+    ),
+    BaselineStatus.CONFIRMED: "Commit the file by hand.",
+}
+
+
 def print_written_recording(
     baseline: Baseline, gated_changes: tuple[list[str], list[str]], path: Path
 ) -> None:
@@ -112,5 +121,5 @@ def print_written_recording(
     lines += [
         f"- disagrees with the recording it replaces: {key}" for key in baseline.disagreements
     ]
-    lines.append("Commit the file by hand.")
+    lines.append(_NEXT_STEP[baseline.status])
     console.print(Panel("\n".join(lines)))
