@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from evals.baseline import BaselineStatus
 from evals.gate import (
     FLOORS,
+    LEGACY_THRESHOLDS,
     Cell,
     CellComparison,
     CellOutcome,
@@ -41,11 +42,10 @@ class GateResult(BaseModel):
 
 @dataclass(frozen=True)
 class GateInput:
-    """What the gate judges. Mismatches cover every reason the run cannot be compared."""
+    """Mismatches cover every reason the run cannot be compared."""
 
     mode: GateMode
     metrics: EvalMetrics
-    thresholds: dict[str, float] | None = None
     baseline_status: BaselineStatus | None = None
     cells: dict[Cell, CellComparison] = field(default_factory=dict[Cell, CellComparison])
     mismatches: list[str] = field(default_factory=list[str])
@@ -74,17 +74,17 @@ def judge_gate(gate_input: GateInput) -> GateResult:
 def _red_reasons(gate_input: GateInput, breaches: list[str]) -> list[str]:
     match gate_input.mode:
         case GateMode.LEGACY_THRESHOLDS:
-            return _missed_thresholds(gate_input.metrics, gate_input.thresholds or {})
+            return _missed_thresholds(gate_input.metrics)
         case GateMode.FLOORS_ONLY:
             return _breach_reasons(gate_input.metrics, breaches)
         case GateMode.PAIRED:
             return _breach_reasons(gate_input.metrics, breaches) + _regressions(gate_input.cells)
 
 
-def _missed_thresholds(metrics: EvalMetrics, thresholds: dict[str, float]) -> list[str]:
+def _missed_thresholds(metrics: EvalMetrics) -> list[str]:
     return [
         f"{name} {getattr(metrics, name):.2f} under its threshold {threshold:.2f}"
-        for name, threshold in thresholds.items()
+        for name, threshold in LEGACY_THRESHOLDS.items()
         if getattr(metrics, name) < threshold
     ]
 

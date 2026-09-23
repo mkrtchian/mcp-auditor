@@ -1,19 +1,20 @@
-import tests.unit.support.test_eval_gate_given as given
-from evals.gate import CellOutcome
+import pytest
+
+import tests.unit.support.test_eval_gate_verdict_given as given
+from evals.gate import LEGACY_THRESHOLDS, CellOutcome
 from evals.gate_verdict import GateInput, GateMode, GateVerdict, judge_gate
 
 
-def test_legacy_mode_is_red_on_a_missed_threshold():
+@pytest.mark.parametrize("metric", sorted(LEGACY_THRESHOLDS))
+def test_legacy_mode_is_red_on_a_missed_legacy_threshold(metric: str):
+    missed = LEGACY_THRESHOLDS[metric] - 0.01
+
     result = judge_gate(
-        GateInput(
-            mode=GateMode.LEGACY_THRESHOLDS,
-            metrics=given.metrics(precision=0.84),
-            thresholds=given.LEGACY_THRESHOLDS,
-        )
+        GateInput(mode=GateMode.LEGACY_THRESHOLDS, metrics=given.metrics(**{metric: missed}))
     )
 
     assert result.verdict == GateVerdict.RED
-    assert any("precision" in reason for reason in result.reasons)
+    assert any(metric in reason for reason in result.reasons)
 
 
 def test_legacy_mode_is_green_when_every_threshold_is_met():
@@ -21,7 +22,6 @@ def test_legacy_mode_is_green_when_every_threshold_is_met():
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
             metrics=given.metrics(),
-            thresholds=given.LEGACY_THRESHOLDS,
         )
     )
 
@@ -34,7 +34,6 @@ def test_legacy_mode_reports_floor_breaches():
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
             metrics=given.metrics(recall=0.4),
-            thresholds=given.LEGACY_THRESHOLDS,
         )
     )
 
@@ -109,7 +108,6 @@ def test_legacy_mode_with_a_mismatch_is_not_comparable():
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
             metrics=given.metrics(),
-            thresholds=given.LEGACY_THRESHOLDS,
             mismatches=[mismatch],
         )
     )

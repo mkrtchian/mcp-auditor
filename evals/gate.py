@@ -1,3 +1,4 @@
+import math
 from enum import StrEnum
 from typing import Self
 
@@ -65,6 +66,13 @@ FLOORS: dict[str, float] = {
     "recall": 0.50,
     "precision": 0.50,
     "distribution_coverage": 0.50,
+}
+
+LEGACY_THRESHOLDS: dict[str, float] = {
+    "recall": 0.80,
+    "precision": 0.85,
+    "consistency": 0.70,
+    "distribution_coverage": 0.80,
 }
 
 
@@ -162,22 +170,26 @@ def metric_resolutions(
 ) -> dict[str, float]:
     """One misclassified case's move on each averaged metric (ADR 016).
 
-    Precision counts every predicted FAIL of the full maps, outside the ground truth
-    included: the mean per map times the runs is their total.
+    Precision is averaged per run over that run's predicted FAILs, outside the ground truth
+    included, so its figure is the largest single-case move across runs: the run with the
+    fewest predicted FAILs. A run predicting none cannot move it.
     """
     runs = len(verdict_maps)
     expected_fails = sum(1 for verdict in ground_truth.values() if verdict == EvalVerdict.FAIL)
-    predicted_fails = sum(
-        1
-        for verdicts in verdict_maps
-        for verdict in verdicts.values()
-        if verdict == EvalVerdict.FAIL
-    )
     return {
         "recall": _one_case_in(expected_fails * runs),
-        "precision": _one_case_in(predicted_fails),
+        "precision": _largest_precision_move(verdict_maps),
         "distribution_coverage": _one_case_in(tool_count * len(AuditCategory) * runs),
     }
+
+
+def _largest_precision_move(verdict_maps: list[VerdictMap]) -> float:
+    predicted_fails = [
+        sum(1 for verdict in verdicts.values() if verdict == EvalVerdict.FAIL)
+        for verdicts in verdict_maps
+    ]
+    moves = [_one_case_in(len(verdict_maps) * fails) for fails in predicted_fails if fails]
+    return max(moves, default=1.0)
 
 
 def _one_case_in(support: int) -> float:
@@ -199,6 +211,8 @@ def metric_deltas(
         value: float = getattr(candidate, name) - getattr(baseline, name)
         resolution = resolutions[name]
         deltas[name] = MetricDelta(
-            value=value, resolution=resolution, inconclusive=abs(value) < resolution
+            value=value,
+            resolution=resolution,
+            inconclusive=abs(value) < resolution and not math.isclose(abs(value), resolution),
         )
     return deltas

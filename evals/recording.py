@@ -12,7 +12,7 @@ from evals.gate_verdict import GateResult, GateVerdict
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics
 
-MODEL_CHANGE_PROCEDURE = (
+_MODEL_CHANGE_PROCEDURE = (
     "follow the model-change procedure of ADR 016: run both models, record the delta, "
     "delete the baseline file, record a new exploratory baseline"
 )
@@ -34,6 +34,11 @@ class Recording(BaseModel):
 
 class RecordingRefused(BaseModel):
     reasons: list[str]
+
+
+class GatedSetChange(BaseModel):
+    entering: list[str]
+    leaving: list[str]
 
 
 def decide_recording(
@@ -82,8 +87,8 @@ def _other_conditions(existing: Baseline, recording: Recording) -> list[str]:
         return []
     return [
         f"conditions differ from the exploratory baseline ({'; '.join(mismatches)}): delete it "
-        "in a commit of its own and record a new one, after the model-change procedure of "
-        "ADR 016 if a model differs"
+        "in a commit of its own and record a new one, and if a model differs, "
+        + _MODEL_CHANGE_PROCEDURE
     ]
 
 
@@ -93,7 +98,7 @@ def _confirmed_refusals(existing: Baseline, recording: Recording, gate: GateResu
     if mismatches:
         reasons.append(
             f"conditions differ from the confirmed baseline ({'; '.join(mismatches)}): "
-            f"{MODEL_CHANGE_PROCEDURE}"
+            f"{_MODEL_CHANGE_PROCEDURE}"
         )
     if gate.verdict != GateVerdict.GREEN:
         reasons.append(f"the gate is {gate.verdict}")
@@ -144,10 +149,10 @@ def _ref(baseline: Baseline) -> RecordingRef:
 
 def gated_set_changes(
     old: Baseline | None, new: Baseline, ground_truth: GroundTruth
-) -> tuple[list[str], list[str]]:
+) -> GatedSetChange:
     before = _gated_set(old, ground_truth) if old else set[str]()
     after = _gated_set(new, ground_truth)
-    return sorted(after - before), sorted(before - after)
+    return GatedSetChange(entering=sorted(after - before), leaving=sorted(before - after))
 
 
 def _gated_set(baseline: Baseline, ground_truth: GroundTruth) -> set[str]:

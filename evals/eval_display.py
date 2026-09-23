@@ -11,6 +11,7 @@ from evals.eval_report import EvalReport
 from evals.gate import CellComparison, CellOutcome
 from evals.gate_verdict import GateMode, GateResult, GateVerdict
 from evals.metrics import RunDetail
+from evals.recording import GatedSetChange
 
 console = Console()
 
@@ -111,13 +112,10 @@ _NEXT_STEP = {
 }
 
 
-def print_written_recording(
-    baseline: Baseline, gated_changes: tuple[list[str], list[str]], path: Path
-) -> None:
-    entering, leaving = gated_changes
+def print_written_recording(baseline: Baseline, gated_changes: GatedSetChange, path: Path) -> None:
     lines = [f"[bold green]Baseline recorded ({baseline.status}) to {path}.[/bold green]"]
-    lines += [f"- enters the gated set: {key}" for key in entering]
-    lines += [f"- leaves the gated set: {key}" for key in leaving]
+    lines += [f"- enters the gated set: {key}" for key in gated_changes.entering]
+    lines += [f"- leaves the gated set: {key}" for key in gated_changes.leaving]
     lines += [
         f"- disagrees with the recording it replaces: {key}" for key in baseline.disagreements
     ]

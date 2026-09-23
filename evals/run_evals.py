@@ -26,7 +26,15 @@ from evals.eval_session import (
     tree_drift,
 )
 from evals.export import export_judged_cases
-from evals.gate import Cell, Observation, compare, metric_deltas, metric_resolutions, observe
+from evals.gate import (
+    LEGACY_THRESHOLDS,
+    Cell,
+    Observation,
+    compare,
+    metric_deltas,
+    metric_resolutions,
+    observe,
+)
 from evals.gate_verdict import GateInput, GateMode, GateResult, GateVerdict, judge_gate
 from evals.honeypots import (
     HONEYPOTS,
@@ -50,13 +58,6 @@ from evals.replay import ReplayAudit, Replayer
 from mcp_auditor.domain.models import AuditReport, TokenUsage, ToolReport
 
 DEFAULT_REPORT_PATH = "output/eval_report.json"
-
-THRESHOLDS: dict[str, float] = {
-    "recall": 0.80,
-    "precision": 0.85,
-    "consistency": 0.70,
-    "distribution_coverage": 0.80,
-}
 
 EXIT_CODES = {
     GateVerdict.GREEN: 0,
@@ -153,7 +154,7 @@ async def run_evals(session: EvalSession) -> EvalRunResult:
             "completed_runs": len(outcome.details),
         },
         metrics=metrics,
-        thresholds=THRESHOLDS if session.mode == GateMode.LEGACY_THRESHOLDS else {},
+        thresholds=LEGACY_THRESHOLDS if gate.mode == GateMode.LEGACY_THRESHOLDS else {},
         passed=gate.verdict == GateVerdict.GREEN,
         gate=gate,
         runs=outcome.details,
@@ -226,12 +227,7 @@ async def _judge(session: EvalSession, outcome: RunsOutcome, metrics: EvalMetric
     mismatches = _incomplete_runs(session.conditions.runs, len(outcome.details))
     baseline = session.baseline
     if baseline is None:
-        thresholds = THRESHOLDS if session.mode == GateMode.LEGACY_THRESHOLDS else None
-        return judge_gate(
-            GateInput(
-                mode=session.mode, metrics=metrics, thresholds=thresholds, mismatches=mismatches
-            )
-        )
+        return judge_gate(GateInput(mode=session.mode, metrics=metrics, mismatches=mismatches))
 
     cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
     if session.mode == GateMode.PAIRED and not mismatches:

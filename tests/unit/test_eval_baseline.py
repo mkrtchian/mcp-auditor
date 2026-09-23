@@ -15,7 +15,12 @@ from evals.baseline import (
 from evals.gate import CellOutcome, Observation, ReplayRule, cell_key
 from evals.gate_verdict import GateMode, GateVerdict
 from evals.ground_truth import GroundTruth
-from evals.recording import RecordingRefused, decide_recording, gated_set_changes
+from evals.recording import (
+    GatedSetChange,
+    RecordingRefused,
+    decide_recording,
+    gated_set_changes,
+)
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 VULNERABLE_CELL = given.VULNERABLE_CELL
@@ -251,7 +256,10 @@ def test_a_second_recording_at_other_conditions_is_refused():
     result = decide_recording(existing, given.a_recording(budget=7), given.a_gate())
 
     assert isinstance(result, RecordingRefused)
-    assert any("exploratory baseline" in reason for reason in result.reasons)
+    assert any(
+        "exploratory baseline" in reason and "run both models, record the delta" in reason
+        for reason in result.reasons
+    )
 
 
 def test_recording_over_a_confirmed_baseline_under_a_green_gate_replaces_it():
@@ -301,9 +309,9 @@ def test_a_gated_cell_becoming_unstable_leaves_the_gated_set():
         )
     )
 
-    entering, leaving = gated_set_changes(old, new, given.a_ground_truth())
+    changes = gated_set_changes(old, new, given.a_ground_truth())
 
-    assert (entering, leaving) == ([], [cell_key(VULNERABLE_CELL)])
+    assert changes == GatedSetChange(entering=[], leaving=[cell_key(VULNERABLE_CELL)])
 
 
 def test_a_stable_incorrect_cell_becoming_correct_enters_the_gated_set():
@@ -312,14 +320,16 @@ def test_a_stable_incorrect_cell_becoming_correct_enters_the_gated_set():
     )
     new = given.a_baseline(runs=given.all_correct_runs())
 
-    entering, leaving = gated_set_changes(old, new, given.a_ground_truth())
+    changes = gated_set_changes(old, new, given.a_ground_truth())
 
-    assert (entering, leaving) == ([cell_key(VULNERABLE_CELL)], [])
+    assert changes == GatedSetChange(entering=[cell_key(VULNERABLE_CELL)], leaving=[])
 
 
 def test_with_no_previous_baseline_every_gated_cell_enters():
     new = given.a_baseline(runs=given.all_correct_runs())
 
-    entering, leaving = gated_set_changes(None, new, given.a_ground_truth())
+    changes = gated_set_changes(None, new, given.a_ground_truth())
 
-    assert (entering, leaving) == (sorted([cell_key(VULNERABLE_CELL), cell_key(SAFE_CELL)]), [])
+    assert changes == GatedSetChange(
+        entering=sorted([cell_key(VULNERABLE_CELL), cell_key(SAFE_CELL)]), leaving=[]
+    )

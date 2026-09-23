@@ -1,4 +1,4 @@
-from evals.gate import Cell, CellComparison, CellOutcome, Observation
+from evals.gate import Cell, Observation
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics, VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
@@ -31,18 +31,3 @@ def metrics(
 
 def runs_failing(cell: Cell, runs: int) -> list[VerdictMap]:
     return [{cell: EvalVerdict.FAIL} for _ in range(runs)]
-
-
-LEGACY_THRESHOLDS: dict[str, float] = {
-    "recall": 0.80,
-    "precision": 0.85,
-    "consistency": 0.70,
-    "distribution_coverage": 0.80,
-}
-
-
-def cells_with(*outcomes: CellOutcome) -> dict[Cell, CellComparison]:
-    return {
-        (f"tool_{index}", AuditCategory.INPUT_VALIDATION): CellComparison(outcome=outcome)
-        for index, outcome in enumerate(outcomes)
-    }

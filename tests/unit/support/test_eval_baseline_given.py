@@ -10,10 +10,7 @@ from evals.gate_verdict import GateMode, GateResult, GateVerdict
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics
 from evals.recording import Recording
-from mcp_auditor.domain.models import AuditCategory, EvalVerdict
-
-VULNERABLE_CELL: Cell = ("get_user", AuditCategory.INPUT_VALIDATION)
-SAFE_CELL: Cell = ("get_user", AuditCategory.INJECTION)
+from tests.unit.support.test_eval_gate_given import SAFE_CELL, VULNERABLE_CELL, a_ground_truth
 
 RECORDED_COMMIT = "0123abc"
 
@@ -68,10 +65,6 @@ def a_baseline(
         runs=[{cell_key(cell): observation for cell, observation in run.items()} for run in runs],
         metrics=EvalMetrics(recall=0.9, precision=0.8, consistency=0.7, distribution_coverage=0.95),
     )
-
-
-def a_ground_truth() -> GroundTruth:
-    return {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.PASS}
 
 
 def all_correct_runs() -> ObservationRuns:

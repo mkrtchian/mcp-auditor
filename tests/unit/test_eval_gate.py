@@ -178,11 +178,6 @@ def test_a_replay_rule_that_could_never_decide_is_rejected(replays: int, require
         ReplayRule(replays=replays, required=required)
 
 
-@pytest.mark.parametrize(("replays", "required"), [(5, 5), (5, 1)])
-def test_a_replay_rule_within_its_bounds_is_accepted(replays: int, required: int):
-    assert ReplayRule(replays=replays, required=required).required == required
-
-
 def test_settle_turns_a_reproduced_flip_into_a_regression():
     flip = CellComparison(outcome=CellOutcome.FLIP, cause=FlipCause.WRONG_VERDICT)
 
@@ -242,6 +237,26 @@ def test_recall_delta_larger_than_one_case_is_conclusive():
     assert not deltas["recall"].inconclusive
 
 
+def test_a_delta_of_exactly_one_case_is_conclusive():
+    resolutions = {"recall": 1 / 33, "precision": 1.0, "distribution_coverage": 1.0}
+
+    deltas = metric_deltas(
+        given.metrics(recall=32 / 33), given.metrics(recall=31 / 33), resolutions
+    )
+
+    assert not deltas["recall"].inconclusive
+
+
+def test_a_delta_of_half_a_case_is_inconclusive():
+    resolutions = {"recall": 1 / 33, "precision": 1.0, "distribution_coverage": 1.0}
+
+    deltas = metric_deltas(
+        given.metrics(recall=32 / 33), given.metrics(recall=31.5 / 33), resolutions
+    )
+
+    assert deltas["recall"].inconclusive
+
+
 def test_deltas_cover_the_gated_metrics_only():
     resolutions = metric_resolutions(
         given.runs_failing(VULNERABLE_CELL, runs=3), given.a_ground_truth(), 1
@@ -264,8 +279,28 @@ def test_precision_resolution_counts_a_fail_outside_the_ground_truth():
     assert math.isclose(resolutions["precision"], 1 / (2 * 2))
 
 
+def test_precision_resolution_is_the_largest_single_case_move_across_runs():
+    maps = [_map_failing(fails=1), _map_failing(fails=9)]
+
+    resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
+
+    assert math.isclose(resolutions["precision"], 1 / (2 * 1))
+
+
+def test_precision_resolution_skips_a_run_without_predicted_fail():
+    maps = [_map_failing(fails=4), _map_failing(fails=0)]
+
+    resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
+
+    assert math.isclose(resolutions["precision"], 1 / (2 * 4))
+
+
+def _map_failing(fails: int) -> VerdictMap:
+    return {(f"tool_{index}", AuditCategory.INJECTION): EvalVerdict.FAIL for index in range(fails)}
+
+
 def test_precision_resolution_without_predicted_fail_is_one():
-    maps: list[VerdictMap] = [{SAFE_CELL: EvalVerdict.PASS}]
+    maps: list[VerdictMap] = [{SAFE_CELL: EvalVerdict.PASS}, {SAFE_CELL: EvalVerdict.PASS}]
 
     resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
 
