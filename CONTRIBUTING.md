@@ -20,6 +20,8 @@ uv run ruff check .                    # lint
 uv run ruff format .                   # format
 uv run pyright                         # type-check
 uv run python -m evals.run_evals       # e2e evals (requires API key)
+uv run python -m evals.run_evals --record-baseline  # record the e2e baseline (clean tree, see below)
+uv run python -m evals.run_evals --ungated          # e2e evals on the floors alone, at any conditions
 uv run python -m evals.run_judge_eval  # judge isolation eval (requires API key)
 ```
 
@@ -47,6 +49,14 @@ The judge isolation eval runs automatically on a pull request that touches `src/
 The workflow checks out the PR's head branch, runs the evals against it, and posts the outcome back as a comment. The trigger is restricted to repository owners, members, and collaborators.
 
 Pull requests that touch the CVE benchmark (`evals/docker/**`, `evals/cve_*.py`, `evals/run_cve_benchmark.py`, the deps `pyproject.toml`/`uv.lock`, or the workflow itself) trigger a deterministic calibration gate. It builds the fixture images and runs `--calibrate` (no API key), and fails if any fixture is dead, minus any target marked CI-unstable. Today that is CVE-2025-68143, whose `git_diff_staged` hangs on GitHub-hosted runners and stays covered by local calibration. The graded detection run is not a gate and has no CI workflow: it runs locally (`uv run python -m evals.run_cve_benchmark`), reported not gated.
+
+### Recording an e2e baseline
+
+The e2e evals gate against `evals/baselines/honeypot_e2e.json` once it exists, cell by cell, with an absolute floor per metric ([ADR 016](docs/adr/016-eval-gate-governance.md)). Until then the absolute thresholds stand. `uv run python -m evals.run_evals --record-baseline` writes that file, and it refuses to start on a tree with tracked modifications. The first recording is exploratory: only the floors gate. A second recording at the same commit confirms it when it classifies the same cells as stable, and from then on a flip on a stable cell is replayed and fails the build when it reproduces. Commit the file by hand. CI never records.
+
+Record under the provider and model settings CI resolves, that is with no `MCP_AUDITOR_PROVIDER`, `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` override in `.env` or the environment that differs from the defaults. CI sets only the API key, so a baseline recorded under an override makes every CI run not comparable.
+
+`--ungated` runs the e2e evals on the floors alone, with no condition check and no baseline comparison, for a cheap local run at other conditions (fewer runs, a smaller budget, another model). It is never used in CI and cannot be combined with `--record-baseline`.
 
 ## Coding, testing, and architecture standards
 

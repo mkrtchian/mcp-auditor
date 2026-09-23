@@ -3,99 +3,40 @@ import asyncio
 import os
 import sys
 import traceback
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from rich.console import Console
-from rich.panel import Panel
 from rich.progress import Progress, TaskID
-from rich.table import Table
 
+from evals import eval_display as display
+from evals.baseline import Baseline, write_baseline
 from evals.eval_report import EvalReport
-from evals.export import export_judged_cases
-from evals.gate_verdict import GateInput, GateMode, GateVerdict, judge_gate
-from evals.ground_truth import (
-    CHAIN_HONEYPOT_GROUND_TRUTH,
-    HONEYPOT_GROUND_TRUTH,
-    SUBTLE_GROUND_TRUTH,
-    GroundTruth,
+from evals.eval_session import (
+    BASELINE_PATH,
+    NOT_COMPARABLE_EXIT,
+    EvalOptions,
+    EvalSession,
+    git,
+    open_session,
 )
+from evals.export import export_judged_cases
+from evals.gate import Cell, Observation, compare, metric_deltas, metric_resolutions, observe
+from evals.gate_verdict import GateInput, GateMode, GateResult, GateVerdict, judge_gate
+from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, TOOL_COUNT, audit_honeypot
 from evals.metrics import (
+    ConsistencyDetail,
     EvalMetrics,
     RunDetail,
-    ToolDistribution,
-    ToolVerdictDetail,
     VerdictMap,
     aggregate_verdicts,
-    blocked_reasons,
+    average_distribution_coverage,
+    build_run_detail,
     compute_consistency,
-    compute_distribution_coverage,
-    compute_precision,
-    compute_recall,
 )
-from mcp_auditor.adapters.llm import create_judge_llm, create_llm
-from mcp_auditor.adapters.mcp_client import StdioMCPClient
-from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.config import Settings, load_settings
-from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import (
-    AttackContext,
-    AuditCategory,
-    AuditReport,
-    TokenUsage,
-    ToolReport,
-)
-from mcp_auditor.graph.builder import build_graph
-
-HONEYPOT_SERVER = Path(__file__).resolve().parent.parent / "tests" / "honeypot_server.py"
-SUBTLE_SERVER = Path(__file__).resolve().parent.parent / "tests" / "subtle_server.py"
-CHAIN_HONEYPOT_SERVER = (
-    Path(__file__).resolve().parent.parent / "tests" / "chain_honeypot_server.py"
-)
-
-console = Console()
-
-
-@dataclass(frozen=True)
-class HoneypotConfig:
-    name: str
-    command: str
-    args: list[str]
-    ground_truth: GroundTruth
-    chain_budget: int = 0
-    max_chain_steps: int = 3
-
-
-@dataclass(frozen=True)
-class EvalRunResult:
-    report: EvalReport
-    runs: list[tuple[int, AuditReport]]
-    ground_truth: GroundTruth
-
-
-HONEYPOTS = [
-    HoneypotConfig(
-        name="honeypot",
-        command="uv",
-        args=["run", "python", str(HONEYPOT_SERVER)],
-        ground_truth=HONEYPOT_GROUND_TRUTH,
-    ),
-    HoneypotConfig(
-        name="subtle",
-        command="uv",
-        args=["run", "python", str(SUBTLE_SERVER)],
-        ground_truth=SUBTLE_GROUND_TRUTH,
-    ),
-    HoneypotConfig(
-        name="chain_honeypot",
-        command="uv",
-        args=["run", "python", str(CHAIN_HONEYPOT_SERVER)],
-        ground_truth=CHAIN_HONEYPOT_GROUND_TRUTH,
-        chain_budget=3,
-        max_chain_steps=5,
-    ),
-]
+from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
+from evals.replay import replay_flips
+from mcp_auditor.domain.models import AuditReport, TokenUsage, ToolReport
 
 DEFAULT_RUNS = 3
 DEFAULT_BUDGET = 10
@@ -108,303 +49,207 @@ THRESHOLDS: dict[str, float] = {
     "distribution_coverage": 0.80,
 }
 
-ALL_CATEGORIES = list(AuditCategory)
+EXIT_CODES = {
+    GateVerdict.GREEN: 0,
+    GateVerdict.RED: 1,
+    GateVerdict.NOT_COMPARABLE: NOT_COMPARABLE_EXIT,
+}
+
+
+@dataclass
+class RunsOutcome:
+    details: list[RunDetail] = field(default_factory=list[RunDetail])
+    verdict_maps: list[VerdictMap] = field(default_factory=list[VerdictMap])
+    audits: list[tuple[int, AuditReport]] = field(default_factory=list[tuple[int, AuditReport]])
+
+    def observations(self) -> list[dict[Cell, Observation]]:
+        return [observe(verdicts, MERGED_GROUND_TRUTH) for verdicts in self.verdict_maps]
+
+    def metrics(self) -> tuple[EvalMetrics, dict[str, ConsistencyDetail]]:
+        consistency, consistency_details = compute_consistency(self.verdict_maps)
+        metrics = EvalMetrics(
+            recall=sum(run.recall for run in self.details) / len(self.details),
+            precision=sum(run.precision for run in self.details) / len(self.details),
+            consistency=consistency,
+            distribution_coverage=average_distribution_coverage(self.details),
+        )
+        return metrics, consistency_details
+
+
+@dataclass(frozen=True)
+class EvalRunResult:
+    report: EvalReport
+    outcome: RunsOutcome
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run evals against the honeypot")
+    options = _parse_args()
+    session = open_session(options)
+    result = asyncio.run(run_evals(session))
+
+    report_path = Path(options.report)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(result.report.model_dump_json(indent=2))
+    export_judged_cases(result.outcome.audits, MERGED_GROUND_TRUTH, report_path)
+    display.print_summary(result.report, options.report)
+
+    if session.record:
+        raise SystemExit(_record(session, result))
+    raise SystemExit(EXIT_CODES[result.report.gate.verdict])
+
+
+def _parse_args() -> EvalOptions:
+    parser = argparse.ArgumentParser(description="Run evals against the honeypots")
     parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
     parser.add_argument("--budget", type=int, default=DEFAULT_BUDGET)
     parser.add_argument("--report", type=str, default=DEFAULT_REPORT_PATH)
+    parser.add_argument(
+        "--record-baseline",
+        action="store_true",
+        help="record evals/baselines/honeypot_e2e.json from a clean tree, to commit by hand",
+    )
+    parser.add_argument(
+        "--ungated",
+        action="store_true",
+        help="gate on the floors alone, at any conditions, with no baseline (never in CI)",
+    )
     args = parser.parse_args()
-
-    result = asyncio.run(run_evals(args.runs, args.budget))
-
-    report_path = Path(args.report)
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(result.report.model_dump_json(indent=2))
-    export_judged_cases(result.runs, result.ground_truth, report_path)
-    _print_summary(result.report, args.report)
-
-    if result.report.passed:
-        console.print(Panel("[bold green]All thresholds met.[/bold green]"))
-    else:
-        console.print(Panel("[bold red]Some thresholds not met.[/bold red]"))
-        raise SystemExit(1)
+    return EvalOptions(args.runs, args.budget, args.report, args.record_baseline, args.ungated)
 
 
-async def run_evals(num_runs: int, budget: int) -> EvalRunResult:
-    settings = load_settings()
-    run_details: list[RunDetail] = []
-    all_verdict_maps: list[VerdictMap] = []
-    accumulated_runs: list[tuple[int, AuditReport]] = []
-    merged_ground_truth: GroundTruth = {}
-    for honeypot in HONEYPOTS:
-        merged_ground_truth.update(honeypot.ground_truth)
+async def run_evals(session: EvalSession) -> EvalRunResult:
+    outcome = await _run_all(session)
+    if not outcome.details:
+        display.print_refusal("All runs failed. Cannot produce eval report.", [])
+        raise SystemExit(NOT_COMPARABLE_EXIT if session.baseline or session.record else 1)
 
-    total_steps = num_runs * len(HONEYPOTS)
-    with Progress(console=console) as progress:
-        task = progress.add_task("Running evals", total=total_steps)
+    metrics, consistency_details = outcome.metrics()
+    gate = await _judge(session, outcome, metrics)
+    report = EvalReport(
+        timestamp=datetime.now(UTC).isoformat(),
+        config={
+            "runs": session.conditions.runs,
+            "budget": session.conditions.budget,
+            "completed_runs": len(outcome.details),
+        },
+        metrics=metrics,
+        thresholds=THRESHOLDS if session.mode == GateMode.LEGACY_THRESHOLDS else {},
+        passed=gate.verdict == GateVerdict.GREEN,
+        gate=gate,
+        runs=outcome.details,
+        consistency_details=consistency_details,
+    )
+    return EvalRunResult(report=report, outcome=outcome)
+
+
+async def _run_all(session: EvalSession) -> RunsOutcome:
+    outcome = RunsOutcome()
+    num_runs = session.conditions.runs
+    with Progress(console=display.console) as progress:
+        task = progress.add_task("Running evals", total=num_runs * len(HONEYPOTS))
         for i in range(num_runs):
             try:
-                verdicts, ground_truth, audit_report = await _run_one_eval(
-                    settings, budget, progress, task
-                )
+                verdicts, audit_report = await _run_one_eval(session, progress, task)
             except Exception:
                 progress.console.print(f"[yellow]Warning: run {i + 1}/{num_runs} failed:[/yellow]")
                 traceback.print_exc(file=sys.stderr)
                 progress.advance(task, advance=len(HONEYPOTS))
                 continue
 
-            all_verdict_maps.append(verdicts)
-            accumulated_runs.append((i, audit_report))
-
-            run_detail = _build_run_detail(i, verdicts, audit_report, ground_truth)
-            _post_langsmith_feedback(
-                run_detail.recall, run_detail.precision, settings.langsmith_project
-            )
-            run_details.append(run_detail)
-            _print_run_result(run_detail, progress)
-
-    if not run_details:
-        console.print("[bold red]All runs failed. Cannot produce eval report.[/bold red]")
-        raise SystemExit(1)
-
-    report = _assemble_report(num_runs, budget, run_details, all_verdict_maps)
-    return EvalRunResult(
-        report=report,
-        runs=accumulated_runs,
-        ground_truth=merged_ground_truth,
-    )
+            run_detail = build_run_detail(i, verdicts, audit_report, MERGED_GROUND_TRUTH)
+            _post_langsmith_feedback(run_detail, session.settings.langsmith_project)
+            outcome.details.append(run_detail)
+            outcome.verdict_maps.append(verdicts)
+            outcome.audits.append((i, audit_report))
+            display.print_run_result(run_detail, progress)
+    return outcome
 
 
 async def _run_one_eval(
-    settings: Settings,
-    budget: int,
-    progress: Progress,
-    task: "TaskID",
-) -> tuple[VerdictMap, GroundTruth, AuditReport]:
+    session: EvalSession, progress: Progress, task: TaskID
+) -> tuple[VerdictMap, AuditReport]:
     merged_verdicts: VerdictMap = {}
-    merged_ground_truth: GroundTruth = {}
     all_tool_reports: list[ToolReport] = []
     total_usage = TokenUsage()
-
     for honeypot in HONEYPOTS:
         progress.console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
-        report = await _run_single_honeypot(settings, honeypot, budget)
-        verdicts = aggregate_verdicts(report)
-        merged_verdicts.update(verdicts)
-        merged_ground_truth.update(honeypot.ground_truth)
+        report = await audit_honeypot(session.settings, honeypot, session.conditions.budget)
+        merged_verdicts.update(aggregate_verdicts(report))
         all_tool_reports.extend(report.tool_reports)
         total_usage = total_usage.add(report.token_usage)
         progress.advance(task)
 
     merged_report = AuditReport(
-        target="evals",
-        tool_reports=all_tool_reports,
-        token_usage=total_usage,
+        target="evals", tool_reports=all_tool_reports, token_usage=total_usage
     )
-    return merged_verdicts, merged_ground_truth, merged_report
+    return merged_verdicts, merged_report
 
 
-async def _run_single_honeypot(
-    settings: Settings, honeypot: HoneypotConfig, budget: int
-) -> AuditReport:
-    llm = create_llm(settings)
-    judge_llm = create_judge_llm(settings)
-    devnull = open(os.devnull, "w")  # noqa: SIM115
-    try:
-        async with StdioMCPClient.connect(
-            ServerLaunch.unconfined(honeypot.command, honeypot.args), errlog=devnull
-        ) as mcp_client:
-            graph = build_graph(llm, AuditedServer(mcp_client), judge_llm=judge_llm)
-            result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                {
-                    "target": f"{honeypot.command} {' '.join(honeypot.args)}",
-                    "test_budget": budget,
-                    "attack_context": AttackContext(),
-                    "chain_budget": honeypot.chain_budget,
-                    "max_chain_steps": honeypot.max_chain_steps,
-                }
-            )
-            return result["audit_report"]
-    finally:
-        devnull.close()
-
-
-def _post_langsmith_feedback(
-    recall: float,
-    precision: float,
-    project_name: str,
-) -> None:
+def _post_langsmith_feedback(run_detail: RunDetail, project_name: str) -> None:
     if not (os.environ.get("LANGSMITH_TRACING") or os.environ.get("LANGCHAIN_TRACING_V2")):
         return
     try:
         from langsmith import Client  # type: ignore[import-untyped]
 
         client = Client()
-        runs = list(
-            client.list_runs(
-                project_name=project_name,
-                limit=1,
-            )
-        )
+        runs = list(client.list_runs(project_name=project_name, limit=1))
         if not runs:
             return
         run_id = runs[0].id
-        client.create_feedback(run_id, key="recall", score=recall)  # pyright: ignore[reportUnknownMemberType]
-        client.create_feedback(run_id, key="precision", score=precision)  # pyright: ignore[reportUnknownMemberType]
+        client.create_feedback(run_id, key="recall", score=run_detail.recall)  # pyright: ignore[reportUnknownMemberType]
+        client.create_feedback(run_id, key="precision", score=run_detail.precision)  # pyright: ignore[reportUnknownMemberType]
     except Exception:
         pass  # Best-effort — don't fail evals because of LangSmith
 
 
-def _build_run_detail(
-    run_index: int,
-    verdicts: VerdictMap,
-    audit_report: AuditReport,
-    ground_truth: GroundTruth,
-) -> RunDetail:
-    recall = compute_recall(verdicts, ground_truth)
-    precision = compute_precision(verdicts, ground_truth)
-    distribution = compute_distribution_coverage(audit_report, ALL_CATEGORIES)
-    verdict_detail = _build_verdict_detail(verdicts, audit_report)
-    distribution_detail = _build_distribution_detail(distribution)
-    return RunDetail(
-        run_index=run_index,
-        verdicts=verdict_detail,
-        distribution=distribution_detail,
-        recall=recall,
-        precision=precision,
-        blocked_reasons=blocked_reasons(audit_report),
-        token_usage={
-            "input_tokens": audit_report.token_usage.input_tokens,
-            "output_tokens": audit_report.token_usage.output_tokens,
-        },
-    )
+async def _judge(session: EvalSession, outcome: RunsOutcome, metrics: EvalMetrics) -> GateResult:
+    baseline = session.baseline
+    if baseline is None:
+        thresholds = THRESHOLDS if session.mode == GateMode.LEGACY_THRESHOLDS else None
+        return judge_gate(GateInput(mode=session.mode, metrics=metrics, thresholds=thresholds))
 
-
-def _build_verdict_detail(
-    verdicts: VerdictMap,
-    audit_report: AuditReport,
-) -> dict[str, dict[str, ToolVerdictDetail]]:
-    case_counts: dict[tuple[str, AuditCategory], int] = {}
-    for tool_report in audit_report.tool_reports:
-        for case in tool_report.cases:
-            if case.eval_result is None:
-                continue
-            result = case.eval_result
-            key = (result.tool_name, result.category)
-            case_counts[key] = case_counts.get(key, 0) + 1
-        for chain in tool_report.chains:
-            if chain.eval_result is None:
-                continue
-            result = chain.eval_result
-            key = (result.tool_name, result.category)
-            case_counts[key] = case_counts.get(key, 0) + 1
-
-    detail: dict[str, dict[str, ToolVerdictDetail]] = {}
-    for (tool_name, category), verdict in verdicts.items():
-        if tool_name not in detail:
-            detail[tool_name] = {}
-        detail[tool_name][category.value] = ToolVerdictDetail(
-            verdict=verdict.value if verdict is not None else "uncovered",
-            case_count=case_counts.get((tool_name, category), 0),
+    mismatches = _incomplete_runs(baseline, len(outcome.details))
+    cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
+    if session.mode == GateMode.PAIRED and not mismatches:
+        cells, mismatches = await replay_flips(session, cells, baseline.replay_rule)
+    resolutions = metric_resolutions(outcome.verdict_maps, MERGED_GROUND_TRUTH, TOOL_COUNT)
+    return judge_gate(
+        GateInput(
+            mode=session.mode,
+            metrics=metrics,
+            baseline_status=baseline.status,
+            cells=cells,
+            mismatches=mismatches,
+            deltas=metric_deltas(baseline.metrics, metrics, resolutions),
         )
-    return detail
-
-
-def _build_distribution_detail(
-    distribution: dict[str, float],
-) -> dict[str, ToolDistribution]:
-    total = len(ALL_CATEGORIES)
-    return {
-        tool_name: ToolDistribution(
-            covered=round(coverage * total),
-            total=total,
-            coverage=coverage,
-        )
-        for tool_name, coverage in distribution.items()
-    }
-
-
-def _assemble_report(
-    num_runs: int,
-    budget: int,
-    run_details: list[RunDetail],
-    all_verdict_maps: list[VerdictMap],
-) -> EvalReport:
-    avg_recall = sum(r.recall for r in run_details) / len(run_details)
-    avg_precision = sum(r.precision for r in run_details) / len(run_details)
-    consistency, consistency_details = compute_consistency(all_verdict_maps)
-    avg_distribution = _average_distribution_coverage(run_details)
-
-    metrics = EvalMetrics(
-        recall=avg_recall,
-        precision=avg_precision,
-        consistency=consistency,
-        distribution_coverage=avg_distribution,
-    )
-    gate = judge_gate(
-        GateInput(mode=GateMode.LEGACY_THRESHOLDS, metrics=metrics, thresholds=THRESHOLDS)
-    )
-
-    return EvalReport(
-        timestamp=datetime.now(UTC).isoformat(),
-        config={"runs": num_runs, "budget": budget, "completed_runs": len(run_details)},
-        metrics=metrics,
-        thresholds=THRESHOLDS,
-        passed=gate.verdict == GateVerdict.GREEN,
-        gate=gate,
-        runs=run_details,
-        consistency_details=consistency_details,
     )
 
 
-def _average_distribution_coverage(run_details: list[RunDetail]) -> float:
-    all_coverages = [dist.coverage for run in run_details for dist in run.distribution.values()]
-    if not all_coverages:
-        return 0.0
-    return sum(all_coverages) / len(all_coverages)
+def _incomplete_runs(baseline: Baseline, completed: int) -> list[str]:
+    expected = baseline.conditions.runs
+    if completed >= expected:
+        return []
+    return [f"{completed} of {expected} runs completed, the baseline holds {expected}"]
 
 
-def _print_summary(report: EvalReport, report_path: str) -> None:
-    metrics = report.metrics
-    thresholds = report.thresholds
-
-    table = Table(show_header=True, header_style="bold")
-    table.add_column("Metric")
-    table.add_column("Value", justify="right")
-    table.add_column("Threshold", justify="right")
-    table.add_column("Status")
-
-    _add_metric_row(table, "Recall", metrics.recall, thresholds["recall"])
-    _add_metric_row(table, "Precision", metrics.precision, thresholds["precision"])
-    _add_metric_row(table, "Consistency", metrics.consistency, thresholds["consistency"])
-    _add_metric_row(
-        table, "Distribution", metrics.distribution_coverage, thresholds["distribution_coverage"]
+def _record(session: EvalSession, result: EvalRunResult) -> int:
+    recording = Recording(
+        conditions=session.conditions,
+        commit=git("rev-parse", "HEAD"),
+        recorded_at=datetime.now(UTC).isoformat(),
+        runs=result.outcome.observations(),
+        metrics=result.report.metrics,
+        completed_all=len(result.outcome.details) == session.conditions.runs,
+        ground_truth=MERGED_GROUND_TRUTH,
     )
-
-    console.print(Panel(table, title="Eval Results"))
-    console.print(f"Report written to {report_path}")
-
-
-def _add_metric_row(table: Table, name: str, value: float, threshold: float) -> None:
-    passed = value >= threshold
-    status = "[green]PASS[/green]" if passed else "[red]FAIL[/red]"
-    table.add_row(name, f"{value:.2f}", f"{threshold:.2f}", status)
-
-
-def _print_run_result(run_detail: RunDetail, progress: Progress) -> None:
-    for tool_name, dist in run_detail.distribution.items():
-        total_cases = sum(v.case_count for v in run_detail.verdicts.get(tool_name, {}).values())
-        progress.console.print(
-            f"  [bold]{tool_name}[/bold]: {total_cases} cases, {dist.covered} categories covered"
-        )
-    progress.console.print(
-        f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f}"
-    )
-    for reason in run_detail.blocked_reasons:
-        progress.console.print(f"  Payload blocked, {reason}")
+    decision = decide_recording(session.baseline, recording, result.report.gate)
+    if isinstance(decision, RecordingRefused):
+        display.print_refusal("Recording refused.", decision.reasons)
+        return NOT_COMPARABLE_EXIT
+    write_baseline(BASELINE_PATH, decision)
+    changes = gated_set_changes(session.baseline, decision, MERGED_GROUND_TRUTH)
+    display.print_written_recording(decision, changes, BASELINE_PATH)
+    return 0
 
 
 if __name__ == "__main__":

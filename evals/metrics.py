@@ -131,3 +131,67 @@ def blocked_reasons(report: AuditReport) -> list[str]:
             + [chain.blocked_reason for chain in tool_report.chains if chain.blocked_reason]
         )
     ]
+
+
+def build_run_detail(
+    run_index: int,
+    verdicts: VerdictMap,
+    audit_report: AuditReport,
+    ground_truth: GroundTruth,
+) -> RunDetail:
+    distribution = compute_distribution_coverage(audit_report, list(AuditCategory))
+    return RunDetail(
+        run_index=run_index,
+        verdicts=_verdict_detail(verdicts, audit_report),
+        distribution=_distribution_detail(distribution),
+        recall=compute_recall(verdicts, ground_truth),
+        precision=compute_precision(verdicts, ground_truth),
+        blocked_reasons=blocked_reasons(audit_report),
+        token_usage={
+            "input_tokens": audit_report.token_usage.input_tokens,
+            "output_tokens": audit_report.token_usage.output_tokens,
+        },
+    )
+
+
+def _verdict_detail(
+    verdicts: VerdictMap,
+    audit_report: AuditReport,
+) -> dict[str, dict[str, ToolVerdictDetail]]:
+    case_counts: dict[tuple[str, AuditCategory], int] = {}
+    for tool_report in audit_report.tool_reports:
+        judged = [case.eval_result for case in tool_report.cases] + [
+            chain.eval_result for chain in tool_report.chains
+        ]
+        for result in judged:
+            if result is None:
+                continue
+            key = (result.tool_name, result.category)
+            case_counts[key] = case_counts.get(key, 0) + 1
+
+    detail: dict[str, dict[str, ToolVerdictDetail]] = {}
+    for (tool_name, category), verdict in verdicts.items():
+        detail.setdefault(tool_name, {})[category.value] = ToolVerdictDetail(
+            verdict=verdict.value if verdict is not None else "uncovered",
+            case_count=case_counts.get((tool_name, category), 0),
+        )
+    return detail
+
+
+def _distribution_detail(distribution: dict[str, float]) -> dict[str, ToolDistribution]:
+    total = len(AuditCategory)
+    return {
+        tool_name: ToolDistribution(
+            covered=round(coverage * total),
+            total=total,
+            coverage=coverage,
+        )
+        for tool_name, coverage in distribution.items()
+    }
+
+
+def average_distribution_coverage(run_details: list[RunDetail]) -> float:
+    all_coverages = [dist.coverage for run in run_details for dist in run.distribution.values()]
+    if not all_coverages:
+        return 0.0
+    return sum(all_coverages) / len(all_coverages)
