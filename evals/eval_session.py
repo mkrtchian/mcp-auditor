@@ -191,6 +191,6 @@ def git(*args: str) -> str:
             ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=True
         )
     except (subprocess.CalledProcessError, FileNotFoundError) as error:
-        reason = f"git {' '.join(args)} failed: record from a git checkout"
-        raise Refused("Recording refused.", [reason]) from error
+        reason = f"git {' '.join(args)} failed: run from a git checkout"
+        raise Refused("Git unavailable.", [reason]) from error
     return completed.stdout.strip()
