@@ -2,6 +2,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import NoReturn
 
+from pydantic import ValidationError
+
 from evals import eval_display as display
 from evals.baseline import (
     Baseline,
@@ -49,7 +51,7 @@ def open_session(options: EvalOptions) -> EvalSession:
             ["--record-baseline cannot run --ungated: a baseline records the conditions it gates"],
         )
     settings = load_settings()
-    baseline = None if options.ungated else load_baseline(BASELINE_PATH)
+    baseline = None if options.ungated else _load_committed_baseline()
     session = EvalSession(
         settings=settings,
         conditions=_candidate_conditions(settings, options),
@@ -66,6 +68,14 @@ def open_session(options: EvalOptions) -> EvalSession:
 def refuse(title: str, reasons: list[str]) -> NoReturn:
     display.print_refusal(title, reasons)
     raise SystemExit(NOT_COMPARABLE_EXIT)
+
+
+def _load_committed_baseline() -> Baseline | None:
+    try:
+        return load_baseline(BASELINE_PATH)
+    except ValidationError as error:
+        reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
+        refuse("Refused before any LLM call.", [reason])
 
 
 def _candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineConditions:

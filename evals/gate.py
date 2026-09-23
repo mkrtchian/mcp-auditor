@@ -1,6 +1,7 @@
 from enum import StrEnum
+from typing import Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics, VerdictMap
@@ -38,6 +39,15 @@ class FlipCause(StrEnum):
 class ReplayRule(BaseModel):
     replays: int = 5
     required: int = 4
+
+    @model_validator(mode="after")
+    def _decides_once_spent(self) -> Self:
+        # Outside these bounds `decide` settles every flip before the first replay.
+        if not 1 <= self.required <= self.replays:
+            raise ValueError(
+                f"replay rule needs 1 <= required <= replays, got {self.required} of {self.replays}"
+            )
+        return self
 
     def decide(self, reproduced: int, cleared: int) -> bool | None:
         if reproduced >= self.required:

@@ -1,6 +1,7 @@
 import math
 
 import pytest
+from pydantic import ValidationError
 
 import tests.unit.support.test_eval_gate_given as given
 from evals.gate import (
@@ -161,6 +162,17 @@ def test_compare(
 )
 def test_replay_rule_decides_four_of_five(reproduced: int, cleared: int, expected: bool | None):
     assert ReplayRule().decide(reproduced, cleared) is expected
+
+
+@pytest.mark.parametrize(("replays", "required"), [(5, 6), (5, 0), (0, 0)])
+def test_a_replay_rule_that_could_never_decide_is_rejected(replays: int, required: int):
+    with pytest.raises(ValidationError):
+        ReplayRule(replays=replays, required=required)
+
+
+@pytest.mark.parametrize(("replays", "required"), [(5, 5), (5, 1)])
+def test_a_replay_rule_within_its_bounds_is_accepted(replays: int, required: int):
+    assert ReplayRule(replays=replays, required=required).required == required
 
 
 def test_settle_turns_a_reproduced_flip_into_a_regression():
