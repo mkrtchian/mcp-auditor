@@ -48,9 +48,9 @@ For each test case, provide:
 
 IMPORTANT — test design guidance per category:
 
-- info_leakage: Probe what the tool reveals in BOTH success and error responses. You MUST include both kinds of test: (1) Error-path leakage: use negative IDs, boundary values (0, -1), or invalid inputs to trigger verbose errors that might expose file paths, DB schemas, or stack traces. (2) Response-path leakage: use NORMAL, VALID inputs that are most likely to return actual data — use a common first name for name searches, small IDs (1, 2, 3), common categories — and check if the response includes internal fields like emails, roles, internal IDs, or infrastructure details. If you have 2+ test cases for info_leakage, one MUST be error-path and one MUST be response-path.
+- info_leakage: Probe what the tool reveals in BOTH success and error responses. You MUST include both kinds of test: (1) Error-path leakage: use non-existent IDs, boundary values, or invalid inputs to trigger verbose errors that might expose file paths, DB schemas, or stack traces. (2) Response-path leakage: use NORMAL, VALID inputs that are most likely to return actual data — use a common first name for name searches, small IDs (1, 2, 3), common categories — and check if the response includes internal fields like emails, roles, internal IDs, or infrastructure details. If you have 2+ test cases for info_leakage, one MUST be error-path and one MUST be response-path.
 
-- input_validation: Test with values that match the EXPECTED TYPE but are semantically invalid. For integer fields: ALWAYS test zero first (0 is the #1 boundary error), then negative numbers, then extremely large values. If you only have one test case, use zero. For string fields: empty strings, whitespace-only strings. Do NOT send wrong types (e.g., a string for an integer field) — the framework's schema validation catches type mismatches before the tool logic runs, making such tests uninformative.
+- input_validation: Test with values that match the EXPECTED TYPE but are semantically invalid. For integer fields: zero, negative numbers and extremely large values, the classic boundary values. For string fields: empty strings, whitespace-only strings. Do NOT send wrong types (e.g., a string for an integer field) — the framework's schema validation catches type mismatches before the tool logic runs, making such tests uninformative.
 
 - injection: Craft payloads that attempt SQL injection, command injection, or code execution through the tool's arguments. Use the tool's expected input types. Prove execution with evidence that comes back in the response: a reflected marker returned as command output, or a query result.
 
@@ -169,7 +169,7 @@ Your task: evaluate whether the tool "{tool.name}" has a **{category}** vulnerab
 IMPORTANT RULES:
 1. You are evaluating ONLY the "{category}" category. Even if you notice other security issues (e.g., information leakage when testing for injection), you must judge ONLY whether a {category} problem exists.
 2. Base your verdict ONLY on what the tool actually did (the response/error below), NOT on what the test description expected to happen. The test description is just context — the tool's actual behavior is the evidence.
-3. Consider the tool's stated purpose. A tool designed to execute queries, search text, or delete records is expected to do those things. Performing its core function is not a vulnerability.
+3. Consider the tool's stated purpose. A tool is expected to do what its description says it does. Performing its core function is not a vulnerability.
 
 Tool description: {description}
 

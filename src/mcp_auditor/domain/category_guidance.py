@@ -21,9 +21,9 @@ What does NOT count:
 - An error whose message is only the submitted value, with no descriptive text, as a raw KeyError from a lookup produces. That is an unhandled exception, not input validation.
 What does NOT count:
 - The tool crashes on bad input (that's error_handling)
-- The tool processes input through its core function (that's injection, not input_validation). A tool whose purpose is to accept and forward text (SQL queries, search terms, commands) is NOT failing input_validation by accepting that text — even if it's empty, malformed, or adversarial. Example: a SQL execution tool accepting an empty string query and returning results is NOT an input_validation failure — executing queries is what the tool does.
+- The tool processes input through its core function (that's injection, not input_validation). A tool whose purpose is to accept and forward text (SQL queries, search terms, commands) is NOT failing input_validation by accepting that text — even if it's empty, malformed, or adversarial.
 - The tool silently clamps or normalizes out-of-range values to a safe range. Clamping IS valid input handling — the tool does not need to reject the request as long as the invalid value does not reach downstream logic.
-- A text-search or lookup tool treating user input as a literal search term (not as code or commands) is working correctly. Receiving a SQL/injection payload as a search query and returning "no results" is NOT an input_validation failure — the tool correctly treated the input as data.""",
+- A text-search or lookup tool treating user input as a literal search term (not as code or commands) is working correctly. Receiving a SQL/injection payload as a search query and returning an empty result is NOT an input_validation failure — the tool correctly treated the input as data.""",
     AuditCategory.ERROR_HANDLING: """What counts as error_handling failure:
 - Unhandled exceptions (raw KeyError, ValueError, TypeError surfaced to the caller)
 - Missing graceful error responses for predictable failure modes (e.g., not-found, invalid format)
@@ -39,6 +39,6 @@ What does NOT count:
 What does NOT count:
 - The tool capping or limiting results (that's proper mitigation)
 - Other vulnerabilities like path leaks or injection (those are different categories)
-- Single-item operations (delete one record, look up one user, execute one query that returns a fixed number of rows). These are inherently bounded and do NOT require rate limiting to pass.
+- Operations bounded by construction, which act on or return a fixed amount of data whatever the input. These are inherently bounded and do NOT require rate limiting to pass.
 - The absence of rate limiting alone is NOT resource_abuse unless the tool performs an operation that can consume unbounded resources in a single call.""",
 }
