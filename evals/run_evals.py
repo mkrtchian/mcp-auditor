@@ -128,7 +128,10 @@ def _parse_args() -> EvalOptions:
     parser.add_argument(
         "--record-baseline",
         action="store_true",
-        help="record evals/baselines/honeypot_e2e.json from a clean tree, to commit by hand",
+        help=(
+            "record evals/baselines/honeypot_e2e.json from a clean tree: run it twice at the"
+            " same commit (exploratory, then confirmed), then commit it by hand"
+        ),
     )
     parser.add_argument(
         "--ungated",
