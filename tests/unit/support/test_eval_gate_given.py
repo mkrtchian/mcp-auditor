@@ -31,3 +31,8 @@ def metrics(
 
 def runs_failing(cell: Cell, runs: int) -> list[VerdictMap]:
     return [{cell: EvalVerdict.FAIL} for _ in range(runs)]
+
+
+def a_run_failing(fails: int) -> VerdictMap:
+    """A run predicting FAIL on that many cells, all outside the ground truth."""
+    return {(f"tool_{index}", AuditCategory.INJECTION): EvalVerdict.FAIL for index in range(fails)}

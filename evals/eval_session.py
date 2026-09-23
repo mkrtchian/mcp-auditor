@@ -83,6 +83,39 @@ def open_session(options: EvalOptions) -> EvalSession:
     return session
 
 
+def _load_committed_baseline() -> Baseline | None:
+    try:
+        baseline = load_baseline(BASELINE_PATH)
+    except ValidationError as error:
+        reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
+        raise Refused("Refused before any LLM call.", [reason]) from error
+    if baseline is None:
+        return None
+    problems = baseline_integrity(baseline, MERGED_GROUND_TRUTH)
+    if problems:
+        raise Refused("Refused before any LLM call.", problems)
+    return baseline
+
+
+def _candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineConditions:
+    return BaselineConditions(
+        runs=options.runs,
+        budget=options.budget,
+        provider=settings.provider,
+        model=settings.resolve_model(),
+        judge_model=settings.resolve_judge_model(),
+        ground_truth_fingerprint=fingerprint_ground_truth(MERGED_GROUND_TRUTH),
+        fixtures={
+            honeypot.name: FixtureConditions(
+                source_fingerprint=fingerprint_source(honeypot.server.read_text()),
+                chain_budget=honeypot.chain_budget,
+                max_chain_steps=honeypot.max_chain_steps,
+            )
+            for honeypot in HONEYPOTS
+        },
+    )
+
+
 def select_mode(baseline: Baseline | None, ungated: bool) -> GateMode:
     if ungated:
         return GateMode.FLOORS_ONLY
@@ -149,39 +182,6 @@ def read_tree() -> TreeState:
     return TreeState(
         commit=git("rev-parse", "HEAD"),
         dirty=bool(git("status", "--porcelain", "--untracked-files=no")),
-    )
-
-
-def _load_committed_baseline() -> Baseline | None:
-    try:
-        baseline = load_baseline(BASELINE_PATH)
-    except ValidationError as error:
-        reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
-        raise Refused("Refused before any LLM call.", [reason]) from error
-    if baseline is None:
-        return None
-    problems = baseline_integrity(baseline, MERGED_GROUND_TRUTH)
-    if problems:
-        raise Refused("Refused before any LLM call.", problems)
-    return baseline
-
-
-def _candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineConditions:
-    return BaselineConditions(
-        runs=options.runs,
-        budget=options.budget,
-        provider=settings.provider,
-        model=settings.resolve_model(),
-        judge_model=settings.resolve_judge_model(),
-        ground_truth_fingerprint=fingerprint_ground_truth(MERGED_GROUND_TRUTH),
-        fixtures={
-            honeypot.name: FixtureConditions(
-                source_fingerprint=fingerprint_source(honeypot.server.read_text()),
-                chain_budget=honeypot.chain_budget,
-                max_chain_steps=honeypot.max_chain_steps,
-            )
-            for honeypot in HONEYPOTS
-        },
     )
 
 

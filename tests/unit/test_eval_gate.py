@@ -280,7 +280,7 @@ def test_precision_resolution_counts_a_fail_outside_the_ground_truth():
 
 
 def test_precision_resolution_is_the_largest_single_case_move_across_runs():
-    maps = [_map_failing(fails=1), _map_failing(fails=9)]
+    maps = [given.a_run_failing(fails=1), given.a_run_failing(fails=9)]
 
     resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
 
@@ -288,15 +288,11 @@ def test_precision_resolution_is_the_largest_single_case_move_across_runs():
 
 
 def test_precision_resolution_skips_a_run_without_predicted_fail():
-    maps = [_map_failing(fails=4), _map_failing(fails=0)]
+    maps = [given.a_run_failing(fails=4), given.a_run_failing(fails=0)]
 
     resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
 
     assert math.isclose(resolutions["precision"], 1 / (2 * 4))
-
-
-def _map_failing(fails: int) -> VerdictMap:
-    return {(f"tool_{index}", AuditCategory.INJECTION): EvalVerdict.FAIL for index in range(fails)}
 
 
 def test_precision_resolution_without_predicted_fail_is_one():
