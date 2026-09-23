@@ -22,6 +22,8 @@ from mcp_auditor.config import Settings, load_settings
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
 DEFAULT_RUNS = 3
 DEFAULT_BUDGET = 10
+RECORDING_REFUSED = "Recording refused."
+REFUSED_BEFORE_ANY_LLM_CALL = "Refused before any LLM call."
 
 
 class Refused(Exception):
@@ -64,7 +66,7 @@ def open_session(options: EvalOptions) -> EvalSession:
     """Raises Refused on anything that makes the run not comparable or its recording refused."""
     if options.record_baseline and options.ungated:
         raise Refused(
-            "Recording refused.",
+            RECORDING_REFUSED,
             ["--record-baseline cannot run --ungated: a baseline records the conditions it gates"],
         )
     settings = load_settings()
@@ -78,7 +80,7 @@ def open_session(options: EvalOptions) -> EvalSession:
     )
     reasons = pre_run_refusals(session)
     if reasons:
-        raise Refused("Refused before any LLM call.", reasons)
+        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, reasons)
     return session
 
 
@@ -87,12 +89,12 @@ def _load_committed_baseline() -> Baseline | None:
         baseline = load_baseline(BASELINE_PATH)
     except ValidationError as error:
         reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
-        raise Refused("Refused before any LLM call.", [reason]) from error
+        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [reason]) from error
     if baseline is None:
         return None
     problems = baseline_integrity(baseline, MERGED_GROUND_TRUTH)
     if problems:
-        raise Refused("Refused before any LLM call.", problems)
+        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, problems)
     return baseline
 
 

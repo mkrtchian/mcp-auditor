@@ -17,6 +17,7 @@ from evals.eval_session import (
     BASELINE_PATH,
     DEFAULT_BUDGET,
     DEFAULT_RUNS,
+    RECORDING_REFUSED,
     EvalOptions,
     EvalSession,
     Refused,
@@ -211,7 +212,7 @@ def _warn_replay(message: str) -> None:
 def _record(session: EvalSession, tree: TreeState, result: EvalRunResult) -> int:
     drift = _recording_drift(session, tree)
     if drift:
-        raise Refused("Recording refused.", drift)
+        raise Refused(RECORDING_REFUSED, drift)
     recording = Recording(
         conditions=session.conditions,
         commit=tree.commit,
@@ -223,7 +224,7 @@ def _record(session: EvalSession, tree: TreeState, result: EvalRunResult) -> int
     )
     decision = decide_recording(session.baseline, recording, result.report.gate)
     if isinstance(decision, RecordingRefused):
-        raise Refused("Recording refused.", decision.reasons)
+        raise Refused(RECORDING_REFUSED, decision.reasons)
     write_baseline(BASELINE_PATH, decision)
     changes = gated_set_changes(session.baseline, decision, MERGED_GROUND_TRUTH)
     display.print_written_recording(decision, changes, BASELINE_PATH)
@@ -235,7 +236,7 @@ def _recording_drift(session: EvalSession, tree: TreeState) -> list[str]:
         reloaded = load_baseline(BASELINE_PATH)
     except ValidationError as error:
         reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
-        raise Refused("Recording refused.", [reason]) from error
+        raise Refused(RECORDING_REFUSED, [reason]) from error
     return tree_drift(tree, read_tree()) + baseline_changed(session.baseline, reloaded)
 
 
