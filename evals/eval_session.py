@@ -48,17 +48,16 @@ class TreeState:
 
 @dataclass(frozen=True)
 class EvalSession:
-    """Fixed before any LLM call. `baseline` is None under --ungated, whatever the file holds."""
+    """Fixed before any LLM call. `baseline` is None under --ungated, whatever the file holds.
+
+    The session records a baseline exactly when it holds a `tree`.
+    """
 
     settings: Settings
     conditions: BaselineConditions
     baseline: Baseline | None
     mode: GateMode
     tree: TreeState | None
-
-    @property
-    def record(self) -> bool:
-        return self.tree is not None
 
 
 def open_session(options: EvalOptions) -> EvalSession:
