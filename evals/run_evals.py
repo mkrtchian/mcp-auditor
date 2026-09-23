@@ -12,7 +12,9 @@ from rich.panel import Panel
 from rich.progress import Progress, TaskID
 from rich.table import Table
 
+from evals.eval_report import EvalReport
 from evals.export import export_judged_cases
+from evals.gate_verdict import GateInput, GateMode, GateVerdict, judge_gate
 from evals.ground_truth import (
     CHAIN_HONEYPOT_GROUND_TRUTH,
     HONEYPOT_GROUND_TRUTH,
@@ -21,7 +23,6 @@ from evals.ground_truth import (
 )
 from evals.metrics import (
     EvalMetrics,
-    EvalReport,
     RunDetail,
     ToolDistribution,
     ToolVerdictDetail,
@@ -337,24 +338,23 @@ def _assemble_report(
     consistency, consistency_details = compute_consistency(all_verdict_maps)
     avg_distribution = _average_distribution_coverage(run_details)
 
-    passed = (
-        avg_recall >= THRESHOLDS["recall"]
-        and avg_precision >= THRESHOLDS["precision"]
-        and consistency >= THRESHOLDS["consistency"]
-        and avg_distribution >= THRESHOLDS["distribution_coverage"]
+    metrics = EvalMetrics(
+        recall=avg_recall,
+        precision=avg_precision,
+        consistency=consistency,
+        distribution_coverage=avg_distribution,
+    )
+    gate = judge_gate(
+        GateInput(mode=GateMode.LEGACY_THRESHOLDS, metrics=metrics, thresholds=THRESHOLDS)
     )
 
     return EvalReport(
         timestamp=datetime.now(UTC).isoformat(),
-        config={"runs": num_runs, "budget": budget},
-        metrics=EvalMetrics(
-            recall=avg_recall,
-            precision=avg_precision,
-            consistency=consistency,
-            distribution_coverage=avg_distribution,
-        ),
+        config={"runs": num_runs, "budget": budget, "completed_runs": len(run_details)},
+        metrics=metrics,
         thresholds=THRESHOLDS,
-        passed=passed,
+        passed=gate.verdict == GateVerdict.GREEN,
+        gate=gate,
         runs=run_details,
         consistency_details=consistency_details,
     )

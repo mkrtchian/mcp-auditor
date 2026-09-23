@@ -40,16 +40,6 @@ class EvalMetrics(BaseModel):
     distribution_coverage: float
 
 
-class EvalReport(BaseModel):
-    timestamp: str
-    config: dict[str, int]
-    metrics: EvalMetrics
-    thresholds: dict[str, float]
-    passed: bool
-    runs: list[RunDetail]
-    consistency_details: dict[str, ConsistencyDetail]
-
-
 def aggregate_verdicts(report: AuditReport) -> VerdictMap:
     """Any-fail per (tool, category) cell: one FAIL among the cell's cases fails it.
 
