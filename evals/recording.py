@@ -59,7 +59,7 @@ def _refusals(existing: Baseline | None, recording: Recording, gate: GateResult)
     if existing is None:
         return reasons
     if existing.status == BaselineStatus.EXPLORATORY:
-        return reasons + _other_commit(existing, recording)
+        return reasons + _other_commit(existing, recording) + _other_conditions(existing, recording)
     return reasons + _confirmed_refusals(existing, recording, gate)
 
 
@@ -69,6 +69,17 @@ def _other_commit(existing: Baseline, recording: Recording) -> list[str]:
     return [
         f"the exploratory baseline was recorded at {existing.commit}, this run at "
         f"{recording.commit}: confirm it at its own commit, or delete it in a commit of its own"
+    ]
+
+
+def _other_conditions(existing: Baseline, recording: Recording) -> list[str]:
+    mismatches = condition_mismatches(existing.conditions, recording.conditions)
+    if not mismatches:
+        return []
+    return [
+        f"conditions differ from the exploratory baseline ({'; '.join(mismatches)}): delete it "
+        "in a commit of its own and record a new one, after the model-change procedure of "
+        "ADR 016 if a model differs"
     ]
 
 

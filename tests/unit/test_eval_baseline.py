@@ -166,6 +166,15 @@ def test_a_second_recording_at_another_commit_is_refused():
     assert any(given.RECORDED_COMMIT in reason for reason in result.reasons)
 
 
+def test_a_second_recording_at_other_conditions_is_refused():
+    existing = given.a_baseline(runs=given.all_correct_runs())
+
+    result = decide_recording(existing, given.a_recording(budget=7), given.a_gate())
+
+    assert isinstance(result, RecordingRefused)
+    assert any("exploratory baseline" in reason for reason in result.reasons)
+
+
 def test_recording_over_a_confirmed_baseline_under_a_green_gate_replaces_it():
     rule = ReplayRule(replays=7, required=5)
     existing = given.a_baseline(status=BaselineStatus.CONFIRMED, replay_rule=rule)

@@ -20,6 +20,8 @@ from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, REPO_ROOT
 from mcp_auditor.config import Settings, load_settings
 
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
+DEFAULT_RUNS = 3
+DEFAULT_BUDGET = 10
 NOT_COMPARABLE_EXIT = 3
 
 
@@ -41,6 +43,7 @@ class EvalSession:
     baseline: Baseline | None
     mode: GateMode
     record: bool
+    commit: str | None
 
 
 def open_session(options: EvalOptions) -> EvalSession:
@@ -58,11 +61,40 @@ def open_session(options: EvalOptions) -> EvalSession:
         baseline=baseline,
         mode=_select_mode(baseline, options.ungated),
         record=options.record_baseline,
+        commit=git("rev-parse", "HEAD") if options.record_baseline else None,
     )
     reasons = _pre_run_refusals(session)
     if reasons:
         refuse("Refused before any LLM call.", reasons)
     return session
+
+
+def ci_condition_mismatches(conditions: BaselineConditions) -> list[str]:
+    """CI passes no --runs, --budget nor MCP_AUDITOR_* override, so it runs at the defaults."""
+    defaults = Settings.model_construct()
+    expected = {
+        "runs": DEFAULT_RUNS,
+        "budget": DEFAULT_BUDGET,
+        "provider": defaults.provider,
+        "model": defaults.resolve_model(),
+        "judge_model": defaults.resolve_judge_model(),
+    }
+    actual = conditions.model_dump()
+    return [
+        f"{field}: CI runs {value}, this run {actual[field]}"
+        for field, value in expected.items()
+        if actual[field] != value
+    ]
+
+
+def tree_drift(session: EvalSession) -> list[str]:
+    """What changed in the checkout while the runs of a recording went on."""
+    reasons: list[str] = []
+    if git("status", "--porcelain", "--untracked-files=no"):
+        reasons.append("tracked files changed during the runs: record again from a clean tree")
+    if git("rev-parse", "HEAD") != session.commit:
+        reasons.append(f"HEAD moved from {session.commit} during the runs: record again")
+    return reasons
 
 
 def refuse(title: str, reasons: list[str]) -> NoReturn:
@@ -112,15 +144,19 @@ def _pre_run_refusals(session: EvalSession) -> list[str]:
     if session.baseline:
         reasons += condition_mismatches(session.baseline.conditions, session.conditions)
     if session.record:
-        reasons += _recording_preconditions(session.baseline)
+        reasons += _recording_preconditions(session)
     return reasons
 
 
-def _recording_preconditions(baseline: Baseline | None) -> list[str]:
-    reasons: list[str] = []
+def _recording_preconditions(session: EvalSession) -> list[str]:
+    reasons = [
+        f"a baseline records the conditions CI runs at, {mismatch}"
+        for mismatch in ci_condition_mismatches(session.conditions)
+    ]
     if git("status", "--porcelain", "--untracked-files=no"):
         reasons.append("the git tree has tracked modifications: record from a clean tree")
-    if baseline is not None and _exploratory_at_another_commit(baseline):
+    baseline = session.baseline
+    if baseline and _exploratory_at_another_commit(baseline, session.commit):
         reasons.append(
             f"the exploratory baseline was recorded at {baseline.commit}: confirm it at "
             "that commit, or delete it in a commit of its own"
@@ -128,13 +164,15 @@ def _recording_preconditions(baseline: Baseline | None) -> list[str]:
     return reasons
 
 
-def _exploratory_at_another_commit(baseline: Baseline) -> bool:
-    exploratory = baseline.status == BaselineStatus.EXPLORATORY
-    return exploratory and git("rev-parse", "HEAD") != baseline.commit
+def _exploratory_at_another_commit(baseline: Baseline, commit: str | None) -> bool:
+    return baseline.status == BaselineStatus.EXPLORATORY and baseline.commit != commit
 
 
 def git(*args: str) -> str:
-    completed = subprocess.run(
-        ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=True
-    )
+    try:
+        completed = subprocess.run(
+            ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        refuse("Recording refused.", [f"git {' '.join(args)} failed: record from a git checkout"])
     return completed.stdout.strip()

@@ -14,11 +14,13 @@ from evals.baseline import Baseline, write_baseline
 from evals.eval_report import EvalReport
 from evals.eval_session import (
     BASELINE_PATH,
+    DEFAULT_BUDGET,
+    DEFAULT_RUNS,
     NOT_COMPARABLE_EXIT,
     EvalOptions,
     EvalSession,
-    git,
     open_session,
+    tree_drift,
 )
 from evals.export import export_judged_cases
 from evals.gate import Cell, Observation, compare, metric_deltas, metric_resolutions, observe
@@ -38,8 +40,6 @@ from evals.recording import Recording, RecordingRefused, decide_recording, gated
 from evals.replay import replay_flips
 from mcp_auditor.domain.models import AuditReport, TokenUsage, ToolReport
 
-DEFAULT_RUNS = 3
-DEFAULT_BUDGET = 10
 DEFAULT_REPORT_PATH = "output/eval_report.json"
 
 THRESHOLDS: dict[str, float] = {
@@ -233,9 +233,14 @@ def _incomplete_runs(baseline: Baseline, completed: int) -> list[str]:
 
 
 def _record(session: EvalSession, result: EvalRunResult) -> int:
+    assert session.commit is not None, "open_session reads HEAD whenever it records"
+    drift = tree_drift(session)
+    if drift:
+        display.print_refusal("Recording refused.", drift)
+        return NOT_COMPARABLE_EXIT
     recording = Recording(
         conditions=session.conditions,
-        commit=git("rev-parse", "HEAD"),
+        commit=session.commit,
         recorded_at=datetime.now(UTC).isoformat(),
         runs=result.outcome.observations(),
         metrics=result.report.metrics,
