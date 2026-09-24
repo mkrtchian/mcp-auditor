@@ -1,10 +1,15 @@
+import pytest
+
 import tests.unit.support.test_eval_session_given as given
 from evals.baseline import BaselineStatus
 from evals.eval_session import (
+    REFUSED_BEFORE_ANY_LLM_CALL,
+    Refused,
     TreeState,
     baseline_changed,
     candidate_conditions,
     ci_condition_mismatches,
+    open_session,
     pre_run_refusals,
     select_mode,
     tree_drift,
@@ -166,3 +171,16 @@ def test_a_judge_override_leaves_the_judge_reasoning_unset():
 
     assert conditions.reasoning == "minimal"
     assert conditions.judge_reasoning is None
+
+
+def test_an_invalid_reasoning_setting_is_refused_before_any_llm_call(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "google")
+    monkeypatch.setenv("MCP_AUDITOR_REASONING", "hgih")
+
+    with pytest.raises(Refused) as refusal:
+        open_session(given.options())
+
+    assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
+    assert "'hgih'" in refusal.value.reasons[0]

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from mcp_auditor.adapters.llm import LLM, StructuredOutput, make_chat_model
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import TokenUsage
+from mcp_auditor.domain.ports import UnparseableOutput
 
 
 class _DummyOutput(BaseModel):
@@ -143,7 +144,7 @@ class TestDictSchema:
         responses = [_raw_response({"unexpected": 1}, 100, 50) for _ in range(3)]
         llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
 
-        with pytest.raises(ValueError, match="unparseable output after 3 attempts"):
+        with pytest.raises(UnparseableOutput, match="unparseable output after 3 attempts"):
             await llm.generate_structured("prompt", _DummyOutput)
 
 

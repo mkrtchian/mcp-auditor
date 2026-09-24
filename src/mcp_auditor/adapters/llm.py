@@ -12,6 +12,7 @@ from pydantic import BaseModel, ValidationError
 
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import TokenUsage
+from mcp_auditor.domain.ports import UnparseableOutput
 
 
 def create_llm(settings: Settings) -> "LLM":
@@ -124,7 +125,7 @@ class LLM:
             output = _validated(parsed, output_schema)
             if output is not None:
                 return output, accumulated_usage
-        raise ValueError(
+        raise UnparseableOutput(
             f"LLM returned unparseable output after {self._max_parse_attempts} attempts"
         )
 

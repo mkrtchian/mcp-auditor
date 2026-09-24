@@ -14,6 +14,10 @@ class MCPClientPort(Protocol):
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse: ...
 
 
+class UnparseableOutput(ValueError):
+    """The model answered, but no attempt matched the requested schema."""
+
+
 class LLMPort(Protocol):
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]

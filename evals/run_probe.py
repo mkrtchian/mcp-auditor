@@ -34,7 +34,7 @@ from evals.probe_corpus import ProbeCall, ProbeCorpus, Role, load_corpus, schema
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.domain.coverage import find_coverage_gap
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, TestCaseBatch, TokenUsage
-from mcp_auditor.domain.ports import LLMPort
+from mcp_auditor.domain.ports import LLMPort, UnparseableOutput
 
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 DEFAULT_REPORT_PATH = "output/probe_report.json"
@@ -98,7 +98,7 @@ async def _replay(corpus: ProbeCorpus, models: list[CandidateModels]) -> list[Pr
         task = progress.add_task("Probing", total=len(corpus.calls) * len(models))
         for index, call in enumerate(corpus.calls):
             for candidate_models in _rotation(models, index):
-                observations.append(await _observe(candidate_models, call, corpus.budget))
+                observations.append(await observe(candidate_models, call, corpus.budget))
                 progress.advance(task)
     return observations
 
@@ -109,13 +109,13 @@ def _rotation(models: list[CandidateModels], call_index: int) -> list[CandidateM
     return models[start:] + models[:start]
 
 
-async def _observe(models: CandidateModels, call: ProbeCall, budget: int) -> ProbeObservation:
+async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> ProbeObservation:
     llm = models.judge if call.role == "judge" else models.main
     outcome, usage, output, error = CallOutcome.PARSED, TokenUsage(), None, None
     started = time.perf_counter()
     try:
         output, usage = await llm.generate_structured(call.prompt, schema_for(call.schema_name))
-    except ValueError:
+    except UnparseableOutput:
         outcome = CallOutcome.PARSE_FAILURE
     except Exception as exception:
         outcome, error = CallOutcome.ERROR, f"{type(exception).__name__}: {exception}"
