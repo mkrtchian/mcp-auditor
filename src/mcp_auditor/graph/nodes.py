@@ -3,11 +3,13 @@ from typing import Any
 from langgraph.graph import END  # type: ignore[import-untyped]
 
 from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.coverage import find_coverage_gap
 from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
     AuditReport,
     BlockedPayload,
+    CoverageGap,
     EvalResult,
     Judgment,
     TestCase,
@@ -38,7 +40,7 @@ def make_discover_tools(server: AuditedServer, tools_filter: frozenset[str] | No
 async def prepare_tool(state: dict[str, Any]) -> dict[str, Any]:
     index = len(state.get("tool_reports", []))
     current = state["discovered_tools"][index]
-    return {"current_tool": current}
+    return {"current_tool": current, "coverage_gap": None}
 
 
 def make_generate_test_cases(llm: LLMPort):
@@ -50,11 +52,27 @@ def make_generate_test_cases(llm: LLMPort):
         prompt = build_attack_generation_prompt(
             tool=tool, budget=budget, categories=categories, attack_context=attack_context
         )
-        batch, usage = await llm.generate_structured(prompt, TestCaseBatch)
+        batch, gap, usages = await _generate_with_one_retry(llm, prompt, budget, categories)
         cases = [TestCase(payload=p) for p in batch.cases]
-        return {"pending_cases": cases, "judged_cases": [], "token_usage": [usage]}
+        return {
+            "pending_cases": cases,
+            "judged_cases": [],
+            "token_usage": usages,
+            "coverage_gap": gap,
+        }
 
     return generate_test_cases
+
+
+async def _generate_with_one_retry(
+    llm: LLMPort, prompt: str, budget: int, categories: list[AuditCategory]
+) -> tuple[TestCaseBatch, CoverageGap | None, list[TokenUsage]]:
+    batch, usage = await llm.generate_structured(prompt, TestCaseBatch)
+    gap = find_coverage_gap(batch, budget, categories)
+    if gap is None:
+        return batch, None, [usage]
+    retried, retry_usage = await llm.generate_structured(prompt, TestCaseBatch)
+    return retried, find_coverage_gap(retried, budget, categories), [usage, retry_usage]
 
 
 def make_execute_tool(server: AuditedServer):
@@ -103,7 +121,8 @@ async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
     tool = state["current_tool"]
     cases = state["judged_cases"]
     chains = state.get("completed_chains", [])
-    report = ToolReport(tool=tool, cases=cases, chains=chains)
+    gap = state.get("coverage_gap")
+    report = ToolReport(tool=tool, cases=cases, chains=chains, coverage_gap=gap)
     return {"tool_reports": [report]}
 
 

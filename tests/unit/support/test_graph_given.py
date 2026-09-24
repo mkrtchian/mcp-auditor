@@ -16,7 +16,7 @@ from mcp_auditor.domain import (
     ToolDefinition,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.graph.builder import build_graph
+from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
 
 
@@ -36,7 +36,7 @@ def a_fake_llm_for_single_tool_audit(
     num_cases: int = 1,
     extraction_response: AttackContext | None = None,
 ) -> FakeLLM:
-    batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
+    batch = a_complete_batch(num_cases)
     judgments = [a_judgment() for _ in range(num_cases)]
     context = extraction_response or AttackContext()
     return FakeLLM([batch, *judgments, context])
@@ -46,7 +46,7 @@ def a_fake_llm_for_destructive_and_safe_case() -> FakeLLM:
     batch = TestCaseBatch(
         cases=[
             a_payload(arguments={"command": "rm -rf /"}),
-            a_payload(arguments={"input": "malicious"}),
+            a_payload(category=AuditCategory.INFO_LEAKAGE, arguments={"input": "malicious"}),
         ]
     )
     return FakeLLM([batch, a_judgment(), AttackContext()])
@@ -55,10 +55,24 @@ def a_fake_llm_for_destructive_and_safe_case() -> FakeLLM:
 def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
     responses: list[BaseModel] = []
     for num_cases in cases_per_tool:
-        batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
+        batch = a_complete_batch(num_cases)
         judgments = [a_judgment() for _ in range(num_cases)]
         responses.extend([batch, *judgments, AttackContext()])
     return FakeLLM(responses)
+
+
+def a_fake_llm_whose_first_tool_batch_stays_short(cases_per_tool: int) -> FakeLLM:
+    short = a_complete_batch(cases_per_tool - 1)
+    short_judgments = [a_judgment() for _ in short.cases]
+    complete = a_complete_batch(cases_per_tool)
+    complete_judgments = [a_judgment() for _ in complete.cases]
+    first_tool = [short, short, *short_judgments, AttackContext()]
+    second_tool = [complete, *complete_judgments, AttackContext()]
+    return FakeLLM([*first_tool, *second_tool])
+
+
+def a_fake_dry_run_llm_whose_batch_stays_short(budget: int) -> FakeLLM:
+    return FakeLLM([a_complete_batch(budget - 1), a_complete_batch(budget - 1)])
 
 
 # The graph wrappers below look trivial but are a typing seam: langgraph's
@@ -66,6 +80,10 @@ def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
 # through these Any-typed helpers instead of calling ainvoke directly.
 def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
     return build_graph(fake_llm, AuditedServer(fake_mcp_client))
+
+
+def a_dry_run_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
+    return build_dry_run_graph(fake_llm, AuditedServer(fake_mcp_client))
 
 
 def a_graph_with_checkpointer(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient, checkpointer: Any):
@@ -83,7 +101,7 @@ async def invoke_graph_with_config(
 
 
 def an_initial_state(
-    test_budget: int = 5,
+    test_budget: int = 1,
     chain_budget: int = 0,
     max_chain_steps: int = 3,
 ) -> dict[str, Any]:
@@ -104,7 +122,7 @@ def an_initial_state(
 
 
 def a_fake_llm_for_single_tool_with_chain(num_cases: int = 1) -> FakeLLM:
-    batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
+    batch = a_complete_batch(num_cases)
     judgments = [a_judgment() for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
     step_obs = StepObservation(observation="dead end", should_continue=False)
@@ -114,7 +132,7 @@ def a_fake_llm_for_single_tool_with_chain(num_cases: int = 1) -> FakeLLM:
 
 
 def a_fake_llm_for_single_tool_with_two_chains(num_cases: int = 1) -> FakeLLM:
-    batch = TestCaseBatch(cases=[a_payload() for _ in range(num_cases)])
+    batch = a_complete_batch(num_cases)
     judgments = [a_judgment() for _ in range(num_cases)]
     chain_plan = ChainPlanBatch(
         chains=[
@@ -126,6 +144,13 @@ def a_fake_llm_for_single_tool_with_two_chains(num_cases: int = 1) -> FakeLLM:
     context = AttackContext()
     return FakeLLM(
         [batch, *judgments, chain_plan, stop_obs, a_judgment(), stop_obs, a_judgment(), context]
+    )
+
+
+def a_complete_batch(num_cases: int) -> TestCaseBatch:
+    categories = list(AuditCategory)
+    return TestCaseBatch(
+        cases=[a_payload(category=categories[i % len(categories)]) for i in range(num_cases)]
     )
 
 

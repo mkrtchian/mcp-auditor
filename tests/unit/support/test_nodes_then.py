@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import Judgment, TestCase, ToolDefinition
+from mcp_auditor.domain import Judgment, TestCase, TestCaseBatch, ToolDefinition
 
 
 def discovered_tools_count(result: dict[str, Any], expected: int) -> None:
@@ -54,3 +54,11 @@ def judged_case_uses_judgment(result: dict[str, Any], judgment: Judgment) -> Non
 
 def attack_context_has_db_engine(result: dict[str, Any], expected: str) -> None:
     assert result["attack_context"].db_engine == expected
+
+
+def pending_payloads_are(result: dict[str, Any], batch: TestCaseBatch) -> None:
+    assert [case.payload for case in result["pending_cases"]] == batch.cases
+
+
+def token_usage_count(result: dict[str, Any], expected: int) -> None:
+    assert len(result["token_usage"]) == expected

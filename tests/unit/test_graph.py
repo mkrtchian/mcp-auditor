@@ -13,7 +13,7 @@ async def test_single_tool_single_test_case():
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5)
+    state = given.an_initial_state(test_budget=1)
 
     result = await given.invoke_graph(graph, state)
 
@@ -30,7 +30,7 @@ async def test_two_tools_two_cases_each():
     fake_llm = given.a_fake_llm_for_multi_tool_audit([2, 2])
     fake_mcp_client = FakeMCPClient([tool_a, tool_b])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5)
+    state = given.an_initial_state(test_budget=2)
 
     result = await given.invoke_graph(graph, state)
 
@@ -48,7 +48,7 @@ async def test_empty_tool_list():
     fake_llm = FakeLLM([])
     fake_mcp_client = FakeMCPClient([])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5)
+    state = given.an_initial_state(test_budget=1)
 
     result = await given.invoke_graph(graph, state)
 
@@ -61,7 +61,7 @@ async def test_token_usage_accumulated():
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=2)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5)
+    state = given.an_initial_state(test_budget=2)
 
     result = await given.invoke_graph(graph, state)
 
@@ -79,7 +79,7 @@ async def test_attack_context_populated_after_audit():
     )
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5)
+    state = given.an_initial_state(test_budget=1)
 
     result = await given.invoke_graph(graph, state)
 
@@ -93,7 +93,7 @@ async def test_chain_budget_zero_skips_chains():
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5, chain_budget=0, max_chain_steps=3)
+    state = given.an_initial_state(test_budget=1, chain_budget=0, max_chain_steps=3)
 
     result = await given.invoke_graph(graph, state)
 
@@ -107,7 +107,7 @@ async def test_chain_budget_one_produces_chain():
     fake_llm = given.a_fake_llm_for_single_tool_with_chain(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
+    state = given.an_initial_state(test_budget=1, chain_budget=1, max_chain_steps=3)
 
     result = await given.invoke_graph(graph, state)
 
@@ -124,7 +124,7 @@ async def test_chain_budget_two_produces_two_chains():
     fake_llm = given.a_fake_llm_for_single_tool_with_two_chains(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5, chain_budget=2, max_chain_steps=3)
+    state = given.an_initial_state(test_budget=1, chain_budget=2, max_chain_steps=3)
 
     result = await given.invoke_graph(graph, state)
 
@@ -142,7 +142,7 @@ async def test_checkpointer_round_trips_nested_subgraph_state():
     fake_mcp_client = FakeMCPClient([tool])
     checkpointer = MemorySaver()
     graph = given.a_graph_with_checkpointer(fake_llm, fake_mcp_client, checkpointer)
-    state = given.an_initial_state(test_budget=5, chain_budget=1, max_chain_steps=3)
+    state = given.an_initial_state(test_budget=1, chain_budget=1, max_chain_steps=3)
     config = {"configurable": {"thread_id": "round-trip"}}
 
     result = await given.invoke_graph_with_config(graph, state, config)
@@ -159,7 +159,7 @@ async def test_destructive_payload_is_blocked_and_never_sent():
     fake_llm = given.a_fake_llm_for_destructive_and_safe_case()
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=5)
+    state = given.an_initial_state(test_budget=2)
 
     result = await given.invoke_graph(graph, state)
 
@@ -170,3 +170,27 @@ async def test_destructive_payload_is_blocked_and_never_sent():
     assert blocked[0].eval_result is None
     assert len([case for case in report.cases if case.eval_result is not None]) == 1
     assert len(fake_mcp_client.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_a_batch_still_short_after_retry_is_flagged_on_its_tool_only():
+    tools = [given.a_tool(name="get_user"), given.a_tool(name="list_users")]
+    fake_llm = given.a_fake_llm_whose_first_tool_batch_stays_short(cases_per_tool=2)
+    graph = given.a_graph(fake_llm, FakeMCPClient(tools))
+    state = given.an_initial_state(test_budget=2)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.report_has_a_gap_of(then.tool_report_at(result, 0), requested=2, received=1)
+    then.report_has_no_gap(then.tool_report_at(result, 1))
+
+
+@pytest.mark.asyncio
+async def test_a_dry_run_carries_the_coverage_gap_to_its_tool_report():
+    fake_llm = given.a_fake_dry_run_llm_whose_batch_stays_short(budget=3)
+    graph = given.a_dry_run_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
+    state = given.an_initial_state(test_budget=3)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.report_has_a_gap_of(result["tool_reports"][0], requested=3, received=2)

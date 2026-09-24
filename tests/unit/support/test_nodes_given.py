@@ -1,13 +1,16 @@
 from typing import Any
 
 from mcp_auditor.domain import (
+    AttackContext,
     AuditCategory,
     AuditPayload,
+    CoverageGap,
     EvalResult,
     EvalVerdict,
     Judgment,
     Severity,
     TestCase,
+    TestCaseBatch,
     ToolDefinition,
     ToolReport,
 )
@@ -89,3 +92,20 @@ def a_tool_report(
     tool = a_tool(name=tool_name)
     cases = [a_test_case(response="some response", error="some error") for _ in range(num_cases)]
     return ToolReport(tool=tool, cases=cases)
+
+
+def a_batch_of(num_cases: int) -> TestCaseBatch:
+    categories = list(AuditCategory)
+    return TestCaseBatch(
+        cases=[a_payload(category=categories[i % len(categories)]) for i in range(num_cases)]
+    )
+
+
+def a_generation_state(test_budget: int) -> dict[str, Any]:
+    return {"current_tool": a_tool(), "test_budget": test_budget, "attack_context": AttackContext()}
+
+
+def a_coverage_gap() -> CoverageGap:
+    return CoverageGap(
+        requested_cases=5, received_cases=3, missing_categories=[AuditCategory.RESOURCE_ABUSE]
+    )

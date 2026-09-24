@@ -48,3 +48,13 @@ def attack_context_is_non_empty(result: dict[str, Any]) -> None:
         or context.observations
     )
     assert has_content, f"Expected non-empty attack context, got {context}"
+
+
+def report_has_a_gap_of(report: ToolReport, requested: int, received: int) -> None:
+    assert report.coverage_gap is not None
+    assert report.coverage_gap.requested_cases == requested
+    assert report.coverage_gap.received_cases == received
+
+
+def report_has_no_gap(report: ToolReport) -> None:
+    assert report.coverage_gap is None

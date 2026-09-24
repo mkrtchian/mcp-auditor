@@ -14,7 +14,7 @@ from mcp_auditor.domain import (
     ToolResponse,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import filter_tools
+from mcp_auditor.domain.models import CoverageGap, filter_tools
 from mcp_auditor.graph.nodes import (
     build_tool_report,
     make_discover_tools,
@@ -98,6 +98,13 @@ class TestPrepareTools:
 
         then.current_tool_is(result, tools[1])
 
+    async def test_resets_the_coverage_gap(self):
+        tools = [given.a_tool(name="t1")]
+
+        result = await prepare_tool({"discovered_tools": tools, "tool_reports": []})
+
+        assert result["coverage_gap"] is None
+
 
 class TestExtractAttackContext:
     async def test_extracts_context_from_tool_report(self):
@@ -121,7 +128,7 @@ class TestExtractAttackContext:
 
 class TestGenerateTestCases:
     async def test_produces_pending_cases(self):
-        payloads = [given.a_payload() for _ in range(3)]
+        payloads = [given.a_payload(category=category) for category in list(AuditCategory)[:3]]
         batch = TestCaseBatch(cases=payloads)
         llm = FakeLLM([batch])
         node = make_generate_test_cases(llm)
@@ -133,6 +140,40 @@ class TestGenerateTestCases:
 
         then.pending_cases_count(result, 3)
         then.judged_cases_count(result, 0)
+
+    async def test_a_complete_batch_is_kept_without_retry(self):
+        batch = given.a_batch_of(5)
+        node = make_generate_test_cases(FakeLLM([batch]))
+
+        result = await node(given.a_generation_state(test_budget=5))
+
+        then.pending_payloads_are(result, batch)
+        then.token_usage_count(result, 1)
+        assert result["coverage_gap"] is None
+
+    async def test_an_incomplete_batch_is_retried_once(self):
+        retried = given.a_batch_of(5)
+        node = make_generate_test_cases(FakeLLM([given.a_batch_of(4), retried]))
+
+        result = await node(given.a_generation_state(test_budget=5))
+
+        then.pending_payloads_are(result, retried)
+        then.token_usage_count(result, 2)
+        assert result["coverage_gap"] is None
+
+    async def test_a_retry_still_incomplete_is_kept_with_its_gap(self):
+        retried = given.a_batch_of(3)
+        node = make_generate_test_cases(FakeLLM([given.a_batch_of(4), retried]))
+
+        result = await node(given.a_generation_state(test_budget=5))
+
+        then.pending_payloads_are(result, retried)
+        then.token_usage_count(result, 2)
+        assert result["coverage_gap"] == CoverageGap(
+            requested_cases=5,
+            received_cases=3,
+            missing_categories=[AuditCategory.INFO_LEAKAGE, AuditCategory.RESOURCE_ABUSE],
+        )
 
 
 class TestExecuteTool:
@@ -222,6 +263,23 @@ class TestFinalizeToolAudit:
         result = await build_tool_report({"current_tool": tool, "judged_cases": judged})
 
         then.tool_report_has_cases(result, 2)
+
+    async def test_copies_the_coverage_gap(self):
+        gap = given.a_coverage_gap()
+        state: dict[str, Any] = {
+            "current_tool": given.a_tool(),
+            "judged_cases": [],
+            "coverage_gap": gap,
+        }
+
+        result = await build_tool_report(state)
+
+        assert result["tool_reports"][0].coverage_gap == gap
+
+    async def test_reads_no_gap_from_an_older_checkpoint(self):
+        result = await build_tool_report({"current_tool": given.a_tool(), "judged_cases": []})
+
+        assert result["tool_reports"][0].coverage_gap is None
 
 
 class TestRouteAfterDiscovery:

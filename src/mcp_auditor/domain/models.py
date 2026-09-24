@@ -206,10 +206,17 @@ class TokenUsage(BaseModel):
         )
 
 
+class CoverageGap(BaseModel):
+    requested_cases: int
+    received_cases: int
+    missing_categories: list[AuditCategory]
+
+
 class ToolReport(BaseModel):
     tool: ToolDefinition
     cases: list[TestCase]
     chains: list[AttackChain] = []
+    coverage_gap: CoverageGap | None = None
 
     @property
     def eval_results(self) -> list[EvalResult]:

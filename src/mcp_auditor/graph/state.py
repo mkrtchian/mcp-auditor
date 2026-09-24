@@ -10,6 +10,7 @@ from mcp_auditor.domain.models import (
     AuditReport,
     ChainGoal,
     ChainStep,
+    CoverageGap,
     StepObservation,
     TestCase,
     TokenUsage,
@@ -31,6 +32,7 @@ class GraphState(TypedDict):
     chain_budget: int
     max_chain_steps: int
     completed_chains: list[AttackChain]
+    coverage_gap: CoverageGap | None
 
 
 class AuditToolState(TypedDict):
@@ -41,6 +43,7 @@ class AuditToolState(TypedDict):
     judged_cases: Annotated[list[TestCase], operator.add]
     token_usage: Annotated[list[TokenUsage], operator.add]
     attack_context: AttackContext
+    coverage_gap: CoverageGap | None
 
 
 class AuditToolInput(TypedDict):
