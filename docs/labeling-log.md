@@ -70,7 +70,7 @@ The "before" column reproduces the figures of the report. The revision lowers re
 
 ### 2026-09-24, fixture repair
 
-Commit: <commit>.
+Commit: dd04f33.
 
 **Ground truth.** Unchanged, 36 cells, 8 FAIL.
 
