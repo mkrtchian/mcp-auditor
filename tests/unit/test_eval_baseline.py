@@ -74,6 +74,15 @@ def test_a_differing_budget_names_both_values():
     assert "7" in mismatches[0]
 
 
+def test_a_baseline_recorded_at_another_reasoning_setting_names_it():
+    recorded = given.conditions()
+    candidate = recorded.model_copy(update={"reasoning": "high"})
+
+    mismatches = condition_mismatches(recorded, candidate)
+
+    assert mismatches == ["reasoning: baseline minimal, candidate high"]
+
+
 def test_a_differing_fixture_fingerprint_names_the_honeypot():
     mismatches = condition_mismatches(
         given.conditions(source_fingerprint="abc"), given.conditions(source_fingerprint="xyz")

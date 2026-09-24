@@ -30,6 +30,8 @@ class BaselineConditions(BaseModel):
     provider: str
     model: str
     judge_model: str
+    reasoning: str | None
+    judge_reasoning: str | None
     ground_truth_fingerprint: str
     fixtures: dict[str, FixtureConditions]
 

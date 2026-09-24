@@ -3,6 +3,7 @@ from evals.baseline import Baseline, BaselineConditions, BaselineStatus
 from evals.eval_session import (
     DEFAULT_BUDGET,
     DEFAULT_RUNS,
+    EvalOptions,
     EvalSession,
     TreeState,
     select_mode,
@@ -21,7 +22,15 @@ def ci_conditions(budget: int = DEFAULT_BUDGET) -> BaselineConditions:
             "provider": defaults.provider,
             "model": defaults.resolve_model(),
             "judge_model": defaults.resolve_judge_model(),
+            "reasoning": defaults.resolve_reasoning(defaults.resolve_model()),
+            "judge_reasoning": defaults.resolve_reasoning(defaults.resolve_judge_model()),
         }
+    )
+
+
+def options() -> EvalOptions:
+    return EvalOptions(
+        runs=DEFAULT_RUNS, budget=DEFAULT_BUDGET, report="", record_baseline=False, ungated=False
     )
 
 

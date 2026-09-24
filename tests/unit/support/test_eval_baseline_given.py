@@ -34,6 +34,8 @@ def conditions(
         provider="google",
         model="gemini-3.1-flash-lite",
         judge_model="gemini-3.1-flash-lite",
+        reasoning="minimal",
+        judge_reasoning="minimal",
         ground_truth_fingerprint=fingerprint_ground_truth(ground_truth or a_ground_truth()),
         fixtures={
             "honeypot": FixtureConditions(

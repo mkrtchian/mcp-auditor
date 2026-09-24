@@ -3,6 +3,7 @@ from evals.baseline import BaselineStatus
 from evals.eval_session import (
     TreeState,
     baseline_changed,
+    candidate_conditions,
     ci_condition_mismatches,
     pre_run_refusals,
     select_mode,
@@ -138,3 +139,30 @@ def test_a_model_override_is_named():
 
     ci_judge = Settings.model_construct().resolve_judge_model()
     assert mismatches == [f"judge_model: CI runs {ci_judge}, this run another-judge"]
+
+
+def test_a_reasoning_override_is_named():
+    conditions = given.ci_conditions().model_copy(update={"reasoning": "high"})
+
+    mismatches = ci_condition_mismatches(conditions)
+
+    ci_reasoning = Settings.model_construct().resolve_reasoning(
+        Settings.model_construct().resolve_model()
+    )
+    assert mismatches == [f"reasoning: CI runs {ci_reasoning}, this run high"]
+
+
+def test_candidate_conditions_carry_the_resolved_reasoning_of_both_models():
+    conditions = candidate_conditions(Settings.model_construct(provider="google"), given.options())
+
+    assert conditions.reasoning == "minimal"
+    assert conditions.judge_reasoning == "minimal"
+
+
+def test_a_judge_override_leaves_the_judge_reasoning_unset():
+    settings = Settings.model_construct(provider="google", judge_model="gemini-3.1-pro-preview")
+
+    conditions = candidate_conditions(settings, given.options())
+
+    assert conditions.reasoning == "minimal"
+    assert conditions.judge_reasoning is None

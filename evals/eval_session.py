@@ -73,7 +73,7 @@ def open_session(options: EvalOptions) -> EvalSession:
     baseline = None if options.ungated else _load_committed_baseline()
     session = EvalSession(
         settings=settings,
-        conditions=_candidate_conditions(settings, options),
+        conditions=candidate_conditions(settings, options),
         baseline=baseline,
         mode=select_mode(baseline, options.ungated),
         tree=read_tree() if options.record_baseline else None,
@@ -98,13 +98,15 @@ def _load_committed_baseline() -> Baseline | None:
     return baseline
 
 
-def _candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineConditions:
+def candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineConditions:
     return BaselineConditions(
         runs=options.runs,
         budget=options.budget,
         provider=settings.provider,
         model=settings.resolve_model(),
         judge_model=settings.resolve_judge_model(),
+        reasoning=settings.resolve_reasoning(settings.resolve_model()),
+        judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
         ground_truth_fingerprint=fingerprint_ground_truth(MERGED_GROUND_TRUTH),
         fixtures={
             honeypot.name: FixtureConditions(
@@ -157,6 +159,8 @@ def ci_condition_mismatches(conditions: BaselineConditions) -> list[str]:
         "provider": defaults.provider,
         "model": defaults.resolve_model(),
         "judge_model": defaults.resolve_judge_model(),
+        "reasoning": defaults.resolve_reasoning(defaults.resolve_model()),
+        "judge_reasoning": defaults.resolve_reasoning(defaults.resolve_judge_model()),
     }
     actual = conditions.model_dump()
     return [
