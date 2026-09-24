@@ -54,3 +54,16 @@ The ground truth keeps 36 cells, 8 FAIL and 28 PASS. "Failing" gives, for each r
 **The four questions of ADR 016.** (1) The change lands in the instrument: the ground truth here, the scoring code in its own commit. (2) The four label changes after creation were found in git history while annotating the fixtures' intent. The disagreement on `project_manager × input_validation` was first noticed through the metric of 2026-08-22, which moves the burden to (3) and (4). (3) Every label follows from the creation writings or from ADR 004, all of which predate the first measurement. (4) Each clause was applied across the 40 cells. R1 moves two cells toward PASS and two toward FAIL, and the removals take out one expected FAIL (R3) and, through R1 then R4, cells in both directions.
 
 **Left to other work.** The judge's isolation fixture now agrees with the ground truth on `delete_record × error_handling`, and keeps a `get_user × input_validation` case (id `0`) that no e2e cell scores. A cell that holds several valid categories is not modelled: R4 removes such cells instead.
+
+**Known after the revision.** Written on 2026-09-24 after the entry above was committed, and changes nothing in it.
+
+- While checking the Failing column, one pass also read `delete_record × error_handling` in the same report: FAIL in all 3 runs, a false positive in every run under its new PASS label.
+- The 2026-09-23 report re-scored under the instrument before and after this revision, with the same verdicts and no new run. Figures are per-run means, pooled counts in parentheses, and no per-cell detail was read.
+
+|             | Before (40 cells, 11 FAIL) | After (36 cells, 8 FAIL) |
+|-------------|----------------------------|--------------------------|
+| Recall      | 0.79 (26/33)               | 0.75 (18/24)             |
+| Precision   | 0.74 (26/35)               | 0.67 (18/27)             |
+| Consistency | 0.96                       | 0.96                     |
+
+The "before" column reproduces the figures of the report. The revision lowers recall and precision on the same verdicts. The figures measure the instrument change alone, are exploratory, and confirm nothing about the system.
