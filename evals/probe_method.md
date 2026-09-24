@@ -106,7 +106,7 @@ The calls run in corpus order, one at a time. On each call every candidate answe
 
 Set the API key of every candidate before running: `GOOGLE_API_KEY`, `OPENAI_API_KEY`, `FIREWORKS_API_KEY` and `DASHSCOPE_API_KEY`. A candidate whose models cannot be built stops the probe before any call. A key rejected only at the first call shows as an error on every call of that candidate.
 
-The report goes to `output/probe_report.json` by default: the observations, the statistics, the admissions and the reference's failed bars. The command exits 0 whatever the verdict. Each observation is also appended to `output/probe_report.jsonl` as soon as it is measured, with one progress line per call on the console, so a run stopped by hand keeps what it measured. There is no resume: a stopped run is rerun from the start.
+The report goes to `output/probe_report.json` by default: the observations, the statistics, the admissions with their latency notes, the reference's failed bars, and the fallback measured against the bars, recorded only. The command exits 0 whatever the verdict. Each observation is also appended to `output/probe_report.jsonl` as soon as it is measured, with one progress line per call on the console, so a run stopped by hand keeps what it measured. There is no resume: a stopped run is rerun from the start.
 
 ## Limits
 
