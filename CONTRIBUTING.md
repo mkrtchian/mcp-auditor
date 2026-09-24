@@ -39,6 +39,17 @@ uv run python -m evals.run_cve_benchmark --runs 3 --budget 10  # graded run
 
 See the README for the reproducibility rationale and the safety note (deliberately-vulnerable images, run on a non-sensitive host).
 
+### Model admission probe
+
+The probe measures candidate models on parse failures, refusals, latency and cost, on a frozen corpus of prompts, before any of them goes through the evals. The corpus is captured once on the reference settings, which needs Docker, the CVE images and `GOOGLE_API_KEY`, and is committed by hand. The probe then needs the key of every candidate (`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `FIREWORKS_API_KEY`):
+
+```bash
+uv run python -m evals.capture_probe_corpus  # writes evals/fixtures/probe_corpus.json
+uv run python -m evals.run_probe             # writes output/probe_report.json
+```
+
+What it measures, the bar values and the limits are in [`evals/probe_method.md`](evals/probe_method.md).
+
 ### Running evals on a pull request
 
 The judge isolation eval runs automatically on a pull request that touches `src/**`, `evals/**`, a honeypot server, or `pyproject.toml`, and it fails the check when the judge falls below its F1 threshold. It needs an API key from repository secrets: a Dependabot pull request and a pull request from a fork both skip the job. The e2e evals never run automatically on a pull request. They run on main after merge, where they gate the build. A maintainer can run either on demand by commenting on the PR:
