@@ -29,7 +29,13 @@ from evals.eval_session import (
 )
 from evals.export import export_judged_cases
 from evals.gate_verdict import GateVerdict
-from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, HoneypotConfig, audit_honeypot
+from evals.honeypots import (
+    HONEYPOTS,
+    MERGED_GROUND_TRUTH,
+    HoneypotConfig,
+    audit_honeypot,
+    models_for,
+)
 from evals.judging import RunsOutcome, judge_runs
 from evals.metrics import RunDetail, VerdictMap, aggregate_verdicts, build_run_detail
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
@@ -164,7 +170,9 @@ async def _run_one_eval(
     total_usage = TokenUsage()
     for honeypot in HONEYPOTS:
         progress.console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
-        report = await audit_honeypot(session.settings, honeypot, session.conditions.budget)
+        report = await audit_honeypot(
+            models_for(session.settings), honeypot, session.conditions.budget
+        )
         merged_verdicts.update(aggregate_verdicts(report))
         all_tool_reports.extend(report.tool_reports)
         total_usage = total_usage.add(report.token_usage)
@@ -195,7 +203,9 @@ def _post_langsmith_feedback(run_detail: RunDetail, project_name: str) -> None:
 
 def _replay_audit(session: EvalSession) -> ReplayAudit:
     async def audit(honeypot: HoneypotConfig) -> VerdictMap:
-        report = await audit_honeypot(session.settings, honeypot, session.conditions.budget)
+        report = await audit_honeypot(
+            models_for(session.settings), honeypot, session.conditions.budget
+        )
         return aggregate_verdicts(report)
 
     return audit

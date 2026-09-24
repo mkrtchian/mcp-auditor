@@ -17,6 +17,7 @@ uv run python -m evals.run_judge_eval  # Judge isolation eval (needs an LLM key:
 docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)
 uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live (Docker, no LLM)
 uv run python -m evals.run_cve_benchmark              # CVE benchmark graded run (Docker + an LLM key)
+uv run python -m evals.capture_probe_corpus           # Capture evals/fixtures/probe_corpus.json once, reference settings only (Docker, the CVE images, GOOGLE_API_KEY), then commit it by hand
 ```
 
 ## Coding standards

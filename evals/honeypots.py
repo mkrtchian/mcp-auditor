@@ -14,6 +14,7 @@ from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport
+from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.builder import build_graph
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -49,15 +50,23 @@ MERGED_GROUND_TRUTH: GroundTruth = {
 TOOL_COUNT = len({tool for tool, _ in MERGED_GROUND_TRUTH})
 
 
-async def audit_honeypot(settings: Settings, honeypot: HoneypotConfig, budget: int) -> AuditReport:
-    llm = create_llm(settings)
-    judge_llm = create_judge_llm(settings)
+@dataclass(frozen=True)
+class AuditModels:
+    llm: LLMPort
+    judge_llm: LLMPort
+
+
+def models_for(settings: Settings) -> AuditModels:
+    return AuditModels(llm=create_llm(settings), judge_llm=create_judge_llm(settings))
+
+
+async def audit_honeypot(models: AuditModels, honeypot: HoneypotConfig, budget: int) -> AuditReport:
     devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
         async with StdioMCPClient.connect(
             ServerLaunch.unconfined("uv", honeypot.args), errlog=devnull
         ) as mcp_client:
-            graph = build_graph(llm, AuditedServer(mcp_client), judge_llm=judge_llm)
+            graph = build_graph(models.llm, AuditedServer(mcp_client), judge_llm=models.judge_llm)
             result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
                 {
                     "target": f"uv {' '.join(honeypot.args)}",
