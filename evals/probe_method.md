@@ -6,7 +6,7 @@ The probe (`uv run python -m evals.run_probe [--report PATH]`) replays a frozen 
 
 It measures, per candidate, over the whole corpus: parse failures per schema, refusals, errors, the median latency per call in each role (generation calls and judge calls), the weighted corpus cost, and the reasoning tokens.
 
-It does not measure detection quality. No verdict is compared with a label, and the corpus holds no label. Detection quality is measured afterwards by the judge isolation eval and the e2e evals, for an admitted challenger only (steps 2 and 3 of ADR 019).
+It does not measure detection quality. No verdict is compared with a label, and the corpus holds no label. Detection quality is measured afterwards by the judge isolation eval and the e2e evals, for an admitted challenger only, after the probe, as ADR 019 sets.
 
 ## The corpus
 
@@ -34,7 +34,7 @@ A challenger is admitted when it clears every bar:
 
 The reference is exempt from every bar (ADR 019). The bars it would fail are printed and written to the report as recorded only, and they trigger nothing.
 
-The judge isolation F1 threshold (0.90) and the honeypot floors (0.50) are the existing ones, applied afterwards in steps 2 and 3 of ADR 019.
+The judge isolation F1 threshold (0.90) and the honeypot floors (0.50) are the existing ones, applied after the probe, as ADR 019 sets. With 8 FAIL cases among the 32 of the judge fixture, one misjudged case moves F1 by about 0.06, so the threshold admits one error and rejects two.
 
 ## Cost
 
@@ -71,7 +71,17 @@ The check catches a setting that did not reach the API: the candidate would then
 | `gpt-6-luna` | effort `low` | more than 0 |
 | GLM-5.3-Flash | schema enforced, no reasoning parameter | not checked |
 
-GLM is not checked because `langchain-fireworks` does not report reasoning tokens (it never fills `output_token_details.reasoning`), and the enforced schema disables reasoning anyway.
+GLM is not checked because `langchain-fireworks` does not report reasoning tokens (it never fills `output_token_details.reasoning`), and Fireworks documents that an enforced schema "disables reasoning output", which did not hold for GLM-5.3-Flash (see below).
+
+## Observations before the ADR 019 revision
+
+Calls made on 2026-09-24 before ADR 019 revised its challenger list, kept here as the evidence its alternatives point to. They come from two probe runs stopped before the end and from informal calls on the corpus outside the probe.
+
+- `gpt-6-luna` at `none` and `low`: when it writes a resource-abuse case whose argument is a long string, it repeats one character in that argument without stopping, over a million characters in 950 seconds on one call, with only its 128,000-token output limit to end it. It did not loop at `medium` on four calls of the same prompt.
+- GLM-5.3-Flash is thinking-only: Fireworks refuses `reasoning_effort="none"`. With no effort set, it billed about ten thousand output tokens per batch, against about 700 for the reference, although Fireworks documents that an enforced schema "disables reasoning output". At `low`, it returned batches with a category or cases missing.
+- DeepSeek V4 Flash and `gpt-5.4-nano` with reasoning off returned incomplete batches. So did `gpt-oss-120b` at `low`, its lowest setting, since it cannot turn its reasoning off.
+- Each provider receives the output schema through its structured output mode. Fireworks enforces it during decoding. OpenAI receives it without strict mode, which refuses the open `arguments` object of a payload.
+- The output cap the adapter sets on OpenAI and Fireworks calls counts reasoning tokens, so a challenger that reasons can be cut by it. The cap is set to bound a loop without cutting a batch at `medium`.
 
 ## Data retention per provider
 

@@ -6,29 +6,29 @@
 
 ## Context
 
-The auditor calls one LLM in two roles: it generates the attack payloads, and it judges each response. ADR 005 chose Gemini 3.1 Flash-Lite in March 2026 on price, public benchmarks and a honeypot eval of three runs, where it parsed every call and Claude Haiku 4.5 lost one run to unparseable output. Since then, cheaper models have appeared: OpenAI's `gpt-6-luna` lists at $0.10 per million input tokens and $0.50 per million output tokens, against $0.25 and $1.50 for Flash-Lite, and GLM-5.3-Flash (Fireworks) and Qwen3.8-Flash (Alibaba Cloud Model Studio) list at about $0.15 and $0.50 (list prices on 2026-09-24). Google has also scheduled the shutdown of Gemini 3.1 Flash-Lite for 2027-05-07, and names Gemini 3.5 Flash-Lite as its replacement (deprecations page, read on 2026-09-24).
+The auditor calls one LLM in two roles: it generates the attack payloads, and it judges each response. Since ADR 005 chose Gemini 3.1 Flash-Lite in March 2026, cheaper models have appeared: OpenAI's `gpt-6-luna` lists at $0.10 per million input tokens and $0.50 per million output tokens, against $0.25 and $1.50 for Flash-Lite, and GLM-5.3-Flash (Fireworks) and Qwen3.8-Flash (Alibaba Cloud Model Studio) list at about $0.15 and $0.50 (list prices on 2026-09-24). Google has also scheduled the shutdown of Gemini 3.1 Flash-Lite for 2027-05-07, and names Gemini 3.5 Flash-Lite as its replacement (deprecations page, read on 2026-09-24).
 
-The last honeypot measurement was under the precision threshold when this was written, so the gate was red. Price is the reason to look again, and that reason holds with every eval number deleted.
+Price is the reason to look again, and that reason holds with every eval number deleted.
 
 ## Decision
 
-**One model serves both roles.** The public benchmarks read for this decision do not score payload writing and response classification separately, so only this repository's own instruments could be used to pick one model per role. If the adopted model later refuses to write the payloads the auditor needs, both roles move together to another model through a new ADR.
+**One model serves both roles.** The public benchmarks read for this decision do not score payload writing and response classification separately, so only this repository's own instruments could be used to pick one model per role.
 
-**The OpenAI, Fireworks and Alibaba Cloud Model Studio providers join Google and Anthropic**, whatever the outcome, so a user can select them. Each runs its default model at the setting its challenger is measured at below.
+**The OpenAI, Fireworks and Alibaba Cloud Model Studio providers join Google and Anthropic**, whatever the outcome, so a user can select them. Each new provider's default model is its challenger, at the setting measured below.
 
 **The default model is the one the procedure below selects**, and it is named here, with its setting and the reason for the choice, before this ADR is accepted.
 
 ## How the default is chosen
 
-**The challengers are Qwen3.8-Flash with thinking off, GLM-5.3-Flash at reasoning effort `medium`, and `gpt-6-luna` at reasoning effort `medium`.** Each runs with the schema enforced by the provider. Gemini 3.1 Flash-Lite at thinking level `minimal`, set explicitly, is the reference they are measured against. Gemini 3.5 Flash-Lite at `minimal` runs in the same session and is recorded, not admitted or refused: it is the fallback below.
+**The challengers are Qwen3.8-Flash with thinking off, GLM-5.3-Flash at reasoning effort `medium`, and `gpt-6-luna` at reasoning effort `medium`.** Gemini 3.1 Flash-Lite at thinking level `minimal`, set explicitly, is the reference they are measured against, because it is the model the prompts were written for and the one an audit runs today. Gemini 3.5 Flash-Lite at `minimal` runs in the same session and is recorded, not admitted or refused. A bar it fails is recorded as a defect of the fallback and does not stop the move to it.
 
-**A challenger is admitted if it clears bars written before it runs.** Every structured call parses within the retries the adapter allows. The generator stays under a refusal ceiling. The time to replay the whole corpus and the cost of that replay stay within a set multiple of the reference's, with challenger and reference measured in the same session. The provider does not train on API data at the tier used. The judge isolation eval keeps its F1 threshold of 0.90, and the honeypot suite keeps the floors of ADR 016. The definitions and the values are committed with a probe that measures them, before its first run. The reference is exempt: a bar it fails records a defect it already has, and does not trigger a switch.
+**A challenger is admitted if it clears bars written before the run that decides admission.** The cost of replaying the probe's corpus stays at or under the reference's, measured in the same session. The judge isolation eval keeps its F1 threshold of 0.90, and the honeypot suite keeps the floors of ADR 016. The definitions and the values live in the probe's method note, committed before that run. The reference is exempt: a bar it fails records a defect it already has, and does not trigger a switch.
 
-**The time bar is on the whole corpus, not on each call.** What a user waits for is an audit, and an audit makes one generation call per tool against about ten judgments. A median per call and per role would refuse a model whose slow generation costs the audit a few seconds while its judgments keep pace.
+**Latency is recorded against its bar, and it does not refuse a challenger on its own.** The bar is the one written before any measurement, a median per call and per role at most 3 times the reference's. Latency is the one property the auditor can reduce itself, by running independent calls in parallel, while parsing, refusals and cost belong to the model. A challenger that clears every other bar and fails only this one is decided case by case, in this ADR, with the reason written down. That verdict is exploratory under ADR 016, since the latencies of the candidates were known when this rule was written.
 
-**Admission is per setting, and a model is admitted when one of its settings is.** If no challenger is admitted, the default moves to Gemini 3.5 Flash-Lite at thinking level `minimal`, the successor Google names. That move is forced by the shutdown date, not chosen, so it clears no bar. If one model is admitted, it becomes the default. When two are admitted, the choice is made on public benchmarks read again on the day of the choice, at the admitted setting when a benchmark reports it. The reason for the choice must hold with every probe and eval number deleted.
+**If no challenger is admitted, the default moves to Gemini 3.5 Flash-Lite at thinking level `minimal`**, the successor Google names. That move is forced by the shutdown date, not chosen, so no bar applies to it. If one model is admitted, it becomes the default. When more than one is admitted, the choice is made on public benchmarks read again on the day of the choice, at the admitted setting when a benchmark reports it. The reason for the choice must hold with every probe and eval number deleted.
 
-**What was known before the probe ran.** The challenger list and the time bar were revised after informal calls on the probe's corpus, outside the probe, on 2026-09-24. Those calls showed the latency of every candidate below, and the revision is written with that knowledge. The bars keep the multiple of 3 they had before those calls.
+**What was known before the challengers and the latency rule were revised.** On 2026-09-24, two runs of the probe on the first challenger list (`gpt-6-luna` at `none` and `low`, GLM-5.3-Flash with no effort set) were stopped before the end, and the observations of the second were read. Informal calls on the probe's corpus followed, outside the probe. On generation calls, Qwen3.8-Flash and GLM-5.3-Flash at `medium` took about four times the reference's time, and `gpt-6-luna` at `medium` about seven times on four calls. The revision was written with that knowledge.
 
 ## Alternatives considered
 
@@ -38,21 +38,20 @@ The last honeypot measurement was under the precision threshold when this was wr
 
 **The cheapest admitted model wins, with no reading of the benchmarks.** Rejected. The rule would move the default toward the weakest model that clears the bars, and lose detection quality that no instrument in this repository measures.
 
-**Keep the median latency per call and raise its multiple to 4 or 5.** Rejected. The latencies of the candidates were already known, so the multiple would have been chosen to admit them.
+**Raise the latency multiple to 4 or 5.** Rejected. The latencies of the candidates were already known, so the multiple would have been chosen to admit them.
 
-**Keep Gemini 3.1 Flash-Lite when no challenger is admitted.** Rejected. Its shutdown date would force another ADR within months.
+**Keep Gemini 3.1 Flash-Lite when no challenger is admitted.** Rejected. Its shutdown on 2027-05-07 would force another ADR.
 
-**Gemini 3.5 Flash-Lite as a challenger.** Rejected. It lists at $0.30 and $2.50, above the reference, so it would fail the cost bar by construction. It is the fallback instead.
+**Gemini 3.5 Flash-Lite as a challenger.** Rejected. It lists at $0.30 and $2.50, above the reference on every price, so it would fail the cost bar unless it used fewer tokens.
 
-**The lower settings of the challengers.** Rejected on calls observed before the probe. `gpt-6-luna` at `none` and `low` loops on a payload that asks for a very long string, writing the same character until its 128,000-token output limit. GLM-5.3-Flash is a thinking-only model: Fireworks refuses to turn its reasoning off, it reasons for about ten thousand tokens per batch when no effort is set, and at `low` it returns batches with a category or cases missing. An enforced schema does not stop reasoning on Fireworks, despite its documentation.
+**The lower settings of the challengers.** Rejected on the calls made before the revision, whose observations are kept in the probe's method note. GLM-5.3-Flash is a thinking-only model, and Fireworks refuses to turn its reasoning off. At `low`, it returned batches with a category or cases missing.
 
-**Other models.** DeepSeek V4 Flash, `gpt-5.4-nano` and `gpt-oss-120b` returned incomplete batches on the same calls, and `gpt-oss-120b` cannot turn its reasoning off. Claude Haiku 4.5 lists at $1 and $5 per million tokens. Mistral Small 4 scores below the challengers on public benchmarks. Qwen3.8-Flash on other hosts is relayed to Alibaba, and Fireworks does not serve it serverless.
+**Other models.** Claude Haiku 4.5 lists at $1 and $5 per million tokens, about four and three times the reference. Mistral Small 4 scores below the challengers on public benchmarks. OpenRouter and Novita list Qwen3.8-Flash with Alibaba as their upstream, so another host would add a hop without serving another copy, and Fireworks does not offer it on its serverless tier.
 
 ## Consequences
 
 - Anthropic stays a supported provider, with Haiku 4.5 as its default model. Haiku is no longer a designated fallback.
-- The honeypot floors refuse only a collapsed model. The judge threshold is the one bar that can refuse a working model: with 8 FAIL cases among the 32, one misjudged case moves F1 by about 0.06, so the threshold admits one error and rejects two. The fixture was built from the reference's failures, and this decision accepts that bias toward the reference.
-- The public scores of Qwen3.8-Flash and GLM-5.3-Flash were measured with their reasoning at its highest. Neither is published at the setting run here, so the comparison between two admitted models rests on scores that do not match the setting.
-- The adapter's output cap counts reasoning tokens on some providers, so a challenger that reasons can be cut by it. The cap is set so that it bounds a loop without cutting a batch at `medium`.
-- If the fallback applies, the default becomes a model that no instrument in this repository has measured, on prompts tuned for its predecessor. Its first honeypot run is exploratory, and the baseline follows ADR 016's procedure for a model change.
-- If Gemini 3.1 Flash-Lite stops answering before the probe runs, the relative bars lose their reference, so the procedure is rewritten in this ADR before any challenger runs.
+- The judge eval runs once, so a challenger as good as the reference can be refused by one error on that draw. The judge prompt was tuned against its fixture on the reference, and this decision accepts that bias toward the reference.
+- The public scores of Qwen3.8-Flash and GLM-5.3-Flash were measured with reasoning on. Neither is published at the setting run here, so a comparison that involves either of them rests on scores that do not match the setting.
+- Whichever model becomes the default, ADR 016's procedure for a model change applies. If the fallback applies, the default is a model that only the probe has measured, on prompts tuned for its predecessor.
+- If Gemini 3.1 Flash-Lite stops answering before the run that decides admission, the relative bars lose their reference, so the procedure is rewritten in this ADR before any challenger runs.
