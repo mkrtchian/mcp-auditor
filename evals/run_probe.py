@@ -15,7 +15,6 @@ from typing import Any
 
 from dotenv import load_dotenv
 from rich.console import Console
-from rich.progress import Progress
 from rich.table import Table
 
 from evals.honeypots import REPO_ROOT
@@ -72,7 +71,8 @@ def main() -> None:
         sys.exit(1)
     corpus = load_corpus(CORPUS_PATH)
     models = _build_models(CANDIDATES)
-    observations = asyncio.run(_replay(corpus, models))
+    sink = Path(args.report).with_suffix(".jsonl")
+    observations = asyncio.run(_replay(corpus, models, sink))
     result = _analyze(corpus, observations)
     _write_report(Path(args.report), result)
     _print_table(result)
@@ -92,15 +92,33 @@ def _build_models(candidates: list[Candidate]) -> list[CandidateModels]:
     return built
 
 
-async def _replay(corpus: ProbeCorpus, models: list[CandidateModels]) -> list[ProbeObservation]:
+async def _replay(
+    corpus: ProbeCorpus, models: list[CandidateModels], sink: Path
+) -> list[ProbeObservation]:
+    """Each observation reaches `sink` as it is measured, so a hung run keeps what it measured."""
+    sink.parent.mkdir(parents=True, exist_ok=True)
+    sink.write_text("")
     observations: list[ProbeObservation] = []
-    with Progress(console=console) as progress:
-        task = progress.add_task("Probing", total=len(corpus.calls) * len(models))
-        for index, call in enumerate(corpus.calls):
-            for candidate_models in _rotation(models, index):
-                observations.append(await observe(candidate_models, call, corpus.budget))
-                progress.advance(task)
+    total = len(corpus.calls) * len(models)
+    for index, call in enumerate(corpus.calls):
+        for candidate_models in _rotation(models, index):
+            observation = await observe(candidate_models, call, corpus.budget)
+            append_observation(sink, observation)
+            observations.append(observation)
+            console.print(_progress_line(len(observations), total, observation))
     return observations
+
+
+def append_observation(sink: Path, observation: ProbeObservation) -> None:
+    with sink.open("a") as lines:
+        lines.write(observation.model_dump_json() + "\n")
+
+
+def _progress_line(done: int, total: int, observation: ProbeObservation) -> str:
+    return (
+        f"call {done}/{total} {observation.candidate} {observation.call_id} "
+        f"{observation.outcome.value} {observation.seconds:.1f}s"
+    )
 
 
 def _rotation(models: list[CandidateModels], call_index: int) -> list[CandidateModels]:

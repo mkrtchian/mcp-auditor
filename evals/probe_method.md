@@ -26,7 +26,7 @@ A challenger is admitted when it clears every bar:
 
 - **Parse failures** after the adapter's 3 attempts: 0, on each of the six schemas (`TestCaseBatch`, `Judgment`, `AttackContext`, `ChainPlanBatch`, `StepObservation`, `AuditPayload`).
 - **Refusals**: 0.
-- **Errors** (any exception other than a parse failure: API error, timeout): 0. A candidate that did not answer every call was not measured on the whole corpus. **On an error, rerun the probe** rather than read it as a verdict on the model.
+- **Errors** (any exception other than a parse failure: API error, or an OpenAI or Fireworks call that exceeds its 120-second timeout on every retry): 0. A candidate that did not answer every call was not measured on the whole corpus. **On an error, rerun the probe** rather than read it as a verdict on the model.
 - **Median latency per call, per role**: at most 3 times the reference's median measured in the same probe run. Equal to 3 times passes.
 - **Weighted corpus cost**: at most the reference's (ratio 1.0). Equal passes.
 - **Reasoning tokens consistent with the setting**: see below.
@@ -89,7 +89,7 @@ The calls run in corpus order, one at a time. On each call every candidate answe
 
 Set the API key of every candidate before running: `GOOGLE_API_KEY`, `OPENAI_API_KEY` and `FIREWORKS_API_KEY`. A candidate whose models cannot be built stops the probe before any call. A key rejected only at the first call shows as an error on every call of that candidate.
 
-The report goes to `output/probe_report.json` by default: the observations, the statistics, the admissions and the reference's failed bars. The command exits 0 whatever the verdict.
+The report goes to `output/probe_report.json` by default: the observations, the statistics, the admissions and the reference's failed bars. The command exits 0 whatever the verdict. Each observation is also appended to `output/probe_report.jsonl` as soon as it is measured, with one progress line per call on the console, so a run stopped by hand keeps what it measured. There is no resume: a stopped run is rerun from the start.
 
 ## Limits
 

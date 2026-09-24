@@ -70,21 +70,39 @@ def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:  # p
     return ChatGoogleGenerativeAI(model=model, thinking_level=reasoning, max_retries=3)  # pyright: ignore[reportUnknownArgumentType,reportArgumentType]
 
 
+# Without it, a probe run once hung 17 minutes on one OpenAI response.
+_REQUEST_TIMEOUT_SECONDS = 120
+
+
 def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
     # ChatOpenAI raises openai.OpenAIError on a missing key, which the CLI does not catch.
     if not os.environ.get("OPENAI_API_KEY"):
         raise ValueError("OPENAI_API_KEY is not set.")
     if reasoning is None:
-        return ChatOpenAI(model=model, use_responses_api=True, max_retries=3)
+        return ChatOpenAI(
+            model=model,
+            use_responses_api=True,
+            max_retries=3,
+            timeout=_REQUEST_TIMEOUT_SECONDS,
+        )
     return ChatOpenAI(
-        model=model, reasoning_effort=reasoning, use_responses_api=True, max_retries=3
+        model=model,
+        reasoning_effort=reasoning,
+        use_responses_api=True,
+        max_retries=3,
+        timeout=_REQUEST_TIMEOUT_SECONDS,
     )
 
 
 def _make_fireworks_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
     if reasoning is None:
-        return ChatFireworks(model=model, max_retries=3)
-    return ChatFireworks(model=model, reasoning_effort=reasoning, max_retries=3)
+        return ChatFireworks(model=model, max_retries=3, timeout=_REQUEST_TIMEOUT_SECONDS)
+    return ChatFireworks(
+        model=model,
+        reasoning_effort=reasoning,
+        max_retries=3,
+        timeout=_REQUEST_TIMEOUT_SECONDS,
+    )
 
 
 class _InputTokenDetails(TypedDict):

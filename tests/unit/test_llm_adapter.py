@@ -185,6 +185,7 @@ class TestMakeChatModel:
 
         assert getattr(chat_model, "model_name", None) == "gpt-6-luna"
         assert getattr(chat_model, "reasoning_effort", None) == "low"
+        assert getattr(chat_model, "request_timeout", None) == 120
 
     def test_fireworks_builds_glm_with_no_reasoning(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
@@ -194,6 +195,7 @@ class TestMakeChatModel:
 
         assert getattr(chat_model, "model_name", None) == "accounts/fireworks/models/glm-5p3-flash"
         assert getattr(chat_model, "reasoning_effort", "unset") is None
+        assert getattr(chat_model, "request_timeout", None) == 120
 
     def test_fireworks_passes_an_explicit_reasoning(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
