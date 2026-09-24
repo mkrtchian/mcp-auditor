@@ -252,3 +252,33 @@ class TestMakeChatModel:
 
         with pytest.raises(ValueError, match="OPENAI_API_KEY"):
             make_chat_model(settings, settings.resolve_model())
+
+    def test_alibaba_builds_qwen_on_chat_completions_with_thinking_off(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("DASHSCOPE_API_KEY", "dummy")
+        settings = Settings(provider="alibaba", model="", judge_model="", reasoning="")
+
+        chat_model = make_chat_model(settings, settings.resolve_model())
+
+        assert getattr(chat_model, "model_name", None) == "qwen3.8-flash"
+        assert str(getattr(chat_model, "openai_api_base", "")) == (
+            "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+        )
+        assert getattr(chat_model, "extra_body", None) == {"enable_thinking": False}
+        assert not getattr(chat_model, "use_responses_api", True)
+        assert getattr(chat_model, "request_timeout", None) == 120
+        assert getattr(chat_model, "max_tokens", None) == 4096
+
+    @pytest.mark.parametrize("key", [None, ""])
+    def test_alibaba_without_its_key_raises_naming_it(
+        self, monkeypatch: pytest.MonkeyPatch, key: str | None
+    ):
+        if key is None:
+            monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
+        else:
+            monkeypatch.setenv("DASHSCOPE_API_KEY", key)
+        settings = Settings(provider="alibaba", model="", judge_model="", reasoning="")
+
+        with pytest.raises(ValueError, match="DASHSCOPE_API_KEY"):
+            make_chat_model(settings, settings.resolve_model())

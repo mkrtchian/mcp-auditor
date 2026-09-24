@@ -189,21 +189,22 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 
 | Variable                     | Default                | Description                               |
 |:---------------------------|:---------------------|:------------------------------------------|
-| `MCP_AUDITOR_PROVIDER`     | `google`             | LLM provider: `google`, `anthropic`, `openai` or `fireworks` |
+| `MCP_AUDITOR_PROVIDER`     | `google`             | LLM provider: `google`, `anthropic`, `openai`, `fireworks` or `alibaba` |
 | `MCP_AUDITOR_MODEL`        | per-provider default | Override the main model name              |
 | `MCP_AUDITOR_JUDGE_MODEL`  | same as main model   | Separate model for verdict classification |
-| `MCP_AUDITOR_REASONING`    | per-provider default | Reasoning setting sent to the main and judge models: `minimal`, `low`, `medium` or `high` for `google`, `none`, `low`, `medium`, `high`, `xhigh` or `max` for `openai`, `low`, `medium` or `high` for `fireworks`, not accepted for `anthropic` |
+| `MCP_AUDITOR_REASONING`    | per-provider default | Reasoning setting sent to the main and judge models: `minimal`, `low`, `medium` or `high` for `google`, `none`, `low`, `medium`, `high`, `xhigh` or `max` for `openai`, `low`, `medium` or `high` for `fireworks`, not accepted for `anthropic` or `alibaba` |
 | `GOOGLE_API_KEY`           | --                   | Required when provider is `google`        |
 | `ANTHROPIC_API_KEY`        | --                   | Required when provider is `anthropic`     |
 | `OPENAI_API_KEY`           | --                   | Required when provider is `openai`        |
 | `FIREWORKS_API_KEY`        | --                   | Required when provider is `fireworks`     |
+| `DASHSCOPE_API_KEY`        | --                   | Required when provider is `alibaba` (Alibaba Cloud Model Studio, international) |
 | `LANGSMITH_TRACING`        | --                   | Set to `true` to activate tracing         |
 | `LANGSMITH_API_KEY`        | --                   | LangSmith API key (required for tracing)  |
 | `LANGSMITH_PROJECT`        | --                   | LangSmith project name for traces (unset, LangSmith uses its own default) |
 | `LANGSMITH_ENDPOINT`       | US region            | Set to the EU URL if your workspace is EU |
 | `MCP_AUDITOR_TOOL_CALL_TIMEOUT` | `30`           | Seconds before a tool call is abandoned and judged as a timeout error |
 
-With the default `google` provider, the main model and the judge both run `gemini-3.1-flash-lite` at thinking level `minimal`. With `anthropic` they run `claude-haiku-4-5-20251001` with no reasoning setting. With `openai` they run `gpt-6-luna` at reasoning effort `low`. With `fireworks` they run GLM-5.3-Flash (`accounts/fireworks/models/glm-5p3-flash`) with no reasoning setting: the auditor has Fireworks enforce the output schema, which disables reasoning. The default reasoning applies to the provider's default model only: a model named by `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` is sent no reasoning setting, so its API default applies, unless `MCP_AUDITOR_REASONING` is set.
+With the default `google` provider, the main model and the judge both run `gemini-3.1-flash-lite` at thinking level `minimal`. With `anthropic` they run `claude-haiku-4-5-20251001` with no reasoning setting. With `openai` they run `gpt-6-luna` at reasoning effort `low`. With `fireworks` they run GLM-5.3-Flash (`accounts/fireworks/models/glm-5p3-flash`) with no reasoning setting: the auditor has Fireworks enforce the output schema, which disables reasoning. With `alibaba` they run `qwen3.8-flash` on Alibaba Cloud Model Studio's international endpoint, with thinking always off. The default reasoning applies to the provider's default model only: a model named by `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` is sent no reasoning setting, so its API default applies, unless `MCP_AUDITOR_REASONING` is set.
 
 ### CLI options
 

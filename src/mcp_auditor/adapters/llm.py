@@ -8,7 +8,7 @@ from langchain_core.runnables import Runnable
 from langchain_fireworks import ChatFireworks
 from langchain_google_genai import ChatGoogleGenerativeAI  # pyright: ignore[reportMissingTypeStubs]
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, SecretStr, ValidationError
 
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import TokenUsage
@@ -34,13 +34,14 @@ class StructuredOutput:
     schema_as_dict: bool = False
 
 
-# OpenAI gets a dict: langchain-openai makes a Pydantic class strict, and strict mode
-# rejects the open object AuditPayload.arguments.
+# OpenAI and Alibaba, both through ChatOpenAI, get a dict: ChatOpenAI makes a Pydantic
+# class strict, and strict mode rejects the open object AuditPayload.arguments.
 _STRUCTURED_OUTPUT = {
     "google": StructuredOutput(method="json_schema"),
     "anthropic": StructuredOutput(method="function_calling"),
     "openai": StructuredOutput(method="json_schema", schema_as_dict=True),
     "fireworks": StructuredOutput(method="json_schema"),
+    "alibaba": StructuredOutput(method="json_schema", schema_as_dict=True),
 }
 
 
@@ -54,9 +55,11 @@ def make_chat_model(settings: Settings, model: str) -> BaseChatModel:  # pyright
         return _make_openai_model(model, reasoning)
     if settings.provider == "fireworks":
         return _make_fireworks_model(model, reasoning)
+    if settings.provider == "alibaba":
+        return _make_alibaba_model(model)
     raise ValueError(
         f"Unknown provider: {settings.provider!r}. "
-        "Use 'google', 'anthropic', 'openai' or 'fireworks'."
+        "Use 'google', 'anthropic', 'openai', 'fireworks' or 'alibaba'."
     )
 
 
@@ -113,6 +116,26 @@ def _make_fireworks_model(model: str, reasoning: str | None) -> BaseChatModel:  
         max_retries=3,
         timeout=_REQUEST_TIMEOUT_SECONDS,
         max_tokens=_MAX_OUTPUT_TOKENS,
+    )
+
+
+_ALIBABA_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+
+
+def _make_alibaba_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    api_key = os.environ.get("DASHSCOPE_API_KEY")
+    if not api_key:
+        raise ValueError("DASHSCOPE_API_KEY is not set.")
+    # Qwen thinks by default, for minutes per batch.
+    return ChatOpenAI(
+        model=model,
+        base_url=_ALIBABA_BASE_URL,
+        api_key=SecretStr(api_key),
+        use_responses_api=False,
+        extra_body={"enable_thinking": False},
+        max_retries=3,
+        timeout=_REQUEST_TIMEOUT_SECONDS,
+        max_completion_tokens=_MAX_OUTPUT_TOKENS,
     )
 
 

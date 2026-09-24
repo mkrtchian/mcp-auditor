@@ -62,6 +62,12 @@ _PROVIDERS = {
         reasoning=None,
         accepted_reasoning=("low", "medium", "high"),
     ),
+    # The adapter always turns Qwen's thinking off, so the provider takes no setting.
+    "alibaba": _ProviderDefaults(
+        model="qwen3.8-flash",
+        reasoning=None,
+        accepted_reasoning=(),
+    ),
 }
 
 
@@ -72,7 +78,8 @@ def _default_model(provider: str) -> str:
 def _provider_defaults(provider: str) -> _ProviderDefaults:
     if provider not in _PROVIDERS:
         raise ValueError(
-            f"Unknown provider: {provider!r}. Use 'google', 'anthropic', 'openai' or 'fireworks'."
+            f"Unknown provider: {provider!r}. "
+            "Use 'google', 'anthropic', 'openai', 'fireworks' or 'alibaba'."
         )
     return _PROVIDERS[provider]
 

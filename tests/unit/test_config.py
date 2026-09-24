@@ -50,7 +50,7 @@ def test_judge_model_override(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.resolve_judge_model() == "pro"
 
 
-def test_unknown_provider_names_the_four_providers(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_unknown_provider_names_every_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "mistral")
     monkeypatch.delenv("MCP_AUDITOR_MODEL", raising=False)
 
@@ -58,7 +58,7 @@ def test_unknown_provider_names_the_four_providers(monkeypatch: pytest.MonkeyPat
 
     with pytest.raises(ValueError, match="Unknown provider") as error:
         settings.resolve_model()
-    for provider in ("google", "anthropic", "openai", "fireworks"):
+    for provider in ("google", "anthropic", "openai", "fireworks", "alibaba"):
         assert provider in str(error.value)
 
 
@@ -142,4 +142,20 @@ def test_openai_rejects_minimal_naming_its_accepted_values() -> None:
     settings = _settings("openai", reasoning="minimal")
 
     with pytest.raises(ValueError, match="none, low, medium, high, xhigh, max"):
+        settings.resolve_reasoning(settings.resolve_model())
+
+
+def test_alibaba_resolves_qwen_with_no_reasoning_setting() -> None:
+    settings = _settings("alibaba")
+
+    model = settings.resolve_model()
+
+    assert model == "qwen3.8-flash"
+    assert settings.resolve_reasoning(model) is None
+
+
+def test_alibaba_takes_no_reasoning_setting() -> None:
+    settings = _settings("alibaba", reasoning="low")
+
+    with pytest.raises(ValueError, match="takes no reasoning setting"):
         settings.resolve_reasoning(settings.resolve_model())
