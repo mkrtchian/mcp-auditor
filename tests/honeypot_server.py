@@ -3,12 +3,34 @@
 Every behavior below, including the apparent bugs, is deliberate: `evals/ground_truth.py`
 asserts the expected verdict on the (tool, category) pairs it keeps, and
 `docs/labeling-log.md` records the ones it dropped. Do not fix the planted flaws, a "cleanup"
-here silently invalidates the eval suite.
+here silently invalidates the eval suite. On invalid arguments the server returns a generic
+error by design, see `docs/labeling-log.md`.
 """
 
-from mcp.server.fastmcp import FastMCP
+from collections.abc import Sequence
+from typing import Annotated, Any
 
-app = FastMCP("honeypot")
+from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
+from mcp.types import ContentBlock
+from pydantic import Strict, ValidationError
+
+
+class GenericArgumentErrors(FastMCP):
+    # Instrument repair (docs/labeling-log.md): the library's validation message names an
+    # internal model and the pydantic version, a flaw no label planted.
+    async def call_tool(
+        self, name: str, arguments: dict[str, Any]
+    ) -> Sequence[ContentBlock] | dict[str, Any]:
+        try:
+            return await super().call_tool(name, arguments)
+        except ToolError as error:
+            if isinstance(error.__cause__, ValidationError):
+                raise ToolError(f"Error executing tool {name}: Invalid arguments") from None
+            raise
+
+
+app = GenericArgumentErrors("honeypot")
 
 USERS = {42: "Alice", 1: "Bob"}
 VALID_CATEGORIES = ["books", "movies", "music"]
@@ -35,9 +57,10 @@ def execute_query(query: str) -> str:
 
 
 @app.tool()
-def list_items(category: str, limit: int = 10) -> str:
+def list_items(category: str, limit: Annotated[int, Strict()] = 10) -> str:
     """List items in a given category with an optional limit."""
-    # Deliberate PASS control: input is validated and clamped, no flaw to find here.
+    # Deliberate PASS control: input is validated and clamped, and the limit is type-checked
+    # strictly, no flaw to find here.
     if category not in VALID_CATEGORIES:
         raise ValueError("Invalid category")
     clamped_limit = max(1, min(limit, 100))

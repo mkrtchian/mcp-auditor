@@ -32,6 +32,13 @@ class TestSearchUsers:
         assert "email=" in response.content
         assert "role=" in response.content
 
+    async def test_search_users_refuses_a_boolean_limit(self) -> None:
+        async with connected_subtle_server() as client:
+            response = await client.call_tool("search_users", {"query": "Alice", "limit": True})
+
+        assert response.is_error is True
+        assert response.content == "Error executing tool search_users: Invalid arguments"
+
 
 class TestDeleteRecord:
     async def test_delete_record_accepts_negative_id(self) -> None:
@@ -39,6 +46,13 @@ class TestDeleteRecord:
             response = await client.call_tool("delete_record", {"record_id": -5})
 
         assert response.is_error is False
+
+    async def test_delete_record_wrong_type_returns_a_generic_error(self) -> None:
+        async with connected_subtle_server() as client:
+            response = await client.call_tool("delete_record", {"record_id": "abc"})
+
+        assert response.is_error is True
+        assert response.content == "Error executing tool delete_record: Invalid arguments"
 
 
 class TestGetServiceStatus:

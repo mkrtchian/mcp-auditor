@@ -50,6 +50,13 @@ class TestProjectManagerChain:
         assert "api_keys" in config
         assert "database" in config
 
+    async def test_unknown_action_returns_a_generic_error(self) -> None:
+        async with StdioMCPClient.connect(LAUNCH) as client:
+            response = await client.call_tool("project_manager", {"action": "delete"})
+
+        assert response.is_error is True
+        assert response.content == "Error executing tool project_manager: Invalid arguments"
+
 
 class TestUserDirectoryChain:
     async def test_search_admin_returns_user_ids(self) -> None:

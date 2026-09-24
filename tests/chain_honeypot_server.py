@@ -6,15 +6,35 @@ several steps, and a pass on error_handling, injection and resource_abuse. The g
 no longer holds input_validation for either tool nor injection for project_manager:
 `docs/labeling-log.md` records why. A comment names the branch that carries a flaw where a
 record of that commit does, and says so where none does. Do not fix the planted flaws, a
-"cleanup" here silently invalidates the eval suite.
+"cleanup" here silently invalidates the eval suite. On invalid arguments the server returns
+a generic error by design, see `docs/labeling-log.md`.
 """
 
 import json
-from typing import Literal
+from collections.abc import Sequence
+from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
+from mcp.types import ContentBlock
+from pydantic import ValidationError
 
-app = FastMCP("chain-honeypot")
+
+class GenericArgumentErrors(FastMCP):
+    # Instrument repair (docs/labeling-log.md): the library's validation message names an
+    # internal model and the pydantic version, a flaw no label planted.
+    async def call_tool(
+        self, name: str, arguments: dict[str, Any]
+    ) -> Sequence[ContentBlock] | dict[str, Any]:
+        try:
+            return await super().call_tool(name, arguments)
+        except ToolError as error:
+            if isinstance(error.__cause__, ValidationError):
+                raise ToolError(f"Error executing tool {name}: Invalid arguments") from None
+            raise
+
+
+app = GenericArgumentErrors("chain-honeypot")
 
 PROJECTS = {
     "proj_001": {

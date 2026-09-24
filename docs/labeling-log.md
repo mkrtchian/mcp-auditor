@@ -67,3 +67,22 @@ The ground truth keeps 36 cells, 8 FAIL and 28 PASS. "Failing" gives, for each r
 | Consistency | 0.96                       | 0.96                     |
 
 The "before" column reproduces the figures of the report. The revision lowers recall and precision on the same verdicts. The figures measure the instrument change alone, are exploratory, and confirm nothing about the system.
+
+### 2026-09-24, fixture repair
+
+Commit: <commit>.
+
+**Ground truth.** Unchanged, 36 cells, 8 FAIL.
+
+**Instrument change (R2).** The three honeypot servers return `Error executing tool <name>: Invalid arguments` in place of the library's validation message, and the `limit` of `list_items` and of `search_users` is strictly an integer, so `true` and `"42"` are refused through the same generic error. Every error a tool body raises reaches the client unchanged, and so does the library's `Unknown tool`. The published schemas are unchanged. The mechanism holds for mcp 1.26.0 and pydantic 2.12.5, as the first entry states for its facts.
+
+**Disagreements resolved.** Both R5 bullets of the first entry, every cell they list: error_handling of `execute_query`, `list_items`, `search_users`, `delete_record`, `get_service_status`, `project_manager` and `user_directory`, info_leakage of `list_items`, `delete_record` and `get_service_status`, and input_validation of `list_items` and `search_users`.
+
+**Disagreements still in place.**
+
+- R6, `project_manager`'s `read_file` echoes any other path back, whatever its length: resource_abuse of `project_manager`.
+- R1, the planted silent success of `delete_record` on an unknown id is filed under input_validation at creation, and can be read as missing not-found handling: error_handling of `delete_record`.
+
+**What was known when the repair was decided.** Everything the first entry lists, plus its "Known after the revision" section: the per-cell verdicts of the four removed cells and of `delete_record × error_handling`, and the aggregates re-scored under both instruments. Not the per-cell verdicts of any R5 cell.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the fixture. (2) The disagreements were found while writing the rubric, from the fixture's code and the library's behavior, with the eval report closed. (3) The target behavior is the creation writings': a PASS control without a planted flaw, and a generic error where a plan promised one. Those writings predate every measurement. (4) The repair applies to every cell R5 lists, including PASS cells of tools that carry planted flaws in other categories. It works in both directions. On the PASS cells it lists, it removes an unplanted flaw, which can raise the measured precision. On four planted FAIL cells (`get_user` error_handling and info_leakage, info_leakage of `project_manager` and `user_directory`), it removes the library message a judge could have read as evidence, which can lower the measured recall. Both directions are stated here before any measurement.
