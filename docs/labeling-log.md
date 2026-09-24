@@ -24,7 +24,7 @@ The clauses apply in the order written. A clause reaches every cell it describes
 
 ### 2026-09-24, first revision
 
-Commit: <commit 2>.
+Commit: fe69924.
 
 **State of the gate.** No baseline was recorded, so the absolute thresholds gated. The last measurement, exploratory (2026-09-23, 3 runs, budget 10, prompts of `4ccd538`), was under the precision threshold, so the revision was taken with the gate red. The clauses were written from the fixtures' written intent, with the eval report closed.
 
@@ -35,10 +35,10 @@ Commit: <commit 2>.
 | Cell | Before | After | Clause | Failing |
 |---|---|---|---|---|
 | `delete_record × error_handling` | FAIL | PASS | R1: `fa52ad8` aligned it on the judge's guidance | n/a |
-| `get_user × input_validation` | FAIL | removed | R3 | <step 3> |
-| `project_manager × input_validation` | PASS | removed | R1 back to FAIL (`fa52ad8`), then R4 | <step 3> |
-| `user_directory × input_validation` | PASS | removed | R1 back to FAIL (`fa52ad8`), then R4 | <step 3> |
-| `project_manager × injection` | FAIL | removed | R1 back to PASS (`597491d`), then R4 | <step 3> |
+| `get_user × input_validation` | FAIL | removed | R3 | 0/3 |
+| `project_manager × input_validation` | PASS | removed | R1 back to FAIL (`fa52ad8`), then R4 | 3/3 |
+| `user_directory × input_validation` | PASS | removed | R1 back to FAIL (`fa52ad8`), then R4 | 0/3 |
+| `project_manager × injection` | FAIL | removed | R1 back to PASS (`597491d`), then R4 | 1/3 |
 
 The ground truth keeps 36 cells, 8 FAIL and 28 PASS. "Failing" gives, for each removed cell, the number of runs of the 2026-09-23 report (3 runs, budget 10, prompts of `4ccd538`) whose verdict on that cell contradicted the label then in force, written `k/3`. A run that did not cover the cell is counted apart, neither as contradicting nor as agreeing: `k/3, n not covered`. No rule turns that count into a yes or a no.
 
