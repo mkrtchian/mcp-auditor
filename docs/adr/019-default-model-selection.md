@@ -6,7 +6,7 @@
 
 ## Context
 
-The auditor calls one LLM in two roles: it generates the attack payloads, and it judges each response. ADR 005 chose Gemini 3.1 Flash-Lite in March 2026 on price, public benchmarks and a honeypot eval of three runs, where it parsed every call and Claude Haiku 4.5 lost one run to unparseable output. Since then, OpenAI has released `gpt-6-luna` at $0.10 per million input tokens and $0.50 per million output tokens, against $0.25 and $1.50 for Flash-Lite (list prices on 2026-09-24). GLM-5.3-Flash, an open-weight model, scores highest among the low-cost models on public benchmarks, which measured it at its highest reasoning setting. Fireworks serves it at $0.15 and $0.50.
+The auditor calls one LLM in two roles: it generates the attack payloads, and it judges each response. ADR 005 chose Gemini 3.1 Flash-Lite in March 2026 on price, public benchmarks and a honeypot eval of three runs, where it parsed every call and Claude Haiku 4.5 lost one run to unparseable output. Since then, OpenAI has released `gpt-6-luna` at $0.10 per million input tokens and $0.50 per million output tokens, against $0.25 and $1.50 for Flash-Lite (list prices on 2026-09-24). GLM-5.3-Flash, an open-weight model, scores highest among the low-cost models on public benchmarks, which measured it at its highest reasoning setting. Fireworks serves it at $0.15 and $0.50. Google has also scheduled the shutdown of Gemini 3.1 Flash-Lite for 2027-05-07, and names Gemini 3.5 Flash-Lite as its replacement (deprecations page, read on 2026-09-24).
 
 The last honeypot measurement was under the precision threshold when this was written, so the gate was red. Price is the reason to look again, and that reason holds with every eval number deleted.
 
@@ -24,7 +24,7 @@ The last honeypot measurement was under the precision threshold when this was wr
 
 **A challenger is admitted if it clears bars written before it runs.** Every structured call parses within the retries the adapter allows. The generator stays under a refusal ceiling. Latency per call and cost per audit stay within a set multiple of the reference's, with challenger and reference measured in the same session. The provider does not train on API data at the tier used. The judge isolation eval keeps its F1 threshold of 0.90, and the honeypot suite keeps the floors of ADR 016. The definitions and the values are committed with a probe that measures them, before its first run. The reference is exempt: a bar it fails records a defect it already has, and does not trigger a switch.
 
-**Admission is per setting, and a model is admitted when one of its settings is.** If no challenger is admitted, Flash-Lite stays, at the same setting as in the reference run. If one model is admitted, it becomes the default. When two models or two settings of one model are admitted, the choice is made on public benchmarks read again on the day of the choice, at the admitted setting when a benchmark reports it. The reason for the choice must hold with every probe and eval number deleted.
+**Admission is per setting, and a model is admitted when one of its settings is.** If no challenger is admitted, the default moves to Gemini 3.5 Flash-Lite at thinking level `minimal`, the successor Google names. That move is forced by the shutdown date, not chosen, so it clears no bar. If one model is admitted, it becomes the default. When two models or two settings of one model are admitted, the choice is made on public benchmarks read again on the day of the choice, at the admitted setting when a benchmark reports it. The reason for the choice must hold with every probe and eval number deleted.
 
 ## Alternatives considered
 
@@ -34,10 +34,15 @@ The last honeypot measurement was under the precision threshold when this was wr
 
 **The cheapest admitted model wins, with no reading of the benchmarks.** Rejected. The rule would move the default toward the weakest model that clears the bars, and lose detection quality that no instrument in this repository measures.
 
-**Other models.** Claude Haiku 4.5 lists at $1 and $5 per million tokens, ten times the price of Luna. DeepSeek's privacy policy lists user input among the data used to train its models. Gemini 3.5 Flash-Lite costs more than the model it would replace. Mistral Small 4 and `gpt-oss-120b` score below the challengers on public benchmarks. Z.ai serves GLM-5.3-Flash about four times slower than Fireworks, at the same price.
+**Keep Gemini 3.1 Flash-Lite when no challenger is admitted.** Rejected. Its shutdown date would force another ADR within months.
+
+**Gemini 3.5 Flash-Lite as a third challenger.** Rejected. It lists at $0.30 and $2.50, above the reference, so it would fail the cost bar by construction. It is the fallback instead.
+
+**Other models.** Claude Haiku 4.5 lists at $1 and $5 per million tokens, ten times the price of Luna. DeepSeek's privacy policy lists user input among the data used to train its models. Mistral Small 4 and `gpt-oss-120b` score below the challengers on public benchmarks. Z.ai serves GLM-5.3-Flash about four times slower than Fireworks, at the same price.
 
 ## Consequences
 
 - Anthropic stays a supported provider, with Haiku 4.5 as its default model. Haiku is no longer a designated fallback.
 - The honeypot floors refuse only a collapsed model. The judge threshold is the one bar that can refuse a working model: with 8 FAIL cases among the 32, one misjudged case moves F1 by about 0.06, so the threshold admits one error and rejects two. The fixture was built from the reference's failures, and this decision accepts that bias toward the reference.
+- If the fallback applies, the default becomes a model that no instrument in this repository has measured, on prompts tuned for its predecessor. Its first honeypot run is exploratory, and the baseline follows ADR 016's procedure for a model change.
 - If Gemini 3.1 Flash-Lite stops answering before the probe runs, the relative bars lose their reference, so the procedure is rewritten in this ADR before any challenger runs.
