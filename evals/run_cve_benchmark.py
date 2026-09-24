@@ -37,7 +37,7 @@ CVE_RUNS = 3
 CVE_TEST_BUDGET = 10
 DEFAULT_REPORT_PATH = "output/cve_report.json"
 
-_EXPECTED_IMAGES = (
+EXPECTED_IMAGES = (
     "mcp-auditor-cve-filesystem:local",
     "mcp-auditor-cve-git:local",
     "mcp-auditor-cve-kubernetes:local",
@@ -105,7 +105,7 @@ def _preflight_ok() -> bool:
     if not _docker_ready():
         console.print(f"[red]Docker daemon unreachable.[/red] Start Docker, then {_BUILD_HINT}.")
         return False
-    missing = [image for image in _EXPECTED_IMAGES if not _image_exists(image)]
+    missing = [image for image in EXPECTED_IMAGES if not _image_exists(image)]
     if missing:
         console.print(f"[red]Missing images:[/red] {', '.join(missing)}. To build: {_BUILD_HINT}.")
         return False

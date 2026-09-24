@@ -27,6 +27,7 @@ from evals.probe_corpus import (
     sample_judge_calls,
     write_corpus,
 )
+from evals.run_cve_benchmark import EXPECTED_IMAGES
 from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
@@ -40,7 +41,6 @@ JUDGE_SAMPLE_SIZE = 60
 JUDGE_SAMPLE_SEED = 20260924
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 
-_IMAGE_PREFIX = "mcp-auditor-cve-"
 _BUILD_COMMAND = "docker compose -f evals/docker/compose.yml build"
 
 console = Console()
@@ -93,14 +93,7 @@ def _refuse(reason: str, details: list[str]) -> None:
 
 
 def _cve_image_problems() -> list[str]:
-    images: set[str] = set()
-    for target in CVE_TARGETS:
-        try:
-            with target.environment() as launch:
-                images.update(arg for arg in launch.args if arg.startswith(_IMAGE_PREFIX))
-        except (subprocess.CalledProcessError, OSError) as error:
-            return [f"{target.cve_id}: its environment failed to start ({error})"]
-    return [f"missing image {image}" for image in sorted(images) if not _image_exists(image)]
+    return [f"missing image {image}" for image in EXPECTED_IMAGES if not _image_exists(image)]
 
 
 def _image_exists(image: str) -> bool:
