@@ -78,22 +78,23 @@ def compute_recall(aggregated: VerdictMap, ground_truth: GroundTruth) -> float:
 
 
 def compute_precision(aggregated: VerdictMap, ground_truth: GroundTruth) -> float:
-    predicted_fails = [key for key, verdict in aggregated.items() if verdict == EvalVerdict.FAIL]
+    predicted_fails = [
+        key
+        for key, verdict in aggregated.items()
+        if verdict == EvalVerdict.FAIL and key in ground_truth
+    ]
     if not predicted_fails:
         return 1.0
-    correct = sum(1 for key in predicted_fails if ground_truth.get(key) == EvalVerdict.FAIL)
+    correct = sum(1 for key in predicted_fails if ground_truth[key] == EvalVerdict.FAIL)
     return correct / len(predicted_fails)
 
 
 def compute_consistency(
     all_runs: list[VerdictMap],
+    ground_truth: GroundTruth,
 ) -> tuple[float, dict[str, ConsistencyDetail]]:
-    all_keys: set[tuple[str, AuditCategory]] = set()
-    for run in all_runs:
-        all_keys.update(run.keys())
-
     details: dict[str, ConsistencyDetail] = {}
-    for key in sorted(all_keys, key=lambda k: (k[0], k[1].value)):
+    for key in sorted(ground_truth, key=lambda k: (k[0], k[1].value)):
         tool_name, category = key
         fail_count = sum(1 for run in all_runs if run.get(key) == EvalVerdict.FAIL)
         pass_count = sum(1 for run in all_runs if run.get(key) == EvalVerdict.PASS)

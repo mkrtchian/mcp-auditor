@@ -163,6 +163,19 @@ def test_precision_with_false_positive():
     assert compute_precision(aggregated, ground_truth) == 0.5
 
 
+def test_precision_ignores_a_fail_outside_the_ground_truth():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("b", INJECTION): FAIL,
+    }
+
+    assert compute_precision(aggregated, ground_truth) == 1.0
+
+
 def test_precision_no_predictions():
     ground_truth: GroundTruth = {
         ("a", INPUT_VALIDATION): PASS,
@@ -180,8 +193,9 @@ def test_consistency_perfect():
     run1: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
     run2: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
     run3: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    ground_truth: GroundTruth = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
 
-    score, details = compute_consistency([run1, run2, run3])
+    score, details = compute_consistency([run1, run2, run3], ground_truth)
 
     assert score == 1.0
     assert all(d.rate == 1.0 for d in details.values())
@@ -205,11 +219,26 @@ def test_consistency_mixed():
     # ("a", ERROR_HANDLING): 1 PASS, 2 FAIL -> agreement = 2/3
     # average = 2/3
     expected = 2.0 / 3.0
-    score, details = compute_consistency([run1, run2, run3])
+    ground_truth: GroundTruth = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    score, details = compute_consistency([run1, run2, run3], ground_truth)
 
     assert abs(score - expected) < 1e-9
     assert details["a/input_validation"].agree == 2
     assert details["a/error_handling"].agree == 2
+
+
+def test_consistency_ignores_a_cell_outside_the_ground_truth():
+    runs: list[VerdictMap] = [
+        {("a", INPUT_VALIDATION): FAIL, ("b", INJECTION): FAIL},
+        {("a", INPUT_VALIDATION): FAIL, ("b", INJECTION): PASS},
+        {("a", INPUT_VALIDATION): FAIL, ("b", INJECTION): PASS},
+    ]
+    ground_truth: GroundTruth = {("a", INPUT_VALIDATION): FAIL}
+
+    score, details = compute_consistency(runs, ground_truth)
+
+    assert score == 1.0
+    assert set(details) == {"a/input_validation"}
 
 
 def test_distribution_full_coverage():
@@ -247,7 +276,9 @@ def test_a_blocked_case_leaves_verdict_metrics_untouched():
     assert aggregated == baseline
     assert compute_recall(aggregated, ground_truth) == compute_recall(baseline, ground_truth)
     assert compute_precision(aggregated, ground_truth) == compute_precision(baseline, ground_truth)
-    assert compute_consistency([aggregated]) == compute_consistency([baseline])
+    assert compute_consistency([aggregated], ground_truth) == compute_consistency(
+        [baseline], ground_truth
+    )
 
 
 def test_distribution_coverage_drops_when_the_only_case_of_a_category_is_blocked():

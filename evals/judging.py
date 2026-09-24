@@ -38,7 +38,9 @@ class RunsOutcome:
         return [observe(verdicts, MERGED_GROUND_TRUTH) for verdicts in self.verdict_maps]
 
     def metrics(self) -> tuple[EvalMetrics, dict[str, ConsistencyDetail]]:
-        consistency, consistency_details = compute_consistency(self.verdict_maps)
+        consistency, consistency_details = compute_consistency(
+            self.verdict_maps, MERGED_GROUND_TRUTH
+        )
         metrics = EvalMetrics(
             recall=sum(run.recall for run in self.details) / len(self.details),
             precision=sum(run.precision for run in self.details) / len(self.details),

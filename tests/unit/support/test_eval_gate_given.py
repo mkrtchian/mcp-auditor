@@ -34,5 +34,9 @@ def runs_failing(cell: Cell, runs: int) -> list[VerdictMap]:
 
 
 def a_run_failing(fails: int) -> VerdictMap:
-    """A run predicting FAIL on that many cells, all outside the ground truth."""
+    """A run predicting FAIL on that many cells, the cells of `a_ground_truth_failing`."""
     return {(f"tool_{index}", AuditCategory.INJECTION): EvalVerdict.FAIL for index in range(fails)}
+
+
+def a_ground_truth_failing(cells: int) -> GroundTruth:
+    return {(f"tool_{index}", AuditCategory.INJECTION): EvalVerdict.FAIL for index in range(cells)}

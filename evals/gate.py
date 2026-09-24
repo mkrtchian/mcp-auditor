@@ -170,23 +170,27 @@ def metric_resolutions(
 ) -> dict[str, float]:
     """One misclassified case's move on each averaged metric (ADR 016).
 
-    Precision is averaged per run over that run's predicted FAILs, outside the ground truth
-    included, so its figure is the largest single-case move across runs: the run with the
-    fewest predicted FAILs. A run predicting none moves it the most: one false positive takes
-    that run's precision from 1 to 0.
+    Precision is averaged per run over that run's predicted FAILs on the cells of the ground
+    truth, so its figure is the largest single-case move across runs: the run with the fewest
+    predicted FAILs. A run predicting none moves it the most: one false positive takes that
+    run's precision from 1 to 0.
     """
     runs = len(verdict_maps)
     expected_fails = sum(1 for verdict in ground_truth.values() if verdict == EvalVerdict.FAIL)
     return {
         "recall": _one_case_in(expected_fails * runs),
-        "precision": _largest_precision_move(verdict_maps),
+        "precision": _largest_precision_move(verdict_maps, ground_truth),
         "distribution_coverage": _one_case_in(tool_count * len(AuditCategory) * runs),
     }
 
 
-def _largest_precision_move(verdict_maps: list[VerdictMap]) -> float:
+def _largest_precision_move(verdict_maps: list[VerdictMap], ground_truth: GroundTruth) -> float:
     predicted_fails = [
-        sum(1 for verdict in verdicts.values() if verdict == EvalVerdict.FAIL)
+        sum(
+            1
+            for cell, verdict in verdicts.items()
+            if verdict == EvalVerdict.FAIL and cell in ground_truth
+        )
         for verdicts in verdict_maps
     ]
     moves = [_one_case_in(len(verdict_maps) * max(fails, 1)) for fails in predicted_fails]

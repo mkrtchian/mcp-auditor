@@ -267,7 +267,7 @@ def test_deltas_cover_the_gated_metrics_only():
     assert set(deltas) == set(FLOORS)
 
 
-def test_precision_resolution_counts_a_fail_outside_the_ground_truth():
+def test_precision_resolution_ignores_a_fail_outside_the_ground_truth():
     outside = ("other_tool", AuditCategory.INJECTION)
     maps: list[VerdictMap] = [
         {VULNERABLE_CELL: EvalVerdict.FAIL, outside: EvalVerdict.FAIL},
@@ -276,13 +276,13 @@ def test_precision_resolution_counts_a_fail_outside_the_ground_truth():
 
     resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
 
-    assert math.isclose(resolutions["precision"], 1 / (2 * 2))
+    assert math.isclose(resolutions["precision"], 1 / (2 * 1))
 
 
 def test_precision_resolution_is_the_largest_single_case_move_across_runs():
     maps = [given.a_run_failing(fails=1), given.a_run_failing(fails=9)]
 
-    resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
+    resolutions = metric_resolutions(maps, given.a_ground_truth_failing(33), 1)
 
     assert math.isclose(resolutions["precision"], 1 / (2 * 1))
 
@@ -294,7 +294,7 @@ def test_precision_resolution_counts_a_run_without_predicted_fail():
         given.a_run_failing(fails=33),
     ]
 
-    resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
+    resolutions = metric_resolutions(maps, given.a_ground_truth_failing(33), 1)
 
     assert math.isclose(resolutions["precision"], 1 / 3)
 
@@ -302,7 +302,7 @@ def test_precision_resolution_counts_a_run_without_predicted_fail():
 def test_precision_resolution_without_predicted_fail_is_one_case_per_run():
     maps = [given.a_run_failing(fails=0), given.a_run_failing(fails=0)]
 
-    resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
+    resolutions = metric_resolutions(maps, given.a_ground_truth_failing(33), 1)
 
     assert math.isclose(resolutions["precision"], 1 / 2)
 
