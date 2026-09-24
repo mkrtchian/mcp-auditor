@@ -74,13 +74,18 @@ class TestToolResponse:
 
 class TestTokenUsage:
     def test_add_accumulates(self):
-        a = TokenUsage(input_tokens=100, output_tokens=50)
-        b = TokenUsage(input_tokens=200, output_tokens=100)
+        a = TokenUsage(
+            input_tokens=100, output_tokens=50, cached_input_tokens=40, reasoning_tokens=10
+        )
+        b = TokenUsage(
+            input_tokens=200, output_tokens=100, cached_input_tokens=60, reasoning_tokens=30
+        )
 
         total = a.add(b)
 
-        assert total.input_tokens == 300
-        assert total.output_tokens == 150
+        assert total == TokenUsage(
+            input_tokens=300, output_tokens=150, cached_input_tokens=100, reasoning_tokens=40
+        )
 
     def test_add_does_not_mutate(self):
         a = TokenUsage(input_tokens=100, output_tokens=50)

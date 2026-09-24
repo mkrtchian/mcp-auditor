@@ -58,3 +58,55 @@ def test_unknown_provider(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(ValueError, match="Unknown provider"):
         settings.resolve_model()
+
+
+def _settings(provider: str, reasoning: str = "") -> Settings:
+    return Settings(provider=provider, model="", judge_model="", reasoning=reasoning)
+
+
+def test_google_resolves_minimal_reasoning_for_its_default_model() -> None:
+    settings = _settings("google")
+
+    model = settings.resolve_model()
+
+    assert model == "gemini-3.1-flash-lite"
+    assert settings.resolve_reasoning(model) == "minimal"
+
+
+def test_anthropic_resolves_no_reasoning_for_its_default_model() -> None:
+    settings = _settings("anthropic")
+
+    model = settings.resolve_model()
+
+    assert model == "claude-haiku-4-5-20251001"
+    assert settings.resolve_reasoning(model) is None
+
+
+def test_a_model_other_than_the_default_resolves_no_reasoning_when_unset() -> None:
+    assert _settings("google").resolve_reasoning("gemini-3.1-pro-preview") is None
+
+
+def test_a_model_other_than_the_default_takes_the_explicit_reasoning() -> None:
+    settings = _settings("google", reasoning="high")
+
+    assert settings.resolve_reasoning("gemini-3.1-pro-preview") == "high"
+
+
+def test_an_accepted_explicit_reasoning_is_returned_as_set() -> None:
+    settings = _settings("google", reasoning="low")
+
+    assert settings.resolve_reasoning(settings.resolve_model()) == "low"
+
+
+def test_a_reasoning_the_provider_does_not_accept_raises_naming_the_accepted_values() -> None:
+    settings = _settings("google", reasoning="max")
+
+    with pytest.raises(ValueError, match="minimal, low, medium, high"):
+        settings.resolve_reasoning(settings.resolve_model())
+
+
+def test_anthropic_with_any_reasoning_raises() -> None:
+    settings = _settings("anthropic", reasoning="low")
+
+    with pytest.raises(ValueError, match="takes no reasoning setting"):
+        settings.resolve_reasoning(settings.resolve_model())

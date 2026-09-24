@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `MCP_AUDITOR_REASONING` sets the reasoning level sent to the main and judge models (`minimal`, `low`, `medium` or `high` with `google`, refused with `anthropic`). Unset, the provider's default applies to its default model only, and a model named by `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` gets its API default.
+
 ### Changed
 
+- Gemini's thinking level is now set explicitly to `minimal` for the default model. It is the API default, now pinned, so a change of default on the API side no longer changes the audit.
+- Token usage in JSON reports gains `cached_input_tokens` (a subset of `input_tokens`) and `reasoning_tokens` (a subset of `output_tokens`).
 - The honeypot eval ground truth is revised by rubric: four labels changed after the servers were written return to their creation verdict, and four cells whose planted flaw cannot be tied to a mechanism or a category leave it, which keeps 36 cells, 8 of them expected failures. Precision, its resolution and consistency now count only the cells of the ground truth. The rubric and the revision are recorded in `docs/labeling-log.md`.
 - The generator, judge and chain planning prompts no longer name the values, errors or tools of this repo's test servers. A few lines written while tuning against those servers asked for them by name or described their tools one by one, and they now state the general rule instead. A unit test fails when a shipped string contains a discriminating literal of the three test servers. Audits of other servers see prompts that no longer steer toward this repo's fixtures, and the repo's own eval numbers are expected to move.
 - The e2e evals gate against a recorded baseline once one exists (`evals/baselines/honeypot_e2e.json`, written by `--record-baseline`). A stable cell that flips is replayed and fails the build when the flip reproduces, and recall, precision and distribution coverage each keep an absolute floor. A run whose conditions, ground truth or honeypot sources differ from the baseline's is reported not comparable and exits `3`. So is a run where fewer runs completed than were requested, in every mode, the absolute thresholds included, and a baseline file whose runs do not match its conditions or the ground truth is refused before any LLM call. A crash of the eval runner exits `4` instead of `1`, which read as a red gate. No baseline is recorded yet, so the absolute thresholds still gate. `--ungated` runs on the floors alone, at any conditions. CI runs the e2e evals at 3 runs and budget 10, the conditions a baseline is recorded at, instead of 2 runs and budget 7. See [ADR 016](docs/adr/016-eval-gate-governance.md).

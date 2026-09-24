@@ -192,6 +192,7 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `MCP_AUDITOR_PROVIDER`     | `google`             | LLM provider: `google` or `anthropic`     |
 | `MCP_AUDITOR_MODEL`        | per-provider default | Override the main model name              |
 | `MCP_AUDITOR_JUDGE_MODEL`  | same as main model   | Separate model for verdict classification |
+| `MCP_AUDITOR_REASONING`    | per-provider default | Reasoning setting sent to the main and judge models: `minimal`, `low`, `medium` or `high` for `google`, not accepted for `anthropic` |
 | `GOOGLE_API_KEY`           | --                   | Required when provider is `google`        |
 | `ANTHROPIC_API_KEY`        | --                   | Required when provider is `anthropic`     |
 | `LANGSMITH_TRACING`        | --                   | Set to `true` to activate tracing         |
@@ -200,7 +201,7 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `LANGSMITH_ENDPOINT`       | US region            | Set to the EU URL if your workspace is EU |
 | `MCP_AUDITOR_TOOL_CALL_TIMEOUT` | `30`           | Seconds before a tool call is abandoned and judged as a timeout error |
 
-With the default `google` provider, the main model and the judge both run `gemini-3.1-flash-lite`. With `anthropic` they run `claude-haiku-4-5-20251001`.
+With the default `google` provider, the main model and the judge both run `gemini-3.1-flash-lite` at thinking level `minimal`. With `anthropic` they run `claude-haiku-4-5-20251001` with no reasoning setting. The default reasoning applies to the provider's default model only: a model named by `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` is sent no reasoning setting, so its API default applies, unless `MCP_AUDITOR_REASONING` is set.
 
 ### CLI options
 

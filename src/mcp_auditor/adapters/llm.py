@@ -1,4 +1,4 @@
-from typing import Any, TypedDict, cast
+from typing import Any, NotRequired, TypedDict, cast
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
@@ -10,32 +10,49 @@ from mcp_auditor.domain.models import TokenUsage
 
 
 def create_llm(settings: Settings) -> "LLM":
-    return _create_for_provider(settings.provider, settings.resolve_model())
+    return _create_for_provider(settings, settings.resolve_model())
 
 
 def create_judge_llm(settings: Settings) -> "LLM":
-    return _create_for_provider(settings.provider, settings.resolve_judge_model())
+    return _create_for_provider(settings, settings.resolve_judge_model())
 
 
-def _create_for_provider(provider: str, model: str) -> "LLM":
-    if provider == "anthropic":
-        return LLM(_make_anthropic_model(model), max_parse_attempts=3)
-    if provider == "google":
-        return LLM(_make_google_model(model), max_parse_attempts=3)
-    raise ValueError(f"Unknown provider: {provider!r}. Use 'google' or 'anthropic'.")
+def _create_for_provider(settings: Settings, model: str) -> "LLM":
+    return LLM(make_chat_model(settings, model), max_parse_attempts=3)
+
+
+def make_chat_model(settings: Settings, model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    reasoning = settings.resolve_reasoning(model)
+    if settings.provider == "anthropic":
+        return _make_anthropic_model(model)
+    if settings.provider == "google":
+        return _make_google_model(model, reasoning)
+    raise ValueError(f"Unknown provider: {settings.provider!r}. Use 'google' or 'anthropic'.")
 
 
 def _make_anthropic_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
     return ChatAnthropic(model=model, max_retries=3)  # type: ignore[arg-type]
 
 
-def _make_google_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
-    return ChatGoogleGenerativeAI(model=model, max_retries=3)  # pyright: ignore[reportUnknownArgumentType]
+def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    if reasoning is None:
+        return ChatGoogleGenerativeAI(model=model, max_retries=3)  # pyright: ignore[reportUnknownArgumentType]
+    return ChatGoogleGenerativeAI(model=model, thinking_level=reasoning, max_retries=3)  # pyright: ignore[reportUnknownArgumentType,reportArgumentType]
+
+
+class _InputTokenDetails(TypedDict):
+    cache_read: NotRequired[int]
+
+
+class _OutputTokenDetails(TypedDict):
+    reasoning: NotRequired[int]
 
 
 class _UsageMetadata(TypedDict):
     input_tokens: int
     output_tokens: int
+    input_token_details: NotRequired[_InputTokenDetails]
+    output_token_details: NotRequired[_OutputTokenDetails]
 
 
 class LLM:
@@ -80,4 +97,6 @@ def _to_token_usage(metadata: _UsageMetadata | None) -> TokenUsage:
     return TokenUsage(
         input_tokens=metadata["input_tokens"],
         output_tokens=metadata["output_tokens"],
+        cached_input_tokens=metadata.get("input_token_details", {}).get("cache_read", 0),
+        reasoning_tokens=metadata.get("output_token_details", {}).get("reasoning", 0),
     )
