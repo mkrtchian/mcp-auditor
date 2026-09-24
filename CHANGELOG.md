@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Two LLM providers: `openai` (default model `gpt-6-luna` at reasoning effort `low`, needs `OPENAI_API_KEY`) and `fireworks` (default model GLM-5.3-Flash with no reasoning setting, needs `FIREWORKS_API_KEY`). Set `MCP_AUDITOR_PROVIDER` to select one.
 - `MCP_AUDITOR_REASONING` sets the reasoning level sent to the main and judge models (`minimal`, `low`, `medium` or `high` with `google`, refused with `anthropic`). Unset, the provider's default applies to its default model only, and a model named by `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` gets its API default.
 
 ### Changed

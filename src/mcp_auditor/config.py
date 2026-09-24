@@ -52,6 +52,16 @@ _PROVIDERS = {
         reasoning=None,
         accepted_reasoning=(),
     ),
+    "openai": _ProviderDefaults(
+        model="gpt-6-luna",
+        reasoning="low",
+        accepted_reasoning=("none", "low", "medium", "high", "xhigh", "max"),
+    ),
+    "fireworks": _ProviderDefaults(
+        model="accounts/fireworks/models/glm-5p3-flash",
+        reasoning=None,
+        accepted_reasoning=("low", "medium", "high"),
+    ),
 }
 
 
@@ -61,7 +71,9 @@ def _default_model(provider: str) -> str:
 
 def _provider_defaults(provider: str) -> _ProviderDefaults:
     if provider not in _PROVIDERS:
-        raise ValueError(f"Unknown provider: {provider!r}. Use 'google' or 'anthropic'.")
+        raise ValueError(
+            f"Unknown provider: {provider!r}. Use 'google', 'anthropic', 'openai' or 'fireworks'."
+        )
     return _PROVIDERS[provider]
 
 

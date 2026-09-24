@@ -29,6 +29,8 @@ dependencies = [
     "rich>=13.0",
     "pydantic-settings>=2.0",
     "pyyaml>=6.0",
+    "langchain-openai>=1.6.6",
+    "langchain-fireworks>=1.6.2",
 ]
 
 [project.urls]

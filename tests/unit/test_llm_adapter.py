@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from mcp_auditor.adapters.llm import LLM, make_chat_model
+from mcp_auditor.adapters.llm import LLM, StructuredOutput, make_chat_model
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import TokenUsage
 
@@ -19,8 +19,12 @@ class _FakeAIMessage:
     usage_metadata: dict[str, Any]
 
 
+_PYDANTIC_SCHEMA = StructuredOutput(method="json_schema")
+_DICT_SCHEMA = StructuredOutput(method="json_schema", schema_as_dict=True)
+
+
 def _raw_response(
-    parsed: BaseModel | None,
+    parsed: BaseModel | dict[str, Any] | None,
     input_tokens: int,
     output_tokens: int,
     details: dict[str, dict[str, int]] | None = None,
@@ -67,7 +71,7 @@ class TestTokenAccumulationOnRetry:
             _raw_response(None, 100, 50, _details(cache_read=30, reasoning=10)),
             _raw_response(_DummyOutput(value="ok"), 100, 50, _details(cache_read=20, reasoning=5)),
         ]
-        llm = LLM(_FakeModel(responses), max_parse_attempts=3)
+        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -80,7 +84,7 @@ class TestTokenAccumulationOnRetry:
         responses = [
             _raw_response(parsed=_DummyOutput(value="ok"), input_tokens=100, output_tokens=50),
         ]
-        llm = LLM(_FakeModel(responses), max_parse_attempts=3)
+        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -93,7 +97,7 @@ class TestTokenDetails:
         responses = [
             _raw_response(_DummyOutput(value="ok"), 100, 50, _details(cache_read=40, reasoning=20)),
         ]
-        llm = LLM(_FakeModel(responses), max_parse_attempts=3)
+        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -103,12 +107,44 @@ class TestTokenDetails:
     @pytest.mark.asyncio
     async def test_metadata_without_details_leaves_them_at_zero(self):
         responses = [_raw_response(_DummyOutput(value="ok"), 100, 50)]
-        llm = LLM(_FakeModel(responses), max_parse_attempts=3)
+        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
         assert usage.cached_input_tokens == 0
         assert usage.reasoning_tokens == 0
+
+
+class TestDictSchema:
+    @pytest.mark.asyncio
+    async def test_a_dict_matching_the_schema_is_returned_as_the_model(self):
+        responses = [_raw_response({"value": "ok"}, 100, 50)]
+        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        output, _ = await llm.generate_structured("prompt", _DummyOutput)
+
+        assert output == _DummyOutput(value="ok")
+
+    @pytest.mark.asyncio
+    async def test_a_dict_failing_validation_is_retried_with_its_usage_counted(self):
+        responses = [
+            _raw_response({"unexpected": 1}, 100, 50),
+            _raw_response({"value": "ok"}, 100, 50),
+        ]
+        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        output, usage = await llm.generate_structured("prompt", _DummyOutput)
+
+        assert output == _DummyOutput(value="ok")
+        assert usage == TokenUsage(input_tokens=200, output_tokens=100)
+
+    @pytest.mark.asyncio
+    async def test_dicts_failing_validation_on_every_attempt_raise(self):
+        responses = [_raw_response({"unexpected": 1}, 100, 50) for _ in range(3)]
+        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(ValueError, match="unparseable output after 3 attempts"):
+            await llm.generate_structured("prompt", _DummyOutput)
 
 
 class TestMakeChatModel:
@@ -139,3 +175,43 @@ class TestMakeChatModel:
         chat_model = make_chat_model(settings, settings.resolve_model())
 
         assert getattr(chat_model, "model", None) == "claude-haiku-4-5-20251001"
+
+    def test_openai_builds_luna_at_low_reasoning(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "dummy")
+        settings = Settings(provider="openai", model="", judge_model="", reasoning="")
+
+        chat_model = make_chat_model(settings, settings.resolve_model())
+
+        assert getattr(chat_model, "model_name", None) == "gpt-6-luna"
+        assert getattr(chat_model, "reasoning_effort", None) == "low"
+
+    def test_fireworks_builds_glm_with_no_reasoning(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
+        settings = Settings(provider="fireworks", model="", judge_model="", reasoning="")
+
+        chat_model = make_chat_model(settings, settings.resolve_model())
+
+        assert getattr(chat_model, "model_name", None) == "accounts/fireworks/models/glm-5p3-flash"
+        assert getattr(chat_model, "reasoning_effort", "unset") is None
+
+    def test_fireworks_passes_an_explicit_reasoning(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
+        settings = Settings(provider="fireworks", model="", judge_model="", reasoning="high")
+
+        chat_model = make_chat_model(settings, settings.resolve_model())
+
+        assert getattr(chat_model, "reasoning_effort", None) == "high"
+
+    def test_openai_without_its_key_raises_naming_it(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        settings = Settings(provider="openai", model="", judge_model="", reasoning="")
+
+        with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+            make_chat_model(settings, settings.resolve_model())
+
+    def test_openai_with_an_empty_key_raises_naming_it(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "")
+        settings = Settings(provider="openai", model="", judge_model="", reasoning="")
+
+        with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+            make_chat_model(settings, settings.resolve_model())

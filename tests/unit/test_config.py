@@ -50,14 +50,16 @@ def test_judge_model_override(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.resolve_judge_model() == "pro"
 
 
-def test_unknown_provider(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "openai")
+def test_unknown_provider_names_the_four_providers(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "mistral")
     monkeypatch.delenv("MCP_AUDITOR_MODEL", raising=False)
 
     settings = Settings()
 
-    with pytest.raises(ValueError, match="Unknown provider"):
+    with pytest.raises(ValueError, match="Unknown provider") as error:
         settings.resolve_model()
+    for provider in ("google", "anthropic", "openai", "fireworks"):
+        assert provider in str(error.value)
 
 
 def _settings(provider: str, reasoning: str = "") -> Settings:
@@ -109,4 +111,35 @@ def test_anthropic_with_any_reasoning_raises() -> None:
     settings = _settings("anthropic", reasoning="low")
 
     with pytest.raises(ValueError, match="takes no reasoning setting"):
+        settings.resolve_reasoning(settings.resolve_model())
+
+
+def test_openai_resolves_luna_at_low_reasoning_by_default() -> None:
+    settings = _settings("openai")
+
+    model = settings.resolve_model()
+
+    assert model == "gpt-6-luna"
+    assert settings.resolve_reasoning(model) == "low"
+
+
+def test_fireworks_resolves_glm_with_no_reasoning_by_default() -> None:
+    settings = _settings("fireworks")
+
+    model = settings.resolve_model()
+
+    assert model == "accounts/fireworks/models/glm-5p3-flash"
+    assert settings.resolve_reasoning(model) is None
+
+
+def test_fireworks_passes_an_explicit_reasoning_through() -> None:
+    settings = _settings("fireworks", reasoning="high")
+
+    assert settings.resolve_reasoning(settings.resolve_model()) == "high"
+
+
+def test_openai_rejects_minimal_naming_its_accepted_values() -> None:
+    settings = _settings("openai", reasoning="minimal")
+
+    with pytest.raises(ValueError, match="none, low, medium, high, xhigh, max"):
         settings.resolve_reasoning(settings.resolve_model())
