@@ -5,6 +5,7 @@ from mcp_auditor.domain.models import (
     AuditReport,
     ChainGoal,
     ChainStep,
+    CoverageGap,
     EvalResult,
     EvalVerdict,
     ExecutionRecord,
@@ -213,6 +214,16 @@ def a_confined_record(
         read_only_paths=read_only_paths if read_only_paths is not None else [],
         oom_killed=oom_killed,
     )
+
+
+def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
+    report = a_two_tool_report()
+    report.tool_reports[0].coverage_gap = CoverageGap(
+        requested_cases=10,
+        received_cases=7,
+        missing_categories=[AuditCategory.INJECTION, AuditCategory.RESOURCE_ABUSE],
+    )
+    return report
 
 
 def a_report_with_execution(record: ExecutionRecord) -> AuditReport:

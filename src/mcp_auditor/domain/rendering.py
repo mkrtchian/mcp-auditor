@@ -6,6 +6,7 @@ from mcp_auditor.domain.models import (
     AttackChain,
     AuditReport,
     ChainStep,
+    CoverageGap,
     EvalResult,
     EvalVerdict,
     ExecutionRecord,
@@ -94,8 +95,20 @@ def _blocked_count(report: AuditReport) -> int:
     )
 
 
+def describe_coverage_gap(gap: CoverageGap) -> str:
+    description = (
+        f"{gap.received_cases} of {gap.requested_cases} requested cases generated after one retry"
+    )
+    if gap.missing_categories:
+        missing = ", ".join(category.value for category in gap.missing_categories)
+        description += f", missing categories: {missing}"
+    return description
+
+
 def _render_tool_section(tool_report: ToolReport) -> str:
     lines = [f"\n## {tool_report.tool.name}\n"]
+    if tool_report.coverage_gap is not None:
+        lines.append(f"**Coverage gap**: {describe_coverage_gap(tool_report.coverage_gap)}\n")
     for case in tool_report.cases:
         if case.eval_result is not None:
             lines.append(_render_result_section(case.eval_result))

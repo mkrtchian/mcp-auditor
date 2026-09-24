@@ -348,3 +348,36 @@ def test_json_execution_is_null_without_a_record():
     data = json.loads(render_json(report))
 
     assert data["execution"] is None
+
+
+def test_markdown_flags_a_coverage_gap_right_under_the_tool_heading():
+    report = given.a_report_with_a_coverage_gap_on_get_user()
+
+    result = render_markdown(report)
+
+    section = result.split("## get_user\n")[1]
+    gap_line = section.strip().splitlines()[0]
+    assert gap_line.startswith("**Coverage gap**")
+    assert "7 of 10" in gap_line
+    assert "injection, resource_abuse" in gap_line
+
+
+def test_markdown_has_no_coverage_gap_line_without_a_gap():
+    report = given.a_two_tool_report()
+
+    result = render_markdown(report)
+
+    assert "Coverage gap" not in result
+
+
+def test_json_carries_the_coverage_gap():
+    report = given.a_report_with_a_coverage_gap_on_get_user()
+
+    tool_reports = json.loads(render_json(report))["tool_reports"]
+
+    assert tool_reports[0]["coverage_gap"] == {
+        "requested_cases": 10,
+        "received_cases": 7,
+        "missing_categories": ["injection", "resource_abuse"],
+    }
+    assert tool_reports[1]["coverage_gap"] is None

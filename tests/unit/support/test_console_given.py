@@ -7,6 +7,7 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
+    CoverageGap,
     EvalResult,
     EvalVerdict,
     Severity,
@@ -112,6 +113,16 @@ def a_report_with_two_tools() -> AuditReport:
         ],
         token_usage=TokenUsage(input_tokens=1234, output_tokens=567),
     )
+
+
+def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
+    report = a_report_with_two_tools()
+    report.tool_reports[0].coverage_gap = CoverageGap(
+        requested_cases=10,
+        received_cases=7,
+        missing_categories=[AuditCategory.INJECTION],
+    )
+    return report
 
 
 def _a_passing_case(tool_name: str) -> TestCase:

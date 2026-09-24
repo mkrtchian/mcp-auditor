@@ -1,3 +1,5 @@
+from rich.text import Text
+
 import tests.unit.support.test_console_given as given
 from mcp_auditor.domain.models import AuditCategory, ExecutionRegime, Severity
 
@@ -116,3 +118,39 @@ def test_ci_mode_progress_prints_tool_summary():
     assert "get_user" in output
     assert "1 failed" in output
     assert "injection" in output
+
+
+def test_summary_warns_about_a_tool_with_a_coverage_gap():
+    report = given.a_report_with_a_coverage_gap_on_get_user()
+    display, buffer = given.a_display()
+
+    display.print_summary(report)
+
+    output = Text.from_ansi(buffer.getvalue()).plain
+    assert output.count("Warning") == 1
+    warning = " ".join(output.split("Warning")[1].split())
+    assert "get_user" in warning
+    assert "7 of 10" in warning
+    assert "injection" in warning
+
+
+def test_ci_mode_summary_warns_about_a_tool_with_a_coverage_gap():
+    report = given.a_report_with_a_coverage_gap_on_get_user()
+    display, buffer = given.a_ci_display()
+
+    display.print_summary(report)
+
+    output = buffer.getvalue()
+    assert output.count("Warning") == 1
+    warning = " ".join(output.split("Warning")[1].split())
+    assert "get_user" in warning
+    assert "7 of 10" in warning
+
+
+def test_summary_has_no_warning_without_a_coverage_gap():
+    report = given.a_report_with_two_tools()
+    display, buffer = given.a_display()
+
+    display.print_summary(report)
+
+    assert "Warning" not in buffer.getvalue()

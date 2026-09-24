@@ -189,6 +189,7 @@ class Audit:
             self._display.print_dry_run_payloads(
                 report.tool.name, [c.payload for c in report.cases]
             )
+            self._display.print_coverage_gap(report)
 
     def _give_up(
         self,

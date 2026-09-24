@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A generated test case batch that holds fewer cases than the budget, or fewer categories than requested, is asked for once more. A tool whose batch is still incomplete after that retry is flagged with the requested and received case counts and the missing categories: a warning in the console and the dry run, a line under the tool heading in the Markdown report, and a `coverage_gap` entry on the tool report in JSON (`null` when the batch is complete).
 - Gemini's thinking level is now set explicitly to `minimal` for the default model. It is the API default, now pinned, so a change of default on the API side no longer changes the audit.
 - Token usage in JSON reports gains `cached_input_tokens` (a subset of `input_tokens`) and `reasoning_tokens` (a subset of `output_tokens`).
 - The honeypot eval ground truth is revised by rubric: four labels changed after the servers were written return to their creation verdict, and four cells whose planted flaw cannot be tied to a mechanism or a category leave it, which keeps 36 cells, 8 of them expected failures. Precision, its resolution and consistency now count only the cells of the ground truth. The rubric and the revision are recorded in `docs/labeling-log.md`.

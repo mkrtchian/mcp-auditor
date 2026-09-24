@@ -19,10 +19,12 @@ from mcp_auditor.domain.models import (
     ExecutionRegime,
     Severity,
     TokenUsage,
+    ToolReport,
 )
 from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.rendering import (
     ToolSummary,
+    describe_coverage_gap,
     format_severity_breakdown,
     render_summary,
     summarize_tools,
@@ -69,12 +71,23 @@ class AuditDisplay:
     def print_summary(self, report: AuditReport) -> None:
         if self._ci_mode:
             self._console.print(render_summary(report))
-            return
+        else:
+            self._print_results_panel(report)
+        for tool_report in report.tool_reports:
+            self.print_coverage_gap(tool_report)
+
+    def _print_results_panel(self, report: AuditReport) -> None:
         table, total_pass, total_judged = _build_summary_table(report)
         score_line = _format_score_markup(total_pass, total_judged)
         token_line = _format_token_usage(report.token_usage)
         panel = Panel(table, title="Results", subtitle=f"{score_line}  |  {token_line}")
         self._console.print(panel)
+
+    def print_coverage_gap(self, tool_report: ToolReport) -> None:
+        if tool_report.coverage_gap is None:
+            return
+        gap = describe_coverage_gap(tool_report.coverage_gap)
+        self.print_warning(f"{tool_report.tool.name}: incomplete test batch, {gap}")
 
     def print_findings_recap(self, report: AuditReport) -> None:
         findings = sorted(report.findings, key=lambda f: f.severity, reverse=True)
