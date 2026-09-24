@@ -30,8 +30,6 @@ class Candidate:
     reasoning_expected: bool | None
 
 
-_LUNA_PRICES = Prices(input=0.10, cached_input=0.01, output=0.50)
-
 # Gemini `minimal` does not switch thinking fully off, so its tokens are not checked.
 REFERENCE = Candidate(
     name="gemini-3.1-flash-lite minimal",
@@ -43,29 +41,42 @@ REFERENCE = Candidate(
 )
 
 CHALLENGERS = [
+    # Alibaba lists no cached-input rate for this model, so cached input is priced as input.
     Candidate(
-        name="gpt-6-luna none",
-        settings=Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none"),
-        prices=_LUNA_PRICES,
+        name="qwen3.8-flash thinking off",
+        settings=Settings(provider="alibaba", model="qwen3.8-flash", judge_model="", reasoning=""),
+        prices=Prices(input=0.15, cached_input=0.15, output=0.47),
         reasoning_expected=False,
     ),
+    # langchain-fireworks does not report reasoning tokens, so the check has nothing to read.
     Candidate(
-        name="gpt-6-luna low",
-        settings=Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="low"),
-        prices=_LUNA_PRICES,
-        reasoning_expected=True,
-    ),
-    # The enforced schema disables GLM's reasoning, and langchain-fireworks does not
-    # report reasoning tokens, so the check has nothing to read.
-    Candidate(
-        name="glm-5p3-flash",
+        name="glm-5p3-flash medium",
         settings=Settings(
             provider="fireworks",
             model="accounts/fireworks/models/glm-5p3-flash",
             judge_model="",
-            reasoning="",
+            reasoning="medium",
         ),
         prices=Prices(input=0.15, cached_input=0.03, output=0.50),
         reasoning_expected=None,
     ),
+    Candidate(
+        name="gpt-6-luna medium",
+        settings=Settings(
+            provider="openai", model="gpt-6-luna", judge_model="", reasoning="medium"
+        ),
+        prices=Prices(input=0.10, cached_input=0.01, output=0.50),
+        reasoning_expected=True,
+    ),
 ]
+
+# Measured beside the reference and given no verdict: ADR 019 moves to it when no
+# challenger is admitted, whatever bar it fails.
+FALLBACK = Candidate(
+    name="gemini-3.5-flash-lite minimal",
+    settings=Settings(
+        provider="google", model="gemini-3.5-flash-lite", judge_model="", reasoning="minimal"
+    ),
+    prices=Prices(input=0.30, cached_input=0.03, output=2.50),
+    reasoning_expected=None,
+)

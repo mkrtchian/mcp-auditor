@@ -114,22 +114,22 @@ def test_anthropic_with_any_reasoning_raises() -> None:
         settings.resolve_reasoning(settings.resolve_model())
 
 
-def test_openai_resolves_luna_at_low_reasoning_by_default() -> None:
+def test_openai_resolves_luna_at_medium_reasoning_by_default() -> None:
     settings = _settings("openai")
 
     model = settings.resolve_model()
 
     assert model == "gpt-6-luna"
-    assert settings.resolve_reasoning(model) == "low"
+    assert settings.resolve_reasoning(model) == "medium"
 
 
-def test_fireworks_resolves_glm_with_no_reasoning_by_default() -> None:
+def test_fireworks_resolves_glm_at_medium_reasoning_by_default() -> None:
     settings = _settings("fireworks")
 
     model = settings.resolve_model()
 
     assert model == "accounts/fireworks/models/glm-5p3-flash"
-    assert settings.resolve_reasoning(model) is None
+    assert settings.resolve_reasoning(model) == "medium"
 
 
 def test_fireworks_passes_an_explicit_reasoning_through() -> None:

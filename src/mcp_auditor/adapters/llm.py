@@ -75,9 +75,10 @@ def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:  # p
 
 # Without it, a probe run once hung 17 minutes on one OpenAI response.
 _REQUEST_TIMEOUT_SECONDS = 120
-# A normal batch takes under 2,200 output tokens. gpt-6-luna was seen looping on a
-# literal "very long string" payload up to its 128k-token limit.
-_MAX_OUTPUT_TOKENS = 4096
+# Bounds a loop: gpt-6-luna was seen writing a literal "very long string" payload up to
+# its 128k-token limit. The cap counts reasoning on some providers, and a batch at
+# medium reasoning was seen near 3,000 tokens.
+_MAX_OUTPUT_TOKENS = 8192
 
 
 def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]

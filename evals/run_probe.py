@@ -28,7 +28,7 @@ from evals.probe import (
     reference_failures,
     summarize,
 )
-from evals.probe_candidates import CHALLENGERS, PRICES_DATE, REFERENCE, Candidate
+from evals.probe_candidates import CHALLENGERS, FALLBACK, PRICES_DATE, REFERENCE, Candidate
 from evals.probe_corpus import ProbeCall, ProbeCorpus, Role, load_corpus, schema_for
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.domain.coverage import find_coverage_gap
@@ -37,7 +37,7 @@ from mcp_auditor.domain.ports import LLMPort, UnparseableOutput
 
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 DEFAULT_REPORT_PATH = "output/probe_report.json"
-CANDIDATES = [REFERENCE, *CHALLENGERS]
+CANDIDATES = [REFERENCE, *CHALLENGERS, FALLBACK]
 
 console = Console()
 
@@ -57,6 +57,7 @@ class ProbeResult:
     reference: CandidateStats
     challengers: list[CandidateStats]
     admissions: list[Admission]
+    fallback: CandidateStats
 
 
 def main() -> None:
@@ -163,7 +164,7 @@ def _analyze(corpus: ProbeCorpus, observations: list[ProbeObservation]) -> Probe
         summarize(c, [o for o in observations if o.candidate == c.name], judge_weight)
         for c in CANDIDATES
     ]
-    reference, challengers = stats[0], stats[1:]
+    reference, challengers, fallback = stats[0], stats[1:-1], stats[-1]
     return ProbeResult(
         corpus=corpus,
         judge_weight=judge_weight,
@@ -171,6 +172,7 @@ def _analyze(corpus: ProbeCorpus, observations: list[ProbeObservation]) -> Probe
         reference=reference,
         challengers=challengers,
         admissions=[admit(s, reference, Bars()) for s in challengers],
+        fallback=fallback,
     )
 
 
@@ -189,6 +191,10 @@ def _write_report(path: Path, result: ProbeResult) -> None:
         "reference_failed_bars_recorded_only": reference_failures(result.reference, Bars()),
         "challengers": [s.model_dump() for s in result.challengers],
         "admissions": [a.model_dump() for a in result.admissions],
+        "fallback": result.fallback.model_dump(),
+        "fallback_against_the_bars_recorded_only": admit(
+            result.fallback, result.reference, Bars()
+        ).model_dump(),
         "observations": [o.model_dump(mode="json") for o in result.observations],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -221,6 +227,7 @@ def _print_table(result: ProbeResult) -> None:
     for stats, admission in zip(result.challengers, result.admissions, strict=True):
         verdict = "[green]admitted[/green]" if admission.admitted else "[red]not admitted[/red]"
         table.add_row(*_stats_cells(stats, result.reference), verdict)
+    table.add_row(*_stats_cells(result.fallback, result.reference), "fallback (recorded)")
     console.print(table)
     _print_reasons(result)
 
@@ -251,9 +258,14 @@ def _ratio(value: float, reference: float) -> str:
 def _print_reasons(result: ProbeResult) -> None:
     for reason in reference_failures(result.reference, Bars()):
         console.print(f"{result.reference.candidate} (recorded only): {reason}")
+    fallback = admit(result.fallback, result.reference, Bars())
+    for note in [*fallback.reasons, *fallback.latency_notes]:
+        console.print(f"{fallback.candidate} (recorded only): {note}")
     for admission in result.admissions:
         for reason in admission.reasons:
             console.print(f"{admission.candidate}: {reason}")
+        for note in admission.latency_notes:
+            console.print(f"{admission.candidate} (latency, advisory): {note}")
 
 
 if __name__ == "__main__":

@@ -54,12 +54,12 @@ _PROVIDERS = {
     ),
     "openai": _ProviderDefaults(
         model="gpt-6-luna",
-        reasoning="low",
+        reasoning="medium",
         accepted_reasoning=("none", "low", "medium", "high", "xhigh", "max"),
     ),
     "fireworks": _ProviderDefaults(
         model="accounts/fireworks/models/glm-5p3-flash",
-        reasoning=None,
+        reasoning="medium",
         accepted_reasoning=("low", "medium", "high"),
     ),
     # The adapter always turns Qwen's thinking off, so the provider takes no setting.

@@ -11,3 +11,9 @@ def rejected_for(admission: Admission, *words: str) -> None:
     assert any(all(word in reason for word in words) for reason in admission.reasons), (
         admission.reasons
     )
+
+
+def latency_noted(admission: Admission, *words: str) -> None:
+    assert any(all(word in note for word in words) for note in admission.latency_notes), (
+        admission.latency_notes
+    )

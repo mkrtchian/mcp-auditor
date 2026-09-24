@@ -41,7 +41,7 @@ See the README for the reproducibility rationale and the safety note (deliberate
 
 ### Model admission probe
 
-The probe measures candidate models on parse failures, refusals, latency and cost, on a frozen corpus of prompts, before any of them goes through the evals. The corpus is captured once on the reference settings, which needs Docker, the CVE images and `GOOGLE_API_KEY`, and is committed by hand. The probe then needs the key of every candidate (`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `FIREWORKS_API_KEY`):
+The probe measures candidate models on parse failures, refusals, latency and cost, on a frozen corpus of prompts, before any of them goes through the evals. The corpus is captured once on the reference settings, which needs Docker, the CVE images and `GOOGLE_API_KEY`, and is committed by hand. The probe then needs the key of every candidate (`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `FIREWORKS_API_KEY`, `DASHSCOPE_API_KEY`):
 
 ```bash
 uv run python -m evals.capture_probe_corpus  # writes evals/fixtures/probe_corpus.json

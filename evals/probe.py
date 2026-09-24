@@ -55,6 +55,7 @@ class Admission(BaseModel):
     candidate: str
     admitted: bool
     reasons: list[str]
+    latency_notes: list[str]  # ADR 019: recorded against its bar, never a refusal
 
 
 def summarize(
@@ -103,11 +104,15 @@ def call_cost(usage: TokenUsage, prices: Prices) -> float:
 def admit(stats: CandidateStats, reference: CandidateStats, bars: Bars) -> Admission:
     reasons = [
         *_count_reasons(stats),
-        *_latency_reasons(stats, reference, bars),
         *_cost_reasons(stats, reference, bars),
         *_reasoning_reasons(stats),
     ]
-    return Admission(candidate=stats.candidate, admitted=not reasons, reasons=reasons)
+    return Admission(
+        candidate=stats.candidate,
+        admitted=not reasons,
+        reasons=reasons,
+        latency_notes=_latency_notes(stats, reference, bars),
+    )
 
 
 def reference_failures(reference: CandidateStats, bars: Bars) -> list[str]:
@@ -126,7 +131,7 @@ def _count_reasons(stats: CandidateStats) -> list[str]:
     return reasons
 
 
-def _latency_reasons(stats: CandidateStats, reference: CandidateStats, bars: Bars) -> list[str]:
+def _latency_notes(stats: CandidateStats, reference: CandidateStats, bars: Bars) -> list[str]:
     return [
         f"{role} median latency {stats.median_seconds[role]:.2f} s against the reference's "
         f"{reference.median_seconds[role]:.2f} s (bar: at most {bars.max_latency_ratio} times)"

@@ -209,27 +209,27 @@ class TestMakeChatModel:
 
         assert getattr(chat_model, "model", None) == "claude-haiku-4-5-20251001"
 
-    def test_openai_builds_luna_at_low_reasoning(self, monkeypatch: pytest.MonkeyPatch):
+    def test_openai_builds_luna_at_medium_reasoning(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("OPENAI_API_KEY", "dummy")
         settings = Settings(provider="openai", model="", judge_model="", reasoning="")
 
         chat_model = make_chat_model(settings, settings.resolve_model())
 
         assert getattr(chat_model, "model_name", None) == "gpt-6-luna"
-        assert getattr(chat_model, "reasoning_effort", None) == "low"
+        assert getattr(chat_model, "reasoning_effort", None) == "medium"
         assert getattr(chat_model, "request_timeout", None) == 120
-        assert getattr(chat_model, "max_tokens", None) == 4096
+        assert getattr(chat_model, "max_tokens", None) == 8192
 
-    def test_fireworks_builds_glm_with_no_reasoning(self, monkeypatch: pytest.MonkeyPatch):
+    def test_fireworks_builds_glm_at_medium_reasoning(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
         settings = Settings(provider="fireworks", model="", judge_model="", reasoning="")
 
         chat_model = make_chat_model(settings, settings.resolve_model())
 
         assert getattr(chat_model, "model_name", None) == "accounts/fireworks/models/glm-5p3-flash"
-        assert getattr(chat_model, "reasoning_effort", "unset") is None
+        assert getattr(chat_model, "reasoning_effort", None) == "medium"
         assert getattr(chat_model, "request_timeout", None) == 120
-        assert getattr(chat_model, "max_tokens", None) == 4096
+        assert getattr(chat_model, "max_tokens", None) == 8192
 
     def test_fireworks_passes_an_explicit_reasoning(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
@@ -268,7 +268,7 @@ class TestMakeChatModel:
         assert getattr(chat_model, "extra_body", None) == {"enable_thinking": False}
         assert not getattr(chat_model, "use_responses_api", True)
         assert getattr(chat_model, "request_timeout", None) == 120
-        assert getattr(chat_model, "max_tokens", None) == 4096
+        assert getattr(chat_model, "max_tokens", None) == 8192
 
     @pytest.mark.parametrize("key", [None, ""])
     def test_alibaba_without_its_key_raises_naming_it(

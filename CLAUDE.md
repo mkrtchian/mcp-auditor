@@ -18,7 +18,7 @@ docker compose -f evals/docker/compose.yml build      # Build the pinned vulnera
 uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live (Docker, no LLM)
 uv run python -m evals.run_cve_benchmark              # CVE benchmark graded run (Docker + an LLM key)
 uv run python -m evals.capture_probe_corpus           # Capture evals/fixtures/probe_corpus.json once, reference settings only (Docker, the CVE images, GOOGLE_API_KEY), then commit it by hand
-uv run python -m evals.run_probe                      # Admission probe: replay the corpus against every candidate (needs GOOGLE_API_KEY, OPENAI_API_KEY and FIREWORKS_API_KEY, see evals/probe_method.md)
+uv run python -m evals.run_probe                      # Admission probe: replay the corpus against every candidate (needs GOOGLE_API_KEY, OPENAI_API_KEY, FIREWORKS_API_KEY and DASHSCOPE_API_KEY, see evals/probe_method.md)
 ```
 
 ## Coding standards

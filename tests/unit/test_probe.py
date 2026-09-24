@@ -110,19 +110,21 @@ class TestAdmit:
 
         then.rejected_for(admission, "1", "error")
 
-    def test_rejects_a_judge_median_above_three_times_the_reference(self):
+    def test_notes_a_judge_median_above_three_times_the_reference_without_refusing(self):
         stats = given.challenger_stats(median_seconds={"main": 1.0, "judge": 3.1})
 
         admission = admit(stats, given.reference_stats(), Bars())
 
-        then.rejected_for(admission, "judge", "3.10", "1.00")
+        then.admitted(admission)
+        then.latency_noted(admission, "judge", "3.10", "1.00")
 
-    def test_admits_a_judge_median_at_exactly_three_times_the_reference(self):
+    def test_notes_nothing_at_exactly_three_times_the_reference(self):
         stats = given.challenger_stats(median_seconds={"main": 1.0, "judge": 3.0})
 
         admission = admit(stats, given.reference_stats(), Bars())
 
         then.admitted(admission)
+        assert admission.latency_notes == []
 
     def test_rejects_a_cost_above_the_reference(self):
         stats = given.challenger_stats(weighted_cost=1.01)
