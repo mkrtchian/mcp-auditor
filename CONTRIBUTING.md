@@ -83,7 +83,7 @@ Architecture decisions are documented in `docs/adr/` as immutable ADRs. To chang
 
 - Bug fixes with a regression test.
 - New audit categories backed by real-world MCP failure modes.
-- Eval improvements: better ground truth, new honeypot scenarios. A ground truth change follows the discipline in [ADR 016](docs/adr/016-eval-gate-governance.md): revisions go by rubric, never cell by cell.
+- Eval improvements: better ground truth, new honeypot scenarios. A ground truth change follows the discipline in [ADR 016](docs/adr/016-eval-gate-governance.md): revisions go by rubric, never cell by cell. The rubric and every revision live in [`docs/labeling-log.md`](docs/labeling-log.md).
 - A shipped prompt never names a honeypot's values, errors or tools: `tests/unit/test_fixture_contamination.py` checks the literals, and a rule copied as a technique rather than a string is caught only in review.
 - Documentation fixes.
 

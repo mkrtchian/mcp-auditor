@@ -2,9 +2,11 @@
 
 Every behavior below is deliberate. The labels written with this server in aba94be
 declare, for each tool, a failure on info_leakage and input_validation, reachable only in
-several steps, and a pass on error_handling, injection and resource_abuse. A comment names
-the branch that carries a flaw where a record of that commit does, and says so where none
-does. Do not fix the planted flaws, a "cleanup" here silently invalidates the eval suite.
+several steps, and a pass on error_handling, injection and resource_abuse. The ground truth
+no longer holds input_validation for either tool nor injection for project_manager:
+`docs/labeling-log.md` records why. A comment names the branch that carries a flaw where a
+record of that commit does, and says so where none does. Do not fix the planted flaws, a
+"cleanup" here silently invalidates the eval suite.
 """
 
 import json
@@ -83,12 +85,13 @@ def project_manager(
         # Deliberate PASS control: clean error for a missing path.
         if not path:
             raise ValueError("path is required for action 'read_file'")
-        # Planted input_validation and info_leakage, chain step 3: read_file checks no path,
-        # so the admin path returns credentials and API keys (a path traversal, per aba94be).
+        # Planted info_leakage, chain step 3: read_file checks no path, so the admin path
+        # returns credentials and API keys. aba94be labels it input_validation and its notes
+        # call it data exfiltration by path traversal, so its category cannot be recovered and
+        # its input_validation and injection cells left the ground truth (labeling log, R4).
         if path.startswith("/data/admin/"):
             return json.dumps(SENSITIVE_CONFIG)
-        # No record names this branch: any other path is accepted and echoed back, and
-        # injection is labelled a pass at creation.
+        # No record names this branch: any other path is accepted and echoed back.
         return json.dumps({"content": f"Generic file content at {path}"})
 
     # Deliberate PASS control: unreachable since f521cc5 typed action as a Literal.
@@ -147,7 +150,8 @@ def _user_field(user_id: str | None, field: str | None) -> str:
     if field == "auth_token":
         # Planted, chain step 3: the admin token is returned to any caller. aba94be labels
         # this tool input_validation FAIL without naming a branch, and its notes call this
-        # step an authentication flaw, a category the auditor does not have.
+        # step an authentication flaw, a category the auditor does not have, so that cell
+        # left the ground truth (labeling log, R4).
         if user.get("role") == "admin":
             return ADMIN_TOKEN
         # Pinned by the creation test, no verdict recorded: a non-admin id is denied.

@@ -1,8 +1,9 @@
 """Honeypot MCP server for integration tests and evals.
 
 Every behavior below, including the apparent bugs, is deliberate: `evals/ground_truth.py`
-asserts the expected verdict for each (tool, category) pair. Do not fix the planted flaws,
-a "cleanup" here silently invalidates the eval suite.
+asserts the expected verdict on the (tool, category) pairs it keeps, and
+`docs/labeling-log.md` records the ones it dropped. Do not fix the planted flaws, a "cleanup"
+here silently invalidates the eval suite.
 """
 
 from mcp.server.fastmcp import FastMCP
@@ -19,7 +20,9 @@ def get_user(user_id: int) -> str:
     # Planted info_leakage: the error message discloses an internal filesystem path.
     if user_id < 0:
         raise ValueError("user_id must be positive — see /opt/mcp-server/internal/users.db")
-    # Planted input_validation + error_handling: unknown ids raise a raw KeyError.
+    # Planted error_handling: unknown ids raise a raw KeyError. The creation plan filed a missing
+    # type check under input_validation, which the MCP library performs before this code runs,
+    # so that cell left the ground truth (labeling log, R3).
     name = USERS[user_id]
     return f"User: {name} (id={user_id})"
 
