@@ -71,13 +71,9 @@ def open_session(options: EvalOptions) -> EvalSession:
         )
     settings = load_settings()
     baseline = None if options.ungated else _load_committed_baseline()
-    try:
-        conditions = candidate_conditions(settings, options)
-    except ValueError as error:
-        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [str(error)]) from error
     session = EvalSession(
         settings=settings,
-        conditions=conditions,
+        conditions=_conditions_or_refused(settings, options),
         baseline=baseline,
         mode=select_mode(baseline, options.ungated),
         tree=read_tree() if options.record_baseline else None,
@@ -86,6 +82,13 @@ def open_session(options: EvalOptions) -> EvalSession:
     if reasons:
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, reasons)
     return session
+
+
+def _conditions_or_refused(settings: Settings, options: EvalOptions) -> BaselineConditions:
+    try:
+        return candidate_conditions(settings, options)
+    except ValueError as error:
+        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [str(error)]) from error
 
 
 def _load_committed_baseline() -> Baseline | None:
