@@ -72,6 +72,9 @@ def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:  # p
 
 # Without it, a probe run once hung 17 minutes on one OpenAI response.
 _REQUEST_TIMEOUT_SECONDS = 120
+# A normal batch takes under 2,200 output tokens. gpt-6-luna was seen looping on a
+# literal "very long string" payload up to its 128k-token limit.
+_MAX_OUTPUT_TOKENS = 4096
 
 
 def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
@@ -84,6 +87,7 @@ def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # p
             use_responses_api=True,
             max_retries=3,
             timeout=_REQUEST_TIMEOUT_SECONDS,
+            max_completion_tokens=_MAX_OUTPUT_TOKENS,
         )
     return ChatOpenAI(
         model=model,
@@ -91,17 +95,24 @@ def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # p
         use_responses_api=True,
         max_retries=3,
         timeout=_REQUEST_TIMEOUT_SECONDS,
+        max_completion_tokens=_MAX_OUTPUT_TOKENS,
     )
 
 
 def _make_fireworks_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
     if reasoning is None:
-        return ChatFireworks(model=model, max_retries=3, timeout=_REQUEST_TIMEOUT_SECONDS)
+        return ChatFireworks(
+            model=model,
+            max_retries=3,
+            timeout=_REQUEST_TIMEOUT_SECONDS,
+            max_tokens=_MAX_OUTPUT_TOKENS,
+        )
     return ChatFireworks(
         model=model,
         reasoning_effort=reasoning,
         max_retries=3,
         timeout=_REQUEST_TIMEOUT_SECONDS,
+        max_tokens=_MAX_OUTPUT_TOKENS,
     )
 
 
@@ -168,7 +179,17 @@ class LLM:
         response = cast(dict[str, Any], raw_response)
         metadata: _UsageMetadata | None = response["raw"].usage_metadata
         usage = _to_token_usage(metadata)
+        if _was_truncated(response["raw"].response_metadata):
+            return None, usage
         return response["parsed"], usage
+
+
+def _was_truncated(response_metadata: dict[str, Any]) -> bool:
+    # LangChain repairs a JSON cut by the output cap, so a truncated answer would pass as valid.
+    return (
+        response_metadata.get("status") == "incomplete"
+        or response_metadata.get("finish_reason") == "length"
+    )
 
 
 def _validated[T: BaseModel](parsed: object, output_schema: type[T]) -> T | None:

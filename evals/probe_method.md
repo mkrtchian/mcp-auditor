@@ -56,7 +56,7 @@ Prices are the list prices of 2026-09-24 (`PRICES_DATE`), per million tokens (in
 | `gpt-6-luna` | 0.10 | 0.01 | 0.50 |
 | GLM-5.3-Flash on Fireworks serverless | 0.15 | 0.03 | 0.50 |
 
-A call that fails to parse raises without its token usage, so its cost counts as 0. It fails the parse bar anyway.
+An OpenAI or Fireworks answer cut by the 4,096-token output cap counts as a parse failure, not as a parsed call: LangChain would otherwise repair the truncated JSON. A call that fails to parse raises without its token usage, so its cost counts as 0. It fails the parse bar anyway.
 
 **Once, after the first run:** compare the cost the report computes for each provider with that provider's billing console over the run's time window. A gap means the token accounting or the prices are wrong, and the cost bar cannot be read until it is explained.
 

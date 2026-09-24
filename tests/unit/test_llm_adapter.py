@@ -1,5 +1,5 @@
 # pyright: reportArgumentType=false
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import pytest
@@ -18,6 +18,7 @@ class _DummyOutput(BaseModel):
 @dataclass
 class _FakeAIMessage:
     usage_metadata: dict[str, Any]
+    response_metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 _PYDANTIC_SCHEMA = StructuredOutput(method="json_schema")
@@ -148,6 +149,37 @@ class TestDictSchema:
             await llm.generate_structured("prompt", _DummyOutput)
 
 
+def _truncated(response: dict[str, Any], **marker: str) -> dict[str, Any]:
+    response["raw"].response_metadata = marker
+    return response
+
+
+class TestTruncatedOutput:
+    @pytest.mark.asyncio
+    async def test_an_incomplete_response_is_retried(self):
+        responses = [
+            _truncated(_raw_response(_DummyOutput(value="cut"), 100, 4096), status="incomplete"),
+            _raw_response(_DummyOutput(value="ok"), 100, 50),
+        ]
+        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
+
+        output, usage = await llm.generate_structured("prompt", _DummyOutput)
+
+        assert output == _DummyOutput(value="ok")
+        assert usage == TokenUsage(input_tokens=200, output_tokens=4146)
+
+    @pytest.mark.asyncio
+    async def test_a_response_cut_at_the_length_limit_on_every_attempt_raises(self):
+        responses = [
+            _truncated(_raw_response({"value": "cut"}, 100, 4096), finish_reason="length")
+            for _ in range(2)
+        ]
+        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=2)
+
+        with pytest.raises(UnparseableOutput):
+            await llm.generate_structured("prompt", _DummyOutput)
+
+
 class TestMakeChatModel:
     def test_google_default_model_gets_minimal_thinking(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("GOOGLE_API_KEY", "dummy")
@@ -186,6 +218,7 @@ class TestMakeChatModel:
         assert getattr(chat_model, "model_name", None) == "gpt-6-luna"
         assert getattr(chat_model, "reasoning_effort", None) == "low"
         assert getattr(chat_model, "request_timeout", None) == 120
+        assert getattr(chat_model, "max_tokens", None) == 4096
 
     def test_fireworks_builds_glm_with_no_reasoning(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
@@ -196,6 +229,7 @@ class TestMakeChatModel:
         assert getattr(chat_model, "model_name", None) == "accounts/fireworks/models/glm-5p3-flash"
         assert getattr(chat_model, "reasoning_effort", "unset") is None
         assert getattr(chat_model, "request_timeout", None) == 120
+        assert getattr(chat_model, "max_tokens", None) == 4096
 
     def test_fireworks_passes_an_explicit_reasoning(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
