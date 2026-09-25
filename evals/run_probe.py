@@ -25,13 +25,18 @@ from evals.probe import (
     CandidateStats,
     ProbeObservation,
     admit,
-    count_defects,
     reference_failures,
     summarize,
 )
 from evals.probe_candidates import CHALLENGERS, FALLBACK, PRICES_DATE, REFERENCE, Candidate
 from evals.probe_corpus import SCHEMA_NAMES, ProbeCall, ProbeCorpus, Role, load_corpus, schema_for
-from evals.probe_subset import UnknownCandidate, defect_table, select_calls, select_candidates
+from evals.probe_subset import (
+    UnknownCandidate,
+    defect_counts,
+    defect_table,
+    select_calls,
+    select_candidates,
+)
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.domain.coverage import find_coverage_gap
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, TestCaseBatch, TokenUsage
@@ -105,11 +110,7 @@ def _run_subset(corpus: ProbeCorpus, args: argparse.Namespace) -> None:
     models = _build_models(candidates)
     sink = Path(args.report or SUBSET_REPORT_PATH).with_suffix(".jsonl")
     observations = asyncio.run(_replay(subset, models, sink))
-    counts = [
-        count_defects(c.name, [o for o in observations if o.candidate == c.name])
-        for c in candidates
-    ]
-    console.print(defect_table(counts))
+    console.print(defect_table(defect_counts(candidates, observations)))
     console.print(f"Observations written to {sink}")
 
 

@@ -1,4 +1,7 @@
+from evals.probe import CallOutcome, ProbeObservation
+from evals.probe_candidates import Candidate
 from evals.probe_corpus import ProbeCall, ProbeCorpus, ReferenceConditions
+from tests.unit.support.test_probe_given import an_observation
 
 
 def a_corpus_of(schema_names: list[str]) -> ProbeCorpus:
@@ -26,3 +29,7 @@ def a_corpus_of(schema_names: list[str]) -> ProbeCorpus:
             for index, schema_name in enumerate(schema_names)
         ],
     )
+
+
+def an_observation_of(candidate: Candidate, outcome: CallOutcome) -> ProbeObservation:
+    return an_observation(outcome=outcome).model_copy(update={"candidate": candidate.name})

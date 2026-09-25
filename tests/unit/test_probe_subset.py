@@ -1,8 +1,9 @@
 import pytest
 
 import tests.unit.support.test_probe_subset_given as given
+from evals.probe import CallOutcome
 from evals.probe_candidates import CHALLENGERS, REFERENCE, RETEST_CANDIDATES
-from evals.probe_subset import UnknownCandidate, select_calls, select_candidates
+from evals.probe_subset import UnknownCandidate, defect_counts, select_calls, select_candidates
 
 
 class TestSelectCandidates:
@@ -37,3 +38,22 @@ class TestSelectCalls:
         corpus = given.a_corpus_of(["TestCaseBatch", "Judgment", "TestCaseBatch"])
 
         assert select_calls(corpus, None) == corpus.calls
+
+
+class TestDefectCounts:
+    def test_counts_each_candidate_on_its_own_observations_in_candidate_order(self):
+        luna_none, luna_low = RETEST_CANDIDATES
+        observations = [
+            given.an_observation_of(luna_none, CallOutcome.PARSED),
+            given.an_observation_of(luna_low, CallOutcome.PARSE_FAILURE),
+            given.an_observation_of(luna_none, CallOutcome.ERROR),
+        ]
+
+        counts = defect_counts([luna_low, REFERENCE, luna_none], observations)
+
+        assert [(row.candidate, row.calls) for row in counts] == [
+            (luna_low.name, 1),
+            (REFERENCE.name, 0),
+            (luna_none.name, 2),
+        ]
+        assert (counts[0].parse_failures, counts[2].errors) == (1, 1)

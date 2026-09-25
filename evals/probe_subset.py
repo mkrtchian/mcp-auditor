@@ -5,7 +5,7 @@ See the *Subset runs* section of `evals/probe_method.md`.
 
 from rich.table import Table
 
-from evals.probe import DefectCounts
+from evals.probe import DefectCounts, ProbeObservation, count_defects
 from evals.probe_candidates import CHALLENGERS, FALLBACK, REFERENCE, RETEST_CANDIDATES, Candidate
 from evals.probe_corpus import ProbeCall, ProbeCorpus
 
@@ -28,6 +28,15 @@ def select_candidates(names: list[str]) -> list[Candidate]:
 
 def select_calls(corpus: ProbeCorpus, schema: str | None) -> list[ProbeCall]:
     return [call for call in corpus.calls if schema is None or call.schema_name == schema]
+
+
+def defect_counts(
+    candidates: list[Candidate], observations: list[ProbeObservation]
+) -> list[DefectCounts]:
+    return [
+        count_defects(c.name, [o for o in observations if o.candidate == c.name])
+        for c in candidates
+    ]
 
 
 def defect_table(counts: list[DefectCounts]) -> Table:
