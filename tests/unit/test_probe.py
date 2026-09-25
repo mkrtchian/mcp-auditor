@@ -8,6 +8,7 @@ from evals.probe import (
     ProbeObservation,
     admit,
     call_cost,
+    count_defects,
     reference_failures,
     summarize,
 )
@@ -101,6 +102,33 @@ class TestSummarize:
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)
 
         assert (stats.errors, stats.reasoning_tokens, stats.reasoning_expected) == (1, 42, True)
+
+
+class TestCountDefects:
+    def test_counts_each_kind_of_defect_over_the_observations_given(self):
+        observations = [
+            given.an_observation(role="judge", schema_name="Judgment"),
+            given.an_observation(outcome=CallOutcome.PARSE_FAILURE),
+            given.an_observation(
+                role="judge",
+                schema_name="Judgment",
+                outcome=CallOutcome.PARSE_FAILURE,
+                truncated_attempts=2,
+            ),
+            given.an_observation(coverage_gap=given.a_coverage_gap()),
+            given.an_observation(outcome=CallOutcome.ERROR, error="timeout"),
+        ]
+
+        counts = count_defects("challenger", observations)
+
+        assert counts.model_dump() == {
+            "candidate": "challenger",
+            "calls": 5,
+            "parse_failures": 2,
+            "parse_failures_with_truncation": 1,
+            "refusals": 2,
+            "errors": 1,
+        }
 
 
 class TestProbeObservation:

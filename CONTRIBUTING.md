@@ -47,6 +47,7 @@ The probe measures candidate models on parse failures, refusals, latency and cos
 MCP_AUDITOR_PROVIDER=google MCP_AUDITOR_MODEL=gemini-3.1-flash-lite MCP_AUDITOR_JUDGE_MODEL= MCP_AUDITOR_REASONING=minimal \
   uv run python -m evals.capture_probe_corpus  # writes evals/fixtures/probe_corpus.json
 uv run python -m evals.run_probe               # writes output/probe_report.json
+uv run python -m evals.run_probe --candidates "gpt-6-luna none" "gpt-6-luna low" --schema TestCaseBatch  # subset run, debugging only
 ```
 
 What it measures, the bar values and the limits are in [`evals/probe_method.md`](evals/probe_method.md).

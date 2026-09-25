@@ -95,6 +95,8 @@ _SCHEMAS: dict[str, type[BaseModel]] = {
     )
 }
 
+SCHEMA_NAMES = list(_SCHEMAS)
+
 
 def schema_for(schema_name: str) -> type[BaseModel]:
     if schema_name not in _SCHEMAS:

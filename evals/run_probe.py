@@ -25,11 +25,13 @@ from evals.probe import (
     CandidateStats,
     ProbeObservation,
     admit,
+    count_defects,
     reference_failures,
     summarize,
 )
 from evals.probe_candidates import CHALLENGERS, FALLBACK, PRICES_DATE, REFERENCE, Candidate
-from evals.probe_corpus import ProbeCall, ProbeCorpus, Role, load_corpus, schema_for
+from evals.probe_corpus import SCHEMA_NAMES, ProbeCall, ProbeCorpus, Role, load_corpus, schema_for
+from evals.probe_subset import UnknownCandidate, defect_table, select_calls, select_candidates
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.domain.coverage import find_coverage_gap
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, TestCaseBatch, TokenUsage
@@ -37,6 +39,7 @@ from mcp_auditor.domain.ports import LLMPort, UnparseableOutput
 
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 DEFAULT_REPORT_PATH = "output/probe_report.json"
+SUBSET_REPORT_PATH = "output/probe_subset.json"
 CANDIDATES = [REFERENCE, *CHALLENGERS, FALLBACK]
 
 console = Console()
@@ -61,9 +64,7 @@ class ProbeResult:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Replay the probe corpus against every candidate")
-    parser.add_argument("--report", type=str, default=DEFAULT_REPORT_PATH)
-    args = parser.parse_args()
+    args = _parse_arguments()
     load_dotenv()
     if not CORPUS_PATH.exists():
         console.print(
@@ -71,13 +72,45 @@ def main() -> None:
         )
         sys.exit(1)
     corpus = load_corpus(CORPUS_PATH)
+    if args.candidates is not None or args.schema is not None:
+        _run_subset(corpus, args)
+        return
+    report = args.report or DEFAULT_REPORT_PATH
     models = _build_models(CANDIDATES)
-    sink = Path(args.report).with_suffix(".jsonl")
-    observations = asyncio.run(_replay(corpus, models, sink))
+    observations = asyncio.run(_replay(corpus, models, Path(report).with_suffix(".jsonl")))
     result = _analyze(corpus, observations)
-    _write_report(Path(args.report), result)
+    _write_report(Path(report), result)
     _print_table(result)
-    console.print(f"Report written to {args.report}")
+    console.print(f"Report written to {report}")
+
+
+def _parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Replay the probe corpus against every candidate")
+    parser.add_argument("--report", type=str, default=None)
+    parser.add_argument(
+        "--candidates", nargs="+", metavar="NAME", help="subset run: these candidates only"
+    )
+    parser.add_argument("--schema", choices=SCHEMA_NAMES, help="subset run: this schema only")
+    return parser.parse_args()
+
+
+def _run_subset(corpus: ProbeCorpus, args: argparse.Namespace) -> None:
+    """Debugging only: replays a slice of the corpus and computes no admission."""
+    try:
+        candidates = CANDIDATES if args.candidates is None else select_candidates(args.candidates)
+    except UnknownCandidate as unknown:
+        console.print(f"[red]{unknown}[/red]")
+        sys.exit(1)
+    subset = corpus.model_copy(update={"calls": select_calls(corpus, args.schema)})
+    models = _build_models(candidates)
+    sink = Path(args.report or SUBSET_REPORT_PATH).with_suffix(".jsonl")
+    observations = asyncio.run(_replay(subset, models, sink))
+    counts = [
+        count_defects(c.name, [o for o in observations if o.candidate == c.name])
+        for c in candidates
+    ]
+    console.print(defect_table(counts))
+    console.print(f"Observations written to {sink}")
 
 
 def _build_models(candidates: list[Candidate]) -> list[CandidateModels]:

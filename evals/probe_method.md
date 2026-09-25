@@ -108,6 +108,14 @@ Set the API key of every candidate before running: `GOOGLE_API_KEY`, `OPENAI_API
 
 The report goes to `output/probe_report.json` by default: the observations, the statistics, the admissions with their latency notes, the reference's failed bars, and the fallback measured against the bars, recorded only. The command exits 0 whatever the verdict. Each observation is also appended to `output/probe_report.jsonl` as soon as it is measured, with one progress line per call on the console, so a run stopped by hand keeps what it measured. There is no resume: a stopped run is rerun from the start.
 
+## Subset runs
+
+`--candidates NAME [NAME ...]` and `--schema NAME` replay a slice of the corpus: the named candidates (every candidate of the full run when the flag is absent) on the calls of one schema, in corpus order (every call when the flag is absent). Either flag makes the run a subset run. It serves debugging only: it computes no statistics against the bars, no admission and no JSON report, and prints one row of defects per candidate. Its observations go to `output/probe_subset.jsonl` by default, so a debugging run never empties the full run's sink. Only the named candidates' models are built, so it needs their keys only.
+
+Two candidates are measured only in a subset run and never admitted by the probe: `gpt-6-luna none`, expected to produce no reasoning tokens, and `gpt-6-luna low`, expected to produce some.
+
+A *parse failure with truncation* is a parse failure where at least one attempt was cut by the output cap.
+
 ## Limits
 
 - **Watered-down payloads** are not detected (see the refusal rule).

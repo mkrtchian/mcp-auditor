@@ -79,6 +79,27 @@ def summarize(
     )
 
 
+class DefectCounts(BaseModel):
+    candidate: str
+    calls: int
+    parse_failures: int
+    parse_failures_with_truncation: int  # at least one attempt cut by the output cap
+    refusals: int  # same rule as the admission
+    errors: int
+
+
+def count_defects(candidate: str, observations: list[ProbeObservation]) -> DefectCounts:
+    parse_failures = [o for o in observations if o.outcome == CallOutcome.PARSE_FAILURE]
+    return DefectCounts(
+        candidate=candidate,
+        calls=len(observations),
+        parse_failures=len(parse_failures),
+        parse_failures_with_truncation=sum(o.truncated_attempts > 0 for o in parse_failures),
+        refusals=sum(_is_refusal(o) for o in observations),
+        errors=sum(o.outcome == CallOutcome.ERROR for o in observations),
+    )
+
+
 def _median_seconds_per_role(observations: list[ProbeObservation]) -> dict[Role, float]:
     seconds: dict[Role, list[float]] = {}
     for observation in observations:

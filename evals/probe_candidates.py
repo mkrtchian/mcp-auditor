@@ -80,3 +80,19 @@ FALLBACK = Candidate(
     prices=Prices(input=0.30, cached_input=0.03, output=2.50),
     reasoning_expected=None,
 )
+
+# Measured only in a subset run, to debug a candidate: the probe never admits them.
+RETEST_CANDIDATES = [
+    Candidate(
+        name="gpt-6-luna none",
+        settings=Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none"),
+        prices=Prices(input=0.10, cached_input=0.01, output=0.50),
+        reasoning_expected=False,
+    ),
+    Candidate(
+        name="gpt-6-luna low",
+        settings=Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="low"),
+        prices=Prices(input=0.10, cached_input=0.01, output=0.50),
+        reasoning_expected=True,
+    ),
+]
