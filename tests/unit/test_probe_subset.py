@@ -2,7 +2,7 @@ import pytest
 
 import tests.unit.support.test_probe_subset_given as given
 from evals.probe import CallOutcome
-from evals.probe_candidates import CHALLENGERS, REFERENCE, RETEST_CANDIDATES
+from evals.probe_candidates import CHALLENGERS, REFERENCE
 from evals.probe_subset import UnknownCandidate, defect_counts, select_calls, select_candidates
 
 
@@ -10,7 +10,7 @@ class TestSelectCandidates:
     def test_returns_the_named_candidates_once_each_in_the_order_given(self):
         selected = select_candidates(["gpt-6-luna low", "gpt-6-luna none", "gpt-6-luna low"])
 
-        assert selected == [RETEST_CANDIDATES[1], RETEST_CANDIDATES[0]]
+        assert selected == [CHALLENGERS[1], CHALLENGERS[0]]
 
     def test_finds_the_reference_and_the_challengers(self):
         selected = select_candidates([REFERENCE.name, CHALLENGERS[0].name])
@@ -42,7 +42,7 @@ class TestSelectCalls:
 
 class TestDefectCounts:
     def test_counts_each_candidate_on_its_own_observations_in_candidate_order(self):
-        luna_none, luna_low = RETEST_CANDIDATES
+        luna_none, luna_low = CHALLENGERS
         observations = [
             given.an_observation_of(luna_none, CallOutcome.PARSED),
             given.an_observation_of(luna_low, CallOutcome.PARSE_FAILURE),

@@ -1,6 +1,6 @@
 # Admission probe: method note
 
-The probe (`uv run python -m evals.run_probe [--report PATH]`) replays a frozen corpus of prompts against the reference model and each challenger of ADR 019, and prints an admission verdict per challenger. It also measures the fallback of ADR 019, Gemini 3.5 Flash-Lite at `minimal`, and records it against the bars without a verdict. This note defines what it measures and holds the bar values. The values were written down before the first probe run, and they are also the defaults of `Bars` in `evals/probe.py`. The candidates and their prices are in `evals/probe_candidates.py`.
+The probe (`uv run python -m evals.run_probe [--report PATH]`) replays a frozen corpus of prompts against the reference model and each challenger of ADR 021, `gpt-6-luna` at `none` and at `low`, and prints an admission verdict per challenger. It also measures the fallback of ADR 019, Gemini 3.5 Flash-Lite at `minimal`, and records it against the bars without a verdict. The ADR 019 run, with its own three challengers, is reported in ADR 019 and in `evals/probe_runs/2026-09-25_adr-019.json`. This note defines what it measures and holds the bar values. The values were written down before the first probe run, and they are also the defaults of `Bars` in `evals/probe.py`. The candidates and their prices are in `evals/probe_candidates.py`.
 
 ## What the probe measures, and what it does not
 
@@ -10,7 +10,7 @@ It does not measure detection quality. No verdict is compared with a label, and 
 
 ## The corpus
 
-`evals/fixtures/probe_corpus.json`, written by `uv run python -m evals.capture_probe_corpus` and committed. It holds prompts only: no response, no verdict, no justification.
+`evals/fixtures/probe_corpus.json`, written by `uv run python -m evals.capture_probe_corpus` and committed. It holds prompts only: no response, no verdict, no justification. It is recaptured when the generation prompt changes, and the committed corpus is the one the next admission run replays (ADR 021).
 
 - **Capture run.** One audit of each of the three honeypots at budget 10, on the reference settings (provider `google`, `gemini-3.1-flash-lite`, reasoning `minimal`, for both roles). The capture refuses any other setting. Every structured call the audit makes is recorded, a generator retry on an incomplete batch included, since it is a call the reference made.
 - **Judge sample.** 60 judge calls drawn uniformly with a fixed seed from the judge calls of the capture run, kept in capture order, never selected by verdict. The seed and the number of judge calls captured are recorded in the corpus. Every non-judge call is kept.
@@ -45,7 +45,7 @@ Per call, with list prices in dollars per million tokens:
 ((input - cached_input) * input_price + cached_input * cached_input_price + output * output_price) / 1e6
 ```
 
-Output tokens include reasoning tokens: `langchain-google-genai` adds `thoughts_token_count` into `output_tokens`, and OpenAI bills reasoning tokens as output tokens, counted inside `output_tokens`. Fireworks does not document it.
+Output tokens include reasoning tokens: `langchain-google-genai` adds `thoughts_token_count` into `output_tokens`, and OpenAI bills reasoning tokens as output tokens, counted inside `output_tokens`.
 
 The weighted corpus cost sums that cost over a candidate's calls, each judge call multiplied by `judge_calls_captured / judge calls in the corpus`. The corpus holds every non-judge call of the capture run but only 60 of its judge calls, so the weight restores the share of judging in an audit. The CVE generation calls keep weight 1: the weighted cost approximates the capture run's audits plus those extra generator calls.
 
@@ -54,12 +54,8 @@ Prices are the list prices of 2026-09-24 (`PRICES_DATE`), per million tokens (in
 | Candidate | Input | Cached input | Output |
 |---|---|---|---|
 | Gemini 3.1 Flash-Lite (reference) | 0.25 | 0.025 | 1.50 |
-| Qwen3.8-Flash on Alibaba Cloud Model Studio, Singapore | 0.15 | 0.15 | 0.47 |
-| GLM-5.3-Flash on Fireworks serverless | 0.15 | 0.03 | 0.50 |
 | `gpt-6-luna` | 0.10 | 0.01 | 0.50 |
 | Gemini 3.5 Flash-Lite (fallback) | 0.30 | 0.03 | 2.50 |
-
-Alibaba lists a context-cache discount for Qwen3.8-Flash but no rate, so its cached input is priced as input, which can only overstate its cost.
 
 An OpenAI, Fireworks or Alibaba answer cut by the 8,192-token output cap counts as a parse failure, not as a parsed call: LangChain would otherwise repair the truncated JSON. A call that fails to parse costs the usage of all its attempts, truncated ones included, and fails the parse bar anyway.
 
@@ -72,12 +68,9 @@ The check catches a setting that did not reach the API: the candidate would then
 | Candidate | Setting | Expected reasoning tokens |
 |---|---|---|
 | Gemini 3.1 Flash-Lite (reference) | thinking level `minimal` | not checked: `minimal` does not switch thinking fully off |
-| Qwen3.8-Flash | `enable_thinking: false` | 0 |
-| GLM-5.3-Flash | effort `medium` | not checked |
-| `gpt-6-luna` | effort `medium` | more than 0 |
+| `gpt-6-luna none` | effort `none` | 0 |
+| `gpt-6-luna low` | effort `low` | more than 0 |
 | Gemini 3.5 Flash-Lite (fallback) | thinking level `minimal` | not checked, as for the reference |
-
-GLM is not checked because `langchain-fireworks` does not report reasoning tokens (it never fills `output_token_details.reasoning`).
 
 ## Observations before the ADR 019 revision
 
@@ -104,7 +97,7 @@ The calls run in corpus order, one at a time. On each call every candidate answe
 
 ## Running it
 
-Set the API key of every candidate before running: `GOOGLE_API_KEY`, `OPENAI_API_KEY`, `FIREWORKS_API_KEY` and `DASHSCOPE_API_KEY`. A candidate whose models cannot be built stops the probe before any call. A key rejected only at the first call shows as an error on every call of that candidate.
+Set the API key of every candidate before running: `GOOGLE_API_KEY` and `OPENAI_API_KEY`. A candidate whose models cannot be built stops the probe before any call. A key rejected only at the first call shows as an error on every call of that candidate.
 
 The report goes to `output/probe_report.json` by default: the observations, the statistics, the admissions with their latency notes, the reference's failed bars, and the fallback measured against the bars, recorded only. The command exits 0 whatever the verdict. Each observation is also appended to `output/probe_report.jsonl` as soon as it is measured, with one progress line per call on the console, so a run stopped by hand keeps what it measured. There is no resume: a stopped run is rerun from the start.
 
@@ -112,7 +105,7 @@ The report goes to `output/probe_report.json` by default: the observations, the 
 
 `--candidates NAME [NAME ...]` and `--schema NAME` replay a slice of the corpus: the named candidates (every candidate of the full run when the flag is absent) on the calls of one schema, in corpus order (every call when the flag is absent). Either flag makes the run a subset run. It serves debugging only: it computes no statistics against the bars, no admission and no JSON report, and prints one row of defects per candidate. Its observations go to `output/probe_subset.jsonl` by default, so a debugging run never empties the full run's sink. Only the named candidates' models are built, so it needs their keys only.
 
-Two candidates are measured only in a subset run and never admitted by the probe: `gpt-6-luna none`, expected to produce no reasoning tokens, and `gpt-6-luna low`, expected to produce some.
+A subset run names its candidates among the reference, the challengers and the fallback.
 
 A *parse failure with truncation* is a parse failure where at least one attempt was cut by the output cap.
 

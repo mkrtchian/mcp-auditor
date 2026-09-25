@@ -6,10 +6,10 @@ See the *Subset runs* section of `evals/probe_method.md`.
 from rich.table import Table
 
 from evals.probe import DefectCounts, ProbeObservation, count_defects
-from evals.probe_candidates import CHALLENGERS, FALLBACK, REFERENCE, RETEST_CANDIDATES, Candidate
+from evals.probe_candidates import CHALLENGERS, FALLBACK, REFERENCE, Candidate
 from evals.probe_corpus import ProbeCall, ProbeCorpus
 
-KNOWN_CANDIDATES = [REFERENCE, *CHALLENGERS, FALLBACK, *RETEST_CANDIDATES]
+KNOWN_CANDIDATES = [REFERENCE, *CHALLENGERS, FALLBACK]
 
 
 class UnknownCandidate(ValueError):
