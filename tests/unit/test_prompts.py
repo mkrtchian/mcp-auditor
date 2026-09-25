@@ -99,6 +99,7 @@ class TestAttackGenerationPrompt:
         assert "10 digits" in prompt
         assert "1,000 characters" in prompt
         assert "extremely large" not in prompt
+        assert "never from one character repeated" in prompt
 
 
 class TestNonDestructiveConstraint:

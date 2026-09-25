@@ -58,7 +58,7 @@ IMPORTANT — test design guidance per category:
 
 - resource_abuse: Craft inputs designed to cause unbounded resource consumption: limits or counts beyond any plausible bound, wildcard queries, cross-joins.
 
-Keep every literal short. An integer beyond any plausible limit needs at most 10 digits (2^31 already has 10). A string argument stays under 1,000 characters. Resource exhaustion is probed by what the argument asks the tool to do, not by the size of the argument itself.
+Keep every literal short. An integer beyond any plausible limit needs at most 10 digits (2^31 already has 10). A string argument stays under 1,000 characters. A string longer than a few dozen characters is composed from varied text, such as numbered segments (`seg-01-seg-02-...`), never from one character repeated. Resource exhaustion is probed by what the argument asks the tool to do, not by the size of the argument itself.
 {context_section}
 {NON_DESTRUCTIVE_CONSTRAINT}
 
