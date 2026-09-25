@@ -187,7 +187,7 @@ class TestMakeChatModel:
 
         chat_model = make_chat_model(settings, settings.resolve_model())
 
-        assert getattr(chat_model, "model", None) == "gemini-3.1-flash-lite"
+        assert getattr(chat_model, "model", None) == "gemini-3.5-flash-lite"
         assert getattr(chat_model, "thinking_level", None) == "minimal"
 
     def test_google_judge_override_gets_no_thinking_level(self, monkeypatch: pytest.MonkeyPatch):

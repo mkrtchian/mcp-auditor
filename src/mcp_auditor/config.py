@@ -43,7 +43,7 @@ class _ProviderDefaults:
 
 _PROVIDERS = {
     "google": _ProviderDefaults(
-        model="gemini-3.1-flash-lite",
+        model="gemini-3.5-flash-lite",
         reasoning="minimal",
         accepted_reasoning=("minimal", "low", "medium", "high"),
     ),

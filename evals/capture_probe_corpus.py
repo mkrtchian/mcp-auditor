@@ -19,6 +19,7 @@ from rich.console import Console
 from evals.cve_environments import Launch
 from evals.cve_targets import CVE_TARGETS
 from evals.honeypots import HONEYPOTS, REPO_ROOT, AuditModels, audit_honeypot, models_for
+from evals.probe_candidates import REFERENCE
 from evals.probe_corpus import (
     ProbeCall,
     ProbeCorpus,
@@ -64,8 +65,7 @@ def _reference_mismatches(settings: Settings) -> list[str]:
         actual = _conditions_of(settings)
     except ValueError as error:
         return [str(error)]
-    # The reference is the google provider at its default model and default reasoning.
-    reference = _conditions_of(Settings(provider="google", model="", judge_model="", reasoning=""))
+    reference = _conditions_of(REFERENCE.settings)
     return [
         f"{field}: {getattr(actual, field)!r}, the reference is {getattr(reference, field)!r}"
         for field in ReferenceConditions.model_fields
