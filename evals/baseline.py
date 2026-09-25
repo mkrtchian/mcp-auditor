@@ -1,6 +1,7 @@
 import ast
 import hashlib
 import os
+from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
@@ -8,7 +9,8 @@ from pydantic import BaseModel
 
 from evals.gate import Cell, Observation, ReplayRule, cell_key, parse_cell_key
 from evals.ground_truth import GroundTruth
-from evals.metrics import EvalMetrics
+from evals.metrics import EvalMetrics, VerdictMap, label_scores
+from mcp_auditor.domain.models import EvalVerdict
 
 
 class BaselineStatus(StrEnum):
@@ -102,6 +104,38 @@ def _field_mismatches(
         for field in recorded
         if recorded[field] != candidate[field]
     ]
+
+
+@dataclass(frozen=True)
+class RescoredBaseline:
+    ground_truth: GroundTruth
+    metrics: EvalMetrics
+
+
+def rescore(baseline: Baseline, ground_truth: GroundTruth) -> RescoredBaseline:
+    """The baseline under the current labels (ADR 020).
+
+    An observation is what one run saw on a cell, pass, fail or uncovered, and carries no
+    label, so a label revision re-scores the stored runs instead of resetting the baseline.
+    A cell the revision added has no observation: it stays out of the comparison until a
+    recording covers it, and `ground_truth` here holds only the cells the baseline recorded.
+    Whether a baseline is confirmed depends on its observations alone, so a confirmed
+    baseline stays confirmed under a revision. Consistency and distribution coverage are
+    kept as recorded: no delta reads the first, and the second does not depend on the labels.
+    """
+    runs = baseline.observation_runs()
+    recorded = {cell: verdict for cell, verdict in ground_truth.items() if cell in runs[0]}
+    verdict_maps: list[VerdictMap] = [
+        {
+            cell: None if seen == Observation.UNCOVERED else EvalVerdict(seen.value)
+            for cell, seen in run.items()
+        }
+        for run in runs
+    ]
+    return RescoredBaseline(
+        ground_truth=recorded,
+        metrics=baseline.metrics.model_copy(update=label_scores(verdict_maps, recorded)),
+    )
 
 
 def baseline_integrity(baseline: Baseline, ground_truth: GroundTruth) -> list[str]:

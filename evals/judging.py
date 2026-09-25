@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from evals.baseline import Baseline
+from evals.baseline import Baseline, rescore
 from evals.eval_session import EvalSession
 from evals.gate import (
     Cell,
@@ -20,6 +20,7 @@ from evals.metrics import (
     VerdictMap,
     average_distribution_coverage,
     compute_consistency,
+    label_scores,
 )
 from evals.replay import Replayer
 from mcp_auditor.domain.models import AuditReport
@@ -82,5 +83,7 @@ def _incomplete_runs(session: EvalSession, outcome: RunsOutcome) -> list[str]:
 def _deltas(
     baseline: Baseline, outcome: RunsOutcome, metrics: EvalMetrics
 ) -> dict[str, MetricDelta]:
-    resolutions = metric_resolutions(outcome.verdict_maps, MERGED_GROUND_TRUTH, TOOL_COUNT)
-    return metric_deltas(baseline.metrics, metrics, resolutions)
+    rescored = rescore(baseline, MERGED_GROUND_TRUTH)
+    candidate = metrics.model_copy(update=label_scores(outcome.verdict_maps, rescored.ground_truth))
+    resolutions = metric_resolutions(outcome.verdict_maps, rescored.ground_truth, TOOL_COUNT)
+    return metric_deltas(rescored.metrics, candidate, resolutions)

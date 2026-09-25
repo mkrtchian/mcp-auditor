@@ -8,6 +8,7 @@ from evals.metrics import (
     compute_distribution_coverage,
     compute_precision,
     compute_recall,
+    label_scores,
 )
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
@@ -187,6 +188,16 @@ def test_precision_no_predictions():
     }
 
     assert compute_precision(aggregated, ground_truth) == 1.0
+
+
+def test_label_scores_average_recall_and_precision_per_run():
+    ground_truth: GroundTruth = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    perfect_run: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    inverted_run: VerdictMap = {("a", INPUT_VALIDATION): PASS, ("a", ERROR_HANDLING): FAIL}
+
+    scores = label_scores([perfect_run, inverted_run], ground_truth)
+
+    assert scores == {"recall": 0.5, "precision": 0.5}
 
 
 def test_consistency_perfect():

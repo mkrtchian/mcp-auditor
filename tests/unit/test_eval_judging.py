@@ -106,6 +106,19 @@ async def test_a_cell_the_baseline_did_not_record_is_neither_gated_nor_replayed(
     assert given.no_audit_ran(audit)
 
 
+async def test_deltas_leave_out_a_cell_the_baseline_did_not_record():
+    baseline = given.a_baseline_without_the_flipped_cell(BaselineStatus.CONFIRMED)
+    audit = given.an_audit_reproducing_the_flip()
+
+    result = await judge_runs(
+        given.a_session(baseline=baseline),
+        given.runs_missing_the_flipped_cell(),
+        given.a_replayer(audit),
+    )
+
+    assert result.deltas["recall"].value == 0.0
+
+
 def test_runs_outcome_completed_all_when_every_requested_run_has_details():
     assert given.correct_runs(completed=3).completed_all(3)
     assert not given.correct_runs(completed=2).completed_all(3)

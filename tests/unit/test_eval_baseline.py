@@ -11,6 +11,7 @@ from evals.baseline import (
     fingerprint_ground_truth,
     fingerprint_source,
     load_baseline,
+    rescore,
     write_baseline,
 )
 from evals.gate import CellOutcome, Observation, ReplayRule, cell_key
@@ -252,6 +253,34 @@ def test_a_baseline_holding_a_cell_the_ground_truth_removed_has_no_integrity_pro
     baseline = given.a_baseline(runs=runs, ground_truth=recorded_ground_truth)
 
     assert baseline_integrity(baseline, given.a_ground_truth()) == []
+
+
+def test_rescoring_under_a_revised_label_recomputes_recall_and_precision():
+    baseline = given.a_baseline(runs=given.all_correct_runs())
+    revised: GroundTruth = {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.FAIL}
+
+    rescored = rescore(baseline, revised)
+
+    assert (rescored.metrics.recall, rescored.metrics.precision) == (0.5, 1.0)
+
+
+def test_rescoring_leaves_out_a_cell_the_baseline_did_not_record():
+    added_cell = ("get_user", AuditCategory.ERROR_HANDLING)
+    baseline = given.a_baseline(runs=given.all_correct_runs())
+    revised: GroundTruth = {**given.a_ground_truth(), added_cell: EvalVerdict.FAIL}
+
+    rescored = rescore(baseline, revised)
+
+    assert added_cell not in rescored.ground_truth
+    assert rescored.metrics.recall == 1.0
+
+
+def test_rescoring_keeps_the_recorded_distribution_coverage():
+    baseline = given.a_baseline(runs=given.all_correct_runs())
+
+    rescored = rescore(baseline, given.a_ground_truth())
+
+    assert rescored.metrics.distribution_coverage == baseline.metrics.distribution_coverage
 
 
 def test_a_first_recording_is_exploratory():

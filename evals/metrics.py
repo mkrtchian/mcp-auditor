@@ -89,6 +89,16 @@ def compute_precision(aggregated: VerdictMap, ground_truth: GroundTruth) -> floa
     return correct / len(predicted_fails)
 
 
+def label_scores(verdict_maps: list[VerdictMap], ground_truth: GroundTruth) -> dict[str, float]:
+    """Recall and precision averaged per run, as the report computes them."""
+    runs = len(verdict_maps)
+    return {
+        "recall": sum(compute_recall(verdicts, ground_truth) for verdicts in verdict_maps) / runs,
+        "precision": sum(compute_precision(verdicts, ground_truth) for verdicts in verdict_maps)
+        / runs,
+    }
+
+
 def compute_consistency(
     all_runs: list[VerdictMap],
     ground_truth: GroundTruth,
