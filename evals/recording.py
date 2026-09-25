@@ -12,24 +12,26 @@ from evals.gate_verdict import GateResult, GateVerdict
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics
 
-_MODEL_CHANGE_PROCEDURE = (
-    "follow the model-change procedure of ADR 016: run both models, record the delta, "
-    "delete the baseline file, record a new exploratory baseline"
+_RESET_PROCEDURE = (
+    "reset the baseline under ADR 020: delete its file in the commit that makes the change, "
+    "with no other change in that commit, and record twice at that commit (exploratory, then "
+    "confirmed). If the gate was red, name the cells whose flip fired it at the last run, in "
+    "the labeling log entry or, for a model, in the commit message: each must come out stable "
+    "and correct in the confirmed baseline, or the change is reverted. Runs and budget change "
+    "only from a green gate. For a model, also run both models and record the delta while "
+    "the old one answers (ADR 016)"
 )
 
 _FLIPPED = {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRODUCED}
 
 
 class Recording(BaseModel):
-    """What a run offers to record. Its ground truth is the one the baseline fingerprints."""
-
     conditions: BaselineConditions
     commit: str
     recorded_at: str
     runs: list[dict[Cell, Observation]]
     metrics: EvalMetrics
     completed_all: bool
-    ground_truth: GroundTruth
 
 
 class RecordingRefused(BaseModel):
@@ -67,12 +69,16 @@ def _refusals(existing: Baseline | None, recording: Recording, gate: GateResult)
         return (
             reasons
             + exploratory_commit_refusal(existing, recording.commit)
-            + _other_conditions(existing, recording)
+            + condition_refusals(existing, recording.conditions)
         )
     return reasons + _confirmed_refusals(existing, recording, gate)
 
 
 def exploratory_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
+    """A baseline is confirmed at the commit of its first recording. A change that lands while
+    it is exploratory, a label revision included, resets it: the file is deleted and recorded
+    again twice at the new commit.
+    """
     if baseline.status != BaselineStatus.EXPLORATORY or baseline.commit == commit:
         return []
     return [
@@ -81,25 +87,19 @@ def exploratory_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
     ]
 
 
-def _other_conditions(existing: Baseline, recording: Recording) -> list[str]:
-    mismatches = condition_mismatches(existing.conditions, recording.conditions)
+def condition_refusals(baseline: Baseline, candidate: BaselineConditions) -> list[str]:
+    mismatches = condition_mismatches(baseline.conditions, candidate)
     if not mismatches:
         return []
     return [
-        f"conditions differ from the exploratory baseline ({'; '.join(mismatches)}): delete it "
-        "in a commit of its own and record a new one, and if a model differs, "
-        + _MODEL_CHANGE_PROCEDURE
+        f"conditions differ from the {baseline.status} baseline ({'; '.join(mismatches)}): "
+        f"to run at other conditions without changing the baseline, pass --ungated. To change "
+        f"the baseline's conditions, {_RESET_PROCEDURE}"
     ]
 
 
 def _confirmed_refusals(existing: Baseline, recording: Recording, gate: GateResult) -> list[str]:
-    reasons: list[str] = []
-    mismatches = condition_mismatches(existing.conditions, recording.conditions)
-    if mismatches:
-        reasons.append(
-            f"conditions differ from the confirmed baseline ({'; '.join(mismatches)}): "
-            f"{_MODEL_CHANGE_PROCEDURE}"
-        )
+    reasons = condition_refusals(existing, recording.conditions)
     if gate.verdict != GateVerdict.GREEN:
         reasons.append(f"the gate is {gate.verdict}")
     reasons += [
@@ -122,12 +122,12 @@ def _second_recording(existing: Baseline, recording: Recording) -> Baseline:
 
 
 def _disagreements(existing: Baseline, recording: Recording) -> list[str]:
-    first = classify(existing.observation_runs(), recording.ground_truth)
-    second = classify(recording.runs, recording.ground_truth)
+    first = existing.observation_runs()
     return sorted(
         cell_key(cell)
-        for cell, state in first.items()
-        if state != CellState.UNSTABLE and second[cell] != state
+        for cell, seen in first[0].items()
+        if all(run[cell] == seen for run in first)
+        and any(run.get(cell) != seen for run in recording.runs)
     )
 
 

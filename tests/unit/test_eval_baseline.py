@@ -104,6 +104,12 @@ def test_no_honeypot_passes_instructions_to_its_server():
         ), honeypot.name
 
 
+def test_no_tool_name_appears_in_two_honeypots():
+    tool_names = [{tool for tool, _ in honeypot.ground_truth} for honeypot in HONEYPOTS]
+
+    assert len(set[str]().union(*tool_names)) == sum(len(names) for names in tool_names)
+
+
 def test_equal_conditions_have_no_mismatch():
     assert condition_mismatches(given.conditions(), given.conditions()) == []
 
@@ -357,6 +363,17 @@ def test_a_cell_unstable_in_the_exploratory_baseline_is_no_disagreement():
     assert result.disagreements == []
 
 
+def test_a_second_recording_seeing_uncovered_where_the_first_saw_fail_disagrees():
+    existing = given.a_baseline(runs=given.runs_where_safe_cell_is(Observation.FAIL))
+    uncovered = given.runs_where_safe_cell_is(Observation.UNCOVERED)
+
+    result = decide_recording(existing, given.a_recording(runs=uncovered), given.a_gate())
+
+    assert isinstance(result, Baseline)
+    assert result.status == BaselineStatus.EXPLORATORY
+    assert result.disagreements == [cell_key(SAFE_CELL)]
+
+
 def test_a_second_recording_at_another_commit_is_refused():
     existing = given.a_baseline(runs=given.all_correct_runs())
 
@@ -373,7 +390,7 @@ def test_a_second_recording_at_other_conditions_is_refused():
 
     assert isinstance(result, RecordingRefused)
     assert any(
-        "exploratory baseline" in reason and "run both models, record the delta" in reason
+        "exploratory baseline" in reason and "reset the baseline under ADR 020" in reason
         for reason in result.reasons
     )
 
@@ -408,13 +425,16 @@ def test_recording_over_a_confirmed_baseline_under_a_red_gate_is_refused():
     assert isinstance(result, RecordingRefused)
 
 
-def test_recording_over_a_confirmed_baseline_at_other_conditions_points_at_the_model_change():
+def test_recording_over_a_confirmed_baseline_at_other_conditions_points_at_the_reset_procedure():
     existing = given.a_baseline(status=BaselineStatus.CONFIRMED)
 
     result = decide_recording(existing, given.a_recording(budget=7), given.a_gate())
 
     assert isinstance(result, RecordingRefused)
-    assert any("model-change procedure of ADR 016" in reason for reason in result.reasons)
+    assert any(
+        "confirmed baseline" in reason and "reset the baseline under ADR 020" in reason
+        for reason in result.reasons
+    )
 
 
 def test_a_gated_cell_becoming_unstable_leaves_the_gated_set():

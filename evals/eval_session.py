@@ -9,14 +9,13 @@ from evals.baseline import (
     BaselineStatus,
     FixtureConditions,
     baseline_integrity,
-    condition_mismatches,
     fingerprint_ground_truth,
     fingerprint_source,
     load_baseline,
 )
 from evals.gate_verdict import GateMode
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, REPO_ROOT
-from evals.recording import exploratory_commit_refusal
+from evals.recording import condition_refusals, exploratory_commit_refusal
 from mcp_auditor.config import Settings, load_settings
 
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
@@ -139,7 +138,7 @@ def select_mode(baseline: Baseline | None, ungated: bool) -> GateMode:
 def pre_run_refusals(session: EvalSession) -> list[str]:
     reasons: list[str] = []
     if session.baseline:
-        reasons += condition_mismatches(session.baseline.conditions, session.conditions)
+        reasons += condition_refusals(session.baseline, session.conditions)
     if session.tree is not None:
         reasons += _recording_refusals(session, session.tree)
     return reasons

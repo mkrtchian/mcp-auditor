@@ -53,7 +53,9 @@ def test_a_baseline_at_other_conditions_names_the_mismatch():
 
     reasons = pre_run_refusals(session)
 
-    assert reasons == ["budget: baseline 10, candidate 7"]
+    assert len(reasons) == 1
+    assert "budget: baseline 10, candidate 7" in reasons[0]
+    assert "reset the baseline under ADR 020" in reasons[0]
 
 
 def test_a_baseline_of_another_ground_truth_is_not_refused():

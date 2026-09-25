@@ -81,6 +81,10 @@ def runs_where_vulnerable_cell_is(*observations: Observation) -> ObservationRuns
     ]
 
 
+def runs_where_safe_cell_is(observation: Observation) -> ObservationRuns:
+    return [{VULNERABLE_CELL: Observation.FAIL, SAFE_CELL: observation} for _ in range(3)]
+
+
 def a_recording(
     runs: ObservationRuns | None = None,
     commit: str = RECORDED_COMMIT,
@@ -94,7 +98,6 @@ def a_recording(
         runs=all_correct_runs() if runs is None else runs,
         metrics=EvalMetrics(recall=0.9, precision=0.9, consistency=0.9, distribution_coverage=0.9),
         completed_all=completed_all,
-        ground_truth=a_ground_truth(),
     )
 
 
