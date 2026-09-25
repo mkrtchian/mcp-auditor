@@ -1,7 +1,7 @@
 # ADR 020: How the Honeypot Baseline Changes
 
 **Date:** 2026-09-25
-**Status:** Draft
+**Status:** Accepted
 **Supersedes:** in ADR 016, for the honeypot suite: the oracle version as a condition that refuses a comparison, the two ways out of a red gate, the first baseline on a new model when the gate was red, and, for the cells a declared regression names, the rule that fires the gate.
 
 ## Context
