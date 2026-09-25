@@ -1,6 +1,6 @@
 # Labeling log
 
-The ground truth of the honeypot evals (`evals/ground_truth.py`) is revised by rubric, never cell by cell ([ADR 016](adr/016-eval-gate-governance.md)). This file holds the rubric and one entry per revision. An entry carries what git does not: the clauses invoked, the state of the gate when the revision was taken, whether each removed cell was the one failing, and the known disagreements the revision leaves in place. The diff lives in the commit the entry points to.
+The ground truth of the honeypot evals (`evals/ground_truth.py`) is revised by rubric, never cell by cell ([ADR 016](adr/016-eval-gate-governance.md)). This file holds the rubric and one entry per instrument change, labels, fixtures or scoring code, whatever the state of the gate ([ADR 020](adr/020-honeypot-baseline-changes.md)). An entry answers the four questions of ADR 016, and when the gate is red it names the cells whose flip fired it at the last run before the change. It also carries what git does not: the clauses invoked, the state of the gate when the revision was taken, whether each removed cell was the one failing, and the known disagreements the revision leaves in place. The diff lives in the commit the entry points to.
 
 ## Rubric
 

@@ -60,11 +60,13 @@ async def test_detects_missing_input_validation():
 
 ### When an eval number comes back red
 
-Governed by `docs/adr/016-eval-gate-governance.md`. The short form:
+Governed by ADR 016, amended by ADR 020 for the honeypot suite (`docs/adr/016-eval-gate-governance.md`, `docs/adr/020-honeypot-baseline-changes.md`). The short form:
 
 - **Fix the system, not the instrument.** A prompt, a guard table or a default may be changed after reading eval output, and it may ship. Its written justification has to hold once every mention of the measurement is deleted. A justification that needs "and the oracle credits that" is fitting the product to the benchmark. The number that change then produces is exploratory: it is recorded and confirms nothing.
 - **An instrument change and a system change do not license each other.** An instrument change does not borrow its justification from a system change shipped with it. A system change written to make the revision look earned licenses nothing.
 - **Never re-record a baseline while the gate is red.** That compares the candidate to itself, and it is the one move forbidden outright.
+- **A reset is not a re-recording.** A change to a fixture, the scoring code, the model, runs or budget deletes the baseline in its own commit and records it again twice. Under a red gate it names the cells that fired it, and each must come out stable and correct in the confirmed baseline, or the change is reverted. Runs and budget change only from a green gate. A label revision re-scores the stored runs and needs no reset. One such change per commit. See `docs/adr/020-honeypot-baseline-changes.md`.
+- **Every instrument change has a labeling log entry**, labels, fixtures or scoring code, whatever the state of the gate.
 - **The ground truth is revised by rubric, never cell by cell.** Write the rubric clause down before computing its effect on the metrics, apply it to every affected cell including the ones it does not help, and record it in `docs/labeling-log.md`, created with the first revision.
 - **Honeypots are fixtures.** Only deliberately planted flaws count. A branch whose intent cannot be recovered is annotated as unspecified and its cell leaves the ground truth, instead of carrying a guessed label.
 - **A delta smaller than the instrument's resolution is inconclusive**, a third verdict beside pass and fail, and it is never reported as a win.
