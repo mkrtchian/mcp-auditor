@@ -125,6 +125,13 @@ def test_a_baseline_recorded_at_another_reasoning_setting_names_it():
     assert mismatches == ["reasoning: baseline minimal, candidate high"]
 
 
+def test_a_differing_ground_truth_fingerprint_is_no_mismatch():
+    recorded = given.conditions()
+    candidate = recorded.model_copy(update={"ground_truth_fingerprint": "another"})
+
+    assert condition_mismatches(recorded, candidate) == []
+
+
 def test_a_differing_fixture_fingerprint_names_the_honeypot():
     mismatches = condition_mismatches(
         given.conditions(source_fingerprint="abc"), given.conditions(source_fingerprint="xyz")
@@ -229,11 +236,20 @@ def test_a_key_with_an_unknown_category_is_reported_not_raised():
     assert problems == ["run 1: unreadable cell key 'get_user/unknown'"]
 
 
-def test_a_baseline_of_another_ground_truth_gets_no_cell_set_line():
+def test_a_baseline_missing_a_cell_the_ground_truth_added_has_no_integrity_problem():
     other_ground_truth: GroundTruth = {VULNERABLE_CELL: EvalVerdict.FAIL}
     runs = given.all_correct_runs()
     del runs[0][SAFE_CELL]
     baseline = given.a_baseline(runs=runs, ground_truth=other_ground_truth)
+
+    assert baseline_integrity(baseline, given.a_ground_truth()) == []
+
+
+def test_a_baseline_holding_a_cell_the_ground_truth_removed_has_no_integrity_problem():
+    removed_cell = ("get_user", AuditCategory.ERROR_HANDLING)
+    recorded_ground_truth: GroundTruth = {**given.a_ground_truth(), removed_cell: EvalVerdict.PASS}
+    runs = [{**run, removed_cell: Observation.PASS} for run in given.all_correct_runs()]
+    baseline = given.a_baseline(runs=runs, ground_truth=recorded_ground_truth)
 
     assert baseline_integrity(baseline, given.a_ground_truth()) == []
 

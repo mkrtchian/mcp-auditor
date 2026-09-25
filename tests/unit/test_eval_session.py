@@ -56,6 +56,13 @@ def test_a_baseline_at_other_conditions_names_the_mismatch():
     assert reasons == ["budget: baseline 10, candidate 7"]
 
 
+def test_a_baseline_of_another_ground_truth_is_not_refused():
+    baseline = given.a_baseline_at_ci_conditions()
+    baseline.conditions.ground_truth_fingerprint = "another"
+
+    assert pre_run_refusals(given.a_session(baseline=baseline)) == []
+
+
 def test_recording_on_a_dirty_tree_is_refused():
     session = given.a_session(tree=TreeState(commit=given.HEAD, dirty=True))
 

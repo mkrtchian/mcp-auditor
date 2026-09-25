@@ -46,6 +46,13 @@ def a_baseline_all_correct(status: BaselineStatus) -> Baseline:
     )
 
 
+def a_baseline_without_the_flipped_cell(status: BaselineStatus) -> Baseline:
+    baseline = a_baseline_all_correct(status)
+    for run in baseline.runs:
+        del run[cell_key(FLIPPED_CELL)]
+    return baseline
+
+
 def an_audit_reproducing_the_flip() -> FakeAudit:
     replay = a_replay(reproducing=(FLIPPED_CELL,))
     return FakeAudit({FLIPPED_HONEYPOT.name: [replay] * 5}, honeypots=HONEYPOTS)

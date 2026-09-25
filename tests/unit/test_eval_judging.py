@@ -91,6 +91,21 @@ async def test_a_crashing_replay_makes_the_run_not_comparable():
     assert result.reasons == [f"a replay of {given.FLIPPED_HONEYPOT.name} failed"]
 
 
+async def test_a_cell_the_baseline_did_not_record_is_neither_gated_nor_replayed():
+    baseline = given.a_baseline_without_the_flipped_cell(BaselineStatus.CONFIRMED)
+    audit = given.an_audit_reproducing_the_flip()
+
+    result = await judge_runs(
+        given.a_session(baseline=baseline),
+        given.runs_missing_the_flipped_cell(),
+        given.a_replayer(audit),
+    )
+
+    assert result.cells[FLIPPED_KEY].outcome == CellOutcome.NOT_RECORDED
+    assert not any("regression on" in reason for reason in result.reasons)
+    assert given.no_audit_ran(audit)
+
+
 def test_runs_outcome_completed_all_when_every_requested_run_has_details():
     assert given.correct_runs(completed=3).completed_all(3)
     assert not given.correct_runs(completed=2).completed_all(3)

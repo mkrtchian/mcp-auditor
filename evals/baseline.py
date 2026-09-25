@@ -75,8 +75,10 @@ def fingerprint_source(source: str) -> str:
 
 
 def condition_mismatches(recorded: BaselineConditions, candidate: BaselineConditions) -> list[str]:
+    # The ground truth fingerprint is provenance: a label revision re-scores (ADR 020).
+    excluded = {"fixtures", "ground_truth_fingerprint"}
     mismatches = _field_mismatches(
-        "", recorded.model_dump(exclude={"fixtures"}), candidate.model_dump(exclude={"fixtures"})
+        "", recorded.model_dump(exclude=excluded), candidate.model_dump(exclude=excluded)
     )
     for name in sorted(recorded.fixtures.keys() | candidate.fixtures.keys()):
         recorded_fixture = recorded.fixtures.get(name)

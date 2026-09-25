@@ -30,6 +30,7 @@ class CellOutcome(StrEnum):
     FLIP = "flip"
     REGRESSION = "regression"
     FLIP_NOT_REPRODUCED = "flip_not_reproduced"
+    NOT_RECORDED = "not_recorded"
 
 
 class FlipCause(StrEnum):
@@ -97,9 +98,11 @@ def _observation_of(verdict: EvalVerdict | None) -> Observation:
 def classify(
     runs: list[dict[Cell, Observation]], ground_truth: GroundTruth
 ) -> dict[Cell, CellState]:
+    """Cells a run did not record get no state (ADR 020)."""
     return {
-        cell: _state_of([run.get(cell, Observation.UNCOVERED) for run in runs], expected)
+        cell: _state_of([run[cell] for run in runs], expected)
         for cell, expected in ground_truth.items()
+        if all(cell in run for run in runs)
     }
 
 
@@ -130,6 +133,8 @@ def compare(
             candidate_states[cell] == CellState.STABLE_CORRECT,
             _flip_cause(cell, candidate_runs),
         )
+        if cell in baseline_states
+        else CellComparison(outcome=CellOutcome.NOT_RECORDED)
         for cell in ground_truth
     }
 

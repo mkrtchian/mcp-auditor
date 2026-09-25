@@ -95,6 +95,14 @@ def test_classify_reads_uncovered_in_every_run_as_stable_incorrect():
     assert states[VULNERABLE_CELL] == CellState.STABLE_INCORRECT
 
 
+def test_classify_leaves_out_a_cell_a_run_did_not_record():
+    runs = given.runs_observing(VULNERABLE_CELL, [FAIL, FAIL, FAIL])
+
+    states = classify(runs, given.a_ground_truth())
+
+    assert SAFE_CELL not in states
+
+
 @pytest.mark.parametrize(
     ("baseline", "candidate", "expected"),
     [
@@ -154,6 +162,16 @@ def test_compare(
     )
 
     assert comparisons[VULNERABLE_CELL] == expected
+
+
+def test_compare_marks_a_cell_the_baseline_did_not_record():
+    comparisons = compare(
+        given.runs_observing(VULNERABLE_CELL, [FAIL, FAIL, FAIL]),
+        [{VULNERABLE_CELL: FAIL, SAFE_CELL: PASS} for _ in range(3)],
+        given.a_ground_truth(),
+    )
+
+    assert comparisons[SAFE_CELL] == CellComparison(outcome=CellOutcome.NOT_RECORDED)
 
 
 @pytest.mark.parametrize(
