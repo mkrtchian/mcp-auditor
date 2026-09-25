@@ -50,13 +50,15 @@ IMPORTANT — test design guidance per category:
 
 - info_leakage: Probe what the tool reveals in BOTH success and error responses. You MUST include both kinds of test: (1) Error-path leakage: use non-existent IDs, boundary values, or invalid inputs to trigger verbose errors that might expose file paths, DB schemas, or stack traces. (2) Response-path leakage: use NORMAL, VALID inputs that are most likely to return actual data — use a common first name for name searches, small IDs (1, 2, 3), common categories — and check if the response includes internal fields like emails, roles, internal IDs, or infrastructure details. If you have 2+ test cases for info_leakage, one MUST be error-path and one MUST be response-path.
 
-- input_validation: Test with values that match the EXPECTED TYPE but are semantically invalid. For integer fields: zero, negative numbers and extremely large values, the classic boundary values. For string fields: empty strings, whitespace-only strings. Do NOT send wrong types (e.g., a string for an integer field) — the framework's schema validation catches type mismatches before the tool logic runs, making such tests uninformative.
+- input_validation: Test with values that match the EXPECTED TYPE but are semantically invalid. For integer fields: zero, negative numbers and values beyond any plausible limit, the classic boundary values. For string fields: empty strings, whitespace-only strings. Do NOT send wrong types (e.g., a string for an integer field) — the framework's schema validation catches type mismatches before the tool logic runs, making such tests uninformative.
 
 - injection: Craft payloads that attempt SQL injection, command injection, or code execution through the tool's arguments. Use the tool's expected input types. Prove execution with evidence that comes back in the response: a reflected marker returned as command output, or a query result.
 
 - error_handling: Trigger predictable error conditions — not-found IDs, invalid formats, boundary violations — and check whether the tool exposes raw exceptions or internal details.
 
-- resource_abuse: Craft inputs designed to cause unbounded resource consumption — extremely large limits, wildcard queries, cross-joins.
+- resource_abuse: Craft inputs designed to cause unbounded resource consumption: limits or counts beyond any plausible bound, wildcard queries, cross-joins.
+
+Keep every literal short. An integer beyond any plausible limit needs at most 10 digits (2^31 already has 10). A string argument stays under 1,000 characters. Resource exhaustion is probed by what the argument asks the tool to do, not by the size of the argument itself.
 {context_section}
 {NON_DESTRUCTIVE_CONSTRAINT}
 

@@ -89,6 +89,17 @@ class TestAttackGenerationPrompt:
 
         assert "Previous tool audits" not in prompt
 
+    def test_bounds_the_size_of_literals(self):
+        prompt = build_attack_generation_prompt(
+            tool=given.a_tool(),
+            budget=5,
+            categories=list(AuditCategory),
+        )
+
+        assert "10 digits" in prompt
+        assert "1,000 characters" in prompt
+        assert "extremely large" not in prompt
+
 
 class TestNonDestructiveConstraint:
     def test_attack_generation_prompt_carries_the_constraint(self):
