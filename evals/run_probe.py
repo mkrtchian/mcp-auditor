@@ -116,10 +116,13 @@ def append_observation(sink: Path, observation: ProbeObservation) -> None:
 
 
 def _progress_line(done: int, total: int, observation: ProbeObservation) -> str:
-    return (
+    line = (
         f"call {done}/{total} {observation.candidate} {observation.call_id} "
         f"{observation.outcome.value} {observation.seconds:.1f}s"
     )
+    if observation.truncated_attempts > 0:
+        line += f" ({observation.truncated_attempts} truncated)"
+    return line
 
 
 def _rotation(models: list[CandidateModels], call_index: int) -> list[CandidateModels]:
@@ -131,11 +134,13 @@ def _rotation(models: list[CandidateModels], call_index: int) -> list[CandidateM
 async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> ProbeObservation:
     llm = models.judge if call.role == "judge" else models.main
     outcome, usage, output, error = CallOutcome.PARSED, TokenUsage(), None, None
+    truncated_attempts = 0
     started = time.perf_counter()
     try:
         output, usage = await llm.generate_structured(call.prompt, schema_for(call.schema_name))
-    except UnparseableOutput:
-        outcome = CallOutcome.PARSE_FAILURE
+    except UnparseableOutput as unparseable:
+        outcome, usage = CallOutcome.PARSE_FAILURE, unparseable.usage
+        truncated_attempts = unparseable.truncated_attempts
     except Exception as exception:
         outcome, error = CallOutcome.ERROR, f"{type(exception).__name__}: {exception}"
     seconds = time.perf_counter() - started
@@ -149,6 +154,7 @@ async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> Prob
         outcome=outcome,
         coverage_gap=_coverage_gap(output, budget),
         error=error,
+        truncated_attempts=truncated_attempts,
     )
 
 

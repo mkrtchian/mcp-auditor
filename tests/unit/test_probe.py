@@ -2,7 +2,15 @@ import math
 
 import tests.unit.support.test_probe_given as given
 import tests.unit.support.test_probe_then as then
-from evals.probe import Bars, CallOutcome, admit, call_cost, reference_failures, summarize
+from evals.probe import (
+    Bars,
+    CallOutcome,
+    ProbeObservation,
+    admit,
+    call_cost,
+    reference_failures,
+    summarize,
+)
 from evals.probe_candidates import Prices
 from mcp_auditor.domain.models import TokenUsage
 
@@ -33,6 +41,18 @@ class TestSummarize:
         stats = summarize(given.a_candidate(), observations, judge_weight=2.5)
 
         assert math.isclose(stats.weighted_cost, 1.0 + 2.5)
+
+    def test_counts_the_cost_of_a_parse_failure_like_a_parsed_call(self):
+        usage = TokenUsage(input_tokens=1_000, output_tokens=8_192)
+        prices = Prices(input=0.25, cached_input=0.025, output=1.50)
+        observations = [
+            given.an_observation(usage=usage),
+            given.an_observation(outcome=CallOutcome.PARSE_FAILURE, usage=usage),
+        ]
+
+        stats = summarize(given.a_candidate(prices), observations, judge_weight=1.0)
+
+        assert math.isclose(stats.weighted_cost, 2 * call_cost(usage, prices))
 
     def test_computes_the_median_latency_of_each_role(self):
         observations = [
@@ -81,6 +101,15 @@ class TestSummarize:
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)
 
         assert (stats.errors, stats.reasoning_tokens, stats.reasoning_expected) == (1, 42, True)
+
+
+class TestProbeObservation:
+    def test_a_line_written_before_truncation_was_recorded_reads_as_no_truncation(self):
+        line = given.an_observation(outcome=CallOutcome.PARSE_FAILURE).model_dump_json(
+            exclude={"truncated_attempts"}
+        )
+
+        assert ProbeObservation.model_validate_json(line).truncated_attempts == 0
 
 
 class TestAdmit:

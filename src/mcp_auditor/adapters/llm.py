@@ -171,16 +171,18 @@ class LLM:
     ) -> tuple[T, TokenUsage]:
         structured = self._bind(output_schema)
         accumulated_usage = TokenUsage()
+        truncated_attempts = 0
         for _attempt in range(self._max_parse_attempts):
             raw_response = await structured.ainvoke(prompt)
-            parsed, usage = self._unpack_raw_response(raw_response)
+            parsed, usage, truncated = self._unpack_raw_response(raw_response)
             accumulated_usage = accumulated_usage.add(usage)
+            if truncated:
+                truncated_attempts += 1
+                continue
             output = _validated(parsed, output_schema)
             if output is not None:
                 return output, accumulated_usage
-        raise UnparseableOutput(
-            f"LLM returned unparseable output after {self._max_parse_attempts} attempts"
-        )
+        raise UnparseableOutput(self._max_parse_attempts, truncated_attempts, accumulated_usage)
 
     def _bind(self, output_schema: type[BaseModel]) -> Runnable[str, object]:
         method = self._structured_output.method
@@ -195,7 +197,7 @@ class LLM:
     def _unpack_raw_response(
         self,
         raw_response: object,
-    ) -> tuple[object, TokenUsage]:
+    ) -> tuple[object, TokenUsage, bool]:
         """Langchain's include_raw=True returns {"raw": AIMessage, "parsed": BaseModel}.
 
         Single coupling point with that contract.
@@ -203,9 +205,7 @@ class LLM:
         response = cast(dict[str, Any], raw_response)
         metadata: _UsageMetadata | None = response["raw"].usage_metadata
         usage = _to_token_usage(metadata)
-        if _was_truncated(response["raw"].response_metadata):
-            return None, usage
-        return response["parsed"], usage
+        return response["parsed"], usage, _was_truncated(response["raw"].response_metadata)
 
 
 def _was_truncated(response_metadata: dict[str, Any]) -> bool:

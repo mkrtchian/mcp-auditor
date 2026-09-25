@@ -61,7 +61,7 @@ Prices are the list prices of 2026-09-24 (`PRICES_DATE`), per million tokens (in
 
 Alibaba lists a context-cache discount for Qwen3.8-Flash but no rate, so its cached input is priced as input, which can only overstate its cost.
 
-An OpenAI, Fireworks or Alibaba answer cut by the 8,192-token output cap counts as a parse failure, not as a parsed call: LangChain would otherwise repair the truncated JSON. A call that fails to parse raises without its token usage, so its cost counts as 0. It fails the parse bar anyway.
+An OpenAI, Fireworks or Alibaba answer cut by the 8,192-token output cap counts as a parse failure, not as a parsed call: LangChain would otherwise repair the truncated JSON. A call that fails to parse costs the usage of all its attempts, truncated ones included, and fails the parse bar anyway.
 
 **Once, after the first run:** compare the cost the report computes for each provider with that provider's billing console over the run's time window. A gap means the token accounting or the prices are wrong, and the cost bar cannot be read until it is explained.
 
@@ -114,4 +114,4 @@ The report goes to `output/probe_report.json` by default: the observations, the 
 - **Retries on HTTP 429** happen inside the provider clients (`max_retries=3`) and count in the latency.
 - **Same-session load** (network, provider load) affects all candidates alike only as far as the rotation spreads it.
 - **Median, not p95.** A p95 over about 60 judge calls rests on its third-largest value, so the median is the statistic.
-- **Parse failures carry no cost** (see Cost).
+- **Errors carry no cost.** An exception raised inside the provider client carries no token usage, so an error counts 0. A model answer holding an integer past the 4,300 digits Python converts is one: its tokens were billed but are not counted.

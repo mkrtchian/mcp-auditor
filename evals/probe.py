@@ -33,6 +33,7 @@ class ProbeObservation(BaseModel):
     outcome: CallOutcome
     coverage_gap: CoverageGap | None = None  # TestCaseBatch calls only
     error: str | None = None
+    truncated_attempts: int = 0  # attempts cut by the output cap on a parse failure
 
 
 class CandidateStats(BaseModel):

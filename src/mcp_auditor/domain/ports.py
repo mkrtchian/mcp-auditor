@@ -17,6 +17,11 @@ class MCPClientPort(Protocol):
 class UnparseableOutput(ValueError):
     """The model answered, but no attempt matched the requested schema."""
 
+    def __init__(self, attempts: int, truncated_attempts: int, usage: TokenUsage):
+        super().__init__(f"LLM returned unparseable output after {attempts} attempts")
+        self.truncated_attempts = truncated_attempts
+        self.usage = usage
+
 
 class LLMPort(Protocol):
     async def generate_structured[T: BaseModel](

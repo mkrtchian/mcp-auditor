@@ -36,11 +36,25 @@ def _models_raising(error: Exception) -> CandidateModels:
 
 @pytest.mark.asyncio
 async def test_unparseable_output_is_a_parse_failure():
-    models = _models_raising(UnparseableOutput("unparseable output after 3 attempts"))
+    models = _models_raising(
+        UnparseableOutput(attempts=3, truncated_attempts=0, usage=TokenUsage())
+    )
 
     observation = await observe(models, A_JUDGE_CALL, budget=10)
 
     assert observation.outcome == CallOutcome.PARSE_FAILURE
+
+
+@pytest.mark.asyncio
+async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempts():
+    usage = TokenUsage(input_tokens=100, output_tokens=8192)
+    models = _models_raising(UnparseableOutput(attempts=3, truncated_attempts=1, usage=usage))
+
+    observation = await observe(models, A_JUDGE_CALL, budget=10)
+
+    assert observation.outcome == CallOutcome.PARSE_FAILURE
+    assert observation.usage == usage
+    assert observation.truncated_attempts == 1
 
 
 @pytest.mark.asyncio

@@ -148,6 +148,17 @@ class TestDictSchema:
         with pytest.raises(UnparseableOutput, match="unparseable output after 3 attempts"):
             await llm.generate_structured("prompt", _DummyOutput)
 
+    @pytest.mark.asyncio
+    async def test_the_raised_error_carries_the_usage_of_every_attempt(self):
+        responses = [_raw_response({"unexpected": 1}, 100, 50 + attempt) for attempt in range(3)]
+        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(UnparseableOutput) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.usage == TokenUsage(input_tokens=300, output_tokens=153)
+        assert raised.value.truncated_attempts == 0
+
 
 def _truncated(response: dict[str, Any], **marker: str) -> dict[str, Any]:
     response["raw"].response_metadata = marker
@@ -178,6 +189,34 @@ class TestTruncatedOutput:
 
         with pytest.raises(UnparseableOutput):
             await llm.generate_structured("prompt", _DummyOutput)
+
+    @pytest.mark.asyncio
+    async def test_the_raised_error_counts_the_truncated_attempts_and_their_usage(self):
+        responses = [
+            _truncated(_raw_response({"value": "cut"}, 100, 8192), finish_reason="length")
+            for _ in range(2)
+        ]
+        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=2)
+
+        with pytest.raises(UnparseableOutput) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.truncated_attempts == 2
+        assert raised.value.usage == TokenUsage(input_tokens=200, output_tokens=16384)
+
+    @pytest.mark.asyncio
+    async def test_a_truncated_attempt_among_malformed_ones_is_counted_alone(self):
+        responses = [
+            _truncated(_raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
+            _raw_response({"unexpected": 1}, 100, 50),
+            _raw_response({"unexpected": 1}, 100, 50),
+        ]
+        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(UnparseableOutput) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.truncated_attempts == 1
 
 
 class TestMakeChatModel:
