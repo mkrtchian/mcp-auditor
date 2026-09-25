@@ -1,7 +1,7 @@
 import pytest
 
+import tests.unit.support.test_probe_subset_given as given
 from evals.probe_candidates import CHALLENGERS, REFERENCE, RETEST_CANDIDATES
-from evals.probe_corpus import ProbeCall, ProbeCorpus, ReferenceConditions
 from evals.probe_subset import UnknownCandidate, select_calls, select_candidates
 
 
@@ -27,40 +27,13 @@ class TestSelectCandidates:
 
 class TestSelectCalls:
     def test_keeps_the_calls_of_the_schema_in_corpus_order(self):
-        corpus = _a_corpus(["TestCaseBatch", "Judgment", "TestCaseBatch", "Judgment"])
+        corpus = given.a_corpus_of(["TestCaseBatch", "Judgment", "TestCaseBatch", "Judgment"])
 
         selected = select_calls(corpus, "TestCaseBatch")
 
         assert [call.call_id for call in selected] == ["call-0", "call-2"]
 
     def test_keeps_every_call_without_a_schema(self):
-        corpus = _a_corpus(["TestCaseBatch", "Judgment", "TestCaseBatch"])
+        corpus = given.a_corpus_of(["TestCaseBatch", "Judgment", "TestCaseBatch"])
 
         assert select_calls(corpus, None) == corpus.calls
-
-
-def _a_corpus(schema_names: list[str]) -> ProbeCorpus:
-    return ProbeCorpus(
-        captured_at="2026-09-24T10:00:00+00:00",
-        commit="8457fcc",
-        reference=ReferenceConditions(
-            provider="google",
-            model="gemini-3.1-flash-lite",
-            judge_model="gemini-3.1-flash-lite",
-            reasoning="minimal",
-            judge_reasoning="minimal",
-        ),
-        budget=10,
-        judge_sample_seed=7,
-        judge_calls_captured=2,
-        calls=[
-            ProbeCall(
-                call_id=f"call-{index}",
-                schema_name=schema_name,
-                role="main" if schema_name == "TestCaseBatch" else "judge",
-                source="honeypot",
-                prompt=f"prompt {index}",
-            )
-            for index, schema_name in enumerate(schema_names)
-        ],
-    )
