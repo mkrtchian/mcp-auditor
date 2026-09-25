@@ -14,7 +14,9 @@ from tests.unit.support.test_eval_gate_given import SAFE_CELL, VULNERABLE_CELL, 
 
 RECORDED_COMMIT = "0123abc"
 
-SERVER_SOURCE = '''import json
+SERVER_SOURCE = '''"""A server with one tool."""
+
+import json
 
 
 def get_user(user_id: str) -> str:

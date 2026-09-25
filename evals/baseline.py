@@ -1,7 +1,6 @@
+import ast
 import hashlib
-import io
 import os
-import tokenize
 from enum import StrEnum
 from pathlib import Path
 
@@ -66,17 +65,13 @@ def fingerprint_ground_truth(ground_truth: GroundTruth) -> str:
 
 
 def fingerprint_source(source: str) -> str:
-    """Hash of the token stream, blind to comments, blank lines and positions.
-
-    Types are hashed by name: their numbers shift between Python minor versions.
+    """Hash of what executes or reaches the model: comments, formatting and the module
+    docstring are left out (ADR 020). `ast.dump` output belongs to the Python minor version.
     """
-    ignored = {tokenize.COMMENT, tokenize.NL}
-    tokens = [
-        (tokenize.tok_name[token.type], token.string)
-        for token in tokenize.generate_tokens(io.StringIO(source).readline)
-        if token.type not in ignored
-    ]
-    return hashlib.sha256(repr(tokens).encode()).hexdigest()
+    module = ast.parse(source)
+    if ast.get_docstring(module, clean=False) is not None:
+        module.body = module.body[1:]
+    return hashlib.sha256(ast.dump(module).encode()).hexdigest()
 
 
 def condition_mismatches(recorded: BaselineConditions, candidate: BaselineConditions) -> list[str]:

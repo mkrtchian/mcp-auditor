@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 import tests.unit.support.test_eval_baseline_given as given
@@ -15,6 +16,7 @@ from evals.baseline import (
 from evals.gate import CellOutcome, Observation, ReplayRule, cell_key
 from evals.gate_verdict import GateMode, GateVerdict
 from evals.ground_truth import GroundTruth
+from evals.honeypots import HONEYPOTS
 from evals.recording import (
     GatedSetChange,
     RecordingRefused,
@@ -59,6 +61,46 @@ def test_source_fingerprint_changes_with_a_changed_string_literal():
     changed = given.SERVER_SOURCE.replace('"id"', '"user_id"')
 
     assert fingerprint_source(changed) != fingerprint_source(given.SERVER_SOURCE)
+
+
+def test_source_fingerprint_ignores_the_module_docstring():
+    edited = given.SERVER_SOURCE.replace("A server with one tool.", "The planted flaws, explained.")
+
+    assert fingerprint_source(edited) == fingerprint_source(given.SERVER_SOURCE)
+
+
+def test_source_fingerprint_ignores_quotes_trailing_commas_and_parentheses():
+    reformatted = given.SERVER_SOURCE.replace(
+        'def get_user(user_id: str) -> str:\n    """Return the user."""\n'
+        '    return json.dumps({"id": user_id})\n',
+        'def get_user(\n    user_id: str,\n) -> str:\n    """Return the user."""\n'
+        "    return (\n        json.dumps({'id': user_id})\n    )\n",
+    )
+    assert reformatted != given.SERVER_SOURCE
+
+    assert fingerprint_source(reformatted) == fingerprint_source(given.SERVER_SOURCE)
+
+
+def test_source_fingerprint_changes_with_a_tool_docstring():
+    changed = given.SERVER_SOURCE.replace("Return the user.", "Return any user.")
+
+    assert fingerprint_source(changed) != fingerprint_source(given.SERVER_SOURCE)
+
+
+def test_source_fingerprint_changes_with_a_changed_argument_type():
+    changed = given.SERVER_SOURCE.replace("user_id: str", "user_id: int")
+
+    assert fingerprint_source(changed) != fingerprint_source(given.SERVER_SOURCE)
+
+
+def test_no_honeypot_passes_instructions_to_its_server():
+    for honeypot in HONEYPOTS:
+        module = ast.parse(honeypot.server.read_text())
+
+        assert not any(
+            isinstance(node, ast.keyword) and node.arg == "instructions"
+            for node in ast.walk(module)
+        ), honeypot.name
 
 
 def test_equal_conditions_have_no_mismatch():
