@@ -7,6 +7,7 @@ from typing import Self, cast
 
 from rich.columns import Columns
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.status import Status
 from rich.table import Table
@@ -97,7 +98,9 @@ class AuditDisplay:
     def print_refused_steps(self, refused_steps: list[RefusedStep]) -> None:
         for refused in refused_steps:
             description = describe_refused_step(refused)
-            self.print_warning(f"{refused.tool_name}: refused by the model provider, {description}")
+            self.print_warning(
+                escape(f"{refused.tool_name}: refused by the model provider, {description}")
+            )
 
     def print_findings_recap(self, report: AuditReport) -> None:
         findings = sorted(report.findings, key=lambda f: f.severity, reverse=True)

@@ -1,7 +1,13 @@
 from rich.text import Text
 
 import tests.unit.support.test_console_given as given
-from mcp_auditor.domain.models import AuditCategory, ExecutionRegime, Severity
+from mcp_auditor.domain.models import (
+    AuditCategory,
+    AuditStep,
+    ExecutionRegime,
+    RefusedStep,
+    Severity,
+)
 
 
 def test_header_contains_target():
@@ -170,6 +176,16 @@ def test_refused_steps_are_warned_one_by_one_as_the_dry_run_does():
     warnings = _warnings(buffer.getvalue())
     assert len(warnings) == 2
     assert all(given.REFUSAL_MESSAGE in warning for warning in warnings)
+
+
+def test_a_refused_step_warning_prints_the_provider_message_verbatim():
+    display, buffer = given.a_ci_display()
+    message = "Blocked [see policy] by [/moderation]"
+    refused = RefusedStep(tool_name="get_user", step=AuditStep.JUDGMENT, provider_message=message)
+
+    display.print_refused_steps([refused])
+
+    assert message in _warnings(buffer.getvalue())[0]
 
 
 def test_summary_has_no_warning_without_a_coverage_gap():
