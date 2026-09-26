@@ -1,6 +1,11 @@
 from click.testing import CliRunner
 
-from mcp_auditor.cli import cli, parse_tools_filter
+import tests.unit.support.test_cli_given as given
+from mcp_auditor.audit import CIOptions
+from mcp_auditor.cli import ci_exit_code, cli, parse_tools_filter
+from mcp_auditor.domain import Severity
+
+CI = CIOptions(enabled=True, severity_threshold=Severity.MEDIUM)
 
 
 def test_parses_comma_separated():
@@ -46,3 +51,40 @@ def test_a_launcher_without_a_confinement_profile_stops_the_run():
     # The refusal precedes the LLM initialization, so the run stops the same way on a
     # machine that holds an API key and on one that does not.
     assert "could not initialize LLM" not in result.output
+
+
+class TestCIExitCode:
+    def test_an_incomplete_audit_without_findings_exits_3(self):
+        report = given.a_report(refused=True)
+
+        assert ci_exit_code(report, CI) == 3
+
+    def test_a_coverage_gap_alone_exits_3(self):
+        report = given.a_report(coverage_gap=True)
+
+        assert ci_exit_code(report, CI) == 3
+
+    def test_findings_at_the_threshold_exit_1_on_a_complete_audit(self):
+        report = given.a_report(finding=Severity.MEDIUM)
+
+        assert ci_exit_code(report, CI) == 1
+
+    def test_findings_take_precedence_over_an_incomplete_audit(self):
+        report = given.a_report(finding=Severity.HIGH, refused=True)
+
+        assert ci_exit_code(report, CI) == 1
+
+    def test_findings_below_the_threshold_on_a_complete_audit_exit_0(self):
+        report = given.a_report(finding=Severity.LOW)
+
+        assert ci_exit_code(report, CI) == 0
+
+    def test_a_complete_audit_without_findings_exits_0(self):
+        report = given.a_report()
+
+        assert ci_exit_code(report, CI) == 0
+
+    def test_an_incomplete_audit_exits_0_outside_ci(self):
+        report = given.a_report(refused=True)
+
+        assert ci_exit_code(report, CIOptions(enabled=False)) == 0

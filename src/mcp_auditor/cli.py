@@ -56,7 +56,12 @@ def cli() -> None:
     type=click.IntRange(min=0),
     help="Attack chains per tool (0 = disabled). Each chain adds several LLM calls.",
 )
-@click.option("--ci", is_flag=True, default=False, help="CI mode: plain output, exit 1.")
+@click.option(
+    "--ci",
+    is_flag=True,
+    default=False,
+    help="CI mode: plain output, exit 1 on findings, 3 on an incomplete audit.",
+)
 @click.option(
     "--severity-threshold",
     type=click.Choice([s.value for s in Severity], case_sensitive=False),
@@ -169,8 +174,17 @@ def _deliver(report: AuditReport, config: AuditConfig, display: AuditDisplay) ->
     display.print_summary(report)
     display.print_findings_recap(report)
     write_reports(report, config.report_paths, display)
-    if config.ci.enabled and report.has_findings_at_or_above(config.ci.severity_threshold):
-        raise SystemExit(1)
+    exit_code = ci_exit_code(report, config.ci)
+    if exit_code != 0:
+        raise SystemExit(exit_code)
+
+
+def ci_exit_code(report: AuditReport, ci: CIOptions) -> int:
+    if not ci.enabled:
+        return 0
+    if report.has_findings_at_or_above(ci.severity_threshold):
+        return 1
+    return 0 if report.is_complete else 3
 
 
 def _launch_context(config: AuditConfig) -> LaunchContext:

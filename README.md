@@ -217,7 +217,7 @@ With the default `openai` provider, the main model and the judge both run `gpt-6
 | `--resume`   | off        | Resume from last checkpoint                       |
 | `--chains`   | `0` (off)  | Attack chains per tool (adaptive multi-step sequences) |
 | `--dry-run`  | off        | Discover tools and generate cases, skip execution |
-| `--ci`       | off        | CI mode: no Rich UI, exit 1 on findings           |
+| `--ci`       | off        | CI mode: no Rich UI, exit 1 on findings, 3 on an incomplete audit |
 | `--severity-threshold` | `medium` | Minimum severity to trigger CI failure    |
 | `--unconfined` | off | Launch the server on this host with your privileges, outside any container |
 | `--image`    | per launcher | Image to run the server in, for a launcher the default table does not cover |
@@ -252,7 +252,7 @@ CLI flags override config file values. `unconfined`, `image` and `mount` are del
 
 The false-positive rate on a healthy server is not measured yet (see [Measurement](#measurement)). Until you have triaged a few runs against your own server, read a failing audit job as a signal to open the report before letting it block a merge.
 
-`--ci` replaces Rich UI with plain text, keeps all diagnostic output, and exits with code 1 if any finding meets the severity threshold.
+`--ci` replaces Rich UI with plain text, keeps all diagnostic output, and exits with code 1 if any finding meets the severity threshold. It exits with code 3 when the audit is incomplete, because a step was refused by the model provider or a tool was left with a coverage gap, since a clean result then covers less than was asked for. Findings take precedence: an incomplete audit with a finding at or above the threshold exits with code 1.
 
 ```yaml
 # .github/workflows/mcp-audit.yml
