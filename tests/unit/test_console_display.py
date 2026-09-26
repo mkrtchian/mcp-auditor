@@ -130,7 +130,7 @@ def test_summary_warns_about_a_tool_with_a_coverage_gap():
     assert output.count("Warning") == 1
     warning = " ".join(output.split("Warning")[1].split())
     assert "get_user" in warning
-    assert "7 of 10" in warning
+    assert "7 cases generated for 10 requested" in warning
     assert "injection" in warning
 
 
@@ -144,7 +144,7 @@ def test_ci_mode_summary_warns_about_a_tool_with_a_coverage_gap():
     assert output.count("Warning") == 1
     warning = " ".join(output.split("Warning")[1].split())
     assert "get_user" in warning
-    assert "7 of 10" in warning
+    assert "7 cases generated for 10 requested" in warning
 
 
 def test_summary_has_no_warning_without_a_coverage_gap():

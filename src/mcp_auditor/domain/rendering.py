@@ -96,9 +96,7 @@ def _blocked_count(report: AuditReport) -> int:
 
 
 def describe_coverage_gap(gap: CoverageGap) -> str:
-    description = (
-        f"{gap.received_cases} of {gap.requested_cases} requested cases generated after one retry"
-    )
+    description = f"{gap.received_cases} cases generated for {gap.requested_cases} requested"
     if gap.missing_categories:
         missing = ", ".join(category.value for category in gap.missing_categories)
         description += f", missing categories: {missing}"

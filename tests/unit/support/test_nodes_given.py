@@ -94,10 +94,10 @@ def a_tool_report(
     return ToolReport(tool=tool, cases=cases)
 
 
-def a_batch_of(num_cases: int) -> TestCaseBatch:
-    categories = list(AuditCategory)
+def a_batch_of(num_cases: int, categories: list[AuditCategory] | None = None) -> TestCaseBatch:
+    cycled = categories or list(AuditCategory)
     return TestCaseBatch(
-        cases=[a_payload(category=categories[i % len(categories)]) for i in range(num_cases)]
+        cases=[a_payload(category=cycled[i % len(cycled)]) for i in range(num_cases)]
     )
 
 

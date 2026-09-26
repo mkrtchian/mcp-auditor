@@ -1,6 +1,8 @@
+import pytest
+
 import tests.unit.support.test_coverage_given as given
 from mcp_auditor.domain import AuditCategory
-from mcp_auditor.domain.coverage import find_coverage_gap
+from mcp_auditor.domain.coverage import completion_size, find_coverage_gap
 from mcp_auditor.domain.models import CoverageGap
 
 ALL_CATEGORIES = list(AuditCategory)
@@ -57,3 +59,15 @@ def test_a_single_case_budget_never_reports_a_category_gap():
     batch = given.a_batch_of(1, categories=[AuditCategory.RESOURCE_ABUSE])
 
     assert find_coverage_gap(batch, budget=1, categories=ALL_CATEGORIES) is None
+
+
+@pytest.mark.parametrize(
+    ("budget", "missing_count", "expected"),
+    [(10, 1, 2), (10, 2, 4), (3, 3, 1), (3, 5, 3), (7, 1, 1)],
+)
+def test_a_completion_asks_each_missing_category_for_its_share_of_the_budget(
+    budget: int, missing_count: int, expected: int
+):
+    missing = ALL_CATEGORIES[-missing_count:]
+
+    assert completion_size(budget, ALL_CATEGORIES, missing) == expected

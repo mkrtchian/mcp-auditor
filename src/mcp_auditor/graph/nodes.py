@@ -1,12 +1,14 @@
+from dataclasses import dataclass
 from typing import Any
 
 from langgraph.graph import END  # type: ignore[import-untyped]
 
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.coverage import find_coverage_gap
+from mcp_auditor.domain.coverage import completion_size, find_coverage_gap
 from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
+    AuditPayload,
     AuditReport,
     BlockedPayload,
     CoverageGap,
@@ -15,6 +17,7 @@ from mcp_auditor.domain.models import (
     TestCase,
     TestCaseBatch,
     TokenUsage,
+    ToolDefinition,
     ToolReport,
     filter_tools,
     order_tools_for_audit,
@@ -43,16 +46,28 @@ async def prepare_tool(state: dict[str, Any]) -> dict[str, Any]:
     return {"current_tool": current, "coverage_gap": None}
 
 
+@dataclass(frozen=True)
+class GenerationRequest:
+    tool: ToolDefinition
+    budget: int
+    categories: list[AuditCategory]
+    attack_context: AttackContext
+
+    def prompt_for(self, categories: list[AuditCategory], budget: int) -> str:
+        return build_attack_generation_prompt(
+            tool=self.tool, budget=budget, categories=categories, attack_context=self.attack_context
+        )
+
+
 def make_generate_test_cases(llm: LLMPort):
     async def generate_test_cases(state: dict[str, Any]) -> dict[str, Any]:
-        tool = state["current_tool"]
-        budget = state["test_budget"]
-        attack_context = state["attack_context"]
-        categories = list(AuditCategory)
-        prompt = build_attack_generation_prompt(
-            tool=tool, budget=budget, categories=categories, attack_context=attack_context
+        request = GenerationRequest(
+            tool=state["current_tool"],
+            budget=state["test_budget"],
+            categories=list(AuditCategory),
+            attack_context=state["attack_context"],
         )
-        batch, gap, usages = await _generate_with_one_retry(llm, prompt, budget, categories)
+        batch, gap, usages = await _generate_covering_batch(llm, request)
         cases = [TestCase(payload=p) for p in batch.cases]
         return {
             "pending_cases": cases,
@@ -64,15 +79,31 @@ def make_generate_test_cases(llm: LLMPort):
     return generate_test_cases
 
 
-async def _generate_with_one_retry(
-    llm: LLMPort, prompt: str, budget: int, categories: list[AuditCategory]
+async def _generate_covering_batch(
+    llm: LLMPort, request: GenerationRequest
 ) -> tuple[TestCaseBatch, CoverageGap | None, list[TokenUsage]]:
+    prompt = request.prompt_for(request.categories, request.budget)
     batch, usage = await llm.generate_structured(prompt, TestCaseBatch)
-    gap = find_coverage_gap(batch, budget, categories)
-    if gap is None:
+    if find_coverage_gap(batch, request.budget, request.categories) is None:
         return batch, None, [usage]
     retried, retry_usage = await llm.generate_structured(prompt, TestCaseBatch)
-    return retried, find_coverage_gap(retried, budget, categories), [usage, retry_usage]
+    gap = find_coverage_gap(retried, request.budget, request.categories)
+    if gap is None or not gap.missing_categories:
+        return retried, gap, [usage, retry_usage]
+    added, completion_usage = await _complete_categories(llm, request, gap.missing_categories)
+    merged = TestCaseBatch(cases=[*retried.cases, *added])
+    merged_gap = find_coverage_gap(merged, request.budget, request.categories)
+    return merged, merged_gap, [usage, retry_usage, completion_usage]
+
+
+async def _complete_categories(
+    llm: LLMPort, request: GenerationRequest, missing: list[AuditCategory]
+) -> tuple[list[AuditPayload], TokenUsage]:
+    size = completion_size(request.budget, request.categories, missing)
+    completion, usage = await llm.generate_structured(
+        request.prompt_for(missing, size), TestCaseBatch
+    )
+    return [case for case in completion.cases if case.category in missing][:size], usage
 
 
 def make_execute_tool(server: AuditedServer):

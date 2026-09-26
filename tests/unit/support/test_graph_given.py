@@ -66,13 +66,14 @@ def a_fake_llm_whose_first_tool_batch_stays_short(cases_per_tool: int) -> FakeLL
     short_judgments = [a_judgment() for _ in short.cases]
     complete = a_complete_batch(cases_per_tool)
     complete_judgments = [a_judgment() for _ in complete.cases]
-    first_tool = [short, short, *short_judgments, AttackContext()]
+    first_tool = [short, short, a_complete_batch(1), *short_judgments, AttackContext()]
     second_tool = [complete, *complete_judgments, AttackContext()]
     return FakeLLM([*first_tool, *second_tool])
 
 
 def a_fake_dry_run_llm_whose_batch_stays_short(budget: int) -> FakeLLM:
-    return FakeLLM([a_complete_batch(budget - 1), a_complete_batch(budget - 1)])
+    short = a_complete_batch(budget - 1)
+    return FakeLLM([short, short, a_complete_batch(1)])
 
 
 # The graph wrappers below look trivial but are a typing seam: langgraph's

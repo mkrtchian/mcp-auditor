@@ -3,8 +3,9 @@ import re
 
 import tests.unit.support.test_rendering_given as given
 import tests.unit.support.test_rendering_then as then
-from mcp_auditor.domain.models import ExecutionRecord, ExecutionRegime
+from mcp_auditor.domain.models import AuditCategory, CoverageGap, ExecutionRecord, ExecutionRegime
 from mcp_auditor.domain.rendering import (
+    describe_coverage_gap,
     render_json,
     render_markdown,
     render_summary,
@@ -358,8 +359,24 @@ def test_markdown_flags_a_coverage_gap_right_under_the_tool_heading():
     section = result.split("## get_user\n")[1]
     gap_line = section.strip().splitlines()[0]
     assert gap_line.startswith("**Coverage gap**")
-    assert "7 of 10" in gap_line
+    assert "7 cases generated for 10 requested" in gap_line
     assert "injection, resource_abuse" in gap_line
+
+
+def test_a_coverage_gap_names_its_case_counts_and_missing_categories():
+    gap = CoverageGap(
+        requested_cases=10, received_cases=7, missing_categories=[AuditCategory.INJECTION]
+    )
+
+    assert describe_coverage_gap(gap) == (
+        "7 cases generated for 10 requested, missing categories: injection"
+    )
+
+
+def test_a_coverage_gap_without_missing_categories_names_its_case_counts_only():
+    gap = CoverageGap(requested_cases=10, received_cases=7, missing_categories=[])
+
+    assert describe_coverage_gap(gap) == "7 cases generated for 10 requested"
 
 
 def test_markdown_has_no_coverage_gap_line_without_a_gap():
