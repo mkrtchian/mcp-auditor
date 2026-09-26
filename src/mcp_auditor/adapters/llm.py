@@ -10,9 +10,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI  # pyright: ignore[rep
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, SecretStr, ValidationError
 
+from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import TokenUsage
-from mcp_auditor.domain.ports import UnparseableOutput
+from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 
 
 def create_llm(settings: Settings) -> "LLM":
@@ -173,13 +174,15 @@ class LLM:
         accumulated_usage = TokenUsage()
         truncated_attempts = 0
         for _attempt in range(self._max_parse_attempts):
-            raw_response = await structured.ainvoke(prompt)
-            parsed, usage, truncated = self._unpack_raw_response(raw_response)
-            accumulated_usage = accumulated_usage.add(usage)
-            if truncated:
+            raw_response = await _invoke(structured, prompt, accumulated_usage)
+            attempt = self._unpack_raw_response(raw_response)
+            accumulated_usage = accumulated_usage.add(attempt.usage)
+            if attempt.refusal is not None:
+                raise ProviderRefusal(attempt.refusal, accumulated_usage)
+            if attempt.truncated:
                 truncated_attempts += 1
                 continue
-            output = _validated(parsed, output_schema)
+            output = _validated(attempt.parsed, output_schema)
             if output is not None:
                 return output, accumulated_usage
         raise UnparseableOutput(self._max_parse_attempts, truncated_attempts, accumulated_usage)
@@ -194,18 +197,40 @@ class LLM:
             output_schema, method=method, include_raw=True
         )
 
-    def _unpack_raw_response(
-        self,
-        raw_response: object,
-    ) -> tuple[object, TokenUsage, bool]:
+    def _unpack_raw_response(self, raw_response: object) -> "_Attempt":
         """Langchain's include_raw=True returns {"raw": AIMessage, "parsed": BaseModel}.
 
         Single coupling point with that contract.
         """
         response = cast(dict[str, Any], raw_response)
-        metadata: _UsageMetadata | None = response["raw"].usage_metadata
-        usage = _to_token_usage(metadata)
-        return response["parsed"], usage, _was_truncated(response["raw"].response_metadata)
+        raw_message = response["raw"]
+        metadata: _UsageMetadata | None = raw_message.usage_metadata
+        return _Attempt(
+            parsed=response["parsed"],
+            usage=_to_token_usage(metadata),
+            truncated=_was_truncated(raw_message.response_metadata),
+            refusal=refusal_from_metadata(raw_message),
+        )
+
+
+@dataclass(frozen=True)
+class _Attempt:
+    parsed: object
+    usage: TokenUsage
+    truncated: bool
+    refusal: str | None
+
+
+async def _invoke(
+    structured: Runnable[str, object], prompt: str, usage_so_far: TokenUsage
+) -> object:
+    try:
+        return await structured.ainvoke(prompt)
+    except Exception as error:
+        refusal = refusal_from_error(error)
+        if refusal is None:
+            raise
+        raise ProviderRefusal(refusal, usage_so_far) from error
 
 
 def _was_truncated(response_metadata: dict[str, Any]) -> bool:

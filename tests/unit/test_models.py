@@ -13,7 +13,7 @@ from mcp_auditor.domain import (
     TokenUsage,
     ToolResponse,
 )
-from mcp_auditor.domain.models import order_tools_for_audit
+from mcp_auditor.domain.models import AuditStep, order_tools_for_audit
 
 
 class TestEnumConstraints:
@@ -131,6 +131,30 @@ class TestAuditReportFindings:
         report = AuditReport(target="test", tool_reports=[], token_usage=TokenUsage())
 
         assert report.has_findings_at_or_above(Severity.LOW) is False
+
+
+class TestAuditReportCompleteness:
+    def test_a_report_without_refusal_or_gap_is_complete(self):
+        report = given.a_report()
+
+        assert report.is_complete is True
+
+    def test_a_refused_step_makes_the_report_incomplete(self):
+        report = given.a_report(refused_steps=[given.a_refused_step()])
+
+        assert report.is_complete is False
+
+    def test_a_coverage_gap_makes_the_report_incomplete(self):
+        report = given.a_report(coverage_gap=given.a_coverage_gap())
+
+        assert report.is_complete is False
+
+    def test_refused_steps_survive_a_json_roundtrip(self):
+        report = given.a_report(refused_steps=[given.a_refused_step(AuditStep.CHAIN_PLANNING)])
+
+        rebuilt = AuditReport.model_validate_json(report.model_dump_json())
+
+        assert rebuilt.refused_steps == report.refused_steps
 
 
 class TestOrderToolsForAudit:

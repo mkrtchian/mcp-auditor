@@ -23,6 +23,17 @@ class UnparseableOutput(ValueError):
         self.usage = usage
 
 
+class ProviderRefusal(Exception):
+    """The provider refused the request or its answer on policy grounds,
+    before or instead of a model answer.
+    """
+
+    def __init__(self, provider_message: str, usage: TokenUsage):
+        super().__init__(provider_message)
+        self.provider_message = provider_message
+        self.usage = usage
+
+
 class LLMPort(Protocol):
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]

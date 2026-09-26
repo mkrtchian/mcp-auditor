@@ -278,11 +278,32 @@ class ExecutionRecord(BaseModel):
     Under the other regimes it is always `None`, there being no container of the auditor's."""
 
 
+class AuditStep(StrEnum):
+    TEST_GENERATION = "test_generation"
+    JUDGMENT = "judgment"
+    CONTEXT_EXTRACTION = "context_extraction"
+    CHAIN_PLANNING = "chain_planning"
+    CHAIN_STEP_OBSERVATION = "chain_step_observation"
+    CHAIN_STEP_PLANNING = "chain_step_planning"
+    CHAIN_JUDGMENT = "chain_judgment"
+
+
+class RefusedStep(BaseModel):
+    tool_name: str
+    step: AuditStep
+    provider_message: str
+
+
 class AuditReport(BaseModel):
     target: str
     tool_reports: list[ToolReport]
     token_usage: TokenUsage
     execution: ExecutionRecord | None = None
+    refused_steps: list[RefusedStep] = []
+
+    @property
+    def is_complete(self) -> bool:
+        return not self.refused_steps and all(tr.coverage_gap is None for tr in self.tool_reports)
 
     @property
     def findings(self) -> list[EvalResult]:
