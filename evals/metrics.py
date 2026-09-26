@@ -24,6 +24,7 @@ class RunDetail(BaseModel):
     recall: float
     precision: float
     blocked_reasons: list[str] = []
+    refused_steps: list[str] = []
     token_usage: dict[str, int]
 
 
@@ -144,6 +145,13 @@ def blocked_reasons(report: AuditReport) -> list[str]:
     ]
 
 
+def refused_steps(report: AuditReport) -> list[str]:
+    return [
+        f"{refused.tool_name}: {refused.step}, {refused.provider_message}"
+        for refused in report.refused_steps
+    ]
+
+
 def build_run_detail(
     run_index: int,
     verdicts: VerdictMap,
@@ -158,6 +166,7 @@ def build_run_detail(
         recall=compute_recall(verdicts, ground_truth),
         precision=compute_precision(verdicts, ground_truth),
         blocked_reasons=blocked_reasons(audit_report),
+        refused_steps=refused_steps(audit_report),
         token_usage={
             "input_tokens": audit_report.token_usage.input_tokens,
             "output_tokens": audit_report.token_usage.output_tokens,

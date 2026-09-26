@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from rich.console import Console
+from rich.markup import escape
 
 from evals.cve_environments import Launch
 from evals.cve_oracle import (
@@ -22,7 +23,7 @@ from evals.cve_oracle import (
     resolve_status,
 )
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
-from evals.metrics import blocked_reasons
+from evals.metrics import blocked_reasons, refused_steps
 from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
@@ -170,10 +171,7 @@ async def run_cve_benchmark(targets: list[CVETarget], budget: int, runs: int) ->
                     # Record before __exit__ fires so a best-effort teardown error
                     # cannot erase a completed run's detection.
                     detections.append(detect_in_report(target, report))
-                    for reason in blocked_reasons(report):
-                        console.print(
-                            f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]"
-                        )
+                    _print_incidents(target, report)
             except (LaunchError, subprocess.CalledProcessError) as exc:
                 console.print(f"[yellow]{target.cve_id} run skipped:[/yellow] {exc}")
                 continue
@@ -181,6 +179,15 @@ async def run_cve_benchmark(targets: list[CVETarget], budget: int, runs: int) ->
             not_run(target) if not detections else resolve_status(target, detections, budget)
         )
     return results
+
+
+def _print_incidents(target: CVETarget, report: AuditReport) -> None:
+    for reason in blocked_reasons(report):
+        console.print(f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]")
+    for refused in refused_steps(report):
+        console.print(
+            f"[yellow]{target.cve_id}: refused by the model provider, {escape(refused)}[/yellow]"
+        )
 
 
 async def calibrate_all(targets: list[CVETarget], ci: bool = False) -> bool:

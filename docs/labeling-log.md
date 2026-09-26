@@ -86,3 +86,19 @@ Commit: dd04f33.
 **What was known when the repair was decided.** Everything the first entry lists, plus its "Known after the revision" section: the per-cell verdicts of the four removed cells and of `delete_record × error_handling`, and the aggregates re-scored under both instruments. Not the per-cell verdicts of any R5 cell.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the fixture. (2) The disagreements were found while writing the rubric, from the fixture's code and the library's behavior, with the eval report closed. (3) The target behavior is the creation writings': a PASS control without a planted flaw, and a generic error where a plan promised one. Those writings predate every measurement. (4) The repair applies to every cell R5 lists, including PASS cells of tools that carry planted flaws in other categories. It works in both directions. On the PASS cells it lists, it removes an unplanted flaw, which can raise the measured precision. On four planted FAIL cells (`get_user` error_handling and info_leakage, info_leakage of `project_manager` and `user_directory`), it removes the library message a judge could have read as evidence, which can lower the measured recall. Both directions are stated here before any measurement.
+
+### 2026-09-27, refused steps in the eval output
+
+Commit: the one that adds this entry.
+
+**Ground truth.** Unchanged, 36 cells, 8 FAIL.
+
+**State of the gate.** No baseline is committed, so no gate compares against one.
+
+**What changed in the output.** Each run of the honeypot evals (`RunDetail.refused_steps` in the eval report, one console line per step beside the blocked payloads) and of the CVE benchmark (a console line beside its blocked payloads) lists the audit steps the model provider refused, one line per step, `<tool>: <step>, <provider message>`. No scoring, label, gate, bar or baseline logic changes, and no metric moves: a refused judgment already left its case without a verdict, which `aggregate_verdicts` skips.
+
+**Probe reclassification.** `evals/run_probe.py` records a call that raises `ProviderRefusal` as a parse failure carrying the refusal's usage and the provider's message. A refusal in the model's answer already ended as a parse failure, so its count does not move. A refusal returned as a 400 before the model (OpenAI's `invalid_prompt`, Alibaba's `DataInspectionFailed`) was an error and becomes a parse failure, which the refusal rule counts as a refusal on a `TestCaseBatch` call. The run of ADR 019 is the case it would have changed: the 12 Qwen3.8-Flash calls Alibaba rejected, filed as errors then, would be parse failures now, under the schemas of the attack chains they came from (`AuditPayload`, `StepObservation`, `ChainPlanBatch`, `Judgment`). None was a `TestCaseBatch` call, so none would count as a refusal. The 6 batches cut at the output cap stay errors.
+
+**Justification.** A refused step must not read as a miss. A cell that loses its only observation to a refusal looks, in the metrics, like a cell the auditor did not cover, and the output has to name the cause where a reader of the gate looks. In the probe, the method note says to rerun on an error, and a policy refusal is not transient: a rerun meets the same policy.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, its output and the probe's outcome classes. (2) The need was found when a provider refused one call of a baseline recording and the audit stopped, not through a metric. (3) The target is that a refusal be visible and never mistaken for a transient error or a miss, a criterion that reads no measurement. (4) The output change applies to every run and every step. The probe reclassification applies to every 400 policy refusal of every candidate and schema, the reference's included, and moves counts from the error bar to the parse failure bar, and to the refusal bar on `TestCaseBatch`.

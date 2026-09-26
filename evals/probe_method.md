@@ -24,9 +24,9 @@ A `TestCaseBatch` call is a refusal when its output does not parse within the ad
 
 The defects, listed per model under the table and in the report, the reference's included:
 
-- **Parse failures** after the adapter's 3 attempts, per schema (`TestCaseBatch`, `Judgment`, `AttackContext`, `ChainPlanBatch`, `StepObservation`, `AuditPayload`).
+- **Parse failures** after the adapter's 3 attempts, per schema (`TestCaseBatch`, `Judgment`, `AttackContext`, `ChainPlanBatch`, `StepObservation`, `AuditPayload`). A call the provider refuses on policy grounds is a parse failure too, with the provider's message in the observation's `error`, whether the refusal comes as the model's answer or as a 400 before the model (OpenAI's `invalid_prompt`, Alibaba's `DataInspectionFailed`). On a `TestCaseBatch` call it therefore counts as a refusal.
 - **Refusals**, by the rule above.
-- **Errors**: any exception other than a parse failure, such as an API error, or an OpenAI, Fireworks or Alibaba call that exceeds its 120-second timeout on every retry. A model that did not answer every call was not measured on the whole corpus. **On an error, rerun the probe** rather than read it as a fact about the model.
+- **Errors**: any exception other than a parse failure or a policy refusal, such as an API error, or an OpenAI, Fireworks or Alibaba call that exceeds its 120-second timeout on every retry. A model that did not answer every call was not measured on the whole corpus. **On an error, rerun the probe** rather than read it as a fact about the model.
 - **Reasoning tokens at odds with the setting**: see below.
 
 The numbers, per model: the weighted corpus cost and its ratio to the reference's, the median latency per call in each role, and the reasoning tokens. They are not judged against a threshold: each ADR that chooses a model states how it weighs them.

@@ -32,7 +32,7 @@ from evals.probe_subset import (
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.domain.coverage import find_coverage_gap
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, TestCaseBatch, TokenUsage
-from mcp_auditor.domain.ports import LLMPort, UnparseableOutput
+from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, UnparseableOutput
 
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 DEFAULT_REPORT_PATH = "output/probe_report.json"
@@ -165,6 +165,9 @@ async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> Prob
     except UnparseableOutput as unparseable:
         outcome, usage = CallOutcome.PARSE_FAILURE, unparseable.usage
         truncated_attempts = unparseable.truncated_attempts
+    except ProviderRefusal as refusal:
+        outcome, usage = CallOutcome.PARSE_FAILURE, refusal.usage
+        error = refusal.provider_message
     except Exception as exception:
         outcome, error = CallOutcome.ERROR, f"{type(exception).__name__}: {exception}"
     seconds = time.perf_counter() - started

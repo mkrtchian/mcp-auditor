@@ -3,9 +3,11 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
+    AuditStep,
     ChainGoal,
     EvalResult,
     EvalVerdict,
+    RefusedStep,
     Severity,
     TestCase,
     TokenUsage,
@@ -95,3 +97,10 @@ def and_a_blocked_chain(report: AuditReport, tool: str, category: AuditCategory)
         for tr in report.tool_reports
     ]
     return report.model_copy(update={"tool_reports": tool_reports})
+
+
+def and_a_refused_judgment(report: AuditReport, tool: str, provider_message: str) -> AuditReport:
+    refused = RefusedStep(
+        tool_name=tool, step=AuditStep.JUDGMENT, provider_message=provider_message
+    )
+    return report.model_copy(update={"refused_steps": [*report.refused_steps, refused]})

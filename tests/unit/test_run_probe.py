@@ -8,7 +8,7 @@ from evals.probe_candidates import REFERENCE
 from evals.probe_corpus import ProbeCall
 from evals.run_probe import CandidateModels, append_observation, observe
 from mcp_auditor.domain.models import TokenUsage
-from mcp_auditor.domain.ports import UnparseableOutput
+from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 
 A_JUDGE_CALL = ProbeCall(
     call_id="honeypot/Judgment/000",
@@ -55,6 +55,18 @@ async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempt
     assert observation.outcome == CallOutcome.PARSE_FAILURE
     assert observation.usage == usage
     assert observation.truncated_attempts == 1
+
+
+@pytest.mark.asyncio
+async def test_a_provider_refusal_is_a_parse_failure_carrying_its_usage_and_message():
+    usage = TokenUsage(input_tokens=120, output_tokens=5)
+    models = _models_raising(ProviderRefusal("flagged by the usage policy", usage))
+
+    observation = await observe(models, A_JUDGE_CALL, budget=10)
+
+    assert observation.outcome == CallOutcome.PARSE_FAILURE
+    assert observation.usage == usage
+    assert observation.error == "flagged by the usage policy"
 
 
 @pytest.mark.asyncio
