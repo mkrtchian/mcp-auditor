@@ -18,6 +18,7 @@ from mcp_auditor.graph.chain_nodes import (
     route_after_execute_step,
     route_after_judge,
     route_after_observe,
+    route_after_plan_step,
     route_after_planning,
     route_to_chains_or_report,
 )
@@ -130,7 +131,11 @@ def _build_chain_audit_subgraph(
         },
     )
     builder.add_conditional_edges("observe_step", route_after_observe)
-    builder.add_edge("plan_step", "execute_step")
+    builder.add_conditional_edges(
+        "plan_step",
+        route_after_plan_step,
+        {"execute_step": "execute_step", "judge_chain": "judge_chain"},
+    )
     builder.add_conditional_edges("judge_chain", route_after_judge)
     builder.add_conditional_edges("abandon_chain", route_after_judge)
     return builder.compile()

@@ -237,3 +237,46 @@ async def test_a_dry_run_with_a_refused_generation_carries_the_refused_step():
 
     then.report_has_a_gap_of(result["tool_reports"][0], requested=3, received=0)
     then.state_has_refused_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
+
+
+@pytest.mark.asyncio
+async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
+    fake_llm = given.a_fake_llm_refusing_the_chain_planning()
+    graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
+    state = given.an_initial_state(test_budget=1, chain_budget=1)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.report_has_no_chains(then.tool_report_at(result, 0))
+    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.CHAIN_PLANNING)])
+
+
+@pytest.mark.asyncio
+async def test_a_refused_observation_judges_its_chain_and_the_next_chain_runs():
+    fake_llm = given.a_fake_llm_refusing_the_first_chain_observation()
+    graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
+    state = given.an_initial_state(test_budget=1, chain_budget=2)
+
+    result = await given.invoke_graph(graph, state)
+
+    report = then.tool_report_at(result, 0)
+    then.report_has_chains(report, 2)
+    then.chain_has_eval_result(report.chains[0])
+    then.chain_has_eval_result(report.chains[1])
+    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.CHAIN_STEP_OBSERVATION)])
+
+
+@pytest.mark.asyncio
+async def test_a_refused_step_planning_judges_the_chain_with_the_steps_it_has():
+    fake_llm = given.a_fake_llm_refusing_the_chain_step_planning()
+    fake_mcp_client = FakeMCPClient([given.a_tool(name="get_user")])
+    graph = given.a_graph(fake_llm, fake_mcp_client)
+    state = given.an_initial_state(test_budget=1, chain_budget=1, max_chain_steps=3)
+
+    result = await given.invoke_graph(graph, state)
+
+    report = then.tool_report_at(result, 0)
+    then.report_has_chains(report, 1)
+    assert len(report.chains[0].steps) == 1
+    then.chain_has_eval_result(report.chains[0])
+    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.CHAIN_STEP_PLANNING)])

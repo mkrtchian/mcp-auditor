@@ -14,6 +14,7 @@ from mcp_auditor.domain import (
     ToolResponse,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.models import AuditStep
 from mcp_auditor.graph.chain_nodes import (
     abandon_chain,
     make_execute_step,
@@ -25,6 +26,7 @@ from mcp_auditor.graph.chain_nodes import (
     route_after_execute_step,
     route_after_judge,
     route_after_observe,
+    route_after_plan_step,
     route_after_planning,
     route_to_chains_or_report,
 )
@@ -44,6 +46,17 @@ class TestMakePlanChains:
         result = await node(state)
 
         then.pending_chains_count(result, 2)
+
+    @pytest.mark.asyncio
+    async def test_a_refused_planning_plans_no_chain(self):
+        node = make_plan_chains(FakeLLM([given.a_provider_refusal()]))
+        state = given.a_chain_audit_state(chain_budget=2)
+
+        result = await node(state)
+
+        then.pending_chains_count(result, 0)
+        then.refused_step_recorded(result, AuditStep.CHAIN_PLANNING)
+        assert route_after_planning({**state, **result}) == END
 
 
 class TestPrepareChain:
@@ -68,6 +81,15 @@ class TestPrepareChain:
         result = prepare_chain(state)
 
         assert result["blocked_step_reason"] is None
+
+    def test_clears_a_refusal_from_the_previous_chain(self):
+        state = given.a_chain_audit_state(
+            pending_chains=[given.a_chain_goal()], chain_step_refused=True
+        )
+
+        result = prepare_chain(state)
+
+        assert result["chain_step_refused"] is False
 
 
 class TestMakeExecuteStep:
@@ -178,6 +200,19 @@ class TestMakeObserveStep:
         assert latest.observation == "found path"
         assert result["current_observation"].should_continue is True
 
+    @pytest.mark.asyncio
+    async def test_a_refused_observation_sends_the_chain_to_its_judgment(self):
+        node = make_observe_step(FakeLLM([given.a_provider_refusal()]))
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[given.a_chain_step()],
+        )
+
+        result = await node(state)
+
+        then.refused_step_recorded(result, AuditStep.CHAIN_STEP_OBSERVATION)
+        assert route_after_observe({**state, **result}) == "judge_chain"
+
 
 class TestMakePlanStep:
     @pytest.mark.asyncio
@@ -199,6 +234,21 @@ class TestMakePlanStep:
         result = await node(state)
 
         assert result["current_step_payload"] == next_payload
+        assert route_after_plan_step({**state, **result}) == "execute_step"
+
+    @pytest.mark.asyncio
+    async def test_a_refused_step_planning_sends_the_chain_to_its_judgment(self):
+        node = make_plan_step(FakeLLM([given.a_provider_refusal()]))
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[given.a_chain_step()],
+            current_observation=given.a_step_observation(),
+        )
+
+        result = await node(state)
+
+        then.refused_step_recorded(result, AuditStep.CHAIN_STEP_PLANNING)
+        assert route_after_plan_step({**state, **result}) == "judge_chain"
 
 
 class TestMakeJudgeChain:
@@ -230,6 +280,24 @@ class TestMakeJudgeChain:
             verdict=EvalVerdict.FAIL,
         )
 
+    @pytest.mark.asyncio
+    async def test_a_refused_judgment_completes_the_chain_unjudged(self):
+        node = make_judge_chain(FakeLLM([given.a_provider_refusal()]))
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[given.a_chain_step()],
+            chain_step_refused=True,
+        )
+
+        result = await node(state)
+
+        then.completed_chains_count(result, 1)
+        chain = result["completed_chains"][0]
+        then.chain_has_steps(chain, 1)
+        assert chain.eval_result is None
+        then.refused_step_recorded(result, AuditStep.CHAIN_JUDGMENT)
+        assert result["chain_step_refused"] is False
+
 
 class TestRouteAfterObserve:
     def test_continues_when_should_continue_and_under_max(self):
@@ -238,6 +306,7 @@ class TestRouteAfterObserve:
             "current_observation": observation,
             "current_chain_steps": [given.a_chain_step()],
             "max_chain_steps": 5,
+            "chain_step_refused": False,
         }
         assert route_after_observe(state) == "plan_step"
 
@@ -247,6 +316,7 @@ class TestRouteAfterObserve:
             "current_observation": observation,
             "current_chain_steps": [given.a_chain_step()],
             "max_chain_steps": 5,
+            "chain_step_refused": False,
         }
         assert route_after_observe(state) == "judge_chain"
 
@@ -257,6 +327,7 @@ class TestRouteAfterObserve:
             "current_observation": observation,
             "current_chain_steps": steps,
             "max_chain_steps": 3,
+            "chain_step_refused": False,
         }
         assert route_after_observe(state) == "judge_chain"
 

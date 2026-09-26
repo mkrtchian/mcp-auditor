@@ -6,6 +6,7 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditPayload,
+    AuditStep,
     BlockedPayload,
     ChainPlanBatch,
     ChainStep,
@@ -20,6 +21,7 @@ from mcp_auditor.graph.chain_prompts import (
     build_step_observation_prompt,
     build_step_planning_prompt,
 )
+from mcp_auditor.graph.refusals import ModelCall, Refused, call_model
 
 
 def make_plan_chains(llm: LLMPort):
@@ -34,7 +36,11 @@ def make_plan_chains(llm: LLMPort):
             attack_context=context,
             chain_budget=budget,
         )
-        batch, usage = await llm.generate_structured(prompt, ChainPlanBatch)
+        call = ModelCall(tool.name, AuditStep.CHAIN_PLANNING, prompt, ChainPlanBatch)
+        outcome = await call_model(llm, call)
+        if isinstance(outcome, Refused):
+            return {"pending_chains": [], **outcome.state_update()}
+        batch, usage = outcome
         return {"pending_chains": batch.chains, "token_usage": [usage]}
 
     return plan_chains
@@ -48,6 +54,7 @@ def prepare_chain(state: dict[str, Any]) -> dict[str, Any]:
         "current_chain_steps": [],
         "current_step_payload": goal.first_step,
         "blocked_step_reason": None,
+        "chain_step_refused": False,
     }
 
 
@@ -78,7 +85,11 @@ def make_observe_step(llm: LLMPort):
             goal=goal,
             chain_steps=steps,
         )
-        obs, usage = await llm.generate_structured(prompt, StepObservation)
+        call = ModelCall(tool.name, AuditStep.CHAIN_STEP_OBSERVATION, prompt, StepObservation)
+        outcome = await call_model(llm, call)
+        if isinstance(outcome, Refused):
+            return {"chain_step_refused": True, **outcome.state_update()}
+        obs, usage = outcome
         updated_step = steps[-1].with_observation(obs.observation)
         steps[-1] = updated_step
         return {
@@ -103,7 +114,11 @@ def make_plan_step(llm: LLMPort):
             chain_history=steps,
             observation_hint=hint,
         )
-        payload, usage = await llm.generate_structured(prompt, AuditPayload)
+        call = ModelCall(tool.name, AuditStep.CHAIN_STEP_PLANNING, prompt, AuditPayload)
+        outcome = await call_model(llm, call)
+        if isinstance(outcome, Refused):
+            return {"chain_step_refused": True, **outcome.state_update()}
+        payload, usage = outcome
         return {"current_step_payload": payload, "token_usage": [usage]}
 
     return plan_step
@@ -111,33 +126,36 @@ def make_plan_step(llm: LLMPort):
 
 def make_judge_chain(llm: LLMPort):
     async def judge_chain(state: dict[str, Any]) -> dict[str, Any]:
-        goal = state["current_chain_goal"]
-        steps = state["current_chain_steps"]
         tool = state["current_tool"]
-        chain = AttackChain(goal=goal, steps=steps)
+        chain = AttackChain(
+            goal=state["current_chain_goal"],
+            steps=state["current_chain_steps"],
+            blocked_reason=state["blocked_step_reason"],
+        )
         prompt = build_chain_judge_prompt(tool=tool, chain=chain)
-        judgment, usage = await llm.generate_structured(prompt, Judgment)
-        payload = steps[-1].payload.arguments if steps else goal.first_step.arguments
-        eval_result = EvalResult(
-            tool_name=tool.name,
-            category=goal.category,
-            payload=payload,
-            verdict=judgment.verdict,
-            justification=judgment.justification,
-            severity=judgment.severity,
+        outcome = await call_model(
+            llm, ModelCall(tool.name, AuditStep.CHAIN_JUDGMENT, prompt, Judgment)
         )
-        judged_chain = chain.model_copy(
-            update={"eval_result": eval_result, "blocked_reason": state["blocked_step_reason"]}
-        )
-        return {
-            "completed_chains": [judged_chain],
-            "current_chain_goal": None,
-            "current_chain_steps": [],
-            "blocked_step_reason": None,
-            "token_usage": [usage],
-        }
+        if isinstance(outcome, Refused):
+            return {**_completion(chain), **outcome.state_update()}
+        judgment, usage = outcome
+        eval_result = _chain_eval_result(tool.name, chain, judgment)
+        judged_chain = chain.model_copy(update={"eval_result": eval_result})
+        return {**_completion(judged_chain), "token_usage": [usage]}
 
     return judge_chain
+
+
+def _chain_eval_result(tool_name: str, chain: AttackChain, judgment: Judgment) -> EvalResult:
+    last_payload = chain.steps[-1].payload if chain.steps else chain.goal.first_step
+    return EvalResult(
+        tool_name=tool_name,
+        category=chain.goal.category,
+        payload=last_payload.arguments,
+        verdict=judgment.verdict,
+        justification=judgment.justification,
+        severity=judgment.severity,
+    )
 
 
 def abandon_chain(state: dict[str, Any]) -> dict[str, Any]:
@@ -146,11 +164,16 @@ def abandon_chain(state: dict[str, Any]) -> dict[str, Any]:
         steps=[],
         blocked_reason=state["blocked_step_reason"],
     )
+    return _completion(chain)
+
+
+def _completion(chain: AttackChain) -> dict[str, Any]:
     return {
         "completed_chains": [chain],
         "current_chain_goal": None,
         "current_chain_steps": [],
         "blocked_step_reason": None,
+        "chain_step_refused": False,
     }
 
 
@@ -173,12 +196,20 @@ def route_after_execute_step(state: dict[str, Any]) -> str:
 
 
 def route_after_observe(state: dict[str, Any]) -> str:
+    if state["chain_step_refused"]:
+        return "judge_chain"
     obs = state["current_observation"]
     steps = state["current_chain_steps"]
     max_steps = state["max_chain_steps"]
     if obs.should_continue and len(steps) < max_steps:
         return "plan_step"
     return "judge_chain"
+
+
+def route_after_plan_step(state: dict[str, Any]) -> str:
+    if state["chain_step_refused"]:
+        return "judge_chain"
+    return "execute_step"
 
 
 def route_to_chains_or_report(state: dict[str, Any]) -> str:

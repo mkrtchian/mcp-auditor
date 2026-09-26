@@ -13,9 +13,11 @@ from mcp_auditor.domain import (
     Severity,
     StepObservation,
     TestCase,
+    TokenUsage,
     ToolDefinition,
     ToolResponse,
 )
+from mcp_auditor.domain.ports import ProviderRefusal
 from tests.fakes import FakeMCPClient
 
 
@@ -137,6 +139,7 @@ def a_chain_audit_state(
     attack_context: AttackContext | None = None,
     completed_chains: list[AttackChain] | None = None,
     blocked_step_reason: str | None = None,
+    chain_step_refused: bool = False,
 ) -> dict[str, Any]:
     return {
         "current_tool": tool or a_tool(),
@@ -151,5 +154,10 @@ def a_chain_audit_state(
         "current_observation": current_observation,
         "completed_chains": completed_chains or [],
         "blocked_step_reason": blocked_step_reason,
+        "chain_step_refused": chain_step_refused,
         "token_usage": [],
     }
+
+
+def a_provider_refusal() -> ProviderRefusal:
+    return ProviderRefusal("flagged by policy", TokenUsage(input_tokens=7, output_tokens=0))
