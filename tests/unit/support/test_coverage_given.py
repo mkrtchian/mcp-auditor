@@ -2,7 +2,7 @@ from mcp_auditor.domain import AuditCategory, AuditPayload, TestCaseBatch
 
 
 def a_batch_of(num_cases: int, categories: list[AuditCategory] | None = None) -> TestCaseBatch:
-    cycled = categories or list(AuditCategory)
+    cycled = list(AuditCategory) if categories is None else categories
     return TestCaseBatch(
         cases=[
             AuditPayload(
