@@ -110,3 +110,55 @@ async def test_a_retry_short_of_cases_only_is_not_completed():
     assert result["coverage_gap"] == CoverageGap(
         requested_cases=6, received_cases=5, missing_categories=[]
     )
+
+
+async def test_a_refused_first_call_leaves_no_case_and_a_gap_of_zero_received():
+    refusal = given.a_provider_refusal()
+    node = make_generate_test_cases(FakeLLM([refusal]))
+
+    result = await node(given.a_generation_state(test_budget=5))
+
+    assert result["pending_cases"] == []
+    assert result["coverage_gap"] == CoverageGap(
+        requested_cases=5, received_cases=0, missing_categories=list(AuditCategory)
+    )
+    then.one_generation_refusal_recorded(result)
+    assert result["token_usage"] == [refusal.usage]
+
+
+async def test_a_refused_retry_keeps_the_first_batch_with_its_gap():
+    first = given.a_batch_of(4)
+    node = make_generate_test_cases(FakeLLM([first, given.a_provider_refusal()]))
+
+    result = await node(given.a_generation_state(test_budget=5))
+
+    then.pending_payloads_are(result, first)
+    assert result["coverage_gap"] == CoverageGap(
+        requested_cases=5, received_cases=4, missing_categories=[AuditCategory.RESOURCE_ABUSE]
+    )
+    then.one_generation_refusal_recorded(result)
+    then.token_usage_count(result, 2)
+
+
+async def test_a_refused_completion_keeps_the_retried_batch_with_its_gap():
+    retried = given.a_batch_of(3)
+    node = make_generate_test_cases(FakeLLM([retried, retried, given.a_provider_refusal()]))
+
+    result = await node(given.a_generation_state(test_budget=5))
+
+    then.pending_payloads_are(result, retried)
+    assert result["coverage_gap"] == CoverageGap(
+        requested_cases=5,
+        received_cases=3,
+        missing_categories=[AuditCategory.INFO_LEAKAGE, AuditCategory.RESOURCE_ABUSE],
+    )
+    then.one_generation_refusal_recorded(result)
+    then.token_usage_count(result, 3)
+
+
+async def test_a_generation_without_refusal_records_none():
+    node = make_generate_test_cases(FakeLLM([given.a_batch_of(5)]))
+
+    result = await node(given.a_generation_state(test_budget=5))
+
+    assert result["refused_steps"] == []

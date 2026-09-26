@@ -11,6 +11,7 @@ from mcp_auditor.domain.models import (
     ChainGoal,
     ChainStep,
     CoverageGap,
+    RefusedStep,
     StepObservation,
     TestCase,
     TokenUsage,
@@ -27,6 +28,7 @@ class GraphState(TypedDict):
     judged_cases: list[TestCase]
     tool_reports: Annotated[list[ToolReport], operator.add]
     token_usage: Annotated[list[TokenUsage], operator.add]
+    refused_steps: Annotated[list[RefusedStep], operator.add]
     audit_report: AuditReport | None
     attack_context: AttackContext
     chain_budget: int
@@ -42,6 +44,7 @@ class AuditToolState(TypedDict):
     current_case: TestCase | None
     judged_cases: Annotated[list[TestCase], operator.add]
     token_usage: Annotated[list[TokenUsage], operator.add]
+    refused_steps: Annotated[list[RefusedStep], operator.add]
     attack_context: AttackContext
     coverage_gap: CoverageGap | None
 
@@ -66,6 +69,7 @@ class ChainAuditState(TypedDict):
     blocked_step_reason: str | None
     completed_chains: Annotated[list[AttackChain], operator.add]
     token_usage: Annotated[list[TokenUsage], operator.add]
+    refused_steps: Annotated[list[RefusedStep], operator.add]
 
 
 class ChainAuditInput(TypedDict):

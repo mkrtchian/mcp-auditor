@@ -13,7 +13,7 @@ from mcp_auditor.domain import (
     ToolResponse,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import filter_tools
+from mcp_auditor.domain.models import AuditStep, filter_tools
 from mcp_auditor.graph.nodes import (
     build_tool_report,
     make_discover_tools,
@@ -123,6 +123,21 @@ class TestExtractAttackContext:
 
         assert len(result["token_usage"]) == 1
 
+    async def test_a_refused_extraction_keeps_the_previous_context(self):
+        previous = AttackContext(db_engine="postgres")
+        refusal = given.a_provider_refusal()
+        node = make_extract_attack_context(FakeLLM([refusal]))
+        state = {
+            "tool_reports": [given.a_tool_report(tool_name="read_file")],
+            "attack_context": previous,
+        }
+
+        result = await node(state)
+
+        assert result["attack_context"] == previous
+        then.refused_step_recorded(result, tool_name="read_file", step=AuditStep.CONTEXT_EXTRACTION)
+        assert result["token_usage"] == [refusal.usage]
+
 
 class TestExecuteTool:
     async def test_dispatches_on_current_tool(self):
@@ -201,6 +216,20 @@ class TestJudgeResponse:
         then.judged_cases_count(result, 1)
         then.judged_case_identity_from(result, tool_name="read_file", case=case)
         then.judged_case_uses_judgment(result, judgment=judgment)
+
+    async def test_a_refused_judgment_leaves_the_case_unjudged(self):
+        refusal = given.a_provider_refusal()
+        node = make_judge_response(FakeLLM([refusal]))
+        case = given.a_test_case(response="some output")
+        tool = given.a_tool(name="read_file")
+
+        result = await node({"current_case": case, "judged_cases": [], "current_tool": tool})
+
+        assert result["judged_cases"] == [case]
+        assert result["judged_cases"][0].eval_result is None
+        assert result["current_case"] is None
+        then.refused_step_recorded(result, tool_name="read_file", step=AuditStep.JUDGMENT)
+        assert result["token_usage"] == [refusal.usage]
 
 
 class TestFinalizeToolAudit:

@@ -1,6 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import AttackChain, ToolReport
+from mcp_auditor.domain.models import AuditStep, RefusedStep
 
 
 def has_tool_reports(result: dict[str, Any], expected_count: int) -> None:
@@ -58,3 +59,17 @@ def report_has_a_gap_of(report: ToolReport, requested: int, received: int) -> No
 
 def report_has_no_gap(report: ToolReport) -> None:
     assert report.coverage_gap is None
+
+
+def audit_report_has_refused_steps(
+    result: dict[str, Any], expected: list[tuple[str, AuditStep]]
+) -> None:
+    _are_refused_steps(result["audit_report"].refused_steps, expected)
+
+
+def state_has_refused_steps(result: dict[str, Any], expected: list[tuple[str, AuditStep]]) -> None:
+    _are_refused_steps(result["refused_steps"], expected)
+
+
+def _are_refused_steps(steps: list[RefusedStep], expected: list[tuple[str, AuditStep]]) -> None:
+    assert [(step.tool_name, step.step) for step in steps] == expected

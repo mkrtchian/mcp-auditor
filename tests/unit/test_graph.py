@@ -4,6 +4,7 @@ from langgraph.checkpoint.memory import MemorySaver  # type: ignore[import-untyp
 import tests.unit.support.test_graph_given as given
 import tests.unit.support.test_graph_then as then
 from mcp_auditor.domain import AttackContext
+from mcp_auditor.domain.models import AuditStep
 from tests.fakes import FakeLLM, FakeMCPClient
 
 
@@ -194,3 +195,45 @@ async def test_a_dry_run_carries_the_coverage_gap_to_its_tool_report():
     result = await given.invoke_graph(graph, state)
 
     then.report_has_a_gap_of(result["tool_reports"][0], requested=3, received=2)
+
+
+@pytest.mark.asyncio
+async def test_a_refused_judgment_does_not_stop_the_audit():
+    fake_llm = given.a_fake_llm_refusing_the_first_of_two_judgments()
+    graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
+    state = given.an_initial_state(test_budget=2)
+
+    result = await given.invoke_graph(graph, state)
+
+    report = then.tool_report_at(result, 0)
+    assert [case.eval_result is None for case in report.cases] == [True, False]
+    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.JUDGMENT)])
+
+
+@pytest.mark.asyncio
+async def test_a_refused_first_generation_leaves_its_tool_untested_and_audits_the_next():
+    tools = [given.a_tool(name="get_user"), given.a_tool(name="list_users")]
+    fake_llm = given.a_fake_llm_refusing_the_first_tool_generation(cases_per_tool=2)
+    graph = given.a_graph(fake_llm, FakeMCPClient(tools))
+    state = given.an_initial_state(test_budget=2)
+
+    result = await given.invoke_graph(graph, state)
+
+    first = then.tool_report_at(result, 0)
+    then.report_has_cases(first, 0)
+    then.report_has_a_gap_of(first, requested=2, received=0)
+    then.report_has_cases(then.tool_report_at(result, 1), 2)
+    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
+    assert result["audit_report"].token_usage == fake_llm.total_usage
+
+
+@pytest.mark.asyncio
+async def test_a_dry_run_with_a_refused_generation_carries_the_refused_step():
+    fake_llm = FakeLLM([given.a_provider_refusal()])
+    graph = given.a_dry_run_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
+    state = given.an_initial_state(test_budget=3)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.report_has_a_gap_of(result["tool_reports"][0], requested=3, received=0)
+    then.state_has_refused_steps(result, [("get_user", AuditStep.TEST_GENERATION)])

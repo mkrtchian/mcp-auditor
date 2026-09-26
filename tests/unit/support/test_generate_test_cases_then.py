@@ -1,6 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import TestCaseBatch
+from mcp_auditor.domain.models import AuditStep, RefusedStep
 
 
 def pending_payloads_are(result: dict[str, Any], batch: TestCaseBatch) -> None:
@@ -9,3 +10,13 @@ def pending_payloads_are(result: dict[str, Any], batch: TestCaseBatch) -> None:
 
 def token_usage_count(result: dict[str, Any], expected: int) -> None:
     assert len(result["token_usage"]) == expected
+
+
+def one_generation_refusal_recorded(result: dict[str, Any]) -> None:
+    assert result["refused_steps"] == [
+        RefusedStep(
+            tool_name="test_tool",
+            step=AuditStep.TEST_GENERATION,
+            provider_message="flagged by policy",
+        )
+    ]

@@ -13,9 +13,11 @@ from mcp_auditor.domain import (
     Severity,
     StepObservation,
     TestCaseBatch,
+    TokenUsage,
     ToolDefinition,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.ports import ProviderRefusal
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
 
@@ -74,6 +76,21 @@ def a_fake_llm_whose_first_tool_batch_stays_short(cases_per_tool: int) -> FakeLL
 def a_fake_dry_run_llm_whose_batch_stays_short(budget: int) -> FakeLLM:
     short = a_complete_batch(budget - 1)
     return FakeLLM([short, short, a_complete_batch(1)])
+
+
+def a_fake_llm_refusing_the_first_of_two_judgments() -> FakeLLM:
+    return FakeLLM([a_complete_batch(2), a_provider_refusal(), a_judgment(), AttackContext()])
+
+
+def a_fake_llm_refusing_the_first_tool_generation(cases_per_tool: int) -> FakeLLM:
+    judgments = [a_judgment() for _ in range(cases_per_tool)]
+    first_tool = [a_provider_refusal(), AttackContext()]
+    second_tool = [a_complete_batch(cases_per_tool), *judgments, AttackContext()]
+    return FakeLLM([*first_tool, *second_tool])
+
+
+def a_provider_refusal() -> ProviderRefusal:
+    return ProviderRefusal("flagged by policy", TokenUsage(input_tokens=7, output_tokens=0))
 
 
 # The graph wrappers below look trivial but are a typing seam: langgraph's

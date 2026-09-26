@@ -90,7 +90,9 @@ def _build_audit_tool_subgraph(
     builder.add_node("execute_tool", make_execute_tool(server))
     builder.add_node("judge_response", make_judge_response(judge_llm))
     builder.add_edge(START, "generate_test_cases")
-    builder.add_edge("generate_test_cases", "execute_tool")
+    builder.add_conditional_edges(
+        "generate_test_cases", route_test_cases, {"execute_tool": "execute_tool", END: END}
+    )
     builder.add_conditional_edges(
         "execute_tool",
         route_after_execute,

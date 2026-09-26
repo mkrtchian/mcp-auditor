@@ -9,9 +9,11 @@ from mcp_auditor.domain import (
     Judgment,
     Severity,
     TestCase,
+    TokenUsage,
     ToolDefinition,
     ToolReport,
 )
+from mcp_auditor.domain.ports import ProviderRefusal
 
 
 def a_tool(
@@ -96,3 +98,7 @@ def a_coverage_gap() -> CoverageGap:
     return CoverageGap(
         requested_cases=5, received_cases=3, missing_categories=[AuditCategory.RESOURCE_ABUSE]
     )
+
+
+def a_provider_refusal() -> ProviderRefusal:
+    return ProviderRefusal("flagged by policy", TokenUsage(input_tokens=7, output_tokens=0))
