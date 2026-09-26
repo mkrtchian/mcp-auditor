@@ -20,8 +20,8 @@ Most MCP security tooling today works from one of two angles. **Static analysis*
 ## Quick start
 
 ```bash
-# Set your API key (Google AI Studio has a free tier: aistudio.google.com/apikey)
-export GOOGLE_API_KEY=your-key-here
+# Set your API key (create one at platform.openai.com/api-keys)
+export OPENAI_API_KEY=your-key-here
 
 # Audit an MCP server (the server runs in a Docker container, so Docker must be running)
 mkdir -p /tmp/sandbox
@@ -57,7 +57,7 @@ The audit runs in four phases, with an optional fifth:
 - **Observable effects only.** It flags a vulnerability when the effect surfaces in a tool response. A vulnerability whose only effect is a silent write, a spawned process, or out-of-band exfiltration leaves nothing in the response for the black-box auditor to read, so it stays out of reach until a future instrumented mode (see [ADR 011](docs/adr/011-instrumented-observation-deferred.md)).
 - **Confined by default.** The audited server runs in a Docker container: it does not see the rest of your filesystem, the services bound to your host's loopback interface, your privileges (all capabilities dropped, no privilege escalation, your own uid), or the auditor's environment and API key. What it does see: the paths your command names, mounted writable at the same absolute path, and the Internet, since egress stays open. An argument counts as a path only when the whole argument is spelled like one (absolute, `.`, `..`, `./…`, `../…`), so `--root=./data` is not mounted and a bare word like `build` never is. The report records the regime, the image and its digest, and the mounted paths. A command that is already a `docker run` is audited as you wrote it, flags included, and `--unconfined` launches the server on this host with your privileges. Starting containers requires membership in the `docker` group, which is equivalent to root on the host. [ADR 017](docs/adr/017-confined-target-execution.md), [ADR 018](docs/adr/018-container-confinement.md)
 
-**Safety:** run the auditor only against a server whose state you can restore, never against production. A secret the audited server reads under a mounted path is a live secret of your host, not of a copy. And treat the audit report as sensitive. To prove impact, the auditor reads real data, environment variables included, so a finding can quote a live secret, and nothing redacts it ([ADR 014](docs/adr/014-proving-impact.md)). The same secret reaches the judge model, and your LangSmith traces if tracing is enabled.
+**Safety:** run the auditor only against a server whose state you can restore, never against production. A secret the audited server reads under a mounted path is a live secret of your host, not of a copy. And treat the audit report as sensitive. To prove impact, the auditor reads real data, environment variables included, so a finding can quote a live secret, and nothing redacts it ([ADR 014](docs/adr/014-proving-impact.md)). The same secret reaches the judge model, and your LangSmith traces if tracing is enabled. With the default `openai` provider, OpenAI keeps abuse-monitoring logs of API requests for up to 30 days by default, so a secret quoted to the model stays on its side that long.
 
 The auditor removes its container when a run ends, however it ends. If one is ever left behind, they all carry the same label:
 
@@ -163,7 +163,7 @@ Three instruments run here, each answering a different question, and one questio
 The CVE benchmark runs against real, pinned-vulnerable MCP servers (filesystem, git, kubernetes, fetch). It is reproducible on any machine with two prerequisites: **Docker** (hosts the throwaway vulnerable targets) and an **LLM API key** (for the auditor itself). No cluster, no per-server CLI, no per-server key.
 
 ```bash
-# 1. Prerequisites: Docker running, an LLM API key exported (e.g. GOOGLE_API_KEY).
+# 1. Prerequisites: Docker running, an LLM API key exported (e.g. OPENAI_API_KEY).
 # 2. Build the pinned vulnerable-server images (one-time).
 docker compose -f evals/docker/compose.yml build
 
@@ -189,7 +189,7 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 
 | Variable                     | Default                | Description                               |
 |:---------------------------|:---------------------|:------------------------------------------|
-| `MCP_AUDITOR_PROVIDER`     | `google`             | LLM provider: `google`, `anthropic`, `openai`, `fireworks` or `alibaba` |
+| `MCP_AUDITOR_PROVIDER`     | `openai`             | LLM provider: `openai`, `google`, `anthropic`, `fireworks` or `alibaba` |
 | `MCP_AUDITOR_MODEL`        | per-provider default | Override the main model name              |
 | `MCP_AUDITOR_JUDGE_MODEL`  | same as main model   | Separate model for verdict classification |
 | `MCP_AUDITOR_REASONING`    | per-provider default | Reasoning setting sent to the main and judge models: `minimal`, `low`, `medium` or `high` for `google`, `none`, `low`, `medium`, `high`, `xhigh` or `max` for `openai`, `low`, `medium` or `high` for `fireworks`, not accepted for `anthropic` or `alibaba` |
@@ -204,7 +204,7 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `LANGSMITH_ENDPOINT`       | US region            | Set to the EU URL if your workspace is EU |
 | `MCP_AUDITOR_TOOL_CALL_TIMEOUT` | `30`           | Seconds before a tool call is abandoned and judged as a timeout error |
 
-With the default `google` provider, the main model and the judge both run `gemini-3.5-flash-lite` at thinking level `minimal`. With `anthropic` they run `claude-haiku-4-5-20251001` with no reasoning setting. With `openai` they run `gpt-6-luna` at reasoning effort `medium`. With `fireworks` they run GLM-5.3-Flash (`accounts/fireworks/models/glm-5p3-flash`) at reasoning effort `medium`: it is a thinking-only model, and the schema Fireworks enforces does not stop its reasoning. With `alibaba` they run `qwen3.8-flash` on Alibaba Cloud Model Studio's international endpoint, with thinking always off. The default reasoning applies to the provider's default model only: a model named by `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` is sent no reasoning setting, so its API default applies, unless `MCP_AUDITOR_REASONING` is set.
+With the default `openai` provider, the main model and the judge both run `gpt-6-luna` at reasoning effort `none`. With `google` they run `gemini-3.5-flash-lite` at thinking level `minimal`. With `anthropic` they run `claude-haiku-4-5-20251001` with no reasoning setting. With `fireworks` they run GLM-5.3-Flash (`accounts/fireworks/models/glm-5p3-flash`) at reasoning effort `medium`: it is a thinking-only model, and the schema Fireworks enforces does not stop its reasoning. With `alibaba` they run `qwen3.8-flash` on Alibaba Cloud Model Studio's international endpoint, with thinking always off. The default reasoning applies to the provider's default model only: a model named by `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` is sent no reasoning setting, so its API default applies, unless `MCP_AUDITOR_REASONING` is set.
 
 ### CLI options
 

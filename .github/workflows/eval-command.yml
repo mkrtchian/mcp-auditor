@@ -99,14 +99,14 @@ jobs:
       - name: Run judge eval
         if: (steps.cmd.outputs.mode == 'judge' || steps.cmd.outputs.mode == 'full') && steps.pr.outputs.fork == 'false'
         env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: uv run python -m evals.run_judge_eval
 
       - name: Run e2e eval
         id: e2e
         if: steps.cmd.outputs.mode == 'full' && steps.pr.outputs.fork == 'false'
         env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set +e
           uv run python -m evals.run_evals

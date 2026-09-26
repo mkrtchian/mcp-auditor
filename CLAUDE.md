@@ -9,10 +9,10 @@ uv run pytest tests/integration  # Integration tests only (one test needs Docker
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)
-uv run python -m evals.run_evals       # E2E evals (honeypot servers, needs an LLM key: GOOGLE_API_KEY by default)
+uv run python -m evals.run_evals       # E2E evals (honeypot servers, needs an LLM key: OPENAI_API_KEY by default)
 uv run python -m evals.run_evals --record-baseline  # Record evals/baselines/honeypot_e2e.json from a clean tree: run it twice at the same commit (exploratory, then confirmed), then commit it by hand
 uv run python -m evals.run_evals --ungated          # Floors only, any conditions, no baseline comparison (never in CI)
-uv run python -m evals.run_judge_eval  # Judge isolation eval (needs an LLM key: GOOGLE_API_KEY by default)
+uv run python -m evals.run_judge_eval  # Judge isolation eval (needs an LLM key: OPENAI_API_KEY by default)
 
 docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)
 uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live (Docker, no LLM)

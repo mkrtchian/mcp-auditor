@@ -248,14 +248,14 @@ class TestMakeChatModel:
 
         assert getattr(chat_model, "model", None) == "claude-haiku-4-5-20251001"
 
-    def test_openai_builds_luna_at_medium_reasoning(self, monkeypatch: pytest.MonkeyPatch):
+    def test_openai_builds_luna_at_reasoning_none(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("OPENAI_API_KEY", "dummy")
         settings = Settings(provider="openai", model="", judge_model="", reasoning="")
 
         chat_model = make_chat_model(settings, settings.resolve_model())
 
         assert getattr(chat_model, "model_name", None) == "gpt-6-luna"
-        assert getattr(chat_model, "reasoning_effort", None) == "medium"
+        assert getattr(chat_model, "reasoning_effort", None) == "none"
         assert getattr(chat_model, "request_timeout", None) == 120
         assert getattr(chat_model, "max_tokens", None) == 8192
 

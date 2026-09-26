@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     model_config = {"env_prefix": "MCP_AUDITOR_"}
 
-    provider: str = "google"
+    provider: str = "openai"
     model: str = ""
     judge_model: str = ""
     reasoning: str = ""
@@ -54,7 +54,7 @@ _PROVIDERS = {
     ),
     "openai": _ProviderDefaults(
         model="gpt-6-luna",
-        reasoning="medium",
+        reasoning="none",
         accepted_reasoning=("none", "low", "medium", "high", "xhigh", "max"),
     ),
     "fireworks": _ProviderDefaults(

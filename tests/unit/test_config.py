@@ -7,11 +7,13 @@ def test_default_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MCP_AUDITOR_PROVIDER", raising=False)
     monkeypatch.delenv("MCP_AUDITOR_MODEL", raising=False)
     monkeypatch.delenv("MCP_AUDITOR_JUDGE_MODEL", raising=False)
+    monkeypatch.delenv("MCP_AUDITOR_REASONING", raising=False)
 
     settings = Settings()
 
-    assert settings.provider == "google"
-    assert settings.resolve_model() == "gemini-3.5-flash-lite"
+    assert settings.provider == "openai"
+    assert settings.resolve_model() == "gpt-6-luna"
+    assert settings.resolve_reasoning(settings.resolve_model()) == "none"
 
 
 def test_anthropic_provider_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -114,13 +116,13 @@ def test_anthropic_with_any_reasoning_raises() -> None:
         settings.resolve_reasoning(settings.resolve_model())
 
 
-def test_openai_resolves_luna_at_medium_reasoning_by_default() -> None:
+def test_openai_resolves_luna_at_reasoning_none_by_default() -> None:
     settings = _settings("openai")
 
     model = settings.resolve_model()
 
     assert model == "gpt-6-luna"
-    assert settings.resolve_reasoning(model) == "medium"
+    assert settings.resolve_reasoning(model) == "none"
 
 
 def test_fireworks_resolves_glm_at_medium_reasoning_by_default() -> None:

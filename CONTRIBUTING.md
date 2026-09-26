@@ -25,7 +25,7 @@ uv run python -m evals.run_evals --ungated          # e2e evals on the floors al
 uv run python -m evals.run_judge_eval  # judge isolation eval (requires API key)
 ```
 
-Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set the key of the provider you use: `GOOGLE_API_KEY` (default provider), `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `FIREWORKS_API_KEY` or `DASHSCOPE_API_KEY`. Unit and integration tests don't need any key.
+Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set the key of the provider you use: `OPENAI_API_KEY` (default provider), `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `FIREWORKS_API_KEY` or `DASHSCOPE_API_KEY`. Unit and integration tests don't need any key.
 
 ### CVE benchmark
 
