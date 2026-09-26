@@ -398,3 +398,85 @@ def test_json_carries_the_coverage_gap():
         "missing_categories": ["injection", "resource_abuse"],
     }
     assert tool_reports[1]["coverage_gap"] is None
+
+
+def test_markdown_summary_flags_a_refused_step_and_an_incomplete_audit():
+    report = given.a_report_with_a_refused_judgment_on_get_user()
+
+    summary = render_markdown(report).split("\n## get_user")[0]
+
+    assert "**Refused by the model provider**: 1 step\n" in summary
+    assert "**Audit complete**: no" in summary
+    assert summary.index("**Audit complete**") < summary.index("**Findings**")
+
+
+def test_markdown_summary_flags_a_coverage_gap_alone_as_an_incomplete_audit():
+    report = given.a_report_with_a_coverage_gap_on_get_user()
+
+    result = render_markdown(report)
+
+    assert "**Audit complete**: no" in result
+    assert "**Refused by the model provider**" not in result
+
+
+def test_markdown_summary_of_a_complete_audit_has_neither_line():
+    report = given.a_two_tool_report()
+
+    result = render_markdown(report)
+
+    assert "**Audit complete**" not in result
+    assert "**Refused by the model provider**" not in result
+
+
+def test_markdown_tool_section_lists_its_refused_step():
+    report = given.a_report_with_a_refused_judgment_on_get_user()
+
+    sections = render_markdown(report).split("\n## ")
+    get_user_section = next(s for s in sections if s.startswith("get_user"))
+    list_items_section = next(s for s in sections if s.startswith("list_items"))
+
+    assert (
+        f'**Refused by the model provider**: judgment, "{given.REFUSAL_MESSAGE}"'
+        in get_user_section
+    )
+    assert "Refused" not in list_items_section
+
+
+def test_markdown_renders_a_case_with_no_verdict_and_no_block_as_not_judged():
+    report = given.a_report_with_an_unjudged_case()
+
+    result = render_markdown(report)
+
+    assert "### NOT JUDGED -- injection" in result
+    assert "ls; cat /etc/shadow" in result
+    assert "the model provider refused the judgment" in result
+
+
+def test_markdown_renders_a_chain_with_no_verdict_as_not_judged():
+    report = given.a_report_with_an_unjudged_chain()
+
+    result = render_markdown(report)
+
+    assert "**Verdict**: not judged" in result
+
+
+def test_json_carries_the_refused_steps():
+    report = given.a_report_with_a_refused_judgment_on_get_user()
+
+    refused_steps = json.loads(render_json(report))["refused_steps"]
+
+    assert refused_steps == [
+        {
+            "tool_name": "get_user",
+            "step": "judgment",
+            "provider_message": given.REFUSAL_MESSAGE,
+        }
+    ]
+
+
+def test_markdown_does_not_call_a_blocked_chain_not_judged():
+    report = given.a_report_with_a_blocked_chain()
+
+    result = render_markdown(report)
+
+    assert "not judged" not in result

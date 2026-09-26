@@ -3,6 +3,7 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
+    AuditStep,
     ChainGoal,
     ChainStep,
     CoverageGap,
@@ -10,6 +11,7 @@ from mcp_auditor.domain.models import (
     EvalVerdict,
     ExecutionRecord,
     ExecutionRegime,
+    RefusedStep,
     Severity,
     TestCase,
     TokenUsage,
@@ -224,6 +226,38 @@ def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
         missing_categories=[AuditCategory.INJECTION, AuditCategory.RESOURCE_ABUSE],
     )
     return report
+
+
+REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage policy"
+
+
+def a_report_with_a_refused_judgment_on_get_user() -> AuditReport:
+    report = a_two_tool_report()
+    report.refused_steps = [
+        RefusedStep(tool_name="get_user", step=AuditStep.JUDGMENT, provider_message=REFUSAL_MESSAGE)
+    ]
+    return report
+
+
+def a_report_with_an_unjudged_case() -> AuditReport:
+    unjudged = TestCase(
+        payload=AuditPayload(
+            category=AuditCategory.INJECTION,
+            description="shell metacharacters",
+            arguments={"command": "ls; cat /etc/shadow"},
+        ),
+    )
+    return a_report(
+        target="python server.py",
+        tool_reports=[_a_tool_report_with_blocked(cases=[unjudged])],
+    )
+
+
+def a_report_with_an_unjudged_chain() -> AuditReport:
+    return a_report(
+        target="python server.py",
+        tool_reports=[_a_tool_report_with_blocked(chains=[a_chain()])],
+    )
 
 
 def a_report_with_execution(record: ExecutionRecord) -> AuditReport:

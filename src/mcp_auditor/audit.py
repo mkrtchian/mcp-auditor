@@ -190,6 +190,7 @@ class Audit:
                 report.tool.name, [c.payload for c in report.cases]
             )
             self._display.print_coverage_gap(report)
+        self._display.print_refused_steps(result.get("refused_steps", []))
 
     def _give_up(
         self,

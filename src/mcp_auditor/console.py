@@ -17,6 +17,7 @@ from mcp_auditor.domain.models import (
     AuditReport,
     EvalResult,
     ExecutionRegime,
+    RefusedStep,
     Severity,
     TokenUsage,
     ToolReport,
@@ -25,6 +26,7 @@ from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.rendering import (
     ToolSummary,
     describe_coverage_gap,
+    describe_refused_step,
     format_severity_breakdown,
     render_summary,
     summarize_tools,
@@ -75,6 +77,9 @@ class AuditDisplay:
             self._print_results_panel(report)
         for tool_report in report.tool_reports:
             self.print_coverage_gap(tool_report)
+        self.print_refused_steps(report.refused_steps)
+        if not report.is_complete:
+            self.print_warning("audit incomplete, the steps warned about above were not done")
 
     def _print_results_panel(self, report: AuditReport) -> None:
         table, total_pass, total_judged = _build_summary_table(report)
@@ -88,6 +93,11 @@ class AuditDisplay:
             return
         gap = describe_coverage_gap(tool_report.coverage_gap)
         self.print_warning(f"{tool_report.tool.name}: incomplete test batch, {gap}")
+
+    def print_refused_steps(self, refused_steps: list[RefusedStep]) -> None:
+        for refused in refused_steps:
+            description = describe_refused_step(refused)
+            self.print_warning(f"{refused.tool_name}: refused by the model provider, {description}")
 
     def print_findings_recap(self, report: AuditReport) -> None:
         findings = sorted(report.findings, key=lambda f: f.severity, reverse=True)

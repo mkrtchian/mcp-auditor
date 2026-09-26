@@ -62,8 +62,12 @@ class AuditProgressReporter:
             judged = state_update.get("judged_cases", [])
             if judged:
                 last_case = judged[-1]
-                if last_case.eval_result is not None and self._active_progress:
+                if self._active_progress is None:
+                    return
+                if last_case.eval_result is not None:
                     self._active_progress.advance(last_case.eval_result)
+                elif last_case.blocked_reason is None:
+                    self._active_progress.advance_unjudged()
 
     def _on_chain_audit_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "plan_chains":

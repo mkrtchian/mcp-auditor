@@ -7,9 +7,11 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
+    AuditStep,
     CoverageGap,
     EvalResult,
     EvalVerdict,
+    RefusedStep,
     Severity,
     TestCase,
     TokenUsage,
@@ -122,6 +124,21 @@ def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
         received_cases=7,
         missing_categories=[AuditCategory.INJECTION],
     )
+    return report
+
+
+REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage policy"
+
+
+def a_refused_chain_planning_on_list_items() -> RefusedStep:
+    return RefusedStep(
+        tool_name="list_items", step=AuditStep.CHAIN_PLANNING, provider_message=REFUSAL_MESSAGE
+    )
+
+
+def a_report_with_a_refused_step() -> AuditReport:
+    report = a_report_with_two_tools()
+    report.refused_steps = [a_refused_chain_planning_on_list_items()]
     return report
 
 

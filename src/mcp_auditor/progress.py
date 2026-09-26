@@ -9,6 +9,8 @@ from mcp_auditor.domain.models import EvalResult, EvalVerdict, Severity
 from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.rendering import format_severity_breakdown
 
+UNJUDGED_LINE = "  ? not judged, the model provider refused the judgment"
+
 
 class CIProgress:
     def __init__(self, console: Console, tool_label: str) -> None:
@@ -31,6 +33,9 @@ class CIProgress:
 
     def advance_blocked(self, reason: str) -> None:
         self._console.print(format_blocked_line(reason))
+
+    def advance_unjudged(self) -> None:
+        self._console.print(UNJUDGED_LINE)
 
 
 class ToolProgress:
@@ -72,6 +77,11 @@ class ToolProgress:
 
     def advance_blocked(self, reason: str) -> None:
         self._progress.console.print(format_blocked_line(reason))
+        if self._task_id is not None:
+            self._progress.advance(self._task_id)
+
+    def advance_unjudged(self) -> None:
+        self._progress.console.print(UNJUDGED_LINE)
         if self._task_id is not None:
             self._progress.advance(self._task_id)
 

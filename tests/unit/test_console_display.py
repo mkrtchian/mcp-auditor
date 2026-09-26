@@ -126,12 +126,12 @@ def test_summary_warns_about_a_tool_with_a_coverage_gap():
 
     display.print_summary(report)
 
-    output = Text.from_ansi(buffer.getvalue()).plain
-    assert output.count("Warning") == 1
-    warning = " ".join(output.split("Warning")[1].split())
-    assert "get_user" in warning
-    assert "7 cases generated for 10 requested" in warning
-    assert "injection" in warning
+    warnings = _warnings(Text.from_ansi(buffer.getvalue()).plain)
+    assert len(warnings) == 2
+    assert "get_user" in warnings[0]
+    assert "7 cases generated for 10 requested" in warnings[0]
+    assert "injection" in warnings[0]
+    assert "incomplete" in warnings[1]
 
 
 def test_ci_mode_summary_warns_about_a_tool_with_a_coverage_gap():
@@ -140,11 +140,36 @@ def test_ci_mode_summary_warns_about_a_tool_with_a_coverage_gap():
 
     display.print_summary(report)
 
-    output = buffer.getvalue()
-    assert output.count("Warning") == 1
-    warning = " ".join(output.split("Warning")[1].split())
-    assert "get_user" in warning
-    assert "7 cases generated for 10 requested" in warning
+    warnings = _warnings(buffer.getvalue())
+    assert len(warnings) == 2
+    assert "get_user" in warnings[0]
+    assert "7 cases generated for 10 requested" in warnings[0]
+    assert "incomplete" in warnings[1]
+
+
+def test_summary_warns_about_a_refused_step_then_about_the_incomplete_audit():
+    report = given.a_report_with_a_refused_step()
+    display, buffer = given.a_ci_display()
+
+    display.print_summary(report)
+
+    warnings = _warnings(buffer.getvalue())
+    assert len(warnings) == 2
+    assert "list_items" in warnings[0]
+    assert "chain planning" in warnings[0]
+    assert given.REFUSAL_MESSAGE in warnings[0]
+    assert "incomplete" in warnings[1]
+
+
+def test_refused_steps_are_warned_one_by_one_as_the_dry_run_does():
+    display, buffer = given.a_ci_display()
+    refused = given.a_refused_chain_planning_on_list_items()
+
+    display.print_refused_steps([refused, refused])
+
+    warnings = _warnings(buffer.getvalue())
+    assert len(warnings) == 2
+    assert all(given.REFUSAL_MESSAGE in warning for warning in warnings)
 
 
 def test_summary_has_no_warning_without_a_coverage_gap():
@@ -154,3 +179,7 @@ def test_summary_has_no_warning_without_a_coverage_gap():
     display.print_summary(report)
 
     assert "Warning" not in buffer.getvalue()
+
+
+def _warnings(output: str) -> list[str]:
+    return [" ".join(chunk.split()) for chunk in output.split("Warning")[1:]]

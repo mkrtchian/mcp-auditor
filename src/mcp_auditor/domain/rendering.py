@@ -11,6 +11,7 @@ from mcp_auditor.domain.models import (
     EvalVerdict,
     ExecutionRecord,
     ExecutionRegime,
+    RefusedStep,
     Severity,
     TestCase,
     ToolReport,
@@ -38,7 +39,8 @@ def render_markdown(report: AuditReport) -> str:
         _render_summary_section(report),
     ]
     for tool_report in report.tool_reports:
-        sections.append(_render_tool_section(tool_report))
+        refused_steps = [r for r in report.refused_steps if r.tool_name == tool_report.tool.name]
+        sections.append(_render_tool_section(tool_report, refused_steps))
     return "\n".join(sections)
 
 
@@ -58,12 +60,24 @@ def _render_summary_section(report: AuditReport) -> str:
     lines.append(f"**Test cases**: {total_cases}")
     if blocked_count > 0:
         lines.append(f"**Blocked**: {blocked_count}")
+    lines.extend(_render_completeness_lines(report))
     lines.append(f"**Findings**: {finding_count}")
     if finding_count > 0:
         lines.append(f"  {_severity_breakdown(findings)}")
     usage = report.token_usage
     lines.append(f"**Token usage**: {usage.input_tokens} input, {usage.output_tokens} output")
     return "\n".join(lines)
+
+
+def _render_completeness_lines(report: AuditReport) -> list[str]:
+    lines: list[str] = []
+    refused_count = len(report.refused_steps)
+    if refused_count > 0:
+        noun = "step" if refused_count == 1 else "steps"
+        lines.append(f"**Refused by the model provider**: {refused_count} {noun}")
+    if not report.is_complete:
+        lines.append("**Audit complete**: no")
+    return lines
 
 
 def _render_execution_lines(record: ExecutionRecord) -> list[str]:
@@ -103,18 +117,29 @@ def describe_coverage_gap(gap: CoverageGap) -> str:
     return description
 
 
-def _render_tool_section(tool_report: ToolReport) -> str:
+def describe_refused_step(refused: RefusedStep) -> str:
+    return f'{refused.step.replace("_", " ")}, "{refused.provider_message}"'
+
+
+def _render_tool_section(tool_report: ToolReport, refused_steps: list[RefusedStep]) -> str:
     lines = [f"\n## {tool_report.tool.name}\n"]
     if tool_report.coverage_gap is not None:
         lines.append(f"**Coverage gap**: {describe_coverage_gap(tool_report.coverage_gap)}\n")
+    for refused in refused_steps:
+        lines.append(f"**Refused by the model provider**: {describe_refused_step(refused)}\n")
     for case in tool_report.cases:
-        if case.eval_result is not None:
-            lines.append(_render_result_section(case.eval_result))
-        elif case.blocked_reason is not None:
-            lines.append(_render_blocked_section(case))
+        lines.append(_render_case_section(case))
     for chain in tool_report.chains:
         lines.append(_render_chain_section(chain))
     return "\n".join(lines)
+
+
+def _render_case_section(case: TestCase) -> str:
+    if case.eval_result is not None:
+        return _render_result_section(case.eval_result)
+    if case.blocked_reason is not None:
+        return _render_blocked_section(case)
+    return _render_unjudged_section(case)
 
 
 def _render_result_section(result: EvalResult) -> str:
@@ -140,6 +165,15 @@ def _render_blocked_section(case: TestCase) -> str:
     return "\n".join(lines)
 
 
+def _render_unjudged_section(case: TestCase) -> str:
+    lines = [
+        f"### NOT JUDGED -- {case.payload.category}",
+        f"**Payload**: `{case.payload.arguments}`",
+        "**Reason**: the model provider refused the judgment",
+    ]
+    return "\n".join(lines)
+
+
 def _render_chain_section(chain: AttackChain) -> str:
     lines = [
         f"### CHAIN: {chain.goal.description}",
@@ -150,6 +184,8 @@ def _render_chain_section(chain: AttackChain) -> str:
         lines.append(f"**Blocked**: {chain.blocked_reason}")
     if chain.eval_result:
         lines.append(_render_chain_verdict(chain.eval_result))
+    elif not chain.blocked_reason:
+        lines.append("**Verdict**: not judged")
     return "\n".join(lines)
 
 

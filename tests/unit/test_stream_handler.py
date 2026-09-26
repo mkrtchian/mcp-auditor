@@ -1,3 +1,5 @@
+from rich.text import Text
+
 import tests.unit.support.test_console_given as given
 from mcp_auditor.domain.models import AuditCategory, AuditPayload, TestCase
 from mcp_auditor.stream_handler import AuditProgressReporter
@@ -34,6 +36,22 @@ def test_a_normal_execution_reports_nothing():
     )
 
     assert buffer.getvalue() == ""
+
+
+def test_an_unjudged_case_advances_the_progress_bar():
+    display, buffer = given.a_display()
+    reporter = AuditProgressReporter(display)
+    reporter.on_stream_event(_a_generation_event())
+
+    for _ in range(2):
+        reporter.on_stream_event(
+            (TOOL_AUDIT_NAMESPACE, {"judge_response": {"judged_cases": [_a_case()]}})
+        )
+    reporter.on_stream_event(((), {"build_tool_report": {}}))
+
+    output = Text.from_ansi(buffer.getvalue()).plain
+    assert "2/2" in output
+    assert "not judged" in output
 
 
 def _a_generation_event() -> tuple[tuple[str, ...], dict[str, object]]:
