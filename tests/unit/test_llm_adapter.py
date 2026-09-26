@@ -1,45 +1,20 @@
 # pyright: reportArgumentType=false
-from dataclasses import dataclass, field
-from typing import Any
-
-import httpx2
-import openai
 import pytest
 from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput, make_chat_model
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import TokenUsage
-from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.ports import UnparseableOutput
+from tests.fakes.chat_model import FakeChatModel, raw_response, truncated
 
 
 class _DummyOutput(BaseModel):
     value: str
 
 
-@dataclass
-class _FakeAIMessage:
-    usage_metadata: dict[str, Any]
-    response_metadata: dict[str, Any] = field(default_factory=dict[str, Any])
-    additional_kwargs: dict[str, Any] = field(default_factory=dict[str, Any])
-    content: str | list[dict[str, Any]] = ""
-
-
 _PYDANTIC_SCHEMA = StructuredOutput(method="json_schema")
 _DICT_SCHEMA = StructuredOutput(method="json_schema", schema_as_dict=True)
-
-
-def _raw_response(
-    parsed: BaseModel | dict[str, Any] | None,
-    input_tokens: int,
-    output_tokens: int,
-    details: dict[str, dict[str, int]] | None = None,
-) -> dict[str, Any]:
-    usage_metadata: dict[str, Any] = {"input_tokens": input_tokens, "output_tokens": output_tokens}
-    return {
-        "raw": _FakeAIMessage(usage_metadata=usage_metadata | (details or {})),
-        "parsed": parsed,
-    }
 
 
 def _details(cache_read: int, reasoning: int) -> dict[str, dict[str, int]]:
@@ -49,37 +24,14 @@ def _details(cache_read: int, reasoning: int) -> dict[str, dict[str, int]]:
     }
 
 
-class _FakeStructuredOutput:
-    def __init__(self, responses: list[dict[str, Any] | Exception]) -> None:
-        self._responses = list(responses)
-        self._call_index = 0
-
-    async def ainvoke(self, _prompt: str) -> dict[str, Any]:
-        response = self._responses[self._call_index]
-        self._call_index += 1
-        if isinstance(response, Exception):
-            raise response
-        return response
-
-
-class _FakeModel:
-    """Fake that mimics BaseChatModel.with_structured_output(include_raw=True)."""
-
-    def __init__(self, responses: list[dict[str, Any] | Exception]) -> None:
-        self._responses = responses
-
-    def with_structured_output(self, *_args: Any, **_kwargs: Any) -> _FakeStructuredOutput:
-        return _FakeStructuredOutput(self._responses)
-
-
 class TestTokenAccumulationOnRetry:
     @pytest.mark.asyncio
     async def test_usage_reflects_all_attempts_not_just_successful_one(self):
         responses = [
-            _raw_response(None, 100, 50, _details(cache_read=30, reasoning=10)),
-            _raw_response(_DummyOutput(value="ok"), 100, 50, _details(cache_read=20, reasoning=5)),
+            raw_response(None, 100, 50, _details(cache_read=30, reasoning=10)),
+            raw_response(_DummyOutput(value="ok"), 100, 50, _details(cache_read=20, reasoning=5)),
         ]
-        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
+        llm = LLM(FakeChatModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -90,9 +42,9 @@ class TestTokenAccumulationOnRetry:
     @pytest.mark.asyncio
     async def test_single_successful_attempt_returns_exact_usage(self):
         responses = [
-            _raw_response(parsed=_DummyOutput(value="ok"), input_tokens=100, output_tokens=50),
+            raw_response(parsed=_DummyOutput(value="ok"), input_tokens=100, output_tokens=50),
         ]
-        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
+        llm = LLM(FakeChatModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -103,9 +55,9 @@ class TestTokenDetails:
     @pytest.mark.asyncio
     async def test_details_fill_cached_input_and_reasoning_tokens(self):
         responses = [
-            _raw_response(_DummyOutput(value="ok"), 100, 50, _details(cache_read=40, reasoning=20)),
+            raw_response(_DummyOutput(value="ok"), 100, 50, _details(cache_read=40, reasoning=20)),
         ]
-        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
+        llm = LLM(FakeChatModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -114,8 +66,8 @@ class TestTokenDetails:
 
     @pytest.mark.asyncio
     async def test_metadata_without_details_leaves_them_at_zero(self):
-        responses = [_raw_response(_DummyOutput(value="ok"), 100, 50)]
-        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
+        responses = [raw_response(_DummyOutput(value="ok"), 100, 50)]
+        llm = LLM(FakeChatModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -126,8 +78,8 @@ class TestTokenDetails:
 class TestDictSchema:
     @pytest.mark.asyncio
     async def test_a_dict_matching_the_schema_is_returned_as_the_model(self):
-        responses = [_raw_response({"value": "ok"}, 100, 50)]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+        responses = [raw_response({"value": "ok"}, 100, 50)]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
 
         output, _ = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -136,10 +88,10 @@ class TestDictSchema:
     @pytest.mark.asyncio
     async def test_a_dict_failing_validation_is_retried_with_its_usage_counted(self):
         responses = [
-            _raw_response({"unexpected": 1}, 100, 50),
-            _raw_response({"value": "ok"}, 100, 50),
+            raw_response({"unexpected": 1}, 100, 50),
+            raw_response({"value": "ok"}, 100, 50),
         ]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
 
         output, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -148,16 +100,16 @@ class TestDictSchema:
 
     @pytest.mark.asyncio
     async def test_dicts_failing_validation_on_every_attempt_raise(self):
-        responses = [_raw_response({"unexpected": 1}, 100, 50) for _ in range(3)]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+        responses = [raw_response({"unexpected": 1}, 100, 50) for _ in range(3)]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
 
         with pytest.raises(UnparseableOutput, match="unparseable output after 3 attempts"):
             await llm.generate_structured("prompt", _DummyOutput)
 
     @pytest.mark.asyncio
     async def test_the_raised_error_carries_the_usage_of_every_attempt(self):
-        responses = [_raw_response({"unexpected": 1}, 100, 50 + attempt) for attempt in range(3)]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+        responses = [raw_response({"unexpected": 1}, 100, 50 + attempt) for attempt in range(3)]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
 
         with pytest.raises(UnparseableOutput) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
@@ -166,19 +118,14 @@ class TestDictSchema:
         assert raised.value.truncated_attempts == 0
 
 
-def _truncated(response: dict[str, Any], **marker: str) -> dict[str, Any]:
-    response["raw"].response_metadata = marker
-    return response
-
-
 class TestTruncatedOutput:
     @pytest.mark.asyncio
     async def test_an_incomplete_response_is_retried(self):
         responses = [
-            _truncated(_raw_response(_DummyOutput(value="cut"), 100, 4096), status="incomplete"),
-            _raw_response(_DummyOutput(value="ok"), 100, 50),
+            truncated(raw_response(_DummyOutput(value="cut"), 100, 4096), status="incomplete"),
+            raw_response(_DummyOutput(value="ok"), 100, 50),
         ]
-        llm = LLM(_FakeModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
+        llm = LLM(FakeChatModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
 
         output, usage = await llm.generate_structured("prompt", _DummyOutput)
 
@@ -188,10 +135,10 @@ class TestTruncatedOutput:
     @pytest.mark.asyncio
     async def test_a_response_cut_at_the_length_limit_on_every_attempt_raises(self):
         responses = [
-            _truncated(_raw_response({"value": "cut"}, 100, 4096), finish_reason="length")
+            truncated(raw_response({"value": "cut"}, 100, 4096), finish_reason="length")
             for _ in range(2)
         ]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=2)
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=2)
 
         with pytest.raises(UnparseableOutput):
             await llm.generate_structured("prompt", _DummyOutput)
@@ -199,10 +146,10 @@ class TestTruncatedOutput:
     @pytest.mark.asyncio
     async def test_the_raised_error_counts_the_truncated_attempts_and_their_usage(self):
         responses = [
-            _truncated(_raw_response({"value": "cut"}, 100, 8192), finish_reason="length")
+            truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length")
             for _ in range(2)
         ]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=2)
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=2)
 
         with pytest.raises(UnparseableOutput) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
@@ -213,190 +160,16 @@ class TestTruncatedOutput:
     @pytest.mark.asyncio
     async def test_a_truncated_attempt_among_malformed_ones_is_counted_alone(self):
         responses = [
-            _truncated(_raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
-            _raw_response({"unexpected": 1}, 100, 50),
-            _raw_response({"unexpected": 1}, 100, 50),
+            truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
+            raw_response({"unexpected": 1}, 100, 50),
+            raw_response({"unexpected": 1}, 100, 50),
         ]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
 
         with pytest.raises(UnparseableOutput) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.truncated_attempts == 1
-
-
-_OPENAI_POLICY_MESSAGE = (
-    "Invalid prompt: your prompt was flagged as potentially violating our usage policy."
-)
-
-
-def _bad_request(message: str, code: str | None) -> openai.BadRequestError:
-    request = httpx2.Request("POST", "https://api.example.test/v1/responses")
-    response = httpx2.Response(400, request=request)
-    body = {"message": message, "type": "invalid_request_error", "code": code}
-    return openai.BadRequestError(f"Error code: 400 - {body}", response=response, body=body)
-
-
-def _wrapped(cause: Exception) -> Exception:
-    try:
-        raise RuntimeError("wrapper") from cause
-    except RuntimeError as wrapper:
-        return wrapper
-
-
-def _with_raw(response: dict[str, Any], **raw_fields: Any) -> dict[str, Any]:
-    for name, value in raw_fields.items():
-        setattr(response["raw"], name, value)
-    return response
-
-
-class TestRefusalAsAnError:
-    @pytest.mark.asyncio
-    async def test_openai_invalid_prompt_raises_a_refusal_carrying_the_message(self):
-        error = _bad_request(_OPENAI_POLICY_MESSAGE, code="invalid_prompt")
-        llm = LLM(_FakeModel([error]), _DICT_SCHEMA, max_parse_attempts=3)
-
-        with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", _DummyOutput)
-
-        assert raised.value.provider_message == _OPENAI_POLICY_MESSAGE
-        assert raised.value.usage == TokenUsage()
-
-    @pytest.mark.asyncio
-    async def test_a_refusal_wrapped_as_the_cause_of_another_error_is_recognized(self):
-        error = _wrapped(_bad_request(_OPENAI_POLICY_MESSAGE, code="invalid_prompt"))
-        llm = LLM(_FakeModel([error]), _DICT_SCHEMA, max_parse_attempts=3)
-
-        with pytest.raises(ProviderRefusal, match="usage policy"):
-            await llm.generate_structured("prompt", _DummyOutput)
-
-    @pytest.mark.asyncio
-    async def test_alibaba_data_inspection_failure_raises_a_refusal(self):
-        error = _bad_request(
-            "Input data may contain inappropriate content.", "data_inspection_failed"
-        )
-        llm = LLM(_FakeModel([error]), _DICT_SCHEMA, max_parse_attempts=3)
-
-        with pytest.raises(ProviderRefusal, match="inappropriate content"):
-            await llm.generate_structured("prompt", _DummyOutput)
-
-    @pytest.mark.parametrize(
-        "message",
-        [
-            "<400> InternalError.Algo.DataInspectionFailed: Input data may contain "
-            "inappropriate content.",
-            _OPENAI_POLICY_MESSAGE,
-        ],
-    )
-    @pytest.mark.asyncio
-    async def test_a_refusal_without_a_code_is_recognized_by_its_wording(self, message: str):
-        llm = LLM(_FakeModel([_bad_request(message, code=None)]), _DICT_SCHEMA, 3)
-
-        with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", _DummyOutput)
-
-        assert raised.value.provider_message == message
-
-    @pytest.mark.asyncio
-    async def test_another_bad_request_propagates_unchanged(self):
-        error = _bad_request("Too many tokens.", code="context_length_exceeded")
-        llm = LLM(_FakeModel([error]), _DICT_SCHEMA, max_parse_attempts=3)
-
-        with pytest.raises(openai.BadRequestError) as raised:
-            await llm.generate_structured("prompt", _DummyOutput)
-
-        assert raised.value is error
-
-    @pytest.mark.asyncio
-    async def test_a_refusal_after_a_truncated_attempt_carries_its_usage(self):
-        responses: list[dict[str, Any] | Exception] = [
-            _truncated(_raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
-            _bad_request(_OPENAI_POLICY_MESSAGE, code="invalid_prompt"),
-        ]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
-
-        with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", _DummyOutput)
-
-        assert raised.value.usage == TokenUsage(input_tokens=100, output_tokens=8192)
-
-
-class TestRefusalInTheResponse:
-    @pytest.mark.parametrize(
-        "raw_fields",
-        [
-            pytest.param({"response_metadata": {"stop_reason": "refusal"}}, id="anthropic"),
-            pytest.param({"response_metadata": {"finish_reason": "SAFETY"}}, id="google-safety"),
-            pytest.param(
-                {"response_metadata": {"finish_reason": "PROHIBITED_CONTENT"}},
-                id="google-prohibited",
-            ),
-            pytest.param(
-                {"response_metadata": {"prompt_feedback": {"block_reason": "SAFETY"}}},
-                id="google-prompt-block",
-            ),
-            pytest.param(
-                {"additional_kwargs": {"refusal": "I can't help with that."}},
-                id="openai-chat-completions",
-            ),
-            pytest.param(
-                {"content": [{"type": "refusal", "refusal": "I can't help with that."}]},
-                id="openai-responses",
-            ),
-        ],
-    )
-    @pytest.mark.asyncio
-    async def test_a_refused_answer_raises_without_a_retry(self, raw_fields: dict[str, Any]):
-        responses: list[dict[str, Any] | Exception] = [
-            _with_raw(_raw_response(None, 100, 5), **raw_fields),
-            _raw_response({"value": "ok"}, 100, 50),
-        ]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
-
-        with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", _DummyOutput)
-
-        assert raised.value.provider_message
-        assert raised.value.usage == TokenUsage(input_tokens=100, output_tokens=5)
-
-    @pytest.mark.asyncio
-    async def test_the_model_refusal_text_becomes_the_provider_message(self):
-        refused = _with_raw(
-            _raw_response(None, 100, 5),
-            content=[{"type": "refusal", "refusal": "I can't help with that."}],
-        )
-        llm = LLM(_FakeModel([refused]), _DICT_SCHEMA, max_parse_attempts=3)
-
-        with pytest.raises(ProviderRefusal, match="can't help with that"):
-            await llm.generate_structured("prompt", _DummyOutput)
-
-    @pytest.mark.asyncio
-    async def test_a_refusal_on_the_second_attempt_carries_the_usage_of_both(self):
-        responses: list[dict[str, Any] | Exception] = [
-            _truncated(_raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
-            _with_raw(_raw_response(None, 100, 5), response_metadata={"stop_reason": "refusal"}),
-        ]
-        llm = LLM(_FakeModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
-
-        with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", _DummyOutput)
-
-        assert raised.value.usage == TokenUsage(input_tokens=200, output_tokens=8197)
-
-    @pytest.mark.asyncio
-    async def test_a_normal_google_stop_is_not_a_refusal(self):
-        answered = _with_raw(
-            _raw_response({"value": "ok"}, 100, 50),
-            response_metadata={
-                "finish_reason": "STOP",
-                "prompt_feedback": {"block_reason": 0, "safety_ratings": []},
-            },
-        )
-        llm = LLM(_FakeModel([answered]), _DICT_SCHEMA, max_parse_attempts=3)
-
-        output, _ = await llm.generate_structured("prompt", _DummyOutput)
-
-        assert output == _DummyOutput(value="ok")
 
 
 class TestMakeChatModel:
