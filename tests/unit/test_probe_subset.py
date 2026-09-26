@@ -2,7 +2,7 @@ import pytest
 
 import tests.unit.support.test_probe_subset_given as given
 from evals.probe import CallOutcome
-from evals.probe_candidates import CHALLENGERS, REFERENCE
+from evals.probe_candidates import CANDIDATES, REFERENCE
 from evals.probe_subset import UnknownCandidate, defect_counts, select_calls, select_candidates
 
 
@@ -10,12 +10,12 @@ class TestSelectCandidates:
     def test_returns_the_named_candidates_once_each_in_the_order_given(self):
         selected = select_candidates(["gpt-6-luna low", "gpt-6-luna none", "gpt-6-luna low"])
 
-        assert selected == [CHALLENGERS[1], CHALLENGERS[0]]
+        assert selected == [CANDIDATES[1], CANDIDATES[0]]
 
-    def test_finds_the_reference_and_the_challengers(self):
-        selected = select_candidates([REFERENCE.name, CHALLENGERS[0].name])
+    def test_finds_the_reference_and_the_candidates(self):
+        selected = select_candidates([REFERENCE.name, CANDIDATES[0].name])
 
-        assert selected == [REFERENCE, CHALLENGERS[0]]
+        assert selected == [REFERENCE, CANDIDATES[0]]
 
     def test_refuses_an_unknown_name_naming_the_known_candidates(self):
         with pytest.raises(UnknownCandidate) as refusal:
@@ -42,7 +42,7 @@ class TestSelectCalls:
 
 class TestDefectCounts:
     def test_counts_each_candidate_on_its_own_observations_in_candidate_order(self):
-        luna_none, luna_low = CHALLENGERS
+        luna_none, luna_low = CANDIDATES[:2]
         observations = [
             given.an_observation_of(luna_none, CallOutcome.PARSED),
             given.an_observation_of(luna_low, CallOutcome.PARSE_FAILURE),

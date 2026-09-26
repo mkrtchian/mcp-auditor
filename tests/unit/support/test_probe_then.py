@@ -1,19 +1,2 @@
-from evals.probe import Admission
-
-
-def admitted(admission: Admission) -> None:
-    assert admission.admitted, admission.reasons
-    assert admission.reasons == []
-
-
-def rejected_for(admission: Admission, *words: str) -> None:
-    assert not admission.admitted
-    assert any(all(word in reason for word in words) for reason in admission.reasons), (
-        admission.reasons
-    )
-
-
-def latency_noted(admission: Admission, *words: str) -> None:
-    assert any(all(word in note for word in words) for note in admission.latency_notes), (
-        admission.latency_notes
-    )
+def lists_defects(defects: list[str], *words: str) -> None:
+    assert any(all(word in defect for word in words) for defect in defects), defects

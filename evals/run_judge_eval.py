@@ -34,6 +34,8 @@ from mcp_auditor.graph.prompts import build_judge_prompt
 
 FIXTURES_PATH = Path(__file__).resolve().parent / "fixtures" / "judge_cases.json"
 DEFAULT_REPORT_PATH = "output/judge_eval_report.json"
+# With 8 FAIL cases among the 32 of the fixture, one misjudged case moves F1 by about
+# 0.06, so the threshold tolerates one error and rejects two.
 F1_THRESHOLD = 0.90
 JUDGE_CONCURRENCY = 15
 

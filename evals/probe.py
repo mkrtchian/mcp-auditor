@@ -1,7 +1,7 @@
-"""The probe's analysis: per-candidate statistics and the admission bars.
+"""The probe's analysis: per-candidate statistics and the defects the probe reports.
 
 Pure: the runner (`evals/run_probe.py`) makes the calls and hands the observations
-over. The bars, their values and their limits are defined in `evals/probe_method.md`.
+over. What the probe reports and its limits are in `evals/probe_method.md`.
 """
 
 from collections import Counter
@@ -47,18 +47,6 @@ class CandidateStats(BaseModel):
     reasoning_expected: bool | None
 
 
-class Bars(BaseModel):
-    max_latency_ratio: float = 3.0
-    max_cost_ratio: float = 1.0
-
-
-class Admission(BaseModel):
-    candidate: str
-    admitted: bool
-    reasons: list[str]
-    latency_notes: list[str]  # ADR 019: recorded against its bar, never a refusal
-
-
 def summarize(
     candidate: Candidate, observations: list[ProbeObservation], judge_weight: float
 ) -> CandidateStats:
@@ -84,7 +72,7 @@ class DefectCounts(BaseModel):
     calls: int
     parse_failures: int
     parse_failures_with_truncation: int  # at least one attempt cut by the output cap
-    refusals: int  # same rule as the admission
+    refusals: int  # same rule as `summarize`
     errors: int
 
 
@@ -123,55 +111,22 @@ def call_cost(usage: TokenUsage, prices: Prices) -> float:
     return dollars_per_million / 1_000_000
 
 
-def admit(stats: CandidateStats, reference: CandidateStats, bars: Bars) -> Admission:
-    reasons = [
-        *_count_reasons(stats),
-        *_cost_reasons(stats, reference, bars),
-        *_reasoning_reasons(stats),
-    ]
-    return Admission(
-        candidate=stats.candidate,
-        admitted=not reasons,
-        reasons=reasons,
-        latency_notes=_latency_notes(stats, reference, bars),
-    )
+def list_defects(stats: CandidateStats) -> list[str]:
+    return [*_count_defects(stats), *_reasoning_defects(stats)]
 
 
-def reference_failures(reference: CandidateStats, bars: Bars) -> list[str]:
-    """The bars the reference would fail. Recorded only: the reference is exempt."""
-    return admit(reference, reference, bars).reasons
-
-
-def _count_reasons(stats: CandidateStats) -> list[str]:
-    reasons = [
+def _count_defects(stats: CandidateStats) -> list[str]:
+    defects = [
         f"{count} parse failure(s) on {schema}" for schema, count in stats.parse_failures.items()
     ]
     if stats.refusals:
-        reasons.append(f"{stats.refusals} refusal(s) on {_GENERATION_SCHEMA} calls")
+        defects.append(f"{stats.refusals} refusal(s) on {_GENERATION_SCHEMA} calls")
     if stats.errors:
-        reasons.append(f"{stats.errors} error(s): not measured on the whole corpus, rerun")
-    return reasons
+        defects.append(f"{stats.errors} error(s): not measured on the whole corpus, rerun")
+    return defects
 
 
-def _latency_notes(stats: CandidateStats, reference: CandidateStats, bars: Bars) -> list[str]:
-    return [
-        f"{role} median latency {stats.median_seconds[role]:.2f} s against the reference's "
-        f"{reference.median_seconds[role]:.2f} s (bar: at most {bars.max_latency_ratio} times)"
-        for role in sorted(stats.median_seconds.keys() & reference.median_seconds.keys())
-        if stats.median_seconds[role] > bars.max_latency_ratio * reference.median_seconds[role]
-    ]
-
-
-def _cost_reasons(stats: CandidateStats, reference: CandidateStats, bars: Bars) -> list[str]:
-    if stats.weighted_cost <= bars.max_cost_ratio * reference.weighted_cost:
-        return []
-    return [
-        f"weighted corpus cost ${stats.weighted_cost:.4f} against the reference's "
-        f"${reference.weighted_cost:.4f} (bar: at most {bars.max_cost_ratio} times)"
-    ]
-
-
-def _reasoning_reasons(stats: CandidateStats) -> list[str]:
+def _reasoning_defects(stats: CandidateStats) -> list[str]:
     if stats.reasoning_expected is None:
         return []
     if stats.reasoning_expected and stats.reasoning_tokens == 0:

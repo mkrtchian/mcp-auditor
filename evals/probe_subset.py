@@ -1,4 +1,4 @@
-"""The pure parts of a subset run of the probe: debugging only, no admission.
+"""The pure parts of a subset run of the probe: debugging only.
 
 See the *Subset runs* section of `evals/probe_method.md`.
 """
@@ -6,10 +6,10 @@ See the *Subset runs* section of `evals/probe_method.md`.
 from rich.table import Table
 
 from evals.probe import DefectCounts, ProbeObservation, count_defects
-from evals.probe_candidates import CHALLENGERS, FALLBACK, REFERENCE, Candidate
+from evals.probe_candidates import CANDIDATES, REFERENCE, Candidate
 from evals.probe_corpus import ProbeCall, ProbeCorpus
 
-KNOWN_CANDIDATES = [REFERENCE, *CHALLENGERS, FALLBACK]
+KNOWN_CANDIDATES = [REFERENCE, *CANDIDATES]
 
 
 class UnknownCandidate(ValueError):
@@ -40,7 +40,7 @@ def defect_counts(
 
 
 def defect_table(counts: list[DefectCounts]) -> Table:
-    table = Table(title="Probe subset run (debugging only, no admission)")
+    table = Table(title="Probe subset run (debugging only)")
     columns = ("Candidate", "Calls", "Parse failures", "With truncation", "Refusals", "Errors")
     for column in columns:
         table.add_column(column)

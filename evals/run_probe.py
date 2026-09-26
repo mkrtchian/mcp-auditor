@@ -1,7 +1,8 @@
-"""Replay the probe corpus against every candidate (`uv run python -m evals.run_probe`).
+"""Replay the probe corpus against the reference and every candidate
+(`uv run python -m evals.run_probe`), and report each model's statistics and defects.
 
-What is measured, the bar values and the limits are in `evals/probe_method.md`.
-The verdict is the report: the command exits 0 whether or not a challenger is admitted.
+What is measured, what is reported and the limits are in `evals/probe_method.md`.
+The command exits 0 whatever it finds.
 """
 
 import argparse
@@ -18,17 +19,8 @@ from rich.console import Console
 from rich.table import Table
 
 from evals.honeypots import REPO_ROOT
-from evals.probe import (
-    Admission,
-    Bars,
-    CallOutcome,
-    CandidateStats,
-    ProbeObservation,
-    admit,
-    reference_failures,
-    summarize,
-)
-from evals.probe_candidates import CHALLENGERS, FALLBACK, PRICES_DATE, REFERENCE, Candidate
+from evals.probe import CallOutcome, CandidateStats, ProbeObservation, list_defects, summarize
+from evals.probe_candidates import CANDIDATES, PRICES_DATE, REFERENCE, Candidate
 from evals.probe_corpus import SCHEMA_NAMES, ProbeCall, ProbeCorpus, Role, load_corpus, schema_for
 from evals.probe_subset import (
     UnknownCandidate,
@@ -45,7 +37,7 @@ from mcp_auditor.domain.ports import LLMPort, UnparseableOutput
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 DEFAULT_REPORT_PATH = "output/probe_report.json"
 SUBSET_REPORT_PATH = "output/probe_subset.json"
-CANDIDATES = [REFERENCE, *CHALLENGERS, FALLBACK]
+MEASURED = [REFERENCE, *CANDIDATES]
 
 console = Console()
 
@@ -63,9 +55,7 @@ class ProbeResult:
     judge_weight: float
     observations: list[ProbeObservation]
     reference: CandidateStats
-    challengers: list[CandidateStats]
-    admissions: list[Admission]
-    fallback: CandidateStats
+    candidates: list[CandidateStats]
 
 
 def main() -> None:
@@ -81,7 +71,7 @@ def main() -> None:
         _run_subset(corpus, args)
         return
     report = args.report or DEFAULT_REPORT_PATH
-    models = _build_models(CANDIDATES)
+    models = _build_models(MEASURED)
     observations = asyncio.run(_replay(corpus, models, Path(report).with_suffix(".jsonl")))
     result = _analyze(corpus, observations)
     _write_report(Path(report), result)
@@ -100,9 +90,9 @@ def _parse_arguments() -> argparse.Namespace:
 
 
 def _run_subset(corpus: ProbeCorpus, args: argparse.Namespace) -> None:
-    """Debugging only: replays a slice of the corpus and computes no admission."""
+    """Debugging only: replays a slice of the corpus and computes no statistics."""
     try:
-        candidates = CANDIDATES if args.candidates is None else select_candidates(args.candidates)
+        candidates = MEASURED if args.candidates is None else select_candidates(args.candidates)
     except UnknownCandidate as unknown:
         console.print(f"[red]{unknown}[/red]")
         sys.exit(1)
@@ -202,17 +192,14 @@ def _analyze(corpus: ProbeCorpus, observations: list[ProbeObservation]) -> Probe
     judge_weight = corpus.judge_calls_captured / sum(c.role == "judge" for c in corpus.calls)
     stats = [
         summarize(c, [o for o in observations if o.candidate == c.name], judge_weight)
-        for c in CANDIDATES
+        for c in MEASURED
     ]
-    reference, challengers, fallback = stats[0], stats[1:-1], stats[-1]
     return ProbeResult(
         corpus=corpus,
         judge_weight=judge_weight,
         observations=observations,
-        reference=reference,
-        challengers=challengers,
-        admissions=[admit(s, reference, Bars()) for s in challengers],
-        fallback=fallback,
+        reference=stats[0],
+        candidates=stats[1:],
     )
 
 
@@ -225,20 +212,17 @@ def _write_report(path: Path, result: ProbeResult) -> None:
             "judge_weight": result.judge_weight,
         },
         "prices_date": PRICES_DATE,
-        "bars": Bars().model_dump(),
-        "candidates": [_candidate_entry(c) for c in CANDIDATES],
-        "reference": result.reference.model_dump(),
-        "reference_failed_bars_recorded_only": reference_failures(result.reference, Bars()),
-        "challengers": [s.model_dump() for s in result.challengers],
-        "admissions": [a.model_dump() for a in result.admissions],
-        "fallback": result.fallback.model_dump(),
-        "fallback_against_the_bars_recorded_only": admit(
-            result.fallback, result.reference, Bars()
-        ).model_dump(),
+        "candidates": [_candidate_entry(c) for c in MEASURED],
+        "statistics": [s.model_dump() for s in _measured_stats(result)],
+        "defects": {s.candidate: list_defects(s) for s in _measured_stats(result)},
         "observations": [o.model_dump(mode="json") for o in result.observations],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2))
+
+
+def _measured_stats(result: ProbeResult) -> list[CandidateStats]:
+    return [result.reference, *result.candidates]
 
 
 def _candidate_entry(candidate: Candidate) -> dict[str, Any]:
@@ -258,18 +242,15 @@ def _candidate_entry(candidate: Candidate) -> dict[str, Any]:
 
 
 def _print_table(result: ProbeResult) -> None:
-    table = Table(title="Probe admission")
+    table = Table(title="Probe")
     for column in ("Candidate", "Main median", "Judge median", "Weighted cost", "Cost ratio"):
         table.add_column(column)
-    for column in ("Parse failures", "Refusals", "Errors", "Reasoning tokens", "Verdict"):
+    for column in ("Parse failures", "Refusals", "Errors", "Reasoning tokens", "Defects"):
         table.add_column(column)
-    table.add_row(*_stats_cells(result.reference, result.reference), "reference (exempt)")
-    for stats, admission in zip(result.challengers, result.admissions, strict=True):
-        verdict = "[green]admitted[/green]" if admission.admitted else "[red]not admitted[/red]"
-        table.add_row(*_stats_cells(stats, result.reference), verdict)
-    table.add_row(*_stats_cells(result.fallback, result.reference), "fallback (recorded)")
+    for stats in _measured_stats(result):
+        table.add_row(*_stats_cells(stats, result.reference))
     console.print(table)
-    _print_reasons(result)
+    _print_defects(result)
 
 
 def _stats_cells(stats: CandidateStats, reference: CandidateStats) -> list[str]:
@@ -283,6 +264,7 @@ def _stats_cells(stats: CandidateStats, reference: CandidateStats) -> list[str]:
         str(stats.refusals),
         str(stats.errors),
         str(stats.reasoning_tokens),
+        str(len(list_defects(stats))),
     ]
 
 
@@ -295,17 +277,10 @@ def _ratio(value: float, reference: float) -> str:
     return "-" if reference == 0 else f"{value / reference:.2f}x"
 
 
-def _print_reasons(result: ProbeResult) -> None:
-    for reason in reference_failures(result.reference, Bars()):
-        console.print(f"{result.reference.candidate} (recorded only): {reason}")
-    fallback = admit(result.fallback, result.reference, Bars())
-    for note in [*fallback.reasons, *fallback.latency_notes]:
-        console.print(f"{fallback.candidate} (recorded only): {note}")
-    for admission in result.admissions:
-        for reason in admission.reasons:
-            console.print(f"{admission.candidate}: {reason}")
-        for note in admission.latency_notes:
-            console.print(f"{admission.candidate} (latency, advisory): {note}")
+def _print_defects(result: ProbeResult) -> None:
+    for stats in _measured_stats(result):
+        for defect in list_defects(stats):
+            console.print(f"{stats.candidate}: {defect}")
 
 
 if __name__ == "__main__":
