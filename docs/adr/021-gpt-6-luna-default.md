@@ -1,8 +1,8 @@
 # ADR 021: gpt-6-luna at Reasoning Effort `none` as the Default Model
 
 **Date:** 2026-09-25
-**Status:** Proposed
-**Supersedes:** in ADR 019, the default model, the default setting of the `openai` provider and the list of challengers.
+**Status:** Accepted
+**Supersedes:** in ADR 019, the default model, the default setting of the `openai` provider, the list of challengers, and its section *How the default is chosen*: the admission bars and the rule that admits a model on them.
 
 ## Context
 
@@ -16,17 +16,32 @@ Price is the reason to look again. `gpt-6-luna` lists at $0.10 per million input
 
 **The default model is `gpt-6-luna` at reasoning effort `none`, for both roles.** The default provider moves from `google` to `openai`, and the default setting of the `openai` provider moves from `medium` to `none`.
 
-## How the default is chosen
+**The generator completes the categories a batch misses.** When a generated batch still lacks a category after its retry, the auditor asks for the missing categories alone, instead of reporting the gap and auditing the tool without them. The need holds for any model: on 2026-09-25, Gemini 3.5 Flash-Lite left a batch of `list_items` without `error_handling` after the retry, and that audit ran without the category.
 
-**The probe of ADR 019 is run again, with `gpt-6-luna` at `none` and at `low` as its challengers.** Its bars do not change, and neither does the rest of the admission procedure: a setting that clears the probe then goes through the judge isolation eval and its F1 threshold of 0.90, then the honeypot floors, and it is admitted when it clears all three. The probe replays the corpus recaptured after the second change, the one the debugging runs used, committed before the run.
+**A model is chosen on a written judgment, not on admission bars.** The probe keeps recording what a candidate does on the corpus: loops, answers that do not parse, errors, incomplete batches, cost and latency. Those facts and the evals feed the decision, and the ADR that takes it states the reasons for the choice, what weighs against it, and what would reverse it.
 
-**`none` is preferred when both settings are admitted.** ADR 019 chooses between admitted models on public benchmarks read at the admitted setting, but a benchmark that does not report both settings of one model cannot rank them. At the same per-token prices, `none` bills no reasoning tokens. Between two settings of one model, this is the rule ADR 019 rejected between models (the cheapest admitted one wins), and the risk it named is accepted here: `none` may detect less than `low`, and no instrument in this repository would show it.
+## Why `gpt-6-luna` at `none`
 
-**If only `low` is admitted, the Decision names `low` before this ADR is accepted. If neither is admitted, this ADR is not accepted.** Gemini 3.5 Flash-Lite at `minimal` then stays the default, the `openai` provider keeps `medium`, and the Outcome records the failure instead of a third change to the prompt.
+**The price.** Replaying the corpus cost 0.38 times the reference, Gemini 3.1 Flash-Lite, and about a quarter of Gemini 3.5 Flash-Lite, computed from list prices.
 
-### Outcome
+**The probe found no defect that stops an audit.** On 2026-09-25 it ran on the corpus captured at `8fd8294` (report in `evals/probe_runs/2026-09-25_adr-021.json`). At `none`, no answer failed to parse, no call raised an error, and every loop that reached the output cap was recovered by a retry. The one defect is 2 generated batches out of 55 that came back without the `resource_abuse` category, and the completion above covers that case.
 
-Written after the admission run.
+**The evals do not show a weaker model.** The judge isolation eval gave an F1 of 0.93, where Gemini 3.5 Flash-Lite had 0.94. On the honeypot suite, 3 runs at budget 10 on the same commit, recall was 0.50 against 0.67 for Gemini 3.5 Flash-Lite, and precision 1.00 for both. Most of that gap is one cell, `execute_query` for `injection`, which Gemini reported in all 3 runs and `gpt-6-luna` in none. `gpt-6-luna` reads a tool built to run SQL as doing its job when it runs the injected query, and that reading can be defended for such a tool. On the same day, Gemini 3.5 Flash-Lite scored 0.83, 0.79 and 0.67 on the suite, across the two changes to the prompt.
+
+**`none` rather than `low`.** Both settings behaved alike on the probe and the evals. `none` bills no reasoning tokens, and its median generation call took 4.9 seconds against 8.2 at `low`.
+
+## What weighs against it
+
+The injection payloads of `gpt-6-luna` return a marker, where those of Gemini read the database schema. Proving impact by reading is what ADR 014 asks for, and Gemini follows that preference more closely.
+
+The instruments of this repository tell a working model from a collapsed one, but they cannot rank two working models (ADR 019). A lower detection rate for `gpt-6-luna` would go unseen.
+
+## What would reverse it
+
+- The billing consoles show a cost that is not clearly lower than Gemini 3.5 Flash-Lite.
+- Audits keep reporting missing categories once the completion is built.
+- The CVE benchmark, run with both models on the same targets, shows `gpt-6-luna` detecting fewer flaws.
+- A later probe run shows loops or answers that do not parse again.
 
 ## Alternatives considered
 
@@ -37,5 +52,7 @@ Written after the admission run.
 ## Consequences
 
 An audit run with no configuration needs `OPENAI_API_KEY` instead of `GOOGLE_API_KEY`. A configuration that names a Gemini model or the `minimal` setting without `MCP_AUDITOR_PROVIDER=google` then fails.
+
+The probe's method note loses its admission verdict. Its bars become the list of defects the probe reports.
 
 The knowledge cutoff of `gpt-6-luna`, 2026-05-18, falls after the advisories of the CVE benchmark, published between 2025-07-02 and 2025-12-17. The cutoff of Gemini 3.5 Flash-Lite, March 2026, also falls after them. With either default, a detection on that benchmark can come from what the model has read about the flaw.
