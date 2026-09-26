@@ -193,9 +193,9 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `MCP_AUDITOR_MODEL`        | per-provider default | Override the main model name              |
 | `MCP_AUDITOR_JUDGE_MODEL`  | same as main model   | Separate model for verdict classification |
 | `MCP_AUDITOR_REASONING`    | per-provider default | Reasoning setting sent to the main and judge models: `minimal`, `low`, `medium` or `high` for `google`, `none`, `low`, `medium`, `high`, `xhigh` or `max` for `openai`, `low`, `medium` or `high` for `fireworks`, not accepted for `anthropic` or `alibaba` |
+| `OPENAI_API_KEY`           | --                   | Required when provider is `openai`        |
 | `GOOGLE_API_KEY`           | --                   | Required when provider is `google`        |
 | `ANTHROPIC_API_KEY`        | --                   | Required when provider is `anthropic`     |
-| `OPENAI_API_KEY`           | --                   | Required when provider is `openai`        |
 | `FIREWORKS_API_KEY`        | --                   | Required when provider is `fireworks`     |
 | `DASHSCOPE_API_KEY`        | --                   | Required when provider is `alibaba` (Alibaba Cloud Model Studio, international) |
 | `LANGSMITH_TRACING`        | --                   | Set to `true` to activate tracing         |

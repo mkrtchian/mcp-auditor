@@ -79,7 +79,7 @@ def _provider_defaults(provider: str) -> _ProviderDefaults:
     if provider not in _PROVIDERS:
         raise ValueError(
             f"Unknown provider: {provider!r}. "
-            "Use 'google', 'anthropic', 'openai', 'fireworks' or 'alibaba'."
+            "Use 'openai', 'google', 'anthropic', 'fireworks' or 'alibaba'."
         )
     return _PROVIDERS[provider]
 
