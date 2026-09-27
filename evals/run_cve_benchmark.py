@@ -222,7 +222,7 @@ async def _calibrate_one(target: CVETarget) -> bool:
         except Exception as exc:
             cause = _root_cause(exc)
             reason = f"{type(cause).__name__}: {cause}"
-            console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {reason}")
+            console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {escape(reason)}")
             _print_tail(server_stderr)
             return False
 
