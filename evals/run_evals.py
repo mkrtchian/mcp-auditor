@@ -34,13 +34,14 @@ from evals.honeypots import (
     MERGED_GROUND_TRUTH,
     HoneypotConfig,
     audit_honeypot,
+    audit_honeypots,
     models_for,
 )
 from evals.judging import RunsOutcome, judge_runs
 from evals.metrics import RunDetail, VerdictMap, aggregate_verdicts, build_run_detail
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
 from evals.replay import ReplayAudit, Replayer
-from mcp_auditor.domain.models import AuditReport, RefusedStep, TokenUsage, ToolReport
+from mcp_auditor.domain.models import AuditReport
 
 DEFAULT_REPORT_PATH = "output/eval_report.json"
 NOT_COMPARABLE_EXIT = 3
@@ -165,28 +166,15 @@ async def _run_all(session: EvalSession) -> RunsOutcome:
 async def _run_one_eval(
     session: EvalSession, progress: Progress, task: TaskID
 ) -> tuple[VerdictMap, AuditReport]:
-    merged_verdicts: VerdictMap = {}
-    all_tool_reports: list[ToolReport] = []
-    all_refused_steps: list[RefusedStep] = []
-    total_usage = TokenUsage()
-    for honeypot in HONEYPOTS:
+    async def audit(honeypot: HoneypotConfig) -> AuditReport:
         progress.console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
         report = await audit_honeypot(
             models_for(session.settings), honeypot, session.conditions.budget
         )
-        merged_verdicts.update(aggregate_verdicts(report))
-        all_tool_reports.extend(report.tool_reports)
-        all_refused_steps.extend(report.refused_steps)
-        total_usage = total_usage.add(report.token_usage)
         progress.advance(task)
+        return report
 
-    merged_report = AuditReport(
-        target="evals",
-        tool_reports=all_tool_reports,
-        token_usage=total_usage,
-        refused_steps=all_refused_steps,
-    )
-    return merged_verdicts, merged_report
+    return await audit_honeypots(audit)
 
 
 def _post_langsmith_feedback(run_detail: RunDetail, project_name: str) -> None:

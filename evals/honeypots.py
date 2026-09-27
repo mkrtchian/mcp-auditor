@@ -1,4 +1,5 @@
 import os
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,12 +9,13 @@ from evals.ground_truth import (
     SUBTLE_GROUND_TRUTH,
     GroundTruth,
 )
+from evals.metrics import VerdictMap, aggregate_verdicts
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AttackContext, AuditReport
+from mcp_auditor.domain.models import AttackContext, AuditReport, TokenUsage
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.builder import build_graph
 
@@ -54,6 +56,25 @@ TOOL_COUNT = len({tool for tool, _ in MERGED_GROUND_TRUTH})
 class AuditModels:
     llm: LLMPort
     judge_llm: LLMPort
+
+
+HoneypotAudit = Callable[[HoneypotConfig], Awaitable[AuditReport]]
+
+
+async def audit_honeypots(audit: HoneypotAudit) -> tuple[VerdictMap, AuditReport]:
+    """One run: every honeypot audited in turn, their verdicts and reports merged."""
+    verdicts: VerdictMap = {}
+    merged = AuditReport(target="evals", tool_reports=[], token_usage=TokenUsage())
+    for honeypot in HONEYPOTS:
+        report = await audit(honeypot)
+        verdicts.update(aggregate_verdicts(report))
+        merged = AuditReport(
+            target=merged.target,
+            tool_reports=[*merged.tool_reports, *report.tool_reports],
+            token_usage=merged.token_usage.add(report.token_usage),
+            refused_steps=[*merged.refused_steps, *report.refused_steps],
+        )
+    return verdicts, merged
 
 
 def models_for(settings: Settings) -> AuditModels:

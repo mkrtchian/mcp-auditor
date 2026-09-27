@@ -23,6 +23,7 @@ uv run python -m evals.run_evals       # e2e evals (requires API key)
 uv run python -m evals.run_evals --record-baseline  # record the e2e baseline (clean tree, see below)
 uv run python -m evals.run_evals --ungated          # e2e evals on the floors alone, at any conditions
 uv run python -m evals.run_judge_eval  # judge isolation eval (requires API key)
+uv run python -m evals.run_fault_injection  # fault injection on the honeypot gate (requires API key, by hand)
 ```
 
 Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set the key of the provider you use: `OPENAI_API_KEY` (default provider), `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `FIREWORKS_API_KEY` or `DASHSCOPE_API_KEY`. Unit and integration tests don't need any key.
@@ -74,6 +75,8 @@ How the baseline changes afterwards depends on what changed. A label revision in
 A recording runs at the conditions CI runs at: the default `--runs` and `--budget`, and no `MCP_AUDITOR_PROVIDER`, `MCP_AUDITOR_MODEL`, `MCP_AUDITOR_JUDGE_MODEL` or `MCP_AUDITOR_REASONING` override in `.env` or the environment that differs from the defaults. CI sets only the API key, so a baseline recorded under other conditions would make every CI run not comparable, and `--record-baseline` refuses to start under them. It also refuses to write when the tree, `HEAD` or the baseline file changed during the runs, so two recordings started from the same baseline cannot both write, and it writes the file atomically. Every refusal, and fewer completed runs than requested in any mode, exits `3`. A crash of the runner prints its traceback and exits `4`. The `/eval full` comment on a pull request names the gate mode that judged the run and the baseline status, so a pull request that edits its own baseline shows it.
 
 `--ungated` runs the e2e evals on the floors alone, with no condition check and no baseline comparison, for a cheap local run at other conditions (fewer runs, a smaller budget, another model). It is never used in CI and cannot be combined with `--record-baseline`.
+
+`uv run python -m evals.run_fault_injection [--fault NAME ...]` checks that the gate catches a collapse. It audits the three honeypots with one fault planted (a judge that passes, fails or draws every verdict, no verdict at all, half the detections lost, a dropped category, refused chain steps), the fault staying active in the replays, and judges the runs against the committed fixture `evals/fixtures/fault_injection_baseline.json` in the paired and the floors-only modes. Run it by hand after a change to the gate's logic, at the default conditions and with `OPENAI_API_KEY`. It is never run in CI. It refuses to start when the fixture no longer matches the conditions or the ground truth, and prints each fault's expected result next to the observed one. The faults, the expected results and the recorded runs are in [`evals/fault_injection_method.md`](evals/fault_injection_method.md).
 
 ## Coding, testing, and architecture standards
 
