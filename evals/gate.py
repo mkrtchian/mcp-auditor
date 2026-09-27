@@ -40,6 +40,14 @@ class FlipCause(StrEnum):
 
 
 class ReplayRule(BaseModel):
+    """A flip is a regression when it reproduces 4 times out of at most 5 replays, stopping
+    as soon as the outcome is decided.
+
+    Blind spot: a judge that loses each detection half the time reproduces a flip with
+    probability 6/32, about 0.19, so the gate misses most such losses. The evidence is in
+    `evals/fault_injection_method.md`.
+    """
+
     replays: int = 5
     required: int = 4
 
