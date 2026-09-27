@@ -26,6 +26,8 @@ async def test_the_exploit_reads_as_aimed_and_the_benign_call_does_not(target: C
     [
         "http://127.0.0.1/",
         "http://127.1.2.3:8080/admin",
+        "http://127.1/",
+        "http://127.0.1:8080/admin",
         "http://localhost/",
         "http://169.254.169.254/latest/meta-data/",
         "http://10.0.0.5/",
