@@ -1,35 +1,22 @@
-from dataclasses import dataclass
-from typing import Any
+import re
+from dataclasses import dataclass, field
 
-from evals.cve_oracle import CVEResult, CVEStatus, RunDetection
-from mcp_auditor.domain.models import (
-    AttackChain,
-    AuditCategory,
-    AuditPayload,
-    AuditReport,
-    ChainGoal,
-    ChainStep,
-    EvalResult,
-    EvalVerdict,
-    Severity,
-    TestCase,
-    TokenUsage,
-    ToolDefinition,
-    ToolReport,
-)
+from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade
+from evals.cve_oracle import CVEBenchmarkReport, CVEResult, CVERunConditions
+from mcp_auditor.domain.models import AuditCategory
 
 SENTINEL = "s3nt1nel_ab12cd34ef56"
-INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
-FAIL = EvalVerdict.FAIL
-PASS = EvalVerdict.PASS
+FINGERPRINT = "0123456789abcdef" * 4
 
 
-@dataclass
+@dataclass(frozen=True)
 class FakeTarget:
     cve_id: str = "CVE-2025-0001"
     severity: str = "9.1 CRITICAL"
     sentinel: str = SENTINEL
-    awaited_capability: str | None = None
+    mechanism: MechanismClass = MechanismClass.READ_OUTSIDE_SCOPE
+    aim: re.Pattern[str] = field(default=re.compile(r"^/outside/"))
+    awaited_capability: str | None = "declared-scope awareness"
     note: str = "test note"
 
 
@@ -40,89 +27,62 @@ class FakeOutOfScopeCVE:
     reason: str
 
 
-def a_target(awaited_capability: str | None = None, sentinel: str = SENTINEL) -> FakeTarget:
-    return FakeTarget(awaited_capability=awaited_capability, sentinel=sentinel)
-
-
-def a_case_with_response(
-    response: str | dict[str, Any] | None = None,
-    error: str | None = None,
-    verdict: EvalVerdict = FAIL,
-    category: AuditCategory = INFO_LEAKAGE,
-) -> TestCase:
-    return TestCase(
-        payload=_a_payload(category),
-        response=response,
-        error=error,
-        eval_result=_a_result(verdict, category),
+def a_detected_grade() -> RunGrade:
+    return RunGrade(
+        status=CVEStatus.DETECTED,
+        surfaced=True,
+        aimed=True,
+        evidence=f"leaked {SENTINEL}",
+        category=AuditCategory.INJECTION,
     )
 
 
-def a_chain_with_step(
-    response: str | None = None,
-    error: str | None = None,
-    verdict: EvalVerdict = FAIL,
-    category: AuditCategory = INFO_LEAKAGE,
-) -> AttackChain:
-    payload = _a_payload(category)
-    return AttackChain(
-        goal=ChainGoal(description="test chain", category=category, first_step=payload),
-        steps=[ChainStep(payload=payload, response=response, error=error)],
-        eval_result=_a_result(verdict, category),
-    )
-
-
-def a_report(
-    cases: list[TestCase] | None = None, chains: list[AttackChain] | None = None
-) -> AuditReport:
-    tool_report = ToolReport(
-        tool=ToolDefinition(name="read_file", description="test", input_schema={"type": "object"}),
-        cases=cases or [],
-        chains=chains or [],
-    )
-    return AuditReport(target="test", tool_reports=[tool_report], token_usage=TokenUsage())
-
-
-def a_detection(surfaced: bool, in_fail: bool) -> RunDetection:
-    return RunDetection(
-        sentinel_surfaced=surfaced,
-        sentinel_in_fail=in_fail,
-        evidence=SENTINEL if surfaced else None,
-        category=INFO_LEAKAGE if surfaced else None,
+def a_missed_grade(miss_class: MissClass, fail_without_proof: bool = False) -> RunGrade:
+    return RunGrade(
+        status=CVEStatus.MISSED,
+        miss_class=miss_class,
+        aimed=miss_class != MissClass.NOT_AIMED,
+        fail_without_proof=fail_without_proof,
     )
 
 
 def a_cve_result(
     cve_id: str,
     status: CVEStatus,
-    severity: str = "9.1 CRITICAL",
-    awaited_capability: str | None = None,
-    hits: int = 0,
-    runs: int = 3,
+    detected_runs: int = 0,
+    aimed_runs: int = 0,
+    fail_without_proof_runs: int = 0,
+    miss_class: MissClass | None = None,
 ) -> CVEResult:
     return CVEResult(
         cve_id=cve_id,
-        severity=severity,
+        severity="9.1 CRITICAL",
         note="test note",
+        mechanism=MechanismClass.COMMAND_EXECUTION,
         status=status,
-        awaited_capability=awaited_capability,
-        runs=runs,
-        hits=hits,
-        surfaced=hits,
-        budget=8,
+        miss_class=miss_class,
+        awaited_capability="cross-tool chains",
+        runs=3,
+        detected_runs=detected_runs,
+        surfaced_runs=detected_runs,
+        aimed_runs=aimed_runs,
+        fail_without_proof_runs=fail_without_proof_runs,
+        budget=10,
     )
 
 
-def _a_payload(category: AuditCategory) -> AuditPayload:
-    return AuditPayload(category=category, description="test", arguments={})
-
-
-def _a_result(verdict: EvalVerdict, category: AuditCategory) -> EvalResult:
-    return EvalResult(
-        tool_name="read_file",
-        category=category,
-        payload={},
-        verdict=verdict,
-        justification="test",
-        severity=Severity.HIGH,
+def a_benchmark_report(results: list[CVEResult]) -> CVEBenchmarkReport:
+    return CVEBenchmarkReport(
+        conditions=CVERunConditions(
+            runs=3,
+            budget=10,
+            tools_filtered=True,
+            provider="openai",
+            model="gpt-6-luna",
+            judge_model="gpt-6-judge",
+            reasoning="none",
+            judge_reasoning=None,
+            grammar_fingerprint=FINGERPRINT,
+        ),
+        results=results,
     )

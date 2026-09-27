@@ -177,6 +177,8 @@ uv run python -m evals.run_cve_benchmark --runs 3 --budget 10
 uv run python -m evals.run_cve_benchmark --cve CVE-2025-53109 --cve CVE-2025-53355 --runs 1 --budget 10
 ```
 
+The per-target report grades each target on a ladder (detected by a planted secret, detected by command output alone, proof surfaced but judged pass, missed with the reason), records the run's conditions and the oracle's fingerprint, and gives no detection rate.
+
 **Safety:** the images are deliberately vulnerable known-RCE/SSRF servers, run in throwaway `docker run --rm` containers with all capabilities dropped, no privilege escalation, a process bound, and the vulnerable servers running as an unprivileged user, against a synthetic per-run sentinel (never a real secret). The filesystem, git and kubernetes fixtures run with no network. The SSRF fixture keeps a dedicated network to reach its sentinel, and that network is a plain bridge with the host gateway and Internet egress. Starting the containers requires membership in the `docker` group, which is equivalent to root on the host. Run the benchmark on a non-sensitive host, not on a machine holding production credentials.
 
 No detection rate is published (see [Measurement](#measurement)). The graded run reports its results per target, on your machine.

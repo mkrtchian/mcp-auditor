@@ -1,157 +1,19 @@
 import tests.unit.support.test_cve_oracle_given as given
-from evals.cve_oracle import (
-    CVEStatus,
-    detect_in_report,
-    not_run,
-    out_of_scope_results,
-    render_markdown,
-    resolve_status,
-)
+from evals.cve_grammar import CVEStatus, MechanismClass, MissClass
+from evals.cve_oracle import not_run, out_of_scope_results, render_markdown, result_for
 from mcp_auditor.domain.models import AuditCategory
 
-SENTINEL = given.SENTINEL
 
-
-def test_detects_sentinel_in_fail_response():
-    target = given.a_target()
-    report = given.a_report(cases=[given.a_case_with_response(response=f"leaked {SENTINEL}")])
-
-    detection = detect_in_report(target, report)
-
-    assert detection.sentinel_surfaced
-    assert detection.sentinel_in_fail
-    assert detection.evidence is not None
-    assert SENTINEL in detection.evidence
-    assert detection.category == AuditCategory.INFO_LEAKAGE
-
-
-def test_detects_sentinel_arriving_via_error():
-    target = given.a_target()
-    report = given.a_report(
-        cases=[given.a_case_with_response(response=None, error=f"boom {SENTINEL}")]
-    )
-
-    detection = detect_in_report(target, report)
-
-    assert detection.sentinel_surfaced
-    assert detection.sentinel_in_fail
-
-
-def test_detects_sentinel_in_dict_response():
-    target = given.a_target()
-    report = given.a_report(cases=[given.a_case_with_response(response={"content": SENTINEL})])
-
-    detection = detect_in_report(target, report)
-
-    assert detection.sentinel_surfaced
-    assert detection.sentinel_in_fail
-
-
-def test_detects_sentinel_in_chain_step():
-    target = given.a_target()
-    report = given.a_report(chains=[given.a_chain_with_step(response=f"diff {SENTINEL}")])
-
-    detection = detect_in_report(target, report)
-
-    assert detection.sentinel_surfaced
-    assert detection.sentinel_in_fail
-
-
-def test_surfaced_in_pass_is_not_a_fail():
-    target = given.a_target()
-    report = given.a_report(
-        cases=[given.a_case_with_response(response=f"leaked {SENTINEL}", verdict=given.PASS)]
-    )
-
-    detection = detect_in_report(target, report)
-
-    assert detection.sentinel_surfaced
-    assert not detection.sentinel_in_fail
-
-
-def test_no_sentinel_anywhere():
-    target = given.a_target()
-    report = given.a_report(cases=[given.a_case_with_response(response="nothing here")])
-
-    detection = detect_in_report(target, report)
-
-    assert not detection.sentinel_surfaced
-    assert not detection.sentinel_in_fail
-
-
-def test_resolve_detected_when_any_run_hits():
-    target = given.a_target()
-    detections = [
-        given.a_detection(surfaced=True, in_fail=True),
-        given.a_detection(surfaced=True, in_fail=False),
-        given.a_detection(surfaced=False, in_fail=False),
-    ]
-
-    result = resolve_status(target, detections, budget=8)
-
-    assert result.status == CVEStatus.DETECTED
-    assert result.hits == 1
-    assert result.surfaced == 2
-    assert result.runs == 3
-    assert result.budget == 8
-
-
-def test_detection_at_k_is_any_hit():
-    target = given.a_target()
-    detections = [
-        given.a_detection(surfaced=False, in_fail=False),
-        given.a_detection(surfaced=True, in_fail=True),
-        given.a_detection(surfaced=False, in_fail=False),
-    ]
-
-    result = resolve_status(target, detections, budget=8)
-
-    assert result.status == CVEStatus.DETECTED
-    assert result.hits == 1
-    assert result.runs == 3
-
-
-def test_resolve_reached_but_judged_pass():
-    target = given.a_target(awaited_capability="declared-scope awareness")
-    detections = [
-        given.a_detection(surfaced=True, in_fail=False),
-        given.a_detection(surfaced=True, in_fail=False),
-    ]
-
-    result = resolve_status(target, detections, budget=8)
-
-    assert result.status == CVEStatus.REACHED_BUT_JUDGED_PASS
-    assert result.hits == 0
-    assert result.surfaced == 2
-
-
-def test_resolve_missed_when_awaited_capability_none():
-    target = given.a_target(awaited_capability=None)
-    detections = [given.a_detection(surfaced=False, in_fail=False)]
-
-    result = resolve_status(target, detections, budget=8)
-
-    assert result.status == CVEStatus.MISSED
-
-
-def test_resolve_missed_awaiting_capability():
-    target = given.a_target(awaited_capability="cross-tool chains")
-    detections = [given.a_detection(surfaced=False, in_fail=False)]
-
-    result = resolve_status(target, detections, budget=8)
-
-    assert result.status == CVEStatus.MISSED_AWAITING_CAPABILITY
-    assert result.awaited_capability == "cross-tool chains"
-
-
-def test_not_run_builder():
-    result = not_run(given.a_target())
+def test_not_run_keeps_the_target_description():
+    result = not_run(given.FakeTarget())
 
     assert result.status == CVEStatus.NOT_RUN
     assert result.runs == 0
+    assert result.mechanism == MechanismClass.READ_OUTSIDE_SCOPE
+    assert result.awaited_capability == "declared-scope awareness"
 
 
-def test_out_of_scope_results():
+def test_out_of_scope_results_carry_no_class():
     cves = [
         given.FakeOutOfScopeCVE(cve_id="CVE-2025-68144", severity="7.8 HIGH", reason="silent write")
     ]
@@ -162,25 +24,91 @@ def test_out_of_scope_results():
     assert results[0].status == CVEStatus.OUT_OF_SCOPE
     assert results[0].cve_id == "CVE-2025-68144"
     assert results[0].note == "silent write"
+    assert results[0].mechanism is None
 
 
-def test_render_markdown_table():
-    results = [
-        given.a_cve_result(
-            cve_id="CVE-2025-53109", severity="7.5 HIGH", status=CVEStatus.DETECTED, hits=2
-        ),
-        given.a_cve_result(
-            cve_id="CVE-2025-68143",
-            status=CVEStatus.MISSED_AWAITING_CAPABILITY,
-            awaited_capability="cross-tool chains",
-        ),
+def test_result_for_a_detected_resolution():
+    grades = [given.a_detected_grade(), given.a_missed_grade(MissClass.NOT_AIMED)]
+
+    result = result_for(given.FakeTarget(), grades, budget=10)
+
+    assert result.status == CVEStatus.DETECTED
+    assert result.miss_class is None
+    assert result.mechanism == MechanismClass.READ_OUTSIDE_SCOPE
+    assert result.awaited_capability == "declared-scope awareness"
+    assert (result.runs, result.detected_runs, result.surfaced_runs, result.aimed_runs) == (
+        2,
+        1,
+        1,
+        1,
+    )
+    assert result.budget == 10
+    assert result.evidence is not None and given.SENTINEL in result.evidence
+    assert result.category == AuditCategory.INJECTION
+
+
+def test_result_for_a_missed_resolution():
+    grades = [
+        given.a_missed_grade(MissClass.AIMED_BLOCKED, fail_without_proof=True),
+        given.a_missed_grade(MissClass.NOT_AIMED),
+        given.a_missed_grade(MissClass.NOT_AIMED),
     ]
 
-    markdown = render_markdown(results)
+    result = result_for(given.FakeTarget(), grades, budget=10)
 
-    assert "CVE-2025-53109" in markdown
-    assert "7.5 HIGH" in markdown
-    assert "detected" in markdown
-    assert "2/3" in markdown
-    assert "cross-tool chains" in markdown
-    assert "Statuses: 1 detected, 1 missed_awaiting_capability." in markdown
+    assert result.status == CVEStatus.MISSED
+    assert result.miss_class == MissClass.AIMED_BLOCKED
+    assert (result.runs, result.detected_runs, result.aimed_runs) == (3, 0, 1)
+    assert result.fail_without_proof_runs == 1
+    assert result.evidence is None
+
+
+def test_render_opens_with_the_run_conditions():
+    markdown = render_markdown(given.a_benchmark_report([]))
+
+    conditions = markdown.splitlines()[0]
+    assert "openai" in conditions
+    assert "gpt-6-luna (reasoning none)" in conditions
+    assert "gpt-6-judge (reasoning default)" in conditions
+    assert "3 runs" in conditions
+    assert "budget 10" in conditions
+    assert given.FINGERPRINT[:12] in conditions
+    assert given.FINGERPRINT[:13] not in conditions
+
+
+def test_render_header_names_the_ladder_columns():
+    markdown = render_markdown(given.a_benchmark_report([]))
+
+    assert (
+        "| CVE | CVSS | Class | Status | Detected | Miss class | Aimed | FAIL without proof "
+        "| Awaited capability (hypothesis) | Note |"
+    ) in markdown
+
+
+def test_render_counts_runs_as_fractions():
+    result = given.a_cve_result(
+        "CVE-2025-53355",
+        CVEStatus.MISSED,
+        aimed_runs=2,
+        fail_without_proof_runs=1,
+        miss_class=MissClass.AIMED_NO_PROOF,
+    )
+
+    markdown = render_markdown(given.a_benchmark_report([result]))
+
+    assert (
+        "| CVE-2025-53355 | 9.1 CRITICAL | command_execution | missed | 0/3 | aimed_no_proof "
+        "| 2/3 | 1/3 | cross-tool chains | test note |"
+    ) in markdown
+
+
+def test_render_ends_with_the_status_tally():
+    results = [
+        given.a_cve_result("CVE-2025-53109", CVEStatus.DETECTED, detected_runs=2),
+        given.a_cve_result("CVE-2025-53110", CVEStatus.DETECTED, detected_runs=1),
+        given.a_cve_result("CVE-2025-68143", CVEStatus.MISSED, miss_class=MissClass.NOT_AIMED),
+    ]
+
+    markdown = render_markdown(given.a_benchmark_report(results))
+
+    assert markdown.endswith("Statuses: 2 detected, 1 missed.")

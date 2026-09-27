@@ -11,21 +11,24 @@ from pathlib import Path
 from rich.console import Console
 from rich.markup import escape
 
+from evals import cve_grammar, cve_units
+from evals.baseline import fingerprint_source
 from evals.cve_calibration import calibrate_all
 from evals.cve_environments import Launch, connect
+from evals.cve_grammar import RunGrade, grade_run
 from evals.cve_oracle import (
+    CVEBenchmarkReport,
     CVEResult,
-    RunDetection,
-    detect_in_report,
+    CVERunConditions,
     not_run,
     out_of_scope_results,
     render_markdown,
-    resolve_status,
+    result_for,
 )
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from evals.metrics import blocked_reasons, refused_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
-from mcp_auditor.config import load_settings
+from mcp_auditor.config import Settings, load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport
 from mcp_auditor.domain.ports import MCPClientPort
@@ -34,6 +37,8 @@ from mcp_auditor.graph.builder import build_graph
 CVE_RUNS = 3
 CVE_TEST_BUDGET = 10
 DEFAULT_REPORT_PATH = "output/cve_report.json"
+# Concatenated in this fixed order, so the fingerprint names one version of the grammar.
+GRAMMAR_PATHS = (Path(cve_grammar.__file__), Path(cve_units.__file__))
 
 EXPECTED_IMAGES = (
     "mcp-auditor-cve-filesystem:local",
@@ -86,13 +91,28 @@ def main() -> None:
 
     results = asyncio.run(run_cve_benchmark(graded, args.budget, args.runs))
     results.extend(out_of_scope_results(tracked))
-    _write_reports(results, Path(args.report))
+    conditions = _run_conditions(load_settings(), args.runs, args.budget)
+    _write_reports(CVEBenchmarkReport(conditions=conditions, results=results), Path(args.report))
 
 
-def _write_reports(results: list[CVEResult], report_path: Path) -> None:
+def _run_conditions(settings: Settings, runs: int, budget: int) -> CVERunConditions:
+    return CVERunConditions(
+        runs=runs,
+        budget=budget,
+        tools_filtered=True,
+        provider=settings.provider,
+        model=settings.resolve_model(),
+        judge_model=settings.resolve_judge_model(),
+        reasoning=settings.resolve_reasoning(settings.resolve_model()),
+        judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
+        grammar_fingerprint=fingerprint_source("".join(p.read_text() for p in GRAMMAR_PATHS)),
+    )
+
+
+def _write_reports(report: CVEBenchmarkReport, report_path: Path) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps([r.model_dump(mode="json") for r in results], indent=2))
-    markdown = render_markdown(results)
+    report_path.write_text(json.dumps(report.model_dump(mode="json"), indent=2))
+    markdown = render_markdown(report)
     report_path.with_suffix(".md").write_text(markdown)
 
     console.print(markdown)
@@ -160,21 +180,19 @@ def _reject_unknown_cves(ids: list[str] | None, known: set[str]) -> None:
 async def run_cve_benchmark(targets: list[CVETarget], budget: int, runs: int) -> list[CVEResult]:
     results: list[CVEResult] = []
     for target in targets:
-        detections: list[RunDetection] = []
+        grades: list[RunGrade] = []
         for _ in range(runs):
             try:
                 with target.environment() as launch:
                     report = await _audit(launch, target, budget)
                     # Record before __exit__ fires so a best-effort teardown error
-                    # cannot erase a completed run's detection.
-                    detections.append(detect_in_report(target, report))
+                    # cannot erase a completed run's grade.
+                    grades.append(grade_run(target, report))
                     _print_incidents(target, report)
             except (LaunchError, subprocess.CalledProcessError) as exc:
                 console.print(f"[yellow]{target.cve_id} run skipped:[/yellow] {exc}")
                 continue
-        results.append(
-            not_run(target) if not detections else resolve_status(target, detections, budget)
-        )
+        results.append(not_run(target) if not grades else result_for(target, grades, budget))
     return results
 
 
