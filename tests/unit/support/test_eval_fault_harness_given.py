@@ -26,10 +26,8 @@ from mcp_auditor.domain.models import (
     ToolReport,
 )
 from mcp_auditor.domain.ports import LLMPort
-from tests.unit.support.test_eval_fault_injection_given import (
-    CHAIN_ONLY_FLAWS,
-    the_fault_injection_baseline,
-)
+from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
+from tests.unit.support.test_eval_fault_injection_given import the_fault_injection_baseline
 
 __all__ = ["CHAIN_ONLY_FLAWS", "the_fault_injection_baseline"]
 

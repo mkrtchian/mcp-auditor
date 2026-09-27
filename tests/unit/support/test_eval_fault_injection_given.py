@@ -13,16 +13,9 @@ from evals.gate import Cell, Observation, cell_key
 from evals.honeypots import MERGED_GROUND_TRUTH, REPO_ROOT
 from evals.metrics import EvalMetrics, VerdictMap, compute_consistency, label_scores
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
+from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
 
 FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "fault_injection_baseline.json"
-
-# The chain honeypot plants its info_leakage flaws as three-step chains (its docstring and
-# the comments on each step): a single-step case covers these cells but cannot reach the flaw.
-# Every other cell of that server is covered by single-step cases in every recorded run.
-CHAIN_ONLY_FLAWS: list[Cell] = [
-    ("project_manager", AuditCategory.INFO_LEAKAGE),
-    ("user_directory", AuditCategory.INFO_LEAKAGE),
-]
 
 STABLE_CORRECT_FAILS: list[Cell] = [
     ("get_user", AuditCategory.ERROR_HANDLING),
