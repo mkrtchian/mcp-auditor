@@ -165,7 +165,7 @@ def _legend(sections: list[GridSection], gated_run: bool) -> Table:
 def _outcome_table(rows: list[OutcomeRow]) -> Table:
     table = Table(box=None, header_style="bold")
     for column in ("Outcome", "Cell", "Baseline", "Run", "Replays"):
-        table.add_column(column)
+        table.add_column(column, overflow="fold")
     for row in rows:
         cell = f"{row.cell}*" if row.planted else row.cell
         table.add_row(row.outcome, cell, row.baseline, row.run, row.replays)
