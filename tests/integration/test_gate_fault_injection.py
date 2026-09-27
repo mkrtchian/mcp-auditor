@@ -22,7 +22,10 @@ async def results() -> dict[str, FaultResult]:
 
 
 async def test_the_healthy_audit_reproduces_the_fixture(results: dict[str, FaultResult]):
-    then.the_fixture_reproduced(results[given.HEALTHY.name], FIXTURE)
+    healthy = results[given.HEALTHY.name]
+    assert given.HEALTHY.expectation is not None
+    then.expectation_met(healthy, given.HEALTHY.expectation)
+    then.the_fixture_reproduced(healthy, FIXTURE)
 
 
 @pytest.mark.parametrize("fault", FAULTS_WITH_EXPECTATION, ids=lambda fault: fault.name)
