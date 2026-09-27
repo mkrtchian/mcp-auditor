@@ -8,7 +8,7 @@ It needs no API key and runs in CI with the other integration tests. ADR 003 def
 
 It proves wiring: a fault planted in the models reaches the gate through a real audit (the graph, the aggregation of verdicts, `judge_runs`, the replays with the fault still active, the recording decision) and produces the gate's response on the floors of ADR 022. The unit tests in `tests/unit/test_eval_fault_injection.py` feed the same gate faulted observations built from the fixture: they pin what the gate does with a fault, and this test checks what an audit makes of it.
 
-It does not prove what a real model detects: the honeypot evals and the CVE benchmark measure that. Nor does it prove the gate's response at another operating point than the fixture's, recorded on 2026-09-27. When a first confirmed baseline exists, the fixture can move to it.
+It does not prove what a real model detects: the honeypot evals and the CVE benchmark measure that. Nor does it prove the gate's response at another operating point than the fixture's, recorded on 2026-09-27. When a first confirmed baseline exists, the fixture can move to it. Nor does it exercise the audit of a freshly started server: each scenario audits servers already started, one per honeypot shared by its runs and replays, while the other integration tests and the evals start their own, and the reuse changes no verdict because the verdicts come from the fixture through the fake judge, not from the servers' responses.
 
 ## The fixture
 
@@ -65,4 +65,4 @@ The expectations for the former floors at 0.50 are pinned in history at `35aeaec
 
 ## Cost
 
-Each of the eight scenarios (the healthy one and the seven faults) is its own test, with its own fakes and server processes, and pytest-xdist runs them in parallel under `-n auto`. On 2026-09-27, on a 16-core machine, the scenarios took about 19 seconds under `-n auto` and about 59 seconds one after the other, and the whole integration suite took about 29 seconds under `-n auto`.
+Each of the eight scenarios (the healthy one and the seven faults) is its own test, with its own fakes. It starts one server per honeypot and reuses it for its runs and its replays, and pytest-xdist runs the scenarios in parallel under `-n auto`. On 2026-09-27, on a 16-core machine, each scenario took about 3 to 4 seconds and the eight about 9 seconds under `-n auto`, about 17 seconds one after the other, and the whole integration suite took about 13 seconds under `-n auto`.

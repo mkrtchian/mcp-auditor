@@ -7,6 +7,8 @@ what this proves are in `evals/fault_injection_method.md`.
 """
 
 import itertools
+from collections.abc import AsyncIterator, Mapping
+from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
@@ -22,9 +24,11 @@ from evals.honeypots import (
     MERGED_GROUND_TRUTH,
     REPO_ROOT,
     AuditModels,
+    ConnectedHoneypot,
     HoneypotConfig,
-    audit_honeypot,
+    audit_connected,
     audit_honeypots,
+    connected,
 )
 from evals.judging import RunsOutcome, judge_runs
 from evals.metrics import EvalMetrics, VerdictMap, aggregate_verdicts, build_run_detail
@@ -59,11 +63,12 @@ class Harness:
     budget: int
 
     async def inject(self, fault: Fault) -> FaultResult:
-        audit = FaultedAudit(fault, fault.models(self.base_models), self.budget)
-        outcome = await audit.runs()
-        replayer = Replayer(audit.replay, HONEYPOTS, announce=_ignore, warn=_ignore)
-        paired = await judge_runs(self._session(GateMode.PAIRED), outcome, replayer)
-        floors_only = await judge_runs(self._session(GateMode.FLOORS_ONLY), outcome, replayer)
+        async with _connected_honeypots() as servers:
+            audit = FaultedAudit(fault, fault.models(self.base_models), self.budget, servers)
+            outcome = await audit.runs()
+            replayer = Replayer(audit.replay, HONEYPOTS, announce=_ignore, warn=_ignore)
+            paired = await judge_runs(self._session(GateMode.PAIRED), outcome, replayer)
+            floors_only = await judge_runs(self._session(GateMode.FLOORS_ONLY), outcome, replayer)
         return FaultResult(
             fault=fault.name,
             completed_runs=len(outcome.details),
@@ -97,14 +102,25 @@ class Harness:
         return decision.reasons if isinstance(decision, RecordingRefused) else []
 
 
+@asynccontextmanager
+async def _connected_honeypots() -> AsyncIterator[dict[str, ConnectedHoneypot]]:
+    async with AsyncExitStack() as stack:
+        yield {
+            honeypot.name: await stack.enter_async_context(connected(honeypot))
+            for honeypot in HONEYPOTS
+        }
+
+
 @dataclass(frozen=True)
 class FaultedAudit:
-    """The audit with the fault planted, shared by the runs and the replays. Every audit, a
-    replay included, takes the next index, so a detection loss is drawn afresh at each."""
+    """The audit with the fault planted, shared by the runs and the replays, as are the
+    servers. Every audit, a replay included, takes the next index, so a detection loss is
+    drawn afresh at each."""
 
     fault: Fault
     models: AuditModels
     budget: int
+    servers: Mapping[str, ConnectedHoneypot]
     audits: "itertools.count[int]" = field(default_factory=itertools.count)
 
     async def runs(self) -> RunsOutcome:
@@ -122,7 +138,7 @@ class FaultedAudit:
         return self.fault.degrade(verdicts, next(self.audits))
 
     async def _report(self, honeypot: HoneypotConfig) -> AuditReport:
-        return await audit_honeypot(self.models, honeypot, self.budget)
+        return await audit_connected(self.models, self.servers[honeypot.name], self.budget)
 
 
 def _ignore(_message: str) -> None:

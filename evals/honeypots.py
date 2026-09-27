@@ -1,5 +1,6 @@
 import os
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,7 +17,7 @@ from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, TokenUsage
-from mcp_auditor.domain.ports import LLMPort
+from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -58,6 +59,12 @@ class AuditModels:
     judge_llm: LLMPort
 
 
+@dataclass(frozen=True)
+class ConnectedHoneypot:
+    config: HoneypotConfig
+    client: MCPClientPort
+
+
 HoneypotAudit = Callable[[HoneypotConfig], Awaitable[AuditReport]]
 
 
@@ -82,21 +89,34 @@ def models_for(settings: Settings) -> AuditModels:
 
 
 async def audit_honeypot(models: AuditModels, honeypot: HoneypotConfig, budget: int) -> AuditReport:
+    async with connected(honeypot) as server:
+        return await audit_connected(models, server, budget)
+
+
+@asynccontextmanager
+async def connected(honeypot: HoneypotConfig) -> AsyncIterator[ConnectedHoneypot]:
     devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
         async with StdioMCPClient.connect(
             ServerLaunch.unconfined("uv", honeypot.args), errlog=devnull
         ) as mcp_client:
-            graph = build_graph(models.llm, AuditedServer(mcp_client), judge_llm=models.judge_llm)
-            result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                {
-                    "target": f"uv {' '.join(honeypot.args)}",
-                    "test_budget": budget,
-                    "attack_context": AttackContext(),
-                    "chain_budget": honeypot.chain_budget,
-                    "max_chain_steps": honeypot.max_chain_steps,
-                }
-            )
-            return result["audit_report"]
+            yield ConnectedHoneypot(honeypot, mcp_client)
     finally:
         devnull.close()
+
+
+async def audit_connected(
+    models: AuditModels, honeypot: ConnectedHoneypot, budget: int
+) -> AuditReport:
+    config = honeypot.config
+    graph = build_graph(models.llm, AuditedServer(honeypot.client), judge_llm=models.judge_llm)
+    result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
+        {
+            "target": f"uv {' '.join(config.args)}",
+            "test_budget": budget,
+            "attack_context": AttackContext(),
+            "chain_budget": config.chain_budget,
+            "max_chain_steps": config.max_chain_steps,
+        }
+    )
+    return result["audit_report"]
