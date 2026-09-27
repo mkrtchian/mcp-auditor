@@ -64,7 +64,10 @@ def main() -> None:
     parser.add_argument(
         "--calibrate",
         action="store_true",
-        help="No-LLM exploit and benign call per target; confirms each fixture is live.",
+        help=(
+            "No-LLM exploit and benign call per target; "
+            "confirms each fixture is live and its benign call is clean."
+        ),
     )
     parser.add_argument(
         "--cve",
