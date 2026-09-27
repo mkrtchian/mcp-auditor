@@ -45,6 +45,7 @@ dev = [
     "ruff>=0.15",
     "pyright>=1.1",
     "langsmith>=0.3",
+    "pytest-xdist>=3.8.0",
 ]
 
 [project.scripts]

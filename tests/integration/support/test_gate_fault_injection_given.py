@@ -1,8 +1,6 @@
-import asyncio
-
 from evals.baseline import Baseline, load_baseline
 from evals.fault_catalog import FAULTS, GREEN, Expectation, Fault
-from evals.fault_harness import FIXTURE_PATH, FaultResult, Harness
+from evals.fault_harness import FIXTURE_PATH, FaultResult, Harness, fixture_refusals
 from evals.honeypots import AuditModels
 from tests.fakes.fixture_judge import FixtureJudge
 from tests.fakes.scripted_audit_model import ScriptedAuditModel
@@ -17,14 +15,17 @@ def the_fixture() -> Baseline:
     return fixture
 
 
-async def every_scenario_injected(fixture: Baseline) -> dict[str, FaultResult]:
-    """Each scenario gets its own harness: the fakes count judgments per cell, so a shared one
-    would read the fixture's runs out of step."""
-    scenarios = [HEALTHY, *FAULTS]
-    results = await asyncio.gather(*(a_harness(fixture).inject(scenario) for scenario in scenarios))
-    return {result.fault: result for result in results}
+def fault_named(name: str) -> Fault:
+    return next(fault for fault in FAULTS if fault.name == name)
+
+
+async def injected(scenario: Fault, fixture: Baseline) -> FaultResult:
+    assert fixture_refusals(fixture) == []
+    return await a_harness(fixture).inject(scenario)
 
 
 def a_harness(fixture: Baseline) -> Harness:
+    """Each scenario gets its own harness: the fakes count judgments per cell, so a shared one
+    would read the fixture's runs out of step."""
     models = AuditModels(llm=ScriptedAuditModel(), judge_llm=FixtureJudge(fixture))
     return Harness(fixture, models, BUDGET)

@@ -65,4 +65,4 @@ The expectations for the former floors at 0.50 are pinned in history at `35aeaec
 
 ## Cost
 
-The eight scenarios (the healthy one and the seven faults) run concurrently, each with its own fakes and server processes. On 2026-09-27 the scenarios took about 16 seconds together, and the integration suite went from about 15 to about 32 seconds.
+Each of the eight scenarios (the healthy one and the seven faults) is its own test, with its own fakes and server processes, and pytest-xdist runs them in parallel under `-n auto`. On 2026-09-27, on a 16-core machine, the scenarios took about 19 seconds under `-n auto` and about 59 seconds one after the other, and the whole integration suite took about 29 seconds under `-n auto`.

@@ -8,14 +8,14 @@ Thanks for considering a contribution. This document explains how to get started
 git clone https://github.com/mkrtchian/mcp-auditor.git
 cd mcp-auditor
 uv sync                                # install runtime + dev dependencies
-uv run pytest                          # should be green before you touch anything
+uv run pytest -n auto                  # should be green before you touch anything
 ```
 
 You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management. Don't add a `requirements.txt`. Docker is needed to audit a server under the default regime, which launches it in a container, and by the CVE benchmark (below). One integration test exercises that confined path and skips when Docker does not answer. The unit tests and the regular evals need none.
 
 ```bash
 uv run pytest tests/unit               # unit tests
-uv run pytest tests/integration        # integration tests
+uv run pytest tests/integration -n auto # integration tests
 uv run ruff check .                    # lint
 uv run ruff format .                   # format
 uv run pyright                         # type-check
@@ -81,7 +81,7 @@ A recording runs at the conditions CI runs at: the default `--runs` and `--budge
 
 `--ungated` runs the e2e evals on the floors alone, with no condition check and no baseline comparison, for a cheap local run at other conditions (fewer runs, a smaller budget, another model). It is never used in CI and cannot be combined with `--record-baseline`.
 
-The fault injection on the gate is an integration test, `tests/integration/test_gate_fault_injection.py`, run by `uv run pytest tests/integration` with no API key. It audits the three real honeypot servers with a fake generator and a fake judge that reproduces the committed fixture `evals/fixtures/fault_injection_baseline.json`, plants one fault at a time (a judge that passes, fails or draws every verdict, no verdict at all, half the detections lost, a dropped category, refused chain steps), the fault staying active in the replays, and asserts the gate's answer in the paired and the floors-only modes and the recording decision. It is the first test at the integration level to exercise the eval gate rather than an adapter. It fails first when the fixture no longer matches the ground truth. The faults, the expected results and what the test does not prove are in [`evals/fault_injection_method.md`](evals/fault_injection_method.md).
+The fault injection on the gate is an integration test, `tests/integration/test_gate_fault_injection.py`, run by `uv run pytest tests/integration -n auto` with no API key. It audits the three real honeypot servers with a fake generator and a fake judge that reproduces the committed fixture `evals/fixtures/fault_injection_baseline.json`, plants one fault at a time (a judge that passes, fails or draws every verdict, no verdict at all, half the detections lost, a dropped category, refused chain steps), the fault staying active in the replays, and asserts the gate's answer in the paired and the floors-only modes and the recording decision. It is the first test at the integration level to exercise the eval gate rather than an adapter. It fails first when the fixture no longer matches the ground truth. The faults, the expected results and what the test does not prove are in [`evals/fault_injection_method.md`](evals/fault_injection_method.md).
 
 ## Coding, testing, and architecture standards
 
@@ -118,7 +118,7 @@ User-facing changes (new flags, behavior changes, notable fixes) should come wit
 
 Publishing is automated: pushing a `v*` tag triggers `publish.yml`, which builds the package and publishes it to PyPI via trusted publishing. The manual steps are:
 
-1. Make sure `main` is green: `uv run pytest && uv run ruff check . && uv run pyright`.
+1. Make sure `main` is green: `uv run pytest -n auto && uv run ruff check . && uv run pyright`.
 2. In `CHANGELOG.md`, rename the `[Unreleased]` section to the new version with today's date, add a fresh empty `[Unreleased]` section above it, and update the comparison links at the bottom.
 3. Bump `version` in `pyproject.toml`, then run `uv lock` so the lock file picks it up.
 4. Commit and push: `git commit -m "chore(release): vX.Y.Z"`.

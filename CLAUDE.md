@@ -3,9 +3,9 @@
 ## Commands
 
 ```bash
-uv run pytest                    # Unit + integration tests
+uv run pytest -n auto            # Unit + integration tests
 uv run pytest tests/unit         # Unit tests only
-uv run pytest tests/integration  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker)
+uv run pytest tests/integration -n auto  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker)
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)
