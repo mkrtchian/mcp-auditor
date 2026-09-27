@@ -9,13 +9,12 @@ import random
 from dataclasses import dataclass
 
 from evals.baseline import Baseline, load_baseline
+from evals.fault_harness import FIXTURE_PATH
 from evals.gate import Cell, Observation, cell_key
-from evals.honeypots import MERGED_GROUND_TRUTH, REPO_ROOT
+from evals.honeypots import MERGED_GROUND_TRUTH
 from evals.metrics import EvalMetrics, VerdictMap, compute_consistency, label_scores
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
-
-FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "fault_injection_baseline.json"
 
 STABLE_CORRECT_FAILS: list[Cell] = [
     ("get_user", AuditCategory.ERROR_HANDLING),

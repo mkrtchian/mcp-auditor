@@ -1,6 +1,6 @@
 from evals.baseline import Baseline, load_baseline
+from evals.fault_harness import FIXTURE_PATH
 from evals.gate import Cell, Observation, cell_key
-from evals.honeypots import REPO_ROOT
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -14,8 +14,6 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.chain_prompts import build_chain_judge_prompt
 from mcp_auditor.graph.prompts import build_attack_generation_prompt, build_judge_prompt
-
-FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "fault_injection_baseline.json"
 
 # Observed FAIL, PASS, PASS in the fixture's three runs.
 A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY: Cell = ("execute_query", AuditCategory.INJECTION)

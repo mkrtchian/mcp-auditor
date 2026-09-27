@@ -70,7 +70,18 @@ FAULTS = [
     ),
     Fault(
         "no_verdict",
-        Expectation(RED, RED, True, ("recall", "distribution_coverage", "regression")),
+        Expectation(
+            RED,
+            RED,
+            True,
+            (
+                "recall",
+                "distribution_coverage",
+                "regression",
+                NO_STABLE_FAIL_CELL,
+                NO_STABLE_PASS_CELL,
+            ),
+        ),
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=SilentJudge()),
     ),
     Fault(
