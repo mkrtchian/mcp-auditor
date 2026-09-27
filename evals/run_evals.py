@@ -40,7 +40,7 @@ from evals.judging import RunsOutcome, judge_runs
 from evals.metrics import RunDetail, VerdictMap, aggregate_verdicts, build_run_detail
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
 from evals.replay import ReplayAudit, Replayer
-from mcp_auditor.domain.models import AuditReport, TokenUsage, ToolReport
+from mcp_auditor.domain.models import AuditReport, RefusedStep, TokenUsage, ToolReport
 
 DEFAULT_REPORT_PATH = "output/eval_report.json"
 NOT_COMPARABLE_EXIT = 3
@@ -167,6 +167,7 @@ async def _run_one_eval(
 ) -> tuple[VerdictMap, AuditReport]:
     merged_verdicts: VerdictMap = {}
     all_tool_reports: list[ToolReport] = []
+    all_refused_steps: list[RefusedStep] = []
     total_usage = TokenUsage()
     for honeypot in HONEYPOTS:
         progress.console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
@@ -175,11 +176,15 @@ async def _run_one_eval(
         )
         merged_verdicts.update(aggregate_verdicts(report))
         all_tool_reports.extend(report.tool_reports)
+        all_refused_steps.extend(report.refused_steps)
         total_usage = total_usage.add(report.token_usage)
         progress.advance(task)
 
     merged_report = AuditReport(
-        target="evals", tool_reports=all_tool_reports, token_usage=total_usage
+        target="evals",
+        tool_reports=all_tool_reports,
+        token_usage=total_usage,
+        refused_steps=all_refused_steps,
     )
     return merged_verdicts, merged_report
 
