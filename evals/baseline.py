@@ -1,6 +1,7 @@
 import ast
 import hashlib
 import os
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -84,6 +85,12 @@ def fingerprint_source(source: str) -> str:
     if ast.get_docstring(module, clean=False) is not None:
         module.body = module.body[1:]
     return hashlib.sha256(ast.dump(module).encode()).hexdigest()
+
+
+def fingerprint_sources(sources: Sequence[str]) -> str:
+    """Each module is fingerprinted on its own, so every module docstring is left out."""
+    digests = "\n".join(fingerprint_source(source) for source in sources)
+    return hashlib.sha256(digests.encode()).hexdigest()
 
 
 def condition_mismatches(recorded: BaselineConditions, candidate: BaselineConditions) -> list[str]:

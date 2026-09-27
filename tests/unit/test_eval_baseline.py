@@ -10,6 +10,7 @@ from evals.baseline import (
     condition_mismatches,
     fingerprint_ground_truth,
     fingerprint_source,
+    fingerprint_sources,
     load_baseline,
     rescore,
     write_baseline,
@@ -85,6 +86,22 @@ def test_source_fingerprint_changes_with_a_changed_argument_type():
     changed = given.SERVER_SOURCE.replace("user_id: str", "user_id: int")
 
     assert fingerprint_source(changed) != fingerprint_source(given.SERVER_SOURCE)
+
+
+def test_sources_fingerprint_ignores_the_docstring_of_every_module():
+    edited = given.SERVER_SOURCE.replace("A server with one tool.", "The planted flaws, explained.")
+
+    assert fingerprint_sources([given.SERVER_SOURCE, edited]) == fingerprint_sources(
+        [given.SERVER_SOURCE, given.SERVER_SOURCE]
+    )
+
+
+def test_sources_fingerprint_changes_with_a_change_in_any_module():
+    changed = given.SERVER_SOURCE.replace("user_id: str", "user_id: int")
+
+    assert fingerprint_sources([given.SERVER_SOURCE, changed]) != fingerprint_sources(
+        [given.SERVER_SOURCE, given.SERVER_SOURCE]
+    )
 
 
 def test_no_honeypot_passes_instructions_to_its_server():

@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.markup import escape
 
 from evals import cve_grammar, cve_units
-from evals.baseline import fingerprint_source
+from evals.baseline import fingerprint_sources
 from evals.cve_calibration import calibrate_all
 from evals.cve_environments import Launch, connect
 from evals.cve_grammar import RunGrade, grade_run
@@ -37,7 +37,7 @@ from mcp_auditor.graph.builder import build_graph
 CVE_RUNS = 3
 CVE_TEST_BUDGET = 10
 DEFAULT_REPORT_PATH = "output/cve_report.json"
-# Concatenated in this fixed order, so the fingerprint names one version of the grammar.
+# Fingerprinted in this fixed order, so the fingerprint names one version of the grammar.
 GRAMMAR_PATHS = (Path(cve_grammar.__file__), Path(cve_units.__file__))
 
 EXPECTED_IMAGES = (
@@ -108,7 +108,7 @@ def _run_conditions(settings: Settings, runs: int, budget: int) -> CVERunConditi
         judge_model=settings.resolve_judge_model(),
         reasoning=settings.resolve_reasoning(settings.resolve_model()),
         judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
-        grammar_fingerprint=fingerprint_source("".join(p.read_text() for p in GRAMMAR_PATHS)),
+        grammar_fingerprint=fingerprint_sources([path.read_text() for path in GRAMMAR_PATHS]),
     )
 
 
