@@ -97,6 +97,7 @@ class Harness:
             metrics=outcome.metrics()[0],
             completed_all=outcome.completed_all(DEFAULT_RUNS),
             protected=outcome.protected(),
+            ground_truth=MERGED_GROUND_TRUTH,
         )
         decision = decide_recording(None, recording, floors_only)
         return decision.reasons if isinstance(decision, RecordingRefused) else []

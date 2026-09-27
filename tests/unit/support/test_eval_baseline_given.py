@@ -7,17 +7,12 @@ from evals.baseline import (
 )
 from evals.gate import (
     Cell,
-    CellComparison,
-    CellOutcome,
     Observation,
-    ProtectedCells,
     ReplayRule,
     cell_key,
 )
-from evals.gate_verdict import GateMode, GateResult, GateVerdict
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics
-from evals.recording import Recording
 from tests.unit.support.test_eval_gate_given import SAFE_CELL, VULNERABLE_CELL, a_ground_truth
 
 RECORDED_COMMIT = "0123abc"
@@ -87,58 +82,3 @@ def runs_where_vulnerable_cell_is(*observations: Observation) -> ObservationRuns
     return [
         {VULNERABLE_CELL: observation, SAFE_CELL: Observation.PASS} for observation in observations
     ]
-
-
-def runs_where_safe_cell_is(observation: Observation) -> ObservationRuns:
-    return [{VULNERABLE_CELL: Observation.FAIL, SAFE_CELL: observation} for _ in range(3)]
-
-
-def a_recording(
-    runs: ObservationRuns | None = None,
-    commit: str = RECORDED_COMMIT,
-    completed_all: bool = True,
-    budget: int = 10,
-    protected: ProtectedCells | None = None,
-) -> Recording:
-    return Recording(
-        conditions=conditions(budget=budget),
-        commit=commit,
-        recorded_at="2026-09-23T12:00:00+00:00",
-        runs=all_correct_runs() if runs is None else runs,
-        metrics=EvalMetrics(recall=0.9, precision=0.9, consistency=0.9, distribution_coverage=0.9),
-        completed_all=completed_all,
-        protected=protected or protected_on_both_sides(),
-    )
-
-
-def protected_on_both_sides() -> ProtectedCells:
-    return ProtectedCells(
-        fail_stable_correct=1, fail_total=1, pass_stable_correct=1, pass_total=1, unstable=0
-    )
-
-
-def no_stable_and_correct_fail_cell() -> ProtectedCells:
-    return protected_on_both_sides().model_copy(update={"fail_stable_correct": 0})
-
-
-def no_stable_and_correct_pass_cell() -> ProtectedCells:
-    return protected_on_both_sides().model_copy(update={"pass_stable_correct": 0})
-
-
-def a_gate(
-    verdict: GateVerdict = GateVerdict.GREEN,
-    floor_breaches: list[str] | None = None,
-    vulnerable_cell_outcome: CellOutcome = CellOutcome.UNCHANGED,
-    mode: GateMode = GateMode.PAIRED,
-) -> GateResult:
-    return GateResult(
-        mode=mode,
-        verdict=verdict,
-        reasons=[],
-        baseline_status=None,
-        cells={cell_key(VULNERABLE_CELL): CellComparison(outcome=vulnerable_cell_outcome)},
-        floors={},
-        thresholds={},
-        floor_breaches=floor_breaches or [],
-        deltas={},
-    )

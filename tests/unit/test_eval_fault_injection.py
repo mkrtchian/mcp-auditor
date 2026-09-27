@@ -169,5 +169,6 @@ def _through_the_gate(candidate: given.FaultedCandidate, replays: list[bool]) ->
         metrics=metrics,
         completed_all=True,
         protected=protected_cells(candidate.runs, MERGED_GROUND_TRUTH),
+        ground_truth=MERGED_GROUND_TRUTH,
     )
     return _GateRun(cells, paired, floors_only, decide_recording(None, recording, floors_only))

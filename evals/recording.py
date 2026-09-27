@@ -44,6 +44,7 @@ class Recording(BaseModel):
     metrics: EvalMetrics
     completed_all: bool
     protected: ProtectedCells
+    ground_truth: GroundTruth
 
 
 class RecordingRefused(BaseModel):

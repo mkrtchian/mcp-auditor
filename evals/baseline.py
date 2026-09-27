@@ -136,18 +136,21 @@ def rescore(baseline: Baseline, ground_truth: GroundTruth) -> RescoredBaseline:
     """
     runs = baseline.observation_runs()
     recorded = {cell: verdict for cell, verdict in ground_truth.items() if cell in runs[0]}
-    verdict_maps: list[VerdictMap] = [
+    return RescoredBaseline(
+        ground_truth=recorded,
+        metrics=baseline.metrics.model_copy(update=label_scores(verdict_maps_of(runs), recorded)),
+        protected=protected_cells(runs, recorded),
+    )
+
+
+def verdict_maps_of(runs: list[dict[Cell, Observation]]) -> list[VerdictMap]:
+    return [
         {
             cell: None if seen == Observation.UNCOVERED else EvalVerdict(seen.value)
             for cell, seen in run.items()
         }
         for run in runs
     ]
-    return RescoredBaseline(
-        ground_truth=recorded,
-        metrics=baseline.metrics.model_copy(update=label_scores(verdict_maps, recorded)),
-        protected=protected_cells(runs, recorded),
-    )
 
 
 def baseline_integrity(baseline: Baseline, ground_truth: GroundTruth) -> list[str]:
