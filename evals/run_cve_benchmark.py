@@ -4,10 +4,11 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import IO, Any, cast
 
 from rich.console import Console
 from rich.markup import escape
@@ -207,17 +208,36 @@ async def calibrate_all(targets: list[CVETarget], ci: bool = False) -> bool:
 
 
 async def _calibrate_one(target: CVETarget) -> bool:
-    try:
-        with target.environment() as launch:
-            async with _silent_client(launch) as client:
-                recorder = RecordingClient(client)
-                live = await target.calibrate(recorder)
-                if not live:
-                    _dump_dead_exchanges(target.cve_id, recorder.exchanges)
-                return live
-    except (subprocess.CalledProcessError, OSError, RuntimeError) as exc:
-        console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {exc}")
-        return False
+    # Any failure reads as not live and the next target still runs. A server that dies
+    # before the handshake only says "Connection closed", so its stderr carries the cause.
+    with tempfile.TemporaryFile("w+") as server_stderr:
+        try:
+            with target.environment() as launch:
+                async with _client(launch, server_stderr) as client:
+                    recorder = RecordingClient(client)
+                    live = await target.calibrate(recorder)
+                    if not live:
+                        _dump_dead_exchanges(target.cve_id, recorder.exchanges)
+                    return live
+        except Exception as exc:
+            cause = _root_cause(exc)
+            reason = f"{type(cause).__name__}: {cause}"
+            console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {reason}")
+            _print_tail(server_stderr)
+            return False
+
+
+def _root_cause(exc: BaseException) -> BaseException:
+    if not isinstance(exc, BaseExceptionGroup):
+        return exc
+    group = cast("BaseExceptionGroup[BaseException]", exc)
+    return _root_cause(group.exceptions[0]) if len(group.exceptions) == 1 else group
+
+
+def _print_tail(server_stderr: IO[str], lines: int = 10) -> None:
+    server_stderr.seek(0)
+    for line in server_stderr.read().splitlines()[-lines:]:
+        console.print(f"  {line}", markup=False, highlight=False)
 
 
 class RecordingClient:
@@ -278,17 +298,18 @@ async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
 
 @asynccontextmanager
 async def _silent_client(launch: Launch) -> AsyncIterator[MCPClientPort]:
-    devnull = open(os.devnull, "w")  # noqa: SIM115
-    try:
-        async with StdioMCPClient.connect(
-            ServerLaunch.declared_container(
-                launch.command, launch.args, docker_client_env(os.environ)
-            ),
-            errlog=devnull,
-        ) as client:
+    with open(os.devnull, "w") as devnull:
+        async with _client(launch, devnull) as client:
             yield client
-    finally:
-        devnull.close()
+
+
+@asynccontextmanager
+async def _client(launch: Launch, server_stderr: IO[str]) -> AsyncIterator[MCPClientPort]:
+    async with StdioMCPClient.connect(
+        ServerLaunch.declared_container(launch.command, launch.args, docker_client_env(os.environ)),
+        errlog=server_stderr,
+    ) as client:
+        yield client
 
 
 if __name__ == "__main__":
