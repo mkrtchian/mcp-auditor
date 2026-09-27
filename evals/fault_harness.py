@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from evals.baseline import Baseline, baseline_integrity
 from evals.eval_session import DEFAULT_RUNS, EvalSession
 from evals.fault_catalog import Fault
+from evals.gate import Observation, cell_key
 from evals.gate_verdict import GateMode, GateResult
 from evals.honeypots import (
     HONEYPOTS,
@@ -38,6 +39,7 @@ FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "fault_injection_baseline.json
 class FaultResult(BaseModel):
     fault: str
     completed_runs: int
+    observations: list[dict[str, Observation]]
     metrics: EvalMetrics
     paired: GateResult
     floors_only: GateResult
@@ -65,6 +67,10 @@ class Harness:
         return FaultResult(
             fault=fault.name,
             completed_runs=len(outcome.details),
+            observations=[
+                {cell_key(cell): seen for cell, seen in run.items()}
+                for run in outcome.observations()
+            ],
             metrics=outcome.metrics()[0],
             paired=paired,
             floors_only=floors_only,
