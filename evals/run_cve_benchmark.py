@@ -4,16 +4,15 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import IO, Any, cast
 
 from rich.console import Console
 from rich.markup import escape
 
-from evals.cve_environments import Launch
+from evals.cve_calibration import calibrate_all
+from evals.cve_environments import Launch, connect
 from evals.cve_oracle import (
     CVEResult,
     RunDetection,
@@ -25,13 +24,10 @@ from evals.cve_oracle import (
 )
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from evals.metrics import blocked_reasons, refused_steps
-from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
-from mcp_auditor.adapters.mcp_client import StdioMCPClient
-from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AttackContext, AuditReport, ToolDefinition, ToolResponse
+from mcp_auditor.domain.models import AttackContext, AuditReport
 from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.graph.builder import build_graph
 
@@ -63,7 +59,7 @@ def main() -> None:
     parser.add_argument(
         "--calibrate",
         action="store_true",
-        help="No-LLM ground-truth exploit per target; confirms each fixture is live.",
+        help="No-LLM exploit and benign call per target; confirms each fixture is live.",
     )
     parser.add_argument(
         "--cve",
@@ -191,85 +187,6 @@ def _print_incidents(target: CVETarget, report: AuditReport) -> None:
         )
 
 
-async def calibrate_all(targets: list[CVETarget], ci: bool = False) -> bool:
-    console.print("[bold]Calibration[/bold] (no LLM): raw ground-truth exploit per target\n")
-    all_live = True
-    for target in targets:
-        if ci and target.ci_skip_reason is not None:
-            console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
-            continue
-        live = await _calibrate_one(target)
-        all_live = all_live and live
-        status = "[green]live[/green]" if live else "[red]dead[/red]"
-        console.print(f"{status}  {target.cve_id}")
-    if not all_live:
-        console.print("\n[red]Some fixtures calibrate dead[/red]: fix fixture/exploit/tool-name.")
-    return all_live
-
-
-async def _calibrate_one(target: CVETarget) -> bool:
-    # Any failure reads as not live and the next target still runs. A server that dies
-    # before the handshake only says "Connection closed", so its stderr carries the cause.
-    with tempfile.TemporaryFile("w+") as server_stderr:
-        try:
-            with target.environment() as launch:
-                async with _client(launch, server_stderr) as client:
-                    recorder = RecordingClient(client)
-                    live = await target.calibrate(recorder)
-                    if not live:
-                        _dump_dead_exchanges(target.cve_id, recorder.exchanges)
-                    return live
-        except Exception as exc:
-            cause = _root_cause(exc)
-            reason = f"{type(cause).__name__}: {cause}"
-            console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {escape(reason)}")
-            _print_tail(server_stderr)
-            return False
-
-
-def _root_cause(exc: BaseException) -> BaseException:
-    if not isinstance(exc, BaseExceptionGroup):
-        return exc
-    group = cast("BaseExceptionGroup[BaseException]", exc)
-    return _root_cause(group.exceptions[0]) if len(group.exceptions) == 1 else group
-
-
-def _print_tail(server_stderr: IO[str], lines: int = 10) -> None:
-    server_stderr.seek(0)
-    for line in server_stderr.read().splitlines()[-lines:]:
-        console.print(f"  {line}", markup=False, highlight=False)
-
-
-class RecordingClient:
-    """Wraps the calibration client so a dead fixture can be post-mortemed: it
-    records each tool call and its response for the dump below. When a fixture
-    calibrates dead, the raw ground-truth exploit ran but the sentinel never
-    surfaced, and the recorded exchanges show which step swallowed it (a
-    server-side error-as-value or an empty response)."""
-
-    def __init__(self, inner: MCPClientPort) -> None:
-        self._inner = inner
-        self.exchanges: list[tuple[str, dict[str, Any], ToolResponse]] = []
-
-    async def list_tools(self) -> list[ToolDefinition]:
-        return await self._inner.list_tools()
-
-    async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
-        response = await self._inner.call_tool(name, args)
-        self.exchanges.append((name, args, response))
-        return response
-
-
-def _dump_dead_exchanges(
-    cve_id: str, exchanges: list[tuple[str, dict[str, Any], ToolResponse]]
-) -> None:
-    console.print(f"[yellow]{cve_id} dead, tool exchanges:[/yellow]")
-    for name, args, response in exchanges:
-        marker = "error" if response.is_error else "ok"
-        body = response.content[:500]
-        console.print(f"  {name}({json.dumps(args)}) -> [{marker}] {body!r}", markup=False)
-
-
 async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
     settings = load_settings()
     llm = create_llm(settings)
@@ -299,17 +216,8 @@ async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
 @asynccontextmanager
 async def _silent_client(launch: Launch) -> AsyncIterator[MCPClientPort]:
     with open(os.devnull, "w") as devnull:
-        async with _client(launch, devnull) as client:
+        async with connect(launch, devnull) as client:
             yield client
-
-
-@asynccontextmanager
-async def _client(launch: Launch, server_stderr: IO[str]) -> AsyncIterator[MCPClientPort]:
-    async with StdioMCPClient.connect(
-        ServerLaunch.declared_container(launch.command, launch.args, docker_client_env(os.environ)),
-        errlog=server_stderr,
-    ) as client:
-        yield client
 
 
 if __name__ == "__main__":

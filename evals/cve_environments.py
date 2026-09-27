@@ -37,12 +37,17 @@ import os
 import secrets
 import subprocess
 import tempfile
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import IO
 
 from evals.cve_seeding import init_git_repo_with_commit, make_dir_with_file, plant_symlink
+from mcp_auditor.adapters.docker import docker_client_env
+from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.server_launch import ServerLaunch
+from mcp_auditor.domain.ports import MCPClientPort
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +64,15 @@ class Launch:
     args: list[str]
     chain_budget: int = 0
     max_chain_steps: int = 3  # only consulted when chain_budget > 0
+
+
+@asynccontextmanager
+async def connect(launch: Launch, server_stderr: IO[str]) -> AsyncIterator[MCPClientPort]:
+    async with StdioMCPClient.connect(
+        ServerLaunch.declared_container(launch.command, launch.args, docker_client_env(os.environ)),
+        errlog=server_stderr,
+    ) as client:
+        yield client
 
 
 @contextmanager

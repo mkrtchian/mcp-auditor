@@ -33,7 +33,7 @@ A separate benchmark runs the auditor against real, pinned-vulnerable MCP server
 
 ```bash
 docker compose -f evals/docker/compose.yml build      # one-time, builds the pinned vulnerable-server images
-uv run python -m evals.run_cve_benchmark --calibrate  # no LLM, checks each fixture is live
+uv run python -m evals.run_cve_benchmark --calibrate  # no LLM, checks each fixture is live and its benign call is clean
 uv run python -m evals.run_cve_benchmark --runs 3 --budget 10  # graded run
 ```
 
