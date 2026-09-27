@@ -11,7 +11,8 @@ from pydantic import ValidationError
 from rich.progress import Progress, TaskID
 
 from evals import eval_display as display
-from evals.baseline import load_baseline, write_baseline
+from evals.baseline import Baseline, load_baseline, write_baseline
+from evals.cell_grid import GateGrid, RunAgainstBaseline, cell_grid, outcome_rows
 from evals.eval_report import EvalReport
 from evals.eval_session import (
     BASELINE_PATH,
@@ -28,7 +29,7 @@ from evals.eval_session import (
     tree_drift,
 )
 from evals.export import export_judged_cases
-from evals.gate_verdict import GateVerdict
+from evals.gate_verdict import GateMode, GateVerdict
 from evals.honeypots import (
     HONEYPOTS,
     MERGED_GROUND_TRUTH,
@@ -81,11 +82,25 @@ def _evaluate(options: EvalOptions) -> int:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(result.report.model_dump_json(indent=2))
     export_judged_cases(result.outcome.audits, MERGED_GROUND_TRUTH, report_path)
-    display.print_summary(result.report, options.report)
+    display.print_summary(result.report, options.report, _gate_grid(session.baseline, result))
 
     if session.tree is not None:
         return _record(session, session.tree, result)
     return EXIT_CODES[result.report.gate.verdict]
+
+
+def _gate_grid(baseline: Baseline | None, result: EvalRunResult) -> GateGrid | None:
+    if baseline is None:
+        return None
+    gate = result.report.gate
+    run = RunAgainstBaseline(comparisons=gate.cells, runs=result.outcome.observations())
+    baseline_runs = baseline.observation_runs()
+    paired = gate.mode == GateMode.PAIRED
+    return GateGrid(
+        title=f"Cells against the confirmed baseline ({len(baseline.runs)} runs)",
+        sections=cell_grid(HONEYPOTS, baseline_runs, run) if paired else [],
+        outcomes=outcome_rows(MERGED_GROUND_TRUTH, baseline_runs, run),
+    )
 
 
 def _parse_args() -> EvalOptions:
@@ -234,6 +249,10 @@ def _record(session: EvalSession, tree: TreeState, result: EvalRunResult) -> int
         raise Refused(RECORDING_REFUSED, decision.reasons)
     write_baseline(BASELINE_PATH, decision)
     changes = gated_set_changes(session.baseline, decision, MERGED_GROUND_TRUTH)
+    display.print_recorded_grid(
+        f"Cells of the {decision.status} baseline ({len(decision.runs)} runs)",
+        cell_grid(HONEYPOTS, decision.observation_runs()),
+    )
     display.print_written_recording(decision, changes, BASELINE_PATH)
     return 0
 

@@ -52,6 +52,8 @@ jobs:
       - name: Run e2e evals
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TTY_COMPATIBLE: "1"
+          TTY_INTERACTIVE: "0"
         run: uv run python -m evals.run_evals
 
       - name: Upload e2e report

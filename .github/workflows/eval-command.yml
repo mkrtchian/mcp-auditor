@@ -107,6 +107,8 @@ jobs:
         if: steps.cmd.outputs.mode == 'full' && steps.pr.outputs.fork == 'false'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TTY_COMPATIBLE: "1"
+          TTY_INTERACTIVE: "0"
         run: |
           set +e
           uv run python -m evals.run_evals

@@ -1,17 +1,21 @@
 from pathlib import Path
 
+from rich import box
 from rich.console import Console
 from rich.markup import escape
 from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
+from rich.text import Text
 
 from evals.baseline import Baseline, BaselineStatus
+from evals.cell_grid import CellTag, GateGrid, GridBox, GridSection, OutcomeRow
 from evals.eval_report import EvalReport
-from evals.gate import CellComparison, CellOutcome, ProtectedCells
+from evals.gate import ProtectedCells
 from evals.gate_verdict import GateMode, GateResult, GateVerdict
 from evals.metrics import RunDetail
 from evals.recording import GatedSetChange
+from mcp_auditor.domain.models import AuditCategory
 
 console = Console()
 
@@ -29,16 +33,16 @@ _VERDICT_STYLES = {
 }
 
 
-def print_summary(report: EvalReport, report_path: str) -> None:
+def print_summary(report: EvalReport, report_path: str, grid: GateGrid | None = None) -> None:
     gate = report.gate
     status = f", baseline {gate.baseline_status}" if gate.baseline_status else ""
     console.print(f"Gate mode: [bold]{gate.mode}[/bold]{status}")
     console.print(Panel(_metrics_table(report), title="Eval Results"))
-    changed = {
-        key: cell for key, cell in gate.cells.items() if cell.outcome != CellOutcome.UNCHANGED
-    }
-    if changed:
-        console.print(Panel(_cells_table(changed), title="Cells"))
+    if grid and grid.sections:
+        _print_grid(grid.title, grid.sections, gated_run=True)
+    if grid and grid.outcomes:
+        console.print(_outcome_table(grid.outcomes))
+        console.print("P pass, F fail, - not covered")
     if gate.protected:
         console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
     console.print(f"Report written to {report_path}")
@@ -70,15 +74,101 @@ def _status(passed: bool) -> str:
     return "[green]PASS[/green]" if passed else "[red]FAIL[/red]"
 
 
-def _cells_table(cells: dict[str, CellComparison]) -> Table:
-    table = Table(show_header=True, header_style="bold")
-    table.add_column("Cell")
-    table.add_column("Outcome")
-    table.add_column("Cause")
-    table.add_column("Replays reproduced", justify="right")
-    for key, cell in sorted(cells.items()):
-        replays = f"{sum(cell.replays)}/{len(cell.replays)}" if cell.replays else "-"
-        table.add_row(key, cell.outcome, cell.cause or "-", replays)
+def print_recorded_grid(title: str, sections: list[GridSection]) -> None:
+    _print_grid(title, sections, gated_run=False)
+
+
+_STYLES: dict[CellTag, str] = {
+    CellTag.GATE: "black on green",
+    CellTag.UNSTABLE: "black on yellow",
+    CellTag.MISS: "white on magenta",
+    CellTag.ALARM: "white on magenta",
+    CellTag.FLIP: "black on bright_yellow",
+    CellTag.REGRESSION: "bold white on bright_red",
+    CellTag.FIXED: "black on cyan",
+    CellTag.NEW: "black on white",
+}
+
+_MEANINGS: dict[CellTag, str] = {
+    CellTag.GATE: "gated: same correct verdict in every baseline run",
+    CellTag.UNSTABLE: "not gated: verdict varies across baseline runs",
+    CellTag.MISS: "not gated: planted flaw never found",
+    CellTag.ALARM: "not gated: PASS cell always flagged",
+    CellTag.FLIP: "gated cell wrong in this run, not a regression",
+    CellTag.REGRESSION: "gated cell wrong in this run, reproduced on replay: the gate fails",
+    CellTag.FIXED: "miss or alarm cell correct in every run of this one",
+    CellTag.NEW: "cell the baseline did not record",
+}
+
+_SHORT_CATEGORY: dict[AuditCategory, str] = {
+    AuditCategory.INPUT_VALIDATION: "input",
+    AuditCategory.ERROR_HANDLING: "errors",
+    AuditCategory.INJECTION: "inject",
+    AuditCategory.INFO_LEAKAGE: "leak",
+    AuditCategory.RESOURCE_ABUSE: "abuse",
+}
+
+
+def _print_grid(title: str, sections: list[GridSection], gated_run: bool) -> None:
+    console.print(title)
+    console.print(_grid_table(sections))
+    console.print(_legend(sections, gated_run))
+
+
+def _grid_table(sections: list[GridSection]) -> Table:
+    table = Table(box=box.ROUNDED)
+    table.add_column("tool", max_width=20, overflow="ellipsis")
+    for category in AuditCategory:
+        header = _SHORT_CATEGORY.get(category, category.value[:7])
+        table.add_column(header, justify="center", min_width=7)
+    empty = [""] * len(AuditCategory)
+    for section in sections:
+        table.add_row(Text(section.honeypot, style="dim italic"), *empty)
+        for index, row in enumerate(section.rows):
+            boxes = [_box_text(row.boxes[category]) for category in AuditCategory]
+            table.add_row(row.tool, *boxes, end_section=index == len(section.rows) - 1)
+    return table
+
+
+def _box_text(grid_box: GridBox | None) -> Text:
+    if grid_box is None:
+        return Text("·", style="dim")
+    star = "*" if grid_box.planted else " "
+    # Centring would strip the trailing space and shift unstarred words right of starred ones.
+    return Text(f" {grid_box.tag}{star}", style=_STYLES[grid_box.tag], justify="left")
+
+
+def _legend(sections: list[GridSection], gated_run: bool) -> Table:
+    boxes = [
+        grid_box for section in sections for row in section.rows for grid_box in row.boxes.values()
+    ]
+    present = [grid_box for grid_box in boxes if grid_box is not None]
+    legend = Table.grid(padding=(0, 2))
+    for tag in CellTag:
+        if any(grid_box.tag == tag for grid_box in present):
+            legend.add_row(Text(f" {tag} ", style=_STYLES[tag]), Text(_MEANINGS[tag], style="dim"))
+    if any(grid_box.planted for grid_box in present):
+        legend.add_row(" *", Text("planted flaw", style="dim"))
+    if len(present) < len(boxes):
+        legend.add_row(Text(" ·", style="dim"), Text("no such cell", style="dim"))
+    if gated_run:
+        legend.add_row(
+            "",
+            Text(
+                "a box counts the runs of the baseline, the outcome table the runs of this one",
+                style="dim",
+            ),
+        )
+    return legend
+
+
+def _outcome_table(rows: list[OutcomeRow]) -> Table:
+    table = Table(box=None, header_style="bold")
+    for column in ("Outcome", "Cell", "Baseline", "Run", "Replays"):
+        table.add_column(column)
+    for row in rows:
+        cell = f"{row.cell}*" if row.planted else row.cell
+        table.add_row(row.outcome, cell, row.baseline, row.run, row.replays)
     return table
 
 
@@ -122,8 +212,9 @@ _NEXT_STEP = {
 
 def print_written_recording(baseline: Baseline, gated_changes: GatedSetChange, path: Path) -> None:
     lines = [f"[bold green]Baseline recorded ({baseline.status}) to {path}.[/bold green]"]
-    lines += [f"- enters the gated set: {key}" for key in gated_changes.entering]
-    lines += [f"- leaves the gated set: {key}" for key in gated_changes.leaving]
+    if baseline.confirms is not None or baseline.replaces is not None:
+        lines += [f"- enters the gated set: {key}" for key in gated_changes.entering]
+        lines += [f"- leaves the gated set: {key}" for key in gated_changes.leaving]
     lines += [
         f"- looked stable in the first recording and varied in the second: {key}"
         for key in baseline.disagreements
