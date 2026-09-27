@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 import tests.unit.support.test_eval_fault_harness_given as given
 import tests.unit.support.test_eval_fault_harness_then as then
+from evals.fault_harness import fixture_refusals
 from evals.fault_injection import (
     CategoryDroppingGenerator,
     ChainRefusingModel,
@@ -15,7 +16,6 @@ from evals.fault_injection import (
     lose_detections,
 )
 from evals.honeypots import audit_honeypots
-from evals.run_fault_injection import fixture_refusals
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
@@ -141,25 +141,16 @@ async def test_auditing_the_honeypots_merges_their_reports():
     then.merged(verdicts, merged, list(reports.by_honeypot.values()))
 
 
-def test_the_harness_accepts_the_fixture_at_the_current_conditions():
+def test_the_harness_accepts_the_fixture():
     fixture = given.the_fault_injection_baseline()
 
-    assert fixture_refusals(fixture, given.the_current_conditions()) == []
-
-
-def test_the_harness_refuses_a_fixture_recorded_at_other_conditions():
-    fixture = given.the_fault_injection_baseline()
-
-    reasons = fixture_refusals(fixture, given.the_current_conditions_at_budget(7))
-
-    assert len(reasons) == 1
-    assert "budget: baseline 10, candidate 7" in reasons[0]
+    assert fixture_refusals(fixture) == []
 
 
 def test_the_harness_refuses_a_fixture_whose_runs_miss_a_cell():
     fixture = given.the_fixture_missing(given.CHAIN_ONLY_FLAWS[0])
 
-    reasons = fixture_refusals(fixture, given.the_current_conditions())
+    reasons = fixture_refusals(fixture)
 
     assert reasons == [
         f"run {index}: cells ['project_manager/info_leakage'] missing" for index in range(3)

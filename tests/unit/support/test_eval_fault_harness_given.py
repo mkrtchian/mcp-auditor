@@ -1,11 +1,9 @@
 from dataclasses import dataclass
 
-from evals.baseline import Baseline, BaselineConditions
-from evals.eval_session import DEFAULT_BUDGET, DEFAULT_RUNS, EvalOptions, candidate_conditions
+from evals.baseline import Baseline
 from evals.gate import Cell, cell_key
 from evals.honeypots import HoneypotConfig
 from evals.metrics import VerdictMap
-from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
@@ -30,19 +28,6 @@ from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
 from tests.unit.support.test_eval_fault_injection_given import the_fault_injection_baseline
 
 __all__ = ["CHAIN_ONLY_FLAWS", "the_fault_injection_baseline"]
-
-HARNESS_CONDITIONS_OPTIONS = EvalOptions(
-    runs=DEFAULT_RUNS, budget=DEFAULT_BUDGET, report="", record_baseline=False, ungated=False
-)
-
-
-def the_current_conditions() -> BaselineConditions:
-    """The conditions CI runs at, which the fixture was recorded at."""
-    return candidate_conditions(Settings.model_construct(), HARNESS_CONDITIONS_OPTIONS)
-
-
-def the_current_conditions_at_budget(budget: int) -> BaselineConditions:
-    return the_current_conditions().model_copy(update={"budget": budget})
 
 
 def the_fixture_missing(cell: Cell) -> Baseline:

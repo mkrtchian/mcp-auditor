@@ -1,5 +1,7 @@
 """The faults the harness injects, each on the role it targets, with what the gate is expected
-to answer on the floors of ADR 022. `evals/fault_injection_method.md` gives the reasoning.
+to answer on the floors of ADR 022 against the fixture. The expectations are the assertions of
+the integration test `tests/integration/test_gate_fault_injection.py`.
+`evals/fault_injection_method.md` gives the reasoning.
 """
 
 from collections.abc import Callable
@@ -14,17 +16,30 @@ from evals.fault_injection import (
     SilentJudge,
     lose_detections,
 )
+from evals.gate_verdict import GateVerdict
 from evals.honeypots import AuditModels
 from evals.metrics import VerdictMap
 from mcp_auditor.domain.models import AuditCategory
 
 SEED = 0
+GREEN = GateVerdict.GREEN
+RED = GateVerdict.RED
+NO_STABLE_FAIL_CELL = "no planted FAIL cell is stable and correct"
+NO_STABLE_PASS_CELL = "no PASS cell is stable and correct"
+
+
+@dataclass(frozen=True)
+class Expectation:
+    paired: GateVerdict
+    floors_only: GateVerdict
+    recording_refused: bool
+    reasons: tuple[str, ...]  # substrings expected among the gate's or the recording's reasons
 
 
 @dataclass(frozen=True)
 class Fault:
     name: str
-    expected: str
+    expectation: Expectation | None
     wrap: Callable[[AuditModels], AuditModels] | None = None
     loses_detections: bool = False
 
@@ -40,42 +55,32 @@ class Fault:
 FAULTS = [
     Fault(
         "judge_passes_everything",
-        "red in both modes on recall (0 detections), PAIRED also on the regressions of the 3 "
-        "stable and correct FAIL cells; recording refused on recall and for no stable and "
-        "correct FAIL cell",
+        Expectation(RED, RED, True, ("recall", "regression", NO_STABLE_FAIL_CELL)),
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=PassingJudge()),
     ),
     Fault(
         "judge_fails_everything",
-        "red in both modes on precision, PAIRED also on the regressions of every PASS cell; "
-        "recording refused on precision and for no stable and correct PASS cell",
+        Expectation(RED, RED, True, ("precision", "regression", NO_STABLE_PASS_CELL)),
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=FailingJudge()),
     ),
     Fault(
         "judge_fails_at_random",
-        "red in both modes on precision, PASS cells flipped; recording refused on precision, "
-        "and likely for no stable and correct PASS cell",
+        Expectation(RED, RED, True, ("precision",)),
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=RandomJudge(SEED)),
     ),
     Fault(
         "no_verdict",
-        "red in both modes on recall and distribution_coverage, PAIRED also on the regressions "
-        "(uncovered) of every stable and correct cell; recording refused on both and for no "
-        "stable and correct cell on either side",
+        Expectation(RED, RED, True, ("recall", "distribution_coverage", "regression")),
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=SilentJudge()),
     ),
     Fault(
         "half_the_detections_lost",
-        "PAIRED green unless a lost detection reproduces (about 0.19 each) or the detections "
-        "fall under 3, FLOORS_ONLY green unless they fall under 3; recording accepted when one "
-        "of the 3 stable FAIL cells survives the 3 runs and the detections reach 3, refused "
-        "otherwise (no stable and correct FAIL cell, or recall)",
+        None,
         loses_detections=True,
     ),
     Fault(
         "generator_drops_error_handling",
-        "PAIRED red on the regressions (uncovered) of the 8 stable and correct error_handling "
-        "cells, FLOORS_ONLY green (coverage 0.80 clears its floor); recording accepted",
+        Expectation(RED, GREEN, False, ("regression",)),
         wrap=lambda models: AuditModels(
             llm=CategoryDroppingGenerator(models.llm, AuditCategory.ERROR_HANDLING),
             judge_llm=models.judge_llm,
@@ -83,7 +88,7 @@ FAULTS = [
     ),
     Fault(
         "provider_refuses_chain_steps",
-        "green in both modes, no gated cell moves on the two chain-only flaws; recording accepted",
+        Expectation(GREEN, GREEN, False, ()),
         wrap=lambda models: AuditModels(
             llm=ChainRefusingModel(models.llm), judge_llm=models.judge_llm
         ),

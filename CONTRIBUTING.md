@@ -23,7 +23,6 @@ uv run python -m evals.run_evals       # e2e evals (requires API key)
 uv run python -m evals.run_evals --record-baseline  # record the e2e baseline (clean tree, see below)
 uv run python -m evals.run_evals --ungated          # e2e evals on the floors alone, at any conditions
 uv run python -m evals.run_judge_eval  # judge isolation eval (requires API key)
-uv run python -m evals.run_fault_injection  # fault injection on the honeypot gate (requires API key, by hand)
 ```
 
 Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set the key of the provider you use: `OPENAI_API_KEY` (default provider), `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `FIREWORKS_API_KEY` or `DASHSCOPE_API_KEY`. Unit and integration tests don't need any key.
@@ -82,7 +81,7 @@ A recording runs at the conditions CI runs at: the default `--runs` and `--budge
 
 `--ungated` runs the e2e evals on the floors alone, with no condition check and no baseline comparison, for a cheap local run at other conditions (fewer runs, a smaller budget, another model). It is never used in CI and cannot be combined with `--record-baseline`.
 
-`uv run python -m evals.run_fault_injection [--fault NAME ...]` checks that the gate catches a collapse. It audits the three honeypots with one fault planted (a judge that passes, fails or draws every verdict, no verdict at all, half the detections lost, a dropped category, refused chain steps), the fault staying active in the replays, and judges the runs against the committed fixture `evals/fixtures/fault_injection_baseline.json` in the paired and the floors-only modes. Run it by hand after a change to the gate's logic, at the default conditions and with `OPENAI_API_KEY`. It is never run in CI. It refuses to start when the fixture no longer matches the conditions or the ground truth, and prints each fault's expected result next to the observed one. The faults, the expected results and the recorded runs are in [`evals/fault_injection_method.md`](evals/fault_injection_method.md).
+The fault injection harness checks that the gate catches a collapse. It audits the three honeypots with one fault planted (a judge that passes, fails or draws every verdict, no verdict at all, half the detections lost, a dropped category, refused chain steps), the fault staying active in the replays, and judges the runs against the committed fixture `evals/fixtures/fault_injection_baseline.json` in the paired and the floors-only modes. It refuses a fixture that no longer matches the ground truth. The faults, the expected results and the recorded runs are in [`evals/fault_injection_method.md`](evals/fault_injection_method.md).
 
 ## Coding, testing, and architecture standards
 

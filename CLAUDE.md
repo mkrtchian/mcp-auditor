@@ -5,7 +5,7 @@
 ```bash
 uv run pytest                    # Unit + integration tests
 uv run pytest tests/unit         # Unit tests only
-uv run pytest tests/integration  # Integration tests only (one test needs Docker and network access, it skips without Docker)
+uv run pytest tests/integration  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker)
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)
@@ -13,7 +13,6 @@ uv run python -m evals.run_evals       # E2E evals (honeypot servers, needs an L
 uv run python -m evals.run_evals --record-baseline  # Record evals/baselines/honeypot_e2e.json from a clean tree: run it twice at the same commit (exploratory, then confirmed), then commit it by hand
 uv run python -m evals.run_evals --ungated          # Floors only (recall one detection per run, precision and coverage 0.50), any conditions, no baseline comparison (never in CI)
 uv run python -m evals.run_judge_eval  # Judge isolation eval (needs an LLM key: OPENAI_API_KEY by default)
-uv run python -m evals.run_fault_injection  # Fault injection on the honeypot gate, by hand after a change to the gate's logic (OPENAI_API_KEY, never in CI, see evals/fault_injection_method.md)
 
 docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)
 uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live (Docker, no LLM)
