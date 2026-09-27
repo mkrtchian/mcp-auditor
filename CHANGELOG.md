@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-27
+
 ### Added
 
 - Two LLM providers: `openai` (default model `gpt-6-luna` at reasoning effort `none`, needs `OPENAI_API_KEY`) and `fireworks` (default model GLM-5.3-Flash at reasoning effort `medium`, needs `FIREWORKS_API_KEY`). Set `MCP_AUDITOR_PROVIDER` to select one. Each request to either provider is abandoned after 120 seconds, then retried like any other failed request. Their answers are capped at 8,192 output tokens, reasoning included on some providers, and an answer cut by that cap counts as unparsed: it is retried, then reported as a failure.
@@ -72,6 +74,7 @@ Initial public release on PyPI.
 - Config file support (`.mcp-auditor.yml`), `--tools` filter, `--budget` control, token usage reporting.
 - Three-level test strategy: unit tests with fakes, integration tests against a honeypot server, LLM evals scored against planted ground truth.
 
-[Unreleased]: https://github.com/mkrtchian/mcp-auditor/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/mkrtchian/mcp-auditor/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/mkrtchian/mcp-auditor/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mkrtchian/mcp-auditor/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mkrtchian/mcp-auditor/releases/tag/v0.1.0
