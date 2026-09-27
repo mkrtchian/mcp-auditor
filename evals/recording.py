@@ -6,8 +6,19 @@ from evals.baseline import (
     BaselineStatus,
     RecordingRef,
     condition_mismatches,
+    rescore,
 )
-from evals.gate import Cell, CellOutcome, CellState, Observation, ReplayRule, cell_key, classify
+from evals.gate import (
+    Cell,
+    CellOutcome,
+    CellState,
+    Observation,
+    ProtectedCells,
+    ReplayRule,
+    cell_key,
+    classify,
+    protected_cells,
+)
 from evals.gate_verdict import GateResult, GateVerdict
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics
@@ -17,9 +28,10 @@ _RESET_PROCEDURE = (
     "with no other change in that commit, and record twice at that commit (exploratory, then "
     "confirmed). If the gate was red, name the cells whose flip fired it at the last run, in "
     "the labeling log entry or, for a model, in the commit message: each must come out stable "
-    "and correct in the confirmed baseline, or the change is reverted. Runs and budget change "
-    "only from a green gate. For a model, also run both models and record the delta while "
-    "the old one answers (ADR 016)"
+    "and correct in the confirmed baseline, or the change is reverted. It is reverted too when "
+    "the recording is refused for leaving no planted FAIL cell or no PASS cell stable and "
+    "correct (ADR 022). Runs and budget change only from a green gate. For a model, also run "
+    "both models and record the delta while the old one answers (ADR 016)"
 )
 
 _FLIPPED = {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRODUCED}
@@ -32,6 +44,7 @@ class Recording(BaseModel):
     runs: list[dict[Cell, Observation]]
     metrics: EvalMetrics
     completed_all: bool
+    protected: ProtectedCells
 
 
 class RecordingRefused(BaseModel):
@@ -63,6 +76,10 @@ def _refusals(existing: Baseline | None, recording: Recording, gate: GateResult)
     if not recording.completed_all:
         reasons.append("a run failed: a baseline must hold every run its conditions claim")
     reasons += [f"{name} under its floor" for name in gate.floor_breaches]
+    reasons += [
+        f"no {side} is stable and correct: the gate could not see {miss}"
+        for side, miss in _blind_sides(recording.protected)
+    ]
     if existing is None:
         return reasons
     if existing.status == BaselineStatus.EXPLORATORY:
@@ -72,6 +89,29 @@ def _refusals(existing: Baseline | None, recording: Recording, gate: GateResult)
             + condition_refusals(existing, recording.conditions)
         )
     return reasons + _confirmed_refusals(existing, recording, gate)
+
+
+def rescore_refusals(baseline: Baseline, ground_truth: GroundTruth) -> list[str]:
+    """A label revision re-scores the baseline (ADR 020). One that leaves a side with no stable
+    and correct cell leaves the gate blind on that side, and a confirmed gate that cannot turn
+    green cannot be recorded over: the baseline is reset (ADR 022).
+    """
+    rescored = rescore(baseline, ground_truth)
+    protected = protected_cells(baseline.observation_runs(), rescored.ground_truth)
+    return [
+        f"under the current labels the baseline holds no stable and correct {side}: delete the "
+        f"baseline file in a commit of its own and record twice at that commit (ADR 022)"
+        for side, _ in _blind_sides(protected)
+    ]
+
+
+def _blind_sides(protected: ProtectedCells) -> list[tuple[str, str]]:
+    sides: list[tuple[str, str]] = []
+    if protected.fail_stable_correct == 0:
+        sides.append(("planted FAIL cell", "a lost detection"))
+    if protected.pass_stable_correct == 0:
+        sides.append(("PASS cell", "a new false positive"))
+    return sides
 
 
 def exploratory_commit_refusal(baseline: Baseline, commit: str) -> list[str]:

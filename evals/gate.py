@@ -95,6 +95,37 @@ def _observation_of(verdict: EvalVerdict | None) -> Observation:
     return Observation.UNCOVERED if verdict is None else Observation(verdict.value)
 
 
+class ProtectedCells(BaseModel):
+    """The stable and correct cells are the ones the paired comparison can see move (ADR 022)."""
+
+    fail_stable_correct: int
+    fail_total: int
+    pass_stable_correct: int
+    pass_total: int
+    unstable: int
+
+
+def protected_cells(
+    runs: list[dict[Cell, Observation]], ground_truth: GroundTruth
+) -> ProtectedCells:
+    states = classify(runs, ground_truth)
+
+    def count(label: EvalVerdict, state: CellState | None = None) -> int:
+        return sum(
+            1
+            for cell, seen in states.items()
+            if ground_truth[cell] == label and state in (None, seen)
+        )
+
+    return ProtectedCells(
+        fail_stable_correct=count(EvalVerdict.FAIL, CellState.STABLE_CORRECT),
+        fail_total=count(EvalVerdict.FAIL),
+        pass_stable_correct=count(EvalVerdict.PASS, CellState.STABLE_CORRECT),
+        pass_total=count(EvalVerdict.PASS),
+        unstable=sum(1 for state in states.values() if state == CellState.UNSTABLE),
+    )
+
+
 def classify(
     runs: list[dict[Cell, Observation]], ground_truth: GroundTruth
 ) -> dict[Cell, CellState]:

@@ -43,7 +43,7 @@ def test_a_confirmed_baseline_gates_paired():
 
 
 def test_a_run_without_baseline_nor_recording_is_not_refused():
-    assert pre_run_refusals(given.a_session()) == []
+    assert pre_run_refusals(given.a_session(), given.LABELS) == []
 
 
 def test_a_baseline_at_other_conditions_names_the_mismatch():
@@ -51,7 +51,7 @@ def test_a_baseline_at_other_conditions_names_the_mismatch():
         baseline=given.a_baseline_at_ci_conditions(), conditions=given.ci_conditions(budget=7)
     )
 
-    reasons = pre_run_refusals(session)
+    reasons = pre_run_refusals(session, given.LABELS)
 
     assert len(reasons) == 1
     assert "budget: baseline 10, candidate 7" in reasons[0]
@@ -62,13 +62,48 @@ def test_a_baseline_of_another_ground_truth_is_not_refused():
     baseline = given.a_baseline_at_ci_conditions()
     baseline.conditions.ground_truth_fingerprint = "another"
 
-    assert pre_run_refusals(given.a_session(baseline=baseline)) == []
+    assert pre_run_refusals(given.a_session(baseline=baseline), given.LABELS) == []
+
+
+@pytest.mark.parametrize("status", list(BaselineStatus))
+def test_a_label_revision_leaving_no_stable_and_correct_fail_cell_names_the_reset(
+    status: BaselineStatus,
+):
+    session = given.a_session(baseline=given.a_baseline_at_ci_conditions(status))
+
+    reasons = pre_run_refusals(session, given.LABELS_WITH_THE_FLAW_RELABELED_PASS)
+
+    assert reasons == [
+        "under the current labels the baseline holds no stable and correct planted FAIL cell: "
+        "delete the baseline file in a commit of its own and record twice at that commit "
+        "(ADR 022)"
+    ]
+
+
+def test_a_label_revision_leaving_no_stable_and_correct_pass_cell_names_the_reset():
+    session = given.a_session(baseline=given.a_baseline_at_ci_conditions())
+
+    reasons = pre_run_refusals(session, given.LABELS_WITH_THE_SAFE_CELL_RELABELED_FAIL)
+
+    assert len(reasons) == 1
+    assert "no stable and correct PASS cell" in reasons[0]
+
+
+def test_recording_over_a_baseline_a_label_revision_left_blind_is_refused():
+    session = given.a_session(
+        baseline=given.a_baseline_at_ci_conditions(), tree=given.a_clean_tree()
+    )
+
+    reasons = pre_run_refusals(session, given.LABELS_WITH_THE_FLAW_RELABELED_PASS)
+
+    assert len(reasons) == 1
+    assert "no stable and correct planted FAIL cell" in reasons[0]
 
 
 def test_recording_on_a_dirty_tree_is_refused():
     session = given.a_session(tree=TreeState(commit=given.HEAD, dirty=True))
 
-    reasons = pre_run_refusals(session)
+    reasons = pre_run_refusals(session, given.LABELS)
 
     assert len(reasons) == 1
     assert "clean tree" in reasons[0]
@@ -77,7 +112,7 @@ def test_recording_on_a_dirty_tree_is_refused():
 def test_recording_at_other_ci_conditions_is_refused():
     session = given.a_session(tree=given.a_clean_tree(), conditions=given.ci_conditions(budget=7))
 
-    reasons = pre_run_refusals(session)
+    reasons = pre_run_refusals(session, given.LABELS)
 
     assert reasons == [
         "a baseline records the conditions CI runs at, budget: CI runs 10, this run 7"
@@ -88,7 +123,7 @@ def test_recording_over_an_exploratory_baseline_at_another_commit_is_refused():
     baseline = given.a_baseline_at_ci_conditions(BaselineStatus.EXPLORATORY)
     session = given.a_session(baseline=baseline, tree=given.a_clean_tree(OTHER_COMMIT))
 
-    reasons = pre_run_refusals(session)
+    reasons = pre_run_refusals(session, given.LABELS)
 
     assert len(reasons) == 1
     assert OTHER_COMMIT in reasons[0]

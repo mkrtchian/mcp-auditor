@@ -14,8 +14,9 @@ from evals.baseline import (
     load_baseline,
 )
 from evals.gate_verdict import GateMode
+from evals.ground_truth import GroundTruth
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, REPO_ROOT
-from evals.recording import condition_refusals, exploratory_commit_refusal
+from evals.recording import condition_refusals, exploratory_commit_refusal, rescore_refusals
 from mcp_auditor.config import Settings, load_settings
 
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
@@ -77,7 +78,7 @@ def open_session(options: EvalOptions) -> EvalSession:
         mode=select_mode(baseline, options.ungated),
         tree=read_tree() if options.record_baseline else None,
     )
-    reasons = pre_run_refusals(session)
+    reasons = pre_run_refusals(session, MERGED_GROUND_TRUTH)
     if reasons:
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, reasons)
     return session
@@ -135,10 +136,12 @@ def select_mode(baseline: Baseline | None, ungated: bool) -> GateMode:
     return GateMode.PAIRED
 
 
-def pre_run_refusals(session: EvalSession) -> list[str]:
+def pre_run_refusals(session: EvalSession, ground_truth: GroundTruth) -> list[str]:
+    """What the file, the labels and the tree already decide, before three paid runs."""
     reasons: list[str] = []
     if session.baseline:
         reasons += condition_refusals(session.baseline, session.conditions)
+        reasons += rescore_refusals(session.baseline, ground_truth)
     if session.tree is not None:
         reasons += _recording_refusals(session, session.tree)
     return reasons

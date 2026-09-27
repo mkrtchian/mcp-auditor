@@ -8,9 +8,21 @@ from evals.eval_session import (
     TreeState,
     select_mode,
 )
+from evals.ground_truth import GroundTruth
 from mcp_auditor.config import Settings
+from mcp_auditor.domain.models import EvalVerdict
 
 HEAD = baseline_given.RECORDED_COMMIT
+
+LABELS: GroundTruth = baseline_given.a_ground_truth()
+LABELS_WITH_THE_FLAW_RELABELED_PASS: GroundTruth = {
+    **LABELS,
+    baseline_given.VULNERABLE_CELL: EvalVerdict.PASS,
+}
+LABELS_WITH_THE_SAFE_CELL_RELABELED_FAIL: GroundTruth = {
+    **LABELS,
+    baseline_given.SAFE_CELL: EvalVerdict.FAIL,
+}
 
 
 def ci_conditions(budget: int = DEFAULT_BUDGET) -> BaselineConditions:
@@ -35,9 +47,10 @@ def options() -> EvalOptions:
 
 
 def a_baseline_at_ci_conditions(status: BaselineStatus = BaselineStatus.EXPLORATORY) -> Baseline:
-    return baseline_given.a_baseline(status=status).model_copy(
-        update={"conditions": ci_conditions()}
-    )
+    """Each side of `LABELS` has its one cell stable and correct."""
+    return baseline_given.a_baseline(
+        status=status, runs=baseline_given.all_correct_runs()
+    ).model_copy(update={"conditions": ci_conditions()})
 
 
 def a_session(

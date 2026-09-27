@@ -45,3 +45,29 @@ def a_run_failing(fails: int) -> VerdictMap:
 
 def a_ground_truth_failing(cells: int) -> GroundTruth:
     return {(f"tool_{index}", AuditCategory.INJECTION): EvalVerdict.FAIL for index in range(cells)}
+
+
+OTHER_VULNERABLE_CELL: Cell = ("get_user", AuditCategory.INFO_LEAKAGE)
+OTHER_SAFE_CELL: Cell = ("get_user", AuditCategory.RESOURCE_ABUSE)
+
+
+def a_ground_truth_with_two_cells_of_each_side() -> GroundTruth:
+    return {
+        **a_ground_truth(),
+        OTHER_VULNERABLE_CELL: EvalVerdict.FAIL,
+        OTHER_SAFE_CELL: EvalVerdict.PASS,
+    }
+
+
+def runs_on_two_cells_of_each_side() -> list[dict[Cell, Observation]]:
+    """Each side has one stable and correct cell: the other FAIL cell is unstable, the other
+    PASS cell stable and incorrect."""
+    return [
+        {
+            VULNERABLE_CELL: Observation.FAIL,
+            OTHER_VULNERABLE_CELL: other_vulnerable,
+            SAFE_CELL: Observation.PASS,
+            OTHER_SAFE_CELL: Observation.FAIL,
+        }
+        for other_vulnerable in (Observation.FAIL, Observation.PASS, Observation.FAIL)
+    ]

@@ -116,3 +116,15 @@ Commit: the one that adds this entry.
 **The recording that raised it.** The first baseline recording, on 2026-09-27 at `519168f` (3 runs, `gpt-6-luna` at `none`, budget 10), was refused on the recall floor at recall 0.46, precision 1.00. Detections per planted FAIL cell over the 3 runs: `delete_record × input_validation` 3, `execute_query × info_leakage` 3, `get_user × error_handling` 3, `execute_query × injection` 1, `project_manager × info_leakage` 1, `get_user × info_leakage` 0, `search_users × info_leakage` 0, `user_directory × info_leakage` 0. So 3 of the 8 cells stable and correct, 3 never detected, 2 unstable, 11 detections in all. Every PASS cell was stable and correct.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the gate's scoring code. (2) It was noticed after the floor refused the recording of 2026-09-27, a measurement, which moves the burden to (3) and (4). (3) The target is the collapse a floor exists to catch, a judge that passes everything, which finds no flaw at all. One flaw found per run is the least a working judge shows, and the criterion reads no measured value. (4) The floor applies to every run and every candidate, the healthy system's included. It lowers the bar a candidate must clear, so it can only turn a red recall into a green one: the fault injection tests pin what it stops catching, a half-loss of the detections and refused chain steps among them.
+
+### 2026-09-27, recording condition
+
+Commit: the one that adds this entry.
+
+**Ground truth.** Unchanged, 36 cells, 8 FAIL.
+
+**State of the gate.** No baseline is committed, so no gate compares against one and no reset applies.
+
+**What changes.** A baseline recording is refused when no planted FAIL cell, or no PASS cell, comes out stable and correct over its runs. A committed baseline that a label revision leaves in that state, once re-scored under the current labels, is refused before any LLM call, with the reset as its reason: delete the file in a commit of its own and record twice at that commit. A reset whose recording is refused on this condition is reverted, as one whose red cells do not come out correct. No observation, label or metric moves. See [ADR 022](adr/022-honeypot-recall-floor.md).
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the recording and re-scoring code. (2) It was noticed with the recall floor, after the recording of 2026-09-27 was refused, a measurement. (3) The target is a baseline the paired comparison can use on both sides: with no stable and correct FAIL cell it cannot see a lost detection, with no stable and correct PASS cell it cannot see a new false positive. The criterion reads no measured value. (4) The condition applies to every recording and every re-score, the healthy system's included. It can only refuse: the recording of 2026-09-27 would pass it (3 FAIL cells and 28 PASS cells stable and correct), and a judge that passes or fails everything, or gives no verdict, is refused by it as well as by a floor.

@@ -11,6 +11,7 @@ from evals.gate import (
     CellState,
     FlipCause,
     Observation,
+    ProtectedCells,
     ReplayRule,
     cell_key,
     classify,
@@ -21,6 +22,7 @@ from evals.gate import (
     metric_resolutions,
     observe,
     parse_cell_key,
+    protected_cells,
     recall_floor_breached,
     settle,
 )
@@ -103,6 +105,16 @@ def test_classify_leaves_out_a_cell_a_run_did_not_record():
     states = classify(runs, given.a_ground_truth())
 
     assert SAFE_CELL not in states
+
+
+def test_protected_cells_count_the_stable_and_correct_cells_on_each_side():
+    runs = given.runs_on_two_cells_of_each_side()
+
+    protected = protected_cells(runs, given.a_ground_truth_with_two_cells_of_each_side())
+
+    assert protected == ProtectedCells(
+        fail_stable_correct=1, fail_total=2, pass_stable_correct=1, pass_total=2, unstable=1
+    )
 
 
 @pytest.mark.parametrize(

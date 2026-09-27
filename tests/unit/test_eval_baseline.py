@@ -318,6 +318,36 @@ def test_a_first_recording_breaching_a_floor_is_refused():
     assert any("precision" in reason for reason in result.reasons)
 
 
+def test_a_recording_with_no_stable_and_correct_fail_cell_is_refused():
+    recording = given.a_recording(protected=given.no_stable_and_correct_fail_cell())
+
+    result = decide_recording(None, recording, given.a_gate())
+
+    assert isinstance(result, RecordingRefused)
+    assert result.reasons == [
+        "no planted FAIL cell is stable and correct: the gate could not see a lost detection"
+    ]
+
+
+def test_a_recording_with_no_stable_and_correct_pass_cell_is_refused():
+    recording = given.a_recording(protected=given.no_stable_and_correct_pass_cell())
+
+    result = decide_recording(None, recording, given.a_gate())
+
+    assert isinstance(result, RecordingRefused)
+    assert result.reasons == [
+        "no PASS cell is stable and correct: the gate could not see a new false positive"
+    ]
+
+
+def test_a_recording_with_one_stable_and_correct_cell_on_each_side_is_written():
+    recording = given.a_recording(protected=given.protected_on_both_sides())
+
+    result = decide_recording(None, recording, given.a_gate())
+
+    assert isinstance(result, Baseline)
+
+
 def test_a_recording_with_a_failed_run_is_refused():
     result = decide_recording(None, given.a_recording(completed_all=False), given.a_gate())
 

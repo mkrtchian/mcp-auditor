@@ -27,9 +27,9 @@ def settled_as(result: GateResult, expected: list[Cell], outcome: CellOutcome) -
     assert settled == {cell_key(cell) for cell in expected}
 
 
-def refused_on(decision: Baseline | RecordingRefused, *breaches: str) -> None:
+def refused_on(decision: Baseline | RecordingRefused, *reasons: str) -> None:
     assert isinstance(decision, RecordingRefused)
-    assert decision.reasons == [f"{breach} under its floor" for breach in breaches]
+    assert decision.reasons == list(reasons)
 
 
 def accepted(decision: Baseline | RecordingRefused) -> None:

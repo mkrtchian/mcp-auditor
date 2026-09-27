@@ -30,6 +30,7 @@ from evals.gate import (
     FlipCause,
     compare,
     count_detections,
+    protected_cells,
     settle,
 )
 from evals.gate_verdict import GateInput, GateMode, GateResult, judge_gate
@@ -51,6 +52,10 @@ from tests.fakes.llm import FakeLLM
 INJECTION = AuditCategory.INJECTION
 INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
 NO_DETECTION = "recall: 0 detection(s) over 3 runs, under one per run"
+NO_STABLE_FAIL = (
+    "no planted FAIL cell is stable and correct: the gate could not see a lost detection"
+)
+NO_STABLE_PASS = "no PASS cell is stable and correct: the gate could not see a new false positive"
 
 
 def test_a_judge_passing_everything_is_caught_by_the_recall_floor_and_the_regressions():
@@ -65,7 +70,7 @@ def test_a_judge_passing_everything_is_caught_by_the_recall_floor_and_the_regres
         "regression on delete_record/input_validation",
     )
     then.red_on(run.floors_only, NO_DETECTION)
-    then.refused_on(run.recording, "recall")
+    then.refused_on(run.recording, "recall under its floor", NO_STABLE_FAIL)
 
 
 def test_a_judge_failing_everything_is_caught_by_the_precision_floor_and_the_regressions():
@@ -75,7 +80,7 @@ def test_a_judge_failing_everything_is_caught_by_the_precision_floor_and_the_reg
     then.settled_as(run.paired, given.EXPECTED_PASSES, CellOutcome.REGRESSION)
     assert run.paired.reasons[0] == "precision 0.22 under its floor 0.50"
     then.red_on(run.floors_only, "precision 0.22 under its floor 0.50")
-    then.refused_on(run.recording, "precision")
+    then.refused_on(run.recording, "precision under its floor", NO_STABLE_PASS)
 
 
 def test_a_judge_failing_at_random_seed_0_is_caught_by_precision_but_its_flips_do_not_reproduce():
@@ -88,7 +93,7 @@ def test_a_judge_failing_at_random_seed_0_is_caught_by_precision_but_its_flips_d
     then.settled_as(run.paired, flips, CellOutcome.FLIP_NOT_REPRODUCED)
     then.red_on(run.paired, "precision 0.19 under its floor 0.50")
     then.red_on(run.floors_only, "precision 0.19 under its floor 0.50")
-    then.refused_on(run.recording, "precision")
+    then.refused_on(run.recording, "precision under its floor")
 
 
 def test_no_verdict_flips_every_stable_and_correct_cell_as_uncovered():
@@ -99,7 +104,13 @@ def test_no_verdict_flips_every_stable_and_correct_cell_as_uncovered():
     assert run.paired.reasons[:2] == list(floors)
     then.settled_as(run.paired, given.STABLE_CORRECT_CELLS, CellOutcome.REGRESSION)
     then.red_on(run.floors_only, *floors)
-    then.refused_on(run.recording, "recall", "distribution_coverage")
+    then.refused_on(
+        run.recording,
+        "recall under its floor",
+        "distribution_coverage under its floor",
+        NO_STABLE_FAIL,
+        NO_STABLE_PASS,
+    )
 
 
 @pytest.mark.parametrize(
@@ -127,6 +138,7 @@ def test_a_dropped_category_flips_its_stable_and_correct_cells_and_clears_the_co
     then.flipped(run.cells, dropped, FlipCause.UNCOVERED)
     then.settled_as(run.paired, dropped, CellOutcome.REGRESSION)
     assert "distribution_coverage" not in run.floors_only.floor_breaches
+    then.accepted(run.recording)
 
 
 def test_chain_steps_refused_move_no_cell_on_the_chain_only_flaws_and_are_missed():
@@ -313,5 +325,6 @@ def _through_the_gate(candidate: given.FaultedCandidate, replays: list[bool]) ->
         runs=candidate.runs,
         metrics=metrics,
         completed_all=True,
+        protected=protected_cells(candidate.runs, MERGED_GROUND_TRUTH),
     )
     return _GateRun(cells, paired, floors_only, decide_recording(None, recording, floors_only))

@@ -41,31 +41,35 @@ FAULTS = [
     Fault(
         "judge_passes_everything",
         "red in both modes on recall (0 detections), PAIRED also on the regressions of the 3 "
-        "stable and correct FAIL cells; recording refused on recall",
+        "stable and correct FAIL cells; recording refused on recall and for no stable and "
+        "correct FAIL cell",
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=PassingJudge()),
     ),
     Fault(
         "judge_fails_everything",
         "red in both modes on precision, PAIRED also on the regressions of every PASS cell; "
-        "recording refused on precision",
+        "recording refused on precision and for no stable and correct PASS cell",
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=FailingJudge()),
     ),
     Fault(
         "judge_fails_at_random",
-        "red in both modes on precision, PASS cells flipped; recording refused on precision",
+        "red in both modes on precision, PASS cells flipped; recording refused on precision, "
+        "and likely for no stable and correct PASS cell",
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=RandomJudge(SEED)),
     ),
     Fault(
         "no_verdict",
         "red in both modes on recall and distribution_coverage, PAIRED also on the regressions "
-        "(uncovered) of every stable and correct cell; recording refused on both",
+        "(uncovered) of every stable and correct cell; recording refused on both and for no "
+        "stable and correct cell on either side",
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=SilentJudge()),
     ),
     Fault(
         "half_the_detections_lost",
         "PAIRED green unless a lost detection reproduces (about 0.19 each) or the detections "
-        "fall under 3, FLOORS_ONLY green unless they fall under 3; recording accepted unless "
-        "they fall under 3",
+        "fall under 3, FLOORS_ONLY green unless they fall under 3; recording accepted when one "
+        "of the 3 stable FAIL cells survives the 3 runs and the detections reach 3, refused "
+        "otherwise (no stable and correct FAIL cell, or recall)",
         loses_detections=True,
     ),
     Fault(

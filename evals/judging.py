@@ -7,11 +7,13 @@ from evals.gate import (
     DetectionCount,
     MetricDelta,
     Observation,
+    ProtectedCells,
     compare,
     count_detections,
     metric_deltas,
     metric_resolutions,
     observe,
+    protected_cells,
 )
 from evals.gate_verdict import GateInput, GateMode, GateResult, judge_gate
 from evals.honeypots import MERGED_GROUND_TRUTH, TOOL_COUNT
@@ -42,6 +44,9 @@ class RunsOutcome:
 
     def detections(self) -> DetectionCount:
         return count_detections(self.observations(), MERGED_GROUND_TRUTH)
+
+    def protected(self) -> ProtectedCells:
+        return protected_cells(self.observations(), MERGED_GROUND_TRUTH)
 
     def metrics(self) -> tuple[EvalMetrics, dict[str, ConsistencyDetail]]:
         consistency, consistency_details = compute_consistency(

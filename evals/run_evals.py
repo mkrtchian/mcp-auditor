@@ -226,6 +226,7 @@ def _record(session: EvalSession, tree: TreeState, result: EvalRunResult) -> int
         runs=result.outcome.observations(),
         metrics=result.report.metrics,
         completed_all=result.outcome.completed_all(session.conditions.runs),
+        protected=result.outcome.protected(),
     )
     decision = decide_recording(session.baseline, recording, result.report.gate)
     if isinstance(decision, RecordingRefused):
