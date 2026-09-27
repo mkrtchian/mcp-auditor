@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The CVE benchmark grades each target on a ladder of conditions instead of a single planted sentinel, credits a command's output on command execution targets as a lower rung, no longer credits a proof the auditor's own arguments echoed, classes each miss, reports the awaited capability as a hypothesis, and writes its report as an object with the run conditions and the oracle's fingerprint. Calibration checks every proof of a target's class and a benign call per target.
+- The CVSS column of the CVE benchmark report gives each score from the CVE record on cve.org, with its CVSS version and source (the CNA, or CISA-ADP when the CNA gives none). Five of the seven scores change.
 
 ## [0.3.0] - 2026-09-27
 

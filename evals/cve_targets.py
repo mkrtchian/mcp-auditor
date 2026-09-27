@@ -133,13 +133,15 @@ _INTERNAL_HOST_AIM = re.compile(
 )
 
 
+# Each severity, here and in OUT_OF_SCOPE_CVES, is the CVSS score of the CVE record on
+# cve.org, the CNA's or CISA-ADP's when the CNA gives none, with its version and source.
 # Invariant for every target below: tools_filter must name the same real tool
 # that exploit calls. A wrong name raises in filter_tools, so the run is
 # reported as not_run rather than as a missed detection.
 CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-53109",
-        severity="CVSS 8.4",
+        severity="CVSS 7.3 (v4.0, CNA)",
         sentinel=_SYMLINK_TRAVERSAL_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PLANTED_LINK_AIM,
@@ -156,7 +158,7 @@ CVE_TARGETS: list[CVETarget] = [
     ),
     CVETarget(
         cve_id="CVE-2025-53110",
-        severity="CVSS 7.3",
+        severity="CVSS 7.3 (v4.0, CNA)",
         sentinel=_PREFIX_COLLISION_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PREFIX_SIBLING_AIM,
@@ -169,7 +171,7 @@ CVE_TARGETS: list[CVETarget] = [
     ),
     CVETarget(
         cve_id="CVE-2025-68145",
-        severity="CVSS 7.1",
+        severity="CVSS 6.4 (v4.0, CNA)",
         sentinel=_REPOSITORY_BYPASS_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
@@ -182,7 +184,7 @@ CVE_TARGETS: list[CVETarget] = [
     ),
     CVETarget(
         cve_id="CVE-2025-68143",
-        severity="CVSS 8.8",
+        severity="CVSS 6.5 (v4.0, CNA)",
         sentinel=_GIT_INIT_TRAVERSAL_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
@@ -199,7 +201,7 @@ CVE_TARGETS: list[CVETarget] = [
     ),
     CVETarget(
         cve_id="CVE-2025-53355",
-        severity="CVSS 7.5",
+        severity="CVSS 7.5 (v3.1, CNA)",
         sentinel=_KUBERNETES_INJECTION_SENTINEL,
         mechanism=MechanismClass.COMMAND_EXECUTION,
         aim=_SHELL_METACHARACTER_AIM,
@@ -217,7 +219,7 @@ CVE_TARGETS: list[CVETarget] = [
     ),
     CVETarget(
         cve_id="CVE-2025-65513",
-        severity="CVSS 9.3",
+        severity="CVSS 7.5 (v3.1, CISA-ADP)",
         sentinel=_FETCH_SSRF_SENTINEL,
         mechanism=MechanismClass.INTERNAL_FETCH,
         aim=_INTERNAL_HOST_AIM,
@@ -234,7 +236,7 @@ CVE_TARGETS: list[CVETarget] = [
 OUT_OF_SCOPE_CVES: list[OutOfScopeCVE] = [
     OutOfScopeCVE(
         cve_id="CVE-2025-68144",
-        severity="CVSS 8.1",
+        severity="CVSS 6.3 (v4.0, CNA)",
         reason=(
             "Argument injection (git_diff --output=/path) overwrites a file silently; "
             "nothing surfaces in a tool response, so it needs instrumented observation "
