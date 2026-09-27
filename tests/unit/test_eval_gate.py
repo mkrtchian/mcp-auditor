@@ -15,11 +15,13 @@ from evals.gate import (
     cell_key,
     classify,
     compare,
+    count_detections,
     floor_breaches,
     metric_deltas,
     metric_resolutions,
     observe,
     parse_cell_key,
+    recall_floor_breached,
     settle,
 )
 from evals.metrics import VerdictMap
@@ -218,19 +220,43 @@ def test_settle_turns_a_cleared_flip_into_not_reproduced():
     )
 
 
+def test_one_detection_per_run_clears_the_recall_floor():
+    assert not recall_floor_breached(given.detections(3, runs=3))
+
+
+def test_fewer_detections_than_runs_breaches_the_recall_floor():
+    assert recall_floor_breached(given.detections(2, runs=3))
+
+
+def test_a_recall_floor_breach_is_named_from_the_detection_count():
+    assert floor_breaches(given.metrics(recall=0.9), given.detections(2, runs=3)) == ["recall"]
+
+
 @pytest.mark.parametrize("metric", sorted(FLOORS))
 def test_floor_breach_names_the_metric(metric: str):
     metrics = given.metrics(**{metric: 0.49})
 
-    assert floor_breaches(metrics) == [metric]
+    assert floor_breaches(metrics, given.detections(3, runs=3)) == [metric]
 
 
 def test_no_floor_breach_when_every_metric_clears_its_floor():
-    assert floor_breaches(given.metrics()) == []
+    assert floor_breaches(given.metrics(), given.detections(3, runs=3)) == []
 
 
 def test_consistency_has_no_floor():
-    assert floor_breaches(given.metrics(consistency=0.1)) == []
+    assert floor_breaches(given.metrics(consistency=0.1), given.detections(3, runs=3)) == []
+
+
+def test_detections_count_the_planted_cells_observed_fail_over_the_runs():
+    runs = [
+        {VULNERABLE_CELL: FAIL, SAFE_CELL: FAIL},
+        {VULNERABLE_CELL: PASS, SAFE_CELL: FAIL},
+        {VULNERABLE_CELL: FAIL, SAFE_CELL: PASS},
+    ]
+
+    count = count_detections(runs, given.a_ground_truth())
+
+    assert (count.detections, count.runs, count.planted) == (2, 3, 1)
 
 
 def test_recall_delta_smaller_than_one_case_is_inconclusive():
@@ -282,7 +308,7 @@ def test_deltas_cover_the_gated_metrics_only():
 
     deltas = metric_deltas(given.metrics(), given.metrics(), resolutions)
 
-    assert set(deltas) == set(FLOORS)
+    assert set(deltas) == {"recall", "precision", "distribution_coverage"}
 
 
 def test_precision_resolution_ignores_a_fail_outside_the_ground_truth():

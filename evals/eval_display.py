@@ -52,16 +52,20 @@ def _metrics_table(report: EvalReport) -> Table:
     table.add_column("Threshold" if legacy else "Floor", justify="right")
     table.add_column("Status")
     for name, label in _METRIC_LABELS.items():
-        _add_metric_row(table, label, getattr(report.metrics, name), limits.get(name))
+        value: float = getattr(report.metrics, name)
+        limit = limits.get(name)
+        if limit is None:
+            table.add_row(label, f"{value:.2f}", "-", "")
+            continue
+        # A floor's status reads from the gate: recall's floor is a count, which a rounded mean
+        # compared with 1/planted could contradict.
+        passed = value >= limit if legacy else name not in report.gate.floor_breaches
+        table.add_row(label, f"{value:.2f}", f"{limit:.2f}", _status(passed))
     return table
 
 
-def _add_metric_row(table: Table, name: str, value: float, limit: float | None) -> None:
-    if limit is None:
-        table.add_row(name, f"{value:.2f}", "-", "")
-        return
-    status = "[green]PASS[/green]" if value >= limit else "[red]FAIL[/red]"
-    table.add_row(name, f"{value:.2f}", f"{limit:.2f}", status)
+def _status(passed: bool) -> str:
+    return "[green]PASS[/green]" if passed else "[red]FAIL[/red]"
 
 
 def _cells_table(cells: dict[str, CellComparison]) -> Table:

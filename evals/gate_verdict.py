@@ -10,6 +10,7 @@ from evals.gate import (
     Cell,
     CellComparison,
     CellOutcome,
+    DetectionCount,
     MetricDelta,
     cell_key,
     floor_breaches,
@@ -47,6 +48,7 @@ class GateInput:
 
     mode: GateMode
     metrics: EvalMetrics
+    detections: DetectionCount
     baseline_status: BaselineStatus | None = None
     cells: dict[Cell, CellComparison] = field(default_factory=dict[Cell, CellComparison])
     mismatches: list[str] = field(default_factory=list[str])
@@ -54,7 +56,7 @@ class GateInput:
 
 
 def judge_gate(gate_input: GateInput) -> GateResult:
-    breaches = floor_breaches(gate_input.metrics)
+    breaches = floor_breaches(gate_input.metrics, gate_input.detections)
     if gate_input.mismatches:
         verdict, reasons = GateVerdict.NOT_COMPARABLE, list(gate_input.mismatches)
     else:
@@ -66,11 +68,16 @@ def judge_gate(gate_input: GateInput) -> GateResult:
         reasons=reasons,
         baseline_status=gate_input.baseline_status,
         cells={cell_key(cell): comparison for cell, comparison in gate_input.cells.items()},
-        floors=dict(FLOORS),
+        floors=_floors_of(gate_input.detections),
         thresholds=_thresholds_of(gate_input.mode),
         floor_breaches=breaches,
         deltas=gate_input.deltas,
     )
+
+
+def _floors_of(count: DetectionCount) -> dict[str, float]:
+    """Recall's floor as the mean it amounts to, for display: the count decides the breach."""
+    return {"recall": 1 / count.planted, **FLOORS}
 
 
 def _thresholds_of(mode: GateMode) -> dict[str, float]:
@@ -82,9 +89,9 @@ def _red_reasons(gate_input: GateInput, breaches: list[str]) -> list[str]:
         case GateMode.LEGACY_THRESHOLDS:
             return _missed_thresholds(gate_input.metrics)
         case GateMode.FLOORS_ONLY:
-            return _breach_reasons(gate_input.metrics, breaches)
+            return _breach_reasons(gate_input, breaches)
         case GateMode.PAIRED:
-            return _breach_reasons(gate_input.metrics, breaches) + _regressions(gate_input.cells)
+            return _breach_reasons(gate_input, breaches) + _regressions(gate_input.cells)
 
 
 def _missed_thresholds(metrics: EvalMetrics) -> list[str]:
@@ -95,11 +102,15 @@ def _missed_thresholds(metrics: EvalMetrics) -> list[str]:
     ]
 
 
-def _breach_reasons(metrics: EvalMetrics, breaches: list[str]) -> list[str]:
-    return [
-        f"{name} {getattr(metrics, name):.2f} under its floor {FLOORS[name]:.2f}"
-        for name in breaches
-    ]
+def _breach_reasons(gate_input: GateInput, breaches: list[str]) -> list[str]:
+    return [_breach_reason(gate_input, name) for name in breaches]
+
+
+def _breach_reason(gate_input: GateInput, name: str) -> str:
+    if name == "recall":
+        count = gate_input.detections
+        return f"recall: {count.detections} detection(s) over {count.runs} runs, under one per run"
+    return f"{name} {getattr(gate_input.metrics, name):.2f} under its floor {FLOORS[name]:.2f}"
 
 
 def _regressions(cells: dict[Cell, CellComparison]) -> list[str]:

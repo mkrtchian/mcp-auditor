@@ -122,3 +122,9 @@ async def test_deltas_leave_out_a_cell_the_baseline_did_not_record():
 def test_runs_outcome_completed_all_when_every_requested_run_has_details():
     assert given.correct_runs(completed=3).completed_all(3)
     assert not given.correct_runs(completed=2).completed_all(3)
+
+
+def test_runs_outcome_counts_the_planted_flaws_detected_over_its_runs():
+    count = given.runs_missing_the_flipped_cell(completed=3).detections()
+
+    assert (count.detections, count.runs, count.planted) == (7 * 3, 3, 8)

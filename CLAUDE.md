@@ -11,7 +11,7 @@ uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)
 uv run python -m evals.run_evals       # E2E evals (honeypot servers, needs an LLM key: OPENAI_API_KEY by default)
 uv run python -m evals.run_evals --record-baseline  # Record evals/baselines/honeypot_e2e.json from a clean tree: run it twice at the same commit (exploratory, then confirmed), then commit it by hand
-uv run python -m evals.run_evals --ungated          # Floors only, any conditions, no baseline comparison (never in CI)
+uv run python -m evals.run_evals --ungated          # Floors only (recall one detection per run, precision and coverage 0.50), any conditions, no baseline comparison (never in CI)
 uv run python -m evals.run_judge_eval  # Judge isolation eval (needs an LLM key: OPENAI_API_KEY by default)
 uv run python -m evals.run_fault_injection  # Fault injection on the honeypot gate, by hand after a change to the gate's logic (OPENAI_API_KEY, never in CI, see evals/fault_injection_method.md)
 

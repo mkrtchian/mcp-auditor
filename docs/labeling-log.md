@@ -102,3 +102,17 @@ Commit: the one that adds this entry.
 **Justification.** A refused step must not read as a miss. A cell that loses its only observation to a refusal looks, in the metrics, like a cell the auditor did not cover, and the output has to name the cause where a reader of the gate looks. In the probe, the method note says to rerun on an error, and a policy refusal is not transient: a rerun meets the same policy.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, its output and the probe's outcome classes. (2) The need was found when a provider refused one call of a baseline recording and the audit stopped, not through a metric. (3) The target is that a refusal be visible and never mistaken for a transient error or a miss, a criterion that reads no measurement. (4) The output change applies to every run and every step. The probe reclassification applies to every 400 policy refusal of every candidate and schema, the reference's included, and moves counts from the error bar to the parse failure bar, and to the refusal bar on `TestCaseBatch`.
+
+### 2026-09-27, recall floor
+
+Commit: the one that adds this entry.
+
+**Ground truth.** Unchanged, 36 cells, 8 FAIL.
+
+**State of the gate.** No baseline is committed, so no gate compares against one and no reset applies.
+
+**What changes.** The recall floor of the gate, from a mean recall of 0.50 to one planted flaw found per run on average: the planted FAIL cells observed FAIL, summed over the runs, must reach the number of runs (3 detections over 3 runs today). It is compared as a count, so no rounding decides it. The precision and distribution coverage floors stay at 0.50. No observation, label or metric moves. See [ADR 022](adr/022-honeypot-recall-floor.md).
+
+**The recording that raised it.** The first baseline recording, on 2026-09-27 at `519168f` (3 runs, `gpt-6-luna` at `none`, budget 10), was refused on the recall floor at recall 0.46, precision 1.00. Detections per planted FAIL cell over the 3 runs: `delete_record × input_validation` 3, `execute_query × info_leakage` 3, `get_user × error_handling` 3, `execute_query × injection` 1, `project_manager × info_leakage` 1, `get_user × info_leakage` 0, `search_users × info_leakage` 0, `user_directory × info_leakage` 0. So 3 of the 8 cells stable and correct, 3 never detected, 2 unstable, 11 detections in all. Every PASS cell was stable and correct.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the gate's scoring code. (2) It was noticed after the floor refused the recording of 2026-09-27, a measurement, which moves the burden to (3) and (4). (3) The target is the collapse a floor exists to catch, a judge that passes everything, which finds no flaw at all. One flaw found per run is the least a working judge shows, and the criterion reads no measured value. (4) The floor applies to every run and every candidate, the healthy system's included. It lowers the bar a candidate must clear, so it can only turn a red recall into a green one: the fault injection tests pin what it stops catching, a half-loss of the detections and refused chain steps among them.

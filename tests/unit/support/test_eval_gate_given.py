@@ -1,4 +1,4 @@
-from evals.gate import Cell, Observation
+from evals.gate import Cell, DetectionCount, Observation
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics, VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
@@ -27,6 +27,11 @@ def metrics(
         consistency=consistency,
         distribution_coverage=distribution_coverage,
     )
+
+
+def detections(count: int = 3, runs: int = 3) -> DetectionCount:
+    """Over the 8 planted FAIL cells of the merged ground truth."""
+    return DetectionCount(detections=count, runs=runs, planted=8)
 
 
 def runs_failing(cell: Cell, runs: int) -> list[VerdictMap]:

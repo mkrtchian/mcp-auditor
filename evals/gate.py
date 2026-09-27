@@ -1,4 +1,5 @@
 import math
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Self
 
@@ -64,7 +65,6 @@ class ReplayRule(BaseModel):
 
 
 FLOORS: dict[str, float] = {
-    "recall": 0.50,
     "precision": 0.50,
     "distribution_coverage": 0.50,
 }
@@ -166,8 +166,35 @@ def settle(comparison: CellComparison, replays: list[bool], rule: ReplayRule) ->
     return comparison.model_copy(update={"outcome": outcome, "replays": list(replays)})
 
 
-def floor_breaches(metrics: EvalMetrics) -> list[str]:
-    return [name for name, floor in FLOORS.items() if getattr(metrics, name) < floor]
+@dataclass(frozen=True)
+class DetectionCount:
+    detections: int  # planted FAIL cells observed FAIL, summed over the runs
+    runs: int
+    planted: int  # FAIL cells of the ground truth
+
+
+def count_detections(
+    runs: list[dict[Cell, Observation]], ground_truth: GroundTruth
+) -> DetectionCount:
+    planted = [cell for cell, verdict in ground_truth.items() if verdict == EvalVerdict.FAIL]
+    return DetectionCount(
+        detections=sum(run.get(cell) == Observation.FAIL for run in runs for cell in planted),
+        runs=len(runs),
+        planted=len(planted),
+    )
+
+
+def recall_floor_breached(count: DetectionCount) -> bool:
+    """One planted flaw found per run, on average (ADR 022): the collapse it catches, a judge
+    that passes everything, finds none. A count, not a mean, so that no rounding decides it.
+    A ground truth with no FAIL cell always breaches it: there is no flaw to find.
+    """
+    return count.detections < count.runs
+
+
+def floor_breaches(metrics: EvalMetrics, count: DetectionCount) -> list[str]:
+    recall = ["recall"] if recall_floor_breached(count) else []
+    return recall + [name for name, floor in FLOORS.items() if getattr(metrics, name) < floor]
 
 
 def metric_resolutions(
@@ -207,6 +234,9 @@ def _one_case_in(support: int) -> float:
     return 1 / support if support else 1.0
 
 
+_GATED_METRICS = ("recall", "precision", "distribution_coverage")
+
+
 class MetricDelta(BaseModel):
     value: float
     resolution: float
@@ -217,7 +247,7 @@ def metric_deltas(
     baseline: EvalMetrics, candidate: EvalMetrics, resolutions: dict[str, float]
 ) -> dict[str, MetricDelta]:
     deltas: dict[str, MetricDelta] = {}
-    for name in FLOORS:
+    for name in _GATED_METRICS:
         value: float = getattr(candidate, name) - getattr(baseline, name)
         resolution = resolutions[name]
         deltas[name] = MetricDelta(

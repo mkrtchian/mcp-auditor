@@ -10,7 +10,11 @@ def test_legacy_mode_is_red_on_a_missed_legacy_threshold(metric: str):
     missed = LEGACY_THRESHOLDS[metric] - 0.01
 
     result = judge_gate(
-        GateInput(mode=GateMode.LEGACY_THRESHOLDS, metrics=given.metrics(**{metric: missed}))
+        GateInput(
+            mode=GateMode.LEGACY_THRESHOLDS,
+            metrics=given.metrics(**{metric: missed}),
+            detections=given.detections(),
+        )
     )
 
     assert result.verdict == GateVerdict.RED
@@ -22,6 +26,7 @@ def test_legacy_mode_is_green_when_every_threshold_is_met():
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
             metrics=given.metrics(),
+            detections=given.detections(),
         )
     )
 
@@ -33,11 +38,33 @@ def test_legacy_mode_reports_floor_breaches():
     result = judge_gate(
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
-            metrics=given.metrics(recall=0.4),
+            metrics=given.metrics(),
+            detections=given.detections(2, runs=3),
         )
     )
 
     assert result.floor_breaches == ["recall"]
+
+
+def test_a_recall_breach_reads_as_detections_under_one_per_run():
+    result = judge_gate(
+        GateInput(
+            mode=GateMode.FLOORS_ONLY,
+            metrics=given.metrics(),
+            detections=given.detections(2, runs=3),
+        )
+    )
+
+    assert result.verdict == GateVerdict.RED
+    assert result.reasons == ["recall: 2 detection(s) over 3 runs, under one per run"]
+
+
+def test_the_recall_floor_reads_as_one_planted_flaw_in_the_floors():
+    result = judge_gate(
+        GateInput(mode=GateMode.PAIRED, metrics=given.metrics(), detections=given.detections())
+    )
+
+    assert result.floors == {"recall": 1 / 8, "precision": 0.50, "distribution_coverage": 0.50}
 
 
 def test_floors_only_mode_ignores_a_regression_cell():
@@ -45,6 +72,7 @@ def test_floors_only_mode_ignores_a_regression_cell():
         GateInput(
             mode=GateMode.FLOORS_ONLY,
             metrics=given.metrics(),
+            detections=given.detections(),
             cells=given.cells_with(CellOutcome.REGRESSION),
         )
     )
@@ -54,7 +82,11 @@ def test_floors_only_mode_ignores_a_regression_cell():
 
 def test_floors_only_mode_is_red_on_a_floor_breach():
     result = judge_gate(
-        GateInput(mode=GateMode.FLOORS_ONLY, metrics=given.metrics(distribution_coverage=0.4))
+        GateInput(
+            mode=GateMode.FLOORS_ONLY,
+            metrics=given.metrics(distribution_coverage=0.4),
+            detections=given.detections(),
+        )
     )
 
     assert result.verdict == GateVerdict.RED
@@ -63,14 +95,27 @@ def test_floors_only_mode_is_red_on_a_floor_breach():
 def test_paired_mode_is_red_on_a_regression():
     cells = given.cells_with(CellOutcome.UNCHANGED, CellOutcome.REGRESSION)
 
-    result = judge_gate(GateInput(mode=GateMode.PAIRED, metrics=given.metrics(), cells=cells))
+    result = judge_gate(
+        GateInput(
+            mode=GateMode.PAIRED,
+            metrics=given.metrics(),
+            detections=given.detections(),
+            cells=cells,
+        )
+    )
 
     assert result.verdict == GateVerdict.RED
     assert any("tool_1/input_validation" in reason for reason in result.reasons)
 
 
 def test_paired_mode_is_red_on_a_floor_breach():
-    result = judge_gate(GateInput(mode=GateMode.PAIRED, metrics=given.metrics(precision=0.3)))
+    result = judge_gate(
+        GateInput(
+            mode=GateMode.PAIRED,
+            metrics=given.metrics(precision=0.3),
+            detections=given.detections(),
+        )
+    )
 
     assert result.verdict == GateVerdict.RED
     assert any("precision" in reason for reason in result.reasons)
@@ -79,7 +124,14 @@ def test_paired_mode_is_red_on_a_floor_breach():
 def test_paired_mode_is_green_with_only_unreproduced_and_inconclusive_flips():
     cells = given.cells_with(CellOutcome.FLIP_NOT_REPRODUCED, CellOutcome.INCONCLUSIVE)
 
-    result = judge_gate(GateInput(mode=GateMode.PAIRED, metrics=given.metrics(), cells=cells))
+    result = judge_gate(
+        GateInput(
+            mode=GateMode.PAIRED,
+            metrics=given.metrics(),
+            detections=given.detections(),
+            cells=cells,
+        )
+    )
 
     assert result.verdict == GateVerdict.GREEN
     assert set(result.cells) == {"tool_0/input_validation", "tool_1/input_validation"}
@@ -92,6 +144,7 @@ def test_a_mismatch_makes_the_gate_not_comparable():
         GateInput(
             mode=GateMode.PAIRED,
             metrics=given.metrics(recall=0.1),
+            detections=given.detections(),
             cells=given.cells_with(CellOutcome.REGRESSION),
             mismatches=[mismatch],
         )
@@ -108,6 +161,7 @@ def test_legacy_mode_with_a_mismatch_is_not_comparable():
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
             metrics=given.metrics(),
+            detections=given.detections(),
             mismatches=[mismatch],
         )
     )
@@ -127,6 +181,8 @@ def test_legacy_mode_with_a_mismatch_is_not_comparable():
 def test_only_the_legacy_mode_carries_the_legacy_thresholds(
     mode: GateMode, thresholds: dict[str, float]
 ):
-    result = judge_gate(GateInput(mode=mode, metrics=given.metrics()))
+    result = judge_gate(
+        GateInput(mode=mode, metrics=given.metrics(), detections=given.detections())
+    )
 
     assert result.thresholds == thresholds

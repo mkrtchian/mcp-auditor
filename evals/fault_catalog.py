@@ -1,5 +1,5 @@
 """The faults the harness injects, each on the role it targets, with what the gate is expected
-to answer on the current floors. `evals/fault_injection_method.md` gives the reasoning.
+to answer on the floors of ADR 022. `evals/fault_injection_method.md` gives the reasoning.
 """
 
 from collections.abc import Callable
@@ -40,8 +40,8 @@ class Fault:
 FAULTS = [
     Fault(
         "judge_passes_everything",
-        "red in both modes on recall, PAIRED also on the regressions of the 3 stable and "
-        "correct FAIL cells; recording refused on recall",
+        "red in both modes on recall (0 detections), PAIRED also on the regressions of the 3 "
+        "stable and correct FAIL cells; recording refused on recall",
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=PassingJudge()),
     ),
     Fault(
@@ -52,8 +52,7 @@ FAULTS = [
     ),
     Fault(
         "judge_fails_at_random",
-        "red in both modes on precision, recall likely over its floor; recording refused on "
-        "precision",
+        "red in both modes on precision, PASS cells flipped; recording refused on precision",
         wrap=lambda models: AuditModels(llm=models.llm, judge_llm=RandomJudge(SEED)),
     ),
     Fault(
@@ -64,15 +63,15 @@ FAULTS = [
     ),
     Fault(
         "half_the_detections_lost",
-        "red in both modes on recall, the lost detections settle flip_not_reproduced with "
-        "probability about 0.81 each; recording refused on recall",
+        "PAIRED green unless a lost detection reproduces (about 0.19 each) or the detections "
+        "fall under 3, FLOORS_ONLY green unless they fall under 3; recording accepted unless "
+        "they fall under 3",
         loses_detections=True,
     ),
     Fault(
         "generator_drops_error_handling",
-        "PAIRED red on recall and the regressions (uncovered) of the stable and correct "
-        "error_handling cells, FLOORS_ONLY red on recall alone (coverage 0.80 clears its "
-        "floor); recording refused on recall",
+        "PAIRED red on the regressions (uncovered) of the 8 stable and correct error_handling "
+        "cells, FLOORS_ONLY green (coverage 0.80 clears its floor); recording accepted",
         wrap=lambda models: AuditModels(
             llm=CategoryDroppingGenerator(models.llm, AuditCategory.ERROR_HANDLING),
             judge_llm=models.judge_llm,
@@ -80,8 +79,7 @@ FAULTS = [
     ),
     Fault(
         "provider_refuses_chain_steps",
-        "red in both modes on recall, no gated cell moves on the two chain-only flaws; "
-        "recording refused on recall",
+        "green in both modes, no gated cell moves on the two chain-only flaws; recording accepted",
         wrap=lambda models: AuditModels(
             llm=ChainRefusingModel(models.llm), judge_llm=models.judge_llm
         ),

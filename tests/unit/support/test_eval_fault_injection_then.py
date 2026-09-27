@@ -11,6 +11,11 @@ def red_on(result: GateResult, *reasons: str) -> None:
     assert result.reasons == list(reasons)
 
 
+def green(result: GateResult) -> None:
+    assert result.verdict == GateVerdict.GREEN
+    assert result.reasons == []
+
+
 def flipped(cells: dict[Cell, CellComparison], expected: list[Cell], cause: FlipCause) -> None:
     flips = {cell for cell, comparison in cells.items() if comparison.outcome == CellOutcome.FLIP}
     assert flips == set(expected)
@@ -25,6 +30,10 @@ def settled_as(result: GateResult, expected: list[Cell], outcome: CellOutcome) -
 def refused_on(decision: Baseline | RecordingRefused, *breaches: str) -> None:
     assert isinstance(decision, RecordingRefused)
     assert decision.reasons == [f"{breach} under its floor" for breach in breaches]
+
+
+def accepted(decision: Baseline | RecordingRefused) -> None:
+    assert isinstance(decision, Baseline)
 
 
 def only_detections_lost(verdicts: VerdictMap, degraded: VerdictMap) -> None:

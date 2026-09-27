@@ -4,9 +4,11 @@ from evals.baseline import Baseline, rescore
 from evals.eval_session import EvalSession
 from evals.gate import (
     Cell,
+    DetectionCount,
     MetricDelta,
     Observation,
     compare,
+    count_detections,
     metric_deltas,
     metric_resolutions,
     observe,
@@ -38,6 +40,9 @@ class RunsOutcome:
     def observations(self) -> list[dict[Cell, Observation]]:
         return [observe(verdicts, MERGED_GROUND_TRUTH) for verdicts in self.verdict_maps]
 
+    def detections(self) -> DetectionCount:
+        return count_detections(self.observations(), MERGED_GROUND_TRUTH)
+
     def metrics(self) -> tuple[EvalMetrics, dict[str, ConsistencyDetail]]:
         consistency, consistency_details = compute_consistency(
             self.verdict_maps, MERGED_GROUND_TRUTH
@@ -56,7 +61,14 @@ async def judge_runs(session: EvalSession, outcome: RunsOutcome, replayer: Repla
     mismatches = _incomplete_runs(session, outcome)
     baseline = session.baseline
     if baseline is None:
-        return judge_gate(GateInput(mode=session.mode, metrics=metrics, mismatches=mismatches))
+        return judge_gate(
+            GateInput(
+                mode=session.mode,
+                metrics=metrics,
+                detections=outcome.detections(),
+                mismatches=mismatches,
+            )
+        )
 
     cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
     if session.mode == GateMode.PAIRED and not mismatches:
@@ -65,6 +77,7 @@ async def judge_runs(session: EvalSession, outcome: RunsOutcome, replayer: Repla
         GateInput(
             mode=session.mode,
             metrics=metrics,
+            detections=outcome.detections(),
             baseline_status=baseline.status,
             cells=cells,
             mismatches=mismatches,

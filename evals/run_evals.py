@@ -104,7 +104,10 @@ def _parse_args() -> EvalOptions:
     parser.add_argument(
         "--ungated",
         action="store_true",
-        help="gate on the floors alone, at any conditions, with no baseline (never in CI)",
+        help=(
+            "gate on the floors alone (recall: one detection per run, precision and"
+            " distribution coverage: 0.50), at any conditions, with no baseline (never in CI)"
+        ),
     )
     args = parser.parse_args()
     return EvalOptions(args.runs, args.budget, args.report, args.record_baseline, args.ungated)
