@@ -3,6 +3,7 @@ from evals.baseline import (
     BaselineConditions,
     BaselineStatus,
     FixtureConditions,
+    RecordingRef,
     fingerprint_ground_truth,
 )
 from evals.gate import (
@@ -71,6 +72,13 @@ def a_baseline(
         recorded_at="2026-09-23T10:00:00+00:00",
         runs=[{cell_key(cell): observation for cell, observation in run.items()} for run in runs],
         metrics=EvalMetrics(recall=0.9, precision=0.8, consistency=0.7, distribution_coverage=0.95),
+    )
+
+
+def a_confirmation(runs: ObservationRuns) -> Baseline:
+    first = RecordingRef(commit=RECORDED_COMMIT, recorded_at="2026-09-23T09:00:00+00:00")
+    return a_baseline(status=BaselineStatus.CONFIRMED, runs=runs).model_copy(
+        update={"confirms": first}
     )
 
 

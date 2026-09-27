@@ -7,6 +7,7 @@ from evals.baseline import (
     RecordingRef,
     condition_mismatches,
     rescore,
+    verdict_maps_of,
 )
 from evals.gate import (
     Cell,
@@ -17,10 +18,11 @@ from evals.gate import (
     ReplayRule,
     cell_key,
     classify,
+    protected_cells,
 )
 from evals.gate_verdict import GateResult, GateVerdict
 from evals.ground_truth import GroundTruth
-from evals.metrics import EvalMetrics
+from evals.metrics import EvalMetrics, compute_consistency, label_scores
 
 _RESET_PROCEDURE = (
     "reset the baseline under ADR 020: delete its file in the commit that makes the change, "
@@ -32,6 +34,14 @@ _RESET_PROCEDURE = (
     "correct (ADR 022). Runs and budget change only from a green gate. For a model, also run "
     "both models and record the delta while the old one answers (ADR 016)"
 )
+
+_NOT_MADE_AGAIN = (
+    "this second recording is not made again against the same first recording (ADR 023). If a "
+    "change reset the baseline, revert it and discard both recordings. For a first baseline, "
+    "ADR 023 decides nothing: decide the way forward before recording again"
+)
+
+_FAILED_RUN = "a run failed: a baseline must hold every run its conditions claim"
 
 _FLIPPED = {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRODUCED}
 
@@ -59,22 +69,22 @@ class GatedSetChange(BaseModel):
 def decide_recording(
     existing: Baseline | None, recording: Recording, gate: GateResult
 ) -> Baseline | RecordingRefused:
+    if existing is not None and existing.status == BaselineStatus.EXPLORATORY:
+        return _second_recording(existing, recording, gate)
     reasons = _refusals(existing, recording, gate)
     if reasons:
         return RecordingRefused(reasons=reasons)
     if existing is None:
         return _baseline_from(recording, BaselineStatus.EXPLORATORY, ReplayRule())
-    if existing.status == BaselineStatus.CONFIRMED:
-        return _baseline_from(recording, BaselineStatus.CONFIRMED, existing.replay_rule).model_copy(
-            update={"replaces": _ref(existing)}
-        )
-    return _second_recording(existing, recording)
+    return _baseline_from(recording, BaselineStatus.CONFIRMED, existing.replay_rule).model_copy(
+        update={"replaces": _ref(existing)}
+    )
 
 
 def _refusals(existing: Baseline | None, recording: Recording, gate: GateResult) -> list[str]:
     reasons: list[str] = []
     if not recording.completed_all:
-        reasons.append("a run failed: a baseline must hold every run its conditions claim")
+        reasons.append(_FAILED_RUN)
     reasons += [f"{name} under its floor" for name in gate.floor_breaches]
     reasons += [
         f"no {side} is stable and correct: the gate could not see {miss}"
@@ -82,12 +92,6 @@ def _refusals(existing: Baseline | None, recording: Recording, gate: GateResult)
     ]
     if existing is None:
         return reasons
-    if existing.status == BaselineStatus.EXPLORATORY:
-        return (
-            reasons
-            + exploratory_commit_refusal(existing, recording.commit)
-            + condition_refusals(existing, recording.conditions)
-        )
     return reasons + _confirmed_refusals(existing, recording, gate)
 
 
@@ -149,14 +153,65 @@ def _confirmed_refusals(existing: Baseline, recording: Recording, gate: GateResu
     return reasons
 
 
-def _second_recording(existing: Baseline, recording: Recording) -> Baseline:
-    disagreements = _disagreements(existing, recording)
-    if disagreements:
-        return _baseline_from(
-            recording, BaselineStatus.EXPLORATORY, existing.replay_rule
-        ).model_copy(update={"replaces": _ref(existing), "disagreements": disagreements})
-    return _baseline_from(recording, BaselineStatus.CONFIRMED, existing.replay_rule).model_copy(
-        update={"confirms": _ref(existing)}
+def _second_recording(
+    existing: Baseline, recording: Recording, gate: GateResult
+) -> Baseline | RecordingRefused:
+    """The second recording adds its runs to the first, and a cell is stable only if every run
+    of both gives it the same observation (ADR 023)."""
+    combined = _combined(existing, recording)
+    reasons = _second_recording_refusals(existing, combined, gate)
+    if reasons:
+        return RecordingRefused(reasons=reasons)
+    return _baseline_from(combined, BaselineStatus.CONFIRMED, existing.replay_rule).model_copy(
+        update={"confirms": _ref(existing), "disagreements": _disagreements(existing, recording)}
+    )
+
+
+def _combined(existing: Baseline, recording: Recording) -> Recording:
+    runs = existing.observation_runs() + recording.runs
+    return recording.model_copy(
+        update={
+            "runs": runs,
+            "metrics": _combined_metrics(existing, recording, runs),
+            "protected": protected_cells(runs, recording.ground_truth),
+        }
+    )
+
+
+def _combined_metrics(
+    existing: Baseline, recording: Recording, runs: list[dict[Cell, Observation]]
+) -> EvalMetrics:
+    # Coverage cannot be recomputed from observations. Both recordings hold the same number
+    # of runs, so the mean of theirs is the mean over the combined runs.
+    verdict_maps = verdict_maps_of(runs)
+    consistency, _ = compute_consistency(verdict_maps, recording.ground_truth)
+    coverage = (
+        existing.metrics.distribution_coverage + recording.metrics.distribution_coverage
+    ) / 2
+    return EvalMetrics(
+        **label_scores(verdict_maps, recording.ground_truth),
+        consistency=consistency,
+        distribution_coverage=coverage,
+    )
+
+
+def _second_recording_refusals(
+    existing: Baseline, combined: Recording, gate: GateResult
+) -> list[str]:
+    """`combined` holds the runs of both recordings, and the second's own commit, conditions and
+    completion. The floors read the second recording's own runs, through `gate`."""
+    failed_run = [] if combined.completed_all else [_FAILED_RUN]
+    not_made_again = [f"{name} under its floor" for name in gate.floor_breaches] + [
+        f"no {side} is stable and correct over the runs of both recordings: the gate could not "
+        f"see {miss}"
+        for side, miss in _blind_sides(combined.protected)
+    ]
+    return (
+        failed_run
+        + not_made_again
+        + exploratory_commit_refusal(existing, combined.commit)
+        + condition_refusals(existing, combined.conditions)
+        + ([_NOT_MADE_AGAIN] if not_made_again else [])
     )
 
 

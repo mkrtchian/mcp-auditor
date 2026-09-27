@@ -128,3 +128,17 @@ Commit: the one that adds this entry.
 **What changes.** A baseline recording is refused when no planted FAIL cell, or no PASS cell, comes out stable and correct over its runs. A committed baseline that a label revision leaves in that state, once re-scored under the current labels, is refused before any LLM call, with the reset as its reason: delete the file in a commit of its own and record twice at that commit. A reset whose recording is refused on this condition is reverted, as one whose red cells do not come out correct. No observation, label or metric moves. See [ADR 022](adr/022-honeypot-recall-floor.md).
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the recording and re-scoring code. (2) It was noticed with the recall floor, after the recording of 2026-09-27 was refused, a measurement. (3) The target is a baseline the paired comparison can use on both sides: with no stable and correct FAIL cell it cannot see a lost detection, with no stable and correct PASS cell it cannot see a new false positive. The criterion reads no measured value. (4) The condition applies to every recording and every re-score, the healthy system's included. It can only refuse: the recording of 2026-09-27 would pass it (3 FAIL cells and 28 PASS cells stable and correct), and a judge that passes or fails everything, or gives no verdict, is refused by it as well as by a floor.
+
+### 2026-09-27, second recording
+
+Commit: the one that adds this entry.
+
+**Ground truth.** Unchanged, 36 cells, 8 FAIL.
+
+**State of the gate.** No baseline is committed, so no gate compares against one and no reset applies. The exploratory baseline recorded at `d79e39d` was never committed and is deleted before the next recording.
+
+**What changes.** A second recording at the same commit confirms the first by adding its runs to it. The confirmed baseline holds the runs of both, and a cell is stable only if all of them give it the same observation. ADR 022's condition reads the combined runs. A second recording refused on a floor or under ADR 022 is not made again against the same first recording. No observation, label, floor or metric formula moves. See [ADR 023](adr/023-honeypot-second-recording.md).
+
+**The recordings that raised it.** At `d79e39d` on 2026-09-27, the second recording disagreed with the first on `execute_query × injection`, `list_items × input_validation` and `project_manager × info_leakage`, and under the rule then in force it replaced the first as a new exploratory baseline.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the recording code. (2) It was noticed after the confirmation of 2026-09-27 disagreed, a measurement, which moves the burden to (3) and (4). (3) The target is a confirmation that ends, and gates only the cells stable over every run recorded at the commit. The criterion reads no measured value. (4) The rule applies to every cell of every second recording. On a pair of recordings that agree, it gates a subset of what the old rule gated: a cell that varied in the first recording and looked stable in the second was gated before, and is not now. On a pair that disagrees, it confirms where the old rule started over.

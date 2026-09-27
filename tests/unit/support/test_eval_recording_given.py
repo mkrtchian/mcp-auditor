@@ -20,16 +20,44 @@ from tests.unit.support.test_eval_baseline_given import (
     conditions,
     runs_where_vulnerable_cell_is,
 )
+from tests.unit.support.test_eval_gate_given import (
+    OTHER_SAFE_CELL,
+    OTHER_VULNERABLE_CELL,
+    a_ground_truth_with_two_cells_of_each_side,
+)
 
 __all__ = [
+    "OTHER_SAFE_CELL",
+    "OTHER_VULNERABLE_CELL",
     "RECORDED_COMMIT",
     "SAFE_CELL",
     "VULNERABLE_CELL",
     "a_baseline",
     "a_ground_truth",
+    "a_ground_truth_with_two_cells_of_each_side",
     "all_correct_runs",
     "runs_where_vulnerable_cell_is",
 ]
+
+_THREE_FAILS = (Observation.FAIL,) * 3
+_THREE_PASSES = (Observation.PASS,) * 3
+
+
+def four_cell_runs(
+    vulnerable: tuple[Observation, ...] = _THREE_FAILS,
+    safe: tuple[Observation, ...] = _THREE_PASSES,
+) -> ObservationRuns:
+    """Runs over `a_ground_truth_with_two_cells_of_each_side`, the other two cells always
+    correct."""
+    return [
+        {
+            VULNERABLE_CELL: on_vulnerable,
+            OTHER_VULNERABLE_CELL: Observation.FAIL,
+            SAFE_CELL: on_safe,
+            OTHER_SAFE_CELL: Observation.PASS,
+        }
+        for on_vulnerable, on_safe in zip(vulnerable, safe, strict=True)
+    ]
 
 
 def runs_where_safe_cell_is(observation: Observation) -> ObservationRuns:

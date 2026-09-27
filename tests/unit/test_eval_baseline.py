@@ -1,5 +1,6 @@
 import ast
 import json
+import math
 from pathlib import Path
 
 import tests.unit.support.test_eval_baseline_given as given
@@ -227,6 +228,28 @@ def test_a_baseline_with_fewer_runs_than_its_conditions_claim_names_the_run_coun
     assert problems == ["the baseline holds 2 runs, its conditions claim 3"]
 
 
+def test_a_confirmation_holding_the_runs_of_both_recordings_has_no_integrity_problem():
+    baseline = given.a_confirmation(runs=given.all_correct_runs() + given.all_correct_runs())
+
+    assert baseline_integrity(baseline, given.a_ground_truth()) == []
+
+
+def test_a_confirmation_holding_the_runs_of_one_recording_names_the_run_count():
+    baseline = given.a_confirmation(runs=given.all_correct_runs())
+
+    problems = baseline_integrity(baseline, given.a_ground_truth())
+
+    assert problems == ["the baseline holds 3 runs, its conditions and its confirmation claim 6"]
+
+
+def test_a_baseline_confirming_nothing_with_twice_its_runs_names_the_run_count():
+    baseline = given.a_baseline(runs=given.all_correct_runs() + given.all_correct_runs())
+
+    problems = baseline_integrity(baseline, given.a_ground_truth())
+
+    assert problems == ["the baseline holds 6 runs, its conditions claim 3"]
+
+
 def test_a_key_without_a_category_is_reported_not_raised():
     baseline = given.a_baseline()
     baseline.runs[0]["get_user"] = Observation.PASS
@@ -270,6 +293,16 @@ def test_rescoring_under_a_revised_label_recomputes_recall_and_precision():
     rescored = rescore(baseline, revised)
 
     assert (rescored.metrics.recall, rescored.metrics.precision) == (0.5, 1.0)
+
+
+def test_rescoring_a_combined_baseline_reads_the_runs_of_both_recordings():
+    missed = {VULNERABLE_CELL: Observation.PASS, SAFE_CELL: Observation.PASS}
+    runs = given.all_correct_runs() + given.all_correct_runs()[:2] + [missed]
+    revised: GroundTruth = {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.FAIL}
+
+    rescored = rescore(given.a_baseline(runs=runs), revised)
+
+    assert math.isclose(rescored.metrics.recall, 5 / 12)
 
 
 def test_rescoring_leaves_out_a_cell_the_baseline_did_not_record():

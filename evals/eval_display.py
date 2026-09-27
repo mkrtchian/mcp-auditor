@@ -125,7 +125,8 @@ def print_written_recording(baseline: Baseline, gated_changes: GatedSetChange, p
     lines += [f"- enters the gated set: {key}" for key in gated_changes.entering]
     lines += [f"- leaves the gated set: {key}" for key in gated_changes.leaving]
     lines += [
-        f"- disagrees with the recording it replaces: {key}" for key in baseline.disagreements
+        f"- looked stable in the first recording and varied in the second: {key}"
+        for key in baseline.disagreements
     ]
     if baseline.protected:
         lines.append(_protected_line(baseline.protected))

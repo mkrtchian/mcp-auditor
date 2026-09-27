@@ -155,20 +155,26 @@ def verdict_maps_of(runs: list[dict[Cell, Observation]]) -> list[VerdictMap]:
 
 def baseline_integrity(baseline: Baseline, ground_truth: GroundTruth) -> list[str]:
     """What the file holds that its conditions do not claim, checked when the runner loads it."""
-    problems: list[str] = []
-    claimed = baseline.conditions.runs
-    if not baseline.runs:
-        problems.append("the baseline holds no run")
-    elif len(baseline.runs) != claimed:
-        problems.append(
-            f"the baseline holds {len(baseline.runs)} runs, its conditions claim {claimed}"
-        )
+    problems = _run_count_problems(baseline)
     same_ground_truth = baseline.conditions.ground_truth_fingerprint == fingerprint_ground_truth(
         ground_truth
     )
     for index, run in enumerate(baseline.runs):
         problems += _run_problems(index, run, ground_truth if same_ground_truth else None)
     return problems
+
+
+def _run_count_problems(baseline: Baseline) -> list[str]:
+    held = len(baseline.runs)
+    if not held:
+        return ["the baseline holds no run"]
+    if baseline.confirms is None:
+        claimed, claimants = baseline.conditions.runs, "its conditions"
+    else:  # a confirmation holds the runs of both recordings (ADR 023)
+        claimed, claimants = baseline.conditions.runs * 2, "its conditions and its confirmation"
+    if held == claimed:
+        return []
+    return [f"the baseline holds {held} runs, {claimants} claim {claimed}"]
 
 
 def _run_problems(
