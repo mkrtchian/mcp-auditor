@@ -8,7 +8,7 @@ from rich.table import Table
 
 from evals.baseline import Baseline, BaselineStatus
 from evals.eval_report import EvalReport
-from evals.gate import CellComparison, CellOutcome
+from evals.gate import CellComparison, CellOutcome, ProtectedCells
 from evals.gate_verdict import GateMode, GateResult, GateVerdict
 from evals.metrics import RunDetail
 from evals.recording import GatedSetChange
@@ -39,6 +39,8 @@ def print_summary(report: EvalReport, report_path: str) -> None:
     }
     if changed:
         console.print(Panel(_cells_table(changed), title="Cells"))
+    if gate.protected:
+        console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
     console.print(f"Report written to {report_path}")
     console.print(Panel(_verdict_text(gate)))
 
@@ -125,5 +127,16 @@ def print_written_recording(baseline: Baseline, gated_changes: GatedSetChange, p
     lines += [
         f"- disagrees with the recording it replaces: {key}" for key in baseline.disagreements
     ]
+    if baseline.protected:
+        lines.append(_protected_line(baseline.protected))
     lines.append(_NEXT_STEP[baseline.status])
     console.print(Panel("\n".join(lines)))
+
+
+def _protected_line(protected: ProtectedCells) -> str:
+    return (
+        f"planted FAIL cells stable and correct: "
+        f"{protected.fail_stable_correct}/{protected.fail_total}, "
+        f"PASS cells stable and correct: {protected.pass_stable_correct}/{protected.pass_total}, "
+        f"unstable: {protected.unstable}"
+    )

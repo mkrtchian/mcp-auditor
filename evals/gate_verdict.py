@@ -12,6 +12,7 @@ from evals.gate import (
     CellOutcome,
     DetectionCount,
     MetricDelta,
+    ProtectedCells,
     cell_key,
     floor_breaches,
 )
@@ -40,6 +41,7 @@ class GateResult(BaseModel):
     thresholds: dict[str, float]
     floor_breaches: list[str]
     deltas: dict[str, MetricDelta]
+    protected: ProtectedCells | None = None
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,7 @@ class GateInput:
     cells: dict[Cell, CellComparison] = field(default_factory=dict[Cell, CellComparison])
     mismatches: list[str] = field(default_factory=list[str])
     deltas: dict[str, MetricDelta] = field(default_factory=dict[str, MetricDelta])
+    protected: ProtectedCells | None = None
 
 
 def judge_gate(gate_input: GateInput) -> GateResult:
@@ -72,6 +75,7 @@ def judge_gate(gate_input: GateInput) -> GateResult:
         thresholds=_thresholds_of(gate_input.mode),
         floor_breaches=breaches,
         deltas=gate_input.deltas,
+        protected=gate_input.protected,
     )
 
 

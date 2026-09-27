@@ -17,7 +17,6 @@ from evals.gate import (
     ReplayRule,
     cell_key,
     classify,
-    protected_cells,
 )
 from evals.gate_verdict import GateResult, GateVerdict
 from evals.ground_truth import GroundTruth
@@ -96,8 +95,7 @@ def rescore_refusals(baseline: Baseline, ground_truth: GroundTruth) -> list[str]
     and correct cell leaves the gate blind on that side, and a confirmed gate that cannot turn
     green cannot be recorded over: the baseline is reset (ADR 022).
     """
-    rescored = rescore(baseline, ground_truth)
-    protected = protected_cells(baseline.observation_runs(), rescored.ground_truth)
+    protected = rescore(baseline, ground_truth).protected
     return [
         f"under the current labels the baseline holds no stable and correct {side}: delete the "
         f"baseline file in a commit of its own and record twice at that commit (ADR 022)"
@@ -180,6 +178,7 @@ def _baseline_from(recording: Recording, status: BaselineStatus, rule: ReplayRul
         recorded_at=recording.recorded_at,
         runs=[{cell_key(cell): obs for cell, obs in run.items()} for run in recording.runs],
         metrics=recording.metrics,
+        protected=recording.protected,
     )
 
 

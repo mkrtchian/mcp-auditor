@@ -1,5 +1,5 @@
 from evals.baseline import Baseline, BaselineStatus
-from evals.gate import Cell, cell_key, observe
+from evals.gate import Cell, Observation, cell_key, observe, protected_cells
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
 from evals.judging import RunsOutcome
 from evals.metrics import VerdictMap, build_run_detail
@@ -51,6 +51,17 @@ def a_baseline_without_the_flipped_cell(status: BaselineStatus) -> Baseline:
     for run in baseline.runs:
         del run[cell_key(FLIPPED_CELL)]
     return baseline
+
+
+def a_baseline_that_saw_the_flipped_cell_pass(status: BaselineStatus) -> Baseline:
+    """Recorded when the flipped cell was labeled PASS: its stored summary counts it protected."""
+    baseline = a_baseline_all_correct(status)
+    for run in baseline.runs:
+        run[cell_key(FLIPPED_CELL)] = Observation.PASS
+    recorded_labels = {**MERGED_GROUND_TRUTH, FLIPPED_CELL: EvalVerdict.PASS}
+    return baseline.model_copy(
+        update={"protected": protected_cells(baseline.observation_runs(), recorded_labels)}
+    )
 
 
 def an_audit_reproducing_the_flip() -> FakeAudit:

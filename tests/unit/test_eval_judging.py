@@ -119,6 +119,27 @@ async def test_deltas_leave_out_a_cell_the_baseline_did_not_record():
     assert result.deltas["recall"].value == 0.0
 
 
+async def test_without_baseline_the_gate_reports_no_protected_cells():
+    audit = given.an_audit_reproducing_the_flip()
+
+    result = await judge_runs(given.a_session(), given.correct_runs(), given.a_replayer(audit))
+
+    assert result.protected is None
+
+
+async def test_the_gate_reports_the_protected_cells_of_the_baseline_under_the_current_labels():
+    baseline = given.a_baseline_that_saw_the_flipped_cell_pass(BaselineStatus.EXPLORATORY)
+    audit = given.an_audit_reproducing_the_flip()
+
+    result = await judge_runs(
+        given.a_session(baseline=baseline), given.correct_runs(), given.a_replayer(audit)
+    )
+
+    assert result.protected is not None
+    assert (result.protected.fail_stable_correct, result.protected.fail_total) == (7, 8)
+    assert result.protected != baseline.protected
+
+
 def test_runs_outcome_completed_all_when_every_requested_run_has_details():
     assert given.correct_runs(completed=3).completed_all(3)
     assert not given.correct_runs(completed=2).completed_all(3)

@@ -1,4 +1,5 @@
 import ast
+import json
 from pathlib import Path
 
 import tests.unit.support.test_eval_baseline_given as given
@@ -167,6 +168,16 @@ def test_a_baseline_written_over_another_replaces_it_and_leaves_no_temporary(tmp
 
     assert load_baseline(path) == second
     assert list(tmp_path.glob("*.tmp")) == []
+
+
+def test_a_baseline_written_before_the_protected_summary_loads_without_it(tmp_path: Path):
+    path = tmp_path / "honeypot_e2e.json"
+    written = given.a_baseline().model_dump(exclude={"protected"})
+    path.write_text(json.dumps(written))
+
+    loaded = load_baseline(path)
+
+    assert loaded is not None and loaded.protected is None
 
 
 def test_observation_runs_parse_the_keys_back_to_cells():
@@ -346,6 +357,15 @@ def test_a_recording_with_one_stable_and_correct_cell_on_each_side_is_written():
     result = decide_recording(None, recording, given.a_gate())
 
     assert isinstance(result, Baseline)
+
+
+def test_a_written_baseline_carries_the_recording_protected_cells():
+    protected = given.protected_on_both_sides().model_copy(update={"unstable": 2})
+
+    result = decide_recording(None, given.a_recording(protected=protected), given.a_gate())
+
+    assert isinstance(result, Baseline)
+    assert result.protected == protected
 
 
 def test_a_recording_with_a_failed_run_is_refused():

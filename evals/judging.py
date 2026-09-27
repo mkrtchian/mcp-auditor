@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from evals.baseline import Baseline, rescore
+from evals.baseline import RescoredBaseline, rescore
 from evals.eval_session import EvalSession
 from evals.gate import (
     Cell,
@@ -75,6 +75,7 @@ async def judge_runs(session: EvalSession, outcome: RunsOutcome, replayer: Repla
             )
         )
 
+    rescored = rescore(baseline, MERGED_GROUND_TRUTH)
     cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
     if session.mode == GateMode.PAIRED and not mismatches:
         cells, mismatches = await replayer.settle_flips(cells, baseline.replay_rule)
@@ -86,7 +87,8 @@ async def judge_runs(session: EvalSession, outcome: RunsOutcome, replayer: Repla
             baseline_status=baseline.status,
             cells=cells,
             mismatches=mismatches,
-            deltas=_deltas(baseline, outcome, metrics),
+            deltas=_deltas(rescored, outcome, metrics),
+            protected=rescored.protected,
         )
     )
 
@@ -99,9 +101,8 @@ def _incomplete_runs(session: EvalSession, outcome: RunsOutcome) -> list[str]:
 
 
 def _deltas(
-    baseline: Baseline, outcome: RunsOutcome, metrics: EvalMetrics
+    rescored: RescoredBaseline, outcome: RunsOutcome, metrics: EvalMetrics
 ) -> dict[str, MetricDelta]:
-    rescored = rescore(baseline, MERGED_GROUND_TRUTH)
     candidate = metrics.model_copy(update=label_scores(outcome.verdict_maps, rescored.ground_truth))
     resolutions = metric_resolutions(outcome.verdict_maps, rescored.ground_truth, TOOL_COUNT)
     return metric_deltas(rescored.metrics, candidate, resolutions)

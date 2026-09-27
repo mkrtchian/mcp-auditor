@@ -7,7 +7,15 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals.gate import Cell, Observation, ReplayRule, cell_key, parse_cell_key
+from evals.gate import (
+    Cell,
+    Observation,
+    ProtectedCells,
+    ReplayRule,
+    cell_key,
+    parse_cell_key,
+    protected_cells,
+)
 from evals.ground_truth import GroundTruth
 from evals.metrics import EvalMetrics, VerdictMap, label_scores
 from mcp_auditor.domain.models import EvalVerdict
@@ -53,6 +61,8 @@ class Baseline(BaseModel):
     confirms: RecordingRef | None = None
     replaces: RecordingRef | None = None
     disagreements: list[str] = []
+    # The recording-time summary, for the reader: `None` in a file written before it existed.
+    protected: ProtectedCells | None = None
 
     def observation_runs(self) -> list[dict[Cell, Observation]]:
         return [
@@ -110,6 +120,7 @@ def _field_mismatches(
 class RescoredBaseline:
     ground_truth: GroundTruth
     metrics: EvalMetrics
+    protected: ProtectedCells
 
 
 def rescore(baseline: Baseline, ground_truth: GroundTruth) -> RescoredBaseline:
@@ -135,6 +146,7 @@ def rescore(baseline: Baseline, ground_truth: GroundTruth) -> RescoredBaseline:
     return RescoredBaseline(
         ground_truth=recorded,
         metrics=baseline.metrics.model_copy(update=label_scores(verdict_maps, recorded)),
+        protected=protected_cells(runs, recorded),
     )
 
 
