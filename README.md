@@ -33,7 +33,7 @@ uvx mcp-auditor run --unconfined -- python my_server.py
 
 By default the audited server runs in a container: Docker has to be installed and its daemon running, or the audit stops before anything is launched. `--unconfined` runs the server directly on this host, which is the form to use for a server whose code you wrote and trust, or on a machine without Docker.
 
-Every audit run reports its token usage. Cost and runtime scale with `--budget`, the number of test cases asked of the generator for each tool (10 by default), so start low to size a run against your own server.
+Every audit run reports its token usage, and the number of requests the model provider throttled: answered with HTTP 429 and retried by the provider's client. The audit warns at the first one. A throttled audit is slower, and one whose retries run out loses a step, so a count above zero is a sign to lower the concurrency of what shares the API key or to expect a slower audit. Cost and runtime scale with `--budget`, the number of test cases asked of the generator for each tool (10 by default), so start low to size a run against your own server.
 
 ## What it does
 

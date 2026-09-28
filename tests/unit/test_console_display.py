@@ -197,5 +197,31 @@ def test_summary_has_no_warning_without_a_coverage_gap():
     assert "Warning" not in buffer.getvalue()
 
 
+def test_summary_shows_the_throttled_requests():
+    report = given.a_report_throttled(3)
+    display, buffer = given.a_display()
+
+    display.print_summary(report)
+
+    assert "Throttled: 3" in Text.from_ansi(buffer.getvalue()).plain
+
+
+def test_ci_mode_summary_shows_the_throttled_requests():
+    report = given.a_report_throttled(3)
+    display, buffer = given.a_ci_display()
+
+    display.print_summary(report)
+
+    assert "Throttled: 3" in buffer.getvalue()
+
+
+def test_summary_omits_throttling_when_nothing_was_throttled():
+    report = given.a_report_throttled(0)
+    for display, buffer in (given.a_display(), given.a_ci_display()):
+        display.print_summary(report)
+
+        assert "Throttled" not in buffer.getvalue()
+
+
 def _warnings(output: str) -> list[str]:
     return [" ".join(chunk.split()) for chunk in output.split("Warning")[1:]]

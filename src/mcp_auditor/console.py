@@ -73,7 +73,9 @@ class AuditDisplay:
 
     def print_summary(self, report: AuditReport) -> None:
         if self._ci_mode:
-            self._console.print(render_summary(report))
+            throttled = _format_throttled_requests(report.provider_usage)
+            separator = "  |  " if throttled else ""
+            self._console.print(render_summary(report) + separator + throttled)
         else:
             self._print_results_panel(report)
         for tool_report in report.tool_reports:
@@ -88,6 +90,10 @@ class AuditDisplay:
         token_line = _format_provider_usage(report.provider_usage)
         panel = Panel(table, title="Results", subtitle=f"{score_line}  |  {token_line}")
         self._console.print(panel)
+        # Beside the tokens, the panel subtitle would be cut at 80 columns.
+        throttled = _format_throttled_requests(report.provider_usage)
+        if throttled:
+            self._console.print(f"[yellow]{throttled}[/yellow]")
 
     def print_coverage_gap(self, tool_report: ToolReport) -> None:
         if tool_report.coverage_gap is None:
@@ -263,3 +269,9 @@ def _format_fail_cell(summary: ToolSummary) -> Text | str:
 
 def _format_provider_usage(usage: ProviderUsage) -> str:
     return f"Tokens: {usage.input_tokens:,} in / {usage.output_tokens:,} out"
+
+
+def _format_throttled_requests(usage: ProviderUsage) -> str:
+    if usage.throttled_requests == 0:
+        return ""
+    return f"Throttled: {usage.throttled_requests:,}"

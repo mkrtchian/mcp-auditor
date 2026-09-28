@@ -66,6 +66,11 @@ def _render_summary_section(report: AuditReport) -> str:
         lines.append(f"  {_severity_breakdown(findings)}")
     usage = report.provider_usage
     lines.append(f"**Token usage**: {usage.input_tokens} input, {usage.output_tokens} output")
+    if usage.throttled_requests > 0:
+        noun = "request" if usage.throttled_requests == 1 else "requests"
+        lines.append(
+            f"**Throttled by the model provider**: {usage.throttled_requests} {noun}, retried"
+        )
     return "\n".join(lines)
 
 

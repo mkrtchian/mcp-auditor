@@ -228,6 +228,14 @@ def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
     return report
 
 
+def a_report_throttled(throttled_requests: int) -> AuditReport:
+    report = a_two_tool_report()
+    report.provider_usage = ProviderUsage(
+        input_tokens=15234, output_tokens=8421, throttled_requests=throttled_requests
+    )
+    return report
+
+
 REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage policy"
 
 

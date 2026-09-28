@@ -480,3 +480,28 @@ def test_markdown_does_not_call_a_blocked_chain_not_judged():
     result = render_markdown(report)
 
     assert "not judged" not in result
+
+
+def test_markdown_summary_reports_the_throttled_requests_after_the_token_usage():
+    report = given.a_report_throttled(4)
+
+    result = render_markdown(report)
+
+    assert "**Throttled by the model provider**: 4 requests, retried" in result
+    assert result.index("**Token usage**") < result.index("**Throttled by the model provider**")
+
+
+def test_markdown_summary_omits_throttling_when_nothing_was_throttled():
+    report = given.a_report_throttled(0)
+
+    result = render_markdown(report)
+
+    assert "Throttled" not in result
+
+
+def test_json_carries_the_throttled_requests():
+    report = given.a_report_throttled(4)
+
+    result = json.loads(render_json(report))
+
+    assert result["provider_usage"]["throttled_requests"] == 4

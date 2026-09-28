@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any
 
 from mcp_auditor.console import AuditDisplay
-from mcp_auditor.domain.models import ToolDefinition
+from mcp_auditor.domain.models import ProviderUsage, ToolDefinition
 from mcp_auditor.progress import CIProgress, ToolProgress
 
 
@@ -14,12 +14,14 @@ class AuditProgressReporter:
         self._tool_count = 0
         self._current_tool_name = ""
         self._active_progress: ToolProgress | CIProgress | None = None
+        self._throttling_warned = False
 
     def on_stream_event(self, event: tuple[tuple[str, ...], dict[str, Any]]) -> None:
         namespace, updates = event
         for node_name, state_update in updates.items():
             if not isinstance(state_update, dict):
                 continue
+            self._warn_at_first_throttling(state_update)
             match _graph_level(namespace):
                 case _GraphLevel.ORCHESTRATOR:
                     self._on_orchestrator_event(node_name, state_update)
@@ -27,6 +29,17 @@ class AuditProgressReporter:
                     self._on_tool_audit_event(node_name, state_update)
                 case _GraphLevel.CHAIN_AUDIT:
                     self._on_chain_audit_event(node_name, state_update)
+
+    def _warn_at_first_throttling(self, state_update: dict[str, Any]) -> None:
+        if self._throttling_warned:
+            return
+        usages: list[ProviderUsage] = state_update.get("provider_usage", [])
+        if any(usage.throttled_requests > 0 for usage in usages):
+            self._throttling_warned = True
+            self._display.print_warning(
+                "the model provider is throttling requests (HTTP 429): "
+                "they are retried, the audit slows down"
+            )
 
     def _on_orchestrator_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "discover_tools":
