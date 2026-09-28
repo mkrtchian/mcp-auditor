@@ -3,10 +3,13 @@ import asyncio
 import os
 import sys
 import traceback
+from collections.abc import Awaitable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
+from langchain_core.tracers.context import collect_runs
 from pydantic import ValidationError
 from rich.progress import Progress, TaskID
 
@@ -59,6 +62,13 @@ EXIT_CODES = {
 class EvalRunResult:
     report: EvalReport
     outcome: RunsOutcome
+
+
+@dataclass(frozen=True)
+class CompletedRun:
+    verdicts: VerdictMap
+    report: AuditReport
+    trace_ids: list[UUID]
 
 
 def main() -> None:
@@ -165,51 +175,66 @@ async def _run_all(session: EvalSession) -> RunsOutcome:
         task = progress.add_task("Running evals", total=num_runs * len(HONEYPOTS))
         for i in range(num_runs):
             try:
-                verdicts, audit_report = await _run_one_eval(session, progress, task)
+                completed = await _run_one_eval(session, progress, task)
             except Exception:
                 progress.console.print(f"[yellow]Warning: run {i + 1}/{num_runs} failed:[/yellow]")
                 traceback.print_exc(file=sys.stderr)
                 progress.advance(task, advance=len(HONEYPOTS))
                 continue
 
-            run_detail = build_run_detail(i, verdicts, audit_report, MERGED_GROUND_TRUTH)
-            _post_langsmith_feedback(run_detail, session.settings.langsmith_project)
+            run_detail = build_run_detail(
+                i, completed.verdicts, completed.report, MERGED_GROUND_TRUTH
+            )
+            _post_langsmith_feedback(run_detail, completed.trace_ids)
             outcome.details.append(run_detail)
-            outcome.verdict_maps.append(verdicts)
-            outcome.audits.append((i, audit_report))
+            outcome.verdict_maps.append(completed.verdicts)
+            outcome.audits.append((i, completed.report))
             display.print_run_result(run_detail, progress)
     return outcome
 
 
-async def _run_one_eval(
-    session: EvalSession, progress: Progress, task: TaskID
-) -> tuple[VerdictMap, AuditReport]:
+async def _run_one_eval(session: EvalSession, progress: Progress, task: TaskID) -> CompletedRun:
+    trace_ids: list[UUID] = []
+
     async def audit(honeypot: HoneypotConfig) -> AuditReport:
         progress.console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
-        report = await audit_honeypot(
-            models_for(session.settings), honeypot, session.conditions.budget
+        report = await _traced(
+            audit_honeypot(models_for(session.settings), honeypot, session.conditions.budget),
+            trace_ids,
         )
         progress.advance(task)
         return report
 
-    return await audit_honeypots(audit)
+    verdicts, report = await audit_honeypots(audit)
+    return CompletedRun(verdicts, report, trace_ids)
 
 
-def _post_langsmith_feedback(run_detail: RunDetail, project_name: str) -> None:
-    if not (os.environ.get("LANGSMITH_TRACING") or os.environ.get("LANGCHAIN_TRACING_V2")):
+async def _traced(audit: Awaitable[AuditReport], trace_ids: list[UUID]) -> AuditReport:
+    if not _tracing_enabled():
+        return await audit
+    with collect_runs() as collector:
+        report = await audit
+    if collector.traced_runs:
+        trace_ids.append(collector.traced_runs[0].id)
+    return report
+
+
+def _tracing_enabled() -> bool:
+    return bool(os.environ.get("LANGSMITH_TRACING") or os.environ.get("LANGCHAIN_TRACING_V2"))
+
+
+def _post_langsmith_feedback(run_detail: RunDetail, trace_ids: list[UUID]) -> None:
+    if not _tracing_enabled():
         return
     try:
         from langsmith import Client  # type: ignore[import-untyped]
 
         client = Client()
-        runs = list(client.list_runs(project_name=project_name, limit=1))
-        if not runs:
-            return
-        run_id = runs[0].id
-        client.create_feedback(run_id, key="recall", score=run_detail.recall)  # pyright: ignore[reportUnknownMemberType]
-        client.create_feedback(run_id, key="precision", score=run_detail.precision)  # pyright: ignore[reportUnknownMemberType]
+        for trace_id in trace_ids:
+            client.create_feedback(trace_id, key="recall", score=run_detail.recall)  # pyright: ignore[reportUnknownMemberType]
+            client.create_feedback(trace_id, key="precision", score=run_detail.precision)  # pyright: ignore[reportUnknownMemberType]
     except Exception:
-        pass  # Best-effort — don't fail evals because of LangSmith
+        pass  # Best-effort: don't fail evals because of LangSmith
 
 
 def _replay_audit(session: EvalSession) -> ReplayAudit:

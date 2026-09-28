@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     model: str = ""
     judge_model: str = ""
     reasoning: str = ""
-    langsmith_project: str = "mcp-auditor"
     tool_call_timeout: int = 30
 
     def resolve_model(self) -> str:
