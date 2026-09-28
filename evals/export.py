@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from evals.cve_session import CVEAudit
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AttackChain, AuditReport, TestCase
 
@@ -36,6 +37,24 @@ def export_judged_cases(
                         f.write(json.dumps(line) + "\n")
 
 
+def export_cve_judged_cases(audits: list[CVEAudit], report_path: Path) -> None:
+    """Single-step cases only: a CVE target has no per-case ground truth, and chains are
+    judged by another prompt."""
+    export_path = report_path.with_name("cve_judged_cases.jsonl")
+    with export_path.open("w") as f:
+        for audit in audits:
+            for tool_report in audit.report.tool_reports:
+                for case in tool_report.cases:
+                    if case.eval_result is None:
+                        continue
+                    line = {
+                        "cve_id": audit.cve_id,
+                        "run_index": audit.run_index,
+                        **_judge_input(case, tool_report.tool.description),
+                    }
+                    f.write(json.dumps(line) + "\n")
+
+
 def _single_step_line(
     run_index: int,
     case: TestCase,
@@ -48,6 +67,16 @@ def _single_step_line(
     expected = ground_truth.get(gt_key)
     return {
         "run_index": run_index,
+        **_judge_input(case, tool_description),
+        "expected_verdict": expected.value if expected else None,
+        "correct": result.verdict == expected if expected else None,
+    }
+
+
+def _judge_input(case: TestCase, tool_description: str | None) -> dict[str, Any]:
+    result = case.eval_result
+    assert result is not None
+    return {
         "type": "single_step",
         "tool_name": result.tool_name,
         "tool_description": tool_description,
@@ -58,8 +87,6 @@ def _single_step_line(
         "error": case.error,
         "verdict": result.verdict.value,
         "justification": result.justification,
-        "expected_verdict": expected.value if expected else None,
-        "correct": result.verdict == expected if expected else None,
     }
 
 

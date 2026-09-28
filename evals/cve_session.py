@@ -43,8 +43,16 @@ from evals.eval_session import (
     tree_drift,
 )
 from evals.recording import RecordingRefused
+from mcp_auditor.domain.models import AuditReport
 
-type AuditTarget = Callable[[CVETarget], Awaitable[RunGrade | None]]
+
+@dataclass(frozen=True)
+class GradedAudit:
+    grade: RunGrade
+    report: AuditReport
+
+
+type AuditTarget = Callable[[CVETarget], Awaitable[GradedAudit | None]]
 """One audit of one target, None when it did not complete (launch or infra failure). The
 session may call it concurrently: it decides itself how many audits run at once."""
 
@@ -76,8 +84,16 @@ class WrittenBaseline:
 
 
 @dataclass(frozen=True)
+class CVEAudit:
+    cve_id: str
+    run_index: int  # within its target, in submission order
+    report: AuditReport
+
+
+@dataclass(frozen=True)
 class CVESessionResult:
     grades: dict[str, list[RunGrade]]  # the completed runs of each target, for the report
+    audits: list[CVEAudit]  # the completed main runs, never a replay
     gate: CVEGateResult | None  # None under --ungated
     orphans: list[str]  # baseline files of targets no longer benchmarked
     written: list[WrittenBaseline]
@@ -90,6 +106,7 @@ class _TargetRuns:
     target: CVETarget
     grades: list[RunGrade]
     completed: bool
+    audits: list[CVEAudit]
 
 
 @dataclass(frozen=True)
@@ -120,6 +137,7 @@ async def run_gated(options: CVEOptions, harness: CVEHarness) -> CVESessionResul
     refused = isinstance(recorded, RecordingRefused)
     return CVESessionResult(
         grades={target_runs.target.cve_id: target_runs.grades for target_runs in runs},
+        audits=[audit for target_runs in runs for audit in target_runs.audits],
         gate=gate,
         orphans=session.orphans(),
         written=[] if refused else recorded,
@@ -177,10 +195,16 @@ async def _run_targets(session: _Session) -> list[_TargetRuns]:
     ]
 
 
-def _target_runs(target: CVETarget, outcomes: Sequence[RunGrade | None]) -> _TargetRuns:
-    grades = [grade for grade in outcomes if grade is not None]
+def _target_runs(target: CVETarget, outcomes: Sequence[GradedAudit | None]) -> _TargetRuns:
+    audits = [
+        CVEAudit(target.cve_id, run_index, outcome.report)
+        for run_index, outcome in enumerate(outcomes)
+        if outcome is not None
+    ]
+    grades = [outcome.grade for outcome in outcomes if outcome is not None]
     # A target with no run is never complete: an empty candidate would read as held.
-    return _TargetRuns(target, grades, completed=bool(grades) and len(grades) == len(outcomes))
+    completed = bool(grades) and len(grades) == len(outcomes)
+    return _TargetRuns(target, grades, completed, audits)
 
 
 async def _gate(session: _Session, runs: list[_TargetRuns]) -> CVEGateResult:
@@ -228,8 +252,8 @@ async def _replayed(
     replays: list[bool | None] = []
     settled = comparison
     while settled.outcome == TargetOutcome.PENDING_REPLAY:
-        grade = await harness.audit(target)
-        replays.append(None if grade is None else grade.status not in DETECTION_RUNGS)
+        audit = await harness.audit(target)
+        replays.append(None if audit is None else audit.grade.status not in DETECTION_RUNGS)
         settled = settle(comparison, replays, baseline.replay_rule)
     return settled
 

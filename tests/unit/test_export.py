@@ -2,7 +2,8 @@ import json
 from pathlib import Path
 
 import tests.unit.support.test_export_given as given
-from evals.export import export_judged_cases
+from evals.cve_session import CVEAudit
+from evals.export import export_cve_judged_cases, export_judged_cases
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
@@ -119,3 +120,37 @@ class TestExportHandlesMissingGroundTruth:
         assert len(records) == 1
         assert records[0]["expected_verdict"] is None
         assert records[0]["correct"] is None
+
+
+class TestCVEExportWritesTheJudgedSingleStepCases:
+    def test_each_line_carries_its_cve_and_run_but_no_expected_verdict(
+        self, tmp_path: Path
+    ) -> None:
+        report = given.a_report_with_a_judged_case_an_unjudged_case_and_a_chain()
+        audits = [CVEAudit("CVE-2025-0001", 0, report), CVEAudit("CVE-2025-0002", 1, report)]
+
+        export_cve_judged_cases(audits, tmp_path / "cve_report.json")
+
+        records = _read_jsonl(tmp_path / "cve_judged_cases.jsonl")
+        assert [(record["cve_id"], record["run_index"]) for record in records] == [
+            ("CVE-2025-0001", 0),
+            ("CVE-2025-0002", 1),
+        ]
+        expected_keys = {
+            "cve_id",
+            "run_index",
+            "type",
+            "tool_name",
+            "tool_description",
+            "category",
+            "description",
+            "arguments",
+            "response",
+            "error",
+            "verdict",
+            "justification",
+        }
+        for record in records:
+            assert set(record.keys()) == expected_keys
+            assert record["type"] == "single_step"
+            assert record["verdict"] == "fail"

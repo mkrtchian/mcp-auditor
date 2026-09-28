@@ -5,7 +5,7 @@ from pathlib import Path
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline, fixture_fingerprint
 from evals.cve_baseline import write_baseline as _write_baseline
 from evals.cve_grammar import CVEStatus, MissClass, RunGrade
-from evals.cve_session import AuditTarget, CVEHarness, CVEOptions
+from evals.cve_session import AuditTarget, CVEHarness, CVEOptions, GradedAudit
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.eval_session import TreeState
 from tests.unit.support.test_cve_gate_given import (
@@ -13,6 +13,7 @@ from tests.unit.support.test_cve_gate_given import (
     an_exploratory_baseline,
     conditions,
 )
+from tests.unit.support.test_cve_grammar_given import a_report
 from tests.unit.support.test_cve_oracle_given import a_detected_grade, a_missed_grade
 
 __all__ = ["a_detected_grade", "conditions"]
@@ -29,15 +30,22 @@ def a_miss() -> RunGrade:
 
 @dataclass
 class ScriptedAudit:
-    """Plays each target's script in order, then detects."""
+    """Plays each target's script in order, then detects. Each report is named after the
+    audit that made it, `audit_name(cve_id, n)` for the target's n-th call."""
 
     scripts: dict[str, list[RunGrade | None]] = field(default_factory=lambda: {})
     calls: list[str] = field(default_factory=lambda: [])
 
-    async def __call__(self, target: CVETarget) -> RunGrade | None:
+    async def __call__(self, target: CVETarget) -> GradedAudit | None:
+        name = audit_name(target.cve_id, self.calls.count(target.cve_id))
         self.calls.append(target.cve_id)
         script = self.scripts.get(target.cve_id)
-        return script.pop(0) if script else a_detected_grade()
+        grade = script.pop(0) if script else a_detected_grade()
+        return None if grade is None else GradedAudit(grade, a_report(target=name))
+
+
+def audit_name(cve_id: str, call: int) -> str:
+    return f"{cve_id} audit {call}"
 
 
 @dataclass
@@ -48,12 +56,12 @@ class OverlappingAudit:
     started: set[str] = field(default_factory=lambda: set[str]())
     all_started: asyncio.Event = field(default_factory=asyncio.Event)
 
-    async def __call__(self, target: CVETarget) -> RunGrade | None:
+    async def __call__(self, target: CVETarget) -> GradedAudit | None:
         self.started.add(target.cve_id)
         if self.started >= self.expected:
             self.all_started.set()
         await self.all_started.wait()
-        return a_detected_grade()
+        return GradedAudit(a_detected_grade(), a_report())
 
 
 def a_harness(audit: AuditTarget, baselines: Path, tree: TreeState | None = None) -> CVEHarness:

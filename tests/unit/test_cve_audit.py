@@ -12,6 +12,7 @@ from evals.cve_audit import (
     graded_or_refused,
 )
 from evals.cve_grammar import CVEStatus, RunGrade
+from evals.cve_session import GradedAudit
 from evals.cve_targets import CVE_TARGETS
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, AuditStep, ProviderUsage, RefusedStep
@@ -51,12 +52,12 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
     monkeypatch: pytest.MonkeyPatch,
 ):
     _captured_console(monkeypatch)
-    detected = a_detected_grade()
-    attempt = _ScriptedAttempts([RefusedAttempt(), detected])
+    graded = GradedAudit(a_detected_grade(), grammar.a_report(target="second attempt"))
+    attempt = _ScriptedAttempts([RefusedAttempt(), graded])
 
-    grade = await graded_despite_refusals(TARGET, attempt)
+    outcome = await graded_despite_refusals(TARGET, attempt)
 
-    assert grade == detected
+    assert outcome is graded
     assert attempt.calls == 2
 
 
@@ -64,7 +65,7 @@ async def test_an_audit_refused_at_every_attempt_is_a_run_not_completed(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = _captured_console(monkeypatch)
-    attempt = _ScriptedAttempts([RefusedAttempt()] * REFUSAL_ATTEMPTS)
+    attempt = _ScriptedAttempts[GradedAudit]([RefusedAttempt()] * REFUSAL_ATTEMPTS)
 
     grade = await graded_despite_refusals(TARGET, attempt)
 
@@ -75,7 +76,7 @@ async def test_an_audit_refused_at_every_attempt_is_a_run_not_completed(
 
 async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
     _captured_console(monkeypatch)
-    attempt = _ScriptedAttempts([None])
+    attempt = _ScriptedAttempts[GradedAudit]([None])
 
     grade = await graded_despite_refusals(TARGET, attempt)
 
@@ -117,12 +118,12 @@ def _refused(report: AuditReport) -> AuditReport:
     return report.model_copy(update={"refused_steps": [refusal]})
 
 
-class _ScriptedAttempts:
-    def __init__(self, outcomes: list[RunGrade | RefusedAttempt | None]) -> None:
+class _ScriptedAttempts[T]:
+    def __init__(self, outcomes: list[T | RefusedAttempt | None]) -> None:
         self._outcomes = outcomes
         self.calls = 0
 
-    async def __call__(self) -> RunGrade | RefusedAttempt | None:
+    async def __call__(self) -> T | RefusedAttempt | None:
         self.calls += 1
         return self._outcomes.pop(0)
 

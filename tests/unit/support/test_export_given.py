@@ -82,3 +82,10 @@ def a_chain_with_leakage_verdict() -> AttackChain:
             severity=Severity.HIGH,
         ),
     )
+
+
+def a_report_with_a_judged_case_an_unjudged_case_and_a_chain() -> AuditReport:
+    return a_report(
+        [a_judged_case(EvalVerdict.FAIL), an_unjudged_case()],
+        chains=[a_chain_with_leakage_verdict()],
+    )

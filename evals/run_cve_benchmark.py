@@ -35,6 +35,7 @@ from evals.cve_targets import (
     image_tag,
 )
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
+from evals.export import export_cve_judged_cases
 from evals.metrics import SessionThrottles
 from mcp_auditor.config import Settings, load_settings
 
@@ -165,6 +166,7 @@ async def _run_graded(
         recording_refused=session.recording_refused,
     )
     _write_reports(report, Path(args.report))
+    export_cve_judged_cases(session.audits, Path(args.report))
     _print_session(session, report)
     if session.recording_refused:
         display.print_refusal(RECORDING_REFUSED, session.recording_refused)

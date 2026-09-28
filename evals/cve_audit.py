@@ -12,7 +12,7 @@ from rich.markup import escape
 from evals.concurrency import bounded, entered_in_thread
 from evals.cve_environments import Launch, connect
 from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, RunGrade, grade_run
-from evals.cve_session import AuditTarget
+from evals.cve_session import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
 from evals.metrics import SessionThrottles, blocked_reasons, refused_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
@@ -46,7 +46,7 @@ def audit_target(budget: int, concurrency: int, throttles: SessionThrottles) -> 
     settings = load_settings()
     auditor = _Auditor(create_llm(settings), create_judge_llm(settings), budget)
 
-    async def audit(target: CVETarget) -> RunGrade | None:
+    async def audit(target: CVETarget) -> GradedAudit | None:
         return await graded_despite_refusals(target, lambda: _attempt(target, auditor, throttles))
 
     return bounded(audit, concurrency)
@@ -57,9 +57,9 @@ class RefusedAttempt:
     """An audit whose report holds a step the model provider refused."""
 
 
-async def graded_despite_refusals(
-    target: CVETarget, attempt: Callable[[], Awaitable[RunGrade | RefusedAttempt | None]]
-) -> RunGrade | None:
+async def graded_despite_refusals[T](
+    target: CVETarget, attempt: Callable[[], Awaitable[T | RefusedAttempt | None]]
+) -> T | None:
     """The first attempt not refused grades the run. None when every attempt is refused."""
     for number in range(1, REFUSAL_ATTEMPTS + 1):
         outcome = await attempt()
@@ -78,8 +78,8 @@ async def graded_despite_refusals(
 
 async def _attempt(
     target: CVETarget, auditor: _Auditor, throttles: SessionThrottles
-) -> RunGrade | RefusedAttempt | None:
-    outcome: RunGrade | RefusedAttempt | None = None
+) -> GradedAudit | RefusedAttempt | None:
+    outcome: GradedAudit | RefusedAttempt | None = None
     try:
         async with entered_in_thread(target.environment()) as launch:
             report = await _audit(launch, target, auditor)
@@ -87,9 +87,10 @@ async def _attempt(
             _print_incidents(target, report)
             # Graded before __exit__ fires so a best-effort teardown error
             # cannot erase a completed run's grade.
-            outcome = graded_or_refused(target, report)
-            if isinstance(outcome, RunGrade):
-                console.print(f"{target.cve_id}: {outcome.status}")
+            grade = graded_or_refused(target, report)
+            if isinstance(grade, RunGrade):
+                console.print(f"{target.cve_id}: {grade.status}")
+            outcome = GradedAudit(grade, report) if isinstance(grade, RunGrade) else grade
     except (LaunchError, subprocess.CalledProcessError) as exc:
         failure = "run skipped" if outcome is None else "teardown failed"
         console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {exc}")
