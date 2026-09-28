@@ -964,6 +964,8 @@ version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
+    { name = "httpx" },
+    { name = "httpx2" },
     { name = "langchain-anthropic" },
     { name = "langchain-core" },
     { name = "langchain-fireworks" },
@@ -991,6 +993,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "httpx2", specifier = ">=2.13.1" },
     { name = "langchain-anthropic", specifier = ">=1.0" },
     { name = "langchain-core", specifier = ">=1.6.4" },
     { name = "langchain-fireworks", specifier = ">=1.6.2" },

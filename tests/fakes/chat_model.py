@@ -1,3 +1,5 @@
+import logging
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -16,17 +18,26 @@ class FakeChatModel:
     """Mimics BaseChatModel.with_structured_output(include_raw=True).
 
     Replays one scripted response per call. An exception in the script is raised.
+    A throttled response first logs an HTTP 429 the way the provider SDK's client does.
     """
 
-    def __init__(self, responses: list[dict[str, Any] | Exception]) -> None:
+    def __init__(self, responses: Sequence["ScriptedResponse"]) -> None:
         self._responses = responses
 
     def with_structured_output(self, *_args: Any, **_kwargs: Any) -> "_FakeStructuredOutput":
         return _FakeStructuredOutput(self._responses)
 
 
+@dataclass(frozen=True)
+class Throttled:
+    response: dict[str, Any]
+
+
+type ScriptedResponse = dict[str, Any] | Exception | Throttled
+
+
 class _FakeStructuredOutput:
-    def __init__(self, responses: list[dict[str, Any] | Exception]) -> None:
+    def __init__(self, responses: Sequence[ScriptedResponse]) -> None:
         self._responses = list(responses)
         self._call_index = 0
 
@@ -35,7 +46,21 @@ class _FakeStructuredOutput:
         self._call_index += 1
         if isinstance(response, Exception):
             raise response
+        if isinstance(response, Throttled):
+            _log_throttled_request()
+            return response.response
         return response
+
+
+def _log_throttled_request() -> None:
+    logging.getLogger("httpx2").info(
+        'HTTP Request: %s %s "%s %d %s"',
+        "POST",
+        "https://provider.test/v1/responses",
+        "HTTP/1.1",
+        429,
+        "Too Many Requests",
+    )
 
 
 def raw_response(

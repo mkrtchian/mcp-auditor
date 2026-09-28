@@ -3,10 +3,11 @@ import pytest
 from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput, make_chat_model
+from mcp_auditor.adapters.throttling import install_throttle_log_handler
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import UnparseableOutput
-from tests.fakes.chat_model import FakeChatModel, raw_response, truncated
+from tests.fakes.chat_model import FakeChatModel, Throttled, raw_response, truncated
 
 
 class _DummyOutput(BaseModel):
@@ -170,6 +171,31 @@ class TestTruncatedOutput:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.truncated_attempts == 1
+
+
+class TestThrottledRequests:
+    @pytest.mark.asyncio
+    async def test_a_throttled_request_is_counted_in_the_usage(self):
+        install_throttle_log_handler()
+        responses = [Throttled(raw_response(_DummyOutput(value="ok"), 100, 50))]
+        llm = LLM(FakeChatModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=3)
+
+        _, usage = await llm.generate_structured("prompt", _DummyOutput)
+
+        assert usage.throttled_requests == 1
+
+    @pytest.mark.asyncio
+    async def test_throttled_requests_are_summed_across_parse_attempts(self):
+        install_throttle_log_handler()
+        responses = [
+            Throttled(raw_response({"unexpected": 1}, 100, 50)),
+            Throttled(raw_response({"value": "ok"}, 100, 50)),
+        ]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        _, usage = await llm.generate_structured("prompt", _DummyOutput)
+
+        assert usage.throttled_requests == 2
 
 
 class TestMakeChatModel:

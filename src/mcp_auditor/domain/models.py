@@ -199,6 +199,7 @@ class ProviderUsage(BaseModel):
     output_tokens: int = 0
     cached_input_tokens: int = 0  # subset of input_tokens
     reasoning_tokens: int = 0  # subset of output_tokens
+    throttled_requests: int = 0
 
     def add(self, other: "ProviderUsage") -> "ProviderUsage":
         return ProviderUsage(
@@ -206,6 +207,7 @@ class ProviderUsage(BaseModel):
             output_tokens=self.output_tokens + other.output_tokens,
             cached_input_tokens=self.cached_input_tokens + other.cached_input_tokens,
             reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
+            throttled_requests=self.throttled_requests + other.throttled_requests,
         )
 
 

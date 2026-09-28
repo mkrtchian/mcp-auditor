@@ -11,6 +11,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, SecretStr, ValidationError
 
 from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
+from mcp_auditor.adapters.throttling import counting_throttles, install_throttle_log_handler
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
@@ -25,6 +26,7 @@ def create_judge_llm(settings: Settings) -> "LLM":
 
 
 def _create_for_provider(settings: Settings, model: str) -> "LLM":
+    install_throttle_log_handler()
     chat_model = make_chat_model(settings, model)
     return LLM(chat_model, _STRUCTURED_OUTPUT[settings.provider], max_parse_attempts=3)
 
@@ -174,8 +176,8 @@ class LLM:
         accumulated_usage = ProviderUsage()
         truncated_attempts = 0
         for _attempt in range(self._max_parse_attempts):
-            raw_response = await _invoke(structured, prompt, accumulated_usage)
-            attempt = self._unpack_raw_response(raw_response)
+            raw_response, throttled_requests = await _invoke(structured, prompt, accumulated_usage)
+            attempt = self._unpack_raw_response(raw_response, throttled_requests)
             accumulated_usage = accumulated_usage.add(attempt.usage)
             if attempt.refusal is not None:
                 raise ProviderRefusal(attempt.refusal, accumulated_usage)
@@ -197,7 +199,7 @@ class LLM:
             output_schema, method=method, include_raw=True
         )
 
-    def _unpack_raw_response(self, raw_response: object) -> "_Attempt":
+    def _unpack_raw_response(self, raw_response: object, throttled_requests: int) -> "_Attempt":
         """Langchain's include_raw=True returns {"raw": AIMessage, "parsed": BaseModel}.
 
         Single coupling point with that contract.
@@ -207,7 +209,7 @@ class LLM:
         metadata: _UsageMetadata | None = raw_message.usage_metadata
         return _Attempt(
             parsed=response["parsed"],
-            usage=_to_provider_usage(metadata),
+            usage=_to_provider_usage(metadata, throttled_requests),
             truncated=_was_truncated(raw_message.response_metadata),
             refusal=refusal_from_metadata(raw_message),
         )
@@ -223,14 +225,17 @@ class _Attempt:
 
 async def _invoke(
     structured: Runnable[str, object], prompt: str, usage_so_far: ProviderUsage
-) -> object:
-    try:
-        return await structured.ainvoke(prompt)
-    except Exception as error:
-        refusal = refusal_from_error(error)
-        if refusal is None:
-            raise
-        raise ProviderRefusal(refusal, usage_so_far) from error
+) -> tuple[object, int]:
+    with counting_throttles() as tally:
+        try:
+            raw_response = await structured.ainvoke(prompt)
+        except Exception as error:
+            refusal = refusal_from_error(error)
+            if refusal is None:
+                raise
+            usage = usage_so_far.add(ProviderUsage(throttled_requests=tally.requests))
+            raise ProviderRefusal(refusal, usage) from error
+    return raw_response, tally.requests
 
 
 def _was_truncated(response_metadata: dict[str, Any]) -> bool:
@@ -250,12 +255,13 @@ def _validated[T: BaseModel](parsed: object, output_schema: type[T]) -> T | None
         return None
 
 
-def _to_provider_usage(metadata: _UsageMetadata | None) -> ProviderUsage:
+def _to_provider_usage(metadata: _UsageMetadata | None, throttled_requests: int) -> ProviderUsage:
     if metadata is None:
-        return ProviderUsage()
+        return ProviderUsage(throttled_requests=throttled_requests)
     return ProviderUsage(
         input_tokens=metadata["input_tokens"],
         output_tokens=metadata["output_tokens"],
         cached_input_tokens=metadata.get("input_token_details", {}).get("cache_read", 0),
         reasoning_tokens=metadata.get("output_token_details", {}).get("reasoning", 0),
+        throttled_requests=throttled_requests,
     )
