@@ -179,6 +179,9 @@ uv run python -m evals.run_cve_benchmark --record-baseline
 # Graded run without the comparison.
 uv run python -m evals.run_cve_benchmark --ungated
 
+# Audits run six at a time by default; --concurrency sets how many, 1 runs them one after the other.
+uv run python -m evals.run_cve_benchmark --concurrency 1
+
 # Optional: restrict any mode to specific CVEs with --cve (repeatable).
 uv run python -m evals.run_cve_benchmark --cve CVE-2025-53109 --cve CVE-2025-53355 --runs 1 --budget 10
 ```

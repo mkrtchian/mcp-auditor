@@ -76,6 +76,12 @@ def test_render_opens_with_the_run_conditions():
     assert given.FINGERPRINT[:13] not in conditions
 
 
+def test_render_states_the_concurrency_on_the_conditions_line():
+    markdown = render_markdown(given.a_benchmark_report([]))
+
+    assert f"{given.CONCURRENCY} audits at once" in markdown.splitlines()[0]
+
+
 def test_render_header_names_the_ladder_columns():
     markdown = render_markdown(given.a_benchmark_report([]))
 

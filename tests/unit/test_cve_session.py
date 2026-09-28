@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 
 import pytest
@@ -151,3 +152,31 @@ async def test_a_file_of_a_target_no_longer_benchmarked_is_orphaned_and_not_comp
     assert result.gate is not None
     assert [comparison.cve_id for comparison in result.gate.targets] == [given.KUBERNETES.cve_id]
     assert result.gate.verdict == CVEGateVerdict.GREEN
+
+
+async def test_the_runs_of_two_targets_overlap(tmp_path: Path):
+    targets = [given.KUBERNETES, given.SYMLINK]
+    audit = given.OverlappingAudit({target.cve_id for target in targets})
+
+    async with asyncio.timeout(1):
+        result = await run_gated(given.options(targets=targets), given.a_harness(audit, tmp_path))
+
+    assert [len(grades) for grades in result.grades.values()] == [3, 3]
+
+
+async def test_two_gated_targets_missed_once_settle_their_replays_in_target_order(tmp_path: Path):
+    targets = [given.KUBERNETES, given.SYMLINK]
+    for target in targets:
+        given.a_gated_file(tmp_path, target)
+    audit = given.ScriptedAudit({target.cve_id: [given.a_miss()] for target in targets})
+
+    result = await run_gated(given.options(targets=targets), given.a_harness(audit, tmp_path))
+
+    assert result.gate is not None
+    assert [comparison.cve_id for comparison in result.gate.targets] == [
+        target.cve_id for target in targets
+    ]
+    assert [comparison.outcome for comparison in result.gate.targets] == [
+        TargetOutcome.MISS_NOT_REPRODUCED
+    ] * 2
+    assert [comparison.replays for comparison in result.gate.targets] == [[False, False]] * 2

@@ -34,3 +34,15 @@ def test_a_calibration_that_cannot_reach_docker_exits_as_a_crash(
         run_cve_benchmark.main()
 
     assert exit_.value.code == 4
+
+
+def test_a_concurrency_below_one_is_refused_by_the_parser(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    monkeypatch.setattr("sys.argv", ["run_cve_benchmark", "--concurrency", "0"])
+
+    with pytest.raises(SystemExit) as exit_:
+        run_cve_benchmark.main()
+
+    assert exit_.value.code == 2
+    assert "--concurrency: expected at least 1" in capsys.readouterr().err

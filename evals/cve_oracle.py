@@ -54,6 +54,7 @@ class CVEResult(BaseModel):
 
 class CVEBenchmarkReport(BaseModel):
     conditions: CVERunConditions
+    concurrency: int  # an execution setting, never compared nor recorded in a baseline
     results: list[CVEResult]
     gate: CVEGateResult | None = None
     recording_refused: list[str] = []
@@ -120,7 +121,7 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
         refusal = ["", "Recording refused, no baseline written:", *refusal]
     return "\n".join(
         [
-            _render_conditions(report.conditions),
+            _render_conditions(report.conditions, report.concurrency),
             "",
             header,
             separator,
@@ -133,14 +134,14 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
     )
 
 
-def _render_conditions(conditions: CVERunConditions) -> str:
+def _render_conditions(conditions: CVERunConditions, concurrency: int) -> str:
     model = _with_reasoning(conditions.model, conditions.reasoning)
     judge = _with_reasoning(conditions.judge_model, conditions.judge_reasoning)
     tools = "tools filtered" if conditions.tools_filtered else "all tools"
     return (
         f"Conditions: {conditions.provider}, model {model}, judge {judge}, "
         f"{conditions.runs} runs, budget {conditions.budget}, {tools}, "
-        f"grammar {conditions.grammar_fingerprint[:12]}."
+        f"grammar {conditions.grammar_fingerprint[:12]}, {concurrency} audits at once."
     )
 
 

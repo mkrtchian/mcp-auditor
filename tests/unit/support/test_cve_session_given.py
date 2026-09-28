@@ -1,10 +1,11 @@
+import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline, fixture_fingerprint
 from evals.cve_baseline import write_baseline as _write_baseline
 from evals.cve_grammar import CVEStatus, MissClass, RunGrade
-from evals.cve_session import CVEHarness, CVEOptions
+from evals.cve_session import AuditTarget, CVEHarness, CVEOptions
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.eval_session import TreeState
 from tests.unit.support.test_cve_gate_given import (
@@ -39,7 +40,23 @@ class ScriptedAudit:
         return script.pop(0) if script else a_detected_grade()
 
 
-def a_harness(audit: ScriptedAudit, baselines: Path, tree: TreeState | None = None) -> CVEHarness:
+@dataclass
+class OverlappingAudit:
+    """Detects once every expected target has started an audit, and waits until then."""
+
+    expected: set[str]
+    started: set[str] = field(default_factory=lambda: set[str]())
+    all_started: asyncio.Event = field(default_factory=asyncio.Event)
+
+    async def __call__(self, target: CVETarget) -> RunGrade | None:
+        self.started.add(target.cve_id)
+        if self.started >= self.expected:
+            self.all_started.set()
+        await self.all_started.wait()
+        return a_detected_grade()
+
+
+def a_harness(audit: AuditTarget, baselines: Path, tree: TreeState | None = None) -> CVEHarness:
     return CVEHarness(
         audit=audit,
         baselines=baselines,

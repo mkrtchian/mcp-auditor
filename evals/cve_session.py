@@ -1,6 +1,7 @@
 """One gated CVE benchmark run (ADR 024): the runs, the replays of fallen gated targets, and
 the recording, with git, Docker, the clock and the baseline directory injected."""
 
+import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,7 +45,8 @@ from evals.eval_session import (
 from evals.recording import RecordingRefused
 
 type AuditTarget = Callable[[CVETarget], Awaitable[RunGrade | None]]
-"""One audit of one target, None when it did not complete (launch or infra failure)."""
+"""One audit of one target, None when it did not complete (launch or infra failure). The
+session may call it concurrently: it decides itself how many audits run at once."""
 
 type Baselines = dict[str, CVETargetBaseline]
 
@@ -112,7 +114,7 @@ _BENCHMARKED = frozenset(target.cve_id for target in CVE_TARGETS)
 async def run_gated(options: CVEOptions, harness: CVEHarness) -> CVESessionResult:
     """Raises Refused on a run that cannot be compared or recorded before it starts."""
     session = _open(options, harness)
-    runs = [await _run_target(target, session) for target in options.targets]
+    runs = await _run_targets(session)
     gate = None if options.ungated else await _gate(session, runs)
     recorded = _record(session, runs, gate) if gate is not None else []
     refused = isinstance(recorded, RecordingRefused)
@@ -162,25 +164,49 @@ def _recording_tree(session: _Session) -> TreeState:
     return tree
 
 
-async def _run_target(target: CVETarget, session: _Session) -> _TargetRuns:
-    runs = session.options.conditions.runs
-    outcomes = [await session.harness.audit(target) for _ in range(runs)]
+async def _run_targets(session: _Session) -> list[_TargetRuns]:
+    count = session.options.conditions.runs
+    targets = session.options.targets
+    # gather keeps submission order, so each target's runs keep the order of a sequence.
+    outcomes = await asyncio.gather(
+        *(session.harness.audit(target) for target in targets for _ in range(count))
+    )
+    return [
+        _target_runs(target, outcomes[index * count : (index + 1) * count])
+        for index, target in enumerate(targets)
+    ]
+
+
+def _target_runs(target: CVETarget, outcomes: Sequence[RunGrade | None]) -> _TargetRuns:
     grades = [grade for grade in outcomes if grade is not None]
     # A target with no run is never complete: an empty candidate would read as held.
-    return _TargetRuns(target, grades, completed=bool(grades) and len(grades) == runs)
+    return _TargetRuns(target, grades, completed=bool(grades) and len(grades) == len(outcomes))
 
 
 async def _gate(session: _Session, runs: list[_TargetRuns]) -> CVEGateResult:
     baselines = session.baselines()
     mismatches = condition_mismatches(baselines, session.options.conditions)
-    comparisons: list[TargetComparison] = []
-    for target_runs in runs:
-        baseline = baselines.get(target_runs.target.cve_id)
-        comparison = compare_target(baseline, _candidate(target_runs))
-        if baseline is not None and not mismatches:
-            comparison = await _replayed(comparison, target_runs.target, baseline, session.harness)
-        comparisons.append(comparison)
+    comparisons = [
+        compare_target(baselines.get(target_runs.target.cve_id), _candidate(target_runs))
+        for target_runs in runs
+    ]
+    if not mismatches:
+        comparisons = await asyncio.gather(
+            *(
+                _settled(comparison, target_runs.target, session)
+                for comparison, target_runs in zip(comparisons, runs, strict=True)
+            )
+        )
     return judge(comparisons, mismatches)
+
+
+async def _settled(
+    comparison: TargetComparison, target: CVETarget, session: _Session
+) -> TargetComparison:
+    baseline = session.baselines().get(target.cve_id)
+    if baseline is None:
+        return comparison
+    return await _replayed(comparison, target, baseline, session.harness)
 
 
 def _candidate(target_runs: _TargetRuns) -> TargetCandidate:

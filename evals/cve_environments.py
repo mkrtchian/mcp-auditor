@@ -26,8 +26,12 @@ Setup calls (`docker network create`, sidecar `run -d`, seeding) run with
 `check=True` so a failure raises before the yield: the runner maps that to a
 skipped run. Teardown calls (`docker network rm`, `docker stop`) are
 best-effort: a cleanup error must never raise out of `__exit__` and turn a run
-that already produced a report into a skip. Orphans left by a failed teardown
-carry the `mcp-auditor-cve` label; sweep them with:
+that already produced a report into a skip. The benchmark enters and leaves
+these environments in a worker thread (`entered_in_thread`): leaving the SSRF
+environment stops a sidecar that ignores SIGTERM, so `docker stop` waits its
+10 s grace period, which would freeze every other audit on the event loop.
+Orphans left by a failed teardown carry the `mcp-auditor-cve` label; sweep them
+with:
 
     docker rm -f $(docker ps -aq --filter label=mcp-auditor-cve)
 """

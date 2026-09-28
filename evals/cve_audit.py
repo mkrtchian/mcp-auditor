@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from rich.console import Console
 from rich.markup import escape
 
+from evals.concurrency import bounded, entered_in_thread
 from evals.cve_environments import Launch, connect
 from evals.cve_grammar import RunGrade, grade_run
 from evals.cve_session import AuditTarget
@@ -35,7 +36,7 @@ class _Auditor:
     budget: int
 
 
-def audit_target(budget: int) -> AuditTarget:
+def audit_target(budget: int, concurrency: int) -> AuditTarget:
     # Built once, before any container: a bad model configuration is a crash, never a
     # run skipped, which would read as a gate that cannot compare.
     settings = load_settings()
@@ -44,18 +45,19 @@ def audit_target(budget: int) -> AuditTarget:
     async def audit(target: CVETarget) -> RunGrade | None:
         grade: RunGrade | None = None
         try:
-            with target.environment() as launch:
+            async with entered_in_thread(target.environment()) as launch:
                 report = await _audit(launch, target, auditor)
                 # Graded before __exit__ fires so a best-effort teardown error
                 # cannot erase a completed run's grade.
                 grade = grade_run(target, report)
                 _print_incidents(target, report)
+                console.print(f"{target.cve_id}: {grade.status}")
         except (LaunchError, subprocess.CalledProcessError) as exc:
             outcome = "run skipped" if grade is None else "teardown failed"
             console.print(f"[yellow]{target.cve_id} {outcome}:[/yellow] {exc}")
         return grade
 
-    return audit
+    return bounded(audit, concurrency)
 
 
 def _print_incidents(target: CVETarget, report: AuditReport) -> None:

@@ -13,6 +13,7 @@ from rich.console import Console
 from evals import cve_grammar, cve_units
 from evals import eval_display as display
 from evals.baseline import BaselineStatus, fingerprint_sources
+from evals.concurrency import positive_int
 from evals.cve_audit import audit_target
 from evals.cve_baseline import CVE_BASELINE_DIRECTORY, CVERunConditions
 from evals.cve_calibration import calibrate_all
@@ -38,6 +39,7 @@ from mcp_auditor.config import Settings, load_settings
 
 CVE_RUNS = 3
 CVE_TEST_BUDGET = 10
+CVE_CONCURRENCY = 6
 DEFAULT_REPORT_PATH = "output/cve_report.json"
 NOT_COMPARABLE_EXIT = 3
 CRASHED_EXIT = 4
@@ -94,6 +96,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--budget", type=int, default=CVE_TEST_BUDGET)
     parser.add_argument("--report", type=str, default=DEFAULT_REPORT_PATH)
     parser.add_argument(
+        "--concurrency",
+        type=positive_int,
+        default=CVE_CONCURRENCY,
+        help="Audits in flight at once; 1 runs them one after the other.",
+    )
+    parser.add_argument(
         "--calibrate",
         action="store_true",
         help=(
@@ -141,11 +149,12 @@ async def _run_graded(
 ) -> int:
     conditions = _run_conditions(load_settings(), args.runs, args.budget)
     options = CVEOptions(graded, conditions, args.ungated, args.record_baseline)
-    session = await run_gated(options, _harness(args.budget))
+    session = await run_gated(options, _harness(args.budget, args.concurrency))
     results = [_result(target, session.grades[target.cve_id], args.budget) for target in graded]
     results.extend(out_of_scope_results(tracked))
     report = CVEBenchmarkReport(
         conditions=conditions,
+        concurrency=args.concurrency,
         results=results,
         gate=session.gate,
         recording_refused=session.recording_refused,
@@ -162,9 +171,9 @@ def _result(target: CVETarget, grades: list[RunGrade], budget: int) -> CVEResult
     return not_run(target) if not grades else result_for(target, grades, budget)
 
 
-def _harness(budget: int) -> CVEHarness:
+def _harness(budget: int, concurrency: int) -> CVEHarness:
     return CVEHarness(
-        audit=audit_target(budget),
+        audit=audit_target(budget, concurrency),
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
         image_ids=_image_ids,
