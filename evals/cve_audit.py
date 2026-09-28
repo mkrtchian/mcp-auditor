@@ -29,22 +29,23 @@ class LaunchError(Exception):
 
 
 @dataclass(frozen=True)
-class _Models:
+class _Auditor:
     llm: LLMPort
     judge_llm: LLMPort
+    budget: int
 
 
 def audit_target(budget: int) -> AuditTarget:
     # Built once, before any container: a bad model configuration is a crash, never a
     # run skipped, which would read as a gate that cannot compare.
     settings = load_settings()
-    models = _Models(create_llm(settings), create_judge_llm(settings))
+    auditor = _Auditor(create_llm(settings), create_judge_llm(settings), budget)
 
     async def audit(target: CVETarget) -> RunGrade | None:
         grade: RunGrade | None = None
         try:
             with target.environment() as launch:
-                report = await _audit(launch, target, models, budget)
+                report = await _audit(launch, target, auditor)
                 # Graded before __exit__ fires so a best-effort teardown error
                 # cannot erase a completed run's grade.
                 grade = grade_run(target, report)
@@ -66,19 +67,19 @@ def _print_incidents(target: CVETarget, report: AuditReport) -> None:
         )
 
 
-async def _audit(launch: Launch, target: CVETarget, models: _Models, budget: int) -> AuditReport:
+async def _audit(launch: Launch, target: CVETarget, auditor: _Auditor) -> AuditReport:
     try:
         async with _silent_client(launch) as mcp_client:
             graph = build_graph(
-                models.llm,
+                auditor.llm,
                 AuditedServer(mcp_client),
-                judge_llm=models.judge_llm,
+                judge_llm=auditor.judge_llm,
                 tools_filter=target.tools_filter,
             )
             result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
                 {
                     "target": f"{launch.command} {' '.join(launch.args)}",
-                    "test_budget": budget,
+                    "test_budget": auditor.budget,
                     "attack_context": AttackContext(),
                     "chain_budget": launch.chain_budget,
                     "max_chain_steps": launch.max_chain_steps,
