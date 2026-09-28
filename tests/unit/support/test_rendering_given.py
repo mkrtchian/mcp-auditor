@@ -11,10 +11,10 @@ from mcp_auditor.domain.models import (
     EvalVerdict,
     ExecutionRecord,
     ExecutionRegime,
+    ProviderUsage,
     RefusedStep,
     Severity,
     TestCase,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
 )
@@ -59,7 +59,7 @@ def a_two_tool_report() -> AuditReport:
             a_tool_report("get_user", get_user_results),
             a_tool_report("list_items", list_items_results),
         ],
-        token_usage=TokenUsage(input_tokens=15234, output_tokens=8421),
+        provider_usage=ProviderUsage(input_tokens=15234, output_tokens=8421),
     )
 
 
@@ -267,13 +267,13 @@ def a_report_with_execution(record: ExecutionRecord) -> AuditReport:
 def a_report(
     target: str,
     tool_reports: list[ToolReport],
-    token_usage: TokenUsage | None = None,
+    provider_usage: ProviderUsage | None = None,
     execution: ExecutionRecord | None = None,
 ) -> AuditReport:
     return AuditReport(
         target=target,
         tool_reports=tool_reports,
-        token_usage=token_usage or TokenUsage(),
+        provider_usage=provider_usage or ProviderUsage(),
         execution=execution,
     )
 

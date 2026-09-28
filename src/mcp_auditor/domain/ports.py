@@ -2,7 +2,7 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain.models import TokenUsage, ToolDefinition, ToolResponse
+from mcp_auditor.domain.models import ProviderUsage, ToolDefinition, ToolResponse
 
 
 class MCPClientPort(Protocol):
@@ -17,7 +17,7 @@ class MCPClientPort(Protocol):
 class UnparseableOutput(ValueError):
     """The model answered, but no attempt matched the requested schema."""
 
-    def __init__(self, attempts: int, truncated_attempts: int, usage: TokenUsage):
+    def __init__(self, attempts: int, truncated_attempts: int, usage: ProviderUsage):
         super().__init__(f"LLM returned unparseable output after {attempts} attempts")
         self.truncated_attempts = truncated_attempts
         self.usage = usage
@@ -28,7 +28,7 @@ class ProviderRefusal(Exception):
     before or instead of a model answer.
     """
 
-    def __init__(self, provider_message: str, usage: TokenUsage):
+    def __init__(self, provider_message: str, usage: ProviderUsage):
         super().__init__(provider_message)
         self.provider_message = provider_message
         self.usage = usage
@@ -37,4 +37,4 @@ class ProviderRefusal(Exception):
 class LLMPort(Protocol):
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]: ...
+    ) -> tuple[T, ProviderUsage]: ...

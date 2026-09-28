@@ -6,9 +6,9 @@ from mcp_auditor.domain import (
     ChainPlanBatch,
     EvalResult,
     EvalVerdict,
+    ProviderUsage,
     Severity,
     StepObservation,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
 )
@@ -66,7 +66,7 @@ class TestAuditReportChainFindings:
         report = AuditReport(
             target="test",
             tool_reports=[ToolReport(tool=tool, cases=[], chains=[chain])],
-            token_usage=TokenUsage(),
+            provider_usage=ProviderUsage(),
         )
 
         assert len(report.findings) == 1
@@ -90,7 +90,7 @@ class TestAuditReportChainFindings:
         report = AuditReport(
             target="test",
             tool_reports=[ToolReport(tool=tool, cases=[], chains=[chain])],
-            token_usage=TokenUsage(),
+            provider_usage=ProviderUsage(),
         )
 
         assert len(report.findings) == 0

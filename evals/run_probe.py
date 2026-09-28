@@ -31,7 +31,7 @@ from evals.probe_subset import (
 )
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.domain.coverage import find_coverage_gap
-from mcp_auditor.domain.models import AuditCategory, CoverageGap, TestCaseBatch, TokenUsage
+from mcp_auditor.domain.models import AuditCategory, CoverageGap, ProviderUsage, TestCaseBatch
 from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, UnparseableOutput
 
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
@@ -157,7 +157,7 @@ def _rotation(models: list[CandidateModels], call_index: int) -> list[CandidateM
 
 async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> ProbeObservation:
     llm = models.judge if call.role == "judge" else models.main
-    outcome, usage, output, error = CallOutcome.PARSED, TokenUsage(), None, None
+    outcome, usage, output, error = CallOutcome.PARSED, ProviderUsage(), None, None
     truncated_attempts = 0
     started = time.perf_counter()
     try:

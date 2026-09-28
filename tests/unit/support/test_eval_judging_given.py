@@ -4,7 +4,7 @@ from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
 from evals.judging import RunsOutcome
 from evals.metrics import VerdictMap, build_run_detail
 from evals.replay import Replayer
-from mcp_auditor.domain.models import AuditReport, EvalVerdict, TokenUsage
+from mcp_auditor.domain.models import AuditReport, EvalVerdict, ProviderUsage
 from tests.unit.support.test_eval_replay_given import FakeAudit, a_replay
 from tests.unit.support.test_eval_session_given import a_baseline_at_ci_conditions, a_session
 
@@ -26,7 +26,7 @@ def runs_missing_the_flipped_cell(completed: int = 3) -> RunsOutcome:
 
 
 def an_outcome(verdict_maps: list[VerdictMap]) -> RunsOutcome:
-    report = AuditReport(target="evals", tool_reports=[], token_usage=TokenUsage())
+    report = AuditReport(target="evals", tool_reports=[], provider_usage=ProviderUsage())
     return RunsOutcome(
         details=[
             build_run_detail(index, verdicts, report, MERGED_GROUND_TRUTH)

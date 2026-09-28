@@ -12,9 +12,9 @@ from mcp_auditor.domain.models import (
     ChainStep,
     EvalResult,
     EvalVerdict,
+    ProviderUsage,
     Severity,
     TestCase,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
 )
@@ -117,7 +117,7 @@ def a_report(
         cases=cases or [],
         chains=chains or [],
     )
-    return AuditReport(target=target, tool_reports=[tool_report], token_usage=TokenUsage())
+    return AuditReport(target=target, tool_reports=[tool_report], provider_usage=ProviderUsage())
 
 
 def a_detected_run() -> RunGrade:

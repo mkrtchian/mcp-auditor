@@ -18,7 +18,7 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AttackContext, AuditReport, TokenUsage
+from mcp_auditor.domain.models import AttackContext, AuditReport, ProviderUsage
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
 
@@ -80,13 +80,13 @@ async def audit_honeypots(audit: HoneypotAudit) -> tuple[VerdictMap, AuditReport
         raise failures.exceptions[0] from None
     reports = [task.result() for task in tasks]
     verdicts: VerdictMap = {}
-    merged = AuditReport(target="evals", tool_reports=[], token_usage=TokenUsage())
+    merged = AuditReport(target="evals", tool_reports=[], provider_usage=ProviderUsage())
     for report in reports:
         verdicts.update(aggregate_verdicts(report))
         merged = AuditReport(
             target=merged.target,
             tool_reports=[*merged.tool_reports, *report.tool_reports],
-            token_usage=merged.token_usage.add(report.token_usage),
+            provider_usage=merged.provider_usage.add(report.provider_usage),
             refused_steps=[*merged.refused_steps, *report.refused_steps],
         )
     return verdicts, merged

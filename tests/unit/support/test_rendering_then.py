@@ -4,7 +4,7 @@ import json
 def json_has_expected_structure(json_str: str, expected_tool_count: int) -> None:
     data = json.loads(json_str)
     assert len(data["tool_reports"]) == expected_tool_count
-    assert "token_usage" in data
+    assert "provider_usage" in data
 
 
 def json_has_enum_strings(json_str: str) -> None:

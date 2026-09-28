@@ -14,10 +14,10 @@ from mcp_auditor.domain.models import (
     CoverageGap,
     EvalResult,
     Judgment,
+    ProviderUsage,
     RefusedStep,
     TestCase,
     TestCaseBatch,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
     filter_tools,
@@ -68,7 +68,7 @@ class GenerationRequest:
 @dataclass(frozen=True)
 class GenerationOutcome:
     batch: TestCaseBatch
-    usages: list[TokenUsage]
+    usages: list[ProviderUsage]
     refused_steps: list[RefusedStep] = field(default_factory=list[RefusedStep])
 
     @property
@@ -101,7 +101,7 @@ def make_generate_test_cases(llm: LLMPort):
         return {
             "pending_cases": [TestCase(payload=p) for p in outcome.batch.cases],
             "judged_cases": [],
-            "token_usage": outcome.usages,
+            "provider_usage": outcome.usages,
             "coverage_gap": request.gap_in(outcome.batch),
             "refused_steps": outcome.refused_steps,
         }
@@ -175,7 +175,7 @@ def make_judge_response(llm: LLMPort):
             severity=judgment.severity,
         )
         judged_case = case.model_copy(update={"eval_result": eval_result})
-        return {"judged_cases": [judged_case], "current_case": None, "token_usage": [usage]}
+        return {"judged_cases": [judged_case], "current_case": None, "provider_usage": [usage]}
 
     return judge_response
 
@@ -203,7 +203,7 @@ def make_extract_attack_context(llm: LLMPort):
         if isinstance(answer, Refused):
             return {"attack_context": existing_context, **answer.state_update()}
         new_context, usage = answer
-        return {"attack_context": new_context, "token_usage": [usage]}
+        return {"attack_context": new_context, "provider_usage": [usage]}
 
     return extract_attack_context
 
@@ -211,18 +211,18 @@ def make_extract_attack_context(llm: LLMPort):
 async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
     target = state["target"]
     reports = state.get("tool_reports", [])
-    usage = _sum_token_usage(state.get("token_usage", []))
+    usage = _sum_provider_usage(state.get("provider_usage", []))
     report = AuditReport(
         target=target,
         tool_reports=reports,
-        token_usage=usage,
+        provider_usage=usage,
         refused_steps=state.get("refused_steps", []),
     )
     return {"audit_report": report}
 
 
-def _sum_token_usage(usages: list[TokenUsage]) -> TokenUsage:
-    total = TokenUsage()
+def _sum_provider_usage(usages: list[ProviderUsage]) -> ProviderUsage:
+    total = ProviderUsage()
     for u in usages:
         total = total.add(u)
     return total

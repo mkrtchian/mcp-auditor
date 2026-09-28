@@ -7,9 +7,9 @@ from mcp_auditor.domain import (
     CoverageGap,
     EvalResult,
     EvalVerdict,
+    ProviderUsage,
     Severity,
     TestCase,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
 )
@@ -52,7 +52,7 @@ def a_report_with_finding(severity: Severity) -> AuditReport:
     return AuditReport(
         target="test",
         tool_reports=[ToolReport(tool=a_tool(), cases=[case])],
-        token_usage=TokenUsage(),
+        provider_usage=ProviderUsage(),
     )
 
 
@@ -62,7 +62,7 @@ def a_report(
     return AuditReport(
         target="test",
         tool_reports=[ToolReport(tool=a_tool(), cases=[], coverage_gap=coverage_gap)],
-        token_usage=TokenUsage(),
+        provider_usage=ProviderUsage(),
         refused_steps=refused_steps or [],
     )
 

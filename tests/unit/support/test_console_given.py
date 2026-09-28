@@ -11,10 +11,10 @@ from mcp_auditor.domain.models import (
     CoverageGap,
     EvalResult,
     EvalVerdict,
+    ProviderUsage,
     RefusedStep,
     Severity,
     TestCase,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
 )
@@ -113,7 +113,7 @@ def a_report_with_two_tools() -> AuditReport:
                 ],
             ),
         ],
-        token_usage=TokenUsage(input_tokens=1234, output_tokens=567),
+        provider_usage=ProviderUsage(input_tokens=1234, output_tokens=567),
     )
 
 
@@ -183,5 +183,5 @@ def _a_report(tool_reports: list[ToolReport]) -> AuditReport:
     return AuditReport(
         target="python server.py",
         tool_reports=tool_reports,
-        token_usage=TokenUsage(input_tokens=100, output_tokens=50),
+        provider_usage=ProviderUsage(input_tokens=100, output_tokens=50),
     )

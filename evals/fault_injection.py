@@ -17,28 +17,28 @@ from mcp_auditor.domain.models import (
     ChainPlanBatch,
     EvalVerdict,
     Judgment,
+    ProviderUsage,
     Severity,
     StepObservation,
     TestCaseBatch,
-    TokenUsage,
 )
 from mcp_auditor.domain.ports import LLMPort, ProviderRefusal
 
-_NO_USAGE = TokenUsage()
+_NO_USAGE = ProviderUsage()
 _CHAIN_SCHEMAS: tuple[type[BaseModel], ...] = (ChainPlanBatch, StepObservation, AuditPayload)
 
 
 class PassingJudge:
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         return _judgment(output_schema, EvalVerdict.PASS)
 
 
 class FailingJudge:
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         return _judgment(output_schema, EvalVerdict.FAIL)
 
 
@@ -50,7 +50,7 @@ class RandomJudge:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         verdict = EvalVerdict.FAIL if self._draws.random() < 0.5 else EvalVerdict.PASS
         return _judgment(output_schema, verdict)
 
@@ -60,11 +60,13 @@ class SilentJudge:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         raise ProviderRefusal("fault injection: the judge refuses every case", _NO_USAGE)
 
 
-def _judgment[T: BaseModel](output_schema: type[T], verdict: EvalVerdict) -> tuple[T, TokenUsage]:
+def _judgment[T: BaseModel](
+    output_schema: type[T], verdict: EvalVerdict
+) -> tuple[T, ProviderUsage]:
     # The judge role is asked for a Judgment and nothing else.
     if output_schema is not Judgment:
         raise TypeError(f"a faulty judge answers Judgment only, asked {output_schema.__name__}")
@@ -85,7 +87,7 @@ class CategoryDroppingGenerator:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         answer, usage = await self._inner.generate_structured(prompt, output_schema)
         if isinstance(answer, TestCaseBatch):
             kept = [case for case in answer.cases if case.category != self._category]
@@ -104,7 +106,7 @@ class ChainRefusingModel:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         if output_schema in _CHAIN_SCHEMAS:
             raise ProviderRefusal("fault injection: the provider refuses chain steps", _NO_USAGE)
         return await self._inner.generate_structured(prompt, output_schema)

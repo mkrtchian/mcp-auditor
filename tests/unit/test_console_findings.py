@@ -2,8 +2,8 @@ import tests.unit.support.test_console_given as given
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditReport,
+    ProviderUsage,
     Severity,
-    TokenUsage,
 )
 
 
@@ -124,7 +124,7 @@ def test_summary_score_line_zero_cases():
     report = AuditReport(
         target="python server.py",
         tool_reports=[],
-        token_usage=TokenUsage(input_tokens=0, output_tokens=0),
+        provider_usage=ProviderUsage(input_tokens=0, output_tokens=0),
     )
     display, buffer = given.a_display()
 

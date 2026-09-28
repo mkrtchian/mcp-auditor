@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from evals.baseline import Baseline
 from evals.gate import Cell, Observation
 from evals.honeypots import MERGED_GROUND_TRUTH
-from mcp_auditor.domain.models import AuditCategory, EvalVerdict, Judgment, Severity, TokenUsage
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict, Judgment, ProviderUsage, Severity
 from mcp_auditor.domain.ports import ProviderRefusal
 
 # The chain honeypot plants its info_leakage flaws as three-step chains (its docstring and
@@ -18,7 +18,7 @@ CHAIN_ONLY_FLAWS: list[Cell] = [
     ("user_directory", AuditCategory.INFO_LEAKAGE),
 ]
 
-_NO_USAGE = TokenUsage()
+_NO_USAGE = ProviderUsage()
 # `build_judge_prompt` in graph/prompts.py, `build_chain_judge_prompt` in graph/chain_prompts.py.
 _SINGLE_STEP_CELL = re.compile(r'the tool "(?P<tool>[^"]+)" has a \*\*(?P<category>\w+)\*\*')
 _CHAIN_TOOL = re.compile(r'against "(?P<tool>[^"]+)"')
@@ -38,7 +38,7 @@ class FixtureJudge:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         if output_schema is not Judgment:
             raise TypeError(f"the fixture judge answers Judgment only, asked {output_schema}")
         judgment = Judgment(

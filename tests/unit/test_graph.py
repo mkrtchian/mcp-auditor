@@ -57,7 +57,7 @@ async def test_empty_tool_list():
 
 
 @pytest.mark.asyncio
-async def test_token_usage_accumulated():
+async def test_provider_usage_accumulated():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=2)
     fake_mcp_client = FakeMCPClient([tool])
@@ -66,7 +66,7 @@ async def test_token_usage_accumulated():
 
     result = await given.invoke_graph(graph, state)
 
-    usage = result["audit_report"].token_usage
+    usage = result["audit_report"].provider_usage
     assert usage.input_tokens > 0
     assert usage == fake_llm.total_usage
 
@@ -116,7 +116,7 @@ async def test_chain_budget_one_produces_chain():
     report = then.tool_report_at(result, 0)
     then.report_has_chains(report, 1)
     then.chain_has_eval_result(report.chains[0])
-    then.token_usage_is_positive(result)
+    then.provider_usage_is_positive(result)
 
 
 @pytest.mark.asyncio
@@ -224,7 +224,7 @@ async def test_a_refused_first_generation_leaves_its_tool_untested_and_audits_th
     then.report_has_a_gap_of(first, requested=2, received=0)
     then.report_has_cases(then.tool_report_at(result, 1), 2)
     then.audit_report_has_refused_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
-    assert result["audit_report"].token_usage == fake_llm.total_usage
+    assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 
 @pytest.mark.asyncio

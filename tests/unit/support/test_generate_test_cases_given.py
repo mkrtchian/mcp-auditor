@@ -4,8 +4,8 @@ from mcp_auditor.domain import (
     AttackContext,
     AuditCategory,
     AuditPayload,
+    ProviderUsage,
     TestCaseBatch,
-    TokenUsage,
     ToolDefinition,
 )
 from mcp_auditor.domain.ports import ProviderRefusal
@@ -28,4 +28,4 @@ def a_generation_state(test_budget: int) -> dict[str, Any]:
 
 
 def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", TokenUsage(input_tokens=7, output_tokens=0))
+    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))

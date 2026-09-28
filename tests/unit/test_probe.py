@@ -11,18 +11,18 @@ from evals.probe import (
     summarize,
 )
 from evals.probe_candidates import Prices
-from mcp_auditor.domain.models import TokenUsage
+from mcp_auditor.domain.models import ProviderUsage
 
 
 class TestCallCost:
     def test_prices_cached_input_apart_from_the_rest_of_the_input(self):
-        usage = TokenUsage(input_tokens=1_000_000, cached_input_tokens=400_000, output_tokens=0)
+        usage = ProviderUsage(input_tokens=1_000_000, cached_input_tokens=400_000, output_tokens=0)
         prices = Prices(input=0.25, cached_input=0.025, output=1.50)
 
         assert math.isclose(call_cost(usage, prices), 0.6 * 0.25 + 0.4 * 0.025)
 
     def test_prices_output_at_the_output_price(self):
-        usage = TokenUsage(output_tokens=100_000)
+        usage = ProviderUsage(output_tokens=100_000)
         prices = Prices(input=0.25, cached_input=0.025, output=1.50)
 
         assert math.isclose(call_cost(usage, prices), 0.15)
@@ -42,7 +42,7 @@ class TestSummarize:
         assert math.isclose(stats.weighted_cost, 1.0 + 2.5)
 
     def test_counts_the_cost_of_a_parse_failure_like_a_parsed_call(self):
-        usage = TokenUsage(input_tokens=1_000, output_tokens=8_192)
+        usage = ProviderUsage(input_tokens=1_000, output_tokens=8_192)
         prices = Prices(input=0.25, cached_input=0.025, output=1.50)
         observations = [
             given.an_observation(usage=usage),
@@ -93,8 +93,8 @@ class TestSummarize:
     def test_counts_errors_and_sums_reasoning_tokens(self):
         observations = [
             given.an_observation(outcome=CallOutcome.ERROR, error="timeout"),
-            given.an_observation(usage=TokenUsage(output_tokens=50, reasoning_tokens=30)),
-            given.an_observation(usage=TokenUsage(output_tokens=50, reasoning_tokens=12)),
+            given.an_observation(usage=ProviderUsage(output_tokens=50, reasoning_tokens=30)),
+            given.an_observation(usage=ProviderUsage(output_tokens=50, reasoning_tokens=12)),
         ]
 
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)

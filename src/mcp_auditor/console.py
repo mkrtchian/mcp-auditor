@@ -18,9 +18,9 @@ from mcp_auditor.domain.models import (
     AuditReport,
     EvalResult,
     ExecutionRegime,
+    ProviderUsage,
     RefusedStep,
     Severity,
-    TokenUsage,
     ToolReport,
 )
 from mcp_auditor.domain.owasp import category_with_owasp_id
@@ -85,7 +85,7 @@ class AuditDisplay:
     def _print_results_panel(self, report: AuditReport) -> None:
         table, total_pass, total_judged = _build_summary_table(report)
         score_line = _format_score_markup(total_pass, total_judged)
-        token_line = _format_token_usage(report.token_usage)
+        token_line = _format_provider_usage(report.provider_usage)
         panel = Panel(table, title="Results", subtitle=f"{score_line}  |  {token_line}")
         self._console.print(panel)
 
@@ -261,5 +261,5 @@ def _format_fail_cell(summary: ToolSummary) -> Text | str:
     return Text(f"{summary.failed} ({breakdown})", style=style)
 
 
-def _format_token_usage(usage: TokenUsage) -> str:
+def _format_provider_usage(usage: ProviderUsage) -> str:
     return f"Tokens: {usage.input_tokens:,} in / {usage.output_tokens:,} out"

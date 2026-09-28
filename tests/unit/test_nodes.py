@@ -114,14 +114,14 @@ class TestExtractAttackContext:
 
         then.attack_context_has_db_engine(result, "sqlite")
 
-    async def test_accumulates_token_usage(self):
+    async def test_accumulates_provider_usage(self):
         report = given.a_tool_report()
         llm = FakeLLM([AttackContext(db_engine="sqlite")])
         node = make_extract_attack_context(llm)
 
         result = await node({"tool_reports": [report], "attack_context": AttackContext()})
 
-        assert len(result["token_usage"]) == 1
+        assert len(result["provider_usage"]) == 1
 
     async def test_a_refused_extraction_keeps_the_previous_context(self):
         previous = AttackContext(db_engine="postgres")
@@ -136,7 +136,7 @@ class TestExtractAttackContext:
 
         assert result["attack_context"] == previous
         then.refused_step_recorded(result, tool_name="read_file", step=AuditStep.CONTEXT_EXTRACTION)
-        assert result["token_usage"] == [refusal.usage]
+        assert result["provider_usage"] == [refusal.usage]
 
 
 class TestExecuteTool:
@@ -229,7 +229,7 @@ class TestJudgeResponse:
         assert result["judged_cases"][0].eval_result is None
         assert result["current_case"] is None
         then.refused_step_recorded(result, tool_name="read_file", step=AuditStep.JUDGMENT)
-        assert result["token_usage"] == [refusal.usage]
+        assert result["provider_usage"] == [refusal.usage]
 
 
 class TestFinalizeToolAudit:

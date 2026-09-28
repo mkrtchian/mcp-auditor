@@ -168,8 +168,8 @@ def build_run_detail(
         blocked_reasons=blocked_reasons(audit_report),
         refused_steps=refused_steps(audit_report),
         token_usage={
-            "input_tokens": audit_report.token_usage.input_tokens,
-            "output_tokens": audit_report.token_usage.output_tokens,
+            "input_tokens": audit_report.provider_usage.input_tokens,
+            "output_tokens": audit_report.provider_usage.output_tokens,
         },
     )
 

@@ -7,9 +7,9 @@ from mcp_auditor.domain.models import (
     ChainStep,
     EvalResult,
     EvalVerdict,
+    ProviderUsage,
     Severity,
     TestCase,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
 )
@@ -54,7 +54,7 @@ def a_report(cases: list[TestCase], chains: list[AttackChain] | None = None) -> 
     return AuditReport(
         target="test",
         tool_reports=[ToolReport(tool=TOOL, cases=cases, chains=chains or [])],
-        token_usage=TokenUsage(),
+        provider_usage=ProviderUsage(),
     )
 
 

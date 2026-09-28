@@ -7,9 +7,9 @@ from mcp_auditor.domain import (
     EvalResult,
     EvalVerdict,
     Judgment,
+    ProviderUsage,
     Severity,
     TestCase,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
 )
@@ -101,4 +101,4 @@ def a_coverage_gap() -> CoverageGap:
 
 
 def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", TokenUsage(input_tokens=7, output_tokens=0))
+    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))

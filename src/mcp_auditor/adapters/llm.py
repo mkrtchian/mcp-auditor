@@ -12,7 +12,7 @@ from pydantic import BaseModel, SecretStr, ValidationError
 
 from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import TokenUsage
+from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 
 
@@ -169,9 +169,9 @@ class LLM:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         structured = self._bind(output_schema)
-        accumulated_usage = TokenUsage()
+        accumulated_usage = ProviderUsage()
         truncated_attempts = 0
         for _attempt in range(self._max_parse_attempts):
             raw_response = await _invoke(structured, prompt, accumulated_usage)
@@ -207,7 +207,7 @@ class LLM:
         metadata: _UsageMetadata | None = raw_message.usage_metadata
         return _Attempt(
             parsed=response["parsed"],
-            usage=_to_token_usage(metadata),
+            usage=_to_provider_usage(metadata),
             truncated=_was_truncated(raw_message.response_metadata),
             refusal=refusal_from_metadata(raw_message),
         )
@@ -216,13 +216,13 @@ class LLM:
 @dataclass(frozen=True)
 class _Attempt:
     parsed: object
-    usage: TokenUsage
+    usage: ProviderUsage
     truncated: bool
     refusal: str | None
 
 
 async def _invoke(
-    structured: Runnable[str, object], prompt: str, usage_so_far: TokenUsage
+    structured: Runnable[str, object], prompt: str, usage_so_far: ProviderUsage
 ) -> object:
     try:
         return await structured.ainvoke(prompt)
@@ -250,10 +250,10 @@ def _validated[T: BaseModel](parsed: object, output_schema: type[T]) -> T | None
         return None
 
 
-def _to_token_usage(metadata: _UsageMetadata | None) -> TokenUsage:
+def _to_provider_usage(metadata: _UsageMetadata | None) -> ProviderUsage:
     if metadata is None:
-        return TokenUsage()
-    return TokenUsage(
+        return ProviderUsage()
+    return ProviderUsage(
         input_tokens=metadata["input_tokens"],
         output_tokens=metadata["output_tokens"],
         cached_input_tokens=metadata.get("input_token_details", {}).get("cache_read", 0),

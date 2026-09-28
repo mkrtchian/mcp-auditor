@@ -41,7 +41,7 @@ def make_plan_chains(llm: LLMPort):
         if isinstance(outcome, Refused):
             return {"pending_chains": [], **outcome.state_update()}
         batch, usage = outcome
-        return {"pending_chains": batch.chains, "token_usage": [usage]}
+        return {"pending_chains": batch.chains, "provider_usage": [usage]}
 
     return plan_chains
 
@@ -95,7 +95,7 @@ def make_observe_step(llm: LLMPort):
         return {
             "current_chain_steps": steps,
             "current_observation": obs,
-            "token_usage": [usage],
+            "provider_usage": [usage],
         }
 
     return observe_step
@@ -119,7 +119,7 @@ def make_plan_step(llm: LLMPort):
         if isinstance(outcome, Refused):
             return {"chain_step_refused": True, **outcome.state_update()}
         payload, usage = outcome
-        return {"current_step_payload": payload, "token_usage": [usage]}
+        return {"current_step_payload": payload, "provider_usage": [usage]}
 
     return plan_step
 
@@ -141,7 +141,7 @@ def make_judge_chain(llm: LLMPort):
         judgment, usage = outcome
         eval_result = _chain_eval_result(tool.name, chain, judgment)
         judged_chain = chain.model_copy(update={"eval_result": eval_result})
-        return {**_completion(judged_chain), "token_usage": [usage]}
+        return {**_completion(judged_chain), "provider_usage": [usage]}
 
     return judge_chain
 

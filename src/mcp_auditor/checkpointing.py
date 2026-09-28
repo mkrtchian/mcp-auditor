@@ -29,7 +29,7 @@ async def resume_or_reset(graph: Any, thread_id: str, requested: bool) -> bool:
     """True to resume an interrupted audit, False after wiping the thread.
 
     A reused thread must be wiped: the operator.add reducers on tool_reports and
-    token_usage would otherwise fold the previous audit into this report.
+    provider_usage would otherwise fold the previous audit into this report.
     """
     # This read must precede the wipe: adelete_thread is the one saver method
     # that skips setup(), so on a virgin database it fails on a missing table.

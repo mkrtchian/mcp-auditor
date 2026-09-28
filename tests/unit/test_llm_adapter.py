@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput, make_chat_model
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import TokenUsage
+from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import UnparseableOutput
 from tests.fakes.chat_model import FakeChatModel, raw_response, truncated
 
@@ -35,7 +35,7 @@ class TestTokenAccumulationOnRetry:
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
-        assert usage == TokenUsage(
+        assert usage == ProviderUsage(
             input_tokens=200, output_tokens=100, cached_input_tokens=50, reasoning_tokens=15
         )
 
@@ -48,7 +48,7 @@ class TestTokenAccumulationOnRetry:
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
-        assert usage == TokenUsage(input_tokens=100, output_tokens=50)
+        assert usage == ProviderUsage(input_tokens=100, output_tokens=50)
 
 
 class TestTokenDetails:
@@ -96,7 +96,7 @@ class TestDictSchema:
         output, usage = await llm.generate_structured("prompt", _DummyOutput)
 
         assert output == _DummyOutput(value="ok")
-        assert usage == TokenUsage(input_tokens=200, output_tokens=100)
+        assert usage == ProviderUsage(input_tokens=200, output_tokens=100)
 
     @pytest.mark.asyncio
     async def test_dicts_failing_validation_on_every_attempt_raise(self):
@@ -114,7 +114,7 @@ class TestDictSchema:
         with pytest.raises(UnparseableOutput) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
 
-        assert raised.value.usage == TokenUsage(input_tokens=300, output_tokens=153)
+        assert raised.value.usage == ProviderUsage(input_tokens=300, output_tokens=153)
         assert raised.value.truncated_attempts == 0
 
 
@@ -130,7 +130,7 @@ class TestTruncatedOutput:
         output, usage = await llm.generate_structured("prompt", _DummyOutput)
 
         assert output == _DummyOutput(value="ok")
-        assert usage == TokenUsage(input_tokens=200, output_tokens=4146)
+        assert usage == ProviderUsage(input_tokens=200, output_tokens=4146)
 
     @pytest.mark.asyncio
     async def test_a_response_cut_at_the_length_limit_on_every_attempt_raises(self):
@@ -155,7 +155,7 @@ class TestTruncatedOutput:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.truncated_attempts == 2
-        assert raised.value.usage == TokenUsage(input_tokens=200, output_tokens=16384)
+        assert raised.value.usage == ProviderUsage(input_tokens=200, output_tokens=16384)
 
     @pytest.mark.asyncio
     async def test_a_truncated_attempt_among_malformed_ones_is_counted_alone(self):

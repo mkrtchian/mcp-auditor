@@ -19,12 +19,12 @@ from mcp_auditor.domain.models import (
     EvalResult,
     EvalVerdict,
     Judgment,
+    ProviderUsage,
     RefusedStep,
     Severity,
     StepObservation,
     TestCase,
     TestCaseBatch,
-    TokenUsage,
     ToolDefinition,
     ToolReport,
     ToolResponse,
@@ -139,19 +139,21 @@ def a_report_per_honeypot() -> HoneypotReports:
     return HoneypotReports(
         {
             "honeypot": _a_report(
-                "get_user", EvalVerdict.FAIL, TokenUsage(input_tokens=100, output_tokens=10)
+                "get_user", EvalVerdict.FAIL, ProviderUsage(input_tokens=100, output_tokens=10)
             ).model_copy(update={"refused_steps": [_a_refused_step("get_user")]}),
             "subtle": _a_report(
-                "list_items", EvalVerdict.PASS, TokenUsage(input_tokens=200, output_tokens=20)
+                "list_items", EvalVerdict.PASS, ProviderUsage(input_tokens=200, output_tokens=20)
             ),
             "chain_honeypot": _a_report(
-                "project_manager", EvalVerdict.FAIL, TokenUsage(input_tokens=300, output_tokens=30)
+                "project_manager",
+                EvalVerdict.FAIL,
+                ProviderUsage(input_tokens=300, output_tokens=30),
             ),
         }
     )
 
 
-def _a_report(tool: str, verdict: EvalVerdict, usage: TokenUsage) -> AuditReport:
+def _a_report(tool: str, verdict: EvalVerdict, usage: ProviderUsage) -> AuditReport:
     result = EvalResult(
         tool_name=tool,
         category=AuditCategory.INFO_LEAKAGE,
@@ -164,7 +166,7 @@ def _a_report(tool: str, verdict: EvalVerdict, usage: TokenUsage) -> AuditReport
         tool=ToolDefinition(name=tool, input_schema={"type": "object"}),
         cases=[TestCase(payload=_a_payload(AuditCategory.INFO_LEAKAGE), eval_result=result)],
     )
-    return AuditReport(target=tool, tool_reports=[tool_report], token_usage=usage)
+    return AuditReport(target=tool, tool_reports=[tool_report], provider_usage=usage)
 
 
 def _a_refused_step(tool: str) -> RefusedStep:

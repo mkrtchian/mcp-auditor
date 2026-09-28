@@ -4,7 +4,7 @@ from evals.probe import CallOutcome, CandidateStats, ProbeObservation
 from evals.probe_candidates import Candidate, Prices
 from evals.probe_corpus import Role
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import AuditCategory, CoverageGap, TokenUsage
+from mcp_auditor.domain.models import AuditCategory, CoverageGap, ProviderUsage
 
 ONE_DOLLAR_PER_MILLION_INPUT = Prices(input=1.0, cached_input=0.0, output=0.0)
 
@@ -31,15 +31,15 @@ def an_observation(
         schema_name=schema_name,
         role=role,
         seconds=seconds,
-        usage=changes.pop("usage", TokenUsage()),
+        usage=changes.pop("usage", ProviderUsage()),
         outcome=outcome,
         coverage_gap=changes.pop("coverage_gap", None),
         **changes,
     )
 
 
-def a_million_input_tokens() -> TokenUsage:
-    return TokenUsage(input_tokens=1_000_000)
+def a_million_input_tokens() -> ProviderUsage:
+    return ProviderUsage(input_tokens=1_000_000)
 
 
 def a_coverage_gap() -> CoverageGap:

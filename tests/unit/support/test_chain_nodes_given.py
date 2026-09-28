@@ -10,10 +10,10 @@ from mcp_auditor.domain import (
     EvalResult,
     EvalVerdict,
     Judgment,
+    ProviderUsage,
     Severity,
     StepObservation,
     TestCase,
-    TokenUsage,
     ToolDefinition,
     ToolResponse,
 )
@@ -155,9 +155,9 @@ def a_chain_audit_state(
         "completed_chains": completed_chains or [],
         "blocked_step_reason": blocked_step_reason,
         "chain_step_refused": chain_step_refused,
-        "token_usage": [],
+        "provider_usage": [],
     }
 
 
 def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", TokenUsage(input_tokens=7, output_tokens=0))
+    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))

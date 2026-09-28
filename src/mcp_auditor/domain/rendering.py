@@ -64,7 +64,7 @@ def _render_summary_section(report: AuditReport) -> str:
     lines.append(f"**Findings**: {finding_count}")
     if finding_count > 0:
         lines.append(f"  {_severity_breakdown(findings)}")
-    usage = report.token_usage
+    usage = report.provider_usage
     lines.append(f"**Token usage**: {usage.input_tokens} input, {usage.output_tokens} output")
     return "\n".join(lines)
 

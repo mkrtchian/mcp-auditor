@@ -7,7 +7,7 @@ from evals.probe import CallOutcome, ProbeObservation
 from evals.probe_candidates import REFERENCE
 from evals.probe_corpus import ProbeCall
 from evals.run_probe import CandidateModels, append_observation, observe
-from mcp_auditor.domain.models import TokenUsage
+from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 
 A_JUDGE_CALL = ProbeCall(
@@ -25,7 +25,7 @@ class _RaisingLLM:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         raise self._error
 
 
@@ -37,7 +37,7 @@ def _models_raising(error: Exception) -> CandidateModels:
 @pytest.mark.asyncio
 async def test_unparseable_output_is_a_parse_failure():
     models = _models_raising(
-        UnparseableOutput(attempts=3, truncated_attempts=0, usage=TokenUsage())
+        UnparseableOutput(attempts=3, truncated_attempts=0, usage=ProviderUsage())
     )
 
     observation = await observe(models, A_JUDGE_CALL, budget=10)
@@ -47,7 +47,7 @@ async def test_unparseable_output_is_a_parse_failure():
 
 @pytest.mark.asyncio
 async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempts():
-    usage = TokenUsage(input_tokens=100, output_tokens=8192)
+    usage = ProviderUsage(input_tokens=100, output_tokens=8192)
     models = _models_raising(UnparseableOutput(attempts=3, truncated_attempts=1, usage=usage))
 
     observation = await observe(models, A_JUDGE_CALL, budget=10)
@@ -59,7 +59,7 @@ async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempt
 
 @pytest.mark.asyncio
 async def test_a_provider_refusal_is_a_parse_failure_carrying_its_usage_and_message():
-    usage = TokenUsage(input_tokens=120, output_tokens=5)
+    usage = ProviderUsage(input_tokens=120, output_tokens=5)
     models = _models_raising(ProviderRefusal("flagged by the usage policy", usage))
 
     observation = await observe(models, A_JUDGE_CALL, budget=10)

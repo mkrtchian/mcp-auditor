@@ -10,10 +10,10 @@ from mcp_auditor.domain import (
     ChainPlanBatch,
     EvalVerdict,
     Judgment,
+    ProviderUsage,
     Severity,
     StepObservation,
     TestCaseBatch,
-    TokenUsage,
     ToolDefinition,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
@@ -110,7 +110,7 @@ def a_fake_llm_refusing_the_chain_step_planning() -> FakeLLM:
 
 
 def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", TokenUsage(input_tokens=7, output_tokens=0))
+    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
 
 
 # The graph wrappers below look trivial but are a typing seam: langgraph's
@@ -150,7 +150,7 @@ def an_initial_state(
         "current_tool": None,
         "judged_cases": [],
         "tool_reports": [],
-        "token_usage": [],
+        "provider_usage": [],
         "audit_report": None,
         "attack_context": AttackContext(),
         "chain_budget": chain_budget,

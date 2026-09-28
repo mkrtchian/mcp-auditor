@@ -9,12 +9,12 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     ChainGoal,
     ChainPlanBatch,
+    ProviderUsage,
     StepObservation,
     TestCaseBatch,
-    TokenUsage,
 )
 
-_NO_USAGE = TokenUsage()
+_NO_USAGE = ProviderUsage()
 # `build_attack_generation_prompt` lists the categories right under this line, up to a blank
 # line. The category guidance further down also starts lines with `- info_leakage:`.
 _CATEGORY_LIST_HEADER = "Distribute test cases across these attack categories:\n"
@@ -25,7 +25,7 @@ class ScriptedAuditModel:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         answer = _ANSWERS.get(output_schema)
         if answer is None:
             raise TypeError(f"the scripted model does not answer {output_schema.__name__}")

@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from evals.probe_candidates import Candidate, Prices
 from evals.probe_corpus import Role
-from mcp_auditor.domain.models import CoverageGap, TestCaseBatch, TokenUsage
+from mcp_auditor.domain.models import CoverageGap, ProviderUsage, TestCaseBatch
 
 _GENERATION_SCHEMA = TestCaseBatch.__name__
 
@@ -29,7 +29,7 @@ class ProbeObservation(BaseModel):
     schema_name: str
     role: Role
     seconds: float
-    usage: TokenUsage
+    usage: ProviderUsage
     outcome: CallOutcome
     coverage_gap: CoverageGap | None = None  # TestCaseBatch calls only
     error: str | None = None
@@ -101,7 +101,7 @@ def _is_refusal(observation: ProbeObservation) -> bool:
     return observation.outcome == CallOutcome.PARSE_FAILURE or observation.coverage_gap is not None
 
 
-def call_cost(usage: TokenUsage, prices: Prices) -> float:
+def call_cost(usage: ProviderUsage, prices: Prices) -> float:
     uncached_input = usage.input_tokens - usage.cached_input_tokens
     dollars_per_million = (
         uncached_input * prices.input

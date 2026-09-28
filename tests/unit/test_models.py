@@ -8,9 +8,9 @@ import pytest
 import tests.unit.support.test_models_given as given
 from mcp_auditor.domain import (
     AuditReport,
+    ProviderUsage,
     Severity,
     TestCase,
-    TokenUsage,
     ToolResponse,
 )
 from mcp_auditor.domain.models import AuditStep, order_tools_for_audit
@@ -72,24 +72,24 @@ class TestToolResponse:
         assert response.error_type == "ConnectionError"
 
 
-class TestTokenUsage:
+class TestProviderUsage:
     def test_add_accumulates(self):
-        a = TokenUsage(
+        a = ProviderUsage(
             input_tokens=100, output_tokens=50, cached_input_tokens=40, reasoning_tokens=10
         )
-        b = TokenUsage(
+        b = ProviderUsage(
             input_tokens=200, output_tokens=100, cached_input_tokens=60, reasoning_tokens=30
         )
 
         total = a.add(b)
 
-        assert total == TokenUsage(
+        assert total == ProviderUsage(
             input_tokens=300, output_tokens=150, cached_input_tokens=100, reasoning_tokens=40
         )
 
     def test_add_does_not_mutate(self):
-        a = TokenUsage(input_tokens=100, output_tokens=50)
-        b = TokenUsage(input_tokens=200, output_tokens=100)
+        a = ProviderUsage(input_tokens=100, output_tokens=50)
+        b = ProviderUsage(input_tokens=200, output_tokens=100)
 
         a.add(b)
 
@@ -128,7 +128,7 @@ class TestAuditReportFindings:
         assert report.has_findings_at_or_above(Severity.HIGH) is False
 
     def test_empty_report_has_no_findings(self):
-        report = AuditReport(target="test", tool_reports=[], token_usage=TokenUsage())
+        report = AuditReport(target="test", tool_reports=[], provider_usage=ProviderUsage())
 
         assert report.has_findings_at_or_above(Severity.LOW) is False
 

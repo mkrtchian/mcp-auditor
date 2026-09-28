@@ -32,8 +32,8 @@ def chain_has_eval_result(chain: AttackChain) -> None:
     assert chain.eval_result is not None
 
 
-def token_usage_is_positive(result: dict[str, Any]) -> None:
-    usage = result["audit_report"].token_usage
+def provider_usage_is_positive(result: dict[str, Any]) -> None:
+    usage = result["audit_report"].provider_usage
     assert usage.input_tokens > 0
     assert usage.output_tokens > 0
 

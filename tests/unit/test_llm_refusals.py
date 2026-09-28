@@ -7,7 +7,7 @@ import pytest
 from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput
-from mcp_auditor.domain.models import TokenUsage
+from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal
 from tests.fakes.chat_model import FakeChatModel, raw_response, truncated
 
@@ -54,7 +54,7 @@ class TestRefusalAsAnError:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.provider_message == _OPENAI_POLICY_MESSAGE
-        assert raised.value.usage == TokenUsage()
+        assert raised.value.usage == ProviderUsage()
 
     @pytest.mark.asyncio
     async def test_a_refusal_wrapped_as_the_cause_of_another_error_is_recognized(self):
@@ -112,7 +112,7 @@ class TestRefusalAsAnError:
         with pytest.raises(ProviderRefusal) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
 
-        assert raised.value.usage == TokenUsage(input_tokens=100, output_tokens=8192)
+        assert raised.value.usage == ProviderUsage(input_tokens=100, output_tokens=8192)
 
 
 class TestRefusalInTheResponse:
@@ -151,7 +151,7 @@ class TestRefusalInTheResponse:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.provider_message
-        assert raised.value.usage == TokenUsage(input_tokens=100, output_tokens=5)
+        assert raised.value.usage == ProviderUsage(input_tokens=100, output_tokens=5)
 
     @pytest.mark.asyncio
     async def test_the_model_refusal_text_becomes_the_provider_message(self):
@@ -175,7 +175,7 @@ class TestRefusalInTheResponse:
         with pytest.raises(ProviderRefusal) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
 
-        assert raised.value.usage == TokenUsage(input_tokens=200, output_tokens=8197)
+        assert raised.value.usage == ProviderUsage(input_tokens=200, output_tokens=8197)
 
     @pytest.mark.asyncio
     async def test_a_normal_google_stop_is_not_a_refusal(self):

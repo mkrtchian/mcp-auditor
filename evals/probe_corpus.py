@@ -16,9 +16,9 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     ChainPlanBatch,
     Judgment,
+    ProviderUsage,
     StepObservation,
     TestCaseBatch,
-    TokenUsage,
 )
 from mcp_auditor.domain.ports import LLMPort
 
@@ -59,7 +59,7 @@ class RecordingLLM:
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, TokenUsage]:
+    ) -> tuple[T, ProviderUsage]:
         schema_name = output_schema.__name__
         self._sink.append(
             ProbeCall(

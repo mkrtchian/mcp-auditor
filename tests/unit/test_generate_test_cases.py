@@ -23,7 +23,7 @@ async def test_a_complete_batch_is_kept_without_retry():
     result = await node(given.a_generation_state(test_budget=5))
 
     then.pending_payloads_are(result, batch)
-    then.token_usage_count(result, 1)
+    then.provider_usage_count(result, 1)
     assert result["coverage_gap"] is None
 
 
@@ -34,7 +34,7 @@ async def test_an_incomplete_batch_is_retried_once():
     result = await node(given.a_generation_state(test_budget=5))
 
     then.pending_payloads_are(result, retried)
-    then.token_usage_count(result, 2)
+    then.provider_usage_count(result, 2)
     assert result["coverage_gap"] is None
 
 
@@ -46,7 +46,7 @@ async def test_a_retry_still_incomplete_is_kept_with_its_gap():
     result = await node(given.a_generation_state(test_budget=5))
 
     then.pending_payloads_are(result, retried)
-    then.token_usage_count(result, 3)
+    then.provider_usage_count(result, 3)
     assert result["coverage_gap"] == CoverageGap(
         requested_cases=5,
         received_cases=3,
@@ -62,7 +62,7 @@ async def test_a_completion_fills_the_category_the_retry_missed():
     result = await node(given.a_generation_state(test_budget=5))
 
     then.pending_payloads_are(result, TestCaseBatch(cases=[*retried.cases, *completion.cases]))
-    then.token_usage_count(result, 3)
+    then.provider_usage_count(result, 3)
     assert result["coverage_gap"] is None
 
 
@@ -106,7 +106,7 @@ async def test_a_retry_short_of_cases_only_is_not_completed():
     result = await node(given.a_generation_state(test_budget=6))
 
     then.pending_payloads_are(result, retried)
-    then.token_usage_count(result, 2)
+    then.provider_usage_count(result, 2)
     assert result["coverage_gap"] == CoverageGap(
         requested_cases=6, received_cases=5, missing_categories=[]
     )
@@ -123,7 +123,7 @@ async def test_a_refused_first_call_leaves_no_case_and_a_gap_of_zero_received():
         requested_cases=5, received_cases=0, missing_categories=list(AuditCategory)
     )
     then.one_generation_refusal_recorded(result)
-    assert result["token_usage"] == [refusal.usage]
+    assert result["provider_usage"] == [refusal.usage]
 
 
 async def test_a_refused_retry_keeps_the_first_batch_with_its_gap():
@@ -137,7 +137,7 @@ async def test_a_refused_retry_keeps_the_first_batch_with_its_gap():
         requested_cases=5, received_cases=4, missing_categories=[AuditCategory.RESOURCE_ABUSE]
     )
     then.one_generation_refusal_recorded(result)
-    then.token_usage_count(result, 2)
+    then.provider_usage_count(result, 2)
 
 
 async def test_a_refused_completion_keeps_the_retried_batch_with_its_gap():
@@ -153,7 +153,7 @@ async def test_a_refused_completion_keeps_the_retried_batch_with_its_gap():
         missing_categories=[AuditCategory.INFO_LEAKAGE, AuditCategory.RESOURCE_ABUSE],
     )
     then.one_generation_refusal_recorded(result)
-    then.token_usage_count(result, 3)
+    then.provider_usage_count(result, 3)
 
 
 async def test_a_generation_without_refusal_records_none():
