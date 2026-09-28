@@ -6,10 +6,12 @@ import pytest
 import tests.integration.support.test_gate_fault_injection_given as given
 import tests.integration.support.test_gate_fault_injection_then as then
 from evals.fault_catalog import FAULTS, Fault
+from mcp_auditor.domain.models import AuditCategory
 
 FIXTURE = given.the_fixture()
 RANDOM_JUDGE = "judge_fails_at_random"
 HALF_LOSS = "half_the_detections_lost"
+DECLARED_DROP = "generator_drops_error_handling_declared"
 PINNED_FAULTS = [f for f in FAULTS if f.expectation is not None and f.name != RANDOM_JUDGE]
 
 
@@ -37,3 +39,8 @@ async def test_a_random_judge_breaks_precision_and_flips_pass_cells():
 async def test_losing_half_the_detections_obeys_the_gate_rules():
     result = await given.injected(given.fault_named(HALF_LOSS), FIXTURE)
     then.the_half_loss_obeys_the_rules(result, FIXTURE)
+
+
+async def test_a_declaration_clears_exactly_the_dropped_category():
+    result = await given.injected(given.fault_named(DECLARED_DROP), FIXTURE)
+    then.only_the_declared_category_flipped(result, FIXTURE, AuditCategory.ERROR_HANDLING)

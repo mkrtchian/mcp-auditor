@@ -81,6 +81,7 @@ jobs:
         with:
           ref: ${{ steps.pr.outputs.sha }}
           persist-credentials: false
+          fetch-depth: 2
 
       - name: Install uv
         if: steps.cmd.outputs.mode != 'none' && steps.pr.outputs.fork == 'false'
@@ -94,7 +95,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.cmd.outputs.mode != 'none' && steps.pr.outputs.fork == 'false'
-        run: uv sync --dev
+        run: uv sync --dev --locked
 
       - name: Run judge eval
         if: (steps.cmd.outputs.mode == 'judge' || steps.cmd.outputs.mode == 'full') && steps.pr.outputs.fork == 'false'

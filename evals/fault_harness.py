@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from pydantic import BaseModel
 
 from evals.baseline import Baseline, baseline_integrity
+from evals.declared_flips import ActiveDeclarations
 from evals.eval_session import DEFAULT_RUNS, EvalSession
 from evals.fault_catalog import Fault
 from evals.gate import Observation, cell_key
@@ -67,8 +68,10 @@ class Harness:
             audit = FaultedAudit(fault, fault.models(self.base_models), self.budget, servers)
             outcome = await audit.runs()
             replayer = Replayer(audit.replay, HONEYPOTS, announce=_ignore, warn=_ignore)
-            paired = await judge_runs(self._session(GateMode.PAIRED), outcome, replayer)
-            floors_only = await judge_runs(self._session(GateMode.FLOORS_ONLY), outcome, replayer)
+            paired = await judge_runs(self._session(GateMode.PAIRED, fault), outcome, replayer)
+            floors_only = await judge_runs(
+                self._session(GateMode.FLOORS_ONLY, fault), outcome, replayer
+            )
         return FaultResult(
             fault=fault.name,
             completed_runs=len(outcome.details),
@@ -82,10 +85,18 @@ class Harness:
             recording_refusals=self._recording_refusals(outcome, floors_only),
         )
 
-    def _session(self, mode: GateMode) -> EvalSession:
+    def _session(self, mode: GateMode, fault: Fault) -> EvalSession:
         # Only satisfies the type: judge_runs never reads it, and model_construct skips the env.
         settings = Settings.model_construct(provider="openai", model="gpt-6-luna", reasoning="none")
-        return EvalSession(settings, self.fixture.conditions, self.fixture, mode, tree=None)
+        declarations = ActiveDeclarations(keys=_declared_keys(fault))
+        return EvalSession(
+            settings,
+            self.fixture.conditions,
+            self.fixture,
+            mode,
+            tree=None,
+            declarations=declarations,
+        )
 
     def _recording_refusals(self, outcome: RunsOutcome, floors_only: GateResult) -> list[str]:
         """A first recording of the faulted runs, with no baseline before it."""
@@ -101,6 +112,10 @@ class Harness:
         )
         decision = decide_recording(None, recording, floors_only)
         return decision.reasons if isinstance(decision, RecordingRefused) else []
+
+
+def _declared_keys(fault: Fault) -> frozenset[str]:
+    return frozenset(cell_key(cell) for cell in MERGED_GROUND_TRUTH if cell[1] == fault.declares)
 
 
 @asynccontextmanager

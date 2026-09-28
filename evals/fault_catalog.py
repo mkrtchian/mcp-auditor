@@ -42,6 +42,7 @@ class Fault:
     expectation: Expectation | None
     wrap: Callable[[AuditModels], AuditModels] | None = None
     loses_detections: bool = False
+    declares: AuditCategory | None = None
 
     def models(self, models: AuditModels) -> AuditModels:
         return self.wrap(models) if self.wrap else models
@@ -96,6 +97,15 @@ FAULTS = [
             llm=CategoryDroppingGenerator(models.llm, AuditCategory.ERROR_HANDLING),
             judge_llm=models.judge_llm,
         ),
+    ),
+    Fault(
+        "generator_drops_error_handling_declared",
+        Expectation(GREEN, GREEN, False, ()),
+        wrap=lambda models: AuditModels(
+            llm=CategoryDroppingGenerator(models.llm, AuditCategory.ERROR_HANDLING),
+            judge_llm=models.judge_llm,
+        ),
+        declares=AuditCategory.ERROR_HANDLING,
     ),
     Fault(
         "provider_refuses_chain_steps",

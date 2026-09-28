@@ -35,6 +35,7 @@ Each wraps the healthy model on the role it targets (`evals/fault_injection.py`,
 - **`no_verdict`**: the judge refuses every case (`ProviderRefusal`), so no case is judged, which is how a missing verdict reaches the report.
 - **`half_the_detections_lost`**: the healthy judge runs, then each FAIL cell of the run's verdict map turns PASS with probability 0.5 (`lose_detections`), the draw keyed on the cell, the seed and the audit index. A draw per case would lose a cell of k FAIL cases only with probability 0.5^k. The index counts every audit, replays included, so each replay draws afresh.
 - **`generator_drops_error_handling`**: the generator's `error_handling` cases are removed from every test case batch, the completions included, and its chain goals from every chain plan. Four categories of five are left per tool, so distribution coverage reads 0.80.
+- **`generator_drops_error_handling_declared`**: the same fault as `generator_drops_error_handling`, run with every `error_handling` cell declared (`Fault.declares`), as the commit that makes such a change would declare them in `evals/declared_flips.json`. The harness hands the declarations to the session directly, with no file and no git read. It pins that the flips the undeclared fault turns red on are exactly the ones a declaration clears: the stable and correct `error_handling` cells read `declared`, no cell reads `flip`, `regression` or `flip_not_reproduced`, and a recording of the runs is accepted.
 - **`provider_refuses_chain_steps`**: the provider refuses every chain planning, step observation and next step call. The single-step cases still cover every cell, and the chain-only cells keep their single-step verdicts.
 
 ## Why the fault stays active in the replays
@@ -55,6 +56,7 @@ The recall floor is one detection per run on average (at least 3 detections over
 | `no_verdict` | red: recall, distribution coverage, regressions (uncovered) on the 31 stable and correct cells | red: recall, distribution coverage | refused: recall, distribution coverage, no stable and correct cell on either side |
 | `half_the_detections_lost` | green unless a lost detection reproduces (about 0.19 each) or the detections fall under 3 | green unless the detections fall under 3 | accepted when one of the 3 stable FAIL cells survives the 3 runs, refused otherwise for no stable and correct FAIL cell |
 | `generator_drops_error_handling` | red: regressions (uncovered) on the 8 stable and correct `error_handling` cells | green: the miss, no floor sees a dropped category | accepted |
+| `generator_drops_error_handling_declared` | green: the 8 stable and correct `error_handling` cells read `declared`, no other cell flips | green | accepted |
 | `provider_refuses_chain_steps` | green: no chain-only flaw is stable and correct in the fixture, so the gate cannot see its loss | green | accepted |
 
 The misses the test pins: the half-loss fault in both modes (the replay blind spot), the dropped category in `floors_only` (caught only by the paired comparison), and the refused chain steps in both modes (no chain-only flaw is gated).
@@ -65,4 +67,4 @@ The expectations for the former floors at 0.50 are pinned in history at `35aeaec
 
 ## Cost
 
-Each of the eight scenarios (the healthy one and the seven faults) is its own test, with its own fakes. It starts one server per honeypot and reuses it for its runs and its replays, and pytest-xdist runs the scenarios in parallel under `-n auto`. On 2026-09-27, on a 16-core machine, each scenario took about 3 to 4 seconds and the eight about 9 seconds under `-n auto`, about 17 seconds one after the other, and the whole integration suite took about 13 seconds under `-n auto`.
+Each of the nine scenarios (the healthy one and the eight faults) is its own test, with its own fakes. It starts one server per honeypot and reuses it for its runs and its replays, and pytest-xdist runs the scenarios in parallel under `-n auto`. On 2026-09-27, when there were eight, on a 16-core machine, each scenario took about 3 to 4 seconds and the eight about 9 seconds under `-n auto`, about 17 seconds one after the other, and the whole integration suite took about 13 seconds under `-n auto`.

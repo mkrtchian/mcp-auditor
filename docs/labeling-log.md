@@ -181,3 +181,14 @@ Commit: the one that adds this entry. It comes before any CVE baseline is commit
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the CVE runner, in how a run is counted. No prompt, guard or default of the system under test moves. (2) It was noticed when a provider refusal was printed during a baseline recording, not from a measured value: every target missed in every run, so no grade depends on it. (3) The target is that a run count as a miss only when the audit ran every step, the criterion the honeypot evals apply by reading a refused judgment as an uncovered cell rather than a verdict. It reads no measurement. (4) It applies to every target and every run, replays included. It moves only the runs that did not detect and whose audit held a refused step: such a run, graded before as a miss, now takes the grade of the next attempt that detects or holds no refused step, or does not complete. It never turns a detection into a miss.
 
+### 2026-09-28, declared flips
+
+Commit: 17962cb, 8e5a64a and the one that adds this entry.
+
+**Ground truth.** Unchanged, 36 cells, 8 FAIL.
+
+**State of the gate.** A confirmed honeypot baseline is committed (`89aedd7`). No observation, metric or baseline format moves, so it stays valid and no reset applies.
+
+**What changes.** The honeypot gate reads the declarations of `evals/declared_flips.json`. An entry is active at the commit whose parent is its `base`, on a clean tree. A gated cell an active entry names, whose outcome is `flip`, reads `declared` instead: it is not replayed and is not a reason for red. A declared cell whose outcome is anything else stays as the comparison set it and is listed under `declared_held`. An active entry naming a cell outside the ground truth, or a cell named twice, refuses the run before any LLM call. No observation, label, floor, metric, replay rule or baseline format moves, and the recording code is unchanged: a green run with declared flips is recorded like any green run. See [ADR 020](adr/020-honeypot-baseline-changes.md).
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the code that reads a flip at the gate. No prompt, guard or default of the system under test moves. (2) It was noticed from ADR 020, whose declaration had no code to read it, so a deliberate regression was blocked. No measurement raised it. (3) The target is that a regression declared before the run, in the commit that makes it, does not fail the gate, while an undeclared one still does. The criterion reads no measured value. (4) It applies to every gated cell and every run, and only to the cells an active entry names. It can only turn a red verdict green, on those cells, at that one commit. The fault injection test pins both sides: the dropped category is red undeclared and green declared, with the same cells.

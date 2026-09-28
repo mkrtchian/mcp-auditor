@@ -6,7 +6,7 @@ from evals.fault_harness import FaultResult
 from evals.gate import CellOutcome, CellState, Observation, cell_key, classify
 from evals.gate_verdict import GateVerdict
 from evals.honeypots import MERGED_GROUND_TRUTH
-from mcp_auditor.domain.models import EvalVerdict
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 _FLIPPED = {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRODUCED}
 
@@ -49,10 +49,28 @@ def some_pass_cells_flipped(result: FaultResult) -> None:
     assert flipped, _summary(result)
 
 
-def _fixture_cells(fixture: Baseline, keep: Callable[[CellState, EvalVerdict], bool]) -> list[str]:
+def only_the_declared_category_flipped(
+    result: FaultResult, fixture: Baseline, category: AuditCategory
+) -> None:
+    observed = _summary(result)
+    declared = _fixture_cells(fixture, lambda state, _: state == CellState.STABLE_CORRECT, category)
+    assert declared, observed
+    for key in declared:
+        assert result.paired.cells[key].outcome == CellOutcome.DECLARED, f"{key}: {observed}"
+    flipped = [key for key, cell in result.paired.cells.items() if cell.outcome in _FLIPPED]
+    assert flipped == [], observed
+
+
+def _fixture_cells(
+    fixture: Baseline,
+    keep: Callable[[CellState, EvalVerdict], bool],
+    category: AuditCategory | None = None,
+) -> list[str]:
     states = classify(fixture.observation_runs(), MERGED_GROUND_TRUTH)
     return [
-        cell_key(cell) for cell, state in states.items() if keep(state, MERGED_GROUND_TRUTH[cell])
+        cell_key(cell)
+        for cell, state in states.items()
+        if keep(state, MERGED_GROUND_TRUTH[cell]) and category in (None, cell[1])
     ]
 
 
