@@ -168,3 +168,16 @@ Commit: the one that adds this entry. It comes before any CVE baseline.
 **Fingerprint.** `af382a92abbd393dd41b27776c71d705d7cf41017d3b6fb765c8f041773b386c`, computed as in the entry "2026-09-27, CVE oracle, first grammar". It replaces `ac6999b35394508fc5f07cef7a90b676448193a8b17e4b149bfe100e79274113`.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the CVE oracle, as a rename. No prompt, guard or default of the system under test moves. (2) It was noticed while writing the CVE acceptance gate (ADR 024), not from a measurement. (3) The target is one definition of a detected run, shared by the grammar and the gate. The criterion reads no measured value. (4) It applies to every target and changes no grade.
+
+### 2026-09-28, CVE runs with a refused step
+
+Commit: the one that adds this entry. It comes before any CVE baseline is committed.
+
+**State.** No CVE baseline is committed. Two recordings were made at `418933e`, every target missed in every run and none gated, and they are discarded, not committed: one run of CVE-2025-68143 in the second recording had its chain planning refused by the model provider (`invalid_prompt`) and was recorded as a completed miss. The honeypot ground truth is unchanged.
+
+**What changes.** An audit of a CVE target whose report holds a step the model provider refused is not graded. It is audited again, up to `REFUSAL_ATTEMPTS` = 3 attempts in all, and the first attempt with no refused step grades the run. A run refused at every attempt returns no grade, like a run whose server did not launch: the target is then incomplete, which makes the gate not comparable and refuses a recording. No rung, proof, aim, miss class or category moves, and the grammar's fingerprint does not change.
+
+**Known bias.** Retrying until the provider accepts selects the runs whose generated prompts pass its filter. If the attempts the provider refuses are also the ones likelier to detect, a baseline under-reads detection. The previous behavior under-read it more, since it counted those runs as misses.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the CVE runner, in how a run is counted. No prompt, guard or default of the system under test moves. (2) It was noticed when a provider refusal was printed during a baseline recording, not from a measured value: every target missed in every run, so no grade depends on it. (3) The target is that a run count as a miss only when the audit ran every step, the criterion the honeypot evals apply by reading a refused judgment as an uncovered cell rather than a verdict. It reads no measurement. (4) It applies to every target and every run, replays included, and can only turn a miss into a detection or into a run not completed, never a detection into a miss.
+

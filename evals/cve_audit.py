@@ -2,7 +2,7 @@
 
 import os
 import subprocess
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
@@ -24,6 +24,10 @@ from mcp_auditor.graph.builder import build_graph
 
 console = Console()
 
+# A policy refusal stops a step, so the run says nothing of detection. The generated prompts
+# differ from one audit to the next, so a new attempt usually passes the provider's filter.
+REFUSAL_ATTEMPTS = 3
+
 
 class LaunchError(Exception):
     """A pinned server failed to launch or install (infra, not a detection miss)."""
@@ -43,22 +47,55 @@ def audit_target(budget: int, concurrency: int, throttles: SessionThrottles) -> 
     auditor = _Auditor(create_llm(settings), create_judge_llm(settings), budget)
 
     async def audit(target: CVETarget) -> RunGrade | None:
-        grade: RunGrade | None = None
-        try:
-            async with entered_in_thread(target.environment()) as launch:
-                report = await _audit(launch, target, auditor)
-                # Graded before __exit__ fires so a best-effort teardown error
-                # cannot erase a completed run's grade.
-                grade = grade_run(target, report)
-                throttles.count(report)
-                _print_incidents(target, report)
-                console.print(f"{target.cve_id}: {grade.status}")
-        except (LaunchError, subprocess.CalledProcessError) as exc:
-            outcome = "run skipped" if grade is None else "teardown failed"
-            console.print(f"[yellow]{target.cve_id} {outcome}:[/yellow] {exc}")
-        return grade
+        return await graded_despite_refusals(target, lambda: _attempt(target, auditor, throttles))
 
     return bounded(audit, concurrency)
+
+
+@dataclass(frozen=True)
+class RefusedAttempt:
+    """An audit whose report holds a step the model provider refused."""
+
+
+async def graded_despite_refusals(
+    target: CVETarget, attempt: Callable[[], Awaitable[RunGrade | RefusedAttempt | None]]
+) -> RunGrade | None:
+    """The first attempt not refused grades the run. None when every attempt is refused."""
+    for number in range(1, REFUSAL_ATTEMPTS + 1):
+        outcome = await attempt()
+        if not isinstance(outcome, RefusedAttempt):
+            return outcome
+        console.print(
+            f"[yellow]{target.cve_id}: attempt {number}/{REFUSAL_ATTEMPTS} refused by the"
+            " model provider, not graded[/yellow]"
+        )
+    console.print(
+        f"[yellow]{target.cve_id} run skipped:[/yellow] refused by the model provider"
+        f" at all {REFUSAL_ATTEMPTS} attempts"
+    )
+    return None
+
+
+async def _attempt(
+    target: CVETarget, auditor: _Auditor, throttles: SessionThrottles
+) -> RunGrade | RefusedAttempt | None:
+    outcome: RunGrade | RefusedAttempt | None = None
+    try:
+        async with entered_in_thread(target.environment()) as launch:
+            report = await _audit(launch, target, auditor)
+            throttles.count(report)
+            _print_incidents(target, report)
+            if report.refused_steps:
+                outcome = RefusedAttempt()
+            else:
+                # Graded before __exit__ fires so a best-effort teardown error
+                # cannot erase a completed run's grade.
+                outcome = grade_run(target, report)
+                console.print(f"{target.cve_id}: {outcome.status}")
+    except (LaunchError, subprocess.CalledProcessError) as exc:
+        failure = "run skipped" if outcome is None else "teardown failed"
+        console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {exc}")
+    return outcome
 
 
 def _print_incidents(target: CVETarget, report: AuditReport) -> None:
