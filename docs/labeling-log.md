@@ -156,3 +156,15 @@ Commit: 7df9c52 through the one that adds this entry, then c62c3d5 (fingerprint 
 **How it was written.** The three defects were found by error analysis, reading the audit traces of graded runs of the CVE benchmark. One of them is also recorded in the plan of 2026-08-20 on non-destructive payloads: on CVE-2025-53355, a FAIL in `injection` on `kubectl_generic` carried the content of `/etc/passwd` while the oracle read `missed`. The traces decided what to fix, not what the grammar credits: each rule is written from the published CVE mechanisms, the POSIX output formats of `id` and passwd(5), and ADR 004 for the valid categories. Not every target's mechanism comes from its advisory: the CVE-2025-53355 fixture exploits `kubectl_generic`, a tool the advisory does not list, found on the pinned server, where it calibrates live. Which targets have been read, and so which could still enter a holdout, is decided when the holdout selection rule is written, not here.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the CVE oracle and its calibration. No prompt, guard or default of the system under test moves. (2) All three defects were noticed by reading the audit traces of graded runs, which moves the burden to (3) and (4). (3) The target is an oracle that credits a flaw only on output the auditor could not have written, tied to the verdict on the same unit, and names why a target was missed. The criterion reads no measured value. (4) The grammar applies to every target, and no target is special-cased in it. It can lower a status (an echoed nonce, a FAIL on another unit) and raise one (a command's output on a command execution target), and it removes the hypothesis-as-status in both directions.
+
+### 2026-09-28, CVE oracle, detection rungs made public
+
+Commit: the one that adds this entry. It comes before any CVE baseline.
+
+**State.** No CVE baseline is committed, so none is reset. The honeypot ground truth is unchanged.
+
+**What changes.** `_DETECTION_RUNGS` in `evals/cve_grammar.py` is renamed `DETECTION_RUNGS`, so the per-target CVE baseline reads a run as detected on the same two rungs the grammar counts (`detected`, `detected_execution_only`). Nothing a run grades changes: no rung, proof, aim, miss class or category moves. The rename changes the AST of the grammar module, so its fingerprint moves.
+
+**Fingerprint.** `af382a92abbd393dd41b27776c71d705d7cf41017d3b6fb765c8f041773b386c`, computed as in the entry "2026-09-27, CVE oracle, first grammar". It replaces `ac6999b35394508fc5f07cef7a90b676448193a8b17e4b149bfe100e79274113`.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the CVE oracle, as a rename. No prompt, guard or default of the system under test moves. (2) It was noticed while writing the CVE acceptance gate (ADR 024), not from a measurement. (3) The target is one definition of a detected run, shared by the grammar and the gate. The criterion reads no measured value. (4) It applies to every target and changes no grade.

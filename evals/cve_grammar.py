@@ -142,7 +142,7 @@ class Resolution(BaseModel):
     category: AuditCategory | None = None
 
 
-_DETECTION_RUNGS = frozenset({CVEStatus.DETECTED, CVEStatus.DETECTED_EXECUTION_ONLY})
+DETECTION_RUNGS = frozenset({CVEStatus.DETECTED, CVEStatus.DETECTED_EXECUTION_ONLY})
 
 
 def grade_run(target: GradedTarget, report: AuditReport) -> RunGrade:
@@ -169,7 +169,7 @@ def resolve(grades: Sequence[RunGrade]) -> Resolution:
             if best.status == CVEStatus.MISSED
             else None
         ),
-        detected_runs=sum(grade.status in _DETECTION_RUNGS for grade in grades),
+        detected_runs=sum(grade.status in DETECTION_RUNGS for grade in grades),
         surfaced_runs=sum(grade.surfaced for grade in grades),
         aimed_runs=sum(grade.aimed for grade in grades),
         fail_without_proof_runs=sum(grade.fail_without_proof for grade in grades),

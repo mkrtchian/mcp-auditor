@@ -13,19 +13,25 @@ from rich.markup import escape
 
 from evals import cve_grammar, cve_units
 from evals.baseline import fingerprint_sources
+from evals.cve_baseline import CVERunConditions
 from evals.cve_calibration import calibrate_all
 from evals.cve_environments import Launch, connect
 from evals.cve_grammar import RunGrade, grade_run
 from evals.cve_oracle import (
     CVEBenchmarkReport,
     CVEResult,
-    CVERunConditions,
     not_run,
     out_of_scope_results,
     render_markdown,
     result_for,
 )
-from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
+from evals.cve_targets import (
+    CVE_TARGETS,
+    OUT_OF_SCOPE_CVES,
+    CVETarget,
+    OutOfScopeCVE,
+    image_tag,
+)
 from evals.metrics import blocked_reasons, refused_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import Settings, load_settings
@@ -40,12 +46,8 @@ DEFAULT_REPORT_PATH = "output/cve_report.json"
 # Fingerprinted in this fixed order, so the fingerprint names one version of the grammar.
 GRAMMAR_PATHS = (Path(cve_grammar.__file__), Path(cve_units.__file__))
 
-EXPECTED_IMAGES = (
-    "mcp-auditor-cve-filesystem:local",
-    "mcp-auditor-cve-git:local",
-    "mcp-auditor-cve-kubernetes:local",
-    "mcp-auditor-cve-fetch:local",
-    "mcp-auditor-cve-sentinel:local",
+EXPECTED_IMAGES = tuple(
+    image_tag(name) for name in dict.fromkeys(n for t in CVE_TARGETS for n in t.images)
 )
 _BUILD_HINT = "run `docker compose -f evals/docker/compose.yml build`"
 

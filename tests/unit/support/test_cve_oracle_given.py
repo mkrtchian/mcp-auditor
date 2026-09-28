@@ -1,8 +1,9 @@
 import re
 from dataclasses import dataclass, field
 
+from evals.cve_baseline import CVERunConditions
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade
-from evals.cve_oracle import CVEBenchmarkReport, CVEResult, CVERunConditions
+from evals.cve_oracle import CVEBenchmarkReport, CVEResult
 from mcp_auditor.domain.models import AuditCategory
 
 SENTINEL = "s3nt1nel_ab12cd34ef56"

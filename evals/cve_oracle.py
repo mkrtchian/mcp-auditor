@@ -4,6 +4,7 @@ from typing import Protocol
 
 from pydantic import BaseModel
 
+from evals.cve_baseline import CVERunConditions
 from evals.cve_grammar import CVEStatus, GradedTarget, MechanismClass, MissClass, RunGrade, resolve
 from mcp_auditor.domain.models import AuditCategory
 
@@ -48,19 +49,6 @@ class CVEResult(BaseModel):
     budget: int = 0
     evidence: str | None = None
     category: AuditCategory | None = None
-
-
-class CVERunConditions(BaseModel):
-    runs: int
-    budget: int
-    # Always True today, recorded because a capability number needs False (ADR 015).
-    tools_filtered: bool
-    provider: str
-    model: str
-    judge_model: str
-    reasoning: str | None
-    judge_reasoning: str | None
-    grammar_fingerprint: str
 
 
 class CVEBenchmarkReport(BaseModel):

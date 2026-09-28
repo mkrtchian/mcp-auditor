@@ -3,6 +3,7 @@ import secrets
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
+from pathlib import Path
 
 from evals.cve_environments import (
     Launch,
@@ -20,7 +21,18 @@ from mcp_auditor.domain.ports import MCPClientPort
 # generator first needs list_directory to discover the planted symlink.
 FILESYSTEM_READ_TOOLS = frozenset({"read_file", "list_directory"})
 
-_KUBERNETES_IMAGE = "mcp-auditor-cve-kubernetes:local"
+DOCKER_DIRECTORY = Path(__file__).parent / "docker"
+
+
+def image_tag(name: str) -> str:
+    return f"mcp-auditor-cve-{name}:local"
+
+
+def image_dockerfile(name: str, docker_directory: Path = DOCKER_DIRECTORY) -> Path:
+    return docker_directory / f"Dockerfile.{name}"
+
+
+_KUBERNETES_IMAGE = image_tag("kubernetes")
 
 
 @dataclass(frozen=True)
@@ -30,13 +42,18 @@ class CVETarget:
     sentinel: str
     mechanism: MechanismClass
     aim: re.Pattern[str]
-    environment: Callable[[], AbstractContextManager[Launch]]
+    images: tuple[str, ...]  # services of evals/docker/compose.yml
+    builder: Callable[..., AbstractContextManager[Launch]]
+    builder_args: tuple[str, ...]  # passed before the sentinel
     exploit: Callable[[MCPClientPort], Awaitable[None]]
     benign: Callable[[MCPClientPort], Awaitable[None]]
     awaited_capability: str | None
     note: str
     tools_filter: frozenset[str] | None
     ci_skip_reason: str | None = None
+
+    def environment(self) -> AbstractContextManager[Launch]:
+        return self.builder(*self.builder_args, self.sentinel)
 
 
 @dataclass(frozen=True)
@@ -145,7 +162,9 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_SYMLINK_TRAVERSAL_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PLANTED_LINK_AIM,
-        environment=lambda: filesystem_env(_SYMLINK_TRAVERSAL_SENTINEL),
+        images=("filesystem",),
+        builder=filesystem_env,
+        builder_args=(),
         exploit=_exploit_symlink_traversal,
         benign=_list_sandbox,
         awaited_capability="cross-tool chains",
@@ -162,7 +181,9 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_PREFIX_COLLISION_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PREFIX_SIBLING_AIM,
-        environment=lambda: prefix_collision_env(_PREFIX_COLLISION_SENTINEL),
+        images=("filesystem",),
+        builder=prefix_collision_env,
+        builder_args=(),
         exploit=_exploit_prefix_collision,
         benign=_list_sandbox,
         awaited_capability="declared-scope awareness",
@@ -175,7 +196,9 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_REPOSITORY_BYPASS_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
-        environment=lambda: repository_bypass_env(_REPOSITORY_BYPASS_SENTINEL),
+        images=("git",),
+        builder=repository_bypass_env,
+        builder_args=(),
         exploit=_exploit_repository_bypass,
         benign=_benign_repository_bypass,
         awaited_capability="declared-scope awareness",
@@ -188,7 +211,9 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_GIT_INIT_TRAVERSAL_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
-        environment=lambda: git_init_traversal_env(_GIT_INIT_TRAVERSAL_SENTINEL),
+        images=("git",),
+        builder=git_init_traversal_env,
+        builder_args=(),
         exploit=_exploit_git_init_traversal,
         benign=_benign_git_init_traversal,
         awaited_capability="cross-tool chains + declared-scope awareness",
@@ -205,9 +230,9 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_KUBERNETES_INJECTION_SENTINEL,
         mechanism=MechanismClass.COMMAND_EXECUTION,
         aim=_SHELL_METACHARACTER_AIM,
-        environment=lambda: command_injection_env(
-            _KUBERNETES_IMAGE, _KUBERNETES_INJECTION_SENTINEL
-        ),
+        images=("kubernetes",),
+        builder=command_injection_env,
+        builder_args=(_KUBERNETES_IMAGE,),
         exploit=_exploit_kubernetes_injection,
         benign=_benign_kubernetes_injection,
         awaited_capability=None,
@@ -223,7 +248,9 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_FETCH_SSRF_SENTINEL,
         mechanism=MechanismClass.INTERNAL_FETCH,
         aim=_INTERNAL_HOST_AIM,
-        environment=lambda: ssrf_env(_FETCH_SSRF_SENTINEL),
+        images=("fetch", "sentinel"),
+        builder=ssrf_env,
+        builder_args=(),
         exploit=_exploit_fetch_ssrf,
         benign=_benign_fetch_ssrf,
         awaited_capability="declared-scope awareness",
