@@ -12,7 +12,7 @@ from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
 from evals.gate import ReplayRule
 
 _BASELINE_DIRECTORY = "evals/baselines/cve"
-_WHOLE_RESET = (
+WHOLE_RESET = (
     f"Reset the whole baseline: delete {_BASELINE_DIRECTORY}/ in a commit of its own, "
     "then record twice at one commit (ADR 020)."
 )
@@ -80,7 +80,7 @@ def compare_target(
     if baseline is None:
         return outcome(TargetOutcome.NO_BASELINE)
     if baseline.fixture_fingerprint != candidate.fixture_fingerprint:
-        return outcome(TargetOutcome.FIXTURE_CHANGED, _target_reset(candidate.cve_id))
+        return outcome(TargetOutcome.FIXTURE_CHANGED, target_reset(candidate.cve_id))
     if not baseline.gated():
         return outcome(TargetOutcome.NOT_GATED, _why_not_gated(baseline))
     if not candidate.completed:
@@ -94,7 +94,7 @@ def _file_name(cve_id: str) -> str:
     return f"{cve_id}.json"
 
 
-def _target_reset(cve_id: str) -> str:
+def target_reset(cve_id: str) -> str:
     return (
         f"fixture changed since the baseline: delete {_BASELINE_DIRECTORY}/{_file_name(cve_id)} "
         f"in the commit that changes its fixture, then record it twice at one commit "
@@ -137,7 +137,7 @@ def judge(comparisons: Sequence[TargetComparison], mismatches: list[str]) -> CVE
         *_named(comparisons, TargetOutcome.PENDING_REPLAY),
     ]
     if mismatches or incomplete:
-        reasons = [*mismatches, _WHOLE_RESET] if mismatches else []
+        reasons = [*mismatches, WHOLE_RESET] if mismatches else []
         return _result(CVEGateVerdict.NOT_COMPARABLE, [*reasons, *incomplete], comparisons)
     regressions = _named(comparisons, TargetOutcome.REGRESSION)
     if regressions:
