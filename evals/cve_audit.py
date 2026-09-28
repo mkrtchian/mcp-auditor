@@ -4,6 +4,7 @@ import os
 import subprocess
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
 from rich.console import Console
 from rich.markup import escape
@@ -17,7 +18,7 @@ from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport
-from mcp_auditor.domain.ports import MCPClientPort
+from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
 
 console = Console()
@@ -27,12 +28,23 @@ class LaunchError(Exception):
     """A pinned server failed to launch or install (infra, not a detection miss)."""
 
 
+@dataclass(frozen=True)
+class _Models:
+    llm: LLMPort
+    judge_llm: LLMPort
+
+
 def audit_target(budget: int) -> AuditTarget:
+    # Built once, before any container: a bad model configuration is a crash, never a
+    # run skipped, which would read as a gate that cannot compare.
+    settings = load_settings()
+    models = _Models(create_llm(settings), create_judge_llm(settings))
+
     async def audit(target: CVETarget) -> RunGrade | None:
         grade: RunGrade | None = None
         try:
             with target.environment() as launch:
-                report = await _audit(launch, target, budget)
+                report = await _audit(launch, target, models, budget)
                 # Graded before __exit__ fires so a best-effort teardown error
                 # cannot erase a completed run's grade.
                 grade = grade_run(target, report)
@@ -54,16 +66,13 @@ def _print_incidents(target: CVETarget, report: AuditReport) -> None:
         )
 
 
-async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
-    settings = load_settings()
-    llm = create_llm(settings)
-    judge_llm = create_judge_llm(settings)
+async def _audit(launch: Launch, target: CVETarget, models: _Models, budget: int) -> AuditReport:
     try:
         async with _silent_client(launch) as mcp_client:
             graph = build_graph(
-                llm,
+                models.llm,
                 AuditedServer(mcp_client),
-                judge_llm=judge_llm,
+                judge_llm=models.judge_llm,
                 tools_filter=target.tools_filter,
             )
             result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
