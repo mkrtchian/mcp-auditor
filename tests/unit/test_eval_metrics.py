@@ -1,6 +1,7 @@
 import tests.unit.support.test_eval_metrics_given as given
 from evals.ground_truth import GroundTruth
 from evals.metrics import (
+    SessionThrottles,
     VerdictMap,
     aggregate_verdicts,
     blocked_reasons,
@@ -342,3 +343,12 @@ def test_a_run_detail_lists_each_refused_step_with_its_tool_and_provider_message
     detail = build_run_detail(0, aggregate_verdicts(report), report, {})
 
     assert detail.refused_steps == ["search: judgment, flagged by the usage policy"]
+
+
+def test_session_throttles_count_each_report_and_keep_the_total():
+    throttles = SessionThrottles()
+
+    counts = [throttles.count(given.a_report_throttled(times)) for times in (2, 0)]
+
+    assert counts == [2, 0]
+    assert throttles.requests == 2

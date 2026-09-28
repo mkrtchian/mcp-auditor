@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from pydantic import BaseModel
 
 from evals.ground_truth import GroundTruth
@@ -150,6 +152,16 @@ def refused_steps(report: AuditReport) -> list[str]:
         f"{refused.tool_name}: {refused.step}, {refused.provider_message}"
         for refused in report.refused_steps
     ]
+
+
+@dataclass
+class SessionThrottles:
+    requests: int = 0
+
+    def count(self, report: AuditReport) -> int:
+        throttled = report.provider_usage.throttled_requests
+        self.requests += throttled
+        return throttled
 
 
 def build_run_detail(

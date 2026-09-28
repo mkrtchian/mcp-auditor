@@ -14,7 +14,7 @@ from evals.cve_environments import Launch, connect
 from evals.cve_grammar import RunGrade, grade_run
 from evals.cve_session import AuditTarget
 from evals.cve_targets import CVETarget
-from evals.metrics import blocked_reasons, refused_steps
+from evals.metrics import SessionThrottles, blocked_reasons, refused_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
@@ -36,7 +36,7 @@ class _Auditor:
     budget: int
 
 
-def audit_target(budget: int, concurrency: int) -> AuditTarget:
+def audit_target(budget: int, concurrency: int, throttles: SessionThrottles) -> AuditTarget:
     # Built once, before any container: a bad model configuration is a crash, never a
     # run skipped, which would read as a gate that cannot compare.
     settings = load_settings()
@@ -50,6 +50,7 @@ def audit_target(budget: int, concurrency: int) -> AuditTarget:
                 # Graded before __exit__ fires so a best-effort teardown error
                 # cannot erase a completed run's grade.
                 grade = grade_run(target, report)
+                throttles.count(report)
                 _print_incidents(target, report)
                 console.print(f"{target.cve_id}: {grade.status}")
         except (LaunchError, subprocess.CalledProcessError) as exc:
@@ -66,6 +67,12 @@ def _print_incidents(target: CVETarget, report: AuditReport) -> None:
     for refused in refused_steps(report):
         console.print(
             f"[yellow]{target.cve_id}: refused by the model provider, {escape(refused)}[/yellow]"
+        )
+    throttled = report.provider_usage.throttled_requests
+    if throttled > 0:
+        console.print(
+            f"[yellow]{target.cve_id}: throttled {throttled} time(s)"
+            " by the model provider (HTTP 429)[/yellow]"
         )
 
 

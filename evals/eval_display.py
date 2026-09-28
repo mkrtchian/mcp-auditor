@@ -45,6 +45,12 @@ def print_summary(report: EvalReport, report_path: str, grid: GateGrid | None = 
         console.print("P pass, F fail, - not covered")
     if gate.protected:
         console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
+    throttled = report.config.get("throttled_requests", 0)
+    if throttled > 0:
+        console.print(
+            f"[yellow]Throttled by the model provider: {throttled} requests"
+            f" at concurrency {report.config['concurrency']}[/yellow]"
+        )
     console.print(f"Report written to {report_path}")
     console.print(Panel(_verdict_text(gate)))
 

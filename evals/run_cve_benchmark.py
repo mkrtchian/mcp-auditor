@@ -35,6 +35,7 @@ from evals.cve_targets import (
     image_tag,
 )
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
+from evals.metrics import SessionThrottles
 from mcp_auditor.config import Settings, load_settings
 
 CVE_RUNS = 3
@@ -151,18 +152,20 @@ async def _run_graded(
 ) -> int:
     conditions = _run_conditions(load_settings(), args.runs, args.budget)
     options = CVEOptions(graded, conditions, args.ungated, args.record_baseline)
-    session = await run_gated(options, _harness(args.budget, args.concurrency))
+    throttles = SessionThrottles()
+    session = await run_gated(options, _harness(args.budget, args.concurrency, throttles))
     results = [_result(target, session.grades[target.cve_id], args.budget) for target in graded]
     results.extend(out_of_scope_results(tracked))
     report = CVEBenchmarkReport(
         conditions=conditions,
         concurrency=args.concurrency,
+        throttled_requests=throttles.requests,
         results=results,
         gate=session.gate,
         recording_refused=session.recording_refused,
     )
     _write_reports(report, Path(args.report))
-    _print_session(session)
+    _print_session(session, report)
     if session.recording_refused:
         display.print_refusal(RECORDING_REFUSED, session.recording_refused)
         return NOT_COMPARABLE_EXIT
@@ -173,9 +176,9 @@ def _result(target: CVETarget, grades: list[RunGrade], budget: int) -> CVEResult
     return not_run(target) if not grades else result_for(target, grades, budget)
 
 
-def _harness(budget: int, concurrency: int) -> CVEHarness:
+def _harness(budget: int, concurrency: int, throttles: SessionThrottles) -> CVEHarness:
     return CVEHarness(
-        audit=audit_target(budget, concurrency),
+        audit=audit_target(budget, concurrency, throttles),
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
         image_ids=_image_ids,
@@ -195,11 +198,16 @@ def _image_ids(names: Sequence[str]) -> dict[str, str]:
     }
 
 
-def _print_session(session: CVESessionResult) -> None:
+def _print_session(session: CVESessionResult, report: CVEBenchmarkReport) -> None:
     if session.gate is None:
         console.print("[yellow]Ungated run: nothing compared to evals/baselines/cve/.[/yellow]")
     else:
         console.print(f"Gate: [bold]{session.gate.verdict.value}[/bold].")
+    if report.throttled_requests > 0:
+        console.print(
+            f"[yellow]Throttled by the model provider: {report.throttled_requests} requests"
+            f" at concurrency {report.concurrency}[/yellow]"
+        )
     for orphan in session.orphans:
         console.print(f"[yellow]Orphaned baseline file, not compared:[/yellow] {orphan}")
     for written in session.written:

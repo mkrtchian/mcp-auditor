@@ -82,6 +82,26 @@ def test_render_states_the_concurrency_on_the_conditions_line():
     assert f"{given.CONCURRENCY} audits at once" in markdown.splitlines()[0]
 
 
+def test_render_states_the_throttled_requests_on_the_conditions_line():
+    report = given.a_benchmark_report([]).model_copy(update={"throttled_requests": 4})
+
+    conditions = render_markdown(report).splitlines()[0]
+
+    assert "4 requests throttled by the model provider" in conditions
+
+
+def test_render_leaves_throttling_out_when_nothing_was_throttled():
+    conditions = render_markdown(given.a_benchmark_report([])).splitlines()[0]
+
+    assert "throttled" not in conditions
+
+
+def test_the_report_json_carries_the_throttled_requests():
+    report = given.a_benchmark_report([]).model_copy(update={"throttled_requests": 4})
+
+    assert '"throttled_requests":4' in report.model_dump_json()
+
+
 def test_render_header_names_the_ladder_columns():
     markdown = render_markdown(given.a_benchmark_report([]))
 

@@ -104,3 +104,9 @@ def and_a_refused_judgment(report: AuditReport, tool: str, provider_message: str
         tool_name=tool, step=AuditStep.JUDGMENT, provider_message=provider_message
     )
     return report.model_copy(update={"refused_steps": [*report.refused_steps, refused]})
+
+
+def a_report_throttled(times: int) -> AuditReport:
+    return AuditReport(
+        target="test", tool_reports=[], provider_usage=ProviderUsage(throttled_requests=times)
+    )

@@ -39,7 +39,7 @@ from evals.honeypots import (
     models_for,
 )
 from evals.judging import RunsOutcome, judge_runs
-from evals.metrics import VerdictMap, aggregate_verdicts
+from evals.metrics import SessionThrottles, VerdictMap, aggregate_verdicts
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
 from evals.replay import ReplayAudit, Replayer
 from mcp_auditor.domain.models import AuditReport
@@ -142,7 +142,8 @@ def _parse_args() -> EvalOptions:
 
 
 async def run_evals(session: EvalSession, concurrency: int) -> EvalRunResult:
-    audit = _announced_audit(session, concurrency)
+    throttles = SessionThrottles()
+    audit = _announced_audit(session, concurrency, throttles)
     outcome = await run_all(audit, session.conditions.runs)
     if not outcome.details:
         raise Refused("All runs failed.", ["no run completed: nothing to judge"])
@@ -161,6 +162,7 @@ async def run_evals(session: EvalSession, concurrency: int) -> EvalRunResult:
             "runs": session.conditions.runs,
             "budget": session.conditions.budget,
             "concurrency": concurrency,
+            "throttled_requests": throttles.requests,
             "completed_runs": len(outcome.details),
         },
         metrics=metrics,
@@ -173,14 +175,23 @@ async def run_evals(session: EvalSession, concurrency: int) -> EvalRunResult:
     return EvalRunResult(report=report, outcome=outcome)
 
 
-def _announced_audit(session: EvalSession, concurrency: int) -> AnnouncedAudit:
+def _announced_audit(
+    session: EvalSession, concurrency: int, throttles: SessionThrottles
+) -> AnnouncedAudit:
     """One bound shared by every audit of the session, runs and replays alike."""
     models = models_for(session.settings)
 
     async def audit(honeypot: HoneypotConfig, announcement: str | None) -> AuditReport:
         if announcement:
             display.console.print(announcement)
-        return await audit_honeypot(models, honeypot, session.conditions.budget)
+        report = await audit_honeypot(models, honeypot, session.conditions.budget)
+        throttled = throttles.count(report)
+        if throttled > 0:
+            display.console.print(
+                f"[yellow]{honeypot.name} was throttled {throttled} time(s)"
+                " by the model provider (HTTP 429)[/yellow]"
+            )
+        return report
 
     return bounded(audit, concurrency)
 
