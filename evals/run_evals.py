@@ -1,25 +1,23 @@
 import argparse
 import asyncio
-import os
 import sys
 import traceback
-from collections.abc import Awaitable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import UUID
 
-from langchain_core.tracers.context import collect_runs
 from pydantic import ValidationError
-from rich.progress import Progress, TaskID
 
 from evals import eval_display as display
 from evals.baseline import Baseline, load_baseline, write_baseline
 from evals.cell_grid import GateGrid, RunAgainstBaseline, cell_grid, outcome_rows
+from evals.concurrency import bounded, positive_int
 from evals.eval_report import EvalReport
+from evals.eval_runs import AnnouncedAudit, run_all
 from evals.eval_session import (
     BASELINE_PATH,
     DEFAULT_BUDGET,
+    DEFAULT_CONCURRENCY,
     DEFAULT_RUNS,
     RECORDING_REFUSED,
     EvalOptions,
@@ -38,11 +36,10 @@ from evals.honeypots import (
     MERGED_GROUND_TRUTH,
     HoneypotConfig,
     audit_honeypot,
-    audit_honeypots,
     models_for,
 )
 from evals.judging import RunsOutcome, judge_runs
-from evals.metrics import RunDetail, VerdictMap, aggregate_verdicts, build_run_detail
+from evals.metrics import VerdictMap, aggregate_verdicts
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
 from evals.replay import ReplayAudit, Replayer
 from mcp_auditor.domain.models import AuditReport
@@ -64,13 +61,6 @@ class EvalRunResult:
     outcome: RunsOutcome
 
 
-@dataclass(frozen=True)
-class CompletedRun:
-    verdicts: VerdictMap
-    report: AuditReport
-    trace_ids: list[UUID]
-
-
 def main() -> None:
     options = _parse_args()
     try:
@@ -86,7 +76,7 @@ def main() -> None:
 
 def _evaluate(options: EvalOptions) -> int:
     session = open_session(options)
-    result = asyncio.run(run_evals(session))
+    result = asyncio.run(run_evals(session, options.concurrency))
 
     report_path = Path(options.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -119,6 +109,12 @@ def _parse_args() -> EvalOptions:
     parser.add_argument("--budget", type=int, default=DEFAULT_BUDGET)
     parser.add_argument("--report", type=str, default=DEFAULT_REPORT_PATH)
     parser.add_argument(
+        "--concurrency",
+        type=positive_int,
+        default=DEFAULT_CONCURRENCY,
+        help="Audits in flight at once, runs and replays alike; 1 runs them one after the other.",
+    )
+    parser.add_argument(
         "--record-baseline",
         action="store_true",
         help=(
@@ -135,17 +131,25 @@ def _parse_args() -> EvalOptions:
         ),
     )
     args = parser.parse_args()
-    return EvalOptions(args.runs, args.budget, args.report, args.record_baseline, args.ungated)
+    return EvalOptions(
+        runs=args.runs,
+        budget=args.budget,
+        report=args.report,
+        record_baseline=args.record_baseline,
+        ungated=args.ungated,
+        concurrency=args.concurrency,
+    )
 
 
-async def run_evals(session: EvalSession) -> EvalRunResult:
-    outcome = await _run_all(session)
+async def run_evals(session: EvalSession, concurrency: int) -> EvalRunResult:
+    audit = _announced_audit(session, concurrency)
+    outcome = await run_all(audit, session.conditions.runs)
     if not outcome.details:
         raise Refused("All runs failed.", ["no run completed: nothing to judge"])
 
     metrics, consistency_details = outcome.metrics()
     replayer = Replayer(
-        audit=_replay_audit(session),
+        audit=_replay_audit(audit),
         honeypots=HONEYPOTS,
         announce=_announce_replay,
         warn=_warn_replay,
@@ -156,6 +160,7 @@ async def run_evals(session: EvalSession) -> EvalRunResult:
         config={
             "runs": session.conditions.runs,
             "budget": session.conditions.budget,
+            "concurrency": concurrency,
             "completed_runs": len(outcome.details),
         },
         metrics=metrics,
@@ -168,83 +173,23 @@ async def run_evals(session: EvalSession) -> EvalRunResult:
     return EvalRunResult(report=report, outcome=outcome)
 
 
-async def _run_all(session: EvalSession) -> RunsOutcome:
-    outcome = RunsOutcome()
-    num_runs = session.conditions.runs
-    with Progress(console=display.console) as progress:
-        task = progress.add_task("Running evals", total=num_runs * len(HONEYPOTS))
-        for i in range(num_runs):
-            try:
-                completed = await _run_one_eval(session, progress, task)
-            except Exception:
-                progress.console.print(f"[yellow]Warning: run {i + 1}/{num_runs} failed:[/yellow]")
-                traceback.print_exc(file=sys.stderr)
-                progress.advance(task, advance=len(HONEYPOTS))
-                continue
+def _announced_audit(session: EvalSession, concurrency: int) -> AnnouncedAudit:
+    """One bound shared by every audit of the session, runs and replays alike."""
+    models = models_for(session.settings)
 
-            run_detail = build_run_detail(
-                i, completed.verdicts, completed.report, MERGED_GROUND_TRUTH
-            )
-            _post_langsmith_feedback(run_detail, completed.trace_ids)
-            outcome.details.append(run_detail)
-            outcome.verdict_maps.append(completed.verdicts)
-            outcome.audits.append((i, completed.report))
-            display.print_run_result(run_detail, progress)
-    return outcome
+    async def audit(honeypot: HoneypotConfig, announcement: str | None) -> AuditReport:
+        if announcement:
+            display.console.print(announcement)
+        return await audit_honeypot(models, honeypot, session.conditions.budget)
+
+    return bounded(audit, concurrency)
 
 
-async def _run_one_eval(session: EvalSession, progress: Progress, task: TaskID) -> CompletedRun:
-    trace_ids: list[UUID] = []
+def _replay_audit(audit: AnnouncedAudit) -> ReplayAudit:
+    async def replay(honeypot: HoneypotConfig) -> VerdictMap:
+        return aggregate_verdicts(await audit(honeypot, None))
 
-    async def audit(honeypot: HoneypotConfig) -> AuditReport:
-        progress.console.print(f"  Auditing [bold]{honeypot.name}[/bold]...")
-        report = await _traced(
-            audit_honeypot(models_for(session.settings), honeypot, session.conditions.budget),
-            trace_ids,
-        )
-        progress.advance(task)
-        return report
-
-    verdicts, report = await audit_honeypots(audit)
-    return CompletedRun(verdicts, report, trace_ids)
-
-
-async def _traced(audit: Awaitable[AuditReport], trace_ids: list[UUID]) -> AuditReport:
-    if not _tracing_enabled():
-        return await audit
-    with collect_runs() as collector:
-        report = await audit
-    if collector.traced_runs:
-        trace_ids.append(collector.traced_runs[0].id)
-    return report
-
-
-def _tracing_enabled() -> bool:
-    return bool(os.environ.get("LANGSMITH_TRACING") or os.environ.get("LANGCHAIN_TRACING_V2"))
-
-
-def _post_langsmith_feedback(run_detail: RunDetail, trace_ids: list[UUID]) -> None:
-    if not _tracing_enabled():
-        return
-    try:
-        from langsmith import Client  # type: ignore[import-untyped]
-
-        client = Client()
-        for trace_id in trace_ids:
-            client.create_feedback(trace_id, key="recall", score=run_detail.recall)  # pyright: ignore[reportUnknownMemberType]
-            client.create_feedback(trace_id, key="precision", score=run_detail.precision)  # pyright: ignore[reportUnknownMemberType]
-    except Exception:
-        pass  # Best-effort: don't fail evals because of LangSmith
-
-
-def _replay_audit(session: EvalSession) -> ReplayAudit:
-    async def audit(honeypot: HoneypotConfig) -> VerdictMap:
-        report = await audit_honeypot(
-            models_for(session.settings), honeypot, session.conditions.budget
-        )
-        return aggregate_verdicts(report)
-
-    return audit
+    return replay
 
 
 def _announce_replay(message: str) -> None:

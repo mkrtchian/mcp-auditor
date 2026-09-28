@@ -12,6 +12,7 @@ uv run pyright                   # Type check (strict mode)
 uv run python -m evals.run_evals       # E2E evals (honeypot servers, needs an LLM key: OPENAI_API_KEY by default)
 uv run python -m evals.run_evals --record-baseline  # Record evals/baselines/honeypot_e2e.json from a clean tree: run it twice at the same commit (exploratory, then confirmed), then commit it by hand
 uv run python -m evals.run_evals --ungated          # Floors only (recall one detection per run, precision and coverage 0.50), any conditions, no baseline comparison (never in CI)
+uv run python -m evals.run_evals --concurrency N    # Honeypot audits in flight at once, runs and replays alike, default 6, 1 for the old sequence (recorded in the report, never in the baseline)
 uv run python -m evals.run_judge_eval  # Judge isolation eval (needs an LLM key: OPENAI_API_KEY by default)
 
 docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)

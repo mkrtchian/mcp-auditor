@@ -2,6 +2,7 @@ import tests.unit.support.test_eval_baseline_given as baseline_given
 from evals.baseline import Baseline, BaselineConditions, BaselineStatus
 from evals.eval_session import (
     DEFAULT_BUDGET,
+    DEFAULT_CONCURRENCY,
     DEFAULT_RUNS,
     EvalOptions,
     EvalSession,
@@ -42,7 +43,12 @@ def ci_conditions(budget: int = DEFAULT_BUDGET) -> BaselineConditions:
 
 def options() -> EvalOptions:
     return EvalOptions(
-        runs=DEFAULT_RUNS, budget=DEFAULT_BUDGET, report="", record_baseline=False, ungated=False
+        runs=DEFAULT_RUNS,
+        budget=DEFAULT_BUDGET,
+        report="",
+        record_baseline=False,
+        ungated=False,
+        concurrency=DEFAULT_CONCURRENCY,
     )
 
 

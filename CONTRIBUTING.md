@@ -22,6 +22,7 @@ uv run pyright                         # type-check
 uv run python -m evals.run_evals       # e2e evals (requires API key)
 uv run python -m evals.run_evals --record-baseline  # record the e2e baseline (clean tree, see below)
 uv run python -m evals.run_evals --ungated          # e2e evals on the floors alone, at any conditions
+uv run python -m evals.run_evals --concurrency N    # e2e audits in flight at once (default 6, 1 for the old sequence)
 uv run python -m evals.run_judge_eval  # judge isolation eval (requires API key)
 ```
 
