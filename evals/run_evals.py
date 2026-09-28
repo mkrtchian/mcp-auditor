@@ -147,6 +147,7 @@ def _parse_args() -> EvalOptions:
 
 
 async def run_evals(session: EvalSession, concurrency: int) -> EvalRunResult:
+    tree = session.tree or read_tree()
     throttles = SessionThrottles()
     audit = _announced_audit(session, concurrency, throttles)
     outcome = await run_all(audit, session.conditions.runs)
@@ -163,6 +164,9 @@ async def run_evals(session: EvalSession, concurrency: int) -> EvalRunResult:
     gate = await judge_runs(session, outcome, replayer)
     report = EvalReport(
         timestamp=datetime.now(UTC).isoformat(),
+        commit=tree.commit,
+        dirty=tree.dirty,
+        conditions=session.conditions,
         config={
             "runs": session.conditions.runs,
             "budget": session.conditions.budget,

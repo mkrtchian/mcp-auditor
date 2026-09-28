@@ -10,6 +10,7 @@ from mcp_auditor.domain.models import AuditCategory
 SENTINEL = "s3nt1nel_ab12cd34ef56"
 FINGERPRINT = "0123456789abcdef" * 4
 CONCURRENCY = 4
+COMMIT = "c0ffee"
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,8 @@ def a_benchmark_report(results: list[CVEResult]) -> CVEBenchmarkReport:
             grammar_fingerprint=FINGERPRINT,
         ),
         concurrency=CONCURRENCY,
+        commit=COMMIT,
+        dirty=False,
         results=results,
     )
 

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from evals.cve_baseline import CVERunConditions
 from evals.cve_gate import CVEGateResult, TargetComparison
 from evals.cve_grammar import CVEStatus, GradedTarget, MechanismClass, MissClass, RunGrade, resolve
-from mcp_auditor.domain.models import AuditCategory
+from mcp_auditor.domain.models import AuditCategory, ProviderUsage
 
 
 class TargetInfo(GradedTarget, Protocol):
@@ -56,6 +56,9 @@ class CVEBenchmarkReport(BaseModel):
     conditions: CVERunConditions
     concurrency: int  # an execution setting, never compared nor recorded in a baseline
     throttled_requests: int = 0  # an execution observation, never compared nor recorded
+    provider_usage: ProviderUsage = ProviderUsage()  # every attempt billed, replays included
+    commit: str
+    dirty: bool
     results: list[CVEResult]
     gate: CVEGateResult | None = None
     recording_refused: list[str] = []
@@ -145,11 +148,12 @@ def _render_conditions(report: CVEBenchmarkReport) -> str:
     model = _with_reasoning(conditions.model, conditions.reasoning)
     judge = _with_reasoning(conditions.judge_model, conditions.judge_reasoning)
     tools = "tools filtered" if conditions.tools_filtered else "all tools"
+    usage = report.provider_usage
     return (
         f"Conditions: {conditions.provider}, model {model}, judge {judge}, "
         f"{conditions.runs} runs, budget {conditions.budget}, {tools}, "
-        f"grammar {conditions.grammar_fingerprint[:12]}, {report.concurrency} audits at once"
-        f"{throttled}."
+        f"grammar {conditions.grammar_fingerprint[:12]}, {report.concurrency} audits at once, "
+        f"{usage.input_tokens} input tokens, {usage.output_tokens} output tokens{throttled}."
     )
 
 

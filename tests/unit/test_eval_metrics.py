@@ -352,3 +352,13 @@ def test_session_throttles_count_each_report_and_keep_the_total():
 
     assert counts == [2, 0]
     assert throttles.requests == 2
+
+
+def test_session_throttles_sum_the_tokens_of_every_counted_report_a_refused_one_included():
+    throttles = SessionThrottles()
+    refused = given.and_a_refused_judgment(given.a_report_billed(100, 10), "search", "flagged")
+
+    throttles.count(given.a_report_billed(200, 20))
+    throttles.count(refused)
+
+    assert (throttles.usage.input_tokens, throttles.usage.output_tokens) == (300, 30)

@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
 from evals.ground_truth import GroundTruth
-from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict
+from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict, ProviderUsage
 
 VerdictMap = dict[tuple[str, AuditCategory], EvalVerdict | None]
 
@@ -157,10 +157,13 @@ def refused_steps(report: AuditReport) -> list[str]:
 @dataclass
 class SessionThrottles:
     requests: int = 0
+    usage: ProviderUsage = field(default_factory=ProviderUsage)
 
     def count(self, report: AuditReport) -> int:
+        """Every report counted is billed, a refused attempt's and a replay's included."""
         throttled = report.provider_usage.throttled_requests
         self.requests += throttled
+        self.usage = self.usage.add(report.provider_usage)
         return throttled
 
 

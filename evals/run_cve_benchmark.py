@@ -151,6 +151,7 @@ def _flag_refusal(args: argparse.Namespace) -> str | None:
 async def _run_graded(
     args: argparse.Namespace, graded: list[CVETarget], tracked: list[OutOfScopeCVE]
 ) -> int:
+    tree = read_tree()
     conditions = _run_conditions(load_settings(), args.runs, args.budget)
     options = CVEOptions(graded, conditions, args.ungated, args.record_baseline)
     throttles = SessionThrottles()
@@ -161,6 +162,9 @@ async def _run_graded(
         conditions=conditions,
         concurrency=args.concurrency,
         throttled_requests=throttles.requests,
+        provider_usage=throttles.usage,
+        commit=tree.commit,
+        dirty=tree.dirty,
         results=results,
         gate=session.gate,
         recording_refused=session.recording_refused,

@@ -14,6 +14,8 @@ uv run python -m evals.run_evals --record-baseline  # Record evals/baselines/hon
 uv run python -m evals.run_evals --ungated          # Floors only (recall one detection per run, precision and coverage 0.50), any conditions, no baseline comparison (never in CI)
 uv run python -m evals.run_evals --concurrency N    # Honeypot audits in flight at once, runs and replays alike, default 6, 1 for the old sequence (recorded in the report, never in the baseline)
 uv run python -m evals.run_judge_eval  # Judge isolation eval (needs an LLM key: OPENAI_API_KEY by default)
+uv run python -m evals.draw_judge_cases --honeypot-export PATH --honeypot-export PATH --cve-export PATH  # Draw the unlabeled judge cases into evals/fixtures/judge_cases_drawn.json from clean source runs at one commit (no LLM), then commit it by hand
+uv run python -m evals.draw_judge_cases --honeypot-export PATH --honeypot-export PATH --cve-export PATH --complement  # Once every drawn case is labeled and FAIL cases are 40 % or more of the pass or fail ones: one more case per PASS cell, same exports
 
 docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)
 uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live and its benign call is clean (Docker, no LLM)

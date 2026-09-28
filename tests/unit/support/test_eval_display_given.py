@@ -3,6 +3,7 @@ from io import StringIO
 import pytest
 from rich.console import Console
 
+import tests.unit.support.test_eval_baseline_given as baseline_given
 from evals import eval_display
 from evals.eval_report import EvalReport
 from evals.gate_verdict import GateMode, GateResult, GateVerdict
@@ -20,6 +21,9 @@ def an_eval_report(
 ) -> EvalReport:
     return EvalReport(
         timestamp="2026-09-28T00:00:00+00:00",
+        commit="c0ffee",
+        dirty=False,
+        conditions=baseline_given.conditions(),
         config=config or {"concurrency": 6},
         metrics=EvalMetrics(recall=1.0, precision=1.0, consistency=1.0, distribution_coverage=1.0),
         thresholds={},
