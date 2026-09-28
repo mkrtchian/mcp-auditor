@@ -98,10 +98,16 @@ jobs:
         run: uv sync --dev --locked
 
       - name: Run judge eval
+        id: judge
         if: (steps.cmd.outputs.mode == 'judge' || steps.cmd.outputs.mode == 'full') && steps.pr.outputs.fork == 'false'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: uv run python -m evals.run_judge_eval
+        run: |
+          set +e
+          uv run python -m evals.run_judge_eval
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          exit $exit_code
 
       - name: Run e2e eval
         id: e2e
@@ -122,6 +128,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MODE: ${{ steps.cmd.outputs.mode }}
+          JUDGE_EXIT_CODE: ${{ steps.judge.outputs.exit_code }}
           E2E_EXIT_CODE: ${{ steps.e2e.outputs.exit_code }}
           SHA: ${{ steps.pr.outputs.sha }}
         run: |
@@ -136,11 +143,18 @@ jobs:
             gh pr comment ${{ github.event.issue.number }} \
               --body "Evals passed ($MODE).$commit_line$gate_line [Run details]($run_url)"
           else
-            case "$E2E_EXIT_CODE" in
-              1) reason=": e2e red (regression, floor or threshold)" ;;
-              3) reason=": e2e not comparable (conditions, fixtures or incomplete runs, see the log)" ;;
-              4) reason=": e2e crashed (see the log)" ;;
-              *) reason="" ;;
+            case "$JUDGE_EXIT_CODE" in
+              1) reason=": judge red (regression or floor)" ;;
+              3) reason=": judge not comparable or refused (conditions, fixture or baseline, see the log)" ;;
+              4) reason=": judge crashed (see the log)" ;;
+              *)
+                case "$E2E_EXIT_CODE" in
+                  1) reason=": e2e red (regression, floor or threshold)" ;;
+                  3) reason=": e2e not comparable (conditions, fixtures or incomplete runs, see the log)" ;;
+                  4) reason=": e2e crashed (see the log)" ;;
+                  *) reason="" ;;
+                esac
+                ;;
             esac
             gh pr comment ${{ github.event.issue.number }} \
               --body "Evals failed ($MODE)$reason.$commit_line$gate_line [Run details]($run_url)"
