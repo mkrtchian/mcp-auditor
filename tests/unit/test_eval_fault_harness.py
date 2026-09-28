@@ -151,6 +151,15 @@ async def test_auditing_the_honeypots_merges_in_a_fixed_order_whatever_finishes_
     then.merged(verdicts, merged, list(reverse.reports.by_honeypot.values()))
 
 
+async def test_a_failing_honeypot_cancels_the_other_audits_of_its_run():
+    failing = given.OneFailingHoneypot()
+
+    with pytest.raises(given.SubtleHoneypotCrashed):
+        await audit_honeypots(failing.audit)
+
+    assert sorted(failing.cancelled) == ["chain_honeypot", "honeypot"]
+
+
 async def test_a_replay_takes_its_audit_index_when_it_starts_not_when_it_ends():
     first, second = given.SINGLE_STEP_HONEYPOTS
     clients = {first.name: given.GatedClient(), second.name: given.GatedClient()}

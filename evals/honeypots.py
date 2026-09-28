@@ -1,9 +1,10 @@
 import asyncio
 import os
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Callable, Coroutine
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from evals.ground_truth import (
     CHAIN_HONEYPOT_GROUND_TRUTH,
@@ -66,13 +67,18 @@ class ConnectedHoneypot:
     client: MCPClientPort
 
 
-HoneypotAudit = Callable[[HoneypotConfig], Awaitable[AuditReport]]
+HoneypotAudit = Callable[[HoneypotConfig], Coroutine[Any, Any, AuditReport]]
 
 
 async def audit_honeypots(audit: HoneypotAudit) -> tuple[VerdictMap, AuditReport]:
     """One run: every honeypot audited side by side, their verdicts and reports merged in a
-    fixed order."""
-    reports = await asyncio.gather(*(audit(honeypot) for honeypot in HONEYPOTS))
+    fixed order. A failed audit cancels the others, whose reports the run would discard."""
+    try:
+        async with asyncio.TaskGroup() as group:
+            tasks = [group.create_task(audit(honeypot)) for honeypot in HONEYPOTS]
+    except ExceptionGroup as failures:
+        raise failures.exceptions[0] from None
+    reports = [task.result() for task in tasks]
     verdicts: VerdictMap = {}
     merged = AuditReport(target="evals", tool_reports=[], token_usage=TokenUsage())
     for report in reports:

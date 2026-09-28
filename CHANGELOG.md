@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The CVSS column of the CVE benchmark report gives each score from the CVE record on cve.org, with its CVSS version and source (the CNA, or CISA-ADP when the CNA gives none). Five of the seven scores change.
 - The fingerprint of the CVE grammar changes once, from `ac6999b3…` to `af382a92…`: its detection rungs are made public for the CVE baseline. No grade changes.
 
+### Removed
+
+- The `MCP_AUDITOR_LANGSMITH_PROJECT` setting. Its only reader was the e2e evals' lookup of the latest trace, which is gone. LangSmith's own `LANGSMITH_PROJECT` still names the project the traces go to.
+
 ## [0.3.0] - 2026-09-27
 
 ### Added

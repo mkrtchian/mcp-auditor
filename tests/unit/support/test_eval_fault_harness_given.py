@@ -110,6 +110,27 @@ class ReverseFinishingReports:
 _NEVER_IN_SEQUENCE = 1.0  # seconds: awaited one after the other, these audits would wait forever
 
 
+class SubtleHoneypotCrashed(Exception):
+    pass
+
+
+@dataclass(frozen=True)
+class OneFailingHoneypot:
+    """The subtle honeypot's audit fails at once, the others wait until they are cancelled."""
+
+    cancelled: list[str] = field(default_factory=list[str])
+
+    async def audit(self, honeypot: HoneypotConfig) -> AuditReport:
+        if honeypot.name == "subtle":
+            raise SubtleHoneypotCrashed
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.cancelled.append(honeypot.name)
+            raise
+        raise AssertionError("unreachable: the event is never set")
+
+
 def a_report_per_honeypot_finishing_in_reverse() -> ReverseFinishingReports:
     return ReverseFinishingReports(a_report_per_honeypot())
 
