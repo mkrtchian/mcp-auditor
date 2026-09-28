@@ -1,22 +1,22 @@
 import argparse
 import asyncio
 import json
-import os
 import subprocess
 import sys
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+import traceback
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 
 from rich.console import Console
-from rich.markup import escape
 
 from evals import cve_grammar, cve_units
-from evals.baseline import fingerprint_sources
-from evals.cve_baseline import CVERunConditions
+from evals import eval_display as display
+from evals.baseline import BaselineStatus, fingerprint_sources
+from evals.cve_audit import audit_target
+from evals.cve_baseline import CVE_BASELINE_DIRECTORY, CVERunConditions
 from evals.cve_calibration import calibrate_all
-from evals.cve_environments import Launch, connect
-from evals.cve_grammar import RunGrade, grade_run
+from evals.cve_grammar import RunGrade
 from evals.cve_oracle import (
     CVEBenchmarkReport,
     CVEResult,
@@ -25,6 +25,7 @@ from evals.cve_oracle import (
     render_markdown,
     result_for,
 )
+from evals.cve_session import CVEHarness, CVEOptions, CVESessionResult, run_gated
 from evals.cve_targets import (
     CVE_TARGETS,
     OUT_OF_SCOPE_CVES,
@@ -32,17 +33,14 @@ from evals.cve_targets import (
     OutOfScopeCVE,
     image_tag,
 )
-from evals.metrics import blocked_reasons, refused_steps
-from mcp_auditor.adapters.llm import create_judge_llm, create_llm
+from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
 from mcp_auditor.config import Settings, load_settings
-from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AttackContext, AuditReport
-from mcp_auditor.domain.ports import MCPClientPort
-from mcp_auditor.graph.builder import build_graph
 
 CVE_RUNS = 3
 CVE_TEST_BUDGET = 10
 DEFAULT_REPORT_PATH = "output/cve_report.json"
+NOT_COMPARABLE_EXIT = 3
+CRASHED_EXIT = 4
 # Fingerprinted in this fixed order, so the fingerprint names one version of the grammar.
 GRAMMAR_PATHS = (Path(cve_grammar.__file__), Path(cve_units.__file__))
 
@@ -54,11 +52,43 @@ _BUILD_HINT = "run `docker compose -f evals/docker/compose.yml build`"
 console = Console()
 
 
-class LaunchError(Exception):
-    """A pinned server failed to launch or install (infra, not a detection miss)."""
+_NEXT_STEP = {
+    BaselineStatus.EXPLORATORY: (
+        "Run --record-baseline again now, at this commit and on these images, to confirm them."
+    ),
+    BaselineStatus.CONFIRMED: "Commit evals/baselines/cve/ by hand.",
+}
 
 
 def main() -> None:
+    args = _parse_args()
+    graded = _filter_by_cve(CVE_TARGETS, args.cve)
+    tracked = _filter_by_cve(OUT_OF_SCOPE_CVES, args.cve)
+    _reject_unknown_cves(args.cve, {t.cve_id for t in (*graded, *tracked)})
+    refusal = _flag_refusal(args)
+    if refusal:
+        display.print_refusal(RECORDING_REFUSED if args.record_baseline else "Refused.", [refusal])
+        sys.exit(NOT_COMPARABLE_EXIT)
+
+    # Says nothing of detection nor of the fixtures, so a crash in every mode.
+    if not _preflight_ok():
+        sys.exit(CRASHED_EXIT)
+
+    if args.calibrate:
+        sys.exit(0 if asyncio.run(calibrate_all(graded, ci=args.ci)) else 1)
+
+    try:
+        code = asyncio.run(_run_graded(args, graded, tracked))
+    except Refused as refused:
+        display.print_refusal(refused.title, refused.reasons)
+        code = NOT_COMPARABLE_EXIT
+    except Exception:
+        traceback.print_exc()
+        code = CRASHED_EXIT
+    sys.exit(code)
+
+
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the CVE validation benchmark")
     parser.add_argument("--runs", type=int, default=CVE_RUNS)
     parser.add_argument("--budget", type=int, default=CVE_TEST_BUDGET)
@@ -82,22 +112,84 @@ def main() -> None:
         action="store_true",
         help="Skip fixtures marked CI-unstable (ci_skip_reason); for the CI calibration gate.",
     )
-    args = parser.parse_args()
+    parser.add_argument(
+        "--record-baseline",
+        action="store_true",
+        help=(
+            "Record one file per target in evals/baselines/cve/ from a clean tree: run it twice "
+            "at one commit on the local images (exploratory, then confirmed), commit by hand."
+        ),
+    )
+    parser.add_argument(
+        "--ungated",
+        action="store_true",
+        help="Run and report without comparing to evals/baselines/cve/ (exit 0).",
+    )
+    return parser.parse_args()
 
-    graded = _filter_by_cve(CVE_TARGETS, args.cve)
-    tracked = _filter_by_cve(OUT_OF_SCOPE_CVES, args.cve)
-    _reject_unknown_cves(args.cve, {t.cve_id for t in (*graded, *tracked)})
 
-    if not _preflight_ok():
-        sys.exit(1)
+def _flag_refusal(args: argparse.Namespace) -> str | None:
+    if args.calibrate and (args.record_baseline or args.ungated):
+        return "--calibrate runs no audit: it neither records nor gates"
+    if args.record_baseline and args.ungated:
+        return "--record-baseline cannot run --ungated: a baseline records the conditions it gates"
+    return None
 
-    if args.calibrate:
-        sys.exit(0 if asyncio.run(calibrate_all(graded, ci=args.ci)) else 1)
 
-    results = asyncio.run(run_cve_benchmark(graded, args.budget, args.runs))
-    results.extend(out_of_scope_results(tracked))
+async def _run_graded(
+    args: argparse.Namespace, graded: list[CVETarget], tracked: list[OutOfScopeCVE]
+) -> int:
     conditions = _run_conditions(load_settings(), args.runs, args.budget)
-    _write_reports(CVEBenchmarkReport(conditions=conditions, results=results), Path(args.report))
+    options = CVEOptions(graded, conditions, args.ungated, args.record_baseline)
+    session = await run_gated(options, _harness(args.budget))
+    results = [_result(target, session.grades[target.cve_id], args.budget) for target in graded]
+    results.extend(out_of_scope_results(tracked))
+    report = CVEBenchmarkReport(conditions=conditions, results=results, gate=session.gate)
+    _write_reports(report, Path(args.report))
+    _print_session(session)
+    return session.exit_code
+
+
+def _result(target: CVETarget, grades: list[RunGrade], budget: int) -> CVEResult:
+    return not_run(target) if not grades else result_for(target, grades, budget)
+
+
+def _harness(budget: int) -> CVEHarness:
+    return CVEHarness(
+        audit=audit_target(budget),
+        baselines=CVE_BASELINE_DIRECTORY,
+        read_tree=read_tree,
+        image_ids=_image_ids,
+        clock=lambda: datetime.now(UTC).isoformat(),
+    )
+
+
+def _image_ids(names: Sequence[str]) -> dict[str, str]:
+    return {
+        name: subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", image_tag(name)],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        for name in names
+    }
+
+
+def _print_session(session: CVESessionResult) -> None:
+    if session.gate is None:
+        console.print("[yellow]Ungated run: nothing compared to evals/baselines/cve/.[/yellow]")
+    else:
+        console.print(f"Gate: [bold]{session.gate.verdict.value}[/bold].")
+    for orphan in session.orphans:
+        console.print(f"[yellow]Orphaned baseline file, not compared:[/yellow] {orphan}")
+    for written in session.written:
+        path = CVE_BASELINE_DIRECTORY / f"{written.cve_id}.json"
+        console.print(f"[green]Baseline recorded ({written.status}) to {path}.[/green]")
+        if written.leaves_gated_set:
+            console.print(f"  {written.cve_id} leaves the gated set.")
+    if session.written:
+        console.print(_NEXT_STEP[session.written[0].status])
 
 
 def _run_conditions(settings: Settings, runs: int, budget: int) -> CVERunConditions:
@@ -180,67 +272,6 @@ def _reject_unknown_cves(ids: list[str] | None, known: set[str]) -> None:
     if unknown:
         console.print(f"[red]Unknown CVE id(s):[/red] {', '.join(sorted(unknown))}")
         sys.exit(2)
-
-
-async def run_cve_benchmark(targets: list[CVETarget], budget: int, runs: int) -> list[CVEResult]:
-    results: list[CVEResult] = []
-    for target in targets:
-        grades: list[RunGrade] = []
-        for _ in range(runs):
-            try:
-                with target.environment() as launch:
-                    report = await _audit(launch, target, budget)
-                    # Record before __exit__ fires so a best-effort teardown error
-                    # cannot erase a completed run's grade.
-                    grades.append(grade_run(target, report))
-                    _print_incidents(target, report)
-            except (LaunchError, subprocess.CalledProcessError) as exc:
-                console.print(f"[yellow]{target.cve_id} run skipped:[/yellow] {exc}")
-                continue
-        results.append(not_run(target) if not grades else result_for(target, grades, budget))
-    return results
-
-
-def _print_incidents(target: CVETarget, report: AuditReport) -> None:
-    for reason in blocked_reasons(report):
-        console.print(f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]")
-    for refused in refused_steps(report):
-        console.print(
-            f"[yellow]{target.cve_id}: refused by the model provider, {escape(refused)}[/yellow]"
-        )
-
-
-async def _audit(launch: Launch, target: CVETarget, budget: int) -> AuditReport:
-    settings = load_settings()
-    llm = create_llm(settings)
-    judge_llm = create_judge_llm(settings)
-    try:
-        async with _silent_client(launch) as mcp_client:
-            graph = build_graph(
-                llm,
-                AuditedServer(mcp_client),
-                judge_llm=judge_llm,
-                tools_filter=target.tools_filter,
-            )
-            result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                {
-                    "target": f"{launch.command} {' '.join(launch.args)}",
-                    "test_budget": budget,
-                    "attack_context": AttackContext(),
-                    "chain_budget": launch.chain_budget,
-                    "max_chain_steps": launch.max_chain_steps,
-                }
-            )
-            return result["audit_report"]
-    except Exception as exc:
-        raise LaunchError(str(exc)) from exc
-
-
-@asynccontextmanager
-async def _silent_client(launch: Launch) -> AsyncIterator[MCPClientPort]:
-    with open(os.devnull, "w") as devnull:
-        async with connect(launch, devnull) as client:
-            yield client
 
 
 if __name__ == "__main__":

@@ -16,7 +16,9 @@ uv run python -m evals.run_judge_eval  # Judge isolation eval (needs an LLM key:
 
 docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)
 uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live and its benign call is clean (Docker, no LLM)
-uv run python -m evals.run_cve_benchmark              # CVE benchmark graded run (Docker + an LLM key)
+uv run python -m evals.run_cve_benchmark              # CVE acceptance gate (Docker + an LLM key): compares each target to evals/baselines/cve/, exit 0 green, 1 red, 3 not comparable, 4 crash (the preflight included, --calibrate too)
+uv run python -m evals.run_cve_benchmark --record-baseline  # Record one file per target in evals/baselines/cve/ from a clean tree: run it twice at one commit on the local images (exploratory, then confirmed), then commit evals/baselines/cve/ by hand
+uv run python -m evals.run_cve_benchmark --ungated          # CVE graded run with no comparison to the baseline, exit 0
 uv run python -m evals.capture_probe_corpus           # Capture evals/fixtures/probe_corpus.json once, reference settings only (Docker, the CVE images, GOOGLE_API_KEY), then commit it by hand
 uv run python -m evals.run_probe                      # Model probe: replay the corpus against the reference and every candidate, report statistics and defects (needs GOOGLE_API_KEY and OPENAI_API_KEY, see evals/probe_method.md)
 uv run python -m evals.run_probe --candidates "gpt-6-luna none" "gpt-6-luna low" --schema TestCaseBatch  # Subset run: debugging only, no statistics, needs the keys of the named candidates only

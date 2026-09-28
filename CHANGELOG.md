@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The CVE benchmark's graded run is an acceptance gate. It compares each target to its own baseline file in `evals/baselines/cve/`, which records the run conditions, the target's fixture fingerprint, the runs and the image IDs. A target detected in every run of a confirmed baseline is gated, either detection rung counting: a miss on it is replayed alone and the gate goes red when the miss reproduces 4 times out of at most 5. The run exits `0` green, `1` red, `3` not comparable or refused and `4` on a crash. `--record-baseline` records from a clean tree, all files or none: a first recording is exploratory, a second at the same commit confirms it, and a baseline is never recorded over a regression. `--ungated` runs with no comparison. A change to a target's fixture resets that target alone (delete its file in the commit that changes the fixture, record it twice with `--cve`), any other change of conditions resets the whole baseline (delete the directory in a commit of its own, record twice). A baseline file of a target no longer benchmarked is reported as orphaned. See ADR 024.
+
 ### Changed
 
+- A failed preflight of the CVE benchmark (Docker unreachable, an image missing) exits `4` instead of `1`, under `--calibrate` too, so it no longer reads as a dead fixture. The CVE report carries the gate: its verdict and reasons, and per target the outcome, the runs and the replays.
 - The CVE benchmark grades each target on a ladder of conditions instead of a single planted sentinel, credits a command's output on command execution targets as a lower rung, no longer credits a proof the auditor's own arguments echoed, classes each miss, reports the awaited capability as a hypothesis, and writes its report as an object with the run conditions and the oracle's fingerprint. Calibration checks every proof of a target's class and a benign call per target.
 - The CVSS column of the CVE benchmark report gives each score from the CVE record on cve.org, with its CVSS version and source (the CNA, or CISA-ADP when the CNA gives none). Five of the seven scores change.
 - The fingerprint of the CVE grammar changes once, from `ac6999b3…` to `af382a92…`: its detection rungs are made public for the CVE baseline. No grade changes.

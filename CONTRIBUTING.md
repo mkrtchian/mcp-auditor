@@ -29,13 +29,17 @@ Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` a
 
 ### CVE benchmark
 
-A separate benchmark runs the auditor against real, pinned-vulnerable MCP servers in throwaway Docker containers. It needs Docker running plus an API key. Build the images once, confirm each fixture is live (no LLM), then run the graded audit:
+A separate benchmark runs the auditor against real, pinned-vulnerable MCP servers in throwaway Docker containers. It needs Docker running plus an API key. Build the images once, confirm each fixture is live (no LLM), then run the graded audit, which is the acceptance gate:
 
 ```bash
 docker compose -f evals/docker/compose.yml build      # one-time, builds the pinned vulnerable-server images
 uv run python -m evals.run_cve_benchmark --calibrate  # no LLM, checks each fixture is live and its benign call is clean
-uv run python -m evals.run_cve_benchmark --runs 3 --budget 10  # graded run
+uv run python -m evals.run_cve_benchmark              # graded run, gated against evals/baselines/cve/
+uv run python -m evals.run_cve_benchmark --record-baseline  # twice at one clean commit, then commit evals/baselines/cve/ by hand
+uv run python -m evals.run_cve_benchmark --ungated    # graded run with no comparison
 ```
+
+The graded run compares each target to its file in `evals/baselines/cve/` ([ADR 024](docs/adr/024-cve-acceptance-gate.md)). A target detected in every run of a confirmed baseline is gated, and a miss on it is replayed alone: the gate goes red when the miss reproduces. It exits `0` green, `1` red, `3` not comparable or refused, `4` on a crash, a failed preflight (Docker unreachable, an image missing) included, under `--calibrate` too. `--record-baseline` refuses a dirty tree and writes every file or none. The first recording is exploratory, and a second at the same commit on the same images confirms it. A change to one target's fixture resets that target alone: delete its file in the commit that changes the fixture, then record it twice with `--cve`. Any other change of conditions (runs, budget, provider, models, reasoning, the grammar) resets the whole baseline: delete `evals/baselines/cve/` in a commit of its own, then record twice. The rules of [ADR 020](docs/adr/020-honeypot-baseline-changes.md) apply with the target in place of the cell. A baseline file of a target no longer benchmarked is reported as orphaned and not compared.
 
 See the README for the reproducibility rationale and the safety note (deliberately-vulnerable images, run on a non-sensitive host).
 
@@ -61,7 +65,7 @@ The judge isolation eval runs automatically on a pull request that touches `src/
 
 The workflow checks out the PR's head commit as resolved when it reads the command, so a push after the comment does not change what runs. It runs the evals against that commit and posts the outcome back as a comment, naming the commit it evaluated. The trigger is restricted to repository owners, members, and collaborators. `/eval` refuses a pull request from a fork, whose code would run with the repository's API key: to evaluate one before merge, push the reviewed commit to a branch of this repository and comment `/eval` on a pull request from that branch.
 
-Pull requests that touch the CVE benchmark (`evals/docker/**`, `evals/cve_*.py`, `evals/run_cve_benchmark.py`, the deps `pyproject.toml`/`uv.lock`, or the workflow itself) trigger a deterministic calibration gate. It builds the fixture images and runs `--calibrate` (no API key), and fails if any fixture is dead, minus any target marked CI-unstable. Today that is CVE-2025-68143, whose `git_diff_staged` hangs on GitHub-hosted runners and stays covered by local calibration. The graded detection run is not a gate and has no CI workflow: it runs locally (`uv run python -m evals.run_cve_benchmark`), reported not gated.
+Pull requests that touch the CVE benchmark (`evals/docker/**`, `evals/cve_*.py`, `evals/run_cve_benchmark.py`, the deps `pyproject.toml`/`uv.lock`, or the workflow itself) trigger a deterministic calibration gate. It builds the fixture images and runs `--calibrate` (no API key), and fails if any fixture is dead, minus any target marked CI-unstable. Today that is CVE-2025-68143, whose `git_diff_staged` hangs on GitHub-hosted runners and stays covered by local calibration. The graded detection run is the acceptance gate, run by hand on the local images (`uv run python -m evals.run_cve_benchmark`), and it has no CI workflow.
 
 ### Recording an e2e baseline
 
@@ -123,9 +127,10 @@ Publishing is automated: pushing a `v*` tag triggers `publish.yml`, which builds
 1. Make sure `main` is green: `uv run pytest -n auto && uv run ruff check . && uv run pyright`.
 2. In `CHANGELOG.md`, rename the `[Unreleased]` section to the new version with today's date, add a fresh empty `[Unreleased]` section above it, and update the comparison links at the bottom.
 3. Bump `version` in `pyproject.toml`, then run `uv lock` so the lock file picks it up.
-4. Commit and push: `git commit -m "chore(release): vX.Y.Z"`.
-5. Tag and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. This triggers the PyPI publication.
-6. Create the GitHub release, using the changelog section for that version as the body:
+4. Run the CVE acceptance gate on the local images: `uv run python -m evals.run_cve_benchmark`. A red gate stops the release. The release commit's message states the outcome: green, or not comparable with the reason.
+5. Commit and push: `git commit -m "chore(release): vX.Y.Z"`.
+6. Tag and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. This triggers the PyPI publication.
+7. Create the GitHub release, using the changelog section for that version as the body:
 
    ```bash
    gh release create vX.Y.Z --title "vX.Y.Z" \
