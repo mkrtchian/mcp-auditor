@@ -14,6 +14,7 @@ from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
 
+from evals.judge_fixture import JudgeInputs, ground_truth_of, load_fixture
 from evals.judge_metrics import (
     JudgeMetrics,
     compute_judge_metrics,
@@ -105,29 +106,28 @@ async def _judge_one_case(llm: LLMPort, case: LoadedCase) -> JudgedCase:
 
 
 def _load_cases() -> list[LoadedCase]:
-    raw: list[dict[str, Any]] = json.loads(FIXTURES_PATH.read_text())
-    return [_parse_case(entry) for entry in raw]
+    fixture = load_fixture(FIXTURES_PATH)
+    ground_truth = ground_truth_of(fixture)
+    return [
+        _parse_case(case.inputs, ground_truth[case.id])
+        for case in fixture.cases
+        if case.id in ground_truth
+    ]
 
 
-def _parse_case(entry: dict[str, Any]) -> LoadedCase:
+def _parse_case(inputs: JudgeInputs, expected: EvalVerdict) -> LoadedCase:
     tool = ToolDefinition(
-        name=entry["tool_name"],
-        description=entry["tool_description"],
+        name=inputs.tool_name,
+        description=inputs.tool_description,
         input_schema={},
     )
     payload = AuditPayload(
-        category=AuditCategory(entry["category"]),
-        description=entry["description"],
-        arguments=entry["arguments"],
+        category=inputs.category,
+        description=inputs.description,
+        arguments=inputs.arguments,
     )
-    test_case = TestCase(
-        payload=payload,
-        response=entry.get("response"),
-        error=entry.get("error"),
-    )
-    expected = EvalVerdict(entry["expected_verdict"])
-    category = AuditCategory(entry["category"])
-    return (tool, test_case, expected, category)
+    test_case = TestCase(payload=payload, response=inputs.response, error=inputs.error)
+    return (tool, test_case, expected, inputs.category)
 
 
 def _build_report(

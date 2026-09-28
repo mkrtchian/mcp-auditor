@@ -1,327 +1,593 @@
-[
-  {
-    "tool_name": "execute_query",
-    "tool_description": "Execute a SQL query against the database.",
-    "category": "resource_abuse",
-    "description": "Send very long SQL query to test resource handling",
-    "arguments": {"query": "SELECT * FROM users WHERE id IN (1,2,3,...,10000)"},
-    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM users WHERE id IN (1,2,3,...,10000) — Results: 3 rows",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "execute_query",
-    "tool_description": "Execute a SQL query against the database.",
-    "category": "input_validation",
-    "description": "SQL injection payload to test input validation",
-    "arguments": {"query": "'; DROP TABLE users; --"},
-    "response": "[db: /opt/mcp-server/config/database.yml] Executed: '; DROP TABLE users; -- — Results: 3 rows",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "list_items",
-    "tool_description": "List items in a given category with an optional limit.",
-    "category": "input_validation",
-    "description": "Path traversal payload in category parameter",
-    "arguments": {"category": "../../etc/passwd"},
-    "response": null,
-    "error": "Invalid category",
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "get_user",
-    "tool_description": "Look up a user by their numeric ID.",
-    "category": "resource_abuse",
-    "description": "Very large user_id to test resource handling",
-    "arguments": {"user_id": 999999999},
-    "response": null,
-    "error": "999999999",
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "list_items",
-    "tool_description": "List items in a given category with an optional limit.",
-    "category": "info_leakage",
-    "description": "XSS payload in category to test info leakage",
-    "arguments": {"category": "<script>alert(1)</script>"},
-    "response": null,
-    "error": "Invalid category",
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "get_user",
-    "tool_description": "Look up a user by their numeric ID.",
-    "category": "info_leakage",
-    "description": "Negative user_id to trigger error with internal path",
-    "arguments": {"user_id": -1},
-    "response": null,
-    "error": "user_id must be positive — see /opt/mcp-server/internal/users.db",
-    "expected_verdict": "fail"
-  },
-  {
-    "tool_name": "get_user",
-    "tool_description": "Look up a user by their numeric ID.",
-    "category": "error_handling",
-    "description": "Unknown user_id to test error handling",
-    "arguments": {"user_id": 999},
-    "response": null,
-    "error": "999",
-    "expected_verdict": "fail"
-  },
-  {
-    "tool_name": "get_user",
-    "tool_description": "Look up a user by their numeric ID.",
-    "category": "input_validation",
-    "description": "Edge case user_id 0 to test range validation",
-    "arguments": {"user_id": 0},
-    "response": null,
-    "error": "Error executing tool get_user: 0",
-    "expected_verdict": "fail"
-  },
-  {
-    "tool_name": "execute_query",
-    "tool_description": "Execute a SQL query against the database.",
-    "category": "injection",
-    "description": "SQL injection that gets executed and echoed",
-    "arguments": {"query": "'; DROP TABLE users;--"},
-    "response": "[db: /opt/mcp-server/config/database.yml] Executed: '; DROP TABLE users;-- — Results: 3 rows",
-    "error": null,
-    "expected_verdict": "fail"
-  },
-  {
-    "tool_name": "execute_query",
-    "tool_description": "Execute a SQL query against the database.",
-    "category": "info_leakage",
-    "description": "Simple query reveals database path in response",
-    "arguments": {"query": "SELECT 1"},
-    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT 1 — Results: 3 rows",
-    "error": null,
-    "expected_verdict": "fail"
-  },
-  {
-    "tool_name": "list_items",
-    "tool_description": "List items in a given category with an optional limit.",
-    "category": "injection",
-    "description": "SQL injection in category parameter",
-    "arguments": {"category": "'; DROP TABLE items;--"},
-    "response": null,
-    "error": "Invalid category",
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "list_items",
-    "tool_description": "List items in a given category with an optional limit.",
-    "category": "resource_abuse",
-    "description": "Extreme limit value to test resource handling",
-    "arguments": {"category": "books", "limit": 999999},
-    "response": "Items: books1, books2, ... (showing 100)",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "get_user",
-    "tool_description": "Look up a user by their numeric ID.",
-    "category": "injection",
-    "description": "Normal user_id with no injection surface",
-    "arguments": {"user_id": 42},
-    "response": "User: Alice (id=42)",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "execute_query",
-    "tool_description": "Execute a SQL query against the database.",
-    "category": "error_handling",
-    "description": "Malformed SQL to test error handling",
-    "arguments": {"query": "SELCT * FORM"},
-    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELCT * FORM — Results: 3 rows",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "list_items",
-    "tool_description": "List items in a given category with an optional limit.",
-    "category": "error_handling",
-    "description": "Valid category and normal use",
-    "arguments": {"category": "books", "limit": 10},
-    "response": "Items: books1, books2, ... (showing 10)",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "manage_data",
-    "source": "synthetic",
-    "tool_description": "Manage application data.",
-    "category": "info_leakage",
-    "description": "Trigger error that reveals stack trace",
-    "arguments": {"action": "delete", "id": -1},
-    "response": null,
-    "error": "Traceback (most recent call last):\n  File \"/app/server.py\", line 42, in handle_request\n    result = process(data)\nValueError: invalid input",
-    "expected_verdict": "fail"
-  },
-  {
-    "tool_name": "manage_data",
-    "source": "synthetic",
-    "tool_description": "Manage application data.",
-    "category": "info_leakage",
-    "description": "Normal response that mentions a documentation path",
-    "arguments": {"action": "help"},
-    "response": "See documentation at /help/api-guide",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "manage_data",
-    "source": "synthetic",
-    "tool_description": "Manage application data.",
-    "category": "input_validation",
-    "description": "Input rejected with specific validation rule",
-    "arguments": {"id": 99999},
-    "response": null,
-    "error": "ID must be between 1 and 1000",
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "manage_data",
-    "source": "synthetic",
-    "tool_description": "Manage application data.",
-    "category": "error_handling",
-    "description": "Clean structured error response",
-    "arguments": {"action": "create"},
-    "response": null,
-    "error": "Invalid request: missing required field \"name\"",
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "manage_data",
-    "source": "synthetic",
-    "tool_description": "Manage application data.",
-    "category": "injection",
-    "description": "Command echoed unsanitized in response",
-    "arguments": {"command": "ls -la /tmp"},
-    "response": "Executed command: ls -la /tmp",
-    "error": null,
-    "expected_verdict": "fail"
-  },
-  {
-    "tool_name": "list_items",
-    "tool_description": "List items in a given category with an optional limit.",
-    "category": "input_validation",
-    "description": "Negative limit silently clamped to minimum",
-    "arguments": {"category": "books", "limit": -100},
-    "response": "Items: books1, books2, ... (showing 1)",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "list_items",
-    "tool_description": "List items in a given category with an optional limit.",
-    "category": "input_validation",
-    "description": "Verify the tool's behavior when provided with a negative integer for the limit parameter, which conforms to the schema type but is semantically invalid.",
-    "arguments": {"category": "books", "limit": -1},
-    "response": "Items: books1, books2, ... (showing 1)",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "search_users",
-    "tool_description": "Search for users by name.",
-    "category": "input_validation",
-    "description": "SQL injection payload used as literal search term",
-    "arguments": {"query": "'; DROP TABLE users;--", "limit": 10},
-    "response": "No users found",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "search_users",
-    "tool_description": "Search for users by name.",
-    "category": "input_validation",
-    "description": "Path traversal payload used as literal search term",
-    "arguments": {"query": "../../../etc/passwd", "limit": 5},
-    "response": "No users found",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "search_users",
-    "tool_description": "Search for users by name.",
-    "category": "resource_abuse",
-    "description": "Huge limit silently clamped to maximum",
-    "arguments": {"query": "Alice", "limit": 999999},
-    "response": "- Alice (email=alice@internal.corp, role=admin, last_login=2026-01-15)",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "delete_record",
-    "tool_description": "Delete a record by ID.",
-    "category": "resource_abuse",
-    "description": "Single record deletion is bounded by nature",
-    "arguments": {"record_id": 42, "confirm": true},
-    "response": "Record 42 deleted successfully",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "delete_record",
-    "tool_description": "Delete a record by ID.",
-    "category": "resource_abuse",
-    "description": "Large record ID still deletes only one record",
-    "arguments": {"record_id": 999999999, "confirm": false},
-    "response": "Record 999999999 deleted successfully",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "execute_query",
-    "tool_description": "Execute a SQL query against the database.",
-    "category": "input_validation",
-    "description": "Schema enumeration query accepted by SQL execution tool",
-    "arguments": {"query": "SELECT table_name FROM information_schema.tables"},
-    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT table_name FROM information_schema.tables — Results: 12 rows",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "search_users",
-    "tool_description": "Search for users by name.",
-    "category": "info_leakage",
-    "description": "Search results expose internal PII fields",
-    "arguments": {"query": "Alice", "limit": 10},
-    "response": "- Alice (email=alice@internal.corp, role=admin, last_login=2026-01-15)",
-    "error": null,
-    "expected_verdict": "fail"
-  },
-  {
-    "tool_name": "execute_query",
-    "tool_description": "Execute a SQL query against the database.",
-    "category": "input_validation",
-    "description": "Verify the tool handles empty strings gracefully without crashing or leaking state.",
-    "arguments": {"query": ""},
-    "response": "[db: /opt/mcp-server/config/database.yml] Executed:  — Results: 0 rows",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "execute_query",
-    "tool_description": "Execute a SQL query against the database.",
-    "category": "error_handling",
-    "description": "Verify that executing a syntax error on purpose does not reveal raw database engine details.",
-    "arguments": {"query": "SELCT * FORM"},
-    "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELCT * FORM — Results: 3 rows",
-    "error": null,
-    "expected_verdict": "pass"
-  },
-  {
-    "tool_name": "delete_record",
-    "tool_description": "Delete a record by ID.",
-    "category": "error_handling",
-    "description": "Confirm flag set to false but deletion succeeds anyway",
-    "arguments": {"record_id": 42, "confirm": false},
-    "response": "Record 42 deleted successfully",
-    "error": null,
-    "expected_verdict": "pass"
-  }
-]
+{
+  "draw": null,
+  "cases": [
+    {
+      "id": "3bdb20bb9c012af5",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "resource_abuse",
+        "description": "Send very long SQL query to test resource handling",
+        "arguments": {
+          "query": "SELECT * FROM users WHERE id IN (1,2,3,...,10000)"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM users WHERE id IN (1,2,3,...,10000) — Results: 3 rows",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "8c57acde1ac79617",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "input_validation",
+        "description": "SQL injection payload to test input validation",
+        "arguments": {
+          "query": "'; DROP TABLE users; --"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: '; DROP TABLE users; -- — Results: 3 rows",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "57d2280609d4fc7f",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "input_validation",
+        "description": "Path traversal payload in category parameter",
+        "arguments": {
+          "category": "../../etc/passwd"
+        },
+        "response": null,
+        "error": "Invalid category"
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "87acd351e94e231d",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "resource_abuse",
+        "description": "Very large user_id to test resource handling",
+        "arguments": {
+          "user_id": 999999999
+        },
+        "response": null,
+        "error": "999999999"
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "d1039559941b54b1",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "info_leakage",
+        "description": "XSS payload in category to test info leakage",
+        "arguments": {
+          "category": "<script>alert(1)</script>"
+        },
+        "response": null,
+        "error": "Invalid category"
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "460198a9dd7d2cdf",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "info_leakage",
+        "description": "Negative user_id to trigger error with internal path",
+        "arguments": {
+          "user_id": -1
+        },
+        "response": null,
+        "error": "user_id must be positive — see /opt/mcp-server/internal/users.db"
+      },
+      "label": "fail",
+      "clause": null
+    },
+    {
+      "id": "41febf6d8b664a3d",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "error_handling",
+        "description": "Unknown user_id to test error handling",
+        "arguments": {
+          "user_id": 999
+        },
+        "response": null,
+        "error": "999"
+      },
+      "label": "fail",
+      "clause": null
+    },
+    {
+      "id": "bc920dcb238ad2f6",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "input_validation",
+        "description": "Edge case user_id 0 to test range validation",
+        "arguments": {
+          "user_id": 0
+        },
+        "response": null,
+        "error": "Error executing tool get_user: 0"
+      },
+      "label": "fail",
+      "clause": null
+    },
+    {
+      "id": "28df4286c0fda884",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "injection",
+        "description": "SQL injection that gets executed and echoed",
+        "arguments": {
+          "query": "'; DROP TABLE users;--"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: '; DROP TABLE users;-- — Results: 3 rows",
+        "error": null
+      },
+      "label": "fail",
+      "clause": null
+    },
+    {
+      "id": "f6ba50b10278d93e",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "info_leakage",
+        "description": "Simple query reveals database path in response",
+        "arguments": {
+          "query": "SELECT 1"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT 1 — Results: 3 rows",
+        "error": null
+      },
+      "label": "fail",
+      "clause": null
+    },
+    {
+      "id": "c6cbb96cdb9c146f",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "injection",
+        "description": "SQL injection in category parameter",
+        "arguments": {
+          "category": "'; DROP TABLE items;--"
+        },
+        "response": null,
+        "error": "Invalid category"
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "f500bf00ae633fb9",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "resource_abuse",
+        "description": "Extreme limit value to test resource handling",
+        "arguments": {
+          "category": "books",
+          "limit": 999999
+        },
+        "response": "Items: books1, books2, ... (showing 100)",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "b1e74c134348a902",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "injection",
+        "description": "Normal user_id with no injection surface",
+        "arguments": {
+          "user_id": 42
+        },
+        "response": "User: Alice (id=42)",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "0b18ce8019c33ede",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "error_handling",
+        "description": "Malformed SQL to test error handling",
+        "arguments": {
+          "query": "SELCT * FORM"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELCT * FORM — Results: 3 rows",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "e1c7a5c73b68d0e4",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "error_handling",
+        "description": "Valid category and normal use",
+        "arguments": {
+          "category": "books",
+          "limit": 10
+        },
+        "response": "Items: books1, books2, ... (showing 10)",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "98c0dc40a725a720",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "manage_data",
+        "tool_description": "Manage application data.",
+        "category": "info_leakage",
+        "description": "Trigger error that reveals stack trace",
+        "arguments": {
+          "action": "delete",
+          "id": -1
+        },
+        "response": null,
+        "error": "Traceback (most recent call last):\n  File \"/app/server.py\", line 42, in handle_request\n    result = process(data)\nValueError: invalid input"
+      },
+      "label": "fail",
+      "clause": null
+    },
+    {
+      "id": "e4ff648329376ff4",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "manage_data",
+        "tool_description": "Manage application data.",
+        "category": "info_leakage",
+        "description": "Normal response that mentions a documentation path",
+        "arguments": {
+          "action": "help"
+        },
+        "response": "See documentation at /help/api-guide",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "cf720cb679780c8f",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "manage_data",
+        "tool_description": "Manage application data.",
+        "category": "input_validation",
+        "description": "Input rejected with specific validation rule",
+        "arguments": {
+          "id": 99999
+        },
+        "response": null,
+        "error": "ID must be between 1 and 1000"
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "6df60c0d77a5f73c",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "manage_data",
+        "tool_description": "Manage application data.",
+        "category": "error_handling",
+        "description": "Clean structured error response",
+        "arguments": {
+          "action": "create"
+        },
+        "response": null,
+        "error": "Invalid request: missing required field \"name\""
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "54a6dc6b83286a76",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "manage_data",
+        "tool_description": "Manage application data.",
+        "category": "injection",
+        "description": "Command echoed unsanitized in response",
+        "arguments": {
+          "command": "ls -la /tmp"
+        },
+        "response": "Executed command: ls -la /tmp",
+        "error": null
+      },
+      "label": "fail",
+      "clause": null
+    },
+    {
+      "id": "f59f275498d1e000",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "input_validation",
+        "description": "Negative limit silently clamped to minimum",
+        "arguments": {
+          "category": "books",
+          "limit": -100
+        },
+        "response": "Items: books1, books2, ... (showing 1)",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "18722ababc3e8ce6",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "input_validation",
+        "description": "Verify the tool's behavior when provided with a negative integer for the limit parameter, which conforms to the schema type but is semantically invalid.",
+        "arguments": {
+          "category": "books",
+          "limit": -1
+        },
+        "response": "Items: books1, books2, ... (showing 1)",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "f21fd5965c1625d1",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "input_validation",
+        "description": "SQL injection payload used as literal search term",
+        "arguments": {
+          "query": "'; DROP TABLE users;--",
+          "limit": 10
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "8efcdf008c6acf0b",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "input_validation",
+        "description": "Path traversal payload used as literal search term",
+        "arguments": {
+          "query": "../../../etc/passwd",
+          "limit": 5
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "6085c387be58c336",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "resource_abuse",
+        "description": "Huge limit silently clamped to maximum",
+        "arguments": {
+          "query": "Alice",
+          "limit": 999999
+        },
+        "response": "- Alice (email=alice@internal.corp, role=admin, last_login=2026-01-15)",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "ac05e1f5810c8933",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "resource_abuse",
+        "description": "Single record deletion is bounded by nature",
+        "arguments": {
+          "record_id": 42,
+          "confirm": true
+        },
+        "response": "Record 42 deleted successfully",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "9b143a5fea675d07",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "resource_abuse",
+        "description": "Large record ID still deletes only one record",
+        "arguments": {
+          "record_id": 999999999,
+          "confirm": false
+        },
+        "response": "Record 999999999 deleted successfully",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "3c5ea7a0493f88d4",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "input_validation",
+        "description": "Schema enumeration query accepted by SQL execution tool",
+        "arguments": {
+          "query": "SELECT table_name FROM information_schema.tables"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT table_name FROM information_schema.tables — Results: 12 rows",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "807efbc45bf97556",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "info_leakage",
+        "description": "Search results expose internal PII fields",
+        "arguments": {
+          "query": "Alice",
+          "limit": 10
+        },
+        "response": "- Alice (email=alice@internal.corp, role=admin, last_login=2026-01-15)",
+        "error": null
+      },
+      "label": "fail",
+      "clause": null
+    },
+    {
+      "id": "424bf36b7b027879",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "input_validation",
+        "description": "Verify the tool handles empty strings gracefully without crashing or leaking state.",
+        "arguments": {
+          "query": ""
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed:  — Results: 0 rows",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "51fd7d1de2a8af34",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "error_handling",
+        "description": "Verify that executing a syntax error on purpose does not reveal raw database engine details.",
+        "arguments": {
+          "query": "SELCT * FORM"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELCT * FORM — Results: 3 rows",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    },
+    {
+      "id": "9f06afd4ae460943",
+      "source": "legacy",
+      "origin": "legacy",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "error_handling",
+        "description": "Confirm flag set to false but deletion succeeds anyway",
+        "arguments": {
+          "record_id": 42,
+          "confirm": false
+        },
+        "response": "Record 42 deleted successfully",
+        "error": null
+      },
+      "label": "pass",
+      "clause": null
+    }
+  ]
+}
