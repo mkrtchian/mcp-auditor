@@ -11,7 +11,7 @@ from rich.markup import escape
 
 from evals.concurrency import bounded, entered_in_thread
 from evals.cve_environments import Launch, connect
-from evals.cve_grammar import RunGrade, grade_run
+from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, RunGrade, grade_run
 from evals.cve_session import AuditTarget
 from evals.cve_targets import CVETarget
 from evals.metrics import SessionThrottles, blocked_reasons, refused_steps
@@ -85,17 +85,24 @@ async def _attempt(
             report = await _audit(launch, target, auditor)
             throttles.count(report)
             _print_incidents(target, report)
-            if report.refused_steps:
-                outcome = RefusedAttempt()
-            else:
-                # Graded before __exit__ fires so a best-effort teardown error
-                # cannot erase a completed run's grade.
-                outcome = grade_run(target, report)
+            # Graded before __exit__ fires so a best-effort teardown error
+            # cannot erase a completed run's grade.
+            outcome = graded_or_refused(target, report)
+            if isinstance(outcome, RunGrade):
                 console.print(f"{target.cve_id}: {outcome.status}")
     except (LaunchError, subprocess.CalledProcessError) as exc:
         failure = "run skipped" if outcome is None else "teardown failed"
         console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {exc}")
     return outcome
+
+
+def graded_or_refused(target: GradedTarget, report: AuditReport) -> RunGrade | RefusedAttempt:
+    """A detection carries its own proof and stands whatever step was refused. A run that
+    did not detect with a refused step says nothing of detection."""
+    grade = grade_run(target, report)
+    if report.refused_steps and grade.status not in DETECTION_RUNGS:
+        return RefusedAttempt()
+    return grade
 
 
 def _print_incidents(target: CVETarget, report: AuditReport) -> None:

@@ -4,11 +4,18 @@ import pytest
 from rich.console import Console
 
 from evals import cve_audit
-from evals.cve_audit import REFUSAL_ATTEMPTS, RefusedAttempt, audit_target, graded_despite_refusals
-from evals.cve_grammar import RunGrade
+from evals.cve_audit import (
+    REFUSAL_ATTEMPTS,
+    RefusedAttempt,
+    audit_target,
+    graded_despite_refusals,
+    graded_or_refused,
+)
+from evals.cve_grammar import CVEStatus, RunGrade
 from evals.cve_targets import CVE_TARGETS
 from evals.metrics import SessionThrottles
-from mcp_auditor.domain.models import AuditReport, ProviderUsage
+from mcp_auditor.domain.models import AuditReport, AuditStep, ProviderUsage, RefusedStep
+from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_cve_oracle_given import a_detected_grade
 
 TARGET = CVE_TARGETS[0]
@@ -74,6 +81,40 @@ async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.
 
     assert grade is None
     assert attempt.calls == 1
+
+
+def test_a_detection_is_kept_whatever_step_the_provider_refused():
+    leak = grammar.a_case(response=f"leaked {grammar.SENTINEL}")
+    report = _refused(grammar.a_report(cases=[leak]))
+
+    outcome = graded_or_refused(grammar.a_read_target(), report)
+
+    assert isinstance(outcome, RunGrade)
+    assert outcome.status == CVEStatus.DETECTED
+
+
+def test_a_miss_with_a_refused_step_is_not_graded():
+    report = _refused(grammar.a_report(cases=[grammar.a_case(response="nothing")]))
+
+    outcome = graded_or_refused(grammar.a_read_target(), report)
+
+    assert isinstance(outcome, RefusedAttempt)
+
+
+def test_a_miss_with_no_refused_step_is_graded_a_miss():
+    report = grammar.a_report(cases=[grammar.a_case(response="nothing")])
+
+    outcome = graded_or_refused(grammar.a_read_target(), report)
+
+    assert isinstance(outcome, RunGrade)
+    assert outcome.status == CVEStatus.MISSED
+
+
+def _refused(report: AuditReport) -> AuditReport:
+    refusal = RefusedStep(
+        tool_name="git_init", step=AuditStep.CHAIN_PLANNING, provider_message="Invalid prompt"
+    )
+    return report.model_copy(update={"refused_steps": [refusal]})
 
 
 class _ScriptedAttempts:

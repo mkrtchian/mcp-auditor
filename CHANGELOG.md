@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The CVE benchmark no longer grades an audit in which the model provider refused a step as a miss. It audits the target again, up to three attempts, and the first attempt with no refused step grades the run. A run refused at every attempt does not complete, which makes the gate not comparable and refuses a recording.
+- The CVE benchmark no longer grades an audit in which the model provider refused a step as a miss. It audits the target again, up to three attempts, and the first attempt that detects or holds no refused step grades the run. A detection stands whatever step was refused. A run refused at every attempt does not complete, which makes the gate not comparable and refuses a recording.
 - The JSON report's `token_usage` key is renamed `provider_usage`, and gains `throttled_requests`, the number of requests the model provider answered with HTTP 429. An audit interrupted under a previous version still resumes, but the tokens of the steps it ran before the interruption are missing from its report.
 - The `google` provider talks to the API over `httpx` instead of `aiohttp`.
 - The CVE benchmark runs its graded audits side by side, six at once by default, and settles the replays of different targets side by side. `--calibrate` calibrates its targets side by side too. `--concurrency` sets how many audits (or calibrations) are in flight, `1` runs them one after the other as before. The report records the concurrency on its conditions line, and no baseline records or compares it.
