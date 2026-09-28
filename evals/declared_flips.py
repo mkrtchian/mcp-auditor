@@ -7,7 +7,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, StringConstraints
 
-from evals.gate import Cell, CellComparison, CellOutcome
+from evals.gate import CellComparison, CellOutcome
 from evals.honeypots import REPO_ROOT
 
 DECLARED_FLIPS_PATH = REPO_ROOT / "evals" / "declared_flips.json"
@@ -15,6 +15,7 @@ DECLARED_FLIPS_PATH = REPO_ROOT / "evals" / "declared_flips.json"
 
 class Suite(StrEnum):
     HONEYPOT = "honeypot"
+    JUDGE = "judge"
 
 
 class DeclaredFlip(BaseModel):
@@ -70,9 +71,9 @@ def active_declarations(entries: list[DeclaredFlip], dirty: bool) -> ActiveDecla
     return ActiveDeclarations(ignored=keys) if dirty else ActiveDeclarations(keys=keys)
 
 
-def apply_declarations(
-    cells: dict[Cell, CellComparison], declared: frozenset[Cell]
-) -> dict[Cell, CellComparison]:
+def apply_declarations[K](
+    cells: dict[K, CellComparison], declared: frozenset[K]
+) -> dict[K, CellComparison]:
     return {
         cell: _declared(comparison) if cell in declared else comparison
         for cell, comparison in cells.items()

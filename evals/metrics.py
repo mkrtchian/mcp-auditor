@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict, ProviderUsage
 
-VerdictMap = dict[tuple[str, AuditCategory], EvalVerdict | None]
+type KeyedVerdicts[K] = dict[K, EvalVerdict | None]
+VerdictMap = KeyedVerdicts[tuple[str, AuditCategory]]
 
 
 class ToolVerdictDetail(BaseModel):
@@ -72,7 +73,7 @@ def aggregate_verdicts(report: AuditReport) -> VerdictMap:
     return verdicts
 
 
-def compute_recall(aggregated: VerdictMap, ground_truth: GroundTruth) -> float:
+def compute_recall[K](aggregated: KeyedVerdicts[K], ground_truth: dict[K, EvalVerdict]) -> float:
     expected_fails = [key for key, verdict in ground_truth.items() if verdict == EvalVerdict.FAIL]
     if not expected_fails:
         return 1.0
@@ -80,7 +81,7 @@ def compute_recall(aggregated: VerdictMap, ground_truth: GroundTruth) -> float:
     return detected / len(expected_fails)
 
 
-def compute_precision(aggregated: VerdictMap, ground_truth: GroundTruth) -> float:
+def compute_precision[K](aggregated: KeyedVerdicts[K], ground_truth: dict[K, EvalVerdict]) -> float:
     predicted_fails = [
         key
         for key, verdict in aggregated.items()
@@ -92,7 +93,9 @@ def compute_precision(aggregated: VerdictMap, ground_truth: GroundTruth) -> floa
     return correct / len(predicted_fails)
 
 
-def label_scores(verdict_maps: list[VerdictMap], ground_truth: GroundTruth) -> dict[str, float]:
+def label_scores[K](
+    verdict_maps: list[KeyedVerdicts[K]], ground_truth: dict[K, EvalVerdict]
+) -> dict[str, float]:
     """Recall and precision averaged per run, as the report computes them."""
     runs = len(verdict_maps)
     return {

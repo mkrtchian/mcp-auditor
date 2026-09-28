@@ -85,7 +85,7 @@ def open_session(options: EvalOptions) -> EvalSession:
         )
     settings = load_settings()
     baseline = None if options.ungated else _load_committed_baseline()
-    entries, dirty = _declarations_of_head()
+    entries, dirty = declarations_of_head(Suite.HONEYPOT)
     session = EvalSession(
         settings=settings,
         conditions=_conditions_or_refused(settings, options),
@@ -101,7 +101,7 @@ def open_session(options: EvalOptions) -> EvalSession:
     return session
 
 
-def _declarations_of_head() -> tuple[list[DeclaredFlip], bool]:
+def declarations_of_head(suite: Suite) -> tuple[list[DeclaredFlip], bool]:
     """The entries declared by the commit at HEAD, and whether the tree has tracked changes."""
     try:
         entries = load_declared_flips(DECLARED_FLIPS_PATH)
@@ -110,7 +110,7 @@ def _declarations_of_head() -> tuple[list[DeclaredFlip], bool]:
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [reason]) from error
     if not entries:
         return [], False
-    of_head = entries_of_commit(entries, Suite.HONEYPOT, _parent_commit())
+    of_head = entries_of_commit(entries, suite, _parent_commit())
     return of_head, bool(of_head) and _tree_is_dirty()
 
 

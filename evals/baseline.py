@@ -18,7 +18,7 @@ from evals.gate import (
     protected_cells,
 )
 from evals.ground_truth import GroundTruth
-from evals.metrics import EvalMetrics, VerdictMap, label_scores
+from evals.metrics import EvalMetrics, KeyedVerdicts, label_scores
 from mcp_auditor.domain.models import EvalVerdict
 
 
@@ -150,7 +150,7 @@ def rescore(baseline: Baseline, ground_truth: GroundTruth) -> RescoredBaseline:
     )
 
 
-def verdict_maps_of(runs: list[dict[Cell, Observation]]) -> list[VerdictMap]:
+def verdict_maps_of[K](runs: list[dict[K, Observation]]) -> list[KeyedVerdicts[K]]:
     return [
         {
             cell: None if seen == Observation.UNCOVERED else EvalVerdict(seen.value)

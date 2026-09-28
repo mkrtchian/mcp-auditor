@@ -68,6 +68,14 @@ def test_a_commit_without_a_parent_has_no_entry():
     assert entries_of_commit([given.an_entry()], Suite.HONEYPOT, None) == []
 
 
+def test_the_entries_of_a_suite_leave_the_other_suite_out():
+    honeypot = given.an_entry()
+    judge = given.an_entry(key="0123456789abcdef", suite=Suite.JUDGE)
+
+    assert entries_of_commit([honeypot, judge], Suite.JUDGE, given.BASE) == [judge]
+    assert entries_of_commit([honeypot, judge], Suite.HONEYPOT, given.BASE) == [honeypot]
+
+
 def test_a_clean_tree_activates_the_declared_keys():
     declarations = active_declarations([given.an_entry()], dirty=False)
 
@@ -93,6 +101,15 @@ def test_a_key_outside_the_ground_truth_is_a_problem():
 
     assert len(problems) == 1
     assert "nope/input_validation" in problems[0]
+
+
+def test_a_judge_entry_naming_an_unknown_case_is_a_problem():
+    judge = given.an_entry(key="fedcba9876543210", suite=Suite.JUDGE)
+
+    problems = declaration_problems([judge], frozenset({"0123456789abcdef"}))
+
+    assert len(problems) == 1
+    assert "fedcba9876543210" in problems[0]
 
 
 def test_a_key_named_twice_is_a_problem():

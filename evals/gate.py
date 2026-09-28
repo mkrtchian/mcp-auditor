@@ -114,8 +114,8 @@ class ProtectedCells(BaseModel):
     unstable: int
 
 
-def protected_cells(
-    runs: list[dict[Cell, Observation]], ground_truth: GroundTruth
+def protected_cells[K](
+    runs: list[dict[K, Observation]], ground_truth: dict[K, EvalVerdict]
 ) -> ProtectedCells:
     states = classify(runs, ground_truth)
 
@@ -135,9 +135,9 @@ def protected_cells(
     )
 
 
-def classify(
-    runs: list[dict[Cell, Observation]], ground_truth: GroundTruth
-) -> dict[Cell, CellState]:
+def classify[K](
+    runs: list[dict[K, Observation]], ground_truth: dict[K, EvalVerdict]
+) -> dict[K, CellState]:
     """Cells a run did not record get no state (ADR 020)."""
     return {
         cell: _state_of([run[cell] for run in runs], expected)
@@ -160,11 +160,11 @@ class CellComparison(BaseModel):
     replays: list[bool] = []
 
 
-def compare(
-    baseline_runs: list[dict[Cell, Observation]],
-    candidate_runs: list[dict[Cell, Observation]],
-    ground_truth: GroundTruth,
-) -> dict[Cell, CellComparison]:
+def compare[K](
+    baseline_runs: list[dict[K, Observation]],
+    candidate_runs: list[dict[K, Observation]],
+    ground_truth: dict[K, EvalVerdict],
+) -> dict[K, CellComparison]:
     baseline_states = classify(baseline_runs, ground_truth)
     candidate_states = classify(candidate_runs, ground_truth)
     return {
@@ -193,7 +193,7 @@ def _compare_cell(
             return CellComparison(outcome=CellOutcome.UNCHANGED)
 
 
-def _flip_cause(cell: Cell, candidate_runs: list[dict[Cell, Observation]]) -> FlipCause:
+def _flip_cause[K](cell: K, candidate_runs: list[dict[K, Observation]]) -> FlipCause:
     uncovered = any(
         run.get(cell, Observation.UNCOVERED) == Observation.UNCOVERED for run in candidate_runs
     )
@@ -213,8 +213,8 @@ class DetectionCount:
     planted: int  # FAIL cells of the ground truth
 
 
-def count_detections(
-    runs: list[dict[Cell, Observation]], ground_truth: GroundTruth
+def count_detections[K](
+    runs: list[dict[K, Observation]], ground_truth: dict[K, EvalVerdict]
 ) -> DetectionCount:
     planted = [cell for cell, verdict in ground_truth.items() if verdict == EvalVerdict.FAIL]
     return DetectionCount(

@@ -9,9 +9,11 @@ OTHER_BASE = "fedcba9876543210fedcba9876543210fedcba98"
 KNOWN_KEYS = frozenset({"get_user/input_validation", "get_user/error_handling"})
 
 
-def an_entry(key: str = "get_user/input_validation", base: str = BASE) -> DeclaredFlip:
+def an_entry(
+    key: str = "get_user/input_validation", base: str = BASE, suite: Suite = Suite.HONEYPOT
+) -> DeclaredFlip:
     return DeclaredFlip(
-        suite=Suite.HONEYPOT,
+        suite=suite,
         key=key,
         mechanism="the generator no longer probes this category",
         base=base,
