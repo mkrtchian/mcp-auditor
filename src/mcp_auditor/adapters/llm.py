@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
+import httpx
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
 from langchain_core.runnables import Runnable
@@ -71,9 +72,18 @@ def _make_anthropic_model(model: str) -> BaseChatModel:  # pyright: ignore[repor
 
 
 def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    # An httpx transport keeps google-genai off aiohttp, so its 429s reach the httpx log the
+    # throttle count reads. It also reaches the sync client, which would fail a sync call:
+    # the auditor makes none, LLM only calls ainvoke.
+    client_args = {"transport": httpx.AsyncHTTPTransport()}
     if reasoning is None:
-        return ChatGoogleGenerativeAI(model=model, max_retries=3)  # pyright: ignore[reportUnknownArgumentType]
-    return ChatGoogleGenerativeAI(model=model, thinking_level=reasoning, max_retries=3)  # pyright: ignore[reportUnknownArgumentType,reportArgumentType]
+        return ChatGoogleGenerativeAI(model=model, max_retries=3, client_args=client_args)  # pyright: ignore[reportUnknownArgumentType]
+    return ChatGoogleGenerativeAI(  # pyright: ignore[reportUnknownArgumentType]
+        model=model,
+        thinking_level=reasoning,  # pyright: ignore[reportArgumentType]
+        max_retries=3,
+        client_args=client_args,
+    )
 
 
 # Without it, a probe run once hung 17 minutes on one OpenAI response.

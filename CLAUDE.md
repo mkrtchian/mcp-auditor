@@ -91,6 +91,7 @@ Governed by ADR 016, amended by ADR 020 for the honeypot suite (`docs/adr/016-ev
 - The MCP SDK uses **two nested async context managers** (`stdio_client` + `ClientSession`). The adapter wraps both into a single `async with`. Don't try to manage them separately.
 - `with_structured_output` returns a single `BaseModel`, not a list — that's why `TestCaseBatch` exists as a wrapper.
 - The confined container's home is a tmpfs created with the invoking `uid` and `gid` (`--tmpfs /home/audit:exec,uid=…,gid=…`). Drop those two options and the tmpfs is root-owned, so `npx` fails with `EACCES` on its npm cache under `--user`. Same for `--memory-swap`: without it Docker grants as much swap again, the memory bound never bites and `oom_killed` reads `false` in the very case it is recorded for.
+- The throttle count reads the `httpx`/`httpx2` log format, and Google's model is given an `httpx` transport for it. Do not drop `client_args={"transport": ...}` from `_make_google_model`: without it `google-genai` switches to `aiohttp` and Google's 429s silently stop counting.
 - The **unconfined** thread id must keep its pre-0.3.0 hash: `compute_thread_id` hashes the command alone under `unconfined` and appends the regime only under the two container regimes. A unit test pins the literal hash. Hashing the regime for all three would make every audit interrupted before 0.3.0 unresumable, silently.
 
 ## Pointers

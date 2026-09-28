@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The JSON report's `token_usage` key is renamed `provider_usage`, and gains `throttled_requests`, the number of requests the model provider answered with HTTP 429. An audit interrupted under a previous version still resumes, but the tokens of the steps it ran before the interruption are missing from its report.
+- The `google` provider talks to the API over `httpx` instead of `aiohttp`.
 - The CVE benchmark runs its graded audits side by side, six at once by default, and settles the replays of different targets side by side. `--calibrate` calibrates its targets side by side too. `--concurrency` sets how many audits (or calibrations) are in flight, `1` runs them one after the other as before. The report records the concurrency on its conditions line, and no baseline records or compares it.
 - The e2e evals run their runs side by side, and the three honeypots of a run side by side, six audits at once by default, replays included. `--concurrency` sets how many audits are in flight, `1` runs them one after the other as before. Each report records the concurrency in its config, and no baseline records or compares it.
 - The e2e evals attach each run's recall and precision in LangSmith to the traces of that run's own audits, instead of to the most recent trace of the project.

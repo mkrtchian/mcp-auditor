@@ -1,4 +1,5 @@
 # pyright: reportArgumentType=false
+import httpx
 import pytest
 from pydantic import BaseModel
 
@@ -198,6 +199,11 @@ class TestThrottledRequests:
         assert usage.throttled_requests == 2
 
 
+def _transport_of(chat_model: object) -> object:
+    client_args: dict[str, object] = getattr(chat_model, "client_args", None) or {}
+    return client_args.get("transport")
+
+
 class TestMakeChatModel:
     def test_google_default_model_gets_minimal_thinking(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("GOOGLE_API_KEY", "dummy")
@@ -207,6 +213,7 @@ class TestMakeChatModel:
 
         assert getattr(chat_model, "model", None) == "gemini-3.5-flash-lite"
         assert getattr(chat_model, "thinking_level", None) == "minimal"
+        assert isinstance(_transport_of(chat_model), httpx.AsyncHTTPTransport)
 
     def test_google_judge_override_gets_no_thinking_level(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("GOOGLE_API_KEY", "dummy")
@@ -218,6 +225,7 @@ class TestMakeChatModel:
 
         assert getattr(chat_model, "model", None) == "gemini-3.1-pro-preview"
         assert getattr(chat_model, "thinking_level", "unset") is None
+        assert isinstance(_transport_of(chat_model), httpx.AsyncHTTPTransport)
 
     def test_anthropic_builds_the_named_model(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy")
