@@ -1,3 +1,4 @@
+import asyncio
 import os
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -69,11 +70,12 @@ HoneypotAudit = Callable[[HoneypotConfig], Awaitable[AuditReport]]
 
 
 async def audit_honeypots(audit: HoneypotAudit) -> tuple[VerdictMap, AuditReport]:
-    """One run: every honeypot audited in turn, their verdicts and reports merged."""
+    """One run: every honeypot audited side by side, their verdicts and reports merged in a
+    fixed order."""
+    reports = await asyncio.gather(*(audit(honeypot) for honeypot in HONEYPOTS))
     verdicts: VerdictMap = {}
     merged = AuditReport(target="evals", tool_reports=[], token_usage=TokenUsage())
-    for honeypot in HONEYPOTS:
-        report = await audit(honeypot)
+    for report in reports:
         verdicts.update(aggregate_verdicts(report))
         merged = AuditReport(
             target=merged.target,

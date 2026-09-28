@@ -85,6 +85,51 @@ async def test_a_replay_does_not_read_the_other_server_cells_as_uncovered():
     assert settled[BETA_CELL].replays == [False, False]
 
 
+async def test_two_servers_replay_side_by_side():
+    audit = given.FakeAudit(
+        {
+            "alpha": [given.a_replay(reproducing=(ALPHA_CELL,))] * 5,
+            "beta": [given.a_replay(clearing=(BETA_CELL,))] * 5,
+        },
+        waiting={"alpha": "beta"},
+    )
+    replayer = given.a_replayer(audit)
+
+    settled, failures = await replayer.settle_flips(
+        given.cells_flipping(ALPHA_CELL, BETA_CELL), ReplayRule()
+    )
+
+    assert settled[ALPHA_CELL].outcome == CellOutcome.REGRESSION
+    assert settled[BETA_CELL].outcome == CellOutcome.FLIP_NOT_REPRODUCED
+    assert failures == []
+
+
+async def test_failed_replays_are_reported_in_server_order_whatever_fails_first():
+    audit = given.FakeAudit({}, failing=frozenset({"alpha", "beta"}), waiting={"alpha": "beta"})
+    replayer = given.a_replayer(audit)
+
+    _, failures = await replayer.settle_flips(
+        given.cells_flipping(ALPHA_CELL, BETA_CELL), ReplayRule()
+    )
+
+    assert failures == ["a replay of alpha failed", "a replay of beta failed"]
+
+
+async def test_a_failed_replay_of_one_server_lets_the_other_settle():
+    audit = given.FakeAudit(
+        {"beta": [given.a_replay(clearing=(BETA_CELL,))] * 5}, failing=frozenset({"alpha"})
+    )
+    replayer = given.a_replayer(audit)
+
+    settled, failures = await replayer.settle_flips(
+        given.cells_flipping(ALPHA_CELL, BETA_CELL), ReplayRule()
+    )
+
+    assert settled[ALPHA_CELL].outcome == CellOutcome.FLIP
+    assert settled[BETA_CELL].outcome == CellOutcome.FLIP_NOT_REPRODUCED
+    assert failures == ["a replay of alpha failed"]
+
+
 async def test_a_failed_replay_leaves_the_flip_and_is_reported():
     audit = given.FakeAudit({}, failing=frozenset({"alpha"}))
     replayer = given.a_replayer(audit)

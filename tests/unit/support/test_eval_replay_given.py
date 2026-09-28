@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Callable
 from pathlib import Path
 
@@ -33,23 +34,36 @@ def _recorder(sink: list[str] | None) -> Callable[[str], None]:
 
 
 class FakeAudit:
-    """Returns each honeypot's scripted verdict maps in order, or raises for a failing one."""
+    """Returns each honeypot's scripted verdict maps in order, or raises for a failing one.
+
+    A honeypot in `waiting` answers only once the honeypot it names has been audited.
+    """
 
     def __init__(
         self,
         scripts: dict[str, list[VerdictMap]],
         failing: frozenset[str] = frozenset(),
         honeypots: list[HoneypotConfig] = HONEYPOTS,
+        waiting: dict[str, str] | None = None,
     ):
         self._scripts = scripts
         self._failing = failing
+        self._waiting = waiting or {}
+        self._audited = {honeypot.name: asyncio.Event() for honeypot in honeypots}
         self.calls = {honeypot.name: 0 for honeypot in honeypots}
 
     async def __call__(self, honeypot: HoneypotConfig) -> VerdictMap:
         self.calls[honeypot.name] += 1
+        if honeypot.name in self._waiting:
+            async with asyncio.timeout(_NEVER_IN_SEQUENCE):
+                await self._audited[self._waiting[honeypot.name]].wait()
+        self._audited[honeypot.name].set()
         if honeypot.name in self._failing:
             raise RuntimeError(f"{honeypot.name} crashed")
         return self._scripts[honeypot.name].pop(0)
+
+
+_NEVER_IN_SEQUENCE = 1.0  # seconds: replayed one server after the other, the wait never ends
 
 
 def a_replay(reproducing: tuple[Cell, ...] = (), clearing: tuple[Cell, ...] = ()) -> VerdictMap:

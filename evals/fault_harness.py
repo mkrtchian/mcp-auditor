@@ -135,8 +135,10 @@ class FaultedAudit:
         return outcome
 
     async def replay(self, honeypot: HoneypotConfig) -> VerdictMap:
+        # Taken before the audit: replays of different servers finish in any order.
+        index = next(self.audits)
         verdicts = aggregate_verdicts(await self._report(honeypot))
-        return self.fault.degrade(verdicts, next(self.audits))
+        return self.fault.degrade(verdicts, index)
 
     async def _report(self, honeypot: HoneypotConfig) -> AuditReport:
         return await audit_connected(self.models, self.servers[honeypot.name], self.budget)

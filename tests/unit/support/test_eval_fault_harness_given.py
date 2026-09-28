@@ -1,8 +1,13 @@
-from dataclasses import dataclass
+import asyncio
+from dataclasses import dataclass, field
+from typing import Any
 
 from evals.baseline import Baseline
+from evals.fault_catalog import FAULTS
+from evals.fault_harness import FaultedAudit
+from evals.fault_injection import FailingJudge
 from evals.gate import Cell, cell_key
-from evals.honeypots import HoneypotConfig
+from evals.honeypots import HONEYPOTS, AuditModels, ConnectedHoneypot, HoneypotConfig
 from evals.metrics import VerdictMap
 from mcp_auditor.domain.models import (
     AuditCategory,
@@ -22,9 +27,11 @@ from mcp_auditor.domain.models import (
     TokenUsage,
     ToolDefinition,
     ToolReport,
+    ToolResponse,
 )
 from mcp_auditor.domain.ports import LLMPort
 from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
+from tests.fakes.scripted_audit_model import ScriptedAuditModel
 from tests.unit.support.test_eval_fault_injection_given import the_fault_injection_baseline
 
 __all__ = ["CHAIN_ONLY_FLAWS", "the_fault_injection_baseline"]
@@ -82,6 +89,31 @@ class HoneypotReports:
         return self.by_honeypot[honeypot.name]
 
 
+@dataclass(frozen=True)
+class ReverseFinishingReports:
+    """Each honeypot's audit ends only once the next honeypot's has, the last one first."""
+
+    reports: HoneypotReports
+    finished: dict[str, asyncio.Event] = field(
+        default_factory=lambda: {honeypot.name: asyncio.Event() for honeypot in HONEYPOTS}
+    )
+
+    async def audit(self, honeypot: HoneypotConfig) -> AuditReport:
+        position = HONEYPOTS.index(honeypot)
+        if position + 1 < len(HONEYPOTS):
+            async with asyncio.timeout(_NEVER_IN_SEQUENCE):
+                await self.finished[HONEYPOTS[position + 1].name].wait()
+        self.finished[honeypot.name].set()
+        return await self.reports.audit(honeypot)
+
+
+_NEVER_IN_SEQUENCE = 1.0  # seconds: awaited one after the other, these audits would wait forever
+
+
+def a_report_per_honeypot_finishing_in_reverse() -> ReverseFinishingReports:
+    return ReverseFinishingReports(a_report_per_honeypot())
+
+
 def a_report_per_honeypot() -> HoneypotReports:
     return HoneypotReports(
         {
@@ -122,3 +154,36 @@ async def verdicts_of(judge: LLMPort, calls: int) -> list[EvalVerdict]:
     return [
         (await judge.generate_structured("a prompt", Judgment))[0].verdict for _ in range(calls)
     ]
+
+
+FAULT_INJECTION_BUDGET = 5  # One case per category, as in the fault injection integration test.
+MANY_TOOLS = [
+    ToolDefinition(name=f"tool_{index}", input_schema={"type": "object"}) for index in range(20)
+]
+SINGLE_STEP_HONEYPOTS = [honeypot for honeypot in HONEYPOTS if honeypot.chain_budget == 0]
+
+
+class GatedClient:
+    """A server that lists its tools only once its gate opens."""
+
+    def __init__(self) -> None:
+        self.gate = asyncio.Event()
+
+    async def list_tools(self) -> list[ToolDefinition]:
+        await self.gate.wait()
+        return MANY_TOOLS
+
+    async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
+        return ToolResponse(content="ok")
+
+
+def a_faulted_audit_losing_detections(clients: dict[str, GatedClient]) -> FaultedAudit:
+    """Every case is judged a detection, so the loss drawn at each audit index shows."""
+    fault = next(fault for fault in FAULTS if fault.loses_detections)
+    models = AuditModels(llm=ScriptedAuditModel(), judge_llm=FailingJudge())
+    servers = {
+        honeypot.name: ConnectedHoneypot(honeypot, clients[honeypot.name])
+        for honeypot in HONEYPOTS
+        if honeypot.name in clients
+    }
+    return FaultedAudit(fault, models, FAULT_INJECTION_BUDGET, servers)

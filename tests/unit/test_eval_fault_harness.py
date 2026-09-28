@@ -1,5 +1,7 @@
 """The faults the harness plants, and its deterministic parts."""
 
+import asyncio
+
 import pytest
 from pydantic import BaseModel
 
@@ -139,6 +141,30 @@ async def test_auditing_the_honeypots_merges_their_reports():
     verdicts, merged = await audit_honeypots(reports.audit)
 
     then.merged(verdicts, merged, list(reports.by_honeypot.values()))
+
+
+async def test_auditing_the_honeypots_merges_in_a_fixed_order_whatever_finishes_first():
+    reverse = given.a_report_per_honeypot_finishing_in_reverse()
+
+    verdicts, merged = await audit_honeypots(reverse.audit)
+
+    then.merged(verdicts, merged, list(reverse.reports.by_honeypot.values()))
+
+
+async def test_a_replay_takes_its_audit_index_when_it_starts_not_when_it_ends():
+    first, second = given.SINGLE_STEP_HONEYPOTS
+    clients = {first.name: given.GatedClient(), second.name: given.GatedClient()}
+    audit = given.a_faulted_audit_losing_detections(clients)
+
+    first_replay = asyncio.create_task(audit.replay(first))
+    second_replay = asyncio.create_task(audit.replay(second))
+    clients[second.name].gate.set()
+    second_verdicts = await second_replay
+    clients[first.name].gate.set()
+    first_verdicts = await first_replay
+
+    then.lost_as_drawn_at(first_verdicts, audit_index=0)
+    then.lost_as_drawn_at(second_verdicts, audit_index=1)
 
 
 def test_the_harness_accepts_the_fixture():

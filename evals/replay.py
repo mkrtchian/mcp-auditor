@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -19,25 +20,47 @@ class Replayer:
     async def settle_flips(
         self, cells: dict[Cell, CellComparison], rule: ReplayRule
     ) -> tuple[dict[Cell, CellComparison], list[str]]:
-        """Settles every flip by replaying its server alone. The second item lists failures."""
+        """Settles every flip by replaying its server alone, the servers side by side. The
+        second item lists failures."""
+        flipped_by_server = self._flipped_by_server(cells)
+        results = await asyncio.gather(
+            *(
+                self._replay_or_fail(honeypot, flipped, rule)
+                for honeypot, flipped in flipped_by_server
+            )
+        )
         settled = dict(cells)
         failures: list[str] = []
-        for honeypot in self.honeypots:
-            flipped = [
-                cell for cell in honeypot.ground_truth if cells[cell].outcome == CellOutcome.FLIP
-            ]
-            if not flipped:
-                continue
-            try:
-                replays = await self._replay_server(honeypot, flipped, rule)
-            except Exception:
-                self.announce(f"Warning: a replay of {honeypot.name} failed:")
-                self.warn(traceback.format_exc())
-                failures.append(f"a replay of {honeypot.name} failed")
+        for (_, flipped), result in zip(flipped_by_server, results, strict=True):
+            if isinstance(result, str):
+                failures.append(result)
                 continue
             for cell in flipped:
-                settled[cell] = settle(cells[cell], replays[cell], rule)
+                settled[cell] = settle(cells[cell], result[cell], rule)
         return settled, failures
+
+    def _flipped_by_server(
+        self, cells: dict[Cell, CellComparison]
+    ) -> list[tuple[HoneypotConfig, list[Cell]]]:
+        flipped_by_server = [
+            (
+                honeypot,
+                [cell for cell in honeypot.ground_truth if cells[cell].outcome == CellOutcome.FLIP],
+            )
+            for honeypot in self.honeypots
+        ]
+        return [(honeypot, flipped) for honeypot, flipped in flipped_by_server if flipped]
+
+    async def _replay_or_fail(
+        self, honeypot: HoneypotConfig, flipped: list[Cell], rule: ReplayRule
+    ) -> dict[Cell, list[bool]] | str:
+        """The replays of one server, or the failure message when one of them raised."""
+        try:
+            return await self._replay_server(honeypot, flipped, rule)
+        except Exception:
+            self.announce(f"Warning: a replay of {honeypot.name} failed:")
+            self.warn(traceback.format_exc())
+            return f"a replay of {honeypot.name} failed"
 
     async def _replay_server(
         self, honeypot: HoneypotConfig, flipped: list[Cell], rule: ReplayRule
