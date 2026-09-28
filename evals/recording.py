@@ -35,7 +35,7 @@ _RESET_PROCEDURE = (
     "both models and record the delta while the old one answers (ADR 016)"
 )
 
-_NOT_MADE_AGAIN = (
+NOT_MADE_AGAIN = (
     "this second recording is not made again against the same first recording (ADR 023). If a "
     "change reset the baseline, revert it and discard both recordings. For a first baseline, "
     "ADR 023 decides nothing: decide the way forward before recording again"
@@ -211,7 +211,7 @@ def _second_recording_refusals(
         + not_made_again
         + exploratory_commit_refusal(existing, combined.commit)
         + condition_refusals(existing, combined.conditions)
-        + ([_NOT_MADE_AGAIN] if not_made_again else [])
+        + ([NOT_MADE_AGAIN] if not_made_again else [])
     )
 
 
