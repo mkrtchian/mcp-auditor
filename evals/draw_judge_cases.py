@@ -124,7 +124,15 @@ def draw_fixture(strata: Strata, sources: list[SourceRun]) -> JudgeFixture:
     return JudgeFixture(draw=record, cases=[case for cases, _ in draws for case in cases])
 
 
-def complement_refusals(fixture: JudgeFixture) -> list[str]:
+def complement_refusals(fixture: JudgeFixture, sources: list[SourceRun]) -> list[str]:
+    refusals = _labeling_refusals(fixture)
+    recorded = [] if fixture.draw is None else fixture.draw.sources
+    if sorted(s.sha256 for s in recorded) != sorted(s.sha256 for s in sources):
+        refusals.append("the exports differ from the sources the draw recorded")
+    return refusals
+
+
+def _labeling_refusals(fixture: JudgeFixture) -> list[str]:
     if fixture.draw is not None and fixture.draw.complement_seed is not None:
         return ["the complement is already drawn"]
     unlabeled = sum(case.label is None for case in fixture.cases)
@@ -234,10 +242,7 @@ def _cells_labeled(
 
 
 def _complemented(fixture: JudgeFixture, strata: Strata, sources: list[SourceRun]) -> JudgeFixture:
-    refusals = complement_refusals(fixture)
-    recorded = [] if fixture.draw is None else fixture.draw.sources
-    if sorted(s.sha256 for s in recorded) != sorted(s.sha256 for s in sources):
-        refusals.append("the exports differ from the sources the draw recorded")
+    refusals = complement_refusals(fixture, sources)
     if refusals:
         raise Refused("Complement refused.", refusals)
     return complement(fixture, strata)

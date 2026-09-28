@@ -36,7 +36,7 @@ class SourceReport(BaseModel):
 
 def leaked_secrets(cases: Iterable[JudgeCase], home: str, user: str) -> list[str]:
     """Names the case and the kind of match only: the matched text would leak again."""
-    user_word = re.compile(rf"(?<![A-Za-z0-9_]){re.escape(user)}(?![A-Za-z0-9_])")
+    user_word = re.compile(rf"(?<![A-Za-z0-9_]){re.escape(user)}(?![A-Za-z0-9_])", re.IGNORECASE)
     leaks: list[str] = []
     for case in cases:
         text = case.inputs.model_dump_json()

@@ -141,7 +141,9 @@ def test_the_complement_is_refused_while_a_case_is_unlabeled():
     drawn = draw_fixture(given.some_strata(), sources=[])
     fixture = given.labeled(drawn, [FAIL] * 4 + [PASS] * 2 + [FAIL, PASS, None])
 
-    assert complement_refusals(fixture) == ["1 unlabeled case(s): label every case first"]
+    assert complement_refusals(fixture, sources=[]) == [
+        "1 unlabeled case(s): label every case first"
+    ]
 
 
 def test_the_complement_is_refused_when_fail_cases_stay_under_the_rule():
@@ -149,7 +151,7 @@ def test_the_complement_is_refused_when_fail_cases_stay_under_the_rule():
     labels = [FAIL] * 2 + [PASS] * 4 + [CaseLabel.UNSPECIFIED, PASS, PASS]
     fixture = given.labeled(drawn, labels)
 
-    assert complement_refusals(fixture) == [
+    assert complement_refusals(fixture, sources=[]) == [
         "the complement rule does not fire: 2 FAIL cases of 8 labeled pass or fail, under 40 %"
     ]
 
@@ -159,7 +161,18 @@ def test_a_complement_already_drawn_is_refused():
     fixture = given.labeled(draw_fixture(strata, sources=[]), [FAIL] * 9)
     completed = given.labeled(complement(fixture, strata), [FAIL] * 11)
 
-    assert complement_refusals(completed) == ["the complement is already drawn"]
+    assert complement_refusals(completed, sources=[]) == ["the complement is already drawn"]
+
+
+def test_the_complement_is_refused_on_exports_the_draw_did_not_record():
+    recorded = source_run("honeypot.jsonl", b"first run", given.a_source_report())
+    rerun = source_run("honeypot.jsonl", b"another run", given.a_source_report())
+    drawn = draw_fixture(given.some_strata(), sources=[recorded])
+    fixture = given.labeled(drawn, [FAIL] * 9)
+
+    assert complement_refusals(fixture, sources=[rerun]) == [
+        "the exports differ from the sources the draw recorded"
+    ]
 
 
 def test_the_leak_check_names_the_case_and_the_kind_of_match_never_the_text():
@@ -195,6 +208,15 @@ def test_the_leak_check_knows_each_key_pattern(text: str, kind: str):
     case = case.model_copy(update={"inputs": case.inputs.model_copy(update={"response": text})})
 
     assert f"case {case.id}: {kind}" in leaked_secrets([case], HOME, USER)
+
+
+def test_the_user_name_is_a_leak_whatever_its_case():
+    case = given.some_cases(1)[0]
+    case = case.model_copy(
+        update={"inputs": case.inputs.model_copy(update={"response": "owner: Alice"})}
+    )
+
+    assert leaked_secrets([case], HOME, USER) == [f"case {case.id}: user name"]
 
 
 def test_a_user_name_inside_a_longer_word_is_not_a_leak():
