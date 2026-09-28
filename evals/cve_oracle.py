@@ -56,6 +56,7 @@ class CVEBenchmarkReport(BaseModel):
     conditions: CVERunConditions
     results: list[CVEResult]
     gate: CVEGateResult | None = None
+    recording_refused: list[str] = []
 
 
 def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> CVEResult:
@@ -114,6 +115,9 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
     counts = Counter(result.status for result in report.results)
     tally = ", ".join(f"{counts[status]} {status.value}" for status in CVEStatus if counts[status])
     gate = [] if report.gate is None else ["", *_render_gate(report.gate)]
+    refusal = [f"- {reason}" for reason in report.recording_refused]
+    if refusal:
+        refusal = ["", "Recording refused, no baseline written:", *refusal]
     return "\n".join(
         [
             _render_conditions(report.conditions),
@@ -124,6 +128,7 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
             "",
             f"Statuses: {tally}.",
             *gate,
+            *refusal,
         ]
     )
 

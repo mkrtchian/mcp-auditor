@@ -132,3 +132,15 @@ def test_render_without_a_gate_has_no_gate_section():
     markdown = render_markdown(given.a_benchmark_report([]))
 
     assert "Gate" not in markdown
+
+
+def test_render_ends_with_the_reasons_a_recording_was_refused():
+    report = given.a_benchmark_report([]).model_copy(
+        update={"recording_refused": ["CVE-2025-53355: the gated target regressed"]}
+    )
+
+    markdown = render_markdown(report)
+
+    assert markdown.endswith(
+        "Recording refused, no baseline written:\n- CVE-2025-53355: the gated target regressed"
+    )

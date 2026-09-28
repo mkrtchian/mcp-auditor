@@ -144,9 +144,17 @@ async def _run_graded(
     session = await run_gated(options, _harness(args.budget))
     results = [_result(target, session.grades[target.cve_id], args.budget) for target in graded]
     results.extend(out_of_scope_results(tracked))
-    report = CVEBenchmarkReport(conditions=conditions, results=results, gate=session.gate)
+    report = CVEBenchmarkReport(
+        conditions=conditions,
+        results=results,
+        gate=session.gate,
+        recording_refused=session.recording_refused,
+    )
     _write_reports(report, Path(args.report))
     _print_session(session)
+    if session.recording_refused:
+        display.print_refusal(RECORDING_REFUSED, session.recording_refused)
+        return NOT_COMPARABLE_EXIT
     return session.exit_code
 
 

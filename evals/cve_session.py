@@ -79,6 +79,7 @@ class CVESessionResult:
     gate: CVEGateResult | None  # None under --ungated
     orphans: list[str]  # baseline files of targets no longer benchmarked
     written: list[WrittenBaseline]
+    recording_refused: list[str]  # why a recording was refused once the runs were paid for
     exit_code: int
 
 
@@ -109,16 +110,18 @@ _BENCHMARKED = frozenset(target.cve_id for target in CVE_TARGETS)
 
 
 async def run_gated(options: CVEOptions, harness: CVEHarness) -> CVESessionResult:
-    """Raises Refused on a run that cannot be compared before it starts, or a refused recording."""
+    """Raises Refused on a run that cannot be compared or recorded before it starts."""
     session = _open(options, harness)
     runs = [await _run_target(target, session) for target in options.targets]
     gate = None if options.ungated else await _gate(session, runs)
-    written = _record(session, runs, gate) if gate is not None else []
+    recorded = _record(session, runs, gate) if gate is not None else []
+    refused = isinstance(recorded, RecordingRefused)
     return CVESessionResult(
         grades={target_runs.target.cve_id: target_runs.grades for target_runs in runs},
         gate=gate,
         orphans=session.orphans(),
-        written=written,
+        written=[] if refused else recorded,
+        recording_refused=recorded.reasons if refused else [],
         exit_code=0 if gate is None else exit_code(gate.verdict),
     )
 
@@ -207,12 +210,12 @@ async def _replayed(
 
 def _record(
     session: _Session, runs: list[_TargetRuns], gate: CVEGateResult
-) -> list[WrittenBaseline]:
+) -> list[WrittenBaseline] | RecordingRefused:
     if session.tree is None:
         return []
     drift = _recording_drift(session, session.tree)
     if drift:
-        raise Refused(RECORDING_REFUSED, drift)
+        return RecordingRefused(reasons=drift)
     baselines = session.baselines()
     comparisons = {comparison.cve_id: comparison for comparison in gate.targets}
     recordings = _recordings(session, session.tree, runs)
@@ -222,7 +225,7 @@ def _record(
     }
     decided = decide_recordings(decisions)
     if isinstance(decided, RecordingRefused):
-        raise Refused(RECORDING_REFUSED, decided.reasons)
+        return decided
     for baseline in decided:
         write_baseline(session.harness.baselines, baseline)
     return [
@@ -233,7 +236,11 @@ def _record(
 
 def _recording_drift(session: _Session, tree: TreeState) -> list[str]:
     drift = tree_drift(tree, session.harness.read_tree())
-    if _load_checked(session.harness.baselines, RECORDING_REFUSED) != session.files:
+    try:
+        changed = _load_checked(session.harness.baselines, RECORDING_REFUSED) != session.files
+    except Refused as invalid:
+        return drift + invalid.reasons
+    if changed:
         drift.append("the baseline files changed during the runs: record again")
     return drift
 

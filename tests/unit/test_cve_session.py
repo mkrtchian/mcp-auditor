@@ -89,6 +89,21 @@ async def test_a_second_recording_at_the_same_commit_confirms_one_file_per_targe
     assert all(len(baseline.runs) == 6 for baseline in files.values())
 
 
+async def test_a_recording_refused_after_the_runs_still_returns_the_graded_runs(tmp_path: Path):
+    given.a_gated_file(tmp_path)
+    audit = given.ScriptedAudit({given.KUBERNETES.cve_id: [given.a_miss()] * 7})
+    before = (tmp_path / f"{given.KUBERNETES.cve_id}.json").read_text()
+
+    result = await run_gated(given.options(record_baseline=True), given.a_harness(audit, tmp_path))
+
+    assert result.recording_refused != []
+    assert result.written == []
+    assert len(result.grades[given.KUBERNETES.cve_id]) == 3
+    assert result.gate is not None
+    assert result.gate.verdict == CVEGateVerdict.RED
+    assert (tmp_path / f"{given.KUBERNETES.cve_id}.json").read_text() == before
+
+
 async def test_a_dirty_tree_refuses_a_recording_before_any_audit(tmp_path: Path):
     audit = given.ScriptedAudit()
     dirty = TreeState(commit=given.COMMIT, dirty=True)
