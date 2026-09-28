@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import pytest
 
 import tests.unit.support.test_eval_session_given as given
+from evals import eval_session
 from evals.baseline import BaselineStatus
 from evals.eval_session import (
     REFUSED_BEFORE_ANY_LLM_CALL,
@@ -228,3 +231,18 @@ def test_an_invalid_reasoning_setting_is_refused_before_any_llm_call(
 
     assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
     assert "'hgih'" in refusal.value.reasons[0]
+
+
+def test_an_invalid_declaration_file_is_refused_before_any_git_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    declarations = tmp_path / "declared_flips.json"
+    declarations.write_text('{"entries": [{"suite": "honeypot"}]}')
+    monkeypatch.setattr(eval_session, "DECLARED_FLIPS_PATH", declarations)
+    monkeypatch.setattr(eval_session.subprocess, "run", given.a_git_that_must_not_run)
+
+    with pytest.raises(Refused) as refusal:
+        open_session(given.options())
+
+    assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
+    assert f"{declarations} is not a valid declaration file" in refusal.value.reasons[0]

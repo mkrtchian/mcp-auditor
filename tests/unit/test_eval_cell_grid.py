@@ -83,6 +83,7 @@ def test_a_ground_truth_cell_missing_from_the_baseline_runs_is_new(
         (CellOutcome.FLIP, CellTag.FLIP),
         (CellOutcome.FLIP_NOT_REPRODUCED, CellTag.FLIP),
         (CellOutcome.REGRESSION, CellTag.REGRESSION),
+        (CellOutcome.DECLARED, CellTag.DECLARED),
         (CellOutcome.IMPROVED, CellTag.FIXED),
         (CellOutcome.NOT_RECORDED, CellTag.NEW),
         (CellOutcome.UNCHANGED, CellTag.UNSTABLE),

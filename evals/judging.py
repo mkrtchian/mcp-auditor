@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from evals.baseline import RescoredBaseline, rescore
+from evals.declared_flips import apply_declarations
 from evals.eval_session import EvalSession
 from evals.gate import (
     Cell,
@@ -13,6 +14,7 @@ from evals.gate import (
     metric_deltas,
     metric_resolutions,
     observe,
+    parse_cell_key,
     protected_cells,
 )
 from evals.gate_verdict import GateInput, GateMode, GateResult, judge_gate
@@ -77,6 +79,8 @@ async def judge_runs(session: EvalSession, outcome: RunsOutcome, replayer: Repla
 
     rescored = rescore(baseline, MERGED_GROUND_TRUTH)
     cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
+    declared = frozenset(parse_cell_key(key) for key in session.declarations.keys)
+    cells = apply_declarations(cells, declared)
     if session.mode == GateMode.PAIRED and not mismatches:
         cells, mismatches = await replayer.settle_flips(cells, baseline.replay_rule)
     return judge_gate(
@@ -89,6 +93,7 @@ async def judge_runs(session: EvalSession, outcome: RunsOutcome, replayer: Repla
             mismatches=mismatches,
             deltas=_deltas(rescored, outcome, metrics),
             protected=rescored.protected,
+            declared=declared,
         )
     )
 

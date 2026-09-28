@@ -82,7 +82,12 @@ def _evaluate(options: EvalOptions) -> int:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(result.report.model_dump_json(indent=2))
     export_judged_cases(result.outcome.audits, MERGED_GROUND_TRUTH, report_path)
-    display.print_summary(result.report, options.report, _gate_grid(session.baseline, result))
+    display.print_summary(
+        result.report,
+        options.report,
+        _gate_grid(session.baseline, result),
+        session.declarations.ignored,
+    )
 
     if session.tree is not None:
         return _record(session, session.tree, result)

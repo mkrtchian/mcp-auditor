@@ -1,5 +1,5 @@
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pydantic import ValidationError
 
@@ -13,6 +13,17 @@ from evals.baseline import (
     fingerprint_source,
     load_baseline,
 )
+from evals.declared_flips import (
+    DECLARED_FLIPS_PATH,
+    ActiveDeclarations,
+    DeclaredFlip,
+    Suite,
+    active_declarations,
+    declaration_problems,
+    entries_of_commit,
+    load_declared_flips,
+)
+from evals.gate import cell_key
 from evals.gate_verdict import GateMode
 from evals.ground_truth import GroundTruth
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, REPO_ROOT
@@ -62,6 +73,7 @@ class EvalSession:
     baseline: Baseline | None
     mode: GateMode
     tree: TreeState | None
+    declarations: ActiveDeclarations = field(default_factory=ActiveDeclarations)
 
 
 def open_session(options: EvalOptions) -> EvalSession:
@@ -73,17 +85,48 @@ def open_session(options: EvalOptions) -> EvalSession:
         )
     settings = load_settings()
     baseline = None if options.ungated else _load_committed_baseline()
+    entries, dirty = _declarations_of_head()
     session = EvalSession(
         settings=settings,
         conditions=_conditions_or_refused(settings, options),
         baseline=baseline,
         mode=select_mode(baseline, options.ungated),
         tree=read_tree() if options.record_baseline else None,
+        declarations=active_declarations(entries, dirty),
     )
     reasons = pre_run_refusals(session, MERGED_GROUND_TRUTH)
+    reasons += declaration_problems(entries, {cell_key(cell) for cell in MERGED_GROUND_TRUTH})
     if reasons:
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, reasons)
     return session
+
+
+def _declarations_of_head() -> tuple[list[DeclaredFlip], bool]:
+    """The entries declared by the commit at HEAD, and whether the tree has tracked changes."""
+    try:
+        entries = load_declared_flips(DECLARED_FLIPS_PATH)
+    except ValidationError as error:
+        reason = f"{DECLARED_FLIPS_PATH} is not a valid declaration file: {error}"
+        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [reason]) from error
+    if not entries:
+        return [], False
+    of_head = entries_of_commit(entries, Suite.HONEYPOT, _parent_commit())
+    return of_head, bool(of_head) and _tree_is_dirty()
+
+
+def _parent_commit() -> str | None:
+    """None on a root commit, a one-commit shallow clone or outside a git checkout."""
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", "HEAD~"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return completed.stdout.strip()
 
 
 def _conditions_or_refused(settings: Settings, options: EvalOptions) -> BaselineConditions:
@@ -202,8 +245,12 @@ def baseline_changed(loaded: Baseline | None, current: Baseline | None) -> list[
 def read_tree() -> TreeState:
     return TreeState(
         commit=_git("rev-parse", "HEAD"),
-        dirty=bool(_git("status", "--porcelain", "--untracked-files=no")),
+        dirty=_tree_is_dirty(),
     )
+
+
+def _tree_is_dirty() -> bool:
+    return bool(_git("status", "--porcelain", "--untracked-files=no"))
 
 
 def _git(*args: str) -> str:

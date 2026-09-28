@@ -1,5 +1,8 @@
+from typing import NoReturn
+
 import tests.unit.support.test_eval_baseline_given as baseline_given
 from evals.baseline import Baseline, BaselineConditions, BaselineStatus
+from evals.declared_flips import ActiveDeclarations
 from evals.eval_session import (
     DEFAULT_BUDGET,
     DEFAULT_CONCURRENCY,
@@ -63,6 +66,7 @@ def a_session(
     baseline: Baseline | None = None,
     tree: TreeState | None = None,
     conditions: BaselineConditions | None = None,
+    declarations: ActiveDeclarations | None = None,
 ) -> EvalSession:
     """A session recording whenever it holds a tree, as open_session builds it."""
     return EvalSession(
@@ -71,8 +75,13 @@ def a_session(
         baseline=baseline,
         mode=select_mode(baseline, ungated=False),
         tree=tree,
+        declarations=declarations or ActiveDeclarations(),
     )
 
 
 def a_clean_tree(commit: str = HEAD) -> TreeState:
     return TreeState(commit=commit, dirty=False)
+
+
+def a_git_that_must_not_run(*args: object, **kwargs: object) -> NoReturn:
+    raise AssertionError("git was read")

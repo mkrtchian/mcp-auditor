@@ -23,6 +23,7 @@ class CellTag(StrEnum):
     MISS = "miss"
     ALARM = "alarm"
     FLIP = "flip"
+    DECLARED = "decl"
     REGRESSION = "REGR"
     FIXED = "fixed"
     NEW = "new"
@@ -103,6 +104,7 @@ _OUTCOME_TAGS: dict[CellOutcome, CellTag] = {
     CellOutcome.FLIP: CellTag.FLIP,
     CellOutcome.FLIP_NOT_REPRODUCED: CellTag.FLIP,
     CellOutcome.REGRESSION: CellTag.REGRESSION,
+    CellOutcome.DECLARED: CellTag.DECLARED,
     CellOutcome.IMPROVED: CellTag.FIXED,
     CellOutcome.NOT_RECORDED: CellTag.NEW,
 }

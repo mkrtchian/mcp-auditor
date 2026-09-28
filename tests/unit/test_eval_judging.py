@@ -7,6 +7,7 @@ would give the same verdicts.
 
 import tests.unit.support.test_eval_judging_given as given
 from evals.baseline import BaselineStatus
+from evals.declared_flips import ActiveDeclarations
 from evals.gate import LEGACY_THRESHOLDS, CellOutcome, cell_key
 from evals.gate_verdict import GateMode, GateVerdict
 from evals.judging import judge_runs
@@ -53,6 +54,23 @@ async def test_a_confirmed_baseline_replays_a_flip_into_a_regression():
     assert f"regression on {FLIPPED_KEY}" in result.reasons
     assert result.deltas
     assert audit.calls[given.FLIPPED_HONEYPOT.name] == 4
+
+
+async def test_a_declared_flip_is_not_replayed_and_does_not_fail_the_gate():
+    session = given.a_session(
+        baseline=given.a_baseline_all_correct(BaselineStatus.CONFIRMED),
+        declarations=ActiveDeclarations(keys=frozenset({FLIPPED_KEY})),
+    )
+    audit = given.an_audit_reproducing_the_flip()
+
+    result = await judge_runs(
+        session, given.runs_missing_the_flipped_cell(), given.a_replayer(audit)
+    )
+
+    assert result.cells[FLIPPED_KEY].outcome == CellOutcome.DECLARED
+    # The minimal audit reports breach the distribution floor, so only the cell reasons are read.
+    assert not any("regression on" in reason for reason in result.reasons)
+    assert given.no_audit_ran(audit)
 
 
 async def test_a_confirmed_baseline_with_missing_runs_replays_nothing():

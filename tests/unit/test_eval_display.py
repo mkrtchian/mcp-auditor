@@ -26,3 +26,38 @@ def test_the_summary_says_nothing_of_throttling_when_nothing_was_throttled(
     print_summary(given.an_eval_report(config), "output/eval_report.json")
 
     assert "Throttled" not in output.getvalue()
+
+
+def test_the_summary_names_a_declared_cell_that_did_not_flip(monkeypatch: pytest.MonkeyPatch):
+    output = given.a_captured_console(monkeypatch)
+
+    print_summary(given.an_eval_report(declared_held=["query/injection"]), "report.json")
+
+    assert "declared, did not flip: query/injection" in output.getvalue()
+
+
+def test_the_summary_notes_the_declarations_ignored_on_a_dirty_tree(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.a_captured_console(monkeypatch)
+
+    print_summary(
+        given.an_eval_report(),
+        "report.json",
+        ignored_declarations=frozenset({"query/injection"}),
+    )
+
+    assert (
+        "Declarations of HEAD ignored, the tree has tracked changes: query/injection"
+        in output.getvalue()
+    )
+
+
+def test_the_summary_says_nothing_of_declarations_when_there_are_none(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.a_captured_console(monkeypatch)
+
+    print_summary(given.an_eval_report(), "report.json")
+
+    assert "declar" not in output.getvalue()

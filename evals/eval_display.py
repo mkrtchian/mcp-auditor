@@ -33,7 +33,12 @@ _VERDICT_STYLES = {
 }
 
 
-def print_summary(report: EvalReport, report_path: str, grid: GateGrid | None = None) -> None:
+def print_summary(
+    report: EvalReport,
+    report_path: str,
+    grid: GateGrid | None = None,
+    ignored_declarations: frozenset[str] = frozenset(),
+) -> None:
     gate = report.gate
     status = f", baseline {gate.baseline_status}" if gate.baseline_status else ""
     console.print(f"Gate mode: [bold]{gate.mode}[/bold]{status}")
@@ -43,6 +48,13 @@ def print_summary(report: EvalReport, report_path: str, grid: GateGrid | None = 
     if grid and grid.outcomes:
         console.print(_outcome_table(grid.outcomes))
         console.print("P pass, F fail, - not covered")
+    for key in gate.declared_held:
+        console.print(f"declared, did not flip: {key}")
+    if ignored_declarations:
+        console.print(
+            "[yellow]Declarations of HEAD ignored, the tree has tracked changes:"
+            f" {escape(', '.join(sorted(ignored_declarations)))}[/yellow]"
+        )
     if gate.protected:
         console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
     throttled = report.config.get("throttled_requests", 0)
@@ -90,6 +102,7 @@ _STYLES: dict[CellTag, str] = {
     CellTag.MISS: "white on magenta",
     CellTag.ALARM: "white on magenta",
     CellTag.FLIP: "black on bright_yellow",
+    CellTag.DECLARED: "black on bright_blue",
     CellTag.REGRESSION: "bold white on bright_red",
     CellTag.FIXED: "black on cyan",
     CellTag.NEW: "black on white",
@@ -101,6 +114,9 @@ _MEANINGS: dict[CellTag, str] = {
     CellTag.MISS: "not gated: planted flaw never found",
     CellTag.ALARM: "not gated: PASS cell always flagged",
     CellTag.FLIP: "gated cell wrong in this run, not a regression",
+    CellTag.DECLARED: (
+        "gated cell wrong in this run, declared before the run: the gate does not fail"
+    ),
     CellTag.REGRESSION: "gated cell wrong in this run, reproduced on replay: the gate fails",
     CellTag.FIXED: "miss or alarm cell correct in every run of this one",
     CellTag.NEW: "cell the baseline did not record",

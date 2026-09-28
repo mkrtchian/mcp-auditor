@@ -15,10 +15,12 @@ def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
     return buffer
 
 
-def an_eval_report(config: dict[str, int]) -> EvalReport:
+def an_eval_report(
+    config: dict[str, int] | None = None, declared_held: list[str] | None = None
+) -> EvalReport:
     return EvalReport(
         timestamp="2026-09-28T00:00:00+00:00",
-        config=config,
+        config=config or {"concurrency": 6},
         metrics=EvalMetrics(recall=1.0, precision=1.0, consistency=1.0, distribution_coverage=1.0),
         thresholds={},
         passed=True,
@@ -32,6 +34,7 @@ def an_eval_report(config: dict[str, int]) -> EvalReport:
             thresholds={},
             floor_breaches=[],
             deltas={},
+            declared_held=declared_held or [],
         ),
         runs=[],
         consistency_details={},
