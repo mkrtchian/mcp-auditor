@@ -22,7 +22,7 @@ async def test_a_server_dead_at_startup_fails_calibration_and_the_next_target_st
         given.a_live_target("CVE-LIVE"),
     ]
 
-    all_live = await calibrate_all(targets)
+    all_live = await calibrate_all(targets, concurrency=2)
 
     output = capsys.readouterr().out
     assert not all_live

@@ -179,7 +179,7 @@ uv run python -m evals.run_cve_benchmark --record-baseline
 # Graded run without the comparison.
 uv run python -m evals.run_cve_benchmark --ungated
 
-# Audits run six at a time by default; --concurrency sets how many, 1 runs them one after the other.
+# Audits (and calibrations) run six at a time by default; --concurrency sets how many, 1 runs them one after the other.
 uv run python -m evals.run_cve_benchmark --concurrency 1
 
 # Optional: restrict any mode to specific CVEs with --cve (repeatable).

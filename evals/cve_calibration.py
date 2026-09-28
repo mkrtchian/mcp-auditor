@@ -7,6 +7,7 @@ read as aimed. The benign call runs first, so the negative control reads a state
 has not touched.
 """
 
+import asyncio
 import json
 import tempfile
 from typing import IO, Any, cast
@@ -14,6 +15,7 @@ from typing import IO, Any, cast
 from rich.console import Console
 from rich.markup import escape
 
+from evals.concurrency import bounded, entered_in_thread
 from evals.cve_environments import connect
 from evals.cve_grammar import PROOFS_BY_CLASS, GradedTarget, ProofKind, is_aimed, proofs_in
 from evals.cve_targets import CVETarget
@@ -26,17 +28,20 @@ console = Console()
 type Exchange = tuple[str, dict[str, Any], ToolResponse]
 
 
-async def calibrate_all(targets: list[CVETarget], ci: bool = False) -> bool:
+async def calibrate_all(targets: list[CVETarget], ci: bool = False, concurrency: int = 1) -> bool:
     console.print("[bold]Calibration[/bold] (no LLM): exploit and benign call per target\n")
-    all_live = True
+    calibrated: list[CVETarget] = []
     for target in targets:
         if ci and target.ci_skip_reason is not None:
             console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
-            continue
-        live = await _calibrate_one(target)
-        all_live = all_live and live
+        else:
+            calibrated.append(target)
+    calibrate = bounded(_calibrate_one, concurrency)
+    verdicts = await asyncio.gather(*(calibrate(target) for target in calibrated))
+    for target, live in zip(calibrated, verdicts, strict=True):
         status = "[green]live[/green]" if live else "[red]dead[/red]"
         console.print(f"{status}  {target.cve_id}")
+    all_live = all(verdicts)
     if not all_live:
         console.print(
             "\n[red]Some fixtures calibrate dead[/red]: fix fixture/exploit/benign call/aim."
@@ -64,14 +69,18 @@ def dead_conditions(target: GradedTarget, exploit: Unit, benign: Unit) -> list[s
 async def _calibrate_one(target: CVETarget) -> bool:
     # Any failure reads as not live and the next target still runs. A server that dies
     # before the handshake only says "Connection closed", so its stderr carries the cause.
+    # Reports print with no await between their lines, so targets calibrated side by side
+    # do not interleave them.
     with tempfile.TemporaryFile("w+") as server_stderr:
         try:
-            with target.environment() as launch:
-                async with connect(launch, server_stderr) as client:
-                    benign = RecordingClient(client)
-                    await target.benign(benign)
-                    exploit = RecordingClient(client)
-                    await target.exploit(exploit)
+            async with (
+                entered_in_thread(target.environment()) as launch,
+                connect(launch, server_stderr) as client,
+            ):
+                benign = RecordingClient(client)
+                await target.benign(benign)
+                exploit = RecordingClient(client)
+                await target.exploit(exploit)
         except Exception as exc:
             cause = _root_cause(exc)
             reason = f"{type(cause).__name__}: {cause}"

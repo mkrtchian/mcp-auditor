@@ -77,7 +77,9 @@ def main() -> None:
         sys.exit(CRASHED_EXIT)
 
     if args.calibrate:
-        sys.exit(0 if asyncio.run(calibrate_all(graded, ci=args.ci)) else 1)
+        sys.exit(
+            0 if asyncio.run(calibrate_all(graded, ci=args.ci, concurrency=args.concurrency)) else 1
+        )
 
     try:
         code = asyncio.run(_run_graded(args, graded, tracked))
@@ -99,7 +101,7 @@ def _parse_args() -> argparse.Namespace:
         "--concurrency",
         type=positive_int,
         default=CVE_CONCURRENCY,
-        help="Audits in flight at once; 1 runs them one after the other.",
+        help="Audits (or calibrations) in flight at once; 1 runs them one after the other.",
     )
     parser.add_argument(
         "--calibrate",
