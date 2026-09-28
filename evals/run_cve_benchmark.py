@@ -188,8 +188,9 @@ def _print_session(session: CVESessionResult) -> None:
         console.print(f"[green]Baseline recorded ({written.status}) to {path}.[/green]")
         if written.leaves_gated_set:
             console.print(f"  {written.cve_id} leaves the gated set.")
-    if session.written:
-        console.print(_NEXT_STEP[session.written[0].status])
+    # A recording can confirm some files and start others, and each status has its next step.
+    for status in dict.fromkeys(written.status for written in session.written):
+        console.print(_NEXT_STEP[status])
 
 
 def _run_conditions(settings: Settings, runs: int, budget: int) -> CVERunConditions:
