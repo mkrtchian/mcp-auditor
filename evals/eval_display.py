@@ -48,13 +48,7 @@ def print_summary(
     if grid and grid.outcomes:
         console.print(_outcome_table(grid.outcomes))
         console.print("P pass, F fail, - not covered")
-    for key in gate.declared_held:
-        console.print(f"declared, did not flip: {key}")
-    if ignored_declarations:
-        console.print(
-            "[yellow]Declarations of HEAD ignored, the tree has tracked changes:"
-            f" {escape(', '.join(sorted(ignored_declarations)))}[/yellow]"
-        )
+    _print_declarations(gate.declared_held, ignored_declarations)
     if gate.protected:
         console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
     throttled = report.config.get("throttled_requests", 0)
@@ -65,6 +59,16 @@ def print_summary(
         )
     console.print(f"Report written to {report_path}")
     console.print(Panel(_verdict_text(gate)))
+
+
+def _print_declarations(held: list[str], ignored: frozenset[str]) -> None:
+    for key in held:
+        console.print(f"declared, did not flip: {key}")
+    if ignored:
+        console.print(
+            "[yellow]Declarations of HEAD ignored, the tree has tracked changes:"
+            f" {escape(', '.join(sorted(ignored)))}[/yellow]"
+        )
 
 
 def _metrics_table(report: EvalReport) -> Table:
