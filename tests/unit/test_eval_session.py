@@ -5,6 +5,7 @@ import pytest
 import tests.unit.support.test_eval_session_given as given
 from evals import eval_session
 from evals.baseline import BaselineStatus
+from evals.declared_flips import ActiveDeclarations
 from evals.eval_session import (
     REFUSED_BEFORE_ANY_LLM_CALL,
     Refused,
@@ -246,3 +247,54 @@ def test_an_invalid_declaration_file_is_refused_before_any_git_read(
 
     assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
     assert f"{declarations} is not a valid declaration file" in refusal.value.reasons[0]
+
+
+def test_an_empty_declaration_file_reads_nothing_from_git(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    monkeypatch.setattr(eval_session, "BASELINE_PATH", tmp_path / "no_baseline.json")
+    monkeypatch.setattr(eval_session, "DECLARED_FLIPS_PATH", given.a_declaration_file(tmp_path))
+    monkeypatch.setattr(eval_session.subprocess, "run", given.a_git_that_must_not_run)
+
+    session = open_session(given.options())
+
+    assert session.declarations == ActiveDeclarations()
+
+
+def test_an_active_declaration_of_an_unknown_cell_is_refused_before_any_llm_call(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    declarations = given.a_declaration_file(tmp_path, "no_such_tool/injection")
+    monkeypatch.setattr(eval_session, "BASELINE_PATH", tmp_path / "no_baseline.json")
+    monkeypatch.setattr(eval_session, "DECLARED_FLIPS_PATH", declarations)
+    monkeypatch.setattr(
+        eval_session.subprocess, "run", given.a_git_whose_parent_is_declared(dirty=False)
+    )
+
+    with pytest.raises(Refused) as refusal:
+        open_session(given.options())
+
+    assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
+    assert refusal.value.reasons == [
+        "declared flip no_such_tool/injection names no cell of the ground truth"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("dirty", "expected"),
+    [
+        (False, ActiveDeclarations(keys=frozenset({given.A_GATED_CELL}))),
+        (True, ActiveDeclarations(ignored=frozenset({given.A_GATED_CELL}))),
+    ],
+)
+def test_the_declarations_of_head_apply_only_on_a_clean_tree(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, dirty: bool, expected: ActiveDeclarations
+):
+    declarations = given.a_declaration_file(tmp_path, given.A_GATED_CELL)
+    monkeypatch.setattr(eval_session, "BASELINE_PATH", tmp_path / "no_baseline.json")
+    monkeypatch.setattr(eval_session, "DECLARED_FLIPS_PATH", declarations)
+    monkeypatch.setattr(eval_session.subprocess, "run", given.a_git_whose_parent_is_declared(dirty))
+
+    session = open_session(given.options())
+
+    assert session.declarations == expected

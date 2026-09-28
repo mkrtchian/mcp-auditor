@@ -1,8 +1,12 @@
+import json
+import subprocess
+from collections.abc import Callable
+from pathlib import Path
 from typing import NoReturn
 
 import tests.unit.support.test_eval_baseline_given as baseline_given
 from evals.baseline import Baseline, BaselineConditions, BaselineStatus
-from evals.declared_flips import ActiveDeclarations
+from evals.declared_flips import ActiveDeclarations, DeclaredFlip, DeclaredFlipsFile, Suite
 from evals.eval_session import (
     DEFAULT_BUDGET,
     DEFAULT_CONCURRENCY,
@@ -17,6 +21,8 @@ from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict
 
 HEAD = baseline_given.RECORDED_COMMIT
+PARENT = "0123456789abcdef0123456789abcdef01234567"
+A_GATED_CELL = "delete_record/injection"
 
 LABELS: GroundTruth = baseline_given.a_ground_truth()
 LABELS_WITH_THE_FLAW_RELABELED_PASS: GroundTruth = {
@@ -85,3 +91,30 @@ def a_clean_tree(commit: str = HEAD) -> TreeState:
 
 def a_git_that_must_not_run(*args: object, **kwargs: object) -> NoReturn:
     raise AssertionError("git was read")
+
+
+def a_declaration_file(tmp_path: Path, *keys: str) -> Path:
+    """Entries declared by a commit whose parent is `PARENT`."""
+    entries = [
+        DeclaredFlip(
+            suite=Suite.HONEYPOT,
+            key=key,
+            mechanism="the generator no longer probes this category",
+            base=PARENT,
+            runs_seen=[],
+        )
+        for key in keys
+    ]
+    path = tmp_path / "declared_flips.json"
+    path.write_text(json.dumps(DeclaredFlipsFile(entries=entries).model_dump(mode="json")))
+    return path
+
+
+def a_git_whose_parent_is_declared(dirty: bool) -> Callable[..., subprocess.CompletedProcess[str]]:
+    """Answers the parent read with `PARENT` and the status read as the tree stands."""
+
+    def run(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        output = PARENT if "rev-parse" in args else (" M evals/judging.py" if dirty else "")
+        return subprocess.CompletedProcess(args, 0, stdout=output, stderr="")
+
+    return run
