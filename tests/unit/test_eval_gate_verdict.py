@@ -186,3 +186,54 @@ def test_only_the_legacy_mode_carries_the_legacy_thresholds(
     )
 
     assert result.thresholds == thresholds
+
+
+def test_paired_mode_is_green_when_its_only_flips_are_declared():
+    cells = given.cells_with(CellOutcome.UNCHANGED, CellOutcome.DECLARED)
+
+    result = judge_gate(
+        GateInput(
+            mode=GateMode.PAIRED,
+            metrics=given.metrics(),
+            detections=given.detections(),
+            cells=cells,
+            declared=frozenset({given.cell(1)}),
+        )
+    )
+
+    assert result.verdict == GateVerdict.GREEN
+    assert result.declared_held == []
+
+
+def test_a_declared_cell_that_did_not_flip_is_reported_as_held():
+    cells = given.cells_with(CellOutcome.DECLARED, CellOutcome.UNCHANGED, CellOutcome.IMPROVED)
+
+    result = judge_gate(
+        GateInput(
+            mode=GateMode.PAIRED,
+            metrics=given.metrics(),
+            detections=given.detections(),
+            cells=cells,
+            declared=frozenset({given.cell(0), given.cell(2), given.cell(1)}),
+        )
+    )
+
+    assert result.verdict == GateVerdict.GREEN
+    assert result.declared_held == ["tool_1/input_validation", "tool_2/input_validation"]
+
+
+def test_a_regression_on_an_undeclared_cell_stays_red_beside_a_declared_flip():
+    cells = given.cells_with(CellOutcome.DECLARED, CellOutcome.REGRESSION)
+
+    result = judge_gate(
+        GateInput(
+            mode=GateMode.PAIRED,
+            metrics=given.metrics(),
+            detections=given.detections(),
+            cells=cells,
+            declared=frozenset({given.cell(0)}),
+        )
+    )
+
+    assert result.verdict == GateVerdict.RED
+    assert result.reasons == ["regression on tool_1/input_validation"]

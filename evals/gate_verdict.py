@@ -42,6 +42,7 @@ class GateResult(BaseModel):
     floor_breaches: list[str]
     deltas: dict[str, MetricDelta]
     protected: ProtectedCells | None = None
+    declared_held: list[str] = []
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,7 @@ class GateInput:
     mismatches: list[str] = field(default_factory=list[str])
     deltas: dict[str, MetricDelta] = field(default_factory=dict[str, MetricDelta])
     protected: ProtectedCells | None = None
+    declared: frozenset[Cell] = frozenset()
 
 
 def judge_gate(gate_input: GateInput) -> GateResult:
@@ -76,6 +78,15 @@ def judge_gate(gate_input: GateInput) -> GateResult:
         floor_breaches=breaches,
         deltas=gate_input.deltas,
         protected=gate_input.protected,
+        declared_held=_declared_held(gate_input),
+    )
+
+
+def _declared_held(gate_input: GateInput) -> list[str]:
+    return sorted(
+        cell_key(cell)
+        for cell in gate_input.declared
+        if cell in gate_input.cells and gate_input.cells[cell].outcome != CellOutcome.DECLARED
     )
 
 

@@ -32,6 +32,7 @@ class CellOutcome(StrEnum):
     REGRESSION = "regression"
     FLIP_NOT_REPRODUCED = "flip_not_reproduced"
     NOT_RECORDED = "not_recorded"
+    DECLARED = "declared"
 
 
 class FlipCause(StrEnum):

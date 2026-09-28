@@ -290,6 +290,16 @@ def test_recording_over_a_confirmed_baseline_under_a_green_gate_replaces_it():
     assert result.replay_rule == rule
 
 
+def test_recording_over_a_confirmed_baseline_under_a_green_gate_with_a_declared_flip_replaces_it():
+    existing = given.a_baseline(status=BaselineStatus.CONFIRMED)
+    gate = given.a_gate(vulnerable_cell_outcome=CellOutcome.DECLARED)
+
+    result = decide_recording(existing, given.a_recording(commit="4567def"), gate)
+
+    assert isinstance(result, Baseline)
+    assert result.replaces == RecordingRef(commit=existing.commit, recorded_at=existing.recorded_at)
+
+
 def test_recording_over_a_confirmed_baseline_with_a_gated_flip_not_reproduced_is_refused():
     existing = given.a_baseline(status=BaselineStatus.CONFIRMED)
     gate = given.a_gate(vulnerable_cell_outcome=CellOutcome.FLIP_NOT_REPRODUCED)
