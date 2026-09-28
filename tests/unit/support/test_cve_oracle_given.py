@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass, field
 
 from evals.cve_baseline import CVERunConditions
+from evals.cve_gate import CVEGateResult, CVEGateVerdict, TargetComparison, TargetOutcome
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade
 from evals.cve_oracle import CVEBenchmarkReport, CVEResult
 from mcp_auditor.domain.models import AuditCategory
@@ -86,4 +87,28 @@ def a_benchmark_report(results: list[CVEResult]) -> CVEBenchmarkReport:
             grammar_fingerprint=FINGERPRINT,
         ),
         results=results,
+    )
+
+
+def a_red_gate() -> CVEGateResult:
+    return CVEGateResult(
+        verdict=CVEGateVerdict.RED,
+        reasons=["CVE-2025-53355: regression, the miss reproduced in 4 of 4 replays"],
+        targets=[
+            TargetComparison(
+                cve_id="CVE-2025-53355",
+                outcome=TargetOutcome.REGRESSION,
+                candidate_runs=[
+                    CVEStatus.DETECTED,
+                    CVEStatus.MISSED,
+                    CVEStatus.DETECTED_EXECUTION_ONLY,
+                ],
+                replays=[True] * 4,
+            ),
+            TargetComparison(
+                cve_id="CVE-2025-53109",
+                outcome=TargetOutcome.HELD,
+                candidate_runs=[CVEStatus.DETECTED] * 3,
+            ),
+        ],
     )

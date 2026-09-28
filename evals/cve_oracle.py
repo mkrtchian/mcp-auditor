@@ -5,6 +5,7 @@ from typing import Protocol
 from pydantic import BaseModel
 
 from evals.cve_baseline import CVERunConditions
+from evals.cve_gate import CVEGateResult, TargetComparison
 from evals.cve_grammar import CVEStatus, GradedTarget, MechanismClass, MissClass, RunGrade, resolve
 from mcp_auditor.domain.models import AuditCategory
 
@@ -54,6 +55,7 @@ class CVEResult(BaseModel):
 class CVEBenchmarkReport(BaseModel):
     conditions: CVERunConditions
     results: list[CVEResult]
+    gate: CVEGateResult | None = None
 
 
 def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> CVEResult:
@@ -111,6 +113,7 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
     # targets that have not, and those two carry different claims. See ADR 015.
     counts = Counter(result.status for result in report.results)
     tally = ", ".join(f"{counts[status]} {status.value}" for status in CVEStatus if counts[status])
+    gate = [] if report.gate is None else ["", *_render_gate(report.gate)]
     return "\n".join(
         [
             _render_conditions(report.conditions),
@@ -120,6 +123,7 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
             *rows,
             "",
             f"Statuses: {tally}.",
+            *gate,
         ]
     )
 
@@ -133,6 +137,26 @@ def _render_conditions(conditions: CVERunConditions) -> str:
         f"{conditions.runs} runs, budget {conditions.budget}, {tools}, "
         f"grammar {conditions.grammar_fingerprint[:12]}."
     )
+
+
+def _render_gate(gate: CVEGateResult) -> list[str]:
+    return [
+        f"Gate: {gate.verdict.value}.",
+        *(f"- {reason}" for reason in gate.reasons),
+        "",
+        "Targets:",
+        *(_render_comparison(comparison) for comparison in gate.targets),
+    ]
+
+
+def _render_comparison(comparison: TargetComparison) -> str:
+    detail = f" ({comparison.detail})" if comparison.detail else ""
+    runs = ", ".join(status.value for status in comparison.candidate_runs) or "none"
+    line = f"- {comparison.cve_id}: {comparison.outcome.value}{detail}. Runs: {runs}."
+    if not comparison.replays:
+        return line
+    replays = ", ".join("reproduced" if replay else "cleared" for replay in comparison.replays)
+    return f"{line} Replays: {replays}."
 
 
 def _with_reasoning(model: str, reasoning: str | None) -> str:

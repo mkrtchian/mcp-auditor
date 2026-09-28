@@ -112,3 +112,23 @@ def test_render_ends_with_the_status_tally():
     markdown = render_markdown(given.a_benchmark_report(results))
 
     assert markdown.endswith("Statuses: 2 detected, 1 missed.")
+
+
+def test_render_appends_the_gate_verdict_and_a_line_per_target():
+    report = given.a_benchmark_report([]).model_copy(update={"gate": given.a_red_gate()})
+
+    markdown = render_markdown(report)
+
+    assert "Gate: red." in markdown
+    assert "- CVE-2025-53355: regression, the miss reproduced in 4 of 4 replays" in markdown
+    assert (
+        "- CVE-2025-53355: regression. Runs: detected, missed, detected_execution_only. "
+        "Replays: reproduced, reproduced, reproduced, reproduced."
+    ) in markdown
+    assert "- CVE-2025-53109: held. Runs: detected, detected, detected." in markdown
+
+
+def test_render_without_a_gate_has_no_gate_section():
+    markdown = render_markdown(given.a_benchmark_report([]))
+
+    assert "Gate" not in markdown
