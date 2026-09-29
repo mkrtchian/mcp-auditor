@@ -1,0 +1,1520 @@
+{
+  "draw": {
+    "seed": 20260928,
+    "quotas": {
+      "fail_cell": 4,
+      "pass_cell": 1,
+      "cve_target": 3
+    },
+    "sources": [
+      {
+        "path": "output/judge_source/honeypot_1/judged_cases.jsonl",
+        "sha256": "652883ab18ac1d941bc8d6bd3cd97f6127b40eb9dcdee74e65c4195d3ca2bda3",
+        "commit": "d6c44fa0c257352728048d9e6308b21e9a6710c6",
+        "conditions": {
+          "runs": 3,
+          "budget": 10,
+          "provider": "openai",
+          "model": "gpt-6-luna",
+          "judge_model": "gpt-6-luna",
+          "reasoning": "none",
+          "judge_reasoning": "none"
+        }
+      },
+      {
+        "path": "output/judge_source/honeypot_2/judged_cases.jsonl",
+        "sha256": "f8bcdb0e2c4d7ae068a29ab2bd75b06d2d9a3217c950241708b52cd58cfc2a92",
+        "commit": "d6c44fa0c257352728048d9e6308b21e9a6710c6",
+        "conditions": {
+          "runs": 3,
+          "budget": 10,
+          "provider": "openai",
+          "model": "gpt-6-luna",
+          "judge_model": "gpt-6-luna",
+          "reasoning": "none",
+          "judge_reasoning": "none"
+        }
+      },
+      {
+        "path": "output/judge_source/cve/cve_judged_cases.jsonl",
+        "sha256": "3253e469c93094c54975156deeb0e78c5d03e729532788f460e261d6004e67c3",
+        "commit": "d6c44fa0c257352728048d9e6308b21e9a6710c6",
+        "conditions": {
+          "runs": 3,
+          "budget": 10,
+          "provider": "openai",
+          "model": "gpt-6-luna",
+          "judge_model": "gpt-6-luna",
+          "reasoning": "none",
+          "judge_reasoning": "none"
+        }
+      }
+    ],
+    "shortfalls": [],
+    "complement_seed": null
+  },
+  "cases": [
+    {
+      "id": "f9ebef7823fc1caf",
+      "source": "honeypot",
+      "origin": "cell delete_record/input_validation",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "input_validation",
+        "description": "Checks handling of an unusually large, 32-bit-boundary-scale integer ID.",
+        "arguments": {
+          "record_id": 2147483647,
+          "confirm": false
+        },
+        "response": "Record 2147483647 deleted successfully",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "ad14bfd0448baa1e",
+      "source": "honeypot",
+      "origin": "cell delete_record/input_validation",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "input_validation",
+        "description": "Check handling of a negative integer ID at a boundary without authorizing deletion.",
+        "arguments": {
+          "record_id": -1,
+          "confirm": false
+        },
+        "response": "Record -1 deleted successfully",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "271b26d3c0d826d4",
+      "source": "honeypot",
+      "origin": "cell delete_record/input_validation",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "input_validation",
+        "description": "Checks handling of the semantically invalid zero ID while preserving the required integer type.",
+        "arguments": {
+          "record_id": 0,
+          "confirm": false
+        },
+        "response": "Record 0 deleted successfully",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "37e2f8c3494e04aa",
+      "source": "honeypot",
+      "origin": "cell delete_record/input_validation",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "input_validation",
+        "description": "Checks rejection of zero as a semantically invalid record ID.",
+        "arguments": {
+          "record_id": 0
+        },
+        "response": "Record 0 deleted successfully",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "2267a93c717e070e",
+      "source": "honeypot",
+      "origin": "cell execute_query/info_leakage",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "info_leakage",
+        "description": "Error-path probe using a nonexistent table; checks whether the error reveals database paths, schema details, or stack traces.",
+        "arguments": {
+          "query": "SELECT * FROM mcp_auditor_nonexistent_731"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM mcp_auditor_nonexistent_731 — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "933c1bb2ada882be",
+      "source": "honeypot",
+      "origin": "cell execute_query/info_leakage",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "info_leakage",
+        "description": "Response-path probe: use a normal, valid lookup for the known small user ID; inspect whether the result exposes only expected public fields or also emails, roles, or other internal data.",
+        "arguments": {
+          "query": "SELECT * FROM users WHERE id=1"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM users WHERE id=1 — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "74d7d661c3d97063",
+      "source": "honeypot",
+      "origin": "cell execute_query/info_leakage",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "info_leakage",
+        "description": "Response-path probe using a normal, likely-valid user lookup; checks whether returned data contains fields beyond the previously observed minimal record.",
+        "arguments": {
+          "query": "SELECT * FROM users WHERE id = 1"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM users WHERE id = 1 — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "3e320c3e08db31b3",
+      "source": "honeypot",
+      "origin": "cell execute_query/info_leakage",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "info_leakage",
+        "description": "Error-path probe: query a nonexistent table to check whether the error leaks the known database path, schema, or stack trace.",
+        "arguments": {
+          "query": "SELECT * FROM mcp_auditor_nonexistent_table"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM mcp_auditor_nonexistent_table — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "ff6c7a2069b1ee65",
+      "source": "honeypot",
+      "origin": "cell execute_query/injection",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "injection",
+        "description": "Tests a benign SQLite UNION SELECT marker for evidence that untrusted query text is executed and its result returned.",
+        "arguments": {
+          "query": "SELECT 'mcp-auditor-probe' AS marker"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT 'mcp-auditor-probe' AS marker — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "8ea382afd414c4cf",
+      "source": "honeypot",
+      "origin": "cell execute_query/injection",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "injection",
+        "description": "Tests whether a SQLite-style tautology can alter a user lookup and return records beyond the intended match.",
+        "arguments": {
+          "query": "SELECT id, name FROM users WHERE id = 1 OR 1=1 LIMIT 3"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT id, name FROM users WHERE id = 1 OR 1=1 LIMIT 3 — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "dac07b41b3af771f",
+      "source": "honeypot",
+      "origin": "cell execute_query/injection",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "injection",
+        "description": "Test a SQLite tautology in a read-only query and check whether it broadens results beyond the intended predicate.",
+        "arguments": {
+          "query": "SELECT id,name FROM users WHERE id=1 OR 1=1"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT id,name FROM users WHERE id=1 OR 1=1 — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "266b2cdfcf743539",
+      "source": "honeypot",
+      "origin": "cell execute_query/injection",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "injection",
+        "description": "Probe SQLite-style tautology injection with a benign SELECT, observing whether unexpected rows or a marker result are returned.",
+        "arguments": {
+          "query": "SELECT 'mcp-auditor-probe' WHERE 1=1 --"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT 'mcp-auditor-probe' WHERE 1=1 -- — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "aef906ac6a361f21",
+      "source": "honeypot",
+      "origin": "cell get_user/error_handling",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "error_handling",
+        "description": "Checks not-found behavior and whether the error exposes raw exceptions or internal details.",
+        "arguments": {
+          "user_id": 987654321
+        },
+        "response": null,
+        "error": "Error executing tool get_user: 987654321"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "015b054f8f42d65e",
+      "source": "honeypot",
+      "origin": "cell get_user/error_handling",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "error_handling",
+        "description": "Trigger a predictable not-found condition and verify the tool returns a controlled error without raw exception details.",
+        "arguments": {
+          "user_id": 999999999
+        },
+        "response": null,
+        "error": "Error executing tool get_user: 999999999"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "6b6a8cc01bf171bc",
+      "source": "honeypot",
+      "origin": "cell get_user/error_handling",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "error_handling",
+        "description": "Checks behavior at the signed 32-bit minimum boundary for parsing or lookup errors.",
+        "arguments": {
+          "user_id": -2147483648
+        },
+        "response": null,
+        "error": "Error executing tool get_user: user_id must be positive — see /opt/mcp-server/internal/users.db"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "93fec5f1d2b1df1b",
+      "source": "honeypot",
+      "origin": "cell get_user/error_handling",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "error_handling",
+        "description": "Checks error handling for the minimum signed 32-bit integer boundary.",
+        "arguments": {
+          "user_id": -2147483648
+        },
+        "response": null,
+        "error": "Error executing tool get_user: user_id must be positive — see /opt/mcp-server/internal/users.db"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "cfee432fa5741eb3",
+      "source": "honeypot",
+      "origin": "cell get_user/info_leakage",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "info_leakage",
+        "description": "Error-path probe using a non-existent ID; check whether errors reveal database schemas, file paths, stack traces, or infrastructure details.",
+        "arguments": {
+          "user_id": 987654321
+        },
+        "response": null,
+        "error": "Error executing tool get_user: 987654321"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "c1f688a8007943ea",
+      "source": "honeypot",
+      "origin": "cell get_user/info_leakage",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "info_leakage",
+        "description": "Error-path probe: requests a non-existent ID and checks whether the response reveals database schemas, file paths, or stack traces.",
+        "arguments": {
+          "user_id": 999999999
+        },
+        "response": null,
+        "error": "Error executing tool get_user: 999999999"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "b8a8a5f4cbca07c0",
+      "source": "honeypot",
+      "origin": "cell get_user/info_leakage",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "info_leakage",
+        "description": "Response-path probe: looks up a common small ID and checks whether returned data includes unnecessary emails, roles, internal identifiers, or infrastructure details.",
+        "arguments": {
+          "user_id": 1
+        },
+        "response": "User: Bob (id=1)",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "28113c86c2fd357d",
+      "source": "honeypot",
+      "origin": "cell get_user/info_leakage",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "info_leakage",
+        "description": "Response-path probe with a common small ID; checks whether returned user data includes unnecessary private or internal fields.",
+        "arguments": {
+          "user_id": 1
+        },
+        "response": "User: Bob (id=1)",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "12f628a4dca62120",
+      "source": "honeypot",
+      "origin": "cell project_manager/info_leakage",
+      "inputs": {
+        "tool_name": "project_manager",
+        "tool_description": "Manage projects: list, view details, or read project files.",
+        "category": "info_leakage",
+        "description": "Response-path probe: requests a common small project ID and checks whether normal project details expose sensitive internal fields or infrastructure information.",
+        "arguments": {
+          "action": "details",
+          "project_id": "1"
+        },
+        "response": null,
+        "error": "Error executing tool project_manager: Unknown project: 1"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "45e48c43c272cbe6",
+      "source": "honeypot",
+      "origin": "cell project_manager/info_leakage",
+      "inputs": {
+        "tool_name": "project_manager",
+        "tool_description": "Manage projects: list, view details, or read project files.",
+        "category": "info_leakage",
+        "description": "Response-path probe: requests details for a common small project ID to check whether normal results expose unnecessary internal identifiers, credentials, or infrastructure details.",
+        "arguments": {
+          "action": "details",
+          "project_id": "1"
+        },
+        "response": null,
+        "error": "Error executing tool project_manager: Unknown project: 1"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "6396afcd3651fa8f",
+      "source": "honeypot",
+      "origin": "cell project_manager/info_leakage",
+      "inputs": {
+        "tool_name": "project_manager",
+        "tool_description": "Manage projects: list, view details, or read project files.",
+        "category": "info_leakage",
+        "description": "Response-path probe using a common small project ID; inspect valid project details for unnecessary internal IDs, credentials, emails, roles, or infrastructure information.",
+        "arguments": {
+          "action": "details",
+          "project_id": "1"
+        },
+        "response": null,
+        "error": "Error executing tool project_manager: Unknown project: 1"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "955ba9d9121f8e55",
+      "source": "honeypot",
+      "origin": "cell project_manager/info_leakage",
+      "inputs": {
+        "tool_name": "project_manager",
+        "tool_description": "Manage projects: list, view details, or read project files.",
+        "category": "info_leakage",
+        "description": "Response-path check: use a common small project ID and inspect successful details for unnecessary internal fields, credentials, or infrastructure information.",
+        "arguments": {
+          "action": "details",
+          "project_id": "1"
+        },
+        "response": null,
+        "error": "Error executing tool project_manager: Unknown project: 1"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "13c47bb3429e92d4",
+      "source": "honeypot",
+      "origin": "cell search_users/info_leakage",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "info_leakage",
+        "description": "Response-path probe using a common valid name; checks whether returned user records include unnecessary internal fields or infrastructure details.",
+        "arguments": {
+          "query": "John",
+          "limit": 3
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "463ea5f8ed593522",
+      "source": "honeypot",
+      "origin": "cell search_users/info_leakage",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "info_leakage",
+        "description": "Error-path probe with an unusual name and boundary limit; checks whether errors disclose schemas, paths, or stack traces.",
+        "arguments": {
+          "query": "mcp-auditor-invalid-user-91c2",
+          "limit": 2147483647
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "d25e1f4073209c5b",
+      "source": "honeypot",
+      "origin": "cell search_users/info_leakage",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "info_leakage",
+        "description": "Use a highly unusual but schema-valid name to trigger an error or empty-result path and check for stack traces, paths, or database details.",
+        "arguments": {
+          "query": "MCP-Audit-Nonexistent-93817",
+          "limit": 10
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "77c8f1536f6ae318",
+      "source": "honeypot",
+      "origin": "cell search_users/info_leakage",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "info_leakage",
+        "description": "Response-path probe: search a common first name and inspect successful results for emails, roles, internal identifiers, or infrastructure details.",
+        "arguments": {
+          "query": "John",
+          "limit": 3
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "7ff739186a7c6851",
+      "source": "honeypot",
+      "origin": "cell user_directory/info_leakage",
+      "inputs": {
+        "tool_name": "user_directory",
+        "tool_description": "Search users, view profiles, or retrieve specific fields.",
+        "category": "info_leakage",
+        "description": "Use a normal common-name search to check whether successful results expose sensitive fields such as emails, roles, or internal identifiers.",
+        "arguments": {
+          "action": "search",
+          "query": "Alex"
+        },
+        "response": "[]",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "0a83cec8365c3a0c",
+      "source": "honeypot",
+      "origin": "cell user_directory/info_leakage",
+      "inputs": {
+        "tool_name": "user_directory",
+        "tool_description": "Search users, view profiles, or retrieve specific fields.",
+        "category": "info_leakage",
+        "description": "Response-path probe: search a common first name and check whether results disclose unnecessary emails, roles, internal IDs, or infrastructure details.",
+        "arguments": {
+          "action": "search",
+          "query": "Alex"
+        },
+        "response": "[]",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "b4ec386eda463ebe",
+      "source": "honeypot",
+      "origin": "cell user_directory/info_leakage",
+      "inputs": {
+        "tool_name": "user_directory",
+        "tool_description": "Search users, view profiles, or retrieve specific fields.",
+        "category": "info_leakage",
+        "description": "Error-path probe: asks for a clearly nonexistent profile to check whether errors disclose stack traces, database schema, or internal paths.",
+        "arguments": {
+          "action": "profile",
+          "user_id": "user_nonexistent_audit_7f3c"
+        },
+        "response": null,
+        "error": "Error executing tool user_directory: Unknown user: user_nonexistent_audit_7f3c"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "23a3f933417ad4d0",
+      "source": "honeypot",
+      "origin": "cell user_directory/info_leakage",
+      "inputs": {
+        "tool_name": "user_directory",
+        "tool_description": "Search users, view profiles, or retrieve specific fields.",
+        "category": "info_leakage",
+        "description": "Response-path probe: searches a common first name to assess whether normal results expose unnecessary fields such as email, roles, or internal identifiers.",
+        "arguments": {
+          "action": "search",
+          "query": "John"
+        },
+        "response": "[]",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "3fd29d3533ce58dd",
+      "source": "honeypot",
+      "origin": "cell delete_record/error_handling",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "error_handling",
+        "description": "Check error handling at the minimum signed 32-bit integer boundary.",
+        "arguments": {
+          "record_id": -2147483648
+        },
+        "response": "Record -2147483648 deleted successfully",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "872492c1ac02c8ca",
+      "source": "honeypot",
+      "origin": "cell delete_record/info_leakage",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "info_leakage",
+        "description": "Response-path probe: uses a common small ID likely to reference an ordinary record and checks whether the response exposes personal or internal fields; confirmation is disabled to avoid deletion.",
+        "arguments": {
+          "record_id": 2,
+          "confirm": false
+        },
+        "response": "Record 2 deleted successfully",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "3b2b7d83d888a801",
+      "source": "honeypot",
+      "origin": "cell delete_record/injection",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "injection",
+        "description": "Probe whether SQL-like syntax encoded in an integer is parsed or evaluated; verify no broad match or unintended deletion occurs.",
+        "arguments": {
+          "record_id": 0,
+          "confirm": false
+        },
+        "response": "Record 0 deleted successfully",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "3675ee8f2d133ce6",
+      "source": "honeypot",
+      "origin": "cell delete_record/resource_abuse",
+      "inputs": {
+        "tool_name": "delete_record",
+        "tool_description": "Delete a record by ID.",
+        "category": "resource_abuse",
+        "description": "Tests whether an extreme but schema-valid integer ID triggers excessive lookup work; confirmation is disabled to avoid deletion.",
+        "arguments": {
+          "record_id": 2147483647,
+          "confirm": false
+        },
+        "response": "Record 2147483647 deleted successfully",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "5a7557a560ec5eef",
+      "source": "honeypot",
+      "origin": "cell execute_query/error_handling",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "error_handling",
+        "description": "Triggers a predictable missing-table error and checks whether raw database details or internal paths are exposed.",
+        "arguments": {
+          "query": "SELECT * FROM mcp_auditor_missing_table"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM mcp_auditor_missing_table — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "59fa83f046c22556",
+      "source": "honeypot",
+      "origin": "cell execute_query/input_validation",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "input_validation",
+        "description": "Checks whether an empty query is rejected cleanly rather than executed or handled unpredictably.",
+        "arguments": {
+          "query": ""
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed:  — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "6f3864597cf921f4",
+      "source": "honeypot",
+      "origin": "cell execute_query/resource_abuse",
+      "inputs": {
+        "tool_name": "execute_query",
+        "tool_description": "Execute a SQL query against the database.",
+        "category": "resource_abuse",
+        "description": "Check whether a recursive CTE with a large requested row count is bounded or allowed to consume excessive resources.",
+        "arguments": {
+          "query": "WITH RECURSIVE seq(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM seq WHERE x<2147483647) SELECT x FROM seq"
+        },
+        "response": "[db: /opt/mcp-server/config/database.yml] Executed: WITH RECURSIVE seq(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM seq WHERE x<2147483647) SELECT x FROM seq — Results: 3 rows",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "b3df5f66dd99f2ef",
+      "source": "honeypot",
+      "origin": "cell get_service_status/error_handling",
+      "inputs": {
+        "tool_name": "get_service_status",
+        "tool_description": "Check the health status of a service.",
+        "category": "error_handling",
+        "description": "Checks behavior for a service name containing path-like components, including whether raw filesystem errors leak.",
+        "arguments": {
+          "service": "../../etc/passwd"
+        },
+        "response": null,
+        "error": "Error executing tool get_service_status: Unknown service"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "12e9ac3a4ad69b25",
+      "source": "honeypot",
+      "origin": "cell get_service_status/info_leakage",
+      "inputs": {
+        "tool_name": "get_service_status",
+        "tool_description": "Check the health status of a service.",
+        "category": "info_leakage",
+        "description": "Response-path probe: requests a common service name and checks whether a normal status response exposes internal identifiers, credentials, or infrastructure details.",
+        "arguments": {
+          "service": "api"
+        },
+        "response": "api: healthy (uptime: 42h)",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "0b38b06892282e32",
+      "source": "honeypot",
+      "origin": "cell get_service_status/injection",
+      "inputs": {
+        "tool_name": "get_service_status",
+        "tool_description": "Check the health status of a service.",
+        "category": "injection",
+        "description": "Probes for command injection using a benign marker; checks whether command output is reflected.",
+        "arguments": {
+          "service": "status; echo mcp-auditor-probe"
+        },
+        "response": null,
+        "error": "Error executing tool get_service_status: Unknown service"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "831a8540183c96a6",
+      "source": "honeypot",
+      "origin": "cell get_service_status/input_validation",
+      "inputs": {
+        "tool_name": "get_service_status",
+        "tool_description": "Check the health status of a service.",
+        "category": "input_validation",
+        "description": "Checks whether a whitespace-only service name is treated as invalid rather than looked up ambiguously.",
+        "arguments": {
+          "service": "   "
+        },
+        "response": null,
+        "error": "Error executing tool get_service_status: Unknown service"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "bd457b189f91b0ba",
+      "source": "honeypot",
+      "origin": "cell get_service_status/resource_abuse",
+      "inputs": {
+        "tool_name": "get_service_status",
+        "tool_description": "Check the health status of a service.",
+        "category": "resource_abuse",
+        "description": "Checks whether a broad pattern-like query causes an unbounded scan or excessive work.",
+        "arguments": {
+          "service": "%"
+        },
+        "response": null,
+        "error": "Error executing tool get_service_status: Unknown service"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "dba12273e2e38b6d",
+      "source": "honeypot",
+      "origin": "cell get_user/injection",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "injection",
+        "description": "Uses a benign numeric marker to check whether numeric input is interpolated unsafely into a query or execution context.",
+        "arguments": {
+          "user_id": 123456789
+        },
+        "response": null,
+        "error": "Error executing tool get_user: 123456789"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "faea9262db293302",
+      "source": "honeypot",
+      "origin": "cell get_user/resource_abuse",
+      "inputs": {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": "resource_abuse",
+        "description": "Tests whether an extremely large but bounded integer causes excessive lookup work or resource consumption.",
+        "arguments": {
+          "user_id": 2147483647
+        },
+        "response": null,
+        "error": "Error executing tool get_user: 2147483647"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "14f718318c214549",
+      "source": "honeypot",
+      "origin": "cell list_items/error_handling",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "error_handling",
+        "description": "Probe a plausible category with the signed 32-bit minimum limit to check boundary error handling.",
+        "arguments": {
+          "category": "users",
+          "limit": -2147483648
+        },
+        "response": null,
+        "error": "Error executing tool list_items: Invalid category"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "4aea612cf0799881",
+      "source": "honeypot",
+      "origin": "cell list_items/info_leakage",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "info_leakage",
+        "description": "Error-path probe with a nonexistent category; check whether the response reveals database paths, schema details, or stack traces.",
+        "arguments": {
+          "category": "nonexistent",
+          "limit": 10
+        },
+        "response": null,
+        "error": "Error executing tool list_items: Invalid category"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "f333218dda77117d",
+      "source": "honeypot",
+      "origin": "cell list_items/injection",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "injection",
+        "description": "Tests SQLite-style tautology injection in the category while remaining a string; look for unexpected rows or a reflected marker.",
+        "arguments": {
+          "category": "' OR 1=1 --",
+          "limit": 10
+        },
+        "response": null,
+        "error": "Error executing tool list_items: Invalid category"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "456c5bdaa5e8a606",
+      "source": "honeypot",
+      "origin": "cell list_items/input_validation",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "input_validation",
+        "description": "Checks handling of a zero limit at the lower boundary.",
+        "arguments": {
+          "category": "general",
+          "limit": 0
+        },
+        "response": null,
+        "error": "Error executing tool list_items: Invalid category"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "02496de2700d013c",
+      "source": "honeypot",
+      "origin": "cell list_items/resource_abuse",
+      "inputs": {
+        "tool_name": "list_items",
+        "tool_description": "List items in a given category with an optional limit.",
+        "category": "resource_abuse",
+        "description": "Requests an extremely large result limit to test whether the server caps work and response size safely.",
+        "arguments": {
+          "category": "all",
+          "limit": 2147483647
+        },
+        "response": null,
+        "error": "Error executing tool list_items: Invalid category"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "d259859c74a174b5",
+      "source": "honeypot",
+      "origin": "cell project_manager/error_handling",
+      "inputs": {
+        "tool_name": "project_manager",
+        "tool_description": "Manage projects: list, view details, or read project files.",
+        "category": "error_handling",
+        "description": "Triggers a predictable not-found error and checks for raw exceptions or internal details.",
+        "arguments": {
+          "action": "details",
+          "project_id": "mcp-auditor-no-such-project-987654"
+        },
+        "response": null,
+        "error": "Error executing tool project_manager: Unknown project: mcp-auditor-no-such-project-987654"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "ccca924793427131",
+      "source": "honeypot",
+      "origin": "cell project_manager/resource_abuse",
+      "inputs": {
+        "tool_name": "project_manager",
+        "tool_description": "Manage projects: list, view details, or read project files.",
+        "category": "resource_abuse",
+        "description": "Probe whether a wildcard-like path triggers an excessively broad file read; the request should be bounded and handled safely.",
+        "arguments": {
+          "action": "read_file",
+          "project_id": "1",
+          "path": "**/*"
+        },
+        "response": "{\"content\": \"Generic file content at **/*\"}",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "dcd18209fdf3d874",
+      "source": "honeypot",
+      "origin": "cell search_users/error_handling",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "error_handling",
+        "description": "Use an unusual but valid name query with a normal limit to check that no raw exceptions or internal details are exposed.",
+        "arguments": {
+          "query": "NoSuchUser-7f3a",
+          "limit": 10
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "f36971a497981d9e",
+      "source": "honeypot",
+      "origin": "cell search_users/injection",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "injection",
+        "description": "Probes for SQL injection using a benign UNION marker; checks whether query results reveal injection execution.",
+        "arguments": {
+          "query": "' UNION SELECT 'mcp-auditor-probe'--",
+          "limit": 5
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "ba6fcad989d97dfd",
+      "source": "honeypot",
+      "origin": "cell search_users/input_validation",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "input_validation",
+        "description": "Checks handling of a negative integer limit.",
+        "arguments": {
+          "query": "Alex",
+          "limit": -1
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "e12d44c879cf9a44",
+      "source": "honeypot",
+      "origin": "cell search_users/resource_abuse",
+      "inputs": {
+        "tool_name": "search_users",
+        "tool_description": "Search for users by name.",
+        "category": "resource_abuse",
+        "description": "Request a broad wildcard search with a very high but schema-valid limit to test whether results are bounded.",
+        "arguments": {
+          "query": "%",
+          "limit": 2147483647
+        },
+        "response": "No users found",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "1b4cc3651cce4ffa",
+      "source": "honeypot",
+      "origin": "cell user_directory/error_handling",
+      "inputs": {
+        "tool_name": "user_directory",
+        "tool_description": "Search users, view profiles, or retrieve specific fields.",
+        "category": "error_handling",
+        "description": "Probe a profile lookup for a nonexistent ID and check that failures are handled without exposing raw exceptions.",
+        "arguments": {
+          "action": "profile",
+          "user_id": "user-999999999"
+        },
+        "response": null,
+        "error": "Error executing tool user_directory: Unknown user: user-999999999"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "f9e46e15071c78cf",
+      "source": "honeypot",
+      "origin": "cell user_directory/injection",
+      "inputs": {
+        "tool_name": "user_directory",
+        "tool_description": "Search users, view profiles, or retrieve specific fields.",
+        "category": "injection",
+        "description": "Tests whether shell-style syntax supplied as a user identifier is treated as data rather than executed; look for the benign marker in any response.",
+        "arguments": {
+          "action": "profile",
+          "user_id": "; echo mcp-auditor-probe"
+        },
+        "response": null,
+        "error": "Error executing tool user_directory: Unknown user: ; echo mcp-auditor-probe"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "fccdb9d51d70f702",
+      "source": "honeypot",
+      "origin": "cell user_directory/resource_abuse",
+      "inputs": {
+        "tool_name": "user_directory",
+        "tool_description": "Search users, view profiles, or retrieve specific fields.",
+        "category": "resource_abuse",
+        "description": "Request an unusually broad profile field value to check that field retrieval is constrained and cannot trigger excessive processing.",
+        "arguments": {
+          "action": "get_field",
+          "user_id": "1",
+          "field": "*"
+        },
+        "response": null,
+        "error": "Error executing tool user_directory: Unknown user: 1"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "16dc8fc2429b406b",
+      "source": "cve",
+      "origin": "cve CVE-2025-53109",
+      "inputs": {
+        "tool_name": "read_file",
+        "tool_description": "Read the complete contents of a file from the file system. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories.",
+        "category": "info_leakage",
+        "description": "Error-path probe: inspect whether an invalid absolute path yields verbose filesystem details or internal implementation information.",
+        "arguments": {
+          "path": "/mcp-auditor-no-such-file-7f3a"
+        },
+        "response": null,
+        "error": "Error: Access denied - path outside allowed directories: /mcp-auditor-no-such-file-7f3a not in /work/sandbox"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "7cde8d7d4e2b16e7",
+      "source": "cve",
+      "origin": "cve CVE-2025-53109",
+      "inputs": {
+        "tool_name": "read_file",
+        "tool_description": "Read the complete contents of a file from the file system. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories.",
+        "category": "input_validation",
+        "description": "Check handling of a whitespace-only path.",
+        "arguments": {
+          "path": "   "
+        },
+        "response": null,
+        "error": "Error: Access denied - path outside allowed directories: /    not in /work/sandbox"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "70c0a82182501d2c",
+      "source": "cve",
+      "origin": "cve CVE-2025-53109",
+      "inputs": {
+        "tool_name": "list_directory",
+        "tool_description": "Get a detailed listing of all files and directories in a specified path. Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes. This tool is essential for understanding directory structure and finding specific files within a directory. Only works within allowed directories.",
+        "category": "injection",
+        "description": "Check whether shell metacharacters are treated as literal path text rather than executed; look for the marker only in a normal listing or bounded error.",
+        "arguments": {
+          "path": "/work/sandbox/;echo mcp-auditor-probe"
+        },
+        "response": null,
+        "error": "Error: ENOENT: no such file or directory, scandir '/work/sandbox/;echo mcp-auditor-probe'"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "1bd34b1116070f03",
+      "source": "cve",
+      "origin": "cve CVE-2025-53110",
+      "inputs": {
+        "tool_name": "list_directory",
+        "tool_description": "Get a detailed listing of all files and directories in a specified path. Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes. This tool is essential for understanding directory structure and finding specific files within a directory. Only works within allowed directories.",
+        "category": "input_validation",
+        "description": "Check that an empty path is rejected safely rather than treated as an unintended default or root directory.",
+        "arguments": {
+          "path": ""
+        },
+        "response": null,
+        "error": "Error: Access denied - path outside allowed directories: / not in /work/sandbox"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "9e21d0c88a2d982e",
+      "source": "cve",
+      "origin": "cve CVE-2025-53110",
+      "inputs": {
+        "tool_name": "list_directory",
+        "tool_description": "Get a detailed listing of all files and directories in a specified path. Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes. This tool is essential for understanding directory structure and finding specific files within a directory. Only works within allowed directories.",
+        "category": "injection",
+        "description": "Probe whether shell metacharacters in a valid string path are executed; a safe implementation should treat this only as a path and return no command marker.",
+        "arguments": {
+          "path": "/work/sandbox; echo mcp-auditor-probe"
+        },
+        "response": null,
+        "error": "Error: Parent directory does not exist: /work"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "139837768dbf40e7",
+      "source": "cve",
+      "origin": "cve CVE-2025-53110",
+      "inputs": {
+        "tool_name": "read_file",
+        "tool_description": "Read the complete contents of a file from the file system. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories.",
+        "category": "resource_abuse",
+        "description": "Request a potentially unbounded virtual file to check for size limits, timeouts, and safe handling of unusually large reads.",
+        "arguments": {
+          "path": "/proc/kcore"
+        },
+        "response": null,
+        "error": "Error: Access denied - path outside allowed directories: /proc/kcore not in /work/sandbox"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "2408cfbcf161b971",
+      "source": "cve",
+      "origin": "cve CVE-2025-53355",
+      "inputs": {
+        "tool_name": "kubectl_generic",
+        "tool_description": "Execute any kubectl command with the provided arguments and flags",
+        "category": "info_leakage",
+        "description": "Error-path probe using a nonexistent resource to check whether diagnostics disclose filesystem paths, kubeconfig details, stack traces, or other internal data.",
+        "arguments": {
+          "command": "get",
+          "resourceType": "deployment",
+          "name": "mcp-auditor-no-such-deployment-91",
+          "namespace": "default",
+          "outputFormat": "yaml"
+        },
+        "response": null,
+        "error": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get deployment mcp-auditor-no-such-deployment-91 --namespace=default -o=yaml\n/bin/sh: 1: kubectl: not found\n"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "d6e753db6ac1a9a2",
+      "source": "cve",
+      "origin": "cve CVE-2025-53355",
+      "inputs": {
+        "tool_name": "kubectl_generic",
+        "tool_description": "Execute any kubectl command with the provided arguments and flags",
+        "category": "injection",
+        "description": "Tests whether shell metacharacters in a resource name are safely treated as data; any echoed marker would indicate command injection.",
+        "arguments": {
+          "command": "get",
+          "resourceType": "pod",
+          "name": "mcp-auditor;echo mcp-auditor-probe",
+          "namespace": "default"
+        },
+        "response": "mcp-auditor-probe --namespace=default\n",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "db4f9795d19e00da",
+      "source": "cve",
+      "origin": "cve CVE-2025-53355",
+      "inputs": {
+        "tool_name": "kubectl_generic",
+        "tool_description": "Execute any kubectl command with the provided arguments and flags",
+        "category": "resource_abuse",
+        "description": "Request an unusually large result limit to verify the tool bounds or rejects resource-intensive listings.",
+        "arguments": {
+          "command": "get",
+          "resourceType": "pods",
+          "namespace": "default",
+          "flags": {
+            "limit": "2147483647"
+          }
+        },
+        "response": null,
+        "error": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get pods --namespace=default --limit=2147483647\n/bin/sh: 1: kubectl: not found\n"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "14c23b05fd176310",
+      "source": "cve",
+      "origin": "cve CVE-2025-65513",
+      "inputs": {
+        "tool_name": "fetch_txt",
+        "tool_description": "Fetch a website, return the content as plain text (no HTML)",
+        "category": "info_leakage",
+        "description": "Response-path probe: fetch a normal public page and check whether returned text unexpectedly includes internal headers, credentials, or infrastructure details.",
+        "arguments": {
+          "url": "https://example.com/",
+          "max_length": 5000,
+          "start_index": 0
+        },
+        "response": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more",
+        "error": null
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "b32cbcdfa17696c7",
+      "source": "cve",
+      "origin": "cve CVE-2025-65513",
+      "inputs": {
+        "tool_name": "fetch_txt",
+        "tool_description": "Fetch a website, return the content as plain text (no HTML)",
+        "category": "input_validation",
+        "description": "Check whether negative pagination values are rejected or normalized.",
+        "arguments": {
+          "url": "https://example.com/",
+          "max_length": -1,
+          "start_index": -1
+        },
+        "response": null,
+        "error": "[\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"max_length\"\n    ]\n  },\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"start_index\"\n    ]\n  }\n]"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "8e0a6cc08886cf2b",
+      "source": "cve",
+      "origin": "cve CVE-2025-65513",
+      "inputs": {
+        "tool_name": "fetch_txt",
+        "tool_description": "Fetch a website, return the content as plain text (no HTML)",
+        "category": "input_validation",
+        "description": "Check handling of a whitespace-only URL.",
+        "arguments": {
+          "url": "   "
+        },
+        "response": null,
+        "error": "[\n  {\n    \"validation\": \"url\",\n    \"code\": \"invalid_string\",\n    \"message\": \"Invalid url\",\n    \"path\": [\n      \"url\"\n    ]\n  }\n]"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "cf0b0ffd63fae844",
+      "source": "cve",
+      "origin": "cve CVE-2025-68143",
+      "inputs": {
+        "tool_name": "git_diff_staged",
+        "tool_description": "Shows changes that are staged for commit",
+        "category": "injection",
+        "description": "Test whether shell metacharacters in a path are treated literally; a safely quoted marker command must not execute or appear as command output.",
+        "arguments": {
+          "repo_path": "/tmp/repo; echo mcp-auditor-probe",
+          "context_lines": 3
+        },
+        "response": null,
+        "error": "/tmp/repo; echo mcp-auditor-probe"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "778083fe8ebf0b2d",
+      "source": "cve",
+      "origin": "cve CVE-2025-68143",
+      "inputs": {
+        "tool_name": "git_add",
+        "tool_description": "Adds file contents to the staging area",
+        "category": "input_validation",
+        "description": "Checks whether an empty repository path is rejected rather than treated as the current directory.",
+        "arguments": {
+          "repo_path": "",
+          "files": [
+            "README.md"
+          ]
+        },
+        "response": null,
+        "error": "/"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "7e10eae7aeac6a30",
+      "source": "cve",
+      "origin": "cve CVE-2025-68143",
+      "inputs": {
+        "tool_name": "git_diff_staged",
+        "tool_description": "Shows changes that are staged for commit",
+        "category": "resource_abuse",
+        "description": "Request the largest plausible context window against a valid repository path to check for excessive diff expansion or resource use.",
+        "arguments": {
+          "repo_path": "/tmp",
+          "context_lines": 2147483647
+        },
+        "response": null,
+        "error": "/tmp"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "ca03d12903e6e812",
+      "source": "cve",
+      "origin": "cve CVE-2025-68145",
+      "inputs": {
+        "tool_name": "git_log",
+        "tool_description": "Shows the commit logs",
+        "category": "input_validation",
+        "description": "Check behavior for a negative commit count.",
+        "arguments": {
+          "repo_path": ".",
+          "max_count": -1
+        },
+        "response": null,
+        "error": "/"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "39e1994c0f9f37b0",
+      "source": "cve",
+      "origin": "cve CVE-2025-68145",
+      "inputs": {
+        "tool_name": "git_log",
+        "tool_description": "Shows the commit logs",
+        "category": "resource_abuse",
+        "description": "Request an unusually large but schema-valid commit count to test whether the tool caps work and output size.",
+        "arguments": {
+          "repo_path": ".",
+          "max_count": 2147483647
+        },
+        "response": null,
+        "error": "/"
+      },
+      "label": null,
+      "clause": null
+    },
+    {
+      "id": "299a26557c7674cc",
+      "source": "cve",
+      "origin": "cve CVE-2025-68145",
+      "inputs": {
+        "tool_name": "git_log",
+        "tool_description": "Shows the commit logs",
+        "category": "info_leakage",
+        "description": "Response-path probe: request a small number of logs from the current repository and check whether returned commit data includes unintended internal details.",
+        "arguments": {
+          "repo_path": ".",
+          "max_count": 3
+        },
+        "response": null,
+        "error": "/"
+      },
+      "label": null,
+      "clause": null
+    }
+  ]
+}
