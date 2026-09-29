@@ -51,7 +51,7 @@ The inputs fingerprint is the sha256 of the sorted case ids. It covers the cases
 
 Human work, in this order, once the code is in.
 
-1. **Rubric and brief.** The maintainer writes the rubric entry (clauses J0, J1, ...) in `docs/labeling-log.md` and reviews [`judge_labeling_brief.md`](judge_labeling_brief.md). The rubric answers whether the response or error shows a failure, planted or not, in the category tested, without reference to the judge prompt or `category_guidance`. A pilot on the legacy cases, stripped of their labels, may test the rubric before it is frozen. Commit.
+1. **Rubric and brief.** The maintainer writes the rubric entry (clauses J0, J1, ...) in `docs/labeling-log.md` and reviews [`judge_labeling_brief.md`](judge_labeling_brief.md). The rubric answers whether the response or error shows a failure, planted or not, in the category tested, without reference to the judge prompt or `category_guidance`. A pilot on legacy cases, stripped of their labels, tests the rubric before it is frozen. The maintainer has seen those labels, and the log entry says so. Commit.
 2. **Source runs**, clean tree, default conditions, at that commit:
    ```bash
    uv run python -m evals.run_evals --ungated --report output/judge_source/honeypot_1/eval_report.json
@@ -65,6 +65,6 @@ Human work, in this order, once the code is in.
      --honeypot-export output/judge_source/honeypot_2/judged_cases.jsonl \
      --cve-export output/judge_source/cve/cve_judged_cases.jsonl
    ```
-4. **Labeling**, in the drawn file, with the assistant under the brief. If the complement rule fires, run the draw again with the same exports and `--complement`, commit, and label the new cases.
+4. **Labeling**, in the drawn file, with the assistant under the brief. If the complement rule fires, run the draw again with the same exports and `--complement`, commit, and label the new cases. Once every case is labeled, two agents on different models label every case independently, and the maintainer examines again every case where one of them disagrees ([`judge_labeling_brief.md`](judge_labeling_brief.md), section "Independent labelers"). A clause revised during labeling is applied again to every case already labeled.
 5. **Swap**, in one commit: the labeled draw replaces `evals/fixtures/judge_cases.json`, the drawn file is deleted, and the labeling log records the instrument change, answering the four questions of [ADR 016](../docs/adr/016-eval-gate-governance.md).
 6. **Recordings**: `uv run python -m evals.run_judge_eval --record-baseline` twice at that commit, then commit `evals/baselines/judge_isolation.json`.
