@@ -8,6 +8,7 @@ import tests.unit.support.test_graph_given as given
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.checkpointing import compute_thread_id, resume_or_reset
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
+from mcp_auditor.domain.relayed_environment import RelayedEnvironment, RelayedVariable
 from tests.fakes import FakeMCPClient
 
 
@@ -159,3 +160,10 @@ def test_two_equal_launches_share_a_thread():
     second = ServerLaunch.unconfined("npx", ["some-server", "/tmp/data"])
 
     assert compute_thread_id(first) == compute_thread_id(second)
+
+
+def test_relaying_variables_keeps_the_unconfined_thread_id():
+    relayed = RelayedEnvironment((RelayedVariable("GITHUB_TOKEN", "ghp_value", redacted=True),))
+    launch = ServerLaunch.unconfined("python", ["server.py"], relayed=relayed)
+
+    assert compute_thread_id(launch) == "7cc34ebdac143b58"

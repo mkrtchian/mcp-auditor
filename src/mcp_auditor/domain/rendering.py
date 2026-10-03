@@ -86,8 +86,18 @@ def _render_completeness_lines(report: AuditReport) -> list[str]:
 
 
 def _render_execution_lines(record: ExecutionRecord) -> list[str]:
-    if record.regime != ExecutionRegime.CONFINED:
-        return [f"**Execution**: {record.regime.replace('_', ' ')}"]
+    if record.regime == ExecutionRegime.CONFINED:
+        lines = _render_confinement_lines(record)
+    else:
+        lines = [f"**Execution**: {record.regime.replace('_', ' ')}"]
+    relayed = [f"{name} (redacted)" for name in record.relayed_variables or []]
+    relayed += [f"{name}={value}" for name, value in (record.plain_variables or {}).items()]
+    if relayed:
+        lines.append(f"**Relayed environment**: {', '.join(relayed)}")
+    return lines
+
+
+def _render_confinement_lines(record: ExecutionRecord) -> list[str]:
     lines = [
         f"**Execution**: confined, {_image_reference(record)}",
         f"**Writable on host**: {', '.join(record.writable_paths or []) or 'none'}",

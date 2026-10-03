@@ -6,6 +6,9 @@ from dataclasses import dataclass
 
 from mcp_auditor.domain.confinement import MountPlan, is_declared_container
 from mcp_auditor.domain.models import ExecutionRecord, ExecutionRegime
+from mcp_auditor.domain.relayed_environment import RelayedEnvironment
+
+NOTHING_RELAYED = RelayedEnvironment()
 
 
 @dataclass(frozen=True)
@@ -16,6 +19,7 @@ class ServerLaunch:
     profile: "ContainerProfile | None" = None
     client_env: Mapping[str, str] | None = None
     """Variables for the host-side `docker` client, not for the container."""
+    relayed: RelayedEnvironment = NOTHING_RELAYED
 
     def __post_init__(self) -> None:
         confined = self.regime == ExecutionRegime.CONFINED
@@ -35,18 +39,37 @@ class ServerLaunch:
         args: Sequence[str],
         profile: "ContainerProfile",
         client_env: Mapping[str, str],
+        *,
+        relayed: RelayedEnvironment = NOTHING_RELAYED,
     ) -> "ServerLaunch":
-        return cls(command, tuple(args), ExecutionRegime.CONFINED, profile, client_env)
+        return cls(command, tuple(args), ExecutionRegime.CONFINED, profile, client_env, relayed)
 
     @classmethod
     def declared_container(
-        cls, command: str, args: Sequence[str], client_env: Mapping[str, str]
+        cls,
+        command: str,
+        args: Sequence[str],
+        client_env: Mapping[str, str],
+        *,
+        relayed: RelayedEnvironment = NOTHING_RELAYED,
     ) -> "ServerLaunch":
-        return cls(command, tuple(args), ExecutionRegime.DECLARED_CONTAINER, client_env=client_env)
+        return cls(
+            command,
+            tuple(args),
+            ExecutionRegime.DECLARED_CONTAINER,
+            client_env=client_env,
+            relayed=relayed,
+        )
 
     @classmethod
-    def unconfined(cls, command: str, args: Sequence[str]) -> "ServerLaunch":
-        return cls(command, tuple(args), ExecutionRegime.UNCONFINED)
+    def unconfined(
+        cls,
+        command: str,
+        args: Sequence[str],
+        *,
+        relayed: RelayedEnvironment = NOTHING_RELAYED,
+    ) -> "ServerLaunch":
+        return cls(command, tuple(args), ExecutionRegime.UNCONFINED, relayed=relayed)
 
     @property
     def target(self) -> str:
@@ -61,19 +84,33 @@ class ServerLaunch:
     def spawn_args(self) -> list[str]:
         if self.profile is None:
             return list(self.args)
-        return container_argv(self.profile, self.command, self.args)
+        return container_argv(self, self.profile)
+
+    @property
+    def spawn_environment(self) -> dict[str, str] | None:
+        """The variables set over the auditor's default environment, `None` for none."""
+        if self.client_env is not None:
+            return dict(self.client_env) | self.relayed.values
+        return self.relayed.values or None
 
     def record(self, oom_killed: bool | None) -> ExecutionRecord:
-        if self.profile is None:
-            return ExecutionRecord(regime=self.regime)
-        mounts = self.profile.mount_plan.mounts
-        return ExecutionRecord(
+        record = ExecutionRecord(
             regime=self.regime,
-            image=self.profile.identity.image,
-            image_digest=self.profile.identity.image_digest,
-            writable_paths=[str(mount.host) for mount in mounts if mount.writable],
-            read_only_paths=[str(mount.host) for mount in mounts if not mount.writable],
-            oom_killed=oom_killed,
+            relayed_variables=[v.name for v in self.relayed.variables if v.redacted] or None,
+            plain_variables={v.name: v.value for v in self.relayed.variables if not v.redacted}
+            or None,
+        )
+        if self.profile is None:
+            return record
+        mounts = self.profile.mount_plan.mounts
+        return record.model_copy(
+            update={
+                "image": self.profile.identity.image,
+                "image_digest": self.profile.identity.image_digest,
+                "writable_paths": [str(mount.host) for mount in mounts if mount.writable],
+                "read_only_paths": [str(mount.host) for mount in mounts if not mount.writable],
+                "oom_killed": oom_killed,
+            }
         )
 
 
@@ -95,7 +132,7 @@ class ContainerProfile:
     memory: str = "2g"
 
 
-def container_argv(profile: ContainerProfile, command: str, args: Sequence[str]) -> list[str]:
+def container_argv(launch: ServerLaunch, profile: ContainerProfile) -> list[str]:
     plan = profile.mount_plan
     return [
         "run",
@@ -125,10 +162,13 @@ def container_argv(profile: ContainerProfile, command: str, args: Sequence[str])
         f"{profile.home}:exec,uid={profile.uid},gid={profile.gid}",
         "-e",
         f"HOME={profile.home}",
+        # A bare name: docker reads the value from its own environment, which
+        # `spawn_environment` fills, so the value never appears in the argv.
+        *(flag for name in launch.relayed.names for flag in ("-e", name)),
         *_mount_flags(plan),
         profile.identity.image,
-        command,
-        *(plan.rewrites.get(element, element) for element in args),
+        launch.command,
+        *(plan.rewrites.get(element, element) for element in launch.args),
     ]
 
 

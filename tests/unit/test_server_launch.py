@@ -132,3 +132,104 @@ def test_an_unconfined_record_carries_nothing_but_its_regime():
     assert record.writable_paths is None
     assert record.read_only_paths is None
     assert record.oom_killed is None
+
+
+def test_a_confined_launch_passes_each_relayed_name_without_its_value():
+    launch = ServerLaunch.confined(
+        "npx", ["server"], given.the_quick_start_profile(), {}, relayed=given.a_token_and_a_region()
+    )
+
+    home = launch.spawn_args.index("HOME=/home/audit")
+    assert launch.spawn_args[home + 1 : home + 5] == ["-e", "GITHUB_TOKEN", "-e", "AWS_REGION"]
+    assert not any("ghp_secret_value" in element for element in launch.spawn_args)
+
+
+def test_an_unconfined_launch_without_relays_spawns_in_the_inherited_environment():
+    assert ServerLaunch.unconfined("python", ["s.py"]).spawn_environment is None
+
+
+def test_an_unconfined_launch_spawns_with_the_relayed_values():
+    launch = ServerLaunch.unconfined("python", ["s.py"], relayed=given.a_token_and_a_region())
+
+    assert launch.spawn_environment == {
+        "GITHUB_TOKEN": "ghp_secret_value",
+        "AWS_REGION": "eu-west-1",
+    }
+
+
+def test_a_confined_launch_merges_the_relayed_values_over_the_client_environment():
+    launch = ServerLaunch.confined(
+        "npx",
+        ["server"],
+        given.the_quick_start_profile(),
+        {"DOCKER_HOST": "unix:///sock", "AWS_REGION": "us-east-1"},
+        relayed=given.a_token_and_a_region(),
+    )
+
+    assert launch.spawn_environment == {
+        "DOCKER_HOST": "unix:///sock",
+        "GITHUB_TOKEN": "ghp_secret_value",
+        "AWS_REGION": "eu-west-1",
+    }
+
+
+def test_a_declared_container_merges_the_relayed_values_over_the_client_environment():
+    launch = ServerLaunch.declared_container(
+        "docker",
+        ["run", "-i", "img"],
+        {"DOCKER_HOST": "unix:///sock"},
+        relayed=given.a_token_and_a_region(),
+    )
+
+    assert launch.spawn_environment == {
+        "DOCKER_HOST": "unix:///sock",
+        "GITHUB_TOKEN": "ghp_secret_value",
+        "AWS_REGION": "eu-west-1",
+    }
+
+
+def test_a_declared_container_without_relays_spawns_with_the_client_environment():
+    launch = ServerLaunch.declared_container("docker", ["run", "-i", "img"], {"DOCKER_HOST": "x"})
+
+    assert launch.spawn_environment == {"DOCKER_HOST": "x"}
+
+
+@pytest.mark.parametrize(
+    "launch",
+    [
+        ServerLaunch.unconfined("python", ["s.py"], relayed=given.a_token_and_a_region()),
+        ServerLaunch.declared_container(
+            "docker", ["run", "-i", "img"], {}, relayed=given.a_token_and_a_region()
+        ),
+        ServerLaunch.confined(
+            "npx",
+            ["server"],
+            given.the_quick_start_profile(),
+            {},
+            relayed=given.a_token_and_a_region(),
+        ),
+    ],
+    ids=lambda launch: launch.regime,
+)
+def test_a_record_names_the_redacted_variables_and_spells_out_the_plain_ones(
+    launch: ServerLaunch,
+):
+    record = launch.record(None)
+
+    assert record.relayed_variables == ["GITHUB_TOKEN"]
+    assert record.plain_variables == {"AWS_REGION": "eu-west-1"}
+
+
+@pytest.mark.parametrize(
+    "launch",
+    [
+        ServerLaunch.unconfined("python", ["s.py"]),
+        ServerLaunch.declared_container("docker", ["run", "-i", "img"], {}),
+        ServerLaunch.confined("npx", ["server"], given.the_quick_start_profile(), {}),
+    ],
+    ids=lambda launch: launch.regime,
+)
+def test_a_record_without_relays_carries_no_relayed_environment(launch: ServerLaunch):
+    record = launch.record(None)
+
+    assert (record.relayed_variables, record.plain_variables) == (None, None)

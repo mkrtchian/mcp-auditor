@@ -1,6 +1,8 @@
 import json
 import re
 
+import pytest
+
 import tests.unit.support.test_rendering_given as given
 import tests.unit.support.test_rendering_then as then
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, ExecutionRecord, ExecutionRegime
@@ -326,6 +328,51 @@ def test_markdown_without_execution_has_no_execution_line():
     assert "**Execution**" not in result
 
 
+RELAYED_LINE = "**Relayed environment**: GITHUB_TOKEN (redacted), AWS_REGION=eu-west-1"
+
+
+@pytest.mark.parametrize(
+    "record",
+    [
+        ExecutionRecord(regime=ExecutionRegime.UNCONFINED),
+        ExecutionRecord(regime=ExecutionRegime.DECLARED_CONTAINER),
+        given.a_confined_record(),
+    ],
+    ids=lambda record: record.regime,
+)
+def test_markdown_shows_the_relayed_environment_under_every_regime(record: ExecutionRecord):
+    relaying = record.model_copy(
+        update={
+            "relayed_variables": ["GITHUB_TOKEN"],
+            "plain_variables": {"AWS_REGION": "eu-west-1"},
+        }
+    )
+    report = given.a_report_with_execution(relaying)
+
+    result = render_markdown(report)
+
+    assert f"{RELAYED_LINE}\n" in result
+
+
+def test_markdown_shows_plain_variables_alone_when_nothing_is_redacted():
+    record = ExecutionRecord(
+        regime=ExecutionRegime.UNCONFINED, plain_variables={"AWS_REGION": "eu-west-1"}
+    )
+    report = given.a_report_with_execution(record)
+
+    result = render_markdown(report)
+
+    assert "**Relayed environment**: AWS_REGION=eu-west-1\n" in result
+
+
+def test_markdown_omits_the_relayed_environment_without_relays():
+    report = given.a_report_with_execution(given.a_confined_record())
+
+    result = render_markdown(report)
+
+    assert "**Relayed environment**" not in result
+
+
 def test_json_carries_the_execution_record_with_the_full_digest():
     report = given.a_report_with_execution(given.a_confined_record())
 
@@ -338,6 +385,8 @@ def test_json_carries_the_execution_record_with_the_full_digest():
         "writable_paths",
         "read_only_paths",
         "oom_killed",
+        "relayed_variables",
+        "plain_variables",
     }
     assert execution["regime"] == "confined"
     assert execution["image_digest"] == given.FULL_DIGEST

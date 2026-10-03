@@ -62,12 +62,13 @@ class StdioMCPClient:
 
 
 def _server_parameters(launch: ServerLaunch) -> StdioServerParameters:
-    if launch.client_env is None:
+    environment = launch.spawn_environment
+    if environment is None:
         return StdioServerParameters(command=launch.spawn_command, args=launch.spawn_args)
     return StdioServerParameters(
         command=launch.spawn_command,
         args=launch.spawn_args,
-        env=get_default_environment() | dict(launch.client_env),
+        env=get_default_environment() | environment,
     )
 
 

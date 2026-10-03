@@ -281,6 +281,8 @@ class ExecutionRecord(BaseModel):
     oom_killed: bool | None = None
     """Read with the regime: under `confined`, `None` means the kill state could not be read.
     Under the other regimes it is always `None`, there being no container of the auditor's."""
+    relayed_variables: list[str] | None = None
+    plain_variables: dict[str, str] | None = None
 
 
 class AuditStep(StrEnum):

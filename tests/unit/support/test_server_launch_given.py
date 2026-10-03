@@ -2,6 +2,7 @@ from pathlib import Path
 
 from mcp_auditor.adapters.server_launch import ContainerIdentity, ContainerProfile
 from mcp_auditor.domain.confinement import MountPlan, MountSpec
+from mcp_auditor.domain.relayed_environment import RelayedEnvironment, RelayedVariable
 
 IMAGE = "node:24-bookworm-slim"
 DIGEST = "sha256:abc123def456"
@@ -44,3 +45,12 @@ def _a_profile(mount_plan: MountPlan) -> ContainerProfile:
 
 def _writable(host: Path) -> MountSpec:
     return MountSpec(host=host, writable=True)
+
+
+def a_token_and_a_region() -> RelayedEnvironment:
+    return RelayedEnvironment(
+        (
+            RelayedVariable("GITHUB_TOKEN", "ghp_secret_value", redacted=True),
+            RelayedVariable("AWS_REGION", "eu-west-1", redacted=False),
+        )
+    )
