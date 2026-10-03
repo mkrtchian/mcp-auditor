@@ -5,10 +5,6 @@ from typing import cast
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 
 
-def marker(name: str) -> str:
-    return f"[value of {name}, redacted by mcp-auditor]"
-
-
 @dataclass(frozen=True)
 class Redaction:
     secrets: Mapping[str, str]
@@ -49,6 +45,10 @@ class Redaction:
         if isinstance(value, list):
             return [self._schema_value(item) for item in cast(list[object], value)]
         return value
+
+
+def marker(name: str) -> str:
+    return f"[value of {name}, redacted by mcp-auditor]"
 
 
 class StreamRedactor:

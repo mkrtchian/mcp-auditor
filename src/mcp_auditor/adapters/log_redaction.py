@@ -10,20 +10,6 @@ _SDK_LOGGERS_REDACTED = ("", "client")
 _SDK_LOGGER_SILENCED = "mcp.client.stdio"
 
 
-class RedactingFilter(logging.Filter):
-    def __init__(self, redaction: Redaction) -> None:
-        super().__init__()
-        self._redaction = redaction
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        record.msg = self._redaction.text(record.getMessage())
-        record.args = None
-        if record.exc_info:
-            traceback = logging.Formatter().formatException(record.exc_info)
-            record.exc_text = self._redaction.text(traceback)
-        return True
-
-
 @contextmanager
 def redacted_sdk_logging(redaction: Redaction) -> Iterator[None]:
     """Only while a value is relayed, so that an audit without one keeps every diagnostic."""
@@ -46,3 +32,17 @@ def redacted_sdk_logging(redaction: Redaction) -> Iterator[None]:
         silenced.setLevel(previous_level)
         for logger in redacted:
             logger.removeFilter(log_filter)
+
+
+class RedactingFilter(logging.Filter):
+    def __init__(self, redaction: Redaction) -> None:
+        super().__init__()
+        self._redaction = redaction
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = self._redaction.text(record.getMessage())
+        record.args = None
+        if record.exc_info:
+            traceback = logging.Formatter().formatException(record.exc_info)
+            record.exc_text = self._redaction.text(traceback)
+        return True

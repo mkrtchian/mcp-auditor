@@ -9,9 +9,11 @@ from mcp_auditor.domain.confinement import (
     MountSpec,
     RefusedMountError,
     UnspellableMountError,
+    environment_names_passed,
     is_declared_container,
     parse_mount_option,
     refused_roots,
+    steers_docker_client,
 )
 
 
@@ -169,3 +171,41 @@ def test_other_container_spellings_are_not_declared_containers():
     assert not is_declared_container("docker", ["container", "run"])
     assert not is_declared_container("podman", ["run"])
     assert not is_declared_container("docker", [])
+
+
+@pytest.mark.parametrize(
+    ("name", "steers"),
+    [
+        ("HOME", True),
+        ("PATH", True),
+        ("DOCKER_HOST", True),
+        ("DOCKER_CONFIG", True),
+        ("DOCKER_DEFAULT_PLATFORM", True),
+        ("GITHUB_TOKEN", False),
+        ("MY_DOCKER_HOST", False),
+        ("PATHS", False),
+        ("docker_host", False),
+    ],
+)
+def test_steers_docker_client(name: str, steers: bool):
+    assert steers_docker_client(name) is steers
+
+
+@pytest.mark.parametrize(
+    ("args", "names", "env_file"),
+    [
+        (["run", "img"], set[str](), False),
+        (["run", "-e", "A", "img"], {"A"}, False),
+        (["run", "-e", "A=1", "img"], {"A"}, False),
+        (["run", "--env", "A", "img"], {"A"}, False),
+        (["run", "--env", "A=1", "img"], {"A"}, False),
+        (["run", "--env=A", "img"], {"A"}, False),
+        (["run", "--env=A=1", "img"], {"A"}, False),
+        (["run", "-e", "A", "--env=B", "img"], {"A", "B"}, False),
+        (["run", "--env-file", "f", "img"], set[str](), True),
+        (["run", "--env-file=f", "img"], set[str](), True),
+        (["run", "img", "-e"], set[str](), False),
+    ],
+)
+def test_environment_names_passed(args: list[str], names: set[str], env_file: bool):
+    assert environment_names_passed(args) == (frozenset(names), env_file)

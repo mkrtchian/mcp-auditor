@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_target_execution_given as given
-from mcp_auditor.domain.confinement import environment_names_passed, steers_docker_client
 from mcp_auditor.domain.models import ExecutionRegime
 from mcp_auditor.domain.relayed_environment import RelayRequest
 from mcp_auditor.target_execution import (
@@ -263,24 +262,6 @@ def test_a_name_that_steers_the_docker_client_is_relayed_unconfined(name: str):
     assert decision.launch.relayed.values == {name: given.TOKEN_VALUE}
 
 
-@pytest.mark.parametrize(
-    ("name", "steers"),
-    [
-        ("HOME", True),
-        ("PATH", True),
-        ("DOCKER_HOST", True),
-        ("DOCKER_CONFIG", True),
-        ("DOCKER_DEFAULT_PLATFORM", True),
-        ("GITHUB_TOKEN", False),
-        ("MY_DOCKER_HOST", False),
-        ("PATHS", False),
-        ("docker_host", False),
-    ],
-)
-def test_steers_docker_client(name: str, steers: bool):
-    assert steers_docker_client(name) is steers
-
-
 def test_a_relay_refusal_stops_before_any_runtime_call():
     context = given.a_context(
         FakeContainerRuntime(untouchable=True), relay=RelayRequest(redacted=("TOKEN=abc",))
@@ -337,23 +318,3 @@ def test_a_declared_container_that_passes_the_relayed_name_is_not_warned_about(
     decision = decide_launch("docker", ["run", "-i", *passing, "an-image"], context)
 
     assert decision.warnings == ()
-
-
-@pytest.mark.parametrize(
-    ("args", "names", "env_file"),
-    [
-        (["run", "img"], set[str](), False),
-        (["run", "-e", "A", "img"], {"A"}, False),
-        (["run", "-e", "A=1", "img"], {"A"}, False),
-        (["run", "--env", "A", "img"], {"A"}, False),
-        (["run", "--env", "A=1", "img"], {"A"}, False),
-        (["run", "--env=A", "img"], {"A"}, False),
-        (["run", "--env=A=1", "img"], {"A"}, False),
-        (["run", "-e", "A", "--env=B", "img"], {"A", "B"}, False),
-        (["run", "--env-file", "f", "img"], set[str](), True),
-        (["run", "--env-file=f", "img"], set[str](), True),
-        (["run", "img", "-e"], set[str](), False),
-    ],
-)
-def test_environment_names_passed(args: list[str], names: set[str], env_file: bool):
-    assert environment_names_passed(args) == (frozenset(names), env_file)
