@@ -16,6 +16,8 @@ NON_DESTRUCTIVE_CONSTRAINT = """NON-DESTRUCTIVE PAYLOADS. This applies to every 
 - A destructive payload proves nothing more than a benign marker does, and it corrupts the rest of the audit."""
 
 
+# Without this notice the judge takes a marker for inert text and can pass a response
+# that leaks the value, a leak it flags when the value itself is shown.
 REDACTION_NOTICE = (
     "REDACTED VALUES. A marker such as `[value of NAME, redacted by mcp-auditor]` stands for a value "
     "the server returned: mcp-auditor replaced the value of the environment variable NAME before "
