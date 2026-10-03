@@ -60,7 +60,7 @@ def test_relay_options_are_documented():
     assert "--env-plain TEXT" in result.output
 
 
-def test_repeated_relay_options_all_reach_the_launch():
+def test_a_name_repeated_across_relay_options_is_refused():
     environ = {"FIRST": "first-value", "SECOND": "second-value", "THIRD": "third-value"}
     relays = ["--env", "FIRST", "--env", "SECOND", "--env-plain", "THIRD"]
     relays += ["--env-plain", "SECOND"]
@@ -73,7 +73,7 @@ def test_repeated_relay_options_all_reach_the_launch():
     assert "SECOND is named twice" in result.output
 
 
-def test_a_relayed_plain_value_reaches_the_launch():
+def test_a_plain_relay_steering_the_docker_client_is_refused():
     relay = ["--env-plain", "DOCKER_HOST=tcp://elsewhere:2375"]
 
     result = CliRunner().invoke(cli, ["run", *relay, "--", "npx", "a-server"])

@@ -146,6 +146,8 @@ def is_declared_container(command: str, args: Sequence[str]) -> bool:
 
 # The relayed values join the environment of the `docker` process that launches the
 # container, so these names would retarget it, change its binary or its configuration.
+# HTTP_PROXY, HTTPS_PROXY and NO_PROXY stay relayable: a server behind a proxy needs them,
+# and in the client they only route a TCP daemon connection through the caller's own proxy.
 def steers_docker_client(name: str) -> bool:
     return name.startswith("DOCKER_") or name in ("PATH", "HOME")
 
