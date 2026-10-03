@@ -2,14 +2,15 @@
 # One audit run: the server it probes, the models it reasons with, the budget it spends,
 # and the report it yields. Outside the hexagon, like `cli.py`, which hands it a decided
 # launch and reads back the report.
-import tempfile
 from dataclasses import dataclass
 from typing import Any, NoReturn
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
 
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
+from mcp_auditor.adapters.log_redaction import redacted_sdk_logging
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.stderr_capture import RedactingStderr
 from mcp_auditor.checkpointing import checkpoint_db_path, compute_thread_id, resume_or_reset
 from mcp_auditor.config import Settings, load_settings
 from mcp_auditor.console import AuditDisplay, print_server_stderr, summarize_exception_group
@@ -86,35 +87,34 @@ class Audit:
 
     async def run(self) -> AuditReport | None:
         """The report, or None for a dry run, which shows payloads and audits nothing."""
-        server_stderr = tempfile.SpooledTemporaryFile(max_size=1024 * 1024, mode="w+")  # noqa: SIM115
-        try:
-            report = await self._probe_the_target(server_stderr)
-        except ConnectionError as exc:
-            self._give_up(f"could not connect to MCP server: {exc}", server_stderr, exc)
-        except OSError as exc:
-            self._give_up(str(exc), server_stderr, exc)
-        except BaseExceptionGroup as exc:
-            self._give_up(
-                f"MCP server failed: {summarize_exception_group(exc)}", server_stderr, exc
-            )
+        redaction = self._execution.launch.relayed.redaction()
+        with RedactingStderr(redaction) as server_stderr, redacted_sdk_logging(redaction):
+            try:
+                report = await self._probe_the_target(server_stderr)
+            except ConnectionError as exc:
+                self._give_up(f"could not connect to MCP server: {exc}", server_stderr, exc)
+            except OSError as exc:
+                self._give_up(str(exc), server_stderr, exc)
+            except BaseExceptionGroup as exc:
+                self._give_up(
+                    f"MCP server failed: {summarize_exception_group(exc)}", server_stderr, exc
+                )
         if report is None:
             return None
         # The container's kill state is known only once the execution's block has exited.
         return report.model_copy(update={"execution": self._execution.record})
 
-    async def _probe_the_target(
-        self, server_stderr: "tempfile.SpooledTemporaryFile[str]"
-    ) -> AuditReport | None:
+    async def _probe_the_target(self, server_stderr: RedactingStderr) -> AuditReport | None:
         async with (
             self._execution,
             AsyncSqliteSaver.from_conn_string(checkpoint_db_path()) as checkpointer,
             StdioMCPClient.connect(
                 self._execution.launch,
-                errlog=server_stderr,
+                errlog=server_stderr.writer,
                 tool_call_timeout=self._analysts.settings.tool_call_timeout,
             ) as mcp_client,
         ):
-            server = AuditedServer(mcp_client)
+            server = AuditedServer(mcp_client, server_stderr.redaction)
             if self._config.execution.dry_run:
                 await self._show_payloads(server)
                 return None
@@ -195,9 +195,10 @@ class Audit:
     def _give_up(
         self,
         message: str,
-        server_stderr: "tempfile.SpooledTemporaryFile[str]",
+        server_stderr: RedactingStderr,
         exc: BaseException,
     ) -> NoReturn:
-        self._display.print_error(message)
-        print_server_stderr(server_stderr, self._display)
+        # An exception string can quote the server.
+        self._display.print_error(server_stderr.redaction.text(message))
+        print_server_stderr(server_stderr.text(), self._display)
         raise SystemExit(1) from exc

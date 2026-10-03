@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from types import TracebackType
 from typing import Self, cast
 
@@ -184,11 +183,8 @@ class NullStatus:
         pass
 
 
-def print_server_stderr(
-    server_stderr: tempfile.SpooledTemporaryFile[str], display: AuditDisplay
-) -> None:
-    server_stderr.seek(0)
-    output = server_stderr.read().strip()
+def print_server_stderr(text: str, display: AuditDisplay) -> None:
+    output = text.strip()
     if output:
         display.print_error(f"server stderr:\n{output}")
 
