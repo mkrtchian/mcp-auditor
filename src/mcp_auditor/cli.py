@@ -23,6 +23,7 @@ from mcp_auditor.audit import (
 from mcp_auditor.config_file import load_config_file, merge_defaults
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import AuditReport, Severity
+from mcp_auditor.domain.relayed_environment import RelayRequest
 from mcp_auditor.report_files import ReportPaths, write_reports
 from mcp_auditor.target_execution import (
     Host,
@@ -86,6 +87,22 @@ def cli() -> None:
     multiple=True,
     help="Host path to mount into the container, PATH or PATH:rw, read-only by default.",
 )
+@click.option(
+    "--env",
+    "env",
+    type=str,
+    multiple=True,
+    help="Relay the variable NAME from your environment to the server, its value redacted "
+    "from everything the server sends back (repeatable).",
+)
+@click.option(
+    "--env-plain",
+    "env_plain",
+    type=str,
+    multiple=True,
+    help="Relay NAME or NAME=value to the server without redaction, the value recorded in "
+    "the report (repeatable).",
+)
 @click.pass_context
 def run(
     ctx: click.Context,
@@ -102,6 +119,8 @@ def run(
     unconfined: bool,
     image: str | None,
     mount: tuple[str, ...],
+    env: tuple[str, ...],
+    env_plain: tuple[str, ...],
 ) -> None:
     """Audit an MCP server.
 
@@ -130,6 +149,7 @@ def run(
             unconfined=params["unconfined"],
             image=params["image"],
             mounts=tuple(params["mount"]),
+            relay=RelayRequest(redacted=tuple(params["env"]), plain=tuple(params["env_plain"])),
         ),
         tools_filter=parse_tools_filter(params["tools"]),
     )
@@ -196,6 +216,7 @@ def _launch_context(config: AuditConfig) -> LaunchContext:
             gid=os.getgid(),
             home=Path.home(),
             docker_env=docker_client_env(os.environ),
+            environ=dict(os.environ),
         ),
         container_name=f"mcp-auditor-{uuid4().hex[:12]}",
     )

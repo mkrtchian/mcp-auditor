@@ -1,4 +1,8 @@
-from mcp_auditor.config_file import merge_defaults
+from pathlib import Path
+
+import pytest
+
+from mcp_auditor.config_file import UnknownKeyError, load_config_file, merge_defaults
 
 
 def test_file_defaults_fill_in_non_explicit_params() -> None:
@@ -28,3 +32,11 @@ def test_empty_file_defaults_returns_cli_params() -> None:
     result = merge_defaults(cli_params, file_defaults={}, explicit_keys=set())
 
     assert result == cli_params
+
+
+def test_the_relayed_environment_is_refused_in_the_config_file(tmp_path: Path) -> None:
+    path = tmp_path / ".mcp-auditor.yml"
+    path.write_text("env:\n  - GITHUB_TOKEN\n")
+
+    with pytest.raises(UnknownKeyError, match="env"):
+        load_config_file(path)

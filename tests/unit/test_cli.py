@@ -53,6 +53,35 @@ def test_a_launcher_without_a_confinement_profile_stops_the_run():
     assert "could not initialize LLM" not in result.output
 
 
+def test_relay_options_are_documented():
+    result = CliRunner().invoke(cli, ["run", "--help"])
+
+    assert "--env TEXT" in result.output
+    assert "--env-plain TEXT" in result.output
+
+
+def test_repeated_relay_options_all_reach_the_launch():
+    environ = {"FIRST": "first-value", "SECOND": "second-value", "THIRD": "third-value"}
+    relays = ["--env", "FIRST", "--env", "SECOND", "--env-plain", "THIRD"]
+    relays += ["--env-plain", "SECOND"]
+
+    result = CliRunner(env=environ).invoke(
+        cli, ["run", "--unconfined", *relays, "--", "python", "x.py"]
+    )
+
+    assert result.exit_code == 1
+    assert "SECOND is named twice" in result.output
+
+
+def test_a_relayed_plain_value_reaches_the_launch():
+    relay = ["--env-plain", "DOCKER_HOST=tcp://elsewhere:2375"]
+
+    result = CliRunner().invoke(cli, ["run", *relay, "--", "npx", "a-server"])
+
+    assert result.exit_code == 1
+    assert "DOCKER_HOST steers the docker client" in result.output
+
+
 class TestCIExitCode:
     def test_an_incomplete_audit_without_findings_exits_3(self):
         report = given.a_report(refused=True)

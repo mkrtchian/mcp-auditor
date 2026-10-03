@@ -9,6 +9,7 @@ import pytest
 
 from mcp_auditor.adapters.docker import DockerRuntime, docker_client_env
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.domain.relayed_environment import RelayRequest
 from mcp_auditor.target_execution import (
     Host,
     LaunchContext,
@@ -21,6 +22,7 @@ from mcp_auditor.target_execution import (
 # confined path, so it must go red on a confinement regression and never on an
 # upstream rename.
 FILESYSTEM_SERVER = "@modelcontextprotocol/server-filesystem@2026.8.31"
+ENV_ECHO_SERVER = pathlib.Path(__file__).parent / "support" / "env_echo_server.py"
 
 
 @pytest.mark.skipif(not DockerRuntime().available(), reason="confined execution needs Docker")
@@ -67,6 +69,37 @@ async def test_confined_launch_serves_the_filesystem_server(tmp_path: pathlib.Pa
     assert str(workspace.resolve()) in (execution.record.writable_paths or [])
     assert str(reference.resolve()) in (execution.record.read_only_paths or [])
     assert containers_named(container_name) == ""
+
+
+@pytest.mark.skipif(not DockerRuntime().available(), reason="confined execution needs Docker")
+async def test_a_relayed_variable_reaches_the_confined_server(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MCP_AUDITOR_RELAYED", "relayed-into-the-container")
+    context = LaunchContext(
+        options=LaunchOptions(
+            unconfined=False,
+            image=None,
+            mounts=(),
+            relay=RelayRequest(redacted=("MCP_AUDITOR_RELAYED",)),
+        ),
+        runtime=DockerRuntime(),
+        host=Host(
+            uid=os.getuid(),
+            gid=os.getgid(),
+            home=pathlib.Path.home(),
+            docker_env=docker_client_env(os.environ),
+            environ=dict(os.environ),
+        ),
+        container_name=f"mcp-auditor-{uuid4().hex[:12]}",
+    )
+    target = ["--with", "mcp==1.26.0", "python", str(ENV_ECHO_SERVER)]
+    launch = decide_launch("uvx", target, context).launch
+
+    async with TargetExecution(launch, context.runtime), StdioMCPClient.connect(launch) as client:
+        echoed = await client.call_tool("echo", {"name": "MCP_AUDITOR_RELAYED"})
+
+    assert echoed.content == "relayed-into-the-container"
 
 
 def containers_named(name: str) -> str:

@@ -2,7 +2,7 @@
 # which image confines it, and the lifetime of the container it runs in. Outside the
 # hexagon, like `cli.py`, and it decides without printing anything.
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import TracebackType
 from typing import Protocol
@@ -16,11 +16,18 @@ from mcp_auditor.domain.confinement import (
     MountPolicy,
     RefusedMountError,
     UnspellableMountError,
+    environment_names_passed,
     is_declared_container,
     parse_mount_option,
     refused_roots,
+    steers_docker_client,
 )
 from mcp_auditor.domain.models import ExecutionRecord
+from mcp_auditor.domain.relayed_environment import (
+    RelayedEnvironment,
+    RelayRefusedError,
+    RelayRequest,
+)
 
 # The mapping comes from Docker's MCP Gateway, which sends the same launchers to the
 # same image families. The tag is the one its publisher still rebuilds: a base image
@@ -53,6 +60,7 @@ class LaunchOptions:
     unconfined: bool
     image: str | None
     mounts: tuple[str, ...]
+    relay: RelayRequest = field(default_factory=RelayRequest)
 
 
 @dataclass(frozen=True)
@@ -61,6 +69,7 @@ class Host:
     gid: int
     home: Path
     docker_env: Mapping[str, str]
+    environ: Mapping[str, str] = field(default_factory=dict[str, str])
 
 
 @dataclass(frozen=True)
@@ -82,15 +91,34 @@ class LaunchRefused(Exception):
 
 
 def decide_launch(command: str, args: Sequence[str], context: LaunchContext) -> LaunchDecision:
+    relayed = _resolved_relay(context)
     if context.options.unconfined:
-        return LaunchDecision(
-            ServerLaunch.unconfined(command, args), _unconfined_warnings(context.options)
-        )
+        launch = ServerLaunch.unconfined(command, args, relayed=relayed)
+        return LaunchDecision(launch, relayed.warnings() + _unconfined_warnings(context.options))
+    _refuse_docker_steering_names(relayed)
+    docker_env = context.host.docker_env
     if is_declared_container(command, args):
-        return LaunchDecision(
-            ServerLaunch.declared_container(command, args, context.host.docker_env), ()
-        )
-    return _confine(command, args, context)
+        launch = ServerLaunch.declared_container(command, args, docker_env, relayed=relayed)
+        return LaunchDecision(launch, relayed.warnings() + _unpassed_names(args, relayed))
+    profile, warnings = _confine(command, args, context)
+    launch = ServerLaunch.confined(command, args, profile, docker_env, relayed=relayed)
+    return LaunchDecision(launch, relayed.warnings() + warnings)
+
+
+def _resolved_relay(context: LaunchContext) -> RelayedEnvironment:
+    try:
+        return RelayedEnvironment.resolved(context.options.relay, context.host.environ)
+    except RelayRefusedError as refusal:
+        raise LaunchRefused(str(refusal)) from refusal
+
+
+def _refuse_docker_steering_names(relayed: RelayedEnvironment) -> None:
+    for name in relayed.names:
+        if steers_docker_client(name):
+            raise LaunchRefused(
+                f"{name} steers the docker client that launches the container and cannot be "
+                "relayed under this regime: run with --unconfined to pass it to the server"
+            )
 
 
 def _unconfined_warnings(options: LaunchOptions) -> tuple[str, ...]:
@@ -99,7 +127,20 @@ def _unconfined_warnings(options: LaunchOptions) -> tuple[str, ...]:
     return ("--image and --mount only mean something in a container: ignored under --unconfined",)
 
 
-def _confine(command: str, args: Sequence[str], context: LaunchContext) -> LaunchDecision:
+def _unpassed_names(args: Sequence[str], relayed: RelayedEnvironment) -> tuple[str, ...]:
+    passed, env_file = environment_names_passed(args)
+    if env_file:
+        return ()
+    return tuple(
+        f"your docker run does not pass {name} to the container: add -e {name} to it"
+        for name in relayed.names
+        if name not in passed
+    )
+
+
+def _confine(
+    command: str, args: Sequence[str], context: LaunchContext
+) -> tuple[ContainerProfile, tuple[str, ...]]:
     image = _image_for(command, context.options)
     _require_a_local_runtime(command, context.runtime)
     plan = _mount_plan(args, context)
@@ -109,8 +150,7 @@ def _confine(command: str, args: Sequence[str], context: LaunchContext) -> Launc
         uid=context.host.uid,
         gid=context.host.gid,
     )
-    launch = ServerLaunch.confined(command, args, profile, context.host.docker_env)
-    return LaunchDecision(launch, _confined_warnings(plan, context.runtime))
+    return profile, _confined_warnings(plan, context.runtime)
 
 
 def _image_for(command: str, options: LaunchOptions) -> str:

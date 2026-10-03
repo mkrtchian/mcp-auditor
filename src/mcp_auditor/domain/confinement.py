@@ -144,6 +144,25 @@ def is_declared_container(command: str, args: Sequence[str]) -> bool:
     return command == "docker" and tuple(args[:1]) == ("run",)
 
 
+# The relayed values join the environment of the `docker` process that launches the
+# container, so these names would retarget it, change its binary or its configuration.
+def steers_docker_client(name: str) -> bool:
+    return name.startswith("DOCKER_") or name in ("PATH", "HOME")
+
+
+# Scans the whole argv rather than stopping at the image: an `-e` after it belongs to
+# the server's own command, and counting it only suppresses a warning.
+def environment_names_passed(args: Sequence[str]) -> tuple[frozenset[str], bool]:
+    names: set[str] = set()
+    for flag, value in zip(args, [*args[1:], None], strict=True):
+        if flag in ("-e", "--env") and value is not None:
+            names.add(value.split("=", 1)[0])
+        elif flag.startswith("--env="):
+            names.add(flag.removeprefix("--env=").split("=", 1)[0])
+    env_file = any(arg == "--env-file" or arg.startswith("--env-file=") for arg in args)
+    return frozenset(names), env_file
+
+
 class RefusedMountError(ValueError):
     def __init__(self, root: Path) -> None:
         super().__init__(f"refusing to mount {root}")
