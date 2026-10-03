@@ -15,10 +15,12 @@ class FakeLLM:
     def __init__(self, responses: Sequence[BaseModel | ProviderRefusal]):
         self._responses: deque[BaseModel | ProviderRefusal] = deque(responses)
         self.total_usage = ProviderUsage()
+        self.prompts: list[str] = []
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
     ) -> tuple[T, ProviderUsage]:
+        self.prompts.append(prompt)
         response = self._responses.popleft()
         if isinstance(response, ProviderRefusal):
             self.total_usage = self.total_usage.add(response.usage)

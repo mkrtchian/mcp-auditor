@@ -28,6 +28,7 @@ from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
     build_context_extraction_prompt,
     build_judge_prompt,
+    with_redaction_notice,
 )
 from mcp_auditor.graph.refusals import ModelCall, Refused, call_model
 
@@ -54,11 +55,14 @@ class GenerationRequest:
     budget: int
     categories: list[AuditCategory]
     attack_context: AttackContext
+    redacting: bool = False
 
     def call_for(self, categories: list[AuditCategory], budget: int) -> ModelCall[TestCaseBatch]:
         prompt = build_attack_generation_prompt(
             tool=self.tool, budget=budget, categories=categories, attack_context=self.attack_context
         )
+        if self.redacting:
+            prompt = with_redaction_notice(prompt)
         return ModelCall(self.tool.name, AuditStep.TEST_GENERATION, prompt, TestCaseBatch)
 
     def gap_in(self, batch: TestCaseBatch) -> CoverageGap | None:
@@ -89,13 +93,14 @@ class GenerationOutcome:
         return GenerationOutcome(batch, usages, [*self.refused_steps, *later.refused_steps])
 
 
-def make_generate_test_cases(llm: LLMPort):
+def make_generate_test_cases(llm: LLMPort, redacting: bool = False):
     async def generate_test_cases(state: dict[str, Any]) -> dict[str, Any]:
         request = GenerationRequest(
             tool=state["current_tool"],
             budget=state["test_budget"],
             categories=list(AuditCategory),
             attack_context=state["attack_context"],
+            redacting=redacting,
         )
         outcome = await _generate_covering_batch(llm, request)
         return {
@@ -157,11 +162,13 @@ def make_execute_tool(server: AuditedServer):
     return execute_tool
 
 
-def make_judge_response(llm: LLMPort):
+def make_judge_response(llm: LLMPort, redacting: bool = False):
     async def judge_response(state: dict[str, Any]) -> dict[str, Any]:
         case = state["current_case"]
         tool = state["current_tool"]
         prompt = build_judge_prompt(tool=tool, test_case=case)
+        if redacting:
+            prompt = with_redaction_notice(prompt)
         answer = await call_model(llm, ModelCall(tool.name, AuditStep.JUDGMENT, prompt, Judgment))
         if isinstance(answer, Refused):
             return {"judged_cases": [case], "current_case": None, **answer.state_update()}
@@ -193,11 +200,13 @@ async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
     return {"tool_reports": [report]}
 
 
-def make_extract_attack_context(llm: LLMPort):
+def make_extract_attack_context(llm: LLMPort, redacting: bool = False):
     async def extract_attack_context(state: dict[str, Any]) -> dict[str, Any]:
         tool_report = state["tool_reports"][-1]
         existing_context = state["attack_context"]
         prompt = build_context_extraction_prompt(tool_report, existing_context)
+        if redacting:
+            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool_report.tool.name, AuditStep.CONTEXT_EXTRACTION, prompt, AttackContext)
         answer = await call_model(llm, call)
         if isinstance(answer, Refused):

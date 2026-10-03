@@ -15,9 +15,11 @@ from mcp_auditor.domain import (
     StepObservation,
     TestCaseBatch,
     ToolDefinition,
+    ToolResponse,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.ports import ProviderRefusal
+from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
 
@@ -120,6 +122,10 @@ def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
     return build_graph(fake_llm, AuditedServer(fake_mcp_client))
 
 
+def a_redacting_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient, secrets: dict[str, str]):
+    return build_graph(fake_llm, AuditedServer(fake_mcp_client, Redaction(secrets)))
+
+
 def a_dry_run_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
     return build_dry_run_graph(fake_llm, AuditedServer(fake_mcp_client))
 
@@ -167,6 +173,18 @@ def a_fake_llm_for_single_tool_with_chain(num_cases: int = 1) -> FakeLLM:
     chain_judgment = a_judgment()
     context = AttackContext()
     return FakeLLM([batch, *judgments, chain_plan, step_obs, chain_judgment, context])
+
+
+def a_fake_llm_for_single_tool_with_a_two_step_chain() -> FakeLLM:
+    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
+    continue_obs = StepObservation(observation="promising", should_continue=True)
+    stop_obs = StepObservation(observation="dead end", should_continue=False)
+    chain = [chain_plan, continue_obs, a_payload(), stop_obs, a_judgment()]
+    return FakeLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])
+
+
+def a_server_echoing(tool: ToolDefinition, content: str) -> FakeMCPClient:
+    return FakeMCPClient([tool], {tool.name: ToolResponse(content=content)})
 
 
 def a_fake_llm_for_single_tool_with_two_chains(num_cases: int = 1) -> FakeLLM:

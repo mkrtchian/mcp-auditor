@@ -63,7 +63,7 @@ def build_graph(
     builder.add_node("audit_tool", audit_subgraph)
     builder.add_node("chain_audit_tool", chain_subgraph)
     builder.add_node("build_tool_report", build_tool_report)
-    builder.add_node("extract_attack_context", make_extract_attack_context(llm))
+    builder.add_node("extract_attack_context", make_extract_attack_context(llm, server.redacting))
     builder.add_node("generate_report", generate_report)
     builder.add_edge(START, "discover_tools")
     builder.add_conditional_edges("discover_tools", route_after_discovery)
@@ -84,12 +84,13 @@ def _build_audit_tool_subgraph(
     server: AuditedServer,
     judge_llm: LLMPort,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
+    redacting = server.redacting
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(
         AuditToolState, input_schema=AuditToolInput
     )
-    builder.add_node("generate_test_cases", make_generate_test_cases(llm))
+    builder.add_node("generate_test_cases", make_generate_test_cases(llm, redacting))
     builder.add_node("execute_tool", make_execute_tool(server))
-    builder.add_node("judge_response", make_judge_response(judge_llm))
+    builder.add_node("judge_response", make_judge_response(judge_llm, redacting))
     builder.add_edge(START, "generate_test_cases")
     builder.add_conditional_edges(
         "generate_test_cases", route_test_cases, {"execute_tool": "execute_tool", END: END}
@@ -108,15 +109,16 @@ def _build_chain_audit_subgraph(
     server: AuditedServer,
     judge_llm: LLMPort,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
+    redacting = server.redacting
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(
         ChainAuditState, input_schema=ChainAuditInput
     )
-    builder.add_node("plan_chains", make_plan_chains(llm))
+    builder.add_node("plan_chains", make_plan_chains(llm, redacting))
     builder.add_node("prepare_chain", prepare_chain)
     builder.add_node("execute_step", make_execute_step(server))
-    builder.add_node("observe_step", make_observe_step(llm))
-    builder.add_node("plan_step", make_plan_step(llm))
-    builder.add_node("judge_chain", make_judge_chain(judge_llm))
+    builder.add_node("observe_step", make_observe_step(llm, redacting))
+    builder.add_node("plan_step", make_plan_step(llm, redacting))
+    builder.add_node("judge_chain", make_judge_chain(judge_llm, redacting))
     builder.add_node("abandon_chain", abandon_chain)
     builder.add_edge(START, "plan_chains")
     builder.add_conditional_edges("plan_chains", route_after_planning)
@@ -146,7 +148,7 @@ def build_dry_run_graph(
     server: AuditedServer,
     tools_filter: frozenset[str] | None = None,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
-    subgraph = _build_generate_only_subgraph(llm)
+    subgraph = _build_generate_only_subgraph(llm, server.redacting)
 
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
     builder.add_node("discover_tools", make_discover_tools(server, tools_filter=tools_filter))
@@ -162,12 +164,12 @@ def build_dry_run_graph(
 
 
 def _build_generate_only_subgraph(
-    llm: LLMPort,
+    llm: LLMPort, redacting: bool
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     builder: StateGraph[Any, Any, Any, Any] = StateGraph(
         AuditToolState, input_schema=AuditToolInput
     )
-    builder.add_node("generate_test_cases", make_generate_test_cases(llm))
+    builder.add_node("generate_test_cases", make_generate_test_cases(llm, redacting))
     builder.add_node("collect_cases", collect_generated_cases)
     builder.add_edge(START, "generate_test_cases")
     builder.add_edge("generate_test_cases", "collect_cases")

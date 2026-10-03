@@ -2,6 +2,8 @@ from typing import Any
 
 from mcp_auditor.domain import AttackChain, ToolReport
 from mcp_auditor.domain.models import AuditStep, RefusedStep
+from mcp_auditor.graph.prompts import REDACTION_NOTICE
+from tests.fakes import FakeLLM
 
 
 def has_tool_reports(result: dict[str, Any], expected_count: int) -> None:
@@ -73,3 +75,13 @@ def state_has_refused_steps(result: dict[str, Any], expected: list[tuple[str, Au
 
 def _are_refused_steps(steps: list[RefusedStep], expected: list[tuple[str, AuditStep]]) -> None:
     assert [(step.tool_name, step.step) for step in steps] == expected
+
+
+def every_prompt_has_the_redaction_notice(fake_llm: FakeLLM, expected_prompts: int) -> None:
+    assert len(fake_llm.prompts) == expected_prompts
+    assert all(REDACTION_NOTICE in prompt for prompt in fake_llm.prompts)
+
+
+def no_prompt_holds(fake_llm: FakeLLM, text: str) -> None:
+    assert fake_llm.prompts
+    assert not any(text in prompt for prompt in fake_llm.prompts)

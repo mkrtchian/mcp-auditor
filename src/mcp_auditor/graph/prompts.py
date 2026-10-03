@@ -16,6 +16,17 @@ NON_DESTRUCTIVE_CONSTRAINT = """NON-DESTRUCTIVE PAYLOADS. This applies to every 
 - A destructive payload proves nothing more than a benign marker does, and it corrupts the rest of the audit."""
 
 
+REDACTION_NOTICE = (
+    "REDACTED VALUES. A marker such as `[value of NAME, redacted by mcp-auditor]` stands for a value "
+    "the server returned: mcp-auditor replaced the value of the environment variable NAME before "
+    "showing you the output. Read the marker as that value."
+)
+
+
+def with_redaction_notice(prompt: str) -> str:
+    return f"{prompt}\n\n{REDACTION_NOTICE}"
+
+
 def format_tool_header(tool: ToolDefinition) -> str:
     description = tool.description or "No description provided"
     schema_json = json.dumps(tool.input_schema, indent=2)

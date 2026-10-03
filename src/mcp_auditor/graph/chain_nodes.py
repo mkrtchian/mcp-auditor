@@ -21,10 +21,11 @@ from mcp_auditor.graph.chain_prompts import (
     build_step_observation_prompt,
     build_step_planning_prompt,
 )
+from mcp_auditor.graph.prompts import with_redaction_notice
 from mcp_auditor.graph.refusals import ModelCall, Refused, call_model
 
 
-def make_plan_chains(llm: LLMPort):
+def make_plan_chains(llm: LLMPort, redacting: bool = False):
     async def plan_chains(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         cases = state["judged_cases"]
@@ -36,6 +37,8 @@ def make_plan_chains(llm: LLMPort):
             attack_context=context,
             chain_budget=budget,
         )
+        if redacting:
+            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, AuditStep.CHAIN_PLANNING, prompt, ChainPlanBatch)
         outcome = await call_model(llm, call)
         if isinstance(outcome, Refused):
@@ -75,7 +78,7 @@ def make_execute_step(server: AuditedServer):
     return execute_step
 
 
-def make_observe_step(llm: LLMPort):
+def make_observe_step(llm: LLMPort, redacting: bool = False):
     async def observe_step(state: dict[str, Any]) -> dict[str, Any]:
         steps = list(state["current_chain_steps"])
         goal = state["current_chain_goal"]
@@ -85,6 +88,8 @@ def make_observe_step(llm: LLMPort):
             goal=goal,
             chain_steps=steps,
         )
+        if redacting:
+            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, AuditStep.CHAIN_STEP_OBSERVATION, prompt, StepObservation)
         outcome = await call_model(llm, call)
         if isinstance(outcome, Refused):
@@ -101,7 +106,7 @@ def make_observe_step(llm: LLMPort):
     return observe_step
 
 
-def make_plan_step(llm: LLMPort):
+def make_plan_step(llm: LLMPort, redacting: bool = False):
     async def plan_step(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         goal = state["current_chain_goal"]
@@ -114,6 +119,8 @@ def make_plan_step(llm: LLMPort):
             chain_history=steps,
             observation_hint=hint,
         )
+        if redacting:
+            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, AuditStep.CHAIN_STEP_PLANNING, prompt, AuditPayload)
         outcome = await call_model(llm, call)
         if isinstance(outcome, Refused):
@@ -124,7 +131,7 @@ def make_plan_step(llm: LLMPort):
     return plan_step
 
 
-def make_judge_chain(llm: LLMPort):
+def make_judge_chain(llm: LLMPort, redacting: bool = False):
     async def judge_chain(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         chain = AttackChain(
@@ -133,6 +140,8 @@ def make_judge_chain(llm: LLMPort):
             blocked_reason=state["blocked_step_reason"],
         )
         prompt = build_chain_judge_prompt(tool=tool, chain=chain)
+        if redacting:
+            prompt = with_redaction_notice(prompt)
         outcome = await call_model(
             llm, ModelCall(tool.name, AuditStep.CHAIN_JUDGMENT, prompt, Judgment)
         )

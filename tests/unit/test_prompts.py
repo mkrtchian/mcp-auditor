@@ -2,10 +2,12 @@ import tests.unit.support.test_prompts_given as given
 from mcp_auditor.domain import AttackContext, AuditCategory
 from mcp_auditor.graph.prompts import (
     NON_DESTRUCTIVE_CONSTRAINT,
+    REDACTION_NOTICE,
     build_attack_generation_prompt,
     build_context_extraction_prompt,
     build_judge_prompt,
     format_attack_context,
+    with_redaction_notice,
 )
 
 
@@ -253,3 +255,7 @@ class TestJudgePrompt:
         prompt = build_judge_prompt(tool=given.a_tool(), test_case=test_case)
 
         assert "no response and no error" in prompt
+
+
+def test_redaction_notice_follows_the_prompt_after_a_blank_line():
+    assert with_redaction_notice("P") == f"P\n\n{REDACTION_NOTICE}"

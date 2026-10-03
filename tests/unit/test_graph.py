@@ -5,6 +5,7 @@ import tests.unit.support.test_graph_given as given
 import tests.unit.support.test_graph_then as then
 from mcp_auditor.domain import AttackContext
 from mcp_auditor.domain.models import AuditStep
+from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
 
 
@@ -117,6 +118,32 @@ async def test_chain_budget_one_produces_chain():
     then.report_has_chains(report, 1)
     then.chain_has_eval_result(report.chains[0])
     then.provider_usage_is_positive(result)
+
+
+@pytest.mark.asyncio
+async def test_a_redacting_server_puts_the_notice_in_every_prompt_and_its_value_in_none():
+    tool = given.a_tool(name="get_user")
+    fake_llm = given.a_fake_llm_for_single_tool_with_a_two_step_chain()
+    server = given.a_server_echoing(tool, "token=s3cr3t-value")
+    graph = given.a_redacting_graph(fake_llm, server, {"TOKEN": "s3cr3t-value"})
+    state = given.an_initial_state(test_budget=1, chain_budget=1, max_chain_steps=3)
+
+    await given.invoke_graph(graph, state)
+
+    then.every_prompt_has_the_redaction_notice(fake_llm, expected_prompts=8)
+    then.no_prompt_holds(fake_llm, "s3cr3t-value")
+
+
+@pytest.mark.asyncio
+async def test_a_server_without_redaction_puts_the_notice_in_no_prompt():
+    tool = given.a_tool(name="get_user")
+    fake_llm = given.a_fake_llm_for_single_tool_with_a_two_step_chain()
+    graph = given.a_graph(fake_llm, given.a_server_echoing(tool, "token=s3cr3t-value"))
+    state = given.an_initial_state(test_budget=1, chain_budget=1, max_chain_steps=3)
+
+    await given.invoke_graph(graph, state)
+
+    then.no_prompt_holds(fake_llm, REDACTION_NOTICE)
 
 
 @pytest.mark.asyncio
