@@ -64,7 +64,7 @@ What it measures, what it reports and its limits are in [`evals/probe_method.md`
 
 ### Running evals on a pull request
 
-The judge isolation eval runs automatically on a pull request that touches `src/**`, `evals/**`, a honeypot server, or `pyproject.toml`, and it fails the check when its gate is red, not comparable or refused (see [The judge isolation eval](#the-judge-isolation-eval)). It needs an API key from repository secrets: a Dependabot pull request and a pull request from a fork both skip the job. The e2e evals never run automatically on a pull request. They run on main after merge, where they gate the build. A maintainer can run either on demand by commenting on the PR:
+The judge isolation eval runs automatically on a pull request that touches `src/**`, `evals/**`, a honeypot server, `pyproject.toml` or `uv.lock`, and it fails the check when its gate is red, not comparable or refused (see [The judge isolation eval](#the-judge-isolation-eval)). It needs an API key from repository secrets: a Dependabot pull request and a pull request from a fork both skip the job. The e2e evals never run automatically on a pull request. They run on main after merge, where they gate the build. A maintainer can run either on demand by commenting on the PR:
 
 - `/eval` runs the judge isolation eval only (fast).
 - `/eval full` also runs the e2e evals (slower, more API calls), at the baseline's conditions: 3 runs and budget 10, the defaults of `evals.run_evals`.
