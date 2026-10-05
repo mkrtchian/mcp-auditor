@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -158,7 +158,11 @@ def _baseline_tag(state: CellState | None, planted: bool) -> CellTag:
 
 
 def _letters(cell: Cell, runs: list[dict[Cell, Observation]]) -> str:
-    return "".join(_LETTERS[run.get(cell, Observation.UNCOVERED)] for run in runs)
+    return observation_letters(run.get(cell, Observation.UNCOVERED) for run in runs)
+
+
+def observation_letters(observations: Iterable[Observation]) -> str:
+    return "".join(_LETTERS[observation] for observation in observations)
 
 
 _LETTERS = {Observation.PASS: "P", Observation.FAIL: "F", Observation.UNCOVERED: "-"}
