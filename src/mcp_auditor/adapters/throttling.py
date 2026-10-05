@@ -1,8 +1,8 @@
 """Counts the HTTP 429 responses the model provider sends back, per LLM call.
 
 The provider clients retry a throttled request by themselves, so the one place every 429
-shows is the response line their HTTP client logs: `openai` and `alibaba` log on the
-`httpx2` logger, `anthropic` and `fireworks` on the `httpx` logger, and Google's model is
+shows is the response line their HTTP client logs: `openai`, `alibaba` and `anthropic` log on
+the `httpx2` logger, `fireworks` on the `httpx` logger, and Google's model is
 given an `httpx` transport because `google-genai` would otherwise go through `aiohttp`,
 which logs nothing. The count reads that log format, so a library that changes it
 silently stops the count, which the tests on real `httpx` and `httpx2` clients pin.

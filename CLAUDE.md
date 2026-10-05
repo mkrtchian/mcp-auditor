@@ -58,6 +58,7 @@ uv run python -m evals.run_probe --candidates "gpt-6-luna none" "gpt-6-luna low"
 import tests.unit.test_audit_given as given
 import tests.unit.test_audit_then as then
 
+
 async def test_detects_missing_input_validation():
     tool = given.a_tool_with_weak_validation()
     fake_llm = given.a_fake_llm_returning(category="input_validation")

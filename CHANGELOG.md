@@ -42,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `MCP_AUDITOR_LANGSMITH_PROJECT` setting. Its only reader was the e2e evals' lookup of the latest trace, which is gone. LangSmith's own `LANGSMITH_PROJECT` still names the project the traces go to.
 
+### Fixed
+
+- `mcp` is now required below 2. The 0.3.0 release accepted any version from 1.0.0, so a fresh install resolved `mcp` 2.x, which renames the fields the client adapter reads (`inputSchema`, `isError`): every audit stopped at tool discovery with an `AttributeError`.
+
 ## [0.3.0] - 2026-09-27
 
 ### Added
