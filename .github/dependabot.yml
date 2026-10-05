@@ -8,6 +8,10 @@ updates:
       python-dependencies:
         patterns:
           - "*"
+    ignore:
+      # The 2.x client needs a migration of the adapter, pyproject.toml bounds it below 2.
+      - dependency-name: "mcp"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

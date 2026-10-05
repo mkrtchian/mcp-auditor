@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `mcp` is now required below 2. The 0.3.0 release accepted any version from 1.0.0, so a fresh install resolved `mcp` 2.x, whose client rejects a tool list in which an input schema has no `type`: the audit of such a server stopped at tool discovery.
+- `mcp` is now required below 2. The 0.3.0 release accepted any version from 1.0.0, so a fresh install resolved `mcp` 2.x, which renames the fields the client adapter reads (`inputSchema`, `isError`): every audit stopped at tool discovery with an `AttributeError`.
 
 ## [0.3.0] - 2026-09-27
 
