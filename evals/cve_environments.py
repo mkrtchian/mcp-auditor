@@ -36,6 +36,11 @@ with:
     docker rm -f $(docker ps -aq --filter label=mcp-auditor-cve)
 """
 
+# This module is part of every CVE baseline's fixture fingerprint, which hashes annotations:
+# renaming the Iterator return types pyright deprecates would reset the whole baseline.
+# To drop with the next reset of that baseline.
+# pyright: reportDeprecated=false
+
 import logging
 import os
 import secrets

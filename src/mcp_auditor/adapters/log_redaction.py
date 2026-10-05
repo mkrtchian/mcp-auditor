@@ -1,6 +1,6 @@
 # The MCP SDK logs data the server sent, outside the boundary `AuditedServer` redacts.
 import logging
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 
 from mcp_auditor.domain.redaction import Redaction
@@ -11,7 +11,7 @@ _SDK_LOGGER_SILENCED = "mcp.client.stdio"
 
 
 @contextmanager
-def redacted_sdk_logging(redaction: Redaction) -> Iterator[None]:
+def redacted_sdk_logging(redaction: Redaction) -> Generator[None]:
     """Only while a value is relayed, so that an audit without one keeps every diagnostic."""
     if not redaction.active:
         yield
