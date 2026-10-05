@@ -122,5 +122,4 @@ def test_the_fingerprint_changes_when_the_inputs_of_a_case_change():
 def test_the_committed_fixture_is_a_labeled_draw():
     fixture = load_fixture(FIXTURES_PATH)
 
-    assert fixture.draw is not None
     assert all(case.clause for case in fixture.cases)

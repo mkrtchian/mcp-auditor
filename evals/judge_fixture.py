@@ -19,7 +19,6 @@ class CaseLabel(StrEnum):
 class CaseSource(StrEnum):
     HONEYPOT = "honeypot"
     CVE = "cve"
-    LEGACY = "legacy"
 
 
 class JudgeInputs(BaseModel):
@@ -59,7 +58,7 @@ class DrawRecord(BaseModel):
 
 
 class JudgeFixture(BaseModel):
-    draw: DrawRecord | None
+    draw: DrawRecord
     cases: list[JudgeCase]
 
 

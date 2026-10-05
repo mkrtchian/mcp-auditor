@@ -28,10 +28,10 @@ About 78 cases. A stratum with fewer candidates than its quota gives all of them
 
 ## The fixture format
 
-`JudgeFixture` (`evals/judge_fixture.py`) holds `draw`, the `DrawRecord` (seed, quotas, each source with its path, sha256, commit and scalar conditions, the shortfalls, the complement seed), `null` for the legacy fixture, and `cases`. Each case holds:
+`JudgeFixture` (`evals/judge_fixture.py`) holds `draw`, the `DrawRecord` (seed, quotas, each source with its path, sha256, commit and scalar conditions, the shortfalls, the complement seed), and `cases`. Each case holds:
 
 - `id`: the first 16 hex characters of the sha256 of the canonical JSON of its inputs (`sort_keys`, no whitespace).
-- `source`: `honeypot`, `cve`, or `legacy` for the 32 hand-written cases the drawn fixture replaces.
+- `source`: `honeypot` or `cve`.
 - `origin`: the stratum it was drawn from.
 - `inputs`: exactly what `build_judge_prompt` reads: `tool_name`, `tool_description`, `category`, `description`, `arguments`, `response`, `error`.
 - `label`: `pass`, `fail` or `unspecified`. `null` only in the drawn file before labeling.

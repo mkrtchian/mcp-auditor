@@ -5,12 +5,15 @@ from typing import Any
 from evals.judge_fixture import (
     CaseLabel,
     CaseSource,
+    DrawRecord,
     JudgeCase,
     JudgeFixture,
     JudgeInputs,
     case_id,
 )
 from mcp_auditor.domain.models import AuditCategory
+
+_A_DRAW = DrawRecord(seed=1, quotas={}, sources=[], shortfalls=[])
 
 
 def some_inputs(**overrides: Any) -> JudgeInputs:
@@ -35,8 +38,8 @@ def a_case(
     inputs = some_inputs(**input_overrides)
     return JudgeCase(
         id=case_id(inputs),
-        source=CaseSource.LEGACY,
-        origin="legacy",
+        source=CaseSource.HONEYPOT,
+        origin="cell get_user/input_validation",
         inputs=inputs,
         label=label,
         clause=clause,
@@ -44,7 +47,7 @@ def a_case(
 
 
 def a_fixture(*cases: JudgeCase) -> JudgeFixture:
-    return JudgeFixture(draw=None, cases=list(cases))
+    return JudgeFixture(draw=_A_DRAW, cases=list(cases))
 
 
 def a_file_holding(tmp_path: Path, *cases: JudgeCase) -> Path:
@@ -55,5 +58,5 @@ def a_file_holding(tmp_path: Path, *cases: JudgeCase) -> Path:
 
 def a_file_with_raw_cases(tmp_path: Path, *raw_cases: dict[str, Any]) -> Path:
     path = tmp_path / "judge_cases.json"
-    path.write_text(json.dumps({"draw": None, "cases": list(raw_cases)}))
+    path.write_text(json.dumps({"draw": _A_DRAW.model_dump(mode="json"), "cases": list(raw_cases)}))
     return path

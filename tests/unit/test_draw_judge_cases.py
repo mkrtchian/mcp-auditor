@@ -88,7 +88,7 @@ def test_the_quotas_are_drawn_per_stratum_honeypot_first_then_cve():
     origins = [case.origin.split()[0] for case in fixture.cases]
     expected_honeypot = FAIL_CELL_QUOTA + 2 * PASS_CELL_QUOTA
     assert origins == ["cell"] * expected_honeypot + ["cve"] * CVE_TARGET_QUOTA
-    assert fixture.draw is not None and fixture.draw.seed == DRAW_SEED
+    assert fixture.draw.seed == DRAW_SEED
 
 
 def test_the_same_seed_and_sources_give_the_same_draw():
@@ -134,7 +134,7 @@ def test_the_complement_draws_one_new_case_per_pass_cell_with_the_next_seed():
     ]
     assert not {case.id for case in added} & {case.id for case in fixture.cases}
     assert all(case.label is None for case in added)
-    assert completed.draw is not None and completed.draw.complement_seed == DRAW_SEED + 1
+    assert completed.draw.complement_seed == DRAW_SEED + 1
 
 
 def test_the_complement_is_refused_while_a_case_is_unlabeled():
