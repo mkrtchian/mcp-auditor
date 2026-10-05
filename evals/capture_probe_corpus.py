@@ -10,7 +10,7 @@ import asyncio
 import os
 import subprocess
 import sys
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
@@ -147,7 +147,7 @@ async def _cve_tools() -> list[ToolDefinition]:
 
 
 @asynccontextmanager
-async def _silent_client(launch: Launch) -> AsyncIterator[MCPClientPort]:
+async def _silent_client(launch: Launch) -> AsyncGenerator[MCPClientPort]:
     devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
         async with StdioMCPClient.connect(

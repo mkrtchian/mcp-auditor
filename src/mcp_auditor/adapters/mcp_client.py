@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import AsyncExitStack, asynccontextmanager
 from typing import IO, Any, Self
 
@@ -24,7 +24,7 @@ class StdioMCPClient:
         launch: ServerLaunch,
         errlog: IO[str] | None = None,
         tool_call_timeout: int = _DEFAULT_TOOL_CALL_TIMEOUT,
-    ) -> AsyncIterator[Self]:
+    ) -> AsyncGenerator[Self]:
         client = cls()
         client._tool_call_timeout = tool_call_timeout
         stack = AsyncExitStack()

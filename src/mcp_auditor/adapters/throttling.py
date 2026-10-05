@@ -9,7 +9,7 @@ silently stops the count, which the tests on real `httpx` and `httpx2` clients p
 """
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -27,7 +27,7 @@ _current_tally: ContextVar[ThrottleTally | None] = ContextVar("_current_tally", 
 
 
 @contextmanager
-def counting_throttles() -> Iterator[ThrottleTally]:
+def counting_throttles() -> Generator[ThrottleTally]:
     """Counts the HTTP 429 responses received while the block runs, in this task only."""
     tally = ThrottleTally()
     token = _current_tally.set(tally)

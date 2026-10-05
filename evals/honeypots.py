@@ -1,6 +1,6 @@
 import asyncio
 import os
-from collections.abc import AsyncIterator, Callable, Coroutine
+from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -102,7 +102,7 @@ async def audit_honeypot(models: AuditModels, honeypot: HoneypotConfig, budget: 
 
 
 @asynccontextmanager
-async def connected(honeypot: HoneypotConfig) -> AsyncIterator[ConnectedHoneypot]:
+async def connected(honeypot: HoneypotConfig) -> AsyncGenerator[ConnectedHoneypot]:
     devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
         async with StdioMCPClient.connect(

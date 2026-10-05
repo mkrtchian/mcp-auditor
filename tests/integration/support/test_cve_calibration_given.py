@@ -1,7 +1,7 @@
 import pathlib
 import re
 import sys
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
 
 from evals.cve_environments import Launch
@@ -65,7 +65,7 @@ def _a_target(
     aim: re.Pattern[str] = OUTSIDE_AIM,
 ) -> CVETarget:
     @contextmanager
-    def builder(_sentinel: str) -> Iterator[Launch]:
+    def builder(_sentinel: str) -> Generator[Launch]:
         yield launch
 
     return CVETarget(

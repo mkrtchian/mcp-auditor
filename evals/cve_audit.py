@@ -2,7 +2,7 @@
 
 import os
 import subprocess
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
@@ -145,7 +145,7 @@ async def _audit(launch: Launch, target: CVETarget, auditor: _Auditor) -> AuditR
 
 
 @asynccontextmanager
-async def _silent_client(launch: Launch) -> AsyncIterator[MCPClientPort]:
+async def _silent_client(launch: Launch) -> AsyncGenerator[MCPClientPort]:
     with open(os.devnull, "w") as devnull:
         async with connect(launch, devnull) as client:
             yield client

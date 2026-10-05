@@ -7,7 +7,7 @@ what this proves are in `evals/fault_injection_method.md`.
 """
 
 import itertools
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncGenerator, Mapping
 from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -119,7 +119,7 @@ def _declared_keys(fault: Fault) -> frozenset[str]:
 
 
 @asynccontextmanager
-async def _connected_honeypots() -> AsyncIterator[dict[str, ConnectedHoneypot]]:
+async def _connected_honeypots() -> AsyncGenerator[dict[str, ConnectedHoneypot]]:
     async with AsyncExitStack() as stack:
         yield {
             honeypot.name: await stack.enter_async_context(connected(honeypot))

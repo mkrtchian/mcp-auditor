@@ -1,6 +1,6 @@
 import argparse
 import asyncio
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import AbstractContextManager, asynccontextmanager
 
 
@@ -18,7 +18,7 @@ def bounded[**P, R](call: Callable[P, Awaitable[R]], limit: int) -> Callable[P, 
 
 
 @asynccontextmanager
-async def entered_in_thread[T](manager: AbstractContextManager[T]) -> AsyncIterator[T]:
+async def entered_in_thread[T](manager: AbstractContextManager[T]) -> AsyncGenerator[T]:
     """Enters and leaves a blocking context manager off the event loop."""
     value = await asyncio.to_thread(manager.__enter__)
     try:

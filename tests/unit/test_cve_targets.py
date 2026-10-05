@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -39,7 +39,7 @@ def test_the_environment_calls_its_builder_with_its_arguments_then_the_sentinel(
     calls: list[tuple[str, ...]] = []
 
     @contextmanager
-    def recording_builder(*args: str) -> Iterator[Launch]:
+    def recording_builder(*args: str) -> Generator[Launch]:
         calls.append(args)
         yield Launch("docker", [])
 
