@@ -108,7 +108,7 @@ What gates:
 
 With no baseline or an exploratory one, only the floors gate. A case labeled `unspecified` is judged and observed, and stays out of the floors and the comparison. The precision, recall and F1 per run and the per-category table are printed and reported (`output/judge_eval_report.json`) as diagnostics, with no threshold. The run exits `0` green or recorded, `1` red, `3` not comparable or refused, `4` on a crash, with its traceback. A run whose provider, judge model, reasoning, runs or cases differ from the baseline's is not comparable. `--ungated` gates on the floors alone, at any conditions, without reading the baseline, and is never used in CI.
 
-Against a baseline, the summary counts the cases per outcome and lists in a table those that left `unchanged`, with their baseline, run and replay observations and the cause of the flip, and it prints the requests the model provider throttled (HTTP 429) with the concurrency when there were any.
+Against a baseline, the summary counts the cases per outcome and lists in a table those that left `unchanged`, with their baseline, run and replay observations and the cause of the flip. With or without a baseline, it prints the requests the model provider throttled (HTTP 429) with the concurrency when there were any.
 
 ### Recording the judge baseline
 
