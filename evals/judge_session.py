@@ -2,7 +2,7 @@
 and the recording, with the judge, git, the declarations and the clock injected."""
 
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -24,7 +24,7 @@ from evals.eval_session import (
     TreeState,
     tree_drift,
 )
-from evals.gate import CellOutcome, Observation, ReplayRule
+from evals.gate import Observation
 from evals.gate_verdict import GateMode, GateVerdict
 from evals.judge_baseline import (
     JudgeBaseline,
@@ -34,12 +34,11 @@ from evals.judge_baseline import (
     load_judge_baseline,
     write_judge_baseline,
 )
-from evals.judge_fixture import JudgeCase, JudgeFixture, ground_truth_of, inputs_fingerprint
+from evals.judge_fixture import JudgeFixture, ground_truth_of, inputs_fingerprint
 from evals.judge_gate import (
     CaseRuns,
     JudgeGateInput,
     JudgeGateResult,
-    compare_cases,
     judge_case_gate,
     judge_ci_condition_mismatches,
     observe_case,
@@ -51,13 +50,10 @@ from evals.judge_recording import (
     judge_exploratory_commit_refusal,
     judge_rescore_refusals,
 )
+from evals.judge_replay import JudgeCall, ReplayContext, replay_flips, reproductions
 from evals.recording import RecordingRefused
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict
-
-type JudgeCall = Callable[[JudgeCase], Awaitable[EvalVerdict | None]]
-"""One judge call on one case, None when the judge gave no verdict. The session may call it
-concurrently."""
 
 NOT_COMPARABLE_EXIT = 3
 
@@ -84,13 +80,18 @@ class JudgeHarness:
     read_tree: Callable[[], TreeState]
     declarations: Callable[[], tuple[list[DeclaredFlip], bool]]
     clock: Callable[[], datetime]
+    on_replays: Callable[[int], None]
 
 
 @dataclass(frozen=True)
 class JudgeSessionResult:
+    """`baseline` is the one the run read, None without one or under --ungated."""
+
     conditions: JudgeConditions
     runs: CaseRuns
     gate: JudgeGateResult
+    baseline: JudgeBaseline | None
+    replay_observations: dict[str, list[Observation]]
     declarations: ActiveDeclarations
     written: JudgeBaseline | None
     recording_refused: list[str]
@@ -118,12 +119,14 @@ async def run_judge_gate(
     """Raises Refused on a run that cannot be compared or recorded before it starts."""
     session = _open(options, fixture, harness)
     runs = await _judge_runs(fixture, options.runs, session.judge)
-    gate = await _gate(session, runs)
+    gate, replay_observations = await _gate(session, runs)
     written, refused = _record(session, runs, gate)
     return JudgeSessionResult(
         conditions=session.conditions,
         runs=runs,
         gate=gate,
+        baseline=session.baseline,
+        replay_observations=replay_observations,
         declarations=session.declarations,
         written=written,
         recording_refused=refused,
@@ -217,54 +220,41 @@ async def _judge_runs(fixture: JudgeFixture, runs: int, judge: JudgeCall) -> Cas
     return list(await asyncio.gather(*(one_run() for _ in range(runs))))
 
 
-async def _gate(session: _Session, runs: CaseRuns) -> JudgeGateResult:
+async def _gate(
+    session: _Session, runs: CaseRuns
+) -> tuple[JudgeGateResult, dict[str, list[Observation]]]:
     baseline = session.baseline
     mismatches = (
         judge_condition_mismatches(baseline.conditions, session.conditions) if baseline else []
     )
     # No baseline, an exploratory one or --ungated: the floors alone (ADR 025).
     paired = baseline is not None and baseline.status == BaselineStatus.CONFIRMED
-    mode = GateMode.PAIRED if paired else GateMode.FLOORS_ONLY
-    replays: dict[str, list[bool]] = {}
+    observations: dict[str, list[Observation]] = {}
     if baseline is not None and paired and not mismatches:
-        replays = await _replay_flips(session, baseline, runs)
-    return judge_case_gate(
-        JudgeGateInput(
-            mode=mode,
-            runs=runs,
-            ground_truth=session.ground_truth,
-            baseline=baseline,
-            replays=replays,
-            declared=session.declarations.keys,
-            mismatches=mismatches,
-        )
+        observations = await replay_flips(_replay_context(session), baseline, runs)
+    gate_input = JudgeGateInput(
+        mode=GateMode.PAIRED if paired else GateMode.FLOORS_ONLY,
+        runs=runs,
+        ground_truth=session.ground_truth,
+        baseline=baseline,
+        replays={
+            case: reproductions(replays, session.ground_truth[case])
+            for case, replays in observations.items()
+        },
+        declared=session.declarations.keys,
+        mismatches=mismatches,
     )
+    return judge_case_gate(gate_input), observations
 
 
-async def _replay_flips(
-    session: _Session, baseline: JudgeBaseline, runs: CaseRuns
-) -> dict[str, list[bool]]:
-    comparisons = compare_cases(baseline, runs, session.ground_truth, session.declarations.keys)
-    flipped = [
-        case
-        for case in session.fixture.cases
-        if case.id in comparisons and comparisons[case.id].outcome == CellOutcome.FLIP
-    ]
-    replayed = await asyncio.gather(
-        *(_replay(session, case, baseline.replay_rule) for case in flipped)
+def _replay_context(session: _Session) -> ReplayContext:
+    return ReplayContext(
+        judge=session.judge,
+        ground_truth=session.ground_truth,
+        declared=session.declarations.keys,
+        cases=session.fixture.cases,
+        announce=session.harness.on_replays,
     )
-    return {case.id: replays for case, replays in zip(flipped, replayed, strict=True)}
-
-
-async def _replay(session: _Session, case: JudgeCase, rule: ReplayRule) -> list[bool]:
-    """One judge call at a time, until the replay rule decides. A call with no verdict
-    reproduces the flip, as an uncovered replay does for the honeypots."""
-    expected = Observation(session.ground_truth[case.id].value)
-    replays: list[bool] = []
-    while rule.decide_replays(replays) is None:
-        observed = observe_case(await session.judge(case))
-        replays.append(observed != expected)
-    return replays
 
 
 def _record(

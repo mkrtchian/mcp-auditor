@@ -12,7 +12,7 @@ from evals.metrics import (
     compute_recall,
     label_scores,
 )
-from mcp_auditor.domain.models import AuditCategory, EvalVerdict
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict, ProviderUsage
 
 FAIL = EvalVerdict.FAIL
 PASS = EvalVerdict.PASS
@@ -362,3 +362,12 @@ def test_session_throttles_sum_the_tokens_of_every_counted_report_a_refused_one_
     throttles.count(refused)
 
     assert (throttles.usage.input_tokens, throttles.usage.output_tokens) == (300, 30)
+
+
+def test_session_throttles_count_a_bare_usage():
+    throttles = SessionThrottles()
+
+    counted = throttles.count_usage(ProviderUsage(input_tokens=50, throttled_requests=3))
+
+    assert counted == 3
+    assert (throttles.requests, throttles.usage.input_tokens) == (3, 50)

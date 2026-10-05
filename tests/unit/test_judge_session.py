@@ -147,20 +147,44 @@ async def test_every_case_is_judged_once_per_run_and_the_gate_is_green(tmp_path:
     assert len(judge.calls) == 4
     assert result.gate.mode == GateMode.PAIRED
     assert result.gate.verdict == GateVerdict.GREEN
+    assert result.replay_observations == {}
     assert result.exit_code == 0
+
+
+async def test_a_run_returns_the_baseline_it_compared_to(tmp_path: Path):
+    path = given.a_baseline_file(tmp_path)
+
+    result = await run_judge_gate(
+        given.options(), given.a_judge_fixture(), given.a_harness(given.ScriptedJudge(), path)
+    )
+
+    assert result.baseline == load_judge_baseline(path)
+
+
+async def test_a_run_with_no_baseline_file_returns_none_for_it(tmp_path: Path):
+    result = await run_judge_gate(
+        given.options(),
+        given.a_judge_fixture(),
+        given.a_harness(given.ScriptedJudge(), tmp_path / "absent.json"),
+    )
+
+    assert result.baseline is None
 
 
 async def test_a_flipped_case_is_replayed_until_it_reproduces_and_the_others_are_not(
     tmp_path: Path,
 ):
     judge = given.a_judge_flipping(PASS_ID, FAIL, PASS, PASS, FAIL, FAIL, FAIL, FAIL)
+    announced: list[int] = []
 
     result = await run_judge_gate(
         given.options(),
         given.a_judge_fixture(),
-        given.a_harness(judge, given.a_baseline_file(tmp_path)),
+        given.a_harness(judge, given.a_baseline_file(tmp_path), on_replays=announced.append),
     )
 
+    assert announced == [1]
+    assert result.replay_observations == {PASS_ID: [Observation.FAIL] * 4}
     assert judge.calls[PASS_ID] == 3 + 4
     assert {case: count for case, count in judge.calls.items() if case != PASS_ID} == {
         case: 3 for case in judge.calls if case != PASS_ID
@@ -181,6 +205,7 @@ async def test_a_flip_cleared_twice_stops_its_replays_and_keeps_the_gate_green(t
 
     assert result.gate.cases[PASS_ID].outcome == CellOutcome.FLIP_NOT_REPRODUCED
     assert result.gate.cases[PASS_ID].replays == [False, False]
+    assert result.replay_observations == {PASS_ID: [Observation.PASS] * 2}
     assert result.exit_code == 0
 
 
@@ -195,7 +220,22 @@ async def test_a_replay_whose_judge_call_raised_counts_as_reproduced(tmp_path: P
 
     assert Observation.UNCOVERED in [run[PASS_ID] for run in result.runs]
     assert result.gate.cases[PASS_ID].replays == [True, True, True, True]
+    assert result.replay_observations == {PASS_ID: [Observation.UNCOVERED] * 4}
     assert result.gate.cases[PASS_ID].outcome == CellOutcome.REGRESSION
+
+
+async def test_nothing_is_announced_when_no_case_flipped(tmp_path: Path):
+    announced: list[int] = []
+
+    await run_judge_gate(
+        given.options(),
+        given.a_judge_fixture(),
+        given.a_harness(
+            given.ScriptedJudge(), given.a_baseline_file(tmp_path), on_replays=announced.append
+        ),
+    )
+
+    assert announced == []
 
 
 async def test_a_declared_flip_is_not_replayed(tmp_path: Path):
@@ -240,6 +280,7 @@ async def test_no_flip_is_replayed_under_ungated(tmp_path: Path):
     assert judge.calls[PASS_ID] == 3
     assert result.gate.mode == GateMode.FLOORS_ONLY
     assert result.gate.cases == {}
+    assert result.baseline is None
 
 
 async def test_other_conditions_than_the_baseline_are_not_comparable_and_replay_nothing(
@@ -308,17 +349,29 @@ async def test_a_recording_refused_by_its_decision_writes_nothing(tmp_path: Path
     assert result.exit_code == 3
 
 
+async def test_a_judge_call_returns_its_verdict_and_its_usage():
+    [case, *_] = given.a_judge_fixture().cases
+    usage = ProviderUsage(input_tokens=120, throttled_requests=2)
+
+    assert await judge_one_case(given.AnsweringLLM(FAIL, usage), case) == (FAIL, usage)
+
+
+THROTTLED = ProviderUsage(throttled_requests=1)
+
+
 @pytest.mark.parametrize(
     "error",
     [
-        UnparseableOutput(attempts=3, truncated_attempts=0, usage=ProviderUsage()),
-        ProviderRefusal("blocked by policy", ProviderUsage()),
+        UnparseableOutput(attempts=3, truncated_attempts=0, usage=THROTTLED),
+        ProviderRefusal("blocked by policy", THROTTLED),
     ],
 )
-async def test_a_judge_call_that_fails_to_answer_is_uncovered(error: Exception):
+async def test_a_judge_call_that_fails_to_answer_is_uncovered_and_keeps_its_usage(
+    error: Exception,
+):
     [case, *_] = given.a_judge_fixture().cases
 
-    assert await judge_one_case(given.RaisingLLM(error), case) is None
+    assert await judge_one_case(given.RaisingLLM(error), case) == (None, THROTTLED)
 
 
 async def test_any_other_judge_call_failure_propagates():

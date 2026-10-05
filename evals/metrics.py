@@ -164,10 +164,12 @@ class SessionThrottles:
 
     def count(self, report: AuditReport) -> int:
         """Every report counted is billed, a refused attempt's and a replay's included."""
-        throttled = report.provider_usage.throttled_requests
-        self.requests += throttled
-        self.usage = self.usage.add(report.provider_usage)
-        return throttled
+        return self.count_usage(report.provider_usage)
+
+    def count_usage(self, usage: ProviderUsage) -> int:
+        self.requests += usage.throttled_requests
+        self.usage = self.usage.add(usage)
+        return usage.throttled_requests
 
 
 def build_run_detail(

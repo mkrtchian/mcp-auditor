@@ -37,6 +37,7 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     EvalVerdict,
     Judgment,
+    ProviderUsage,
     TestCase,
     ToolDefinition,
 )
@@ -74,7 +75,8 @@ def _evaluate(args: argparse.Namespace) -> int:
     llm = create_judge_llm(options.settings)
 
     async def judge(case: JudgeCase) -> EvalVerdict | None:
-        return await judge_one_case(llm, case)
+        verdict, _ = await judge_one_case(llm, case)
+        return verdict
 
     harness = JudgeHarness(
         judge=judge,
@@ -82,6 +84,7 @@ def _evaluate(args: argparse.Namespace) -> int:
         read_tree=read_tree,
         declarations=lambda: declarations_of_head(Suite.JUDGE),
         clock=lambda: datetime.now(UTC),
+        on_replays=lambda _: None,
     )
     display.console.print(
         f"Running judge eval ([bold]{len(fixture.cases)}[/bold] cases, {options.runs} runs)..."
@@ -95,14 +98,14 @@ def _evaluate(args: argparse.Namespace) -> int:
     return result.exit_code
 
 
-async def judge_one_case(llm: LLMPort, case: JudgeCase) -> EvalVerdict | None:
+async def judge_one_case(llm: LLMPort, case: JudgeCase) -> tuple[EvalVerdict | None, ProviderUsage]:
     """None when the judge gave no verdict. Any other failure propagates: caught, it would
     turn a crash into every case uncovered and a red floor."""
     try:
-        judgment, _ = await llm.generate_structured(_judge_prompt(case), Judgment)
-    except (UnparseableOutput, ProviderRefusal):
-        return None
-    return judgment.verdict
+        judgment, usage = await llm.generate_structured(_judge_prompt(case), Judgment)
+    except (UnparseableOutput, ProviderRefusal) as error:
+        return None, error.usage
+    return judgment.verdict, usage
 
 
 def _judge_prompt(case: JudgeCase) -> str:

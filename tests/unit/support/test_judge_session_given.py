@@ -1,5 +1,5 @@
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -13,7 +13,7 @@ from evals.judge_baseline import JudgeBaseline, write_judge_baseline
 from evals.judge_fixture import JudgeCase
 from evals.judge_session import JudgeHarness, JudgeOptions
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import EvalVerdict
+from mcp_auditor.domain.models import EvalVerdict, Judgment, Severity
 from mcp_auditor.domain.ports import ProviderUsage
 from tests.unit.support.test_judge_baseline_given import (
     FAIL_ID,
@@ -79,6 +79,7 @@ def a_harness(
     baseline_path: Path,
     trees: list[TreeState] | None = None,
     declarations: list[DeclaredFlip] | None = None,
+    on_replays: Callable[[int], None] = lambda _: None,
 ) -> JudgeHarness:
     """`trees` are read in turn, the last one repeated."""
     read = _reader(trees or [a_clean_tree()])
@@ -88,6 +89,7 @@ def a_harness(
         read_tree=lambda: next(read),
         declarations=lambda: (declarations or [], False),
         clock=lambda: datetime(2026, 9, 28, 14, tzinfo=UTC),
+        on_replays=on_replays,
     )
 
 
@@ -135,3 +137,15 @@ class RaisingLLM:
         self, prompt: str, output_schema: type[T]
     ) -> tuple[T, ProviderUsage]:
         raise self.error
+
+
+@dataclass
+class AnsweringLLM:
+    verdict: EvalVerdict
+    usage: ProviderUsage
+
+    async def generate_structured[T: BaseModel](
+        self, prompt: str, output_schema: type[T]
+    ) -> tuple[T, ProviderUsage]:
+        judgment = Judgment(verdict=self.verdict, justification="judged", severity=Severity.LOW)
+        return output_schema.model_validate(judgment.model_dump()), self.usage
