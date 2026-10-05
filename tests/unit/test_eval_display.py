@@ -61,3 +61,26 @@ def test_the_summary_says_nothing_of_declarations_when_there_are_none(
     print_summary(given.an_eval_report(), "report.json")
 
     assert "declar" not in output.getvalue()
+
+
+def test_the_summary_explains_a_partial_row(monkeypatch: pytest.MonkeyPatch):
+    output = given.a_captured_console(monkeypatch)
+    grid = given.a_gate_grid_with_an_outcome_row("partial")
+
+    print_summary(given.an_eval_report(), "report.json", grid)
+
+    assert (
+        "partial: wrong in every baseline run, right in some runs of this one, not gated"
+        in output.getvalue()
+    )
+
+
+def test_the_summary_says_nothing_of_partial_rows_when_there_are_none(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.a_captured_console(monkeypatch)
+    grid = given.a_gate_grid_with_an_outcome_row("regression")
+
+    print_summary(given.an_eval_report(), "report.json", grid)
+
+    assert "partial:" not in output.getvalue()

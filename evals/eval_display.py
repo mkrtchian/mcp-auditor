@@ -9,7 +9,7 @@ from rich.table import Table
 from rich.text import Text
 
 from evals.baseline import Baseline, BaselineStatus
-from evals.cell_grid import CellTag, GateGrid, GridBox, GridSection, OutcomeRow
+from evals.cell_grid import PARTIAL, CellTag, GateGrid, GridBox, GridSection, OutcomeRow
 from evals.eval_report import EvalReport
 from evals.gate import ProtectedCells
 from evals.gate_verdict import GateMode, GateResult, GateVerdict
@@ -48,6 +48,10 @@ def print_summary(
     if grid and grid.outcomes:
         console.print(_outcome_table(grid.outcomes))
         console.print("P pass, F fail, - not covered")
+        if any(row.outcome == PARTIAL for row in grid.outcomes):
+            console.print(
+                "partial: wrong in every baseline run, right in some runs of this one, not gated"
+            )
     _print_declarations(gate.declared_held, ignored_declarations)
     if gate.protected:
         console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")

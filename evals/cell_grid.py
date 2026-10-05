@@ -16,6 +16,8 @@ from evals.ground_truth import GroundTruth
 from evals.honeypots import HoneypotConfig
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
+PARTIAL = "partial"
+
 
 class CellTag(StrEnum):
     GATE = "gate"
@@ -55,7 +57,7 @@ class RunAgainstBaseline:
 
 @dataclass(frozen=True)
 class OutcomeRow:
-    outcome: CellOutcome
+    outcome: str  # a CellOutcome, or PARTIAL
     cell: str
     planted: bool
     baseline: str
@@ -86,9 +88,14 @@ def outcome_rows(
     baseline_runs: list[dict[Cell, Observation]],
     run: RunAgainstBaseline,
 ) -> list[OutcomeRow]:
+    partial = {
+        key
+        for key, comparison in run.comparisons.items()
+        if comparison.outcome == CellOutcome.UNCHANGED
+    } & {cell_key(cell) for cell in partial_improvements(baseline_runs, run.runs, ground_truth)}
     return [
         OutcomeRow(
-            outcome=comparison.outcome,
+            outcome=PARTIAL if key in partial else comparison.outcome,
             cell=key,
             planted=ground_truth.get(parse_cell_key(key)) == EvalVerdict.FAIL,
             baseline=_letters(parse_cell_key(key), baseline_runs),
@@ -96,8 +103,30 @@ def outcome_rows(
             replays=_replays(comparison.replays),
         )
         for key, comparison in sorted(run.comparisons.items())
-        if comparison.outcome != CellOutcome.UNCHANGED
+        if comparison.outcome != CellOutcome.UNCHANGED or key in partial
     ]
+
+
+def partial_improvements[K](
+    baseline_runs: list[dict[K, Observation]],
+    candidate_runs: list[dict[K, Observation]],
+    ground_truth: dict[K, EvalVerdict],
+) -> set[K]:
+    """Cells wrong in every baseline run and right in some, not all, candidate runs."""
+    states = classify(baseline_runs, ground_truth)
+    return {
+        key
+        for key, state in states.items()
+        if state == CellState.STABLE_INCORRECT
+        and _right_in_some_not_all(key, candidate_runs, Observation(ground_truth[key].value))
+    }
+
+
+def _right_in_some_not_all[K](
+    key: K, runs: list[dict[K, Observation]], expected: Observation
+) -> bool:
+    right = [run.get(key, Observation.UNCOVERED) == expected for run in runs]
+    return any(right) and not all(right)
 
 
 _OUTCOME_TAGS: dict[CellOutcome, CellTag] = {

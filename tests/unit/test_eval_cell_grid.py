@@ -2,7 +2,14 @@ import pytest
 
 import tests.unit.support.test_eval_cell_grid_given as given
 import tests.unit.support.test_eval_cell_grid_then as then
-from evals.cell_grid import CellTag, GridBox, OutcomeRow, cell_grid, outcome_rows
+from evals.cell_grid import (
+    CellTag,
+    GridBox,
+    OutcomeRow,
+    cell_grid,
+    outcome_rows,
+    partial_improvements,
+)
 from evals.gate import CellOutcome, Observation
 from mcp_auditor.domain.models import AuditCategory
 
@@ -131,3 +138,69 @@ def test_outcome_rows_list_the_changed_cells_sorted_with_their_observations_and_
             replays="-",
         ),
     ]
+
+
+def test_outcome_rows_list_a_partial_improvement_of_an_unchanged_cell_in_cell_order():
+    baseline = given.baseline_runs({SAFE_CELL: [FAIL, FAIL, FAIL]})
+    candidate = given.baseline_runs({SAFE_CELL: [PASS, FAIL, FAIL]})
+    run = given.a_run(
+        {
+            SAFE_CELL: given.comparison(CellOutcome.UNCHANGED),
+            given.SECOND_SAFE_CELL: given.comparison(CellOutcome.REGRESSION, [True, True, True]),
+        },
+        candidate,
+    )
+
+    rows = outcome_rows(given.MERGED_GROUND_TRUTH, baseline, run)
+
+    assert [row.cell for row in rows] == ["list_dir/error_handling", "query/injection"]
+    assert rows[0] == OutcomeRow(
+        outcome="partial",
+        cell="list_dir/error_handling",
+        planted=False,
+        baseline="FFF",
+        run="PFF",
+        replays="-",
+    )
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    [[FAIL, PASS, PASS], [FAIL, UNCOVERED, None]],
+    ids=["right once", "right once, then uncovered and missing"],
+)
+def test_a_stable_incorrect_cell_right_in_some_candidate_runs_is_a_partial_improvement(
+    candidate: list[Observation | None],
+):
+    baseline = given.baseline_runs({PLANTED_CELL: [PASS, PASS, PASS]})
+    candidate_runs = given.baseline_runs({PLANTED_CELL: candidate})
+
+    partial = partial_improvements(baseline, candidate_runs, given.MERGED_GROUND_TRUTH)
+
+    assert partial == {PLANTED_CELL}
+
+
+@pytest.mark.parametrize(
+    "candidate", [[FAIL, FAIL, FAIL], [PASS, PASS, PASS]], ids=["right in all", "right in none"]
+)
+def test_a_stable_incorrect_cell_right_in_all_or_no_candidate_runs_is_not_partial(
+    candidate: list[Observation | None],
+):
+    baseline = given.baseline_runs({PLANTED_CELL: [PASS, PASS, PASS]})
+    candidate_runs = given.baseline_runs({PLANTED_CELL: candidate})
+
+    assert partial_improvements(baseline, candidate_runs, given.MERGED_GROUND_TRUTH) == set()
+
+
+@pytest.mark.parametrize(
+    "baseline",
+    [[FAIL, FAIL, FAIL], [FAIL, PASS, FAIL], [None, None, None]],
+    ids=["stable correct", "unstable", "not recorded"],
+)
+def test_only_a_stable_incorrect_baseline_cell_can_be_a_partial_improvement(
+    baseline: list[Observation | None],
+):
+    baseline_runs = given.baseline_runs({PLANTED_CELL: baseline})
+    candidate_runs = given.baseline_runs({PLANTED_CELL: [FAIL, PASS, PASS]})
+
+    assert partial_improvements(baseline_runs, candidate_runs, given.MERGED_GROUND_TRUTH) == set()

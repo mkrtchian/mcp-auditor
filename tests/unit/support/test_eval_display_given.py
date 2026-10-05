@@ -5,6 +5,7 @@ from rich.console import Console
 
 import tests.unit.support.test_eval_baseline_given as baseline_given
 from evals import eval_display
+from evals.cell_grid import GateGrid, OutcomeRow
 from evals.eval_report import EvalReport
 from evals.gate_verdict import GateMode, GateResult, GateVerdict
 from evals.metrics import EvalMetrics
@@ -43,3 +44,15 @@ def an_eval_report(
         runs=[],
         consistency_details={},
     )
+
+
+def a_gate_grid_with_an_outcome_row(outcome: str) -> GateGrid:
+    row = OutcomeRow(
+        outcome=outcome,
+        cell="list_dir/error_handling",
+        planted=False,
+        baseline="FFF",
+        run="PFF",
+        replays="-",
+    )
+    return GateGrid(title="Baseline", sections=[], outcomes=[row])
