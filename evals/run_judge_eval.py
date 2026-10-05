@@ -45,7 +45,7 @@ from mcp_auditor.graph.prompts import build_judge_prompt
 
 FIXTURES_PATH = Path(__file__).resolve().parent / "fixtures" / "judge_cases.json"
 DEFAULT_REPORT_PATH = "output/judge_eval_report.json"
-DEFAULT_CONCURRENCY = 15
+DEFAULT_CONCURRENCY = 30
 CRASHED_EXIT = 4
 
 

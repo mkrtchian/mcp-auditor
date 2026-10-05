@@ -33,7 +33,7 @@ from mcp_auditor.config import Settings, load_settings
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
 DEFAULT_RUNS = 3
 DEFAULT_BUDGET = 10
-DEFAULT_CONCURRENCY = 6
+DEFAULT_CONCURRENCY = 9
 RECORDING_REFUSED = "Recording refused."
 REFUSED_BEFORE_ANY_LLM_CALL = "Refused before any LLM call."
 

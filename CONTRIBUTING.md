@@ -22,12 +22,12 @@ uv run pyright                         # type-check
 uv run python -m evals.run_evals       # e2e evals (requires API key)
 uv run python -m evals.run_evals --record-baseline  # record the e2e baseline (clean tree, see below)
 uv run python -m evals.run_evals --ungated          # e2e evals on the floors alone, at any conditions
-uv run python -m evals.run_evals --concurrency N    # e2e audits in flight at once (default 6, 1 for the old sequence)
+uv run python -m evals.run_evals --concurrency N    # e2e audits in flight at once (default 9, 1 for the old sequence)
 uv run python -m evals.run_judge_eval  # judge isolation eval (requires API key)
 uv run python -m evals.run_judge_eval --record-baseline  # record the judge baseline (clean tree, see below)
 uv run python -m evals.run_judge_eval --ungated          # judge eval on the floors alone, at any conditions
 uv run python -m evals.run_judge_eval --runs N           # judge each case N times (default 3, the baseline's conditions)
-uv run python -m evals.run_judge_eval --concurrency N    # judge calls in flight at once (default 15)
+uv run python -m evals.run_judge_eval --concurrency N    # judge calls in flight at once (default 30)
 ```
 
 Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set the key of the provider you use: `OPENAI_API_KEY` (default provider), `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `FIREWORKS_API_KEY` or `DASHSCOPE_API_KEY`. Unit and integration tests don't need any key.
