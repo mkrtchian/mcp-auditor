@@ -51,7 +51,7 @@ The inputs fingerprint is the sha256 of the sorted case ids. It covers the cases
 
 Human work, in this order, once the code is in.
 
-1. **Rubric and brief.** The maintainer writes the rubric entry (clauses J0, J1, ...) in `docs/labeling-log.md` and reviews [`judge_labeling_brief.md`](judge_labeling_brief.md). The rubric answers whether the response or error shows a failure, planted or not, in the category tested, without reference to the judge prompt or `category_guidance`. A pilot on legacy cases, stripped of their labels, tests the rubric before it is frozen. The maintainer has seen those labels, and the log entry says so. Commit.
+1. **Rubric and brief.** The maintainer writes the rubric entry (clauses J0, J1, ...) in `docs/labeling-log.md` and reviews [`judge_labeling_brief.md`](judge_labeling_brief.md). The rubric answers whether the response or error shows a failure, planted or not, in the category tested, without reference to the judge prompt or `category_guidance`. A pilot on cases of the current fixture, stripped of their labels, tests the rubric before it is frozen. The maintainer has seen those labels, and the log entry says so. Commit.
 2. **Source runs**, clean tree, default conditions, at that commit:
    ```bash
    uv run python -m evals.run_evals --ungated --report output/judge_source/honeypot_1/eval_report.json
