@@ -21,14 +21,27 @@ NEW_CASE = a_case(
     description="Path traversal leaks /etc/passwd",
 ).model_copy(update={"origin": "cve CVE-2025-53355"})
 STEADY_CASE = a_case(label=CaseLabel.PASS, description="Empty user_id")
+PARTIAL_CASE = a_case(
+    label=CaseLabel.FAIL,
+    tool_name="update_record",
+    category=AuditCategory.INPUT_VALIDATION,
+    description="SQL fragment in record id accepted",
+).model_copy(update={"origin": "cell update_record/input_validation"})
+UNSPECIFIED_CASE = a_case(
+    label=CaseLabel.UNSPECIFIED,
+    tool_name="update_record",
+    category=AuditCategory.ERROR_HANDLING,
+    description="Stack trace on unknown field",
+).model_copy(update={"origin": "cell update_record/error_handling"})
 
 FLIPPED_ID, NEW_ID, STEADY_ID = FLIPPED_CASE.id, NEW_CASE.id, STEADY_CASE.id
+PARTIAL_ID, UNSPECIFIED_ID = PARTIAL_CASE.id, UNSPECIFIED_CASE.id
 
 P, F, U = Observation.PASS, Observation.FAIL, Observation.UNCOVERED
 
 
 def a_judge_fixture() -> JudgeFixture:
-    return a_fixture(FLIPPED_CASE, NEW_CASE, STEADY_CASE)
+    return a_fixture(FLIPPED_CASE, NEW_CASE, STEADY_CASE, PARTIAL_CASE, UNSPECIFIED_CASE)
 
 
 def a_result(
@@ -36,9 +49,15 @@ def a_result(
     replay_observations: dict[str, list[Observation]] | None = None,
     with_baseline: bool = True,
 ) -> JudgeSessionResult:
-    """Baseline on an older draw that lacks NEW_CASE, run 2 judging FLIPPED_CASE FAIL."""
-    baseline_runs = [{FLIPPED_ID: P, STEADY_ID: P} for _ in range(3)]
-    runs = [{FLIPPED_ID: flipped, NEW_ID: F, STEADY_ID: P} for flipped in (P, F, P)]
+    """Baseline on an older draw that lacks NEW_CASE, run 2 judging FLIPPED_CASE FAIL, runs 1
+    and 3 judging PARTIAL_CASE and UNSPECIFIED_CASE FAIL after a baseline judging them PASS."""
+    baseline_runs = [
+        {FLIPPED_ID: P, STEADY_ID: P, PARTIAL_ID: P, UNSPECIFIED_ID: P} for _ in range(3)
+    ]
+    runs = [
+        {FLIPPED_ID: flipped, NEW_ID: F, STEADY_ID: P, PARTIAL_ID: other, UNSPECIFIED_ID: other}
+        for flipped, other in ((P, F), (F, P), (P, F))
+    ]
     return JudgeSessionResult(
         conditions=conditions(),
         runs=runs,

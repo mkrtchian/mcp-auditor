@@ -1,17 +1,18 @@
-"""The case comparison of a judge run as the console shows it: a count per outcome and the
-cases that left `unchanged`."""
+"""The case comparison of a judge run as the console shows it: a count per outcome, the cases
+that left `unchanged`, and the `unchanged` ones wrong in every baseline run and right in some runs
+of this one (`partial`)."""
 
 from dataclasses import dataclass
 
-from evals.cell_grid import observation_letters
+from evals.cell_grid import PARTIAL, observation_letters, partial_improvements
 from evals.gate import CellComparison, CellOutcome, Observation
-from evals.judge_fixture import CaseLabel, JudgeCase, JudgeFixture
+from evals.judge_fixture import CaseLabel, JudgeCase, JudgeFixture, ground_truth_of
 from evals.judge_session import JudgeSessionResult
 
 
 @dataclass(frozen=True)
 class JudgeOutcomeRow:
-    outcome: CellOutcome
+    outcome: str  # a CellOutcome, or PARTIAL
     case: str
     origin: str
     target: str  # tool/category
@@ -25,41 +26,54 @@ class JudgeOutcomeRow:
 @dataclass(frozen=True)
 class CaseOutcomes:
     rows: list[JudgeOutcomeRow]
-    counts: dict[CellOutcome, int]
+    counts: dict[str, int]
 
 
 def case_outcomes(result: JudgeSessionResult, fixture: JudgeFixture) -> CaseOutcomes:
-    return CaseOutcomes(judge_outcome_rows(result, fixture), outcome_counts(result))
+    return CaseOutcomes(judge_outcome_rows(result, fixture), outcome_counts(result, fixture))
 
 
 def judge_outcome_rows(result: JudgeSessionResult, fixture: JudgeFixture) -> list[JudgeOutcomeRow]:
     if result.baseline is None:
         return []
     cases = {case.id: case for case in fixture.cases}
+    outcomes = _displayed_outcomes(result, fixture)
     rows = [
-        _row(cases[case], comparison, result)
+        _row(cases[case], outcomes[case], comparison, result)
         for case, comparison in result.gate.cases.items()
-        if comparison.outcome != CellOutcome.UNCHANGED
+        if outcomes[case] != CellOutcome.UNCHANGED
     ]
     return sorted(rows, key=lambda row: (_OUTCOME_ORDER.index(row.outcome), row.case))
 
 
-def outcome_counts(result: JudgeSessionResult) -> dict[CellOutcome, int]:
+def outcome_counts(result: JudgeSessionResult, fixture: JudgeFixture) -> dict[str, int]:
     if result.baseline is None:
         return {}
-    outcomes = [comparison.outcome for comparison in result.gate.cases.values()]
-    return {outcome: outcomes.count(outcome) for outcome in CellOutcome if outcome in outcomes}
+    outcomes = list(_displayed_outcomes(result, fixture).values())
+    return {outcome: outcomes.count(outcome) for outcome in _OUTCOME_ORDER if outcome in outcomes}
 
 
-_OUTCOME_ORDER = list(CellOutcome)
+_OUTCOME_ORDER: list[str] = list(CellOutcome)
+_OUTCOME_ORDER.insert(_OUTCOME_ORDER.index(CellOutcome.IMPROVED) + 1, PARTIAL)
+
+
+def _displayed_outcomes(result: JudgeSessionResult, fixture: JudgeFixture) -> dict[str, str]:
+    baseline_runs = result.baseline.runs if result.baseline else []
+    partial = partial_improvements(baseline_runs, result.runs, ground_truth_of(fixture))
+    return {
+        case: PARTIAL
+        if comparison.outcome == CellOutcome.UNCHANGED and case in partial
+        else comparison.outcome
+        for case, comparison in result.gate.cases.items()
+    }
 
 
 def _row(
-    case: JudgeCase, comparison: CellComparison, result: JudgeSessionResult
+    case: JudgeCase, outcome: str, comparison: CellComparison, result: JudgeSessionResult
 ) -> JudgeOutcomeRow:
     baseline_runs = result.baseline.runs if result.baseline else []
     return JudgeOutcomeRow(
-        outcome=comparison.outcome,
+        outcome=outcome,
         case=case.id,
         origin=case.origin,
         target=f"{case.inputs.tool_name}/{case.inputs.category.value}",

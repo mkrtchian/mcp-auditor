@@ -100,3 +100,50 @@ def test_counts_follow_the_outcome_order_and_leave_out_zeros():
         (CellOutcome.FLIP_NOT_REPRODUCED, 1),
         (CellOutcome.NOT_RECORDED, 1),
     ]
+
+
+def test_a_case_always_wrong_in_the_baseline_and_right_in_some_runs_shows_as_partial():
+    result = given.a_result(
+        {
+            given.STEADY_ID: CellComparison(outcome=CellOutcome.FLIP),
+            given.PARTIAL_ID: CellComparison(outcome=CellOutcome.UNCHANGED),
+            given.FLIPPED_ID: CellComparison(outcome=CellOutcome.IMPROVED),
+        }
+    )
+
+    rows = judge_outcome_rows(result, given.a_judge_fixture())
+
+    assert [row.case for row in rows] == [given.FLIPPED_ID, given.PARTIAL_ID, given.STEADY_ID]
+    assert rows[1] == JudgeOutcomeRow(
+        outcome="partial",
+        case=given.PARTIAL_ID,
+        origin="cell update_record/input_validation",
+        target="update_record/input_validation",
+        label=CaseLabel.FAIL,
+        baseline="PPP",
+        run="FPF",
+        replays="-",
+        cause="-",
+    )
+
+
+def test_a_partial_case_counts_apart_from_the_unchanged_ones():
+    result = given.a_result(
+        {
+            given.NEW_ID: CellComparison(outcome=CellOutcome.NOT_RECORDED),
+            given.PARTIAL_ID: CellComparison(outcome=CellOutcome.UNCHANGED),
+            given.STEADY_ID: CellComparison(outcome=CellOutcome.UNCHANGED),
+        }
+    )
+
+    counts = case_outcomes(result, given.a_judge_fixture()).counts
+
+    assert list(counts.items()) == [("unchanged", 1), ("partial", 1), ("not_recorded", 1)]
+
+
+def test_an_unspecified_case_never_shows_as_partial():
+    result = given.a_result({given.UNSPECIFIED_ID: CellComparison(outcome=CellOutcome.UNCHANGED)})
+
+    outcomes = case_outcomes(result, given.a_judge_fixture())
+
+    assert (outcomes.rows, list(outcomes.counts.items())) == ([], [("unchanged", 1)])

@@ -6,6 +6,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from evals.baseline import BaselineStatus
+from evals.cell_grid import PARTIAL
 from evals.eval_display import console, print_refusal
 from evals.gate import ProtectedCells
 from evals.gate_verdict import GateVerdict
@@ -93,6 +94,10 @@ def _print_case_outcomes(outcomes: CaseOutcomes) -> None:
     if outcomes.rows:
         console.print(_outcome_table(outcomes.rows))
         console.print("P pass, F fail, - no verdict")
+        if any(row.outcome == PARTIAL for row in outcomes.rows):
+            console.print(
+                "partial: wrong in every baseline run, right in some runs of this one, not gated"
+            )
 
 
 _OUTCOME_COLUMNS = (

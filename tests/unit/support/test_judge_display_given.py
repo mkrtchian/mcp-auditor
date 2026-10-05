@@ -33,6 +33,12 @@ def a_result_with_a_flip_not_reproduced() -> JudgeSessionResult:
     )
 
 
+def a_result_with_a_partial_case() -> JudgeSessionResult:
+    return outcomes_given.a_result(
+        {outcomes_given.PARTIAL_ID: CellComparison(outcome=CellOutcome.UNCHANGED)}
+    )
+
+
 def the_outcomes_of(result: JudgeSessionResult) -> CaseOutcomes:
     return case_outcomes(result, outcomes_given.a_judge_fixture())
 
