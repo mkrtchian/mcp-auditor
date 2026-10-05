@@ -10,6 +10,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from rich.progress import Progress
+
 from evals import judge_display as display
 from evals.concurrency import positive_int
 from evals.declared_flips import Suite
@@ -24,6 +26,7 @@ from evals.judge_metrics import (
     compute_judge_metrics,
     compute_per_category_metrics,
 )
+from evals.judge_outcomes import case_outcomes
 from evals.judge_session import (
     NOT_COMPARABLE_EXIT,
     JudgeHarness,
@@ -31,6 +34,7 @@ from evals.judge_session import (
     JudgeSessionResult,
     run_judge_gate,
 )
+from evals.metrics import SessionThrottles
 from mcp_auditor.adapters.llm import create_judge_llm
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import (
@@ -64,38 +68,72 @@ def main() -> None:
 
 
 def _evaluate(args: argparse.Namespace) -> int:
-    options = JudgeOptions(
+    options = _options(args)
+    fixture = load_fixture(FIXTURES_PATH)
+    display.console.print(
+        f"Running judge eval ([bold]{len(fixture.cases)}[/bold] cases, {options.runs} runs)..."
+    )
+    with Progress(console=display.console) as progress:
+        llm = create_judge_llm(options.settings)
+        tracking = JudgeCallTracking(llm, progress, options.runs * len(fixture.cases))
+        result = asyncio.run(run_judge_gate(options, fixture, _harness(tracking)))
+    report = _build_report(result, fixture) | {
+        "concurrency": options.concurrency,
+        "throttled_requests": tracking.throttles.requests,
+    }
+    path = Path(args.report)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2))
+    display.print_summary(result, report, path, case_outcomes(result, fixture))
+    return result.exit_code
+
+
+def _options(args: argparse.Namespace) -> JudgeOptions:
+    return JudgeOptions(
         settings=load_settings(),
         runs=args.runs,
         record_baseline=args.record_baseline,
         ungated=args.ungated,
         concurrency=args.concurrency,
     )
-    fixture = load_fixture(FIXTURES_PATH)
-    llm = create_judge_llm(options.settings)
 
-    async def judge(case: JudgeCase) -> EvalVerdict | None:
-        verdict, _ = await judge_one_case(llm, case)
-        return verdict
 
-    harness = JudgeHarness(
-        judge=judge,
+def _harness(tracking: "JudgeCallTracking") -> JudgeHarness:
+    return JudgeHarness(
+        judge=tracking.judge,
         baseline_path=JUDGE_BASELINE_PATH,
         read_tree=read_tree,
         declarations=lambda: declarations_of_head(Suite.JUDGE),
         clock=lambda: datetime.now(UTC),
-        on_replays=lambda _: None,
+        on_replays=tracking.on_replays,
     )
-    display.console.print(
-        f"Running judge eval ([bold]{len(fixture.cases)}[/bold] cases, {options.runs} runs)..."
-    )
-    result = asyncio.run(run_judge_gate(options, fixture, harness))
-    report = _build_report(result, fixture)
-    path = Path(args.report)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(report, indent=2))
-    display.print_summary(result, report, path)
-    return result.exit_code
+
+
+class JudgeCallTracking:
+    """Advances the progress of the judge calls and counts their throttled requests, warning
+    once, at the first one: at 30 calls in flight, a line per throttled call would flood."""
+
+    def __init__(self, llm: LLMPort, progress: Progress, run_calls: int) -> None:
+        self.throttles = SessionThrottles()
+        self._llm = llm
+        self._progress = progress
+        self._task = progress.add_task("Judging", total=run_calls)
+        self._warned = False
+
+    async def judge(self, case: JudgeCase) -> EvalVerdict | None:
+        verdict, usage = await judge_one_case(self._llm, case)
+        if self.throttles.count_usage(usage) > 0 and not self._warned:
+            self._warned = True
+            self._progress.console.print(
+                "[yellow]The model provider throttled a judge call (HTTP 429),"
+                " the total is in the summary.[/yellow]"
+            )
+        self._progress.advance(self._task)
+        return verdict
+
+    def on_replays(self, count: int) -> None:
+        """Called once the run calls are all done, so later calls are replays."""
+        self._task = self._progress.add_task(f"Replaying {count} flipped case(s)", total=None)
 
 
 async def judge_one_case(llm: LLMPort, case: JudgeCase) -> tuple[EvalVerdict | None, ProviderUsage]:
@@ -165,6 +203,10 @@ def _build_report(result: JudgeSessionResult, fixture: JudgeFixture) -> dict[str
         },
         "gate": result.gate.model_dump(mode="json"),
         "runs": [{case: seen.value for case, seen in run.items()} for run in result.runs],
+        "replay_observations": {
+            case: [seen.value for seen in observations]
+            for case, observations in result.replay_observations.items()
+        },
         "recorded": result.written.status.value if result.written else None,
         "recording_refused": result.recording_refused,
     }

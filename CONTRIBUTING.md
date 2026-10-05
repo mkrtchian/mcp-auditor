@@ -108,6 +108,8 @@ What gates:
 
 With no baseline or an exploratory one, only the floors gate. A case labeled `unspecified` is judged and observed, and stays out of the floors and the comparison. The precision, recall and F1 per run and the per-category table are printed and reported (`output/judge_eval_report.json`) as diagnostics, with no threshold. The run exits `0` green or recorded, `1` red, `3` not comparable or refused, `4` on a crash, with its traceback. A run whose provider, judge model, reasoning, runs or cases differ from the baseline's is not comparable. `--ungated` gates on the floors alone, at any conditions, without reading the baseline, and is never used in CI.
 
+Against a baseline, the summary counts the cases per outcome and lists in a table those that left `unchanged`, with their baseline, run and replay observations and the cause of the flip, and it prints the requests the model provider throttled (HTTP 429) with the concurrency when there were any.
+
 ### Recording the judge baseline
 
 `uv run python -m evals.run_judge_eval --record-baseline` writes `evals/baselines/judge_isolation.json` under the rules of the e2e recording above: from a clean tree, at the conditions CI runs at (the default `--runs` and no provider, judge model or reasoning override), twice at one commit (exploratory, then confirmed, the second adding its runs to the first), then committed by hand. It refuses a recording with an uncovered case in any run, a floor breach, or no stable and correct case on the FAIL side or on the PASS side, and it refuses to write when the tree, `HEAD` or the baseline file changed during the runs. A confirmed baseline is replaced only from a green run with no flipped case, a declared flip excepted.

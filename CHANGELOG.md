@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The CVE benchmark's graded run writes `cve_judged_cases.jsonl` beside its report: one line per judged single-step case of each completed run, with its CVE id and run index, the judge's input and its verdict. A replay is not exported, nor is a chain, and `--calibrate` exports nothing.
 - The e2e eval report and the CVE report record the commit they ran at and whether the tree had tracked modifications (`commit`, `dirty`), and the e2e report its run conditions (`conditions`). The CVE report records the input and output tokens the model provider billed over the session, every attempt and replay included (`provider_usage`), and prints them on its conditions line.
 - `python -m evals.draw_judge_cases` draws the judge isolation cases from the judged cases of two e2e runs and a CVE run, clean and at one commit, into `evals/fixtures/judge_cases_drawn.json`, unlabeled and stripped of the judge's verdicts. It refuses to write when a drawn case holds the invoking user's home path, user name or an API key pattern. `--complement` draws one more case per PASS cell once the labels call for it.
+- The judge isolation eval shows its progress, a count per case outcome and a table of the cases that left `unchanged` (baseline and run observations, replays, cause), warns at the first request the model provider throttled and prints the total with the concurrency, and its report records `concurrency`, `throttled_requests` and `replay_observations`.
 
 ### Changed
 

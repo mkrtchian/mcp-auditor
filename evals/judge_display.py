@@ -10,6 +10,7 @@ from evals.eval_display import console, print_refusal
 from evals.gate import ProtectedCells
 from evals.gate_verdict import GateVerdict
 from evals.judge_baseline import JUDGE_BASELINE_PATH, JudgeBaseline
+from evals.judge_outcomes import CaseOutcomes, JudgeOutcomeRow
 from evals.judge_session import JudgeSessionResult
 
 __all__ = ["console", "print_refusal", "print_summary"]
@@ -29,12 +30,15 @@ _NEXT_STEP = {
 }
 
 
-def print_summary(result: JudgeSessionResult, report: dict[str, Any], report_path: Path) -> None:
+def print_summary(
+    result: JudgeSessionResult, report: dict[str, Any], report_path: Path, outcomes: CaseOutcomes
+) -> None:
     gate = result.gate
     status = f", baseline {gate.baseline_status}" if gate.baseline_status else ""
     console.print(f"Gate mode: [bold]{gate.mode}[/bold]{status}")
     console.print(Panel(_runs_table(report["per_run"]), title="Judge Eval Diagnostics"))
     console.print(_category_table(report["per_category"]))
+    _print_case_outcomes(outcomes)
     for case in gate.declared_held:
         console.print(f"declared, did not flip: {case}")
     if result.declarations.ignored:
@@ -45,6 +49,11 @@ def print_summary(result: JudgeSessionResult, report: dict[str, Any], report_pat
         )
     if gate.protected:
         console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
+    if report["throttled_requests"] > 0:
+        console.print(
+            f"[yellow]Throttled by the model provider: {report['throttled_requests']} requests"
+            f" at concurrency {report['concurrency']}[/yellow]"
+        )
     console.print(f"Report written to {report_path}")
     console.print(Panel("\n".join([_VERDICT_STYLES[gate.verdict], *_bullets(gate.reasons)])))
     if result.written:
@@ -74,6 +83,47 @@ def _category_table(per_category: dict[str, dict[str, Any]]) -> Table:
         table.add_column(column, justify="right")
     for category, metrics in per_category.items():
         table.add_row(category, *(f"{metrics[name]:.2f}" for name in ("precision", "recall", "f1")))
+    return table
+
+
+def _print_case_outcomes(outcomes: CaseOutcomes) -> None:
+    if outcomes.counts:
+        counts = ", ".join(f"{count} {outcome}" for outcome, count in outcomes.counts.items())
+        console.print(f"Cases: {counts}")
+    if outcomes.rows:
+        console.print(_outcome_table(outcomes.rows))
+        console.print("P pass, F fail, - no verdict")
+
+
+_OUTCOME_COLUMNS = (
+    "Outcome",
+    "Case",
+    "Origin",
+    "Target",
+    "Label",
+    "Baseline",
+    "Run",
+    "Replays",
+    "Cause",
+)
+
+
+def _outcome_table(rows: list[JudgeOutcomeRow]) -> Table:
+    table = Table(box=None, header_style="bold")
+    for column in _OUTCOME_COLUMNS:
+        table.add_column(column, overflow="fold")
+    for row in rows:
+        table.add_row(
+            row.outcome,
+            row.case,
+            escape(row.origin),
+            row.target,
+            row.label or "-",
+            row.baseline,
+            row.run,
+            row.replays,
+            row.cause,
+        )
     return table
 
 
