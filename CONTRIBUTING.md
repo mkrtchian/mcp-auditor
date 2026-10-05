@@ -99,7 +99,7 @@ The fault injection on the gate is an integration test, `tests/integration/test_
 
 ### The judge isolation eval
 
-The judge isolation eval judges each case of `evals/fixtures/judge_cases.json` three times and gates case by case against `evals/baselines/judge_isolation.json` ([ADR 025](docs/adr/025-judge-eval-drawn-fixture.md)), under the rules of the e2e gate with the case in place of the cell. The cases are drawn from the judged cases of honeypot and CVE runs by a rule written before the draw, and labeled one by one, blind to the judge's verdict: the draw rule, the fixture format and the procedure are in [`evals/judge_fixture_method.md`](evals/judge_fixture_method.md), and the labeling brief in [`evals/judge_labeling_brief.md`](evals/judge_labeling_brief.md). Until the drawn cases are labeled, the eval runs on the 32 hand-written cases it used before.
+The judge isolation eval judges each case of `evals/fixtures/judge_cases.json` three times and gates case by case against `evals/baselines/judge_isolation.json` ([ADR 025](docs/adr/025-judge-eval-drawn-fixture.md)), under the rules of the e2e gate with the case in place of the cell. The cases are drawn from the judged cases of honeypot and CVE runs by a rule written before the draw, and labeled one by one, blind to the judge's verdict: the draw rule, the fixture format and the procedure are in [`evals/judge_fixture_method.md`](evals/judge_fixture_method.md), and the labeling brief in [`evals/judge_labeling_brief.md`](evals/judge_labeling_brief.md).
 
 What gates:
 

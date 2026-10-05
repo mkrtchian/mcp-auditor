@@ -119,9 +119,8 @@ def test_the_fingerprint_changes_when_the_inputs_of_a_case_change():
     assert inputs_fingerprint(given.a_fixture(before)) != inputs_fingerprint(given.a_fixture(after))
 
 
-def test_the_legacy_fixture_loads_with_its_32_cases():
+def test_the_committed_fixture_is_a_labeled_draw():
     fixture = load_fixture(FIXTURES_PATH)
 
-    assert fixture.draw is None
-    assert len(fixture.cases) == 32
-    assert sum(case.label == CaseLabel.FAIL for case in fixture.cases) == 8
+    assert fixture.draw is not None
+    assert all(case.clause for case in fixture.cases)
