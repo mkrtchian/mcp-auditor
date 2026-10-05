@@ -70,8 +70,8 @@
         "response": "Record 2147483647 deleted successfully",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "ad14bfd0448baa1e",
@@ -89,8 +89,8 @@
         "response": "Record -1 deleted successfully",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J2"
     },
     {
       "id": "271b26d3c0d826d4",
@@ -108,8 +108,8 @@
         "response": "Record 0 deleted successfully",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J2"
     },
     {
       "id": "37e2f8c3494e04aa",
@@ -126,8 +126,8 @@
         "response": "Record 0 deleted successfully",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J2"
     },
     {
       "id": "2267a93c717e070e",
@@ -144,8 +144,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM mcp_auditor_nonexistent_731 — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J5"
     },
     {
       "id": "933c1bb2ada882be",
@@ -162,8 +162,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM users WHERE id=1 — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J5"
     },
     {
       "id": "74d7d661c3d97063",
@@ -180,8 +180,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM users WHERE id = 1 — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J5"
     },
     {
       "id": "3e320c3e08db31b3",
@@ -198,8 +198,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM mcp_auditor_nonexistent_table — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J5"
     },
     {
       "id": "ff6c7a2069b1ee65",
@@ -216,8 +216,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT 'mcp-auditor-probe' AS marker — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "8ea382afd414c4cf",
@@ -234,8 +234,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT id, name FROM users WHERE id = 1 OR 1=1 LIMIT 3 — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "dac07b41b3af771f",
@@ -252,8 +252,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT id,name FROM users WHERE id=1 OR 1=1 — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "266b2cdfcf743539",
@@ -270,8 +270,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT 'mcp-auditor-probe' WHERE 1=1 -- — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "aef906ac6a361f21",
@@ -288,8 +288,8 @@
         "response": null,
         "error": "Error executing tool get_user: 987654321"
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J7"
     },
     {
       "id": "015b054f8f42d65e",
@@ -306,8 +306,8 @@
         "response": null,
         "error": "Error executing tool get_user: 999999999"
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J7"
     },
     {
       "id": "6b6a8cc01bf171bc",
@@ -324,8 +324,8 @@
         "response": null,
         "error": "Error executing tool get_user: user_id must be positive — see /opt/mcp-server/internal/users.db"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J3"
     },
     {
       "id": "93fec5f1d2b1df1b",
@@ -342,8 +342,8 @@
         "response": null,
         "error": "Error executing tool get_user: user_id must be positive — see /opt/mcp-server/internal/users.db"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J3"
     },
     {
       "id": "cfee432fa5741eb3",
@@ -360,8 +360,8 @@
         "response": null,
         "error": "Error executing tool get_user: 987654321"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "c1f688a8007943ea",
@@ -378,8 +378,8 @@
         "response": null,
         "error": "Error executing tool get_user: 999999999"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "b8a8a5f4cbca07c0",
@@ -396,8 +396,8 @@
         "response": "User: Bob (id=1)",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "28113c86c2fd357d",
@@ -414,8 +414,8 @@
         "response": "User: Bob (id=1)",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "12f628a4dca62120",
@@ -433,8 +433,8 @@
         "response": null,
         "error": "Error executing tool project_manager: Unknown project: 1"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "45e48c43c272cbe6",
@@ -452,8 +452,8 @@
         "response": null,
         "error": "Error executing tool project_manager: Unknown project: 1"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "6396afcd3651fa8f",
@@ -471,8 +471,8 @@
         "response": null,
         "error": "Error executing tool project_manager: Unknown project: 1"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "955ba9d9121f8e55",
@@ -490,8 +490,8 @@
         "response": null,
         "error": "Error executing tool project_manager: Unknown project: 1"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "13c47bb3429e92d4",
@@ -509,8 +509,8 @@
         "response": "No users found",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "463ea5f8ed593522",
@@ -528,8 +528,8 @@
         "response": "No users found",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "d25e1f4073209c5b",
@@ -547,8 +547,8 @@
         "response": "No users found",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "77c8f1536f6ae318",
@@ -566,8 +566,8 @@
         "response": "No users found",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "7ff739186a7c6851",
@@ -585,8 +585,8 @@
         "response": "[]",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "0a83cec8365c3a0c",
@@ -604,8 +604,8 @@
         "response": "[]",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "b4ec386eda463ebe",
@@ -623,8 +623,8 @@
         "response": null,
         "error": "Error executing tool user_directory: Unknown user: user_nonexistent_audit_7f3c"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "23a3f933417ad4d0",
@@ -642,8 +642,8 @@
         "response": "[]",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "3fd29d3533ce58dd",
@@ -660,8 +660,8 @@
         "response": "Record -2147483648 deleted successfully",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J3"
     },
     {
       "id": "872492c1ac02c8ca",
@@ -679,8 +679,8 @@
         "response": "Record 2 deleted successfully",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "3b2b7d83d888a801",
@@ -698,8 +698,8 @@
         "response": "Record 0 deleted successfully",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "3675ee8f2d133ce6",
@@ -717,8 +717,8 @@
         "response": "Record 2147483647 deleted successfully",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "5a7557a560ec5eef",
@@ -735,8 +735,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: SELECT * FROM mcp_auditor_missing_table — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J3"
     },
     {
       "id": "59fa83f046c22556",
@@ -753,8 +753,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed:  — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J2"
     },
     {
       "id": "6f3864597cf921f4",
@@ -771,8 +771,8 @@
         "response": "[db: /opt/mcp-server/config/database.yml] Executed: WITH RECURSIVE seq(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM seq WHERE x<2147483647) SELECT x FROM seq — Results: 3 rows",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "b3df5f66dd99f2ef",
@@ -789,8 +789,8 @@
         "response": null,
         "error": "Error executing tool get_service_status: Unknown service"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J3"
     },
     {
       "id": "12e9ac3a4ad69b25",
@@ -807,8 +807,8 @@
         "response": "api: healthy (uptime: 42h)",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "0b38b06892282e32",
@@ -825,8 +825,8 @@
         "response": null,
         "error": "Error executing tool get_service_status: Unknown service"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "831a8540183c96a6",
@@ -843,8 +843,8 @@
         "response": null,
         "error": "Error executing tool get_service_status: Unknown service"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "bd457b189f91b0ba",
@@ -861,8 +861,8 @@
         "response": null,
         "error": "Error executing tool get_service_status: Unknown service"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "dba12273e2e38b6d",
@@ -879,8 +879,8 @@
         "response": null,
         "error": "Error executing tool get_user: 123456789"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "faea9262db293302",
@@ -897,8 +897,8 @@
         "response": null,
         "error": "Error executing tool get_user: 2147483647"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "14f718318c214549",
@@ -916,8 +916,8 @@
         "response": null,
         "error": "Error executing tool list_items: Invalid category"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J3"
     },
     {
       "id": "4aea612cf0799881",
@@ -935,8 +935,8 @@
         "response": null,
         "error": "Error executing tool list_items: Invalid category"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "f333218dda77117d",
@@ -954,8 +954,8 @@
         "response": null,
         "error": "Error executing tool list_items: Invalid category"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "456c5bdaa5e8a606",
@@ -973,8 +973,8 @@
         "response": null,
         "error": "Error executing tool list_items: Invalid category"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "02496de2700d013c",
@@ -992,8 +992,8 @@
         "response": null,
         "error": "Error executing tool list_items: Invalid category"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "d259859c74a174b5",
@@ -1011,8 +1011,8 @@
         "response": null,
         "error": "Error executing tool project_manager: Unknown project: mcp-auditor-no-such-project-987654"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J3"
     },
     {
       "id": "ccca924793427131",
@@ -1031,8 +1031,8 @@
         "response": "{\"content\": \"Generic file content at **/*\"}",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "dcd18209fdf3d874",
@@ -1050,8 +1050,8 @@
         "response": "No users found",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J3"
     },
     {
       "id": "f36971a497981d9e",
@@ -1069,8 +1069,8 @@
         "response": "No users found",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "ba6fcad989d97dfd",
@@ -1088,8 +1088,8 @@
         "response": "No users found",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "unspecified",
+      "clause": "J11: two readings of the response remain open: the search may have run with the negative limit unchecked, or with the limit brought to the nearest valid value, and \"No users found\" reads the same either way."
     },
     {
       "id": "e12d44c879cf9a44",
@@ -1107,8 +1107,8 @@
         "response": "No users found",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "1b4cc3651cce4ffa",
@@ -1126,8 +1126,8 @@
         "response": null,
         "error": "Error executing tool user_directory: Unknown user: user-999999999"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J3"
     },
     {
       "id": "f9e46e15071c78cf",
@@ -1145,8 +1145,8 @@
         "response": null,
         "error": "Error executing tool user_directory: Unknown user: ; echo mcp-auditor-probe"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "fccdb9d51d70f702",
@@ -1165,8 +1165,8 @@
         "response": null,
         "error": "Error executing tool user_directory: Unknown user: 1"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "16dc8fc2429b406b",
@@ -1183,8 +1183,8 @@
         "response": null,
         "error": "Error: Access denied - path outside allowed directories: /mcp-auditor-no-such-file-7f3a not in /work/sandbox"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "7cde8d7d4e2b16e7",
@@ -1201,8 +1201,8 @@
         "response": null,
         "error": "Error: Access denied - path outside allowed directories: /    not in /work/sandbox"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "70c0a82182501d2c",
@@ -1219,8 +1219,8 @@
         "response": null,
         "error": "Error: ENOENT: no such file or directory, scandir '/work/sandbox/;echo mcp-auditor-probe'"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "1bd34b1116070f03",
@@ -1237,8 +1237,8 @@
         "response": null,
         "error": "Error: Access denied - path outside allowed directories: / not in /work/sandbox"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "9e21d0c88a2d982e",
@@ -1255,8 +1255,8 @@
         "response": null,
         "error": "Error: Parent directory does not exist: /work"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "139837768dbf40e7",
@@ -1273,8 +1273,8 @@
         "response": null,
         "error": "Error: Access denied - path outside allowed directories: /proc/kcore not in /work/sandbox"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "2408cfbcf161b971",
@@ -1295,8 +1295,8 @@
         "response": null,
         "error": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get deployment mcp-auditor-no-such-deployment-91 --namespace=default -o=yaml\n/bin/sh: 1: kubectl: not found\n"
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J5"
     },
     {
       "id": "d6e753db6ac1a9a2",
@@ -1316,8 +1316,8 @@
         "response": "mcp-auditor-probe --namespace=default\n",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "fail",
+      "clause": "J4"
     },
     {
       "id": "db4f9795d19e00da",
@@ -1339,8 +1339,8 @@
         "response": null,
         "error": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get pods --namespace=default --limit=2147483647\n/bin/sh: 1: kubectl: not found\n"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "14c23b05fd176310",
@@ -1359,8 +1359,8 @@
         "response": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more",
         "error": null
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     },
     {
       "id": "b32cbcdfa17696c7",
@@ -1379,8 +1379,8 @@
         "response": null,
         "error": "[\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"max_length\"\n    ]\n  },\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"start_index\"\n    ]\n  }\n]"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "8e0a6cc08886cf2b",
@@ -1397,8 +1397,8 @@
         "response": null,
         "error": "[\n  {\n    \"validation\": \"url\",\n    \"code\": \"invalid_string\",\n    \"message\": \"Invalid url\",\n    \"path\": [\n      \"url\"\n    ]\n  }\n]"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "cf0b0ffd63fae844",
@@ -1416,8 +1416,8 @@
         "response": null,
         "error": "/tmp/repo; echo mcp-auditor-probe"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J4"
     },
     {
       "id": "778083fe8ebf0b2d",
@@ -1437,8 +1437,8 @@
         "response": null,
         "error": "/"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "7e10eae7aeac6a30",
@@ -1456,8 +1456,8 @@
         "response": null,
         "error": "/tmp"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "ca03d12903e6e812",
@@ -1475,8 +1475,8 @@
         "response": null,
         "error": "/"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J2"
     },
     {
       "id": "39e1994c0f9f37b0",
@@ -1494,8 +1494,8 @@
         "response": null,
         "error": "/"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J6"
     },
     {
       "id": "299a26557c7674cc",
@@ -1513,8 +1513,8 @@
         "response": null,
         "error": "/"
       },
-      "label": null,
-      "clause": null
+      "label": "pass",
+      "clause": "J5"
     }
   ]
 }
