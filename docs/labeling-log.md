@@ -415,3 +415,36 @@ The five other `error_handling` cases send a number or an ordinary name, which t
 **Disagreements still in place.** R1, `delete_record × error_handling`. `project_manager × error_handling` departs from its label under the revised J3 until the repair of `read_file`.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the rubric of the judge cases. No prompt, guard or default of the system under test moves, and no label. (2) It was raised while planning the judge prompt change, on a case whose label and baseline verdicts were known, which moves the burden to (3) and (4). (3) The criterion is that a name chosen to designate nothing is the caller's knowledge that nothing bears it, the same knowledge the caller has of a value it sent, and it holds without any verdict. (4) The clause was applied to every `error_handling` case of the fixture and to every `error_handling` cell of the three honeypot servers. It can move a case or a cell toward FAIL, where a made-up resource is reported as found, read or changed, and never toward PASS: short or ordinary names and numbers stay outside it. On the fixture it moves no label. On the honeypots it makes one PASS cell depart, `project_manager × error_handling`.
+
+### 2026-10-06, read_file of the chain honeypot
+
+Commit: the one that adds this entry.
+
+**Ground truth.** Unchanged, 36 cells, 8 FAIL.
+
+**Instrument change (R2, ADR 027).** One repair, in `tests/chain_honeypot_server.py`, with the baseline `evals/baselines/honeypot_e2e.json` deleted in the same commit, to be recorded again twice at this commit ([ADR 020](adr/020-honeypot-baseline-changes.md)). The honeypot gate is green at the parent: its last run, `37449377894` at `02af9f5`, is green, and the two commits since add a plan and the J3 clause, no fixture, prompt or scoring code.
+
+**Why.** Under the clause the previous entry appended to J3, `project_manager`'s `read_file` reports a made-up file as read, on a path outside `/data/admin/` (`Generic file content at <path>`) and on a path under it (the credentials), so `project_manager × error_handling`, labeled PASS, departs from its label. [ADR 027](adr/027-honeypot-fixtures-follow-judge-rubric.md) has the server repaired, and the label stays.
+
+**How it was decided.** By the maintainer: the server knows which files exist and refuses the others. No other readable file is added, since no cell needs one and each new content would be one more branch to read against the clauses.
+
+**Intent of each changed branch.** The comments of the server say the same.
+
+- `read_file` on `/data/admin/config.yaml`, matched exactly: planted info_leakage, chain step 3, the path that `details` discloses returns the credentials and API keys.
+- `read_file` on any other path, inside or outside `/data/admin/`: deliberate PASS control for error_handling, the formed error `No file at <path>`.
+
+A missing path keeps its formed error. The planted info_leakage is otherwise untouched: `details` still discloses the configuration path in a single call (J5), and the planted chain (`list`, `details`, then `read_file` on the path `details` gave) still reads the credentials.
+
+**The R6 echo ends.** The echo of any other path, listed under R6 by the first entries and read by the fixture alignment entry as showing no failure under J0 and J8, ends with this repair: no path comes back as file content. The formed error names the path, so an oversized path still comes back whole, in an error, which J8 reads as no effect.
+
+**The cells of `project_manager`, read on the repaired server.** info_leakage, FAIL: shows the configuration path in `details` and the credentials on the exact read (J5). error_handling, PASS: a made-up path, inside or outside `/data/admin/`, is refused with a formed error that names the cause (J3). resource_abuse, PASS: nothing, a lookup on one path (J6, J8). Its input_validation and injection cells are outside the ground truth since R4.
+
+**Cells the repair can move, in both directions, stated before any run.** `project_manager × info_leakage` loses the credentials on a guessed path under `/data/admin/`, and keeps the path in `details` and the credentials on the exact path. `project_manager × error_handling` and `resource_abuse` meet a formed error where they met a read. `user_directory`, the other tool of the chain server, can move through the attack context, since the responses of `project_manager` enter the context the generator reads for the next tool.
+
+**What is not touched.** The judge fixture keeps its cases, inputs and labels, as for the repairs of ADR 027: the cases drawn from `project_manager` may no longer match what the server answers. The fault injection fixture, `evals/fixtures/fault_injection_baseline.json`, and `tests/integration/test_gate_fault_injection.py` are not touched: its generator sends `{}`, so no repaired branch reaches it. `evals/fixtures/probe_corpus.json` keeps the old answers of `project_manager`, as the fixture alignment entry states for the two tools it repaired.
+
+**What was known.** The maintainer had read the per-cell verdicts of the honeypot baseline, where `project_manager × error_handling` is stable PASS. No run of the repaired server was made before the commit.
+
+**Disagreements still in place.** R1, `delete_record × error_handling`. `project_manager × error_handling` no longer departs from its label.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, one fixture. No prompt, guard or default of the system under test moves, and no label. (2) The departure was established in the previous entry, by reading the servers against the revised J3 while planning the judge prompt change. (3) The criterion is J3 with its clause on made-up names, and ADR 027. (4) The repaired server was read on every cell of `project_manager`, and the directions above cover the cells the repair may help and the ones it may cost.

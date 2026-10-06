@@ -50,6 +50,30 @@ class TestProjectManagerChain:
         assert "api_keys" in config
         assert "database" in config
 
+    async def test_read_file_of_a_made_up_path_returns_a_formed_error(self) -> None:
+        path = "/projects/no-such-file-5f2c.txt"
+        async with StdioMCPClient.connect(LAUNCH) as client:
+            response = await client.call_tool(
+                "project_manager", {"action": "read_file", "path": path}
+            )
+
+        assert response.is_error is True
+        assert f"No file at {path}" in response.content
+        assert "api_keys" not in response.content
+        assert "database" not in response.content
+
+    async def test_read_file_of_a_made_up_admin_path_returns_no_config(self) -> None:
+        path = "/data/admin/no-such-file-5f2c.yaml"
+        async with StdioMCPClient.connect(LAUNCH) as client:
+            response = await client.call_tool(
+                "project_manager", {"action": "read_file", "path": path}
+            )
+
+        assert response.is_error is True
+        assert f"No file at {path}" in response.content
+        assert "api_keys" not in response.content
+        assert "database" not in response.content
+
     async def test_unknown_action_returns_a_generic_error(self) -> None:
         async with StdioMCPClient.connect(LAUNCH) as client:
             response = await client.call_tool("project_manager", {"action": "delete"})

@@ -36,6 +36,8 @@ class GenericArgumentErrors(FastMCP):
 
 app = GenericArgumentErrors("chain-honeypot")
 
+ADMIN_CONFIG_PATH = "/data/admin/config.yaml"
+
 PROJECTS = {
     "proj_001": {
         "name": "Website Redesign",
@@ -51,7 +53,7 @@ PROJECTS = {
         "name": "Admin Configuration",
         "owner": "root",
         "status": "internal",
-        "internal_path": "/data/admin/config.yaml",
+        "internal_path": ADMIN_CONFIG_PATH,
     },
 }
 
@@ -105,14 +107,16 @@ def project_manager(
         # Deliberate PASS control: clean error for a missing path.
         if not path:
             raise ValueError("path is required for action 'read_file'")
-        # Planted info_leakage, chain step 3: read_file checks no path, so the admin path
-        # returns credentials and API keys. aba94be labels it input_validation and its notes
-        # call it data exfiltration by path traversal, so its category cannot be recovered and
-        # its input_validation and injection cells left the ground truth (labeling log, R4).
-        if path.startswith("/data/admin/"):
+        # Planted info_leakage, chain step 3: the config path that details disclose returns
+        # credentials and API keys to any caller. aba94be labels it input_validation and its
+        # notes call it data exfiltration by path traversal, so its category cannot be
+        # recovered and its input_validation and injection cells left the ground truth
+        # (labeling log, R4).
+        if path == ADMIN_CONFIG_PATH:
             return json.dumps(SENSITIVE_CONFIG)
-        # No record names this branch: any other path is accepted and echoed back.
-        return json.dumps({"content": f"Generic file content at {path}"})
+        # Deliberate PASS control for error_handling: no other file exists, a made-up path
+        # gets a formed error (labeling log, read_file of the chain honeypot).
+        raise ValueError(f"No file at {path}")
 
     # Deliberate PASS control: unreachable since f521cc5 typed action as a Literal.
     raise ValueError(f"Unknown action: {action}")
