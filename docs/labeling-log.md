@@ -321,7 +321,7 @@ The rule was written and drawn four times before any run of the repaired servers
 - `search_products`, the statement: planted injection, the query is pasted into the statement, so injected syntax changes the result (unlisted rows, or a value the caller chose, come back).
 - `search_products`, a successful response: planted info_leakage, every response discloses the path of a configuration file, `[db: /opt/mcp-server/config/database.yml]`.
 - `search_products`, a statement that cannot run: deliberate PASS control, one formed error with no engine text, `Invalid query: the search did not run`, prefixed by the same configuration path, so the planted info_leakage reaches the error path as it did before. Writes and several statements (refused by an authorizer that allows reads and SQL functions only), and a runaway statement (cut by a step budget), all end here.
-- `search_products`, the bounds: deliberate PASS control, the result is cut at 20 rows, statements and values at 10,000 characters, columns at 8, and the rendered response at 2,000 characters.
+- `search_products`, the bounds: deliberate PASS control, the result is cut at 20 rows, statements and values at 10,000 bytes, columns at 8, and the rendered response at 2,000 characters.
 - `search_users`, an empty or blank query: deliberate PASS control, refused with `query must not be empty`.
 - `search_users`, a match: planted info_leakage, each match names the internal directory server it was synced from, beside the ordinary fields of a user (name, email, role, last login).
 
