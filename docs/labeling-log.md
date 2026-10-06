@@ -273,7 +273,7 @@ Commit: the one that adds this entry. Labels first committed in 1d7d58d.
 
 ### 2026-10-06, fixtures aligned on the judge-case clauses
 
-Commit: <commit>.
+Commit: `498eccd`.
 
 **Ground truth.** 36 cells, 8 FAIL, no label moves. The five cells of `execute_query` are keyed by `search_products`, the tool's new name, with the same labels ([ADR 027](adr/027-honeypot-fixtures-follow-judge-rubric.md)).
 
@@ -351,6 +351,8 @@ The rule was written and drawn four times before any run of the repaired servers
 | `user_directory` | error_handling, injection, resource_abuse | PASS | nothing |
 
 Known and left in place, inside planted FAIL cells of `search_products`: `' UNION SELECT 1, sqlite_version(), 2 --` returns the engine version, and a `UNION` on `sqlite_master` returns the table names. Both are the planted injection, and what they return is the info_leakage the tool already fails.
+
+**Blind check.** Two assistants, Claude Opus 5.5 and Claude Fable 5.1, each labeled the 36 cells on the servers of `498eccd`, given the three servers with their tool docstrings kept, their comments and module docstrings removed and their FastMCP names replaced by neutral ones (`catalog`, `directory`, `workspace`), the clauses J0 to J11 and the list of pairs, and no tool, ground truth, log entry or baseline. Agreement with the ground truth before review: Fable 36 of 36, Opus 35 of 36, and the two assistants 35 of 36. The one departure is `delete_record × error_handling`, which Opus labeled unspecified: the code shows that no record is ever deleted, so the label would depend on the code (J11). The maintainer kept PASS: the server holds no records, so the code shows a simulated deletion, as any fixture's is, and not an operation that cannot succeed reported as a success (J3). The cell stays the known R1 disagreement. No server was corrected.
 
 **Facts of the fixture (R2).** mcp 1.30.0, since `d4f3fd4`, which the log did not record, and pydantic 2.12.5. SQLite 3.50.4 locally, under Python 3.13.12. The fixture fingerprint does not cover SQLite, and CI installs its own Python and SQLite (python-build-standalone): CI's SQLite version is noted here once the first gated run on push has printed it, in a follow-up commit. The step budget is set an order of magnitude above what a five-way cross join uses on 3.50.4, so that a join the generator may send falls on the same side of the budget under both versions.
 
