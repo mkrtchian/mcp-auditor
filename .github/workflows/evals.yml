@@ -32,7 +32,8 @@ jobs:
       - name: Run judge eval
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: uv run python -m evals.run_judge_eval
+        # Half the default: the e2e job runs alongside and draws on the same tokens-per-minute limit
+        run: uv run python -m evals.run_judge_eval --concurrency 15
 
   e2e-eval:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
