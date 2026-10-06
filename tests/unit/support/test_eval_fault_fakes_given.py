@@ -16,7 +16,7 @@ from mcp_auditor.graph.chain_prompts import build_chain_judge_prompt
 from mcp_auditor.graph.prompts import build_attack_generation_prompt, build_judge_prompt
 
 # Observed FAIL, PASS, PASS in the fixture's three runs.
-A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY: Cell = ("execute_query", AuditCategory.INJECTION)
+A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY: Cell = ("search_products", AuditCategory.INJECTION)
 # Observed PASS, FAIL, PASS: a chain-only cell.
 A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY: Cell = (
     "project_manager",

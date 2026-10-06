@@ -43,7 +43,7 @@ def test_a_judge_passing_everything_is_caught_by_the_recall_floor_and_the_regres
         run.paired,
         NO_DETECTION,
         "regression on get_user/error_handling",
-        "regression on execute_query/info_leakage",
+        "regression on search_products/info_leakage",
         "regression on delete_record/input_validation",
     )
     then.red_on(run.floors_only, NO_DETECTION)
@@ -68,8 +68,8 @@ def test_a_judge_failing_at_random_seed_0_is_caught_by_precision_but_its_flips_d
     ]
     then.flipped(run.cells, flips, FlipCause.WRONG_VERDICT)
     then.settled_as(run.paired, flips, CellOutcome.FLIP_NOT_REPRODUCED)
-    then.red_on(run.paired, "precision 0.19 under its floor 0.50")
-    then.red_on(run.floors_only, "precision 0.19 under its floor 0.50")
+    then.red_on(run.paired, "precision 0.22 under its floor 0.50")
+    then.red_on(run.floors_only, "precision 0.22 under its floor 0.50")
     then.refused_on(run.recording, "precision under its floor")
 
 
@@ -96,7 +96,7 @@ def test_no_verdict_flips_every_stable_and_correct_cell_as_uncovered():
 def test_half_the_detections_lost_is_missed_by_the_paired_comparison_and_the_floors(
     replays: list[bool],
 ):
-    run = _through_the_gate(given.half_the_detections_lost(seed=0), replays)
+    run = _through_the_gate(given.half_the_detections_lost(seed=1), replays)
 
     then.flipped(run.cells, given.LOST_BY_THE_HALF_LOSS_DRAW, FlipCause.WRONG_VERDICT)
     then.settled_as(run.paired, given.LOST_BY_THE_HALF_LOSS_DRAW, CellOutcome.FLIP_NOT_REPRODUCED)

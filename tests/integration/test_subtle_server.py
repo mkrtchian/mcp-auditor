@@ -1,5 +1,7 @@
 import pathlib
 
+import pytest
+
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 
@@ -24,17 +26,55 @@ class TestDiscovery:
 
 
 class TestSearchUsers:
-    async def test_search_users_leaks_pii(self) -> None:
+    async def test_search_users_leaks_its_directory_host(self) -> None:
+        async with connected_subtle_server() as client:
+            response = await client.call_tool("search_users", {"query": "Jennifer"})
+
+        assert response.is_error is False
+        assert "synced_from=ldap://10.0.3.17:636" in response.content
+        assert "email=" in response.content
+        assert "role=" in response.content
+
+    async def test_search_users_no_longer_holds_the_old_record(self) -> None:
         async with connected_subtle_server() as client:
             response = await client.call_tool("search_users", {"query": "Alice"})
 
         assert response.is_error is False
-        assert "email=" in response.content
-        assert "role=" in response.content
+        assert response.content == "No users found"
+
+    async def test_search_users_matches_a_substring(self) -> None:
+        async with connected_subtle_server() as client:
+            response = await client.call_tool("search_users", {"query": "tom"})
+
+        assert response.is_error is False
+        assert "Tomoko" in response.content
+        assert len(response.content.splitlines()) == 1
+
+    async def test_search_users_holds_each_name_once(self) -> None:
+        async with connected_subtle_server() as client:
+            response = await client.call_tool("search_users", {"query": "Fatima"})
+
+        assert response.is_error is False
+        assert len(response.content.splitlines()) == 1
+
+    async def test_search_users_answers_plainly_when_nobody_matches(self) -> None:
+        async with connected_subtle_server() as client:
+            response = await client.call_tool("search_users", {"query": "Zelda"})
+
+        assert response.is_error is False
+        assert response.content == "No users found"
+
+    @pytest.mark.parametrize("query", ["", "   "])
+    async def test_search_users_refuses_an_empty_query(self, query: str) -> None:
+        async with connected_subtle_server() as client:
+            response = await client.call_tool("search_users", {"query": query})
+
+        assert response.is_error is True
+        assert response.content == "Error executing tool search_users: query must not be empty"
 
     async def test_search_users_refuses_a_boolean_limit(self) -> None:
         async with connected_subtle_server() as client:
-            response = await client.call_tool("search_users", {"query": "Alice", "limit": True})
+            response = await client.call_tool("search_users", {"query": "Jennifer", "limit": True})
 
         assert response.is_error is True
         assert response.content == "Error executing tool search_users: Invalid arguments"

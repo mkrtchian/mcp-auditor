@@ -14,6 +14,8 @@ It does not prove what a real model detects: the honeypot evals and the CVE benc
 
 The runs of the recording refused on 2026-09-27 at `519168f`, 3 runs on `gpt-6-luna` at `none`, budget 10, stored as observations only (no payload, response or judgment). Recall 0.46, precision 1.00. Of the 8 planted FAIL cells, 3 are stable and correct (`get_user × error_handling`, `execute_query × info_leakage`, `delete_record × input_validation`), 3 are never detected (`get_user × info_leakage`, `search_users × info_leakage`, `user_directory × info_leakage`) and 2 are unstable (`execute_query × injection` and `project_manager × info_leakage`, each detected in 1 run of 3). The 28 PASS cells are all stable and correct. So 31 cells are gated in the paired mode, and the fixture holds 11 detections over its 3 runs.
 
+On 2026-10-06 the five cells of `execute_query` were renamed with the tool to `search_products` (`docs/labeling-log.md`, entry of that date). The figures above describe the recording of 2026-09-27 under the old name, and its observations did not move. The fixture's ground truth fingerprint follows the renamed keys, so that the check below still sees a missing cell, and its source fingerprints stay those of the recording.
+
 The test fails before any audit when `baseline_integrity` complains about the fixture: a fixture made stale by a honeypot or label change is rebuilt, never compared against in silence. The fixture's model and budget play no role, the test runs fakes at budget 5.
 
 ## The two fakes

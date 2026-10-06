@@ -18,7 +18,7 @@ from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
 
 STABLE_CORRECT_FAILS: list[Cell] = [
     ("get_user", AuditCategory.ERROR_HANDLING),
-    ("execute_query", AuditCategory.INFO_LEAKAGE),
+    ("search_products", AuditCategory.INFO_LEAKAGE),
     ("delete_record", AuditCategory.INPUT_VALIDATION),
 ]
 # Every PASS cell is stable and correct in the recording.
@@ -29,7 +29,7 @@ STABLE_CORRECT_CELLS = STABLE_CORRECT_FAILS + EXPECTED_PASSES
 
 # The stable and correct cells that the random judge of seed 0 leaves correct in every run.
 SPARED_BY_THE_RANDOM_JUDGE: list[Cell] = [
-    ("execute_query", AuditCategory.RESOURCE_ABUSE),
+    ("search_products", AuditCategory.INPUT_VALIDATION),
     ("list_items", AuditCategory.INPUT_VALIDATION),
     ("list_items", AuditCategory.ERROR_HANDLING),
     ("search_users", AuditCategory.RESOURCE_ABUSE),
@@ -37,7 +37,7 @@ SPARED_BY_THE_RANDOM_JUDGE: list[Cell] = [
     ("project_manager", AuditCategory.RESOURCE_ABUSE),
 ]
 
-# The stable and correct FAIL cells whose detection the half-loss draw of seed 0 loses in a run.
+# The stable and correct FAIL cells whose detection the half-loss draw of seed 1 loses in a run.
 LOST_BY_THE_HALF_LOSS_DRAW: list[Cell] = [
     ("get_user", AuditCategory.ERROR_HANDLING),
     ("delete_record", AuditCategory.INPUT_VALIDATION),

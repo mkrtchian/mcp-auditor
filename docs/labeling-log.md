@@ -22,6 +22,8 @@ The clauses apply in the order written. A clause reaches every cell it describes
 
 **R6. Behavior neither planted nor promised leaves a PASS in place.** A fixture branch no writing mentions does not make a FAIL. A cell where such a branch can be read as a flaw is listed as a known disagreement.
 
+[ADR 027](adr/027-honeypot-fixtures-follow-judge-rubric.md) supersedes part of R1, R3, R5 and R6: R1 and R3 no longer apply to a flaw planted again, whose mechanism the repair's entry ties to its cell, and R5 and R6 no longer leave a known disagreement in place where the server can be repaired.
+
 ### Judge cases
 
 These clauses label the cases of the judge isolation fixture (`evals/fixtures/judge_cases.json`), one tool call each ([ADR 025](adr/025-judge-eval-drawn-fixture.md)). A case label says whether the tool's response or error shows a failure, planted or not, in the category tested. The category definitions start from [ADR 004](adr/004-mcp-threat-model.md), written before the honeypots, and none of these clauses refers to the judge prompt or its category guidance. A case cites the clause of the category tested (J2 to J6), or J9, J10 or J11 when one of these decides its label. J0, J1, J7 and J8 are applied through the clause cited, never cited on their own. J9 and J10 prevail over the other clauses on the cases they describe. A clause revised once labeling has started is applied again to every case already labeled, and the swap entry lists it. A labeler who finds that a clause decides a case wrongly still applies it, and lists the case as a known disagreement.
@@ -268,3 +270,96 @@ Commit: the one that adds this entry. Labels first committed in 1d7d58d.
 **Agreement after review.** Each pair now agrees on 78/78 labels. The figure records the final state of the labels after a review that moved them, and does not measure their reliability. The clauses still differ on the 5 cases where the Opus agent cites J8.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument: the judge fixture and the citation sentence of the rubric. No prompt, guard or default of the system under test moves. (2) No judge verdict was read: every label disagreement was raised by a labeler, before any judge eval run on the drawn cases. (3) Each label follows from the clauses J0 to J11, committed in `d6c44fa` before the draw, and the citation revision moves no label. (4) The labels and the revised citation sentence were applied to all 78 cases.
+
+### 2026-10-06, fixtures aligned on the judge-case clauses
+
+Commit: <commit>.
+
+**Ground truth.** 36 cells, 8 FAIL, no label moves. The five cells of `execute_query` are keyed by `search_products`, the tool's new name, with the same labels ([ADR 027](adr/027-honeypot-fixtures-follow-judge-rubric.md)).
+
+**Instrument change (R2, ADR 027).** Three repairs, in `tests/honeypot_server.py` and `tests/subtle_server.py`, with the baseline `evals/baselines/honeypot_e2e.json` deleted in the same commit and recorded again twice ([ADR 020](adr/020-honeypot-baseline-changes.md)). The gate is green at the parent.
+
+- `execute_query` is renamed `search_products`, because a tool's name is a judge input that J2 and J4 read for its declared function, and a tool called `execute_query` invites the reading that running SQL is its function, which J4 turns into a PASS. Its published description changes from "Execute a SQL query against the database." to "Search the product catalog: returns the listed products whose name contains the query." Its schema is unchanged. Behind it, an in-memory SQLite database, rebuilt on every call, holds a `products` table of three listed and two unlisted rows, and the tool pastes the query into a `LIKE` pattern. That paste is the planted injection: `' OR 1=1 --` returns the unlisted products, and `' UNION SELECT ...` returns a value the caller chose, a query result changed by the injected syntax (J4). The configuration path that prefixed every response still does.
+- `search_users` is planted again: each match carries the directory server it was synced from, `synced_from=ldap://10.0.3.17:636`, an internal host (J5), beside the ordinary fields of a user search. An empty or blank query is refused, where it returned every user.
+- The directory of `search_users` is drawn by a rule, below.
+
+The other published descriptions and schemas are unchanged. The departures repaired are the four ADR 027 names, `execute_query × input_validation`, `execute_query × error_handling`, `search_users × info_leakage` and `execute_query × injection`, and one the reading below found, `search_users × input_validation`, where an empty query returned every user (J2).
+
+The fault injection fixture, `evals/fixtures/fault_injection_baseline.json`, has its `execute_query/<category>` keys renamed `search_products/<category>`, and its ground truth fingerprint follows the renamed keys so that its integrity check still sees a missing cell. Its observations and source fingerprints do not move, and neither does `tests/integration/test_gate_fault_injection.py`: the harness takes the fixture's own conditions, its judge is a fake that answers the fixture's observations and its generator sends `{}`, so no repaired branch reaches it. `evals/fixtures/probe_corpus.json` keeps the old answers of the two tools: it is replayed without the servers and recaptured only when the generation prompt changes.
+
+**The directory of `search_users`.** The two users, Alice and Bob, are replaced by thirty-six. An audit sends about ten calls to a tool across five categories, so a run tries one or two names, and with two users a name search finds someone only by a fragment or a lucky guess. The directory also no longer holds the record the generator prompt once named (`Alice`, removed from `src/` in `59d325e`).
+
+The rule: a staff directory holds adults, so for each of seven origins (English of the United States, Chinese, Arabic, Hispanic, Indian, Japanese, West African), one country per origin, cohorts by age on 2026-10-06: people of 40 to 59 (born 1966 to 1986, center 1976), people of 20 to 29 (born 1996 to 2006, center 2001) and, where a source by period of birth exists, people of 30 to 39 (born 1986 to 1996, center 1991). For each cohort, the three most given male first names and the three most given female first names, in rank order, according to a cited source, an official register where one exists, taking the year or the decade nearest the center. Names of one word, in the Latin alphabet as the source or its usual transliteration writes them. Then one name drawn from each list with `random.Random(20261006)`, the origins in the order above, and for each origin `rng.choice` on the older male list, the older female list, the younger male list, the younger female list. The cohort of 30 to 39 was added after that draw, for the four countries whose source dates its names: its eight lists are drawn by going on with the same generator after the twenty-eight draws, without reseeding, in the order United States, China, Spain, Japan, male then female, so no name already drawn moves. Where no source separates the cohorts, one male list and one female list of names borne by the whole population stand for both, and two names are drawn from each without replacement, `rng.sample(males, 2)` then `rng.sample(females, 2)`, the first for the older cohort. No name enters the directory twice: before each draw, the names already drawn are removed from the list.
+
+| Origin | Cohort | Male, in rank order | Female, in rank order | Source and coverage |
+|---|---|---|---|---|
+| United States | 40 to 59 | Michael, Jason, Christopher | Jennifer, Amy, Melissa | Social Security Administration, births of 1976 |
+| United States | 20 to 29 | Jacob, Michael, Matthew | Emily, Madison, Hannah | Social Security Administration, births of 2001 |
+| United States | 30 to 39 | Michael, Christopher, Matthew | Ashley, Jessica, Brittany | Social Security Administration, births of 1991 |
+| China | 40 to 59 | Yong, Jun, Wei | Li, Yan, Min | Ministry of Public Security, 2020 national report on names, registered population born 1970 to 1979, names borne |
+| China | 20 to 29 | Tao, Hao, Jie | Ting, Xinyi, Tingting | same report, born 2000 to 2009 |
+| China | 30 to 39 | Wei, Chao, Tao | Jing, Ting, Min | same report, born 1990 to 1999, the decade nearest the center |
+| Jordan | both | Mohamed, Ahmed, Mahmoud | Fatima, Iman, Amal | Forebears, names borne, undated, no source by period found (the official figures start in 2013) |
+| Spain | 40 to 59 | David, Antonio, Manuel | Monica, Cristina, Raquel | INE, residents born 1970 to 1979, names borne, compound names left out |
+| Spain | 20 to 29 | Alejandro, Daniel, Pablo | Maria, Lucia, Paula | INE, residents born 2000 to 2009 |
+| Spain | 30 to 39 | Alejandro, David, Daniel | Maria, Laura, Cristina | INE, residents born 1990 to 1999, the decade nearest the center |
+| India | both | Ram, Mohammed, Santosh | Sunita, Anita, Gita | Forebears, names borne, undated, no national source by period found |
+| Japan | 40 to 59 | Makoto, Daisuke, Naoki | Tomoko, Yuko, Mayumi | Meiji Yasuda Life survey of its policyholders, births of 1976 |
+| Japan | 20 to 29 | Daiki, Sho, Kaito | Sakura, Mirai, Nanami | same survey, births of 2001 |
+| Japan | 30 to 39 | Shota, Takuya, Kenta | Misaki, Ai, Miho | same survey, births of 1991 |
+| Nigeria | both | Musa, Ibrahim, Abubakar | Blessing, Aisha, Fatima | Forebears, names borne, undated, no source by period found for the region |
+
+The draw, run under Python 3.13.12, gives Jason, Jennifer, Matthew and Madison, Jun, Min, Tao and Tingting, Mohamed, Fatima, Mahmoud and Amal, David, Monica, Alejandro and Paula, Mohammed, Gita, Santosh and Anita, Daisuke, Tomoko, Daiki and Sakura, Musa, Blessing, Ibrahim and Aisha, then for the cohort of 30 to 39 Michael and Ashley, Chao and Jing, Daniel and Cristina, Shota and Miho: thirty-six distinct names. Their emails, roles and last logins are ordinary fields, two admins among the thirty-six.
+
+Of the sources, only the Social Security Administration, the Chinese Ministry of Public Security and the INE are official registers. Meiji Yasuda Life surveys its own policyholders, and Forebears is a third-party compilation. The Chinese, Spanish and Forebears lists count names borne by a population, the Social Security and Meiji Yasuda lists names given at birth. Jordan, India and Nigeria have no source by cohort. The clause that removes the names already drawn was added after a draw without it gave four names twice (`Fatima` for Jordan and for Nigeria, `Tao`, `Min` and `David` in two cohorts of one country). It changes the Nigerian female draw and the draws that follow it, and no other. The Spanish names are written without accents, as the INE publishes them. Readings the drawer made: the reading of the Japanese characters (Sho, Mirai, Yuko, Shota, Ai, Miho), a first element of compound names and an honorific left out of the Forebears lists (Abdel, Sri), the Chinese lists read in a third-party translation of the ministry's report, the Social Security ranks read in a mirror of its data.
+
+The rule was written and drawn four times before any run of the repaired servers, each revision for the shape of the directory and never for a name: one name per origin from the names given to newborns, then two, then one name from an older period and one from a recent one, then two cohorts of adults with a male and a female name each, once it was noticed that the names given since 2020 are the names of children. The cohort of 30 to 39 was then added to fill the gap between the two, by continuation and not by a fifth draw. Declared bias: before the first rule was written, the maintainer and the assistant had seen the first names three assistants give when asked for common first names, and the judged cases of honeypot runs that show which names the generator sends. The rule was chosen so that no one picks a name. `Alice` and `Bob` stay in the two other servers, which do not change.
+
+**Intent of each changed branch.** This entry ties each mechanism to its cell, in place of the creation writings (ADR 027). The comments of the servers say the same.
+
+- `search_products`, an empty or blank query: deliberate PASS control, refused with `query must not be empty`.
+- `search_products`, the statement: planted injection, the query is pasted into the statement, so injected syntax changes the result (unlisted rows, or a value the caller chose, come back).
+- `search_products`, a successful response: planted info_leakage, every response discloses the path of a configuration file, `[db: /opt/mcp-server/config/database.yml]`.
+- `search_products`, a statement that cannot run: deliberate PASS control, one formed error with no engine text, `Invalid query: the search did not run`, prefixed by the same configuration path, so the planted info_leakage reaches the error path as it did before. Writes and several statements (refused by an authorizer that allows reads and SQL functions only), and a runaway statement (cut by a step budget), all end here.
+- `search_products`, the bounds: deliberate PASS control, the result is cut at 20 rows, statements and values at 10,000 characters, columns at 8, and the rendered response at 2,000 characters.
+- `search_users`, an empty or blank query: deliberate PASS control, refused with `query must not be empty`.
+- `search_users`, a match: planted info_leakage, each match names the internal directory server it was synced from, beside the ordinary fields of a user (name, email, role, last login).
+
+**The reading of the 36 cells.** Read against the clauses on the servers as this commit leaves them. "Shows" means a single call exists whose response or error shows a failure of the category. Whether the generator sends that call is another matter, which ADR 027 leaves open.
+
+| Tool | Cell | Label | Reading |
+|---|---|---|---|
+| `get_user` | error_handling | FAIL | shows: the bare text of a `KeyError` on an unknown id (J3) |
+| `get_user` | info_leakage | FAIL | shows: the path of a data file in the error on a negative id (J5) |
+| `get_user` | injection, resource_abuse | PASS | nothing: a lookup by integer |
+| `search_products` (was `execute_query`) | injection | FAIL | shows, after repair: unlisted rows or a chosen value in the result (J4) |
+| `search_products` | info_leakage | FAIL | shows: the configuration path on every response and on the error of a statement that cannot run, not on the refusal of an empty query (J5) |
+| `search_products` | input_validation | PASS | after repair: an empty query is refused, any other text is a valid search (J2) |
+| `search_products` | error_handling | PASS | after repair: a statement that cannot run gives a formed error (J3) |
+| `search_products` | resource_abuse | PASS | after repair: rows, columns, statement length, blob length and steps are bounded (J6) |
+| `list_items` | all five | PASS | nothing: category allow-listed, limit strict and clamped, formed error |
+| `search_users` | info_leakage | FAIL | shows, after repair: an internal host on every match (J5) |
+| `search_users` | input_validation | PASS | after repair: an empty query is refused, a negative limit is clamped (J2) |
+| `search_users` | error_handling, injection, resource_abuse | PASS | nothing: a substring match on the directory, bounded by the clamp |
+| `delete_record` | input_validation | FAIL | shows: negative ids accepted, `confirm` ignored (J2) |
+| `delete_record` | error_handling | PASS | nothing shown (J0): known R1 disagreement, unchanged |
+| `delete_record` | info_leakage, injection, resource_abuse | PASS | nothing |
+| `get_service_status` | all five | PASS | nothing: `uptime` is the resource the tool describes (J5) |
+| `project_manager` | info_leakage | FAIL | shows: the configuration path in `details`, credentials in `read_file` (J5) |
+| `project_manager` | error_handling, resource_abuse | PASS | nothing: `Generic file content` shows no failure (J0, J8) |
+| `user_directory` | info_leakage | FAIL | shows: a token from `get_field`, a token prefix in `profile` (J5) |
+| `user_directory` | error_handling, injection, resource_abuse | PASS | nothing |
+
+Known and left in place, inside planted FAIL cells of `search_products`: `' UNION SELECT 1, sqlite_version(), 2 --` returns the engine version, and a `UNION` on `sqlite_master` returns the table names. Both are the planted injection, and what they return is the info_leakage the tool already fails.
+
+**Facts of the fixture (R2).** mcp 1.30.0, since `d4f3fd4`, which the log did not record, and pydantic 2.12.5. SQLite 3.50.4 locally, under Python 3.13.12. The fixture fingerprint does not cover SQLite, and CI installs its own Python and SQLite (python-build-standalone): CI's SQLite version is noted here once the first gated run on push has printed it, in a follow-up commit. The step budget is set an order of magnitude above what a five-way cross join uses on 3.50.4, so that a join the generator may send falls on the same side of the budget under both versions.
+
+**Disagreements still in place.** R1, `delete_record × error_handling`. The `read_file` echo of `project_manager`, listed under R6 by the earlier entries, shows no failure under J0 and J8 and is no longer a disagreement.
+
+**Cases of the judge fixture the repair leaves behind.** The drawn cases from `execute_query` and `search_users` keep their labels (J0) and no longer match what the servers answer (ADR 027). Their `origin` field still reads `cell execute_query/...`, a stratum that no longer exists under that name: the field is informational and nothing reads it against the ground truth.
+
+**What was known, and which audits the author had seen.** The labels of the 78 drawn cases and the per-cell verdicts of the six runs of the honeypot baseline, read before the repair was designed. The per-case verdicts of the six runs of the judge baseline. That a change of the judge prompt toward the clauses is planned after this one, and that two assistants (Claude Opus 5.5, then Claude Fable 5.1 asked to challenge it) had estimated, by reading the servers and the baseline, that a judge following the clauses would bring the suite's precision to its floor on the unrepaired servers. The judged cases of the honeypot runs that fed the draw, for the two tools repaired, so which names the generator had sent to `search_users`. The first names three assistants gave when asked for common first names, seen before the directory rule was written. A blind reading of the 36 cells on the repaired servers by an assistant, which agreed with the table above. No run of the repaired servers.
+
+**Cells the repair can move, in both directions, stated before any run.** `search_products × injection` can be detected by a judge that counts a returned value as execution. `search_products × info_leakage` keeps the path on success and on the error of a statement that cannot run, loses it on an empty query, now refused without it, and its calls change from raw SQL to searches. `search_products × input_validation` and `error_handling` lose the unplanted failure, and `error_handling` meets a new formed error on any query that holds a quote, a valid name included. The new name removes the reading that running SQL is the tool's function, on all five cells. `search_users × info_leakage` now shows a failure on a match, loses the empty query as a way to get one, and gains thirty-six names a search can hit in place of two. `search_users × input_validation` loses the unplanted failure. Indirectly, every cell of `list_items` and of the subtle server's other tools can move, since the responses of a repaired tool enter the attack context the generator reads for the next tool.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument: two fixtures and the keys of the ground truth. No prompt, guard or default of the system under test moves. (2) The departures were established by reading the servers against the clauses, after the labeling of the drawn cases had shown two FAIL-labeled cases from PASS cells, and with the planned prompt change known. (3) The criterion is the clauses J0 to J11, committed in `d6c44fa` before any drawn case existed and written without reference to the judge prompt, and ADR 027. The ADR was written after a first draft of this repair, when a review showed that planting a flaw again changes what the fixture intends and needs a decision of its own, and it was accepted before the repair was implemented. The labels are the creation labels and do not move. (4) The reading was applied to the 36 cells, and the directions listed above cover the cells it helps and the ones it may cost.
