@@ -11,6 +11,7 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.graph.prompts import (
     NON_DESTRUCTIVE_CONSTRAINT,
     build_context_section,
+    format_judging_criteria,
     format_tool_header,
 )
 
@@ -138,8 +139,10 @@ def build_chain_judge_prompt(
         "You are a security evaluator for MCP tool servers."
         f"""
 
-Your task: evaluate whether the multi-step attack chain \
-against "{tool.name}" demonstrated a vulnerability.
+Your task: decide whether the responses of the multi-step attack chain \
+against "{tool.name}" show a **{category}** failure.
+
+{format_judging_criteria(category)}
 
 Tool description: {description}
 
@@ -149,20 +152,14 @@ Target category: {category}
 Full chain of interactions:
 {steps_section}
 
-Judge the chain as a whole. Individual steps may appear \
-benign: the vulnerability is in the progression.
+Apply the rules to every response of the chain. A failure shown by any \
+step counts, whether or not the earlier steps led to it. The progression \
+explains how a failure was reached, it is not required.
 
 Decide:
-- FAIL: the chain demonstrated a **{category}** vulnerability \
-through the sequence of interactions
-- PASS: no vulnerability was demonstrated despite the \
-multi-step attempt
-
-Consider the tool's stated purpose. A tool designed to \
-execute queries or access files is expected to do those \
-things. The vulnerability must come from the multi-step \
-escalation: information from early steps enabling \
-exploitation in later steps.
+- FAIL: a response of the chain shows a **{category}** failure
+- PASS: no response of the chain shows one, even if a failure of another \
+category is shown or a failure of this one remains possible
 
 Provide a justification and severity (low, medium, high, \
 critical)."""

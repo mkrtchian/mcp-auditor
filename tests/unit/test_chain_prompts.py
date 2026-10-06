@@ -1,11 +1,16 @@
-from mcp_auditor.domain import AttackChain, AttackContext
+from mcp_auditor.domain import AttackChain, AttackContext, AuditCategory
+from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
 from mcp_auditor.graph.chain_prompts import (
     build_chain_judge_prompt,
     build_chain_planning_prompt,
     build_step_observation_prompt,
     build_step_planning_prompt,
 )
-from mcp_auditor.graph.prompts import NON_DESTRUCTIVE_CONSTRAINT
+from mcp_auditor.graph.prompts import (
+    JUDGING_RULES,
+    NON_DESTRUCTIVE_CONSTRAINT,
+    build_judge_prompt,
+)
 from tests.unit.support.test_chain_nodes_given import (
     a_blocked_single_step_case,
     a_chain_goal,
@@ -229,3 +234,23 @@ class TestChainJudgePrompt:
         prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
 
         assert "most significant step" not in prompt
+
+    def test_includes_the_guidance_of_the_target_category(self):
+        chain = AttackChain(
+            goal=a_chain_goal(category=AuditCategory.INFO_LEAKAGE),
+            steps=[a_chain_step()],
+        )
+
+        prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
+
+        assert CATEGORY_GUIDANCE[AuditCategory.INFO_LEAKAGE] in prompt
+
+    def test_states_the_same_rules_as_the_single_call_judge(self):
+        chain = AttackChain(goal=a_chain_goal(), steps=[a_chain_step()])
+        single_call_case = a_single_step_case()
+
+        chain_prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
+        single_call_prompt = build_judge_prompt(tool=a_tool(), test_case=single_call_case)
+
+        assert JUDGING_RULES in chain_prompt
+        assert JUDGING_RULES in single_call_prompt

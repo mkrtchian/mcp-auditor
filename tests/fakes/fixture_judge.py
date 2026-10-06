@@ -20,7 +20,7 @@ CHAIN_ONLY_FLAWS: list[Cell] = [
 
 _NO_USAGE = ProviderUsage()
 # `build_judge_prompt` in graph/prompts.py, `build_chain_judge_prompt` in graph/chain_prompts.py.
-_SINGLE_STEP_CELL = re.compile(r'the tool "(?P<tool>[^"]+)" has a \*\*(?P<category>\w+)\*\*')
+_SINGLE_STEP_CELL = re.compile(r'the tool "(?P<tool>[^"]+)" shows a \*\*(?P<category>\w+)\*\*')
 _CHAIN_TOOL = re.compile(r'against "(?P<tool>[^"]+)"')
 _CHAIN_CATEGORY = re.compile(r"Target category: (?P<category>\w+)")
 _VERDICTS = {Observation.PASS: EvalVerdict.PASS, Observation.FAIL: EvalVerdict.FAIL}

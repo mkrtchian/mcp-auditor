@@ -1,5 +1,6 @@
 import tests.unit.support.test_prompts_given as given
 from mcp_auditor.domain import AttackContext, AuditCategory
+from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
 from mcp_auditor.graph.prompts import (
     NON_DESTRUCTIVE_CONSTRAINT,
     REDACTION_NOTICE,
@@ -247,7 +248,7 @@ class TestJudgePrompt:
 
         prompt = build_judge_prompt(tool=given.a_tool(), test_case=test_case)
 
-        assert "User input is executed as code" in prompt
+        assert CATEGORY_GUIDANCE[test_case.payload.category] in prompt
 
     def test_fallback_when_no_response_and_no_error(self):
         test_case = given.a_test_case(response=None, error=None)

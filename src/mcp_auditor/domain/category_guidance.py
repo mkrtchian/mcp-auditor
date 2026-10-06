@@ -1,44 +1,55 @@
-# Consumed by the judge prompt (build_judge_prompt in graph/prompts.py) to scope
-# each verdict to a single category. The attack generator keeps its own inline
+# Read by both judges, the single-call judge (build_judge_prompt in graph/prompts.py) and the
+# chain judge (build_chain_judge_prompt in graph/chain_prompts.py), after the shared rules, to
+# scope each verdict to a single category. The attack generator keeps its own inline
 # per-category guidance in build_attack_generation_prompt.
 from mcp_auditor.domain.models import AuditCategory
 
 CATEGORY_GUIDANCE: dict[AuditCategory, str] = {
-    AuditCategory.INFO_LEAKAGE: """What counts as info_leakage:
-- Stack traces, internal file paths, database connection strings, or server configuration exposed in responses or errors
-- PII (emails, roles, internal identifiers) returned when not required by the tool's purpose
+    AuditCategory.INPUT_VALIDATION: """What counts as an input_validation failure:
+- The tool treats an invalid input as valid: it succeeds, or computes a result, from it. An input is invalid when it breaks what a schema could express (type, presence, length, bounds, format, allowed values) or a constraint the tool description states. Read it from the tool's name and description, the parameter's name and the value sent: a negative id, count or quantity, an empty text in a parameter meant to carry one.
+- A value of the wrong type converted and used: "10" taken as a number, "yes" as a boolean.
+- The tool acts against the meaning its name or description gives to a valid parameter: a dry_run=true call that still writes, a recursive=false call that still descends.
 What does NOT count:
-- Documentation paths (e.g., /help/api-guide) or user-facing URLs
-- Generic error messages that reveal no internal structure""",
+- An invalid input refused, whatever the form of the refusal, a crash included. A crash can be an error_handling failure.
+- An out-of-range value answered with the nearest valid value: a page size of -5 answered with one item.
+- Arbitrary text in a free-text parameter, such as a search term or a command argument. Such text is a valid input, and what the tool does with it is judged under injection.
+- A statement in a language the parameter carries (SQL, a glob, a regular expression) that does not parse. Its grammar is not a property of the input: an operation that cannot succeed is judged under error_handling. An empty text is not such a statement: it is judged by the first line above.""",
+    AuditCategory.ERROR_HANDLING: """What counts as an error_handling failure:
+- An unhandled exception reaches the caller: a stack trace, or the text of an exception passed through as is, whether it comes from the server's code, a system library or a subprocess.
+- An operation that cannot succeed is reported as a success: a malformed statement reported as executed, a resource that does not exist reported as found, read or changed. A success message counts as such a report, even with no output of the operation.
+A resource name the payload made up shows that the resource does not exist when it is specific to the call, so that nothing could bear it by chance: random or describing itself as absent, such as no-such-invoice-5f2c. A short or ordinary name, such as test or admin, could exist and shows nothing, and so does a number, even one at the boundary of a type.
+What does NOT count:
+- A formed error: it names the cause in terms of the parameter or the resource, with no errno, no exception class name, no exit code and no raw output of a subprocess. "No invoice numbered 7" and "start_date must be before end_date" are formed, and so is a validator's report that lists the failing fields. "[Errno 13] Permission denied: ...", "Traceback (most recent call last)", "exit status 2: tar: ..." and a bare "'7'" (the text of a lookup exception) are not.
+- An invalid input accepted with a success response. That is judged under input_validation, and is an error_handling failure only when the operation asked for could not have succeeded.
+- What an error discloses. That is judged under info_leakage: here, only whether the error is formed.""",
     AuditCategory.INJECTION: """What counts as injection:
-- User input is executed as code, SQL, or commands (e.g., SQL injection, command injection)
-- User input is reflected unsanitized in a way that could alter execution
+- The response shows an effect of the payload beyond what the tool offers: the output of a command, the content of a file outside the scope the tool declares, a query result changed by syntax the payload injected into a statement the tool builds (rows the search should not return, a value the payload chose).
+- The payload reached something outside the tool's declared reach and brought it back: a file outside its declared directories, a credential, an internal host. This counts whatever the tool's declared function, a tool that fetches URLs included.
 What does NOT count:
-- The tool echoing input back inside an error message, unchanged and unexecuted (that's error_handling or info_leakage, not injection). This exclusion is narrow: output that evidences execution is not an echo. A marker returned as command output (a probe string, a username, a version banner), or a query result, means the input ran, and that is injection.""",
-    AuditCategory.INPUT_VALIDATION: """What counts as input_validation failure:
-- The tool accepts clearly invalid input without rejecting OR normalizing it (e.g., negative IDs used as-is, wrong types, out-of-range values processed verbatim)
-- Missing boundary checks that allow nonsensical operations
-- An error whose message is only the submitted value, with no descriptive text, as a raw KeyError from a lookup produces. That is an unhandled exception, not input validation.
+- A tool running what its description says it runs: a tool described as running shell commands, running one.
+- A payload handled as literal data: searched for as text, stored, or returned unchanged.
+- A payload refused.
+- An echo: the payload returned as it was sent, or a statement that it was executed with no output of its execution. A marker shows execution only when it comes back as the output of a command or a query, not as a copy of the input.""",
+    AuditCategory.INFO_LEAKAGE: """What counts as info_leakage, in responses and errors alike:
+- The server's own implementation or configuration: paths of its code or configuration files, library or engine versions, stack traces, the name of an internal class or model, database structure, secrets, environment variables, internal hosts.
+- The system it runs on: paths of data files, other operating system users, installed packages, details of the runtime environment, command-line arguments, database connection strings.
+- Data sensitive by nature, whatever the tool: credentials, passwords or their hashes, tokens and keys, identity numbers, bank or health data.
+- Personal data about people from a tool whose objects are not people: a customer's phone number in a weather tool's answer.
+- Anything the payload reached outside the tool's declared reach and brought back: a file outside its declared directories, a credential, an internal host. This counts whatever the tool's declared function, a tool that fetches URLs included.
 What does NOT count:
-- The tool crashes on bad input (that's error_handling)
-- The tool processes input through its core function (that's injection, not input_validation). A tool whose purpose is to accept and forward text (SQL queries, search terms, commands) is NOT failing input_validation by accepting that text — even if it's empty, malformed, or adversarial.
-- The tool silently clamps or normalizes out-of-range values to a safe range. Clamping IS valid input handling — the tool does not need to reject the request as long as the invalid value does not reach downstream logic.
-- A text-search or lookup tool treating user input as a literal search term (not as code or commands) is working correctly. Receiving a SQL/injection payload as a search query and returning an empty result is NOT an input_validation failure — the tool correctly treated the input as data.""",
-    AuditCategory.ERROR_HANDLING: """What counts as error_handling failure:
-- Unhandled exceptions (raw KeyError, ValueError, TypeError surfaced to the caller)
-- Missing graceful error responses for predictable failure modes (e.g., not-found, invalid format)
-What does NOT count:
-- Clean, structured error messages (e.g., "Unsupported format: expected json or csv", "ID must be between 1 and 1000")
-- The tool successfully processing input and returning a result — even if the response contains suspicious content like internal paths or metadata. If the tool returned a success response, there was no error to handle. Sensitive data in a success response is info_leakage, NOT error_handling.
-- The tool returning the input value as-is is NOT safe error handling if it indicates an unhandled exception
-- A tool that passes input through to a backend system (e.g., SQL engine, API) is not required to pre-validate the input's syntax. If the tool's purpose is to forward queries, silently processing malformed input is expected behavior, not an error_handling failure.
-- A tool accepting edge-case inputs (negative IDs, empty strings) and returning a success response is NOT an error_handling failure — that's input_validation (if it should have rejected them) but the tool did not crash or produce an unhandled exception.""",
+- Fields that are ordinary for the objects the tool is about, as its name and description give them: a customer lookup returning the customer's name and address.
+- The resources the tool is described as exposing, and the scope it declares: a listing from a tool that lists files, the root a file tool declares, named in a refusal.
+- A path or URL given to the caller as a resource to consult, such as documentation.
+- The caller's own payload coming back. What the server adds around it is still judged.
+- A formed error that reveals no internal detail.""",
     AuditCategory.RESOURCE_ABUSE: """What counts as resource_abuse:
-- The tool allows unbounded resource consumption (unlimited memory, CPU, disk, network) — e.g., returning millions of rows, loading unbounded data into memory
-- No size caps on operations that could grow without limit
+- The response shows the server hung, crashed or ran out of a resource: the process died or stopped answering, an out-of-memory error. A timeout or a dropped connection shows it only as the third line says.
+- The server did an unbounded amount of work on request: every one of a million items returned.
+- A timeout or a dropped connection, when the payload is oversized: a string of 100,000 characters or more, an integer of absolute value 2^31 or more, nesting 100 levels deep or more, or a count or size parameter of 10^6 or more. With any other payload, a timeout or a dropped connection does not show its cause, and gives PASS.
 What does NOT count:
-- The tool capping or limiting results (that's proper mitigation)
-- Other vulnerabilities like path leaks or injection (those are different categories)
-- Operations bounded by construction, which act on or return a fixed amount of data whatever the input. These are inherently bounded and do NOT require rate limiting to pass.
-- The absence of rate limiting alone is NOT resource_abuse unless the tool performs an operation that can consume unbounded resources in a single call.""",
+- A large value accepted and processed with a bounded effect.
+- An oversized payload returned whole, with no hang and no crash.
+- A statement that the payload was executed, with no output of its execution.
+- An exception returned in the error. It is judged under error_handling.
+- A cap or a rate limit missing, when the response does not show it exceeded.""",
 }

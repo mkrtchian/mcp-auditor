@@ -15,6 +15,13 @@ NON_DESTRUCTIVE_CONSTRAINT = """NON-DESTRUCTIVE PAYLOADS. This applies to every 
 - When nothing worth reading is in reach, a reflected marker still proves the injection ran: `echo mcp-auditor-probe`, `id`, `whoami`, `SELECT` / `UNION SELECT` rather than DDL or DML. It proves execution, not impact.
 - A destructive payload proves nothing more than a benign marker does, and it corrupts the rest of the audit."""
 
+JUDGING_RULES = """RULES:
+1. Judge what the response or the error shows. A failure that is only possible, that nothing in the response or the error shows, gives PASS. When the response leaves two readings open, or does not show whether the server or something around it caused what you see, give PASS: a cause that is not shown is not reported.
+2. Judge only the category tested. A failure that meets the definition of the category tested is a FAIL even if it also meets the definition of another category. A failure that meets only the definition of another category gives PASS.
+3. The auditor's own text, the test description and any observation written during the test, says what the auditor meant to test or believed. It is not evidence. Only the tool's response and error are.
+4. The framework that serves the tool is part of the server. Judge a message from the framework or from its argument validator like any other part of the response. A prefix the framework adds in front of an exception's text does not make that text a formed error.
+5. A timeout or a dropped connection gives PASS in every category except resource_abuse, which says when it counts. An empty response shows nothing by itself."""
+
 
 # Without this notice the judge takes a marker for inert text and can pass a response
 # that leaks the value, a leak it flags when the value itself is shown.
@@ -171,25 +178,18 @@ def build_judge_prompt(
     test_case: TestCase,
 ) -> str:
     outcome_section = _format_outcome(test_case)
-
     category = test_case.payload.category
-    category_guidance = CATEGORY_GUIDANCE.get(category, "")
-
     description = tool.description or "No description provided"
 
     return f"""You are a security evaluator for MCP tool servers.
 
-Your task: evaluate whether the tool "{tool.name}" has a **{category}** vulnerability based on the ACTUAL BEHAVIOR observed in this test result.
+Your task: decide whether the response or the error of the tool "{tool.name}" shows a **{category}** failure.
 
-IMPORTANT RULES:
-1. You are evaluating ONLY the "{category}" category. Even if you notice other security issues (e.g., information leakage when testing for injection), you must judge ONLY whether a {category} problem exists.
-2. Base your verdict ONLY on what the tool actually did (the response/error below), NOT on what the test description expected to happen. The test description is just context — the tool's actual behavior is the evidence.
-3. Consider the tool's stated purpose. A tool is expected to do what its description says it does. Performing its core function is not a vulnerability.
+{format_judging_criteria(category)}
 
 Tool description: {description}
 
 Test category: {category}
-{category_guidance}
 
 Test case description: {test_case.payload.description}
 
@@ -198,10 +198,14 @@ Attack payload arguments: {json.dumps(test_case.payload.arguments)}
 {outcome_section}
 
 Decide:
-- FAIL: the tool exhibited a **{category}** vulnerability
-- PASS: no {category} problem detected (even if other issues exist)
+- FAIL: the response or the error shows a **{category}** failure
+- PASS: it shows none, even if a failure of another category is shown or a failure of this one remains possible
 
 Provide a justification and severity (low, medium, high, critical)."""
+
+
+def format_judging_criteria(category: AuditCategory) -> str:
+    return f"{JUDGING_RULES}\n\n{CATEGORY_GUIDANCE[category]}"
 
 
 def _format_outcome(test_case: TestCase) -> str:
