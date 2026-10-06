@@ -318,14 +318,13 @@ Integration tests, real servers, no LLM, in the style of the existing files.
 
 ## Procedure
 
-The implementation commits the change. The steps below are the maintainer's, and nothing is pushed until the recordings of step 4 are committed.
+The implementation commits the change and pushes nothing. What follows is the maintainer's.
 
-1. **Review of the commit**, branch by branch, against "The 36 cells". Corrections go in commits on top of it. A correction to a server is part of the repair and comes before the recordings.
-2. **Blind check, before the recordings.** Two agents on different models, launched by the maintainer, each receive the two repaired servers and the chain server with their tool docstrings (the published descriptions) kept and their comments and module docstrings removed, the clauses J0 to J11, and nothing else: no ground truth, no labeling log entry, no baseline. Each says, for every (tool, category) pair of the 36, whether some single call makes the response or error show a failure of that category, and with which call. A pair where an agent departs from the ground truth is examined by the maintainer. The entry records the agreement before review.
-3. **Follow-up commit** that fills the entry's `Commit:` line and adds the agreement of the blind check. Between the commit of the repair and the committed recordings no baseline exists, and a push would run the gate with nothing to compare against.
-4. **Recordings**, clean tree, default conditions, at the last of those commits, once the servers are final: `uv run python -m evals.run_evals --record-baseline` twice (exploratory, then confirmed), then commit `evals/baselines/honeypot_e2e.json` by hand.
-5. **If a recording is refused** (a floor breached, no stable and correct cell on one side, or the second recording disagreeing with the first beyond what [ADR 023](../docs/adr/023-honeypot-second-recording.md) absorbs): the repair is reverted with its recordings (ADR 027). Nothing is patched after reading a refusal.
-6. **Push**, which runs the paired gate against the new baseline.
+1. **Blind check.** Two agents on different models, launched by the maintainer, each receive the two repaired servers and the chain server with their tool docstrings (the published descriptions) kept and their comments and module docstrings removed, the clauses J0 to J11, and nothing else: no ground truth, no labeling log entry, no baseline. Each says, for every (tool, category) pair of the 36, whether some single call makes the response or error show a failure of that category, and with which call. A pair where an agent departs from the ground truth is examined by the maintainer, and the entry records the agreement before that review, in the follow-up commit that fills its `Commit:` line. A correction to a server is part of the repair: it is committed on top, and the blind check is run again on the corrected servers.
+2. **Recordings**, once the servers are final, clean tree, default conditions, at one commit: `uv run python -m evals.run_evals --record-baseline` twice (exploratory, then confirmed), then commit `evals/baselines/honeypot_e2e.json` by hand.
+3. **If a recording is refused** (a floor breached, no stable and correct cell on one side, or the second recording disagreeing with the first beyond what [ADR 023](../docs/adr/023-honeypot-second-recording.md) absorbs): the repair is reverted with its recordings (ADR 027). Nothing is patched after reading a refusal.
+
+Between the commit that deletes the baseline and the one that commits the new recordings, nothing is pushed: the gate on main would have nothing to compare against.
 
 The judge isolation eval is not affected: its fixture and its baseline do not move.
 
@@ -356,7 +355,7 @@ What the due-diligence pass concluded, on 2026-10-06, about the external facts t
 
 ### Step 1: Repair `execute_query` (renamed `search_products`) and `search_users`, with their tests, the renamed keys, the labeling log entry and the baseline deletion
 
-The whole plan fits one agent session: ten files modified, one file deleted, about fifteen integration test cases on two existing test files, and a mechanical key rename in four more. It is also one commit by design (the servers, their tests, the log entry and the deletion together). The step is committed by the implementation, as one commit, and never pushed: the "Procedure" section (review, blind check, follow-up commit, recordings, push) is the maintainer's. Run no eval (`evals.run_evals` and the others need an LLM and are the maintainer's).
+The whole plan fits one agent session: ten files modified, one file deleted, about fifteen integration test cases on two existing test files, and a mechanical key rename in four more. It is also one commit by design (the servers, their tests, the log entry and the deletion together). The step is committed by the implementation, as one commit, and never pushed: the "Procedure" section (blind check, recordings) is the maintainer's. Run no eval (`evals.run_evals` and the others need an LLM and are the maintainer's).
 
 **Files**
 
@@ -389,7 +388,7 @@ The whole plan fits one agent session: ten files modified, one file deleted, abo
 6. **`docs/labeling-log.md`.**
    - Under "Rubric", "Honeypot cells", one sentence right after R6 pointing at [ADR 027](adr/027-honeypot-fixtures-follow-judge-rubric.md) for what it supersedes in R1, R3, R5 and R6. No new clause.
    - Append the entry `### 2026-10-06, fixtures aligned on the judge-case clauses` at the end of "Entries", with `Commit: <commit>.` as its first line (the maintainer fills it in a follow-up commit, as `0eefef0` did). Its sections are the bullets of "Files to modify", `docs/labeling-log.md`, in that order, written as bold-headed paragraphs like the entries above: ground truth, instrument change (R2, ADR 027), intent of each changed branch (the code comments as written in the servers), the reading of the 36 cells (the table of "The 36 cells", the known `UNION` reach on `sqlite_version()` and `sqlite_master` included), facts of the fixture (mcp 1.30.0 since `d4f3fd4`, pydantic 2.12.5, SQLite 3.50.4 locally, the fingerprint does not cover SQLite, CI installs its own Python and SQLite), disagreements still in place, cases of the judge fixture the repair leaves behind, what was known, cells the repair can move in both directions, and the four questions of ADR 016. Also state there that the fault harness (`evals/fixtures/fault_injection_baseline.json`, `tests/integration/test_gate_fault_injection.py`) is untouched and why (its judge is a fake and its generator sends `{}`), and that `evals/fixtures/probe_corpus.json` keeps the old answers of the two tools.
-   - Do not write the agreement of the blind check: it does not exist yet, the maintainer adds it after step 2 of "Procedure". Do not invent any run, figure or verdict on the repaired servers.
+   - Do not write the agreement of the blind check: it does not exist yet, the maintainer adds it after the blind check of "Procedure". Do not invent any run, figure or verdict on the repaired servers.
    - Follow the writing conventions of the log: no em dash, no semicolon, English.
 7. **Delete the baseline.** `git rm evals/baselines/honeypot_e2e.json`. It goes in the same commit as the rest.
 8. Touch nothing listed under "What stays unchanged" (no living doc, no label of the ground truth, no `src/`, no chain server, no judge fixture or baseline, no CVE file, no probe corpus).
