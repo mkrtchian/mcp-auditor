@@ -139,6 +139,18 @@ def test_an_osv_record_without_a_published_date_is_read_without_one(tmp_path: Pa
     assert record.published is None
 
 
+def test_an_osv_reference_without_a_url_is_left_out(tmp_path: Path):
+    advisory = given.an_osv_advisory(
+        "CAN-2022-1000071",
+        references=[{"type": "WEB"}, {"type": "WEB", "url": "https://example.org/gateway"}],
+    )
+    export = given.an_osv_export(tmp_path, advisory)
+
+    [record] = read_osv(export)
+
+    assert record.references == ["https://example.org/gateway"]
+
+
 def test_the_provenance_records_the_hash_of_each_download_and_its_date(tmp_path: Path):
     feed = given.an_nvd_feed(tmp_path, given.an_nvd_cve("CVE-2025-1"))
     export = given.an_osv_export(tmp_path, given.an_osv_advisory("PYSEC-2025-12"))

@@ -73,7 +73,10 @@ def _from_osv_format(source: SourceName, advisory: dict[str, Any]) -> AdvisoryRe
             for affected in advisory.get("affected", [])
             if "package" in affected
         ],
-        references=[reference["url"] for reference in advisory.get("references", [])],
+        # The OSV schema requires a url, yet the export carries references with a type alone.
+        references=[
+            reference["url"] for reference in advisory.get("references", []) if "url" in reference
+        ],
     )
 
 
