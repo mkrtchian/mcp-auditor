@@ -56,6 +56,13 @@ class Widening(BaseModel):
     hit_count: int
 
 
+class Downloads(BaseModel):
+    """The day each export was downloaded, `nvd` keyed by feed file name."""
+
+    nvd: dict[str, date]
+    osv: date
+
+
 class AgentRole(StrEnum):
     COLLECTOR = "collector"
     RECALL = "recall"

@@ -28,6 +28,10 @@ uv run python -m evals.run_cve_benchmark --record-baseline  # Record one file pe
 uv run python -m evals.run_cve_benchmark --ungated          # CVE graded run with no comparison to the baseline, exit 0
 uv run python -m evals.run_cve_benchmark --concurrency N    # Audits (or calibrations) in flight at once, default 6, 1 for the old sequence (combines with any graded mode and --calibrate)
 uv run python -m tests.unit.support.test_cve_grammar_golden_given  # Regenerate the CVE grammar golden master, only in a commit that changes what the grammar grades or a target's mechanism or aim, never in a refactoring
+uv run python -m evals.run_census prefilter          # CVE holdout census: write the undecided pre-filter hits of each export into output/holdout_census/work/ (exports downloaded by hand, see evals/holdout_census_method.md, no LLM)
+uv run python -m evals.run_census status             # What the census still lacks (undecided hits, gaps to widen, unconfirmed absences), exit 0 complete, 1 otherwise
+uv run python -m evals.run_census classify-dossier --out DIR  # Write the classifiers' input outside the repository, once the census is complete
+uv run python -m evals.run_census assemble           # Build, check with load_census and write evals/holdout_census.json from the exports and the work directory, then commit it by hand
 uv run python -m evals.capture_probe_corpus           # Capture evals/fixtures/probe_corpus.json once, reference settings only (Docker, the CVE images, GOOGLE_API_KEY), then commit it by hand
 uv run python -m evals.run_probe                      # Model probe: replay the corpus against the reference and every candidate, report statistics and defects (needs GOOGLE_API_KEY and OPENAI_API_KEY, see evals/probe_method.md)
 uv run python -m evals.run_probe --candidates "gpt-6-luna none" "gpt-6-luna low" --schema TestCaseBatch  # Subset run: debugging only, no statistics, needs the keys of the named candidates only

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `python -m evals.run_census` builds the CVE holdout census, `evals/holdout_census.json`, from the GitHub Advisory Database, NVD and OSV exports and the output files of the census agents. `prefilter` writes the pre-filter hits no collector has decided yet, `status` lists what is left and exits `0` once the census is complete, `classify-dossier` writes the classifiers' input, and `assemble` builds the census, recomputes its figures and refuses to write one that does not load. See `evals/holdout_census_method.md`.
+
 ### Changed
 
 - The judge decides on the clauses that label the judge isolation cases (`docs/labeling-log.md`): a verdict says whether the tool's response or error shows a failure of the category tested, and a failure that is only possible is a PASS. A failure that meets the definitions of several categories is a FAIL in each. A failure the response does not show is a PASS, a timeout or a dropped connection on a payload that is not oversized included. A payload that reaches something outside the tool's declared reach and brings it back is an injection and an info_leakage failure, whatever the tool's declared function. The rules every category shares are `JUDGING_RULES` in `graph/prompts.py`, the guidance of each category stays in `domain/category_guidance.py`.
