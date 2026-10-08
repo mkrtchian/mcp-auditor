@@ -36,15 +36,6 @@ def disclosure_date(records: Sequence[SourceRecord]) -> date:
     return min(record.published for record in records)
 
 
-def _cve_order(advisory_id: str) -> tuple[int, int] | None:
-    match = re.fullmatch(r"CVE-(\d+)-(\d+)", advisory_id)
-    return (int(match[1]), int(match[2])) if match else None
-
-
-def _earliest_published(ghsa: str, records: Sequence[SourceRecord]) -> date:
-    return min((record.published for record in records if record.id == ghsa), default=date.max)
-
-
 def _flaw(ids: set[str], records: list[AdvisoryRecord], recorded: Mapping[str, set[str]]) -> Flaw:
     met = sorted(
         identifier for identifier, known in recorded.items() if ids & (known | {identifier})
@@ -91,3 +82,12 @@ class _UnionFind:
 
     def nodes(self) -> list[str]:
         return list(self._parent)
+
+
+def _cve_order(advisory_id: str) -> tuple[int, int] | None:
+    match = re.fullmatch(r"CVE-(\d+)-(\d+)", advisory_id)
+    return (int(match[1]), int(match[2])) if match else None
+
+
+def _earliest_published(ghsa: str, records: Sequence[SourceRecord]) -> date:
+    return min((record.published for record in records if record.id == ghsa), default=date.max)
