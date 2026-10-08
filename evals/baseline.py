@@ -79,7 +79,8 @@ def fingerprint_ground_truth(ground_truth: GroundTruth) -> str:
 
 def fingerprint_source(source: str) -> str:
     """Hash of what executes or reaches the model: comments, formatting and the module
-    docstring are left out (ADR 020). `ast.dump` output belongs to the Python minor version.
+    docstring are left out (ADR 020). The format of `ast.dump` can change with a Python
+    version, which the pinned fingerprint test catches.
     """
     module = ast.parse(source)
     if ast.get_docstring(module, clean=False) is not None:

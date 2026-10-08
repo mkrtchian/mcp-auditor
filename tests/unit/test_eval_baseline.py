@@ -58,6 +58,14 @@ def test_source_fingerprint_changes_with_a_changed_string_literal():
     assert fingerprint_source(changed) != fingerprint_source(given.SERVER_SOURCE)
 
 
+def test_source_fingerprint_of_a_fixed_source_is_pinned():
+    # A Python upgrade that changes the format of ast.dump moves every fingerprint at once,
+    # every baseline then reads not comparable. It fails here, in the upgrade's commit.
+    assert fingerprint_source(given.CANARY_SOURCE) == (
+        "7c8bc659116f2457071c34ff8ede35b8da5aed57972f198e3452e822afa8cb57"
+    )
+
+
 def test_source_fingerprint_ignores_the_module_docstring():
     edited = given.SERVER_SOURCE.replace("A server with one tool.", "The planted flaws, explained.")
 
