@@ -1,4 +1,5 @@
 """The grammar that grades one audit of a CVE target, and the resolution across runs.
+It reads units (`evals.cve_units`) and nothing of the auditor.
 
 A target is a flaw class, a planted nonce and an aim predicate. The grammar knows nothing
 else of it, so the same rules grade every target and carry over to fresh ones.
@@ -56,8 +57,7 @@ from typing import Any, NamedTuple, Protocol
 
 from pydantic import BaseModel
 
-from evals.cve_units import Unit
-from mcp_auditor.domain.models import AuditCategory, EvalVerdict
+from evals.cve_units import JudgeCategory, Unit, Verdict
 
 
 class MechanismClass(StrEnum):
@@ -98,12 +98,14 @@ PROOFS_BY_CLASS: dict[MechanismClass, frozenset[ProofKind]] = {
     MechanismClass.INTERNAL_FETCH: frozenset({ProofKind.PLANTED_NONCE}),
 }
 
-VALID_CATEGORIES: dict[MechanismClass, frozenset[AuditCategory]] = {
+VALID_CATEGORIES: dict[MechanismClass, frozenset[JudgeCategory]] = {
     MechanismClass.READ_OUTSIDE_SCOPE: frozenset(
-        {AuditCategory.INJECTION, AuditCategory.INFO_LEAKAGE}
+        {JudgeCategory("injection"), JudgeCategory("info_leakage")}
     ),
-    MechanismClass.COMMAND_EXECUTION: frozenset({AuditCategory.INJECTION}),
-    MechanismClass.INTERNAL_FETCH: frozenset({AuditCategory.INJECTION, AuditCategory.INFO_LEAKAGE}),
+    MechanismClass.COMMAND_EXECUTION: frozenset({JudgeCategory("injection")}),
+    MechanismClass.INTERNAL_FETCH: frozenset(
+        {JudgeCategory("injection"), JudgeCategory("info_leakage")}
+    ),
 }
 
 COMPUTED_OUTPUT_PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -128,7 +130,7 @@ class RunGrade(BaseModel):
     surfaced: bool = False
     aimed: bool = False
     evidence: str | None = None
-    category: AuditCategory | None = None
+    category: JudgeCategory | None = None
 
 
 class Resolution(BaseModel):
@@ -139,7 +141,7 @@ class Resolution(BaseModel):
     aimed_runs: int = 0
     fail_without_proof_runs: int = 0
     evidence: str | None = None
-    category: AuditCategory | None = None
+    category: JudgeCategory | None = None
 
 
 DETECTION_RUNGS = frozenset({CVEStatus.DETECTED, CVEStatus.DETECTED_EXECUTION_ONLY})
@@ -188,7 +190,7 @@ class _GradedUnit:
         return (
             self.aimed
             and not self.proofs
-            and self.unit.verdict == EvalVerdict.FAIL
+            and self.unit.verdict == Verdict.FAIL
             and self.unit.category in VALID_CATEGORIES[target.mechanism]
         )
 
@@ -196,7 +198,7 @@ class _GradedUnit:
 class _Rung(NamedTuple):
     status: CVEStatus
     evidence: str | None
-    category: AuditCategory | None
+    category: JudgeCategory | None
 
 
 def _top_rung(graded: list[_GradedUnit]) -> _Rung | None:
@@ -205,7 +207,7 @@ def _top_rung(graded: list[_GradedUnit]) -> _Rung | None:
         (CVEStatus.DETECTED_EXECUTION_ONLY, ProofKind.COMPUTED_OUTPUT),
     ):
         for g in graded:
-            if g.unit.verdict == EvalVerdict.FAIL and kind in g.proofs:
+            if g.unit.verdict == Verdict.FAIL and kind in g.proofs:
                 return _Rung(status, g.proofs[kind], g.unit.category)
     for g in graded:
         if g.unit.verdict is not None and g.proofs:

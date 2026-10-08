@@ -11,6 +11,7 @@ from evals.cve_grammar import (
     grade_run,
 )
 from evals.cve_report_units import units_of
+from evals.cve_units import JudgeCategory
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -138,7 +139,7 @@ def a_detected_run() -> RunGrade:
         surfaced=True,
         aimed=True,
         evidence=f"leaked {SENTINEL}",
-        category=INFO_LEAKAGE,
+        category=JudgeCategory(INFO_LEAKAGE.value),
     )
 
 
@@ -159,7 +160,7 @@ def a_reached_run() -> RunGrade:
         surfaced=True,
         aimed=True,
         evidence=f"leaked {SENTINEL}",
-        category=INFO_LEAKAGE,
+        category=JudgeCategory(INFO_LEAKAGE.value),
     )
 
 

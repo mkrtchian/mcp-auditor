@@ -1,11 +1,19 @@
-"""What the grammar grades: a case or a whole chain, as the report records it, or a sequence
-of calibration exchanges. A chain blocked at its first step keeps no step in the report and is
-read on its planned first step."""
+"""The grammar's input vocabulary, which imports nothing of the auditor. What the grammar grades:
+a case or a whole chain, as the report records it, or a sequence of calibration exchanges. A
+chain blocked at its first step keeps no step in the report and is read on its planned first
+step."""
 
 from collections.abc import Sequence
-from typing import Any, NamedTuple
+from enum import StrEnum
+from typing import Any, NamedTuple, NewType
 
-from mcp_auditor.domain.models import AuditCategory, EvalVerdict
+
+class Verdict(StrEnum):
+    PASS = "pass"
+    FAIL = "fail"
+
+
+JudgeCategory = NewType("JudgeCategory", str)
 
 
 class Step(NamedTuple):
@@ -15,8 +23,8 @@ class Step(NamedTuple):
 
 class Unit(NamedTuple):
     steps: tuple[Step, ...]
-    verdict: EvalVerdict | None  # None: not judged (blocked, refused, or a calibration call)
-    category: AuditCategory | None
+    verdict: Verdict | None  # None: not judged (blocked, refused, or a calibration call)
+    category: JudgeCategory | None
     blocked: bool  # independent of verdict: a chain blocked after step 1 is still judged
 
 

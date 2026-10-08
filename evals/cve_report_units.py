@@ -3,13 +3,11 @@ these domain fields and no other: `tool_reports`, `cases`, `chains`, `payload.ar
 `response`, `error`, `blocked_reason`, `eval_result.verdict`, `eval_result.category`,
 `goal.first_step.arguments` and `steps`."""
 
-from evals.cve_units import Step, Unit
+from evals.cve_units import JudgeCategory, Step, Unit, Verdict
 from mcp_auditor.domain.models import (
     AttackChain,
-    AuditCategory,
     AuditReport,
     EvalResult,
-    EvalVerdict,
     TestCase,
 )
 
@@ -46,7 +44,7 @@ def _present(*texts: str | None) -> tuple[str, ...]:
     return tuple(text for text in texts if text is not None)
 
 
-def _judgment(result: EvalResult | None) -> tuple[EvalVerdict | None, AuditCategory | None]:
+def _judgment(result: EvalResult | None) -> tuple[Verdict | None, JudgeCategory | None]:
     if result is None:
         return None, None
-    return result.verdict, result.category
+    return Verdict(result.verdict.value), JudgeCategory(result.category.value)

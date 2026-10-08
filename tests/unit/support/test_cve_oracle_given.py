@@ -5,7 +5,7 @@ from evals.cve_baseline import CVERunConditions
 from evals.cve_gate import CVEGateResult, CVEGateVerdict, TargetComparison, TargetOutcome
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade
 from evals.cve_oracle import CVEBenchmarkReport, CVEResult
-from mcp_auditor.domain.models import AuditCategory
+from evals.cve_units import JudgeCategory
 
 SENTINEL = "s3nt1nel_ab12cd34ef56"
 FINGERPRINT = "0123456789abcdef" * 4
@@ -37,7 +37,7 @@ def a_detected_grade() -> RunGrade:
         surfaced=True,
         aimed=True,
         evidence=f"leaked {SENTINEL}",
-        category=AuditCategory.INJECTION,
+        category=JudgeCategory("injection"),
     )
 
 

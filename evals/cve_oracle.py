@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from evals.cve_baseline import CVERunConditions
 from evals.cve_gate import CVEGateResult, TargetComparison
 from evals.cve_grammar import CVEStatus, GradedTarget, MechanismClass, MissClass, RunGrade, resolve
-from mcp_auditor.domain.models import AuditCategory, ProviderUsage
+from evals.cve_units import JudgeCategory
+from mcp_auditor.domain.models import ProviderUsage
 
 
 class TargetInfo(GradedTarget, Protocol):
@@ -49,7 +50,7 @@ class CVEResult(BaseModel):
     fail_without_proof_runs: int = 0
     budget: int = 0
     evidence: str | None = None
-    category: AuditCategory | None = None
+    category: JudgeCategory | None = None
 
 
 class CVEBenchmarkReport(BaseModel):
