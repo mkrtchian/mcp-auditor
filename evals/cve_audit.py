@@ -14,6 +14,7 @@ from evals.cve_environments import Launch, connect
 from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, RunGrade, grade_run
 from evals.cve_session import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
+from evals.cve_units import units_of
 from evals.metrics import SessionThrottles, blocked_reasons, refused_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import load_settings
@@ -100,7 +101,7 @@ async def _attempt(
 def graded_or_refused(target: GradedTarget, report: AuditReport) -> RunGrade | RefusedAttempt:
     """A detection carries its own proof and stands whatever step was refused. A run that
     did not detect with a refused step says nothing of detection."""
-    grade = grade_run(target, report)
+    grade = grade_run(target, units_of(report))
     if report.refused_steps and grade.status not in DETECTION_RUNGS:
         return RefusedAttempt()
     return grade

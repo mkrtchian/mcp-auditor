@@ -2,7 +2,15 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade
+from evals.cve_grammar import (
+    CVEStatus,
+    GradedTarget,
+    MechanismClass,
+    MissClass,
+    RunGrade,
+    grade_run,
+)
+from evals.cve_units import units_of
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -118,6 +126,10 @@ def a_report(
         chains=chains or [],
     )
     return AuditReport(target=target, tool_reports=[tool_report], provider_usage=ProviderUsage())
+
+
+def graded(target: GradedTarget, report: AuditReport) -> RunGrade:
+    return grade_run(target, units_of(report))
 
 
 def a_detected_run() -> RunGrade:

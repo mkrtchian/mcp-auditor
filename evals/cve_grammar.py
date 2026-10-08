@@ -56,8 +56,8 @@ from typing import Any, NamedTuple, Protocol
 
 from pydantic import BaseModel
 
-from evals.cve_units import Unit, units_of
-from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict
+from evals.cve_units import Unit
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 
 class MechanismClass(StrEnum):
@@ -145,8 +145,8 @@ class Resolution(BaseModel):
 DETECTION_RUNGS = frozenset({CVEStatus.DETECTED, CVEStatus.DETECTED_EXECUTION_ONLY})
 
 
-def grade_run(target: GradedTarget, report: AuditReport) -> RunGrade:
-    graded = [_GradedUnit(unit, target) for unit in units_of(report)]
+def grade_run(target: GradedTarget, units: Sequence[Unit]) -> RunGrade:
+    graded = [_GradedUnit(unit, target) for unit in units]
     rung = _top_rung(graded) or _Rung(CVEStatus.MISSED, None, None)
     return RunGrade(
         status=rung.status,

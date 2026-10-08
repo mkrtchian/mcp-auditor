@@ -86,7 +86,7 @@ def golden_entries() -> dict[str, Any]:
 
 def _graded(target: given.FakeTarget, report: AuditReport) -> dict[str, Any]:
     return {
-        "grade": grade_run(target, report).model_dump(mode="json"),
+        "grade": grade_run(target, units_of(report)).model_dump(mode="json"),
         "units": [_unit_entry(unit, target) for unit in units_of(report)],
     }
 
@@ -371,7 +371,9 @@ def _echoing(arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 def _resolved(target: given.FakeTarget, reports: Iterable[AuditReport]) -> dict[str, Any]:
-    return resolve([grade_run(target, report) for report in reports]).model_dump(mode="json")
+    return resolve([grade_run(target, units_of(report)) for report in reports]).model_dump(
+        mode="json"
+    )
 
 
 if __name__ == "__main__":
