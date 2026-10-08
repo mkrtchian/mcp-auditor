@@ -166,7 +166,9 @@ def test_render_ends_with_the_status_tally():
 
 
 def test_render_tallies_the_ungraded_statuses_after_the_ladder():
-    out_of_scope = given.FakeOutOfScopeCVE(cve_id="CVE-2025-68144", severity="7.8 HIGH", reason="")
+    out_of_scope = given.FakeOutOfScopeCVE(
+        cve_id="CVE-2025-68144", severity="CVSS 6.3 (v4.0, CNA)", reason=""
+    )
     results = [
         *out_of_scope_results([out_of_scope]),
         not_run(given.FakeTarget()),
