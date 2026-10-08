@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The judge decides on the clauses that label the judge isolation cases (`docs/labeling-log.md`): a verdict says whether the tool's response or error shows a failure of the category tested, and a failure that is only possible is a PASS. A failure that meets the definitions of several categories is a FAIL in each. A failure the response does not show is a PASS, a timeout or a dropped connection on a payload that is not oversized included. A payload that reaches something outside the tool's declared reach and brings it back is an injection and an info_leakage failure, whatever the tool's declared function. The rules every category shares are `JUDGING_RULES` in `graph/prompts.py`, the guidance of each category stays in `domain/category_guidance.py`.
 - The chain judge reads the same rules and category guidance as the single-call judge, and counts a failure shown by any step of the chain: the multi-step progression explains how a failure was reached and is no longer required.
+- The CVE oracle's grammar no longer depends on the auditor's code: it grades units, which one adapter builds from an audit report, and its fingerprint now covers that conversion. A golden master freezes what it grades. No grade changes, and the CVE acceptance baseline is recorded again under the new fingerprint (`docs/labeling-log.md`).
 
 ## [0.4.0] - 2026-10-05
 
