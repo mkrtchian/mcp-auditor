@@ -22,6 +22,7 @@ Each flaw carries its identifier, every ID of the flaw, every source record with
 8. A rejected CVE is one whose NVD `vulnStatus` is `Rejected`. A withdrawn GHSA advisory stays a hit, and its `withdrawn` date is recorded.
 9. Agreement on the effect class is reported twice: on the class name (case and whitespace normalized), and on membership of the grammar.
 10. A flaw whose every source record is withdrawn or rejected stays in the census, classified like any other and flagged `withdrawn`. It counts in the agreement only, never in the coverage figures, the breakdowns or the monthly counts.
+11. A collector may decide hits by the vocabulary of their tokens, a token being a maximal run of letters, digits and underscores. It lists the distinct tokens containing `mcp` in its hits that do not contain `model context protocol`, with their counts, reads the whole list and judges each token, checking the package names it occurs in. A hit whose every such token is judged not to name MCP software is dropped, one decision per hit, with a reason that names its tokens. This fixes a way of deciding, not a narrower pre-filter: each of these hits stays in the census with its decision. The script and the judged list stay in `output/holdout_census/` with the agent's transcript.
 
 ## Downloading the exports
 
