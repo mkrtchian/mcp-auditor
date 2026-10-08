@@ -20,13 +20,16 @@ class SourceName(StrEnum):
     OSV = "osv"
 
 
-class AdvisoryRecord(BaseModel):
+class SourceRecord(BaseModel):
     source: SourceName
     id: str
-    aliases: list[str]
     published: date
     withdrawn: date | None
     rejected: bool
+
+
+class AdvisoryRecord(SourceRecord):
+    aliases: list[str]
     summary: str
     details: str
     packages: list[str]

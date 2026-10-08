@@ -3,7 +3,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from evals.census_sources import AdvisoryRecord
+from evals.census_sources import AdvisoryRecord, SourceRecord
 
 
 @dataclass(frozen=True)
@@ -17,7 +17,7 @@ def merge(records: Iterable[AdvisoryRecord], recorded: Mapping[str, set[str]]) -
     return [_flaw(ids, members, recorded) for ids, members in _alias_components(records)]
 
 
-def census_identifier(ids: set[str], records: Sequence[AdvisoryRecord]) -> str | None:
+def census_identifier(ids: set[str], records: Sequence[SourceRecord]) -> str | None:
     rejected = {_canonical(record.id) for record in records if record.rejected}
     cves = sorted(
         (order, each)
@@ -32,7 +32,7 @@ def census_identifier(ids: set[str], records: Sequence[AdvisoryRecord]) -> str |
     return None
 
 
-def disclosure_date(records: Sequence[AdvisoryRecord]) -> date:
+def disclosure_date(records: Sequence[SourceRecord]) -> date:
     return min(record.published for record in records)
 
 
@@ -41,7 +41,7 @@ def _cve_order(advisory_id: str) -> tuple[int, int] | None:
     return (int(match[1]), int(match[2])) if match else None
 
 
-def _earliest_published(ghsa: str, records: Sequence[AdvisoryRecord]) -> date:
+def _earliest_published(ghsa: str, records: Sequence[SourceRecord]) -> date:
     return min((record.published for record in records if record.id == ghsa), default=date.max)
 
 
