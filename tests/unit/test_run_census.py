@@ -53,6 +53,24 @@ def test_status_is_complete_once_every_hit_of_the_widened_prefilter_is_decided(t
     assert given.run("status", sources_directory, work) == COMPLETE
 
 
+def test_status_is_incomplete_while_a_kept_flaw_has_no_date_in_any_source(tmp_path: Path):
+    sources_directory = given.a_sources_directory(
+        tmp_path, osv=[given.an_mcp_advisory(AN_OSV_ONLY, published=None)]
+    )
+    work = given.a_work_directory(tmp_path, decisions=[given.kept(OSV, AN_OSV_ONLY)])
+
+    assert given.run("status", sources_directory, work) == INCOMPLETE
+
+
+def test_an_undated_hit_its_collector_drops_does_not_block_the_census(tmp_path: Path):
+    sources_directory = given.a_sources_directory(
+        tmp_path, osv=[given.an_mcp_advisory(AN_OSV_ONLY, published=None)]
+    )
+    work = given.a_work_directory(tmp_path, decisions=[given.dropped(OSV, AN_OSV_ONLY)])
+
+    assert given.run("status", sources_directory, work) == COMPLETE
+
+
 def test_status_refuses_a_malformed_work_line_rather_than_reading_it_as_incomplete(
     tmp_path: Path,
 ):
@@ -148,6 +166,18 @@ def test_assemble_writes_a_census_that_loads(tmp_path: Path):
         AN_OSV_ONLY: [Discovery.PREFILTER],
     }
     assert [mismatch.flaw for mismatch in loaded.date_mismatches] == [ITS_CVE, ITS_CVE]
+
+
+def test_assemble_records_how_many_hits_each_prefilter_term_finds(tmp_path: Path):
+    sources_directory, work = _a_complete_census_collection(tmp_path)
+    census = tmp_path / "holdout_census.json"
+
+    given.run("assemble", sources_directory, work, "--census", str(census))
+
+    assert {entry.term.text: entry.hit_count for entry in load_census(census).prefilter} == {
+        "mcp": 2,
+        "model context protocol": 0,
+    }
 
 
 def test_classify_dossier_writes_one_file_per_flaw_the_schema_and_the_grammar_classes(

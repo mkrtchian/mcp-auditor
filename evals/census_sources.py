@@ -23,7 +23,7 @@ class SourceName(StrEnum):
 class SourceRecord(BaseModel):
     source: SourceName
     id: str
-    published: date
+    published: date | None  # optional in the OSV schema
     withdrawn: date | None
     rejected: bool
 
@@ -58,12 +58,12 @@ def read_osv(export: Path) -> Iterator[AdvisoryRecord]:
 
 
 def _from_osv_format(source: SourceName, advisory: dict[str, Any]) -> AdvisoryRecord:
-    withdrawn = advisory.get("withdrawn")
+    published, withdrawn = advisory.get("published"), advisory.get("withdrawn")
     return AdvisoryRecord(
         source=source,
         id=advisory["id"],
         aliases=advisory.get("aliases", []),
-        published=_utc_day(advisory["published"]),
+        published=_utc_day(published) if published else None,
         withdrawn=_utc_day(withdrawn) if withdrawn else None,
         rejected=False,
         summary=advisory.get("summary", ""),

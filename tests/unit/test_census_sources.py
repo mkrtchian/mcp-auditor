@@ -129,6 +129,16 @@ def test_the_osv_reader_reads_the_zip_and_keeps_the_aliases(tmp_path: Path):
     )
 
 
+def test_an_osv_record_without_a_published_date_is_read_without_one(tmp_path: Path):
+    undated = given.an_osv_advisory("PYSEC-2025-12")
+    del undated["published"]
+    export = given.an_osv_export(tmp_path, undated)
+
+    [record] = read_osv(export)
+
+    assert record.published is None
+
+
 def test_the_provenance_records_the_hash_of_each_download_and_its_date(tmp_path: Path):
     feed = given.an_nvd_feed(tmp_path, given.an_nvd_cve("CVE-2025-1"))
     export = given.an_osv_export(tmp_path, given.an_osv_advisory("PYSEC-2025-12"))

@@ -17,6 +17,7 @@ from evals.holdout_census import (
     CensusFlaw,
     Discovery,
     HoldoutCensus,
+    TermHits,
     census_flaw,
     date_mismatches,
 )
@@ -52,7 +53,7 @@ def a_census() -> HoldoutCensus:
     return HoldoutCensus(
         sources=_provenance(),
         agents=[AgentRecord(role=AgentRole.COLLECTOR, scope="ghsa", model="claude-opus-5-5")],
-        prefilter=list(INITIAL_TERMS),
+        prefilter=[TermHits(term=term, hit_count=2) for term in INITIAL_TERMS],
         hits=[_a_hit(ITS_GHSA), _a_hit(GHSA_ONLY_FLAW)],
         flaws=flaws,
         vulnerablemcp=[

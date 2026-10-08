@@ -18,7 +18,9 @@ def an_nvd(
     )
 
 
-def an_osv(osv_id: str, *aliases: str, published: date = date(2025, 6, 12)) -> AdvisoryRecord:
+def an_osv(
+    osv_id: str, *aliases: str, published: date | None = date(2025, 6, 12)
+) -> AdvisoryRecord:
     return sources.a_record(
         source=SourceName.OSV, id=osv_id, aliases=list(aliases), published=published
     )

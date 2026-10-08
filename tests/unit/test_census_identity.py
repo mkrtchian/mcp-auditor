@@ -96,3 +96,18 @@ def test_a_ghsa_aliasing_an_nvd_record_takes_the_earlier_nvd_date():
     [flaw] = merge([ghsa, nvd], recorded={})
 
     assert disclosure_date(flaw.records) == date(2025, 7, 2)
+
+
+def test_a_record_without_a_date_leaves_the_flaw_its_earliest_known_date():
+    ghsa = given.a_ghsa("GHSA-aaaa-bbbb-cccc", published=date(2025, 7, 9))
+    undated = given.an_osv("PYSEC-2025-1", "GHSA-aaaa-bbbb-cccc", published=None)
+
+    [flaw] = merge([ghsa, undated], recorded={})
+
+    assert disclosure_date(flaw.records) == date(2025, 7, 9)
+
+
+def test_a_flaw_whose_records_all_lack_a_date_has_no_disclosure_date():
+    undated = given.an_osv("PYSEC-2025-1", published=None)
+
+    assert disclosure_date([undated]) is None

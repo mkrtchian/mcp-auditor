@@ -12,7 +12,6 @@ from typing import Literal, Self
 from pydantic import BaseModel, ValidationError, model_validator
 
 from evals.census_classification import SoftwareKind
-from evals.census_prefilter import PrefilterTerm
 from evals.census_sources import SourceName
 
 
@@ -49,11 +48,6 @@ class VulnerableMcpEntry(BaseModel):
     cve_id: str
     listed: date
     found: bool
-
-
-class Widening(BaseModel):
-    term: PrefilterTerm
-    hit_count: int
 
 
 class Downloads(BaseModel):

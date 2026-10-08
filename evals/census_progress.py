@@ -22,13 +22,13 @@ from evals.census_work import (
     HitDecision,
     RecallFinding,
     VulnerableMcpEntry,
-    Widening,
 )
 from evals.holdout_census import (
     BOUND,
     CensusFlaw,
     Discovery,
     HoldoutCensus,
+    TermHits,
     census_flaw,
     date_mismatches,
 )
@@ -40,11 +40,11 @@ class CollectionWork:
     gaps: list[Gap]
     recall: list[RecallFinding]
     vulnerablemcp: list[VulnerableMcpEntry]
-    widenings: list[Widening]
+    widenings: list[PrefilterTerm]
 
     @property
     def terms(self) -> list[PrefilterTerm]:
-        return [*INITIAL_TERMS, *(widening.term for widening in self.widenings)]
+        return [*INITIAL_TERMS, *self.widenings]
 
 
 @dataclass(frozen=True)
@@ -85,25 +85,40 @@ class Collection:
             for source, records in self.undecided().items()
             if records
         ]
-        return undecided + self._finding_problems() + self._absence_problems()
+        return (
+            undecided
+            + self._finding_problems()
+            + self._absence_problems()
+            + self._undated_problems()
+        )
+
+    def term_hits(self) -> list[TermHits]:
+        hits = [record for records in self.hits.values() for record in records]
+        return [
+            TermHits(term=term, hit_count=sum(matches(record, [term]) for record in hits))
+            for term in self._work.terms
+        ]
 
     def census_members(self) -> list[tuple[Flaw, CensusFlaw]]:
         """Each flaw of the census, ordered by identifier, with the advisories' full text."""
+        members = [(flaw, census_flaw(flaw, found_by)) for flaw, found_by in self._members()]
+        return sorted(members, key=lambda member: member[1].identifier)
+
+    def _members(self) -> list[tuple[Flaw, list[Discovery]]]:
         found = self._found_by_agents()
         kept = {
             (decision.source, decision.source_id)
             for decision in self._work.decisions
             if decision.decision == "keep"
         }
-        members: list[tuple[Flaw, CensusFlaw]] = []
+        members: list[tuple[Flaw, list[Discovery]]] = []
         for flaw in self._in_bound:
             discoveries = set(found.get(min(flaw.ids), ()))
             if any((record.source, record.id) in kept for record in flaw.records):
                 discoveries.add(Discovery.PREFILTER)
             if discoveries:
-                found_by = [each for each in Discovery if each in discoveries]
-                members.append((flaw, census_flaw(flaw, found_by)))
-        return sorted(members, key=lambda member: member[1].identifier)
+                members.append((flaw, [each for each in Discovery if each in discoveries]))
+        return members
 
     def census(self, inputs: AssemblyInputs) -> HoldoutCensus:
         flaws = [flaw for _, flaw in self.census_members()]
@@ -112,7 +127,7 @@ class Collection:
         return HoldoutCensus(
             sources=inputs.sources,
             agents=inputs.agents,
-            prefilter=self._work.terms,
+            prefilter=self.term_hits(),
             hits=self._work.decisions,
             flaws=flaws,
             vulnerablemcp=self._work.vulnerablemcp,
@@ -149,6 +164,13 @@ class Collection:
             if not entry.found and self._lookup(entry.cve_id) is not None
         ]
 
+    def _undated_problems(self) -> list[str]:
+        return [
+            f"{min(flaw.ids)} has no published date in any source, decide it by hand"
+            for flaw, _ in self._members()
+            if disclosure_date(flaw.records) is None
+        ]
+
     def _sightings(self) -> list[tuple[str, Discovery]]:
         work = self._work
         return [
@@ -169,5 +191,7 @@ class Collection:
         return self._flaw_of.get(advisory_id) or self._flaw_of.get(advisory_id.upper())
 
 
+# A flaw with no date stays in, so that its collector reads it and `status` names it if kept.
 def _within_bound(flaw: Flaw) -> bool:
-    return disclosure_date(flaw.records) <= BOUND
+    disclosed = disclosure_date(flaw.records)
+    return disclosed is None or disclosed <= BOUND

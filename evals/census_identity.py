@@ -32,8 +32,8 @@ def census_identifier(ids: set[str], records: Sequence[SourceRecord]) -> str | N
     return None
 
 
-def disclosure_date(records: Sequence[SourceRecord]) -> date:
-    return min(record.published for record in records)
+def disclosure_date(records: Sequence[SourceRecord]) -> date | None:
+    return min((record.published for record in records if record.published), default=None)
 
 
 def _flaw(ids: set[str], records: list[AdvisoryRecord], recorded: Mapping[str, set[str]]) -> Flaw:
@@ -90,4 +90,7 @@ def _cve_order(advisory_id: str) -> tuple[int, int] | None:
 
 
 def _earliest_published(ghsa: str, records: Sequence[SourceRecord]) -> date:
-    return min((record.published for record in records if record.id == ghsa), default=date.max)
+    return min(
+        (record.published for record in records if record.id == ghsa and record.published),
+        default=date.max,
+    )

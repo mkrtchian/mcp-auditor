@@ -7,10 +7,10 @@ from typing import Any
 import tests.unit.support.test_census_figures_given as figures
 import tests.unit.support.test_census_sources_given as sources
 from evals import run_census
-from evals.census_classification import Classification
+from evals.census_classification import Classification, SoftwareKind
 from evals.census_prefilter import PrefilterTerm
 from evals.census_sources import AdvisoryRecord, SourceName
-from evals.census_work import Downloads, Gap, HitDecision, Widening, read_jsonl
+from evals.census_work import Downloads, Gap, HitDecision, read_jsonl
 
 DOWNLOADED = date(2026, 10, 8)
 MCP_SUMMARY = "Path traversal in an MCP filesystem server"
@@ -46,7 +46,7 @@ def a_work_directory(
     tmp_path: Path,
     decisions: Sequence[HitDecision] = (),
     gaps: Sequence[Gap] = (),
-    widenings: Sequence[Widening] = (),
+    widenings: Sequence[PrefilterTerm] = (),
     classifiers: Sequence[Sequence[Classification]] = (),
 ) -> Path:
     work = tmp_path / "work"
@@ -72,6 +72,17 @@ def kept(source: SourceName, source_id: str) -> HitDecision:
     )
 
 
+def dropped(source: SourceName, source_id: str) -> HitDecision:
+    return HitDecision(
+        source=source,
+        source_id=source_id,
+        decision="drop",
+        software_kind=SoftwareKind.OTHER,
+        reason="Not MCP software.",
+        agent=f"{source} collector",
+    )
+
+
 def a_gap(source_id: str) -> Gap:
     return Gap(
         flaw_id=source_id,
@@ -81,11 +92,10 @@ def a_gap(source_id: str) -> Gap:
     )
 
 
-def a_package_widening(package: str, added_for: str) -> Widening:
-    term = PrefilterTerm(
+def a_package_widening(package: str, added_for: str) -> PrefilterTerm:
+    return PrefilterTerm(
         text=package, kind="package", added_for=added_for, reason="a missed server"
     )
-    return Widening(term=term, hit_count=1)
 
 
 def both_classifiers_classifying(*flaws: tuple[str, date]) -> list[list[Classification]]:

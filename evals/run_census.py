@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from evals import eval_display as display
 from evals.census_classification import Classification
 from evals.census_identity import Flaw
+from evals.census_prefilter import PrefilterTerm
 from evals.census_progress import AssemblyInputs, Collection, CollectionWork
 from evals.census_sources import (
     AdvisoryRecord,
@@ -36,7 +37,6 @@ from evals.census_work import (
     HitDecision,
     RecallFinding,
     VulnerableMcpEntry,
-    Widening,
     read_jsonl,
 )
 from evals.eval_session import Refused
@@ -119,6 +119,8 @@ def _prefilter(args: argparse.Namespace) -> int:
         lines = "".join(record.model_dump_json() + "\n" for record in new)
         (args.work / f"hits_{source}.jsonl").write_text(lines)
         print(f"{source}: {len(hits)} hits, {len(hits) - len(new)} already decided, {len(new)} new")
+    for entry in collection.term_hits():
+        print(f"term {entry.term.text!r} ({entry.term.kind}): {entry.hit_count} hits")
     return 0
 
 
@@ -199,7 +201,7 @@ def _work(work: Path) -> CollectionWork:
         gaps=_read_all(work, "gaps", Gap),
         recall=_read_all(work, "recall", RecallFinding),
         vulnerablemcp=_read_all(work, "vulnerablemcp", VulnerableMcpEntry),
-        widenings=_read_all(work, "widenings", Widening),
+        widenings=_read_all(work, "widenings", PrefilterTerm),
     )
 
 

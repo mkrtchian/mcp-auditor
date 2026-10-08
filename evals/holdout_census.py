@@ -46,6 +46,11 @@ class CensusFlaw(BaseModel):
         return all(record.withdrawn is not None or record.rejected for record in self.records)
 
 
+class TermHits(BaseModel):
+    term: PrefilterTerm
+    hit_count: int
+
+
 class DateMismatch(BaseModel):
     flaw: str
     classifier: str
@@ -60,7 +65,7 @@ class HoldoutCensus(BaseModel):
     bound: date = BOUND
     sources: SourceProvenance
     agents: list[AgentRecord]
-    prefilter: list[PrefilterTerm]
+    prefilter: list[TermHits]
     hits: list[HitDecision]
     flaws: list[CensusFlaw]
     vulnerablemcp: list[VulnerableMcpEntry]
@@ -74,12 +79,16 @@ def census_flaw(flaw: Flaw, found_by: Sequence[Discovery]) -> CensusFlaw:
         SourceRecord.model_validate(record.model_dump(include=set(SourceRecord.model_fields)))
         for record in flaw.records
     ]
+    identifier = flaw.identifier or _without_census_identifier(records)
+    disclosed = disclosure_date(records)
+    if disclosed is None:
+        raise ValueError(f"flaw {identifier} has no published date in any source")
     return CensusFlaw(
-        identifier=flaw.identifier or _without_census_identifier(records),
+        identifier=identifier,
         no_census_identifier=flaw.identifier is None,
         ids=sorted(flaw.ids),
         records=records,
-        disclosure_date=disclosure_date(records),
+        disclosure_date=disclosed,
         found_by=list(found_by),
     )
 
@@ -134,6 +143,8 @@ def _flaw_problems(flaw: CensusFlaw, bound: date) -> list[str]:
     if flaw.identifier != expected or flaw.no_census_identifier != (canonical is None):
         problems.append(f"flaw {flaw.identifier}: its canonical identifier is {expected}")
     earliest = disclosure_date(flaw.records)
+    if earliest is None:
+        return [*problems, f"flaw {flaw.identifier} has no published date in any source"]
     if flaw.disclosure_date != earliest:
         problems.append(
             f"flaw {flaw.identifier}: disclosure date {flaw.disclosure_date} is not the "
@@ -199,7 +210,7 @@ def _consistency_problems(classifications: dict[str, list[Classification]]) -> l
 
 
 def _derived_problems(census: HoldoutCensus) -> list[str]:
-    dates = {flaw.identifier: disclosure_date(flaw.records) for flaw in census.flaws}
+    dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
     withdrawn = {flaw.identifier for flaw in census.flaws if flaw.withdrawn}
     problems: list[str] = []
     if census.date_mismatches != date_mismatches(census.classifications, dates):
