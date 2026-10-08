@@ -165,6 +165,20 @@ def test_render_ends_with_the_status_tally():
     assert markdown.endswith("Statuses: 2 detected, 1 missed.")
 
 
+def test_render_tallies_the_ungraded_statuses_after_the_ladder():
+    out_of_scope = given.FakeOutOfScopeCVE(cve_id="CVE-2025-68144", severity="7.8 HIGH", reason="")
+    results = [
+        *out_of_scope_results([out_of_scope]),
+        not_run(given.FakeTarget()),
+        given.a_cve_result("CVE-2025-68143", CVEStatus.MISSED, miss_class=MissClass.NOT_AIMED),
+        given.a_cve_result("CVE-2025-53109", CVEStatus.DETECTED, detected_runs=2),
+    ]
+
+    markdown = render_markdown(given.a_benchmark_report(results))
+
+    assert markdown.endswith("Statuses: 1 detected, 1 missed, 1 not_run, 1 out_of_scope.")
+
+
 def test_render_appends_the_gate_verdict_and_a_line_per_target():
     report = given.a_benchmark_report([]).model_copy(update={"gate": given.a_red_gate()})
 
