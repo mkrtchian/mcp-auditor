@@ -1,37 +1,12 @@
-from datetime import date
-from typing import Any
-
 from evals.census_classification import (
-    Classification,
     Criterion,
-    Primitive,
     SoftwareKind,
     Transport,
     criteria_met,
     in_grammar,
     is_consistent,
 )
-
-
-def a_classification(**overrides: Any) -> Classification:
-    fields: dict[str, Any] = {
-        "flaw": "CVE-2025-1234",
-        "software_kind": SoftwareKind.SERVER,
-        "server_package": "npm:@acme/files",
-        "affected_versions": "< 1.2.0",
-        "vulnerable_version": "1.1.0",
-        "first_patched_version": "1.2.0",
-        "pinnable": True,
-        "disclosure_date": date(2025, 6, 10),
-        "transport": Transport.STDIO,
-        "primitive": Primitive.TOOLS,
-        "effect_in_tool_response": True,
-        "runs_in_container": True,
-        "effect_class": "read_outside_scope",
-        "first_failed_criterion": None,
-        **overrides,
-    }
-    return Classification(**fields)
+from tests.unit.support.test_census_figures_given import a_classification
 
 
 def test_failing_stdio_tools_call_with_stdio_and_tools_is_inconsistent():
