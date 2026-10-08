@@ -12,9 +12,9 @@ from rich.markup import escape
 from evals.concurrency import bounded, entered_in_thread
 from evals.cve_environments import Launch, connect
 from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, RunGrade, grade_run
+from evals.cve_report_units import units_of
 from evals.cve_session import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
-from evals.cve_units import units_of
 from evals.metrics import SessionThrottles, blocked_reasons, refused_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import load_settings

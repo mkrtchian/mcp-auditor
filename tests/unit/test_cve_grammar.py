@@ -11,7 +11,8 @@ from evals.cve_grammar import (
     proofs_in,
     resolve,
 )
-from evals.cve_units import unit_of_exchanges, units_of
+from evals.cve_report_units import units_of
+from evals.cve_units import unit_of_exchanges
 from mcp_auditor.domain.models import TestCase
 
 SENTINEL = given.SENTINEL

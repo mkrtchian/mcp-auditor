@@ -10,7 +10,7 @@ from evals.cve_grammar import (
     RunGrade,
     grade_run,
 )
-from evals.cve_units import units_of
+from evals.cve_report_units import units_of
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,

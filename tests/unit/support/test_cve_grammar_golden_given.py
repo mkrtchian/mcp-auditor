@@ -27,8 +27,9 @@ from evals.cve_grammar import (
     proofs_in,
     resolve,
 )
+from evals.cve_report_units import units_of
 from evals.cve_targets import CVE_TARGETS
-from evals.cve_units import Unit, unit_of_exchanges, units_of
+from evals.cve_units import Unit, unit_of_exchanges
 from evals.judge_fixture import JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AttackChain, AuditReport, ChainStep, EvalVerdict, TestCase
 
