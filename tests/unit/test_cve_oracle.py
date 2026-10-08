@@ -1,13 +1,19 @@
 import tests.unit.support.test_cve_oracle_given as given
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass
-from evals.cve_oracle import not_run, out_of_scope_results, render_markdown, result_for
+from evals.cve_oracle import (
+    UngradedStatus,
+    not_run,
+    out_of_scope_results,
+    render_markdown,
+    result_for,
+)
 from mcp_auditor.domain.models import AuditCategory, ProviderUsage
 
 
 def test_not_run_keeps_the_target_description():
     result = not_run(given.FakeTarget())
 
-    assert result.status == CVEStatus.NOT_RUN
+    assert result.status == UngradedStatus.NOT_RUN
     assert result.runs == 0
     assert result.mechanism == MechanismClass.READ_OUTSIDE_SCOPE
     assert result.awaited_capability == "declared-scope awareness"
@@ -21,7 +27,7 @@ def test_out_of_scope_results_carry_no_class():
     results = out_of_scope_results(cves)
 
     assert len(results) == 1
-    assert results[0].status == CVEStatus.OUT_OF_SCOPE
+    assert results[0].status == UngradedStatus.OUT_OF_SCOPE
     assert results[0].cve_id == "CVE-2025-68144"
     assert results[0].note == "silent write"
     assert results[0].mechanism is None

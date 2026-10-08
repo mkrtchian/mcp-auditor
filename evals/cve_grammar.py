@@ -78,8 +78,6 @@ class CVEStatus(StrEnum):
     DETECTED_EXECUTION_ONLY = "detected_execution_only"
     REACHED_BUT_JUDGED_PASS = "reached_but_judged_pass"
     MISSED = "missed"
-    NOT_RUN = "not_run"
-    OUT_OF_SCOPE = "out_of_scope"
 
 
 class MissClass(StrEnum):
@@ -98,14 +96,13 @@ PROOFS_BY_CLASS: dict[MechanismClass, frozenset[ProofKind]] = {
     MechanismClass.INTERNAL_FETCH: frozenset({ProofKind.PLANTED_NONCE}),
 }
 
+_INJECTION = JudgeCategory("injection")
+_INFO_LEAKAGE = JudgeCategory("info_leakage")
+
 VALID_CATEGORIES: dict[MechanismClass, frozenset[JudgeCategory]] = {
-    MechanismClass.READ_OUTSIDE_SCOPE: frozenset(
-        {JudgeCategory("injection"), JudgeCategory("info_leakage")}
-    ),
-    MechanismClass.COMMAND_EXECUTION: frozenset({JudgeCategory("injection")}),
-    MechanismClass.INTERNAL_FETCH: frozenset(
-        {JudgeCategory("injection"), JudgeCategory("info_leakage")}
-    ),
+    MechanismClass.READ_OUTSIDE_SCOPE: frozenset({_INJECTION, _INFO_LEAKAGE}),
+    MechanismClass.COMMAND_EXECUTION: frozenset({_INJECTION}),
+    MechanismClass.INTERNAL_FETCH: frozenset({_INJECTION, _INFO_LEAKAGE}),
 }
 
 COMPUTED_OUTPUT_PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -230,16 +227,21 @@ def proofs_in(unit: Unit, target: GradedTarget) -> dict[ProofKind, str]:
     kinds = [kind for kind in ProofKind if kind in PROOFS_BY_CLASS[target.mechanism]]
     found: dict[ProofKind, str] = {}
     for index, step in enumerate(unit.steps):
-        sent = "".join(
-            json.dumps(earlier.arguments, ensure_ascii=False, default=str)
-            for earlier in unit.steps[: index + 1]
-        )
+        sent = _sent_through(unit, index)
         for output in step.outputs:
             for kind in kinds:
                 matches = _matched_texts(kind, output, target)
                 if kind not in found and any(match not in sent for match in matches):
                     found[kind] = output
     return {kind: found[kind] for kind in kinds if kind in found}
+
+
+def _sent_through(unit: Unit, index: int) -> str:
+    """Every argument sent up to and including the step at `index`."""
+    return "".join(
+        json.dumps(step.arguments, ensure_ascii=False, default=str)
+        for step in unit.steps[: index + 1]
+    )
 
 
 def _matched_texts(kind: ProofKind, output: str, target: GradedTarget) -> list[str]:

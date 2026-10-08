@@ -1,5 +1,6 @@
 from collections import Counter
 from collections.abc import Sequence
+from enum import StrEnum
 from typing import Protocol
 
 from pydantic import BaseModel
@@ -9,6 +10,14 @@ from evals.cve_gate import CVEGateResult, TargetComparison
 from evals.cve_grammar import CVEStatus, GradedTarget, MechanismClass, MissClass, RunGrade, resolve
 from evals.cve_units import JudgeCategory
 from mcp_auditor.domain.models import ProviderUsage
+
+
+class UngradedStatus(StrEnum):
+    NOT_RUN = "not_run"
+    OUT_OF_SCOPE = "out_of_scope"
+
+
+type TargetStatus = CVEStatus | UngradedStatus
 
 
 class TargetInfo(GradedTarget, Protocol):
@@ -40,7 +49,7 @@ class CVEResult(BaseModel):
     severity: str
     note: str
     mechanism: MechanismClass | None = None
-    status: CVEStatus
+    status: TargetStatus
     miss_class: MissClass | None = None
     awaited_capability: str | None = None
     runs: int = 0
@@ -92,7 +101,7 @@ def not_run(target: TargetInfo) -> CVEResult:
         severity=target.severity,
         note=target.note,
         mechanism=target.mechanism,
-        status=CVEStatus.NOT_RUN,
+        status=UngradedStatus.NOT_RUN,
         awaited_capability=target.awaited_capability,
     )
 
@@ -103,7 +112,7 @@ def out_of_scope_results(cves: Sequence[OutOfScopeInfo]) -> list[CVEResult]:
             cve_id=cve.cve_id,
             severity=cve.severity,
             note=cve.reason,
-            status=CVEStatus.OUT_OF_SCOPE,
+            status=UngradedStatus.OUT_OF_SCOPE,
         )
         for cve in cves
     ]
@@ -119,7 +128,11 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
     # A single detected/total ratio would pool targets whose traces have been read with
     # targets that have not, and those two carry different claims. See ADR 015.
     counts = Counter(result.status for result in report.results)
-    tally = ", ".join(f"{counts[status]} {status.value}" for status in CVEStatus if counts[status])
+    tally = ", ".join(
+        f"{counts[status]} {status.value}"
+        for status in (*CVEStatus, *UngradedStatus)
+        if counts[status]
+    )
     gate = [] if report.gate is None else ["", *_render_gate(report.gate)]
     refusal = [f"- {reason}" for reason in report.recording_refused]
     if refusal:
