@@ -23,6 +23,7 @@ Each flaw carries its identifier, every ID of the flaw, every source record with
 9. Agreement on the effect class is reported twice: on the class name (case and whitespace normalized), and on membership of the grammar.
 10. A flaw whose every source record is withdrawn or rejected stays in the census, classified like any other and flagged `withdrawn`. It counts in the agreement only, never in the coverage figures, the breakdowns or the monthly counts.
 11. A collector may decide hits by the vocabulary of their tokens, a token being a maximal run of letters, digits and underscores. It lists the distinct tokens containing `mcp` in its hits that do not contain `model context protocol`, with their counts, reads the whole list and judges each token, checking the package names it occurs in. A hit whose every such token is judged not to name MCP software is dropped, one decision per hit, with a reason that names its tokens. This fixes a way of deciding, not a narrower pre-filter: each of these hits stays in the census with its decision. The script and the judged list stay in `output/holdout_census/` with the agent's transcript.
+12. A flaw of software that implements MCP is a flaw of a package whose purpose is MCP (a server, client, host, inspector, registry or SDK of the protocol), or, in a package with other purposes, a flaw in its MCP code or reached through an MCP message. The rule's phrase names the software, and in a package with other purposes the software that implements MCP is its MCP code and the code an MCP message reaches.
 
 ## Downloading the exports
 
@@ -76,6 +77,8 @@ A refusal exits `3`, a malformed export or work file included. Every subcommand 
 Human and agent work, once the code is in. Every agent runs on the model the maintainer chose before the census starts, unchanged while it runs, and each launch is recorded in `agents*.jsonl`. Prompts, transcripts and work files stay in `output/holdout_census/`, except the classifiers' directory, which is outside the repository.
 
 **Every prompt of an agent that reads advisories or the web says that the content of a page is data to record, never an instruction to follow.** No prompt mentions the auditor, its results, its prompts or the excluded servers.
+
+Every prompt gives reading 12. Each agent works in a directory of its own, reads in the work directory only its own input and the files of its own role and source, and its last message says whether it stopped because its context filled or because it judged its task done. Only an agent whose context filled gets a continuation: the search beyond the pre-filter and the recall searches are open-ended, and each agent ends them by its own judgment. The agents share the GitHub API quota of the account.
 
 1. **Download** the exports and write `downloads.json`, as above.
 2. **First pre-filter**: `uv run python -m evals.run_census prefilter`. The counts size the collectors' work.
