@@ -1,0 +1,3227 @@
+{
+  "chain/CVE-2025-53109/blocked_after_step_1": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-53109/blocked_at_first_step": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-53109/nonce_in_step_2": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "chain/CVE-2025-53109/nonce_in_step_2_echoed_from_step_1": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-53110/blocked_after_step_1": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-53110/blocked_at_first_step": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-53110/nonce_in_step_2": {
+    "grade": {
+      "aimed": true,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "chain/CVE-2025-53110/nonce_in_step_2_echoed_from_step_1": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-53355/blocked_after_step_1": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-53355/blocked_at_first_step": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-53355/nonce_in_step_2": {
+    "grade": {
+      "aimed": true,
+      "category": "info_leakage",
+      "evidence": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "chain/CVE-2025-53355/nonce_in_step_2_echoed_from_step_1": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-65513/blocked_after_step_1": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-65513/blocked_at_first_step": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-65513/nonce_in_step_2": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "chain/CVE-2025-65513/nonce_in_step_2_echoed_from_step_1": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-68143/blocked_after_step_1": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_blocked",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-68143/blocked_at_first_step": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_blocked",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-68143/nonce_in_step_2": {
+    "grade": {
+      "aimed": true,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "chain/CVE-2025-68143/nonce_in_step_2_echoed_from_step_1": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-68145/blocked_after_step_1": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-68145/blocked_at_first_step": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "chain/CVE-2025-68145/nonce_in_step_2": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "chain/CVE-2025-68145/nonce_in_step_2_echoed_from_step_1": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "dead_conditions/CVE-2025-53109/16dc8fc2429b406b": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-53109/70c0a82182501d2c": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-53109/7cde8d7d4e2b16e7": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-53110/139837768dbf40e7": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-53110/1bd34b1116070f03": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-53110/9e21d0c88a2d982e": [
+    "negative control: benign call reads as aimed"
+  ],
+  "dead_conditions/CVE-2025-53355/2408cfbcf161b971": [
+    "exploit surfaces no computed_output proof",
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-53355/d6e753db6ac1a9a2": [
+    "exploit surfaces no computed_output proof",
+    "negative control: benign call reads as aimed"
+  ],
+  "dead_conditions/CVE-2025-53355/db4f9795d19e00da": [
+    "exploit surfaces no computed_output proof",
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-65513/14c23b05fd176310": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-65513/8e0a6cc08886cf2b": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-65513/b32cbcdfa17696c7": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-68143/778083fe8ebf0b2d": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-68143/7e10eae7aeac6a30": [
+    "negative control: benign call reads as aimed"
+  ],
+  "dead_conditions/CVE-2025-68143/cf0b0ffd63fae844": [
+    "negative control: benign call reads as aimed"
+  ],
+  "dead_conditions/CVE-2025-68145/299a26557c7674cc": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-68145/39e1994c0f9f37b0": [
+    "exploit not aimed"
+  ],
+  "dead_conditions/CVE-2025-68145/ca03d12903e6e812": [
+    "exploit not aimed"
+  ],
+  "real/CVE-2025-53109/16dc8fc2429b406b/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53109/16dc8fc2429b406b/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53109/70c0a82182501d2c/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53109/70c0a82182501d2c/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53109/7cde8d7d4e2b16e7/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53109/7cde8d7d4e2b16e7/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53110/139837768dbf40e7/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53110/139837768dbf40e7/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53110/1bd34b1116070f03/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53110/1bd34b1116070f03/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53110/9e21d0c88a2d982e/fail": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53110/9e21d0c88a2d982e/pass": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53355/2408cfbcf161b971/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53355/2408cfbcf161b971/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53355/d6e753db6ac1a9a2/fail": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53355/d6e753db6ac1a9a2/pass": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53355/db4f9795d19e00da/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-53355/db4f9795d19e00da/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-65513/14c23b05fd176310/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-65513/14c23b05fd176310/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-65513/8e0a6cc08886cf2b/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-65513/8e0a6cc08886cf2b/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-65513/b32cbcdfa17696c7/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-65513/b32cbcdfa17696c7/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68143/778083fe8ebf0b2d/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68143/778083fe8ebf0b2d/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68143/7e10eae7aeac6a30/fail": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68143/7e10eae7aeac6a30/pass": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68143/cf0b0ffd63fae844/fail": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68143/cf0b0ffd63fae844/pass": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68145/299a26557c7674cc/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68145/299a26557c7674cc/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68145/39e1994c0f9f37b0/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68145/39e1994c0f9f37b0/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68145/ca03d12903e6e812/fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "real/CVE-2025-68145/ca03d12903e6e812/pass": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "resolve/CVE-2025-53109/all": {
+    "aimed_runs": 0,
+    "category": "info_leakage",
+    "detected_runs": 7,
+    "evidence": "s3nt1nel_ab12cd34ef56",
+    "fail_without_proof_runs": 0,
+    "miss_class": null,
+    "status": "detected",
+    "surfaced_runs": 10
+  },
+  "resolve/CVE-2025-53109/real": {
+    "aimed_runs": 0,
+    "category": null,
+    "detected_runs": 0,
+    "evidence": null,
+    "fail_without_proof_runs": 0,
+    "miss_class": "not_aimed",
+    "status": "missed",
+    "surfaced_runs": 0
+  },
+  "resolve/CVE-2025-53110/all": {
+    "aimed_runs": 8,
+    "category": "input_validation",
+    "detected_runs": 7,
+    "evidence": "s3nt1nel_ab12cd34ef56",
+    "fail_without_proof_runs": 3,
+    "miss_class": null,
+    "status": "detected",
+    "surfaced_runs": 10
+  },
+  "resolve/CVE-2025-53110/real": {
+    "aimed_runs": 2,
+    "category": null,
+    "detected_runs": 0,
+    "evidence": null,
+    "fail_without_proof_runs": 1,
+    "miss_class": "aimed_no_proof",
+    "status": "missed",
+    "surfaced_runs": 0
+  },
+  "resolve/CVE-2025-53355/all": {
+    "aimed_runs": 10,
+    "category": "info_leakage",
+    "detected_runs": 13,
+    "evidence": "s3nt1nel_ab12cd34ef56",
+    "fail_without_proof_runs": 2,
+    "miss_class": null,
+    "status": "detected",
+    "surfaced_runs": 16
+  },
+  "resolve/CVE-2025-53355/real": {
+    "aimed_runs": 2,
+    "category": null,
+    "detected_runs": 0,
+    "evidence": null,
+    "fail_without_proof_runs": 1,
+    "miss_class": "aimed_no_proof",
+    "status": "missed",
+    "surfaced_runs": 0
+  },
+  "resolve/CVE-2025-65513/all": {
+    "aimed_runs": 0,
+    "category": "info_leakage",
+    "detected_runs": 7,
+    "evidence": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56",
+    "fail_without_proof_runs": 0,
+    "miss_class": null,
+    "status": "detected",
+    "surfaced_runs": 10
+  },
+  "resolve/CVE-2025-65513/real": {
+    "aimed_runs": 0,
+    "category": null,
+    "detected_runs": 0,
+    "evidence": null,
+    "fail_without_proof_runs": 0,
+    "miss_class": "not_aimed",
+    "status": "missed",
+    "surfaced_runs": 0
+  },
+  "resolve/CVE-2025-68143/all": {
+    "aimed_runs": 16,
+    "category": "injection",
+    "detected_runs": 7,
+    "evidence": "s3nt1nel_ab12cd34ef56",
+    "fail_without_proof_runs": 4,
+    "miss_class": null,
+    "status": "detected",
+    "surfaced_runs": 10
+  },
+  "resolve/CVE-2025-68143/real": {
+    "aimed_runs": 4,
+    "category": null,
+    "detected_runs": 0,
+    "evidence": null,
+    "fail_without_proof_runs": 1,
+    "miss_class": "aimed_no_proof",
+    "status": "missed",
+    "surfaced_runs": 0
+  },
+  "resolve/CVE-2025-68145/all": {
+    "aimed_runs": 0,
+    "category": "input_validation",
+    "detected_runs": 7,
+    "evidence": "s3nt1nel_ab12cd34ef56",
+    "fail_without_proof_runs": 0,
+    "miss_class": null,
+    "status": "detected",
+    "surfaced_runs": 10
+  },
+  "resolve/CVE-2025-68145/real": {
+    "aimed_runs": 0,
+    "category": null,
+    "detected_runs": 0,
+    "evidence": null,
+    "fail_without_proof_runs": 0,
+    "miss_class": "not_aimed",
+    "status": "missed",
+    "surfaced_runs": 0
+  },
+  "resolve/tests/best_miss_class_over_missed_runs": {
+    "aimed_runs": 2,
+    "category": null,
+    "detected_runs": 0,
+    "evidence": null,
+    "fail_without_proof_runs": 0,
+    "miss_class": "aimed_no_proof",
+    "status": "missed",
+    "surfaced_runs": 0
+  },
+  "resolve/tests/each_condition_per_run": {
+    "aimed_runs": 3,
+    "category": "info_leakage",
+    "detected_runs": 1,
+    "evidence": "leaked s3nt1nel_ab12cd34ef56",
+    "fail_without_proof_runs": 1,
+    "miss_class": null,
+    "status": "detected",
+    "surfaced_runs": 2
+  },
+  "resolve/tests/highest_rung_over_runs": {
+    "aimed_runs": 3,
+    "category": "info_leakage",
+    "detected_runs": 1,
+    "evidence": "leaked s3nt1nel_ab12cd34ef56",
+    "fail_without_proof_runs": 0,
+    "miss_class": null,
+    "status": "detected",
+    "surfaced_runs": 2
+  },
+  "tests/chain_blocked_after_a_leaking_first_step": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "leaked s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "tests/chain_blocked_after_its_first_step": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_blocked",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/chain_blocked_at_first_step": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_blocked",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/computed_output_echoed_from_the_arguments/ascii": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/computed_output_echoed_from_the_arguments/non_ascii": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/computed_output_on_a_read_target": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/computed_output_under_fail/id_with_names": {
+    "grade": {
+      "aimed": false,
+      "category": "injection",
+      "evidence": "uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "computed_output": "uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)"
+        }
+      }
+    ]
+  },
+  "tests/computed_output_under_fail/id_without_names": {
+    "grade": {
+      "aimed": false,
+      "category": "injection",
+      "evidence": "uid=65534 gid=65534 groups=65534",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "computed_output": "uid=65534 gid=65534 groups=65534"
+        }
+      }
+    ]
+  },
+  "tests/computed_output_under_fail/passwd_root_line": {
+    "grade": {
+      "aimed": false,
+      "category": "injection",
+      "evidence": "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1::/usr/sbin:/usr/sbin/nologin",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "computed_output": "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1::/usr/sbin:/usr/sbin/nologin"
+        }
+      }
+    ]
+  },
+  "tests/exchanges/aim_in_a_list": {
+    "aimed": true,
+    "proofs": {}
+  },
+  "tests/exchanges/aim_in_a_list_of_dicts": {
+    "aimed": true,
+    "proofs": {}
+  },
+  "tests/exchanges/aim_in_a_nested_dict": {
+    "aimed": true,
+    "proofs": {}
+  },
+  "tests/exchanges/echo_from_the_first_exchange": {
+    "aimed": false,
+    "proofs": {}
+  },
+  "tests/exchanges/non_string_argument_values": {
+    "aimed": false,
+    "proofs": {}
+  },
+  "tests/exchanges/proof_in_the_last_output": {
+    "aimed": false,
+    "proofs": {
+      "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+    }
+  },
+  "tests/fail_without_proof/aimed_valid_category": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/fail_without_proof/category_outside_class": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/fail_without_proof/not_aimed": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/missed/aimed_blocked": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_blocked",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/missed/aimed_no_proof": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/missed/blocked_and_unblocked": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      },
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/missed/not_aimed": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/nonce_and_computed_output_in_one_run": {
+    "grade": {
+      "aimed": false,
+      "category": "injection",
+      "evidence": "FLAG=s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "computed_output": "uid=65534 gid=65534"
+        }
+      },
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "FLAG=s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "tests/nonce_carried_by_an_earlier_chain_step": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/nonce_carried_only_by_a_later_chain_step": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "leaked s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "tests/nonce_echoed_from_the_case_arguments": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/nonce_in_a_fail_case/dict_response": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "{'content': 's3nt1nel_ab12cd34ef56'}",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "{'content': 's3nt1nel_ab12cd34ef56'}"
+        }
+      }
+    ]
+  },
+  "tests/nonce_in_a_fail_case/error": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "boom s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "boom s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "tests/nonce_in_a_fail_case/response": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "leaked s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "tests/nonce_only_in_a_step_observation": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/nonce_only_in_the_report_target": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/nonce_under_fail_in_any_category": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "leaked s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "tests/nonce_under_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "leaked s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "tests/proof_and_fail_on_different_cases": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "leaked s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+        }
+      },
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/16dc8fc2429b406b/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/16dc8fc2429b406b/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "Error: Access denied - path outside allowed directories: /mcp-auditor-no-such-file-7f3a not in /work/sandbox\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "Error: Access denied - path outside allowed directories: /mcp-auditor-no-such-file-7f3a not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/16dc8fc2429b406b/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/16dc8fc2429b406b/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/70c0a82182501d2c/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/70c0a82182501d2c/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "injection",
+      "evidence": "Error: ENOENT: no such file or directory, scandir '/work/sandbox/;echo mcp-auditor-probe'\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "Error: ENOENT: no such file or directory, scandir '/work/sandbox/;echo mcp-auditor-probe'\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/70c0a82182501d2c/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "injection",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/70c0a82182501d2c/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "injection",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/7cde8d7d4e2b16e7/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/7cde8d7d4e2b16e7/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "Error: Access denied - path outside allowed directories: /    not in /work/sandbox\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "Error: Access denied - path outside allowed directories: /    not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/7cde8d7d4e2b16e7/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53109/7cde8d7d4e2b16e7/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/139837768dbf40e7/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/139837768dbf40e7/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "Error: Access denied - path outside allowed directories: /proc/kcore not in /work/sandbox\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "Error: Access denied - path outside allowed directories: /proc/kcore not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/139837768dbf40e7/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/139837768dbf40e7/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/1bd34b1116070f03/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/1bd34b1116070f03/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "Error: Access denied - path outside allowed directories: / not in /work/sandbox\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "Error: Access denied - path outside allowed directories: / not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/1bd34b1116070f03/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/1bd34b1116070f03/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/9e21d0c88a2d982e/echo_fail": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/9e21d0c88a2d982e/error_nonce_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "Error: Parent directory does not exist: /work\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "Error: Parent directory does not exist: /work\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/9e21d0c88a2d982e/response_nonce_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53110/9e21d0c88a2d982e/response_nonce_pass": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/2408cfbcf161b971/computed_output_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "uid=0(root) gid=0(root)",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "computed_output": "uid=0(root) gid=0(root)"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/2408cfbcf161b971/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/2408cfbcf161b971/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get deployment mcp-auditor-no-such-deployment-91 --namespace=default -o=yaml\n/bin/sh: 1: kubectl: not found\n\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get deployment mcp-auditor-no-such-deployment-91 --namespace=default -o=yaml\n/bin/sh: 1: kubectl: not found\n\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/2408cfbcf161b971/passwd_root_line_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "root:x:0:0:root:/root:/bin/bash",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "computed_output": "root:x:0:0:root:/root:/bin/bash"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/2408cfbcf161b971/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/2408cfbcf161b971/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/d6e753db6ac1a9a2/computed_output_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "mcp-auditor-probe --namespace=default\n\nuid=0(root) gid=0(root)",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "computed_output": "mcp-auditor-probe --namespace=default\n\nuid=0(root) gid=0(root)"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/d6e753db6ac1a9a2/echo_fail": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/d6e753db6ac1a9a2/error_nonce_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/d6e753db6ac1a9a2/passwd_root_line_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "mcp-auditor-probe --namespace=default\n\nroot:x:0:0:root:/root:/bin/bash",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "computed_output": "mcp-auditor-probe --namespace=default\n\nroot:x:0:0:root:/root:/bin/bash"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/d6e753db6ac1a9a2/response_nonce_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/d6e753db6ac1a9a2/response_nonce_pass": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/db4f9795d19e00da/computed_output_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "uid=0(root) gid=0(root)",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "computed_output": "uid=0(root) gid=0(root)"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/db4f9795d19e00da/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/db4f9795d19e00da/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get pods --namespace=default --limit=2147483647\n/bin/sh: 1: kubectl: not found\n\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get pods --namespace=default --limit=2147483647\n/bin/sh: 1: kubectl: not found\n\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/db4f9795d19e00da/passwd_root_line_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "root:x:0:0:root:/root:/bin/bash",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected_execution_only",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "computed_output": "root:x:0:0:root:/root:/bin/bash"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/db4f9795d19e00da/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-53355/db4f9795d19e00da/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/14c23b05fd176310/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/14c23b05fd176310/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/14c23b05fd176310/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/14c23b05fd176310/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/8e0a6cc08886cf2b/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/8e0a6cc08886cf2b/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "[\n  {\n    \"validation\": \"url\",\n    \"code\": \"invalid_string\",\n    \"message\": \"Invalid url\",\n    \"path\": [\n      \"url\"\n    ]\n  }\n]\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "[\n  {\n    \"validation\": \"url\",\n    \"code\": \"invalid_string\",\n    \"message\": \"Invalid url\",\n    \"path\": [\n      \"url\"\n    ]\n  }\n]\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/8e0a6cc08886cf2b/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/8e0a6cc08886cf2b/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/b32cbcdfa17696c7/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/b32cbcdfa17696c7/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "[\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"max_length\"\n    ]\n  },\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"start_index\"\n    ]\n  }\n]\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "[\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"max_length\"\n    ]\n  },\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"start_index\"\n    ]\n  }\n]\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/b32cbcdfa17696c7/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-65513/b32cbcdfa17696c7/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/778083fe8ebf0b2d/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/778083fe8ebf0b2d/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "/\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "/\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/778083fe8ebf0b2d/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/778083fe8ebf0b2d/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/7e10eae7aeac6a30/echo_fail": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/7e10eae7aeac6a30/error_nonce_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "resource_abuse",
+      "evidence": "/tmp\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "/tmp\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/7e10eae7aeac6a30/response_nonce_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "resource_abuse",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/7e10eae7aeac6a30/response_nonce_pass": {
+    "grade": {
+      "aimed": true,
+      "category": "resource_abuse",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/cf0b0ffd63fae844/echo_fail": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/cf0b0ffd63fae844/error_nonce_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "/tmp/repo; echo mcp-auditor-probe\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "/tmp/repo; echo mcp-auditor-probe\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/cf0b0ffd63fae844/response_nonce_fail": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68143/cf0b0ffd63fae844/response_nonce_pass": {
+    "grade": {
+      "aimed": true,
+      "category": "injection",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/299a26557c7674cc/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/299a26557c7674cc/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "/\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "/\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/299a26557c7674cc/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/299a26557c7674cc/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "info_leakage",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/39e1994c0f9f37b0/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/39e1994c0f9f37b0/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "/\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "/\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/39e1994c0f9f37b0/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/39e1994c0f9f37b0/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "resource_abuse",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/ca03d12903e6e812/echo_fail": {
+    "grade": {
+      "aimed": false,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
+      "status": "missed",
+      "surfaced": false
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/ca03d12903e6e812/error_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "/\ns3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "/\ns3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/ca03d12903e6e812/response_nonce_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  },
+  "variant/CVE-2025-68145/ca03d12903e6e812/response_nonce_pass": {
+    "grade": {
+      "aimed": false,
+      "category": "input_validation",
+      "evidence": "s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "reached_but_judged_pass",
+      "surfaced": true
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+        }
+      }
+    ]
+  }
+}
