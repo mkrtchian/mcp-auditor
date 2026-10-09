@@ -59,8 +59,8 @@ class DateMismatch(BaseModel):
 
 
 class HoldoutCensus(BaseModel):
-    rule_version: Literal[2] = 2
-    rule_commit: Literal["52fc523"] = "52fc523"
+    rule_version: Literal[3] = 3
+    rule_commit: Literal["0468deb"] = "0468deb"
     bound_commit: Literal["3f09545"] = "3f09545"
     bound: date = BOUND
     sources: SourceProvenance
