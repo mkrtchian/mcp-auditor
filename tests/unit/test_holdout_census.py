@@ -9,6 +9,7 @@ import tests.unit.support.test_census_identity_given as identity
 import tests.unit.support.test_holdout_census_given as given
 from evals.census_work import HitDecision, read_jsonl
 from evals.holdout_census import DateMismatch, HoldoutCensus, load_census
+from evals.run_census import CENSUS_PATH
 
 
 def test_a_well_formed_census_loads(tmp_path: Path):
@@ -17,6 +18,10 @@ def test_a_well_formed_census_loads(tmp_path: Path):
     loaded = load_census(given.written(tmp_path, census))
 
     assert loaded == census
+
+
+def test_the_committed_census_loads():
+    load_census(CENSUS_PATH)
 
 
 DEFECTS: list[tuple[Callable[[HoldoutCensus], HoldoutCensus], str]] = [
