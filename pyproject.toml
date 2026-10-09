@@ -89,3 +89,6 @@ pythonVersion = "3.13"
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
+# output/ is gitignored and holds the census agents' scripts. Setting exclude
+# replaces pyright's defaults, so they are listed again.
+exclude = ["**/node_modules", "**/__pycache__", "**/.*", "output"]
