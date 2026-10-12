@@ -47,9 +47,13 @@ class DockerPlanting(PlantingDocker):
 
     def write_host_file(self, content: str, mode: int) -> str:
         descriptor, path = tempfile.mkstemp(prefix=f"{LABEL}-")
-        with os.fdopen(descriptor, "w") as handle:
-            handle.write(content)
-        os.chmod(path, mode)
+        try:
+            with os.fdopen(descriptor, "w") as handle:
+                handle.write(content)
+            os.chmod(path, mode)
+        except BaseException:
+            os.unlink(path)
+            raise
         return path
 
     def remove_host_file(self, path: str) -> None:
@@ -74,8 +78,8 @@ class DockerPlanting(PlantingDocker):
     def start_sentinel(self, run_args: Sequence[str]) -> str:
         return self._run_detached(run_args)
 
-    def stop_sentinel(self, name: str) -> None:
-        _best_effort("docker", "stop", name)
+    def remove_sentinel(self, name: str) -> None:
+        _best_effort("docker", "rm", "-f", name)
 
     def run_address_setup(self, run_args: Sequence[str]) -> None:
         subprocess.run(
@@ -84,7 +88,18 @@ class DockerPlanting(PlantingDocker):
 
     def _read(self, image_tag: str, path: str) -> str:
         result = subprocess.run(
-            ["docker", "run", "--rm", *confinement_args(), "--entrypoint", "cat", image_tag, path],
+            [
+                "docker",
+                "run",
+                "--rm",
+                "--label",
+                LABEL,
+                *confinement_args(),
+                "--entrypoint",
+                "cat",
+                image_tag,
+                path,
+            ],
             check=True,
             capture_output=True,
             text=True,

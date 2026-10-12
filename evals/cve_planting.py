@@ -81,9 +81,15 @@ def planted(spec: PlantingSpec, image_tag: str, docker: PlantingDocker) -> Gener
     stack = ExitStack()
     try:
         args = _set_up(spec, image_tag, docker, stack)
-    except (subprocess.CalledProcessError, OSError) as error:
+    except PlantingFailed:
+        stack.close()
+        raise
+    except (subprocess.CalledProcessError, OSError, UnicodeError) as error:
         stack.close()
         raise PlantingFailed(str(error)) from error
+    except BaseException:
+        stack.close()
+        raise
     try:
         yield args
     finally:
@@ -146,7 +152,7 @@ def _hold_endpoints(
         docker.run_address_setup(_address_setup_args(holder, address))
     for sentinel in spec.sentinels:
         name = docker.start_sentinel(_sentinel_args(sentinel, network, holder))
-        stack.callback(quiet, docker.stop_sentinel, name)
+        stack.callback(quiet, docker.remove_sentinel, name)
     return holder
 
 

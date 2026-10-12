@@ -1,5 +1,7 @@
 import os
 import re
+import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -7,6 +9,7 @@ import tests.unit.support.test_cve_planting_given as given
 from evals.cve_places import Place, is_endpoint_host
 from evals.cve_planting import (
     RANDOM_NONCES,
+    DockerPlanting,
     NonceSource,
     PlantedArgs,
     PlantingFailed,
@@ -437,10 +440,52 @@ def test_teardown_leaves_nothing_alive_under_the_network_removal_refusal():
 
 def test_a_teardown_failure_is_logged_and_does_not_raise():
     spec = _spec_of([given.endpoint_place(host="198.51.100.5")], host=given.unprivileged_host())
-    docker = given.FakePlantingDocker(fail_teardown=frozenset({"stop_sentinel"}))
+    docker = given.FakePlantingDocker(fail_teardown=frozenset({"remove_sentinel"}))
 
     with planted(spec, "image:tag", docker):  # no exception escapes the block
         pass
+
+
+def test_a_non_infra_setup_failure_undoes_everything_and_re_raises_as_itself():
+    spec = _spec_of(
+        [given.endpoint_place(host="198.51.100.5"), given.file_place(path="/etc/x")],
+        host=given.unprivileged_host(has_network=True),
+    )
+    docker = given.FakePlantingDocker(
+        fail={"start_sentinel": 0}, fail_errors={"start_sentinel": RuntimeError("sentinel boom")}
+    )
+
+    with pytest.raises(RuntimeError, match="sentinel boom"), planted(spec, "image:tag", docker):
+        pass
+
+    assert docker.networks == set()
+    assert docker.holders == {}
+    assert docker.sentinels == {}
+    assert docker.host_files == {}
+
+
+def test_a_non_utf8_passwd_read_undoes_and_raises_planting_failed():
+    spec = _spec_of([given.account_place()])
+    decode_error = UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+    docker = given.FakePlantingDocker(
+        fail={"image_accounts": 0}, fail_errors={"image_accounts": decode_error}
+    )
+
+    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
+        pass
+
+    assert docker.host_files == {}
+
+
+def test_write_host_file_removes_the_temp_file_when_the_content_cannot_be_encoded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+
+    with pytest.raises(UnicodeEncodeError):
+        DockerPlanting().write_host_file("\ud800", 0o644)
+
+    assert list(tmp_path.iterdir()) == []
 
 
 def _only(registry: dict[str, list[str]]) -> str:

@@ -114,6 +114,7 @@ class FakePlantingDocker:
         default_factory=lambda: ImageAccounts(IMAGE_PASSWD, IMAGE_GROUP)
     )
     fail: Mapping[str, int] = field(default_factory=dict[str, int])
+    fail_errors: Mapping[str, Exception] = field(default_factory=dict[str, Exception])
     fail_teardown: frozenset[str] = frozenset()
     host_files: dict[str, HostFile] = field(default_factory=dict[str, HostFile])
     networks: set[str] = field(default_factory=set[str])
@@ -127,6 +128,7 @@ class FakePlantingDocker:
         self._counter = 0
 
     def image_accounts(self, image_tag: str) -> ImageAccounts:
+        self._maybe_fail("image_accounts")
         return self.accounts
 
     def write_host_file(self, content: str, mode: int) -> str:
@@ -162,8 +164,8 @@ class FakePlantingDocker:
     def start_sentinel(self, run_args: Sequence[str]) -> str:
         return self._start("sentinel", self.sentinels, run_args)
 
-    def stop_sentinel(self, name: str) -> None:
-        self._maybe_fail_teardown("stop_sentinel")
+    def remove_sentinel(self, name: str) -> None:
+        self._maybe_fail_teardown("remove_sentinel")
         self.sentinels.pop(name, None)
         self._attached.pop(name, None)
 
@@ -191,7 +193,11 @@ class FakePlantingDocker:
         if remaining > 0:
             self._fail[operation] = remaining - 1
             return
-        raise error or subprocess.CalledProcessError(1, ["docker", operation])
+        raise (
+            self.fail_errors.get(operation)
+            or error
+            or subprocess.CalledProcessError(1, ["docker", operation])
+        )
 
     def _maybe_fail_teardown(self, operation: str) -> None:
         if operation in self.fail_teardown:

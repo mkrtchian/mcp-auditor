@@ -33,9 +33,11 @@ Seeding and the planting layer's setup (`docker network create`, a sidecar
 skipped run. Teardown is best-effort: a cleanup error must never raise out of
 `__exit__` and turn a run that already produced a report into a skip. The
 benchmark enters and leaves these environments in a worker thread
-(`entered_in_thread`): a namespace holder runs a `sleep` that ignores SIGTERM,
-so planting removes it with `docker rm -f` rather than wait out a grace period
-that would freeze every other audit on the event loop.
+(`entered_in_thread`). A namespace holder runs a `sleep` and a sentinel's
+`httpd` runs as PID 1, both ignoring SIGTERM, so planting removes holder and
+sentinels alike with `docker rm -f` rather than wait out a pointless grace
+period per container: teardown runs in the worker thread, so the wait would not
+freeze the event loop, it would only waste the grace.
 Orphans left by a failed teardown, or by a launch cancelled while it was being
 entered in a worker thread (Ctrl-C, or a crash that ends the event loop, with no
 `__exit__` to undo it), carry the `mcp-auditor-cve` label: a namespace holder, a
