@@ -72,7 +72,7 @@ def a_chain_run() -> RunToCheck:
 
 
 def an_echoed_old_nonce_run() -> RunToCheck:
-    # The second step's argument carries the leaked old nonce; the patched stub echoes it, but the
+    # The second step's argument carries the leaked old nonce. The patched stub echoes it, but the
     # strike matches the fresh nonces, so the echo does not fool it: kept.
     report = grammar.a_report(
         chains=[

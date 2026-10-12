@@ -1,6 +1,6 @@
 """The production `PlantingDocker` port that drives Docker and the host filesystem for planting.
 
-Setup calls run with `check=True` so a failure raises before a launch is yielded; teardown
+Setup calls run with `check=True` so a failure raises before a launch is yielded. Teardown
 calls are best-effort and never raise. Every network and container carries the
 `mcp-auditor-cve` label, so an orphan left by a crashed run is swept by label and never
 blocks a later launch.

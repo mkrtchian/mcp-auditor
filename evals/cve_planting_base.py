@@ -4,10 +4,10 @@
 intents only (a file and its content, an environment pair, an account entry, a hostname, a
 sentinel serving a nonce), never a host path, a container or network name, or an argv.
 `PlantedArgs` is the `docker run` arguments a planted launch takes. `PlantingDocker` and
-`NonceSource` are the two injected ports; `RANDOM_NONCES` draws the production nonces.
+`NonceSource` are the two injected ports. `RANDOM_NONCES` draws the production nonces.
 
 `confinement_args` stays public so each builder carries the same container profile. The user
-and network helpers stay public for `planted` to resolve the launch's host into arguments; a
+and network helpers stay public for `planted` to resolve the launch's host into arguments. A
 builder no longer emits them itself, it takes them from the `PlantedArgs` planting yields.
 """
 

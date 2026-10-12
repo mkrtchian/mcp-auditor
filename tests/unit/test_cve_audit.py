@@ -109,7 +109,7 @@ def test_a_miss_with_no_refused_step_is_graded_a_miss():
 
 
 def test_a_struck_only_credit_with_a_refused_step_reads_as_refused():
-    # The replay struck the run's only credit, so the final grade is a miss; a refused step then
+    # The replay struck the run's only credit, so the final grade is a miss. A refused step then
     # makes it a refusal, not a genuine miss, so a refusal never poisons the gate or the baseline.
     struck = RunGrade(
         status=CVEStatus.MISSED,

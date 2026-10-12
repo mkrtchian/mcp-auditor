@@ -103,7 +103,7 @@ def test_the_spec_holds_no_host_path_container_or_network_name_nor_argv():
     docker = given.FakePlantingDocker()
     spec = _spec_of([given.file_place(path="/etc/x"), given.env_place()])
 
-    # Only container-side intents and the drawn nonces; nothing a host or Docker call makes.
+    # Only container-side intents and the drawn nonces, nothing a host or Docker call makes.
     assert docker.host_files == {} and docker.networks == set()
     assert spec.files[0].container_path == "/etc/x"
     assert set(spec.nonces) == {"file-1", "env-1"}

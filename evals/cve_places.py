@@ -9,7 +9,7 @@ fields a consumer reads. It validates each entry strictly: the exact top-level f
 closed `reachable_by` vocabulary, the per-kind coordinate keys, and the coordinate notations
 the rule's source manifest uses. Any other notation raises, naming the entry and the failing
 property but never the value, so the schema test can run on the real file without reading a
-single coordinate. The composition root loads the file once and injects the mapping; every
+single coordinate. The composition root loads the file once and injects the mapping. Every
 consumer, and every test, receives `Places` as an argument and passes fictional records.
 """
 

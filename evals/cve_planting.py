@@ -4,11 +4,11 @@
 host files, creates the network, stands the namespace holder and the sentinels up, and
 yields the target's `docker run` arguments as `PlantedArgs`. Setup undoes itself and raises
 `PlantingFailed` on any failure (a non-zero Docker call or a host file that cannot be
-written); teardown is best-effort and never raises. It owns the network of a launch that has
+written). Teardown is best-effort and never raises. It owns the network of a launch that has
 one, as a plain labelled bridge, so no planting touches the host's routing table.
 
 The pure half (`planting_spec`), the vocabulary and the Docker port live in the sibling
-modules; this module re-exports their public names so a consumer reads one name.
+modules. This module re-exports their public names so a consumer reads one name.
 """
 
 import subprocess
