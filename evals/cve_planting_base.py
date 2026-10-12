@@ -57,7 +57,7 @@ RANDOM_NONCES: NonceSource = _RandomNonces()
 
 
 class PlantingFailed(Exception):
-    """A planting setup step failed; its undo has run and the launch is skipped."""
+    """A planting setup step failed. Its undo has run and the launch is skipped."""
 
 
 @dataclass(frozen=True)
@@ -91,7 +91,7 @@ class SentinelIntent:
     host: str
     path: str
     content: str
-    bind_address: str | None  # None => a DNS alias on the bridge; else bound inside a holder
+    bind_address: str | None  # None => a DNS alias on the bridge, else bound inside a holder
 
 
 @dataclass(frozen=True)

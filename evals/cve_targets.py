@@ -159,7 +159,7 @@ CVE_TARGETS: list[CVETarget] = [
         benign=cve_exploits.list_sandbox,
         awaited_capability="cross-tool chains",
         note=(
-            "Symlink inside the allowed dir; needs list_directory discovery then read_file. "
+            "Symlink inside the allowed dir, needs list_directory discovery then read_file. "
             "The current audit order (read_file before list_directory) neutralises "
             "cross-tool learning."
         ),
@@ -220,7 +220,7 @@ CVE_TARGETS: list[CVETarget] = [
         tools_filter=frozenset({"git_init", "git_add", "git_diff_staged"}),
         ci_skip_reason=(
             "git_diff_staged hangs on GitHub-hosted runners (runner-specific, "
-            "not reproducible locally); still covered by local calibration and the graded run"
+            "not reproducible locally), still covered by local calibration and the graded run"
         ),
     ),
     CVETarget(
@@ -256,7 +256,7 @@ CVE_TARGETS: list[CVETarget] = [
         exploits=(cve_exploits.exploit_fetch_ssrf,),
         benign=cve_exploits.benign_fetch_ssrf,
         awaited_capability="declared-scope awareness",
-        note="SSRF via is_ip_private bypass; a Docker sidecar serves the internal endpoint.",
+        note="SSRF via is_ip_private bypass. A Docker sidecar serves the internal endpoint.",
         tools_filter=frozenset({"fetch_txt"}),
     ),
 ]
@@ -267,8 +267,8 @@ OUT_OF_SCOPE_CVES: list[OutOfScopeCVE] = [
         cve_id="CVE-2025-68144",
         severity="CVSS 6.3 (v4.0, CNA)",
         reason=(
-            "Argument injection (git_diff --output=/path) overwrites a file silently; "
-            "nothing surfaces in a tool response, so it needs instrumented observation "
+            "Argument injection (git_diff --output=/path) overwrites a file silently. "
+            "Nothing surfaces in a tool response, so it needs instrumented observation "
             "(ADR 011)."
         ),
     ),

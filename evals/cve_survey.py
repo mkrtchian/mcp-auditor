@@ -135,7 +135,7 @@ async def _exercise(
             ):
                 benign_exchanges = await _call(target.benign, client) if benign else []
                 exploit_exchanges = [await _call(exploit, client) for exploit in target.exploits]
-        except Exception:  # a Docker or setup failure, retried per place; never a spec refusal
+        except Exception:  # a Docker or setup failure, retried per place, never a spec refusal
             return None
     graded = PlantedTarget(target.mechanism, target.aim, planted.nonces)
     return _Surfaced(_surfaced(exploit_exchanges, graded), _surfaced([benign_exchanges], graded))

@@ -67,7 +67,7 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.ports import MCPClientPort
 
-TOOL_CALL_TIMEOUT = 30  # the client's own default; the replay passes a short one to stay fast
+TOOL_CALL_TIMEOUT = 30  # the client's own default, the replay passes a short one to stay fast
 
 # No per-launch nonce is written by hand any more: the proof is planted at a kept place
 # through `planted`. The builders keep their vulnerable structure (the symlink, the sibling

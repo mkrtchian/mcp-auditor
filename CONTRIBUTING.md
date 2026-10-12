@@ -37,7 +37,7 @@ Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` a
 A separate benchmark runs the auditor against real, pinned-vulnerable MCP servers in throwaway Docker containers. It needs Docker running plus an API key. Build the images once, confirm each fixture is live (no LLM), then run the graded audit, which is the acceptance gate:
 
 ```bash
-docker compose -f evals/docker/compose.yml build      # one-time, builds the pinned vulnerable-server images
+docker compose -f evals/docker/compose.yml build      # one-time, builds the pinned vulnerable and patched server images
 uv run python -m evals.run_cve_benchmark --calibrate  # no LLM, checks each fixture is live on the vulnerable version and fixed on the patched one
 uv run python -m evals.run_cve_benchmark --survey     # no LLM, plants every in-scope candidate place and reports what each version surfaces (no verdict)
 uv run python -m evals.run_cve_benchmark              # graded run, gated against evals/baselines/cve/
