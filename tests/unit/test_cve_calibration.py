@@ -1,10 +1,12 @@
+import dataclasses
 import re
 from dataclasses import dataclass
 
 import pytest
 
-from evals.cve_calibration import RecordingClient, dead_conditions
+from evals.cve_calibration import RecordingClient, calibrate_one, dead_conditions
 from evals.cve_grammar import MechanismClass
+from evals.cve_targets import CVE_TARGETS
 from evals.cve_units import unit_of_exchanges
 from mcp_auditor.domain import ToolResponse
 from tests.fakes.mcp_client import FakeMCPClient
@@ -25,6 +27,13 @@ class FakeTarget:
 COMMAND_TARGET = FakeTarget(
     MechanismClass.COMMAND_EXECUTION, {"planted": NONCE}, re.compile(r"[;&|`]|\$\(")
 )
+
+
+async def test_an_unknown_kept_id_raises_out_of_calibrate_one_before_any_launch():
+    target = dataclasses.replace(CVE_TARGETS[0], kept_places=("no-such-place",))
+
+    with pytest.raises(ValueError, match="no-such-place"):
+        await calibrate_one(target, {})
 
 
 async def test_recording_client_passes_response_through_and_records_the_exchange():

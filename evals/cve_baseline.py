@@ -83,7 +83,7 @@ def fixture_fingerprint(
     kind, coordinates and reach, in kept_places order) and the sentinel Dockerfile whenever a
     kept record is an http_endpoint, since the sentinel image serves it on any target. Out:
     the exploits and benign call (calibration only), the severity, the note, the awaited
-    capability (report text), the sentinel string (random per process), the CI skip, the kept
+    capability (report text), the drawn nonces (random per launch), the CI skip, the kept
     places' family (plants nothing), and what each caller chooses to plant and launch (the
     kept places for a graded run, every candidate for the survey), which live in the callers.
     A change to the shared environment code moves every target's fingerprint.

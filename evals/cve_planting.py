@@ -16,9 +16,6 @@ from collections.abc import Generator
 from contextlib import ExitStack, contextmanager
 
 from evals.cve_planting_base import (
-    LABEL as LABEL,
-)
-from evals.cve_planting_base import (
     RANDOM_NONCES as RANDOM_NONCES,
 )
 from evals.cve_planting_base import (
@@ -50,20 +47,12 @@ from evals.cve_planting_base import (
 from evals.cve_planting_docker import (
     DockerPlanting as DockerPlanting,
 )
-from evals.cve_planting_docker import (
-    best_effort as best_effort,
-)
-from evals.cve_planting_docker import (
-    docker_network as docker_network,
-)
-from evals.cve_planting_docker import (
-    sidecar as sidecar,
-)
 from evals.cve_planting_spec import planting_spec as planting_spec
 
-# re-exported for a one-name import by the audit, calibration, survey and replay callers
+# re-exported for a one-name import by the audit, calibration, survey and replay callers.
+# The user and network helpers (host_user_args, no_network_args, unprivileged_user_args) are
+# imported above for `planted`'s own use only, so they stay off this public surface.
 __all__ = [
-    "LABEL",
     "RANDOM_NONCES",
     "SENTINEL_IMAGE",
     "DockerPlanting",
@@ -75,15 +64,9 @@ __all__ = [
     "PlantingHost",
     "PlantingSpec",
     "SymbolicUser",
-    "best_effort",
     "confinement_args",
-    "docker_network",
-    "host_user_args",
-    "no_network_args",
     "planted",
     "planting_spec",
-    "sidecar",
-    "unprivileged_user_args",
 ]
 
 _HOLDER_SLEEP = "2147483647"

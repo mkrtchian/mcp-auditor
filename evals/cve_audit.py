@@ -9,9 +9,10 @@ from dataclasses import dataclass
 from rich.console import Console
 from rich.markup import escape
 
-from evals.concurrency import entered_in_thread
 from evals.cve_environments import Launch, connect
 from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, PlantedTarget, RunGrade, grade_run
+from evals.cve_places import Places, kept_records
+from evals.cve_planting import PlantingFailed
 from evals.cve_report_units import units_of
 from evals.cve_session_model import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
@@ -41,7 +42,7 @@ class _Auditor:
     budget: int
 
 
-def audit_target(budget: int, throttles: SessionThrottles) -> AuditTarget:
+def audit_target(budget: int, throttles: SessionThrottles, places: Places) -> AuditTarget:
     # Built once, before any container: a bad model configuration is a crash, never a
     # run skipped, which would read as a gate that cannot compare. The composition root
     # bounds the returned audit to the chosen concurrency.
@@ -49,7 +50,9 @@ def audit_target(budget: int, throttles: SessionThrottles) -> AuditTarget:
     auditor = _Auditor(create_llm(settings), create_judge_llm(settings), budget)
 
     async def audit(target: CVETarget) -> GradedAudit | None:
-        return await graded_despite_refusals(target, lambda: _attempt(target, auditor, throttles))
+        return await graded_despite_refusals(
+            target, lambda: _attempt(target, auditor, throttles, places)
+        )
 
     return audit
 
@@ -79,23 +82,26 @@ async def graded_despite_refusals[T](
 
 
 async def _attempt(
-    target: CVETarget, auditor: _Auditor, throttles: SessionThrottles
+    target: CVETarget, auditor: _Auditor, throttles: SessionThrottles, places: Places
 ) -> GradedAudit | RefusedAttempt | None:
+    # An unknown kept id or a planting_spec refusal is a configuration error: it is not
+    # caught here, so it crashes the run rather than reading as a skip the gate cannot compare.
+    records = kept_records(target.kept_places, places)
     outcome: GradedAudit | RefusedAttempt | None = None
     try:
-        async with entered_in_thread(target.environment()) as launch:
-            report = await _audit(launch, target, auditor)
+        async with target.launched(records) as planted:
+            report = await _audit(planted.launch, target, auditor)
             throttles.count(report)
             _print_incidents(target, report)
             # Graded before __exit__ fires so a best-effort teardown error
-            # cannot erase a completed run's grade. The nonce travels per launch, so the
-            # graded target is built here, not frozen on CVETarget (removed in a later step).
-            planted = PlantedTarget(target.mechanism, target.aim, {"planted": target.sentinel})
-            grade = graded_or_refused(planted, report)
+            # cannot erase a completed run's grade. The nonces travel per launch, so the
+            # graded target is built here, not frozen on CVETarget.
+            graded = PlantedTarget(target.mechanism, target.aim, planted.nonces)
+            grade = graded_or_refused(graded, report)
             if isinstance(grade, RunGrade):
                 console.print(f"{target.cve_id}: {grade.status}")
             outcome = GradedAudit(grade, report) if isinstance(grade, RunGrade) else grade
-    except (LaunchError, subprocess.CalledProcessError) as exc:
+    except (LaunchError, PlantingFailed, subprocess.CalledProcessError) as exc:
         failure = "run skipped" if outcome is None else "teardown failed"
         console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {exc}")
     return outcome

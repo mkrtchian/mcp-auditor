@@ -131,8 +131,9 @@ async def _cve_tools() -> list[ToolDefinition]:
     tools: list[ToolDefinition] = []
     for target in CVE_TARGETS:
         console.print(f"Listing the tools of {target.cve_id}...")
-        with target.environment() as launch:
-            async with _silent_client(launch) as client:
+        # Lists tools only, outside any concurrency, planting nothing, so it needs no places.
+        with target.environment(target.planting_spec(())) as planted:
+            async with _silent_client(planted.launch) as client:
                 listed = await client.list_tools()
         tools.extend(tool for tool in listed if tool not in tools)
     return tools

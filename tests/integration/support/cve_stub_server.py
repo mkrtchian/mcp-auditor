@@ -1,4 +1,5 @@
-"""A read server for calibration tests: the nonce passed as argv sits behind `/outside/flag`."""
+"""A read server for calibration and replay tests: the kept place's drawn nonce, passed on the
+command line, sits behind `/outside/flag`, and every other path reads clean."""
 
 import sys
 

@@ -1,12 +1,13 @@
 import re
-import secrets
-from collections.abc import Awaitable, Callable
-from contextlib import AbstractContextManager
+from collections.abc import AsyncGenerator, Awaitable, Callable, Generator, Sequence
+from contextlib import AbstractContextManager, asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+from evals.concurrency import entered_in_thread
 from evals.cve_environments import (
     Launch,
+    PlantedLaunch,
     command_injection_env,
     filesystem_env,
     git_init_traversal_env,
@@ -15,7 +16,15 @@ from evals.cve_environments import (
     ssrf_env,
 )
 from evals.cve_grammar import MechanismClass
-from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_places import Place
+from evals.cve_planting import (
+    RANDOM_NONCES,
+    NonceSource,
+    PlantingHost,
+    PlantingSpec,
+    SymbolicUser,
+)
+from evals.cve_planting import planting_spec as compute_planting_spec
 from mcp_auditor.domain.ports import MCPClientPort
 
 # The filesystem CVEs surface the leak through a read tool, but the blind
@@ -37,7 +46,6 @@ def image_dockerfile(name: str, docker_directory: Path = DOCKER_DIRECTORY) -> Pa
 class CVETarget:
     cve_id: str
     severity: str
-    sentinel: str
     mechanism: MechanismClass | None
     aim: re.Pattern[str]
     reaches: frozenset[str]  # the flaw's reachable_by tokens, among the three in cve_places
@@ -45,8 +53,7 @@ class CVETarget:
     images: tuple[str, ...]  # services of evals/docker/compose.yml
     server_image: str  # the service of images that runs the server under audit
     planting_host: PlantingHost  # what this target's launch can hold (user, cwd, network)
-    # The builder takes the image tag, then the sentinel.
-    builder: Callable[[str, str], AbstractContextManager[Launch]]
+    builder: Callable[[str, PlantingSpec], AbstractContextManager[Launch]]  # (image tag, spec)
     exploits: tuple[Callable[[MCPClientPort], Awaitable[None]], ...]
     benign: Callable[[MCPClientPort], Awaitable[None]]
     awaited_capability: str | None
@@ -54,8 +61,23 @@ class CVETarget:
     tools_filter: frozenset[str] | None
     ci_skip_reason: str | None = None
 
-    def environment(self) -> AbstractContextManager[Launch]:
-        return self.builder(image_tag(self.server_image), self.sentinel)
+    def planting_spec(
+        self, to_plant: Sequence[Place], nonces: NonceSource = RANDOM_NONCES
+    ) -> PlantingSpec:
+        return compute_planting_spec(to_plant, self.planting_host, nonces)
+
+    @contextmanager
+    def environment(self, spec: PlantingSpec) -> Generator[PlantedLaunch]:
+        with self.builder(image_tag(self.server_image), spec) as launch:
+            yield PlantedLaunch(launch, spec.nonces)
+
+    @asynccontextmanager
+    async def launched(
+        self, to_plant: Sequence[Place], *, nonces: NonceSource = RANDOM_NONCES
+    ) -> AsyncGenerator[PlantedLaunch]:
+        spec = self.planting_spec(to_plant, nonces)
+        async with entered_in_thread(self.environment(spec)) as planted_launch:
+            yield planted_launch
 
 
 @dataclass(frozen=True)
@@ -65,19 +87,7 @@ class OutOfScopeCVE:
     reason: str
 
 
-def _sentinel() -> str:
-    return f"MCPAUDIT-{secrets.token_hex(16)}"
-
-
-_SYMLINK_TRAVERSAL_SENTINEL = _sentinel()
-_PREFIX_COLLISION_SENTINEL = _sentinel()
-_REPOSITORY_BYPASS_SENTINEL = _sentinel()
-_GIT_INIT_TRAVERSAL_SENTINEL = _sentinel()
-_KUBERNETES_INJECTION_SENTINEL = _sentinel()
-_FETCH_SSRF_SENTINEL = _sentinel()
-
-
-# The user, working directory and network each builder launches with today (no -w, so cwd is /).
+# The user, working directory and network each target's launch runs with (planting emits them).
 _HOST_NO_NETWORK = PlantingHost(SymbolicUser.HOST, "/", has_network=False)
 _UNPRIVILEGED_NO_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 _UNPRIVILEGED_WITH_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
@@ -137,10 +147,9 @@ _PREFIX_SIBLING_AIM = re.compile(r"^/work/sandbox[^/]")
 _OUTSIDE_REPO_AIM = re.compile(r"^/(?!work/repo(/|$))")
 _SHELL_METACHARACTER_AIM = re.compile(r"[;&|`]|\$\(")
 # A URL whose host is loopback (shortened forms such as 127.1 included), link-local,
-# RFC 1918, 0.0.0.0, [::1], an IPv6 unique local or IPv4-mapped address, or a
-# single-label name. A public URL that redirects inward does not read as aimed, since
-# the aim reads only the arguments sent: that affects the miss class alone, never a
-# detection.
+# RFC 1918, 0.0.0.0, [::1], an IPv6 unique local or IPv4-mapped address, or a single-label
+# name. A public URL that redirects inward does not read as aimed, since the aim reads only
+# the arguments sent: that affects the miss class alone, never a detection.
 _INTERNAL_HOST_AIM = re.compile(
     r"^[a-z][a-z0-9+.-]*://(?:[^/?#@]*@)?"
     r"(?:127(?:\.\d{1,3}){1,3}"
@@ -167,7 +176,6 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-53109",
         severity="CVSS 7.3 (v4.0, CNA)",
-        sentinel=_SYMLINK_TRAVERSAL_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PLANTED_LINK_AIM,
         reaches=frozenset({"arbitrary_read"}),
@@ -189,7 +197,6 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-53110",
         severity="CVSS 7.3 (v4.0, CNA)",
-        sentinel=_PREFIX_COLLISION_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PREFIX_SIBLING_AIM,
         reaches=frozenset({"arbitrary_read"}),
@@ -207,7 +214,6 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-68145",
         severity="CVSS 6.4 (v4.0, CNA)",
-        sentinel=_REPOSITORY_BYPASS_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
         reaches=frozenset({"arbitrary_read"}),
@@ -225,7 +231,6 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-68143",
         severity="CVSS 6.5 (v4.0, CNA)",
-        sentinel=_GIT_INIT_TRAVERSAL_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
         reaches=frozenset({"arbitrary_read"}),
@@ -247,7 +252,6 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-53355",
         severity="CVSS 7.5 (v3.1, CNA)",
-        sentinel=_KUBERNETES_INJECTION_SENTINEL,
         mechanism=MechanismClass.COMMAND_EXECUTION,
         aim=_SHELL_METACHARACTER_AIM,
         reaches=frozenset({"command_execution"}),
@@ -259,16 +263,12 @@ CVE_TARGETS: list[CVETarget] = [
         exploits=(_exploit_kubernetes_injection,),
         benign=_benign_kubernetes_injection,
         awaited_capability=None,
-        note=(
-            "Command injection via kubectl_generic (execSync shell); "
-            "surfaces the env sentinel with no cluster."
-        ),
+        note="Command injection via kubectl_generic (execSync shell), surfaces an env nonce.",
         tools_filter=frozenset({"kubectl_generic"}),
     ),
     CVETarget(
         cve_id="CVE-2025-65513",
         severity="CVSS 7.5 (v3.1, CISA-ADP)",
-        sentinel=_FETCH_SSRF_SENTINEL,
         mechanism=MechanismClass.INTERNAL_FETCH,
         aim=_INTERNAL_HOST_AIM,
         reaches=frozenset({"internal_fetch"}),

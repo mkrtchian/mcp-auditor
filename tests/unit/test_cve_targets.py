@@ -8,6 +8,8 @@ import yaml
 
 from evals.cve_calibration import RecordingClient
 from evals.cve_environments import Launch
+from evals.cve_places import Coordinates, Place, PlantKind
+from evals.cve_planting import PlantingSpec
 from evals.cve_proofs import is_aimed
 from evals.cve_targets import CVE_TARGETS, CVETarget, image_tag
 from evals.cve_units import Unit, unit_of_exchanges
@@ -15,7 +17,26 @@ from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
 
 SSRF_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-65513")
+KUBERNETES_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53355")
 COMPOSE_PATH = Path(__file__).resolve().parents[2] / "evals" / "docker" / "compose.yml"
+
+
+class _FakeNonces:
+    def token(self) -> str:
+        return "MCPAUDIT-fakenonce"
+
+    def account_name(self) -> str:
+        return "mcpaudit-fakeaccount"
+
+
+def _an_env_place() -> Place:
+    return Place(
+        id="fict-env",
+        family="fictional",
+        reachable_by=frozenset({"command_execution"}),
+        kind=PlantKind.ENV,
+        coordinates=Coordinates(PlantKind.ENV, name="FICT"),
+    )
 
 
 @pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])
@@ -35,20 +56,39 @@ def test_every_image_of_a_target_is_a_compose_service(target: CVETarget):
     assert set(target.images) <= set(services)
 
 
-def test_the_environment_calls_its_builder_with_the_server_image_then_the_sentinel():
-    calls: list[tuple[str, ...]] = []
+def test_the_environment_calls_its_builder_with_the_server_image_and_spec_and_yields_its_nonces():
+    calls: list[tuple[str, PlantingSpec]] = []
 
     @contextmanager
-    def recording_builder(*args: str) -> Generator[Launch]:
-        calls.append(args)
+    def recording_builder(image: str, spec: PlantingSpec) -> Generator[Launch]:
+        calls.append((image, spec))
         yield Launch("docker", [])
 
     target = dataclasses.replace(SSRF_TARGET, builder=recording_builder)
+    spec = target.planting_spec(())
 
-    with target.environment():
-        pass
+    with target.environment(spec) as planted:
+        assert planted.nonces == spec.nonces
 
-    assert calls == [(image_tag(SSRF_TARGET.server_image), SSRF_TARGET.sentinel)]
+    assert calls == [(image_tag(SSRF_TARGET.server_image), spec)]
+
+
+def test_an_empty_spec_plants_no_nonce():
+    with KUBERNETES_TARGET.environment(KUBERNETES_TARGET.planting_spec(())) as planted:
+        assert planted.nonces == {}
+        assert "FICT=MCPAUDIT-fakenonce" not in planted.launch.args
+
+
+def test_an_env_place_is_planted_through_arguments_with_no_docker():
+    spec = KUBERNETES_TARGET.planting_spec([_an_env_place()], nonces=_FakeNonces())
+
+    with KUBERNETES_TARGET.environment(spec) as planted:
+        args = planted.launch.args
+        assert planted.nonces == {"fict-env": "MCPAUDIT-fakenonce"}
+        assert "FICT=MCPAUDIT-fakenonce" in args
+        assert "65534:65534" in args
+        assert args[args.index("-w") + 1] == "/"
+        assert args[args.index("--network") + 1] == "none"
 
 
 @pytest.mark.parametrize(

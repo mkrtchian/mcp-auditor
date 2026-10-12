@@ -1,5 +1,4 @@
-"""The production `PlantingDocker` port and the two context-manager helpers the per-target
-environments still enter directly.
+"""The production `PlantingDocker` port that drives Docker and the host filesystem for planting.
 
 Setup calls run with `check=True` so a failure raises before a launch is yielded; teardown
 calls are best-effort and never raise. Every network and container carries the
@@ -12,8 +11,7 @@ import os
 import secrets
 import subprocess
 import tempfile
-from collections.abc import Generator, Sequence
-from contextlib import contextmanager
+from collections.abc import Sequence
 
 from evals.cve_planting_base import (
     LABEL,
@@ -29,7 +27,7 @@ from evals.cve_planting_base import (
 logger = logging.getLogger(__name__)
 
 
-def best_effort(*command: str) -> None:
+def _best_effort(*command: str) -> None:
     try:
         result = subprocess.run(list(command), check=False, capture_output=True, text=True)
     except OSError as error:
@@ -37,29 +35,6 @@ def best_effort(*command: str) -> None:
         return
     if result.returncode != 0:
         logger.warning("cleanup command failed: %s (%s)", " ".join(command), result.stderr.strip())
-
-
-@contextmanager
-def docker_network() -> Generator[str]:
-    name = f"{LABEL}-{secrets.token_hex(6)}"
-    subprocess.run(
-        ["docker", "network", "create", "--label", LABEL, name], check=True, capture_output=True
-    )
-    try:
-        yield name
-    finally:
-        best_effort("docker", "network", "rm", name)
-
-
-@contextmanager
-def sidecar(image: str, *run_args: str) -> Generator[str]:
-    name = f"{LABEL}-{secrets.token_hex(6)}"
-    command = ["docker", "run", "-d", "--rm", *confinement_args(), "--label", LABEL, "--name", name]
-    subprocess.run([*command, *run_args, image], check=True, capture_output=True)
-    try:
-        yield name
-    finally:
-        best_effort("docker", "stop", name)
 
 
 class DockerPlanting(PlantingDocker):
@@ -88,19 +63,19 @@ class DockerPlanting(PlantingDocker):
         return name
 
     def remove_network(self, name: str) -> None:
-        best_effort("docker", "network", "rm", name)
+        _best_effort("docker", "network", "rm", name)
 
     def start_holder(self, run_args: Sequence[str]) -> str:
         return self._run_detached(run_args)
 
     def remove_holder(self, name: str) -> None:
-        best_effort("docker", "rm", "-f", name)
+        _best_effort("docker", "rm", "-f", name)
 
     def start_sentinel(self, run_args: Sequence[str]) -> str:
         return self._run_detached(run_args)
 
     def stop_sentinel(self, name: str) -> None:
-        best_effort("docker", "stop", name)
+        _best_effort("docker", "stop", name)
 
     def run_address_setup(self, run_args: Sequence[str]) -> None:
         subprocess.run(

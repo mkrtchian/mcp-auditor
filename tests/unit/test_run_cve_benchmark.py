@@ -42,6 +42,21 @@ def test_a_calibration_that_cannot_reach_docker_exits_as_a_crash(
     assert exit_.value.code == 4
 
 
+def test_a_calibration_that_raises_exits_as_a_crash(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
+
+    async def boom(*_args: object, **_kwargs: object) -> bool:
+        raise ValueError("a kept id with no record")
+
+    monkeypatch.setattr(run_cve_benchmark, "calibrate_all", boom)
+    monkeypatch.setattr("sys.argv", ["run_cve_benchmark", "--calibrate"])
+
+    with pytest.raises(SystemExit) as exit_:
+        run_cve_benchmark.main()
+
+    assert exit_.value.code == 4
+
+
 def test_a_concurrency_below_one_is_refused_by_the_parser(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
@@ -74,7 +89,7 @@ def test_a_graded_run_reports_the_tree_it_ran_on_and_the_tokens_billed(
     assert report["provider_usage"]["input_tokens"] == 500
 
 
-def _billing_audit_target(budget: int, throttles: SessionThrottles) -> AuditTarget:
+def _billing_audit_target(budget: int, throttles: SessionThrottles, places: object) -> AuditTarget:
     usage = ProviderUsage(input_tokens=500, output_tokens=50)
     throttles.count(AuditReport(target="test", tool_reports=[], provider_usage=usage))
 

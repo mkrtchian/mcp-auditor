@@ -15,9 +15,9 @@ from typing import IO, Any, cast
 from rich.console import Console
 from rich.markup import escape
 
-from evals.concurrency import entered_in_thread
 from evals.cve_environments import connect
 from evals.cve_grammar import GradedTarget, PlantedTarget, ProofKind
+from evals.cve_places import Places, kept_records
 from evals.cve_proofs import is_aimed, proofs_in
 from evals.cve_targets import CVETarget
 from evals.cve_units import Unit, unit_of_exchanges
@@ -68,16 +68,19 @@ def dead_conditions(target: GradedTarget, exploits: Sequence[Unit], benign: Unit
     return conditions
 
 
-async def calibrate_one(target: CVETarget) -> bool:
+async def calibrate_one(target: CVETarget, places: Places) -> bool:
     # Any failure reads as not live and the next target still runs. A server that dies
     # before the handshake only says "Connection closed", so its stderr carries the cause.
     # Reports print with no await between their lines, so targets calibrated side by side
-    # do not interleave them.
+    # do not interleave them. An unknown kept id or a planting_spec refusal is a configuration
+    # error, resolved and checked before the try, so it propagates instead of reading dead.
+    records = kept_records(target.kept_places, places)
+    target.planting_spec(records)
     with tempfile.TemporaryFile("w+") as server_stderr:
         try:
             async with (
-                entered_in_thread(target.environment()) as launch,
-                connect(launch, server_stderr) as client,
+                target.launched(records) as planted,
+                connect(planted.launch, server_stderr) as client,
             ):
                 benign = RecordingClient(client)
                 await target.benign(benign)
@@ -92,9 +95,9 @@ async def calibrate_one(target: CVETarget) -> bool:
             console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {escape(reason)}")
             _print_tail(server_stderr)
             return False
-    planted = PlantedTarget(target.mechanism, target.aim, {"planted": target.sentinel})
+    graded = PlantedTarget(target.mechanism, target.aim, planted.nonces)
     conditions = dead_conditions(
-        planted, [_unit(recorder.exchanges) for recorder in exploits], _unit(benign.exchanges)
+        graded, [_unit(recorder.exchanges) for recorder in exploits], _unit(benign.exchanges)
     )
     if conditions:
         _report_dead(

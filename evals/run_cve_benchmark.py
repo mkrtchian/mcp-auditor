@@ -81,12 +81,8 @@ def main() -> None:
     if not preflight_ok():
         sys.exit(CRASHED_EXIT)
 
-    if args.calibrate:
-        calibrate = bounded(calibrate_one, args.concurrency)
-        sys.exit(0 if asyncio.run(calibrate_all(graded, calibrate, ci=args.ci)) else 1)
-
     try:
-        code = asyncio.run(_run_graded(args, graded, tracked, load_places(HOLDOUT_PLACES)))
+        code = asyncio.run(_run(args, graded, tracked))
     except Refused as refused:
         display.print_refusal(refused.title, refused.reasons)
         code = NOT_COMPARABLE_EXIT
@@ -94,6 +90,22 @@ def main() -> None:
         traceback.print_exc()
         code = CRASHED_EXIT
     sys.exit(code)
+
+
+async def _run(
+    args: argparse.Namespace, graded: list[CVETarget], tracked: list[OutOfScopeCVE]
+) -> int:
+    # Calibration runs under the same crash handler as the graded path, so a configuration
+    # error out of it exits 4, not Python's exit 1, which reads as a dead fixture.
+    places = load_places(HOLDOUT_PLACES)
+    if args.calibrate:
+
+        async def calibrate(target: CVETarget) -> bool:
+            return await calibrate_one(target, places)
+
+        all_live = await calibrate_all(graded, bounded(calibrate, args.concurrency), ci=args.ci)
+        return 0 if all_live else 1
+    return await _run_graded(args, graded, tracked, places)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -189,7 +201,7 @@ def _result(target: CVETarget, grades: list[RunGrade], budget: int) -> CVEResult
 
 def _harness(args: argparse.Namespace, throttles: SessionThrottles, places: Places) -> CVEHarness:
     return CVEHarness(
-        audit=bounded(audit_target(args.budget, throttles), args.concurrency),
+        audit=bounded(audit_target(args.budget, throttles, places), args.concurrency),
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
         image_ids=_image_ids,

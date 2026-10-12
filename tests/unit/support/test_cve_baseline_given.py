@@ -159,7 +159,6 @@ UNFINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "severity": _replacing(severity="CVSS 9.8 (v3.1, CNA)"),
     "awaited capability": _replacing(awaited_capability="cross-tool chains"),
     "exploits": _replacing(exploits=(_another_exploit,)),
-    "sentinel": _replacing(sentinel="MCPAUDIT-another"),
     "a record the target does not keep": _adding_a_record_the_target_does_not_keep(),
     "a kept record's family": _changing_the_kept_record_family(),
     "the sentinel Dockerfile (no kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
