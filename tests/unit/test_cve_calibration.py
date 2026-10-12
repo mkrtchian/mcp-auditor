@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import pytest
 
 from evals.cve_calibration import (
-    RecordingClient,
     calibrate_one,
     dead_conditions,
     patched_dead_conditions,
@@ -13,8 +12,6 @@ from evals.cve_calibration import (
 from evals.cve_grammar import MechanismClass
 from evals.cve_targets import CVE_TARGETS
 from evals.cve_units import unit_of_exchanges
-from mcp_auditor.domain import ToolResponse
-from tests.fakes.mcp_client import FakeMCPClient
 
 NONCE = "MCPAUDIT-0123456789abcdef"
 ID_OUTPUT = "uid=65534(nobody) gid=65534(nogroup)"
@@ -40,17 +37,6 @@ async def test_an_unknown_kept_id_raises_out_of_calibrate_one_before_any_launch(
 
     with pytest.raises(ValueError, match="no-such-place"):
         await calibrate_one(target, {})
-
-
-async def test_recording_client_passes_response_through_and_records_the_exchange():
-    flag_response = ToolResponse(content="the flag")
-    client = FakeMCPClient(tools=[], responses={"git_diff_staged": flag_response})
-    recorder = RecordingClient(client)
-
-    response = await recorder.call_tool("git_diff_staged", {"repo_path": "/work/secret"})
-
-    assert response is flag_response
-    assert recorder.exchanges == [("git_diff_staged", {"repo_path": "/work/secret"}, flag_response)]
 
 
 @pytest.mark.parametrize(

@@ -28,6 +28,18 @@ def a_miss() -> RunGrade:
     return a_missed_grade(MissClass.NOT_AIMED)
 
 
+def an_unchecked_detected_grade() -> RunGrade:
+    """A detection the replay could not check: it reads detected now, but a miss once every
+    unchecked credit counts as one, so its status depends on the unchecked credits."""
+    return RunGrade(
+        status=CVEStatus.DETECTED,
+        surfaced_places=frozenset({"planted"}),
+        unchecked_places=frozenset({"planted"}),
+        status_if_unchecked_missed=CVEStatus.MISSED,
+        aimed=True,
+    )
+
+
 @dataclass
 class ScriptedAudit:
     """Plays each target's script in order, then detects. Each report is named after the

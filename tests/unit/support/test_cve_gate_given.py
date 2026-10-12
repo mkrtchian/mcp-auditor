@@ -58,12 +58,14 @@ def a_candidate(
     fixture: str = FIXTURE,
     completed: bool = True,
     cve_id: str = CVE_ID,
+    depends_on_unchecked: bool = False,
 ) -> TargetCandidate:
     return TargetCandidate(
         cve_id=cve_id,
         fixture_fingerprint=fixture,
         runs=runs if runs is not None else [DETECTED] * 3,
         completed=completed,
+        depends_on_unchecked=depends_on_unchecked,
     )
 
 

@@ -194,6 +194,35 @@ def test_render_lists_the_not_run_conditions_in_a_section_after_the_table():
     assert markdown.index("Not run, pre-run check failed:") > markdown.index("Statuses:")
 
 
+def test_render_lists_the_refused_and_unchecked_credits_after_the_table():
+    results = [
+        given.a_cve_result(
+            "CVE-2025-53355",
+            CVEStatus.MISSED,
+            miss_class=MissClass.NOT_AIMED,
+            struck_places=[["alpha", "beta"], []],
+        ),
+        given.a_cve_result(
+            "CVE-2025-53109", CVEStatus.DETECTED, detected_runs=2, unchecked_places=[["gamma"]]
+        ),
+    ]
+
+    markdown = render_markdown(given.a_benchmark_report(results))
+
+    assert "Replay credits (place ids):" in markdown
+    assert "- CVE-2025-53355: refused (alpha, beta)" in markdown
+    assert "- CVE-2025-53109: unchecked (gamma)" in markdown
+    assert markdown.index("Replay credits") > markdown.index("Statuses:")
+
+
+def test_render_without_replay_credits_has_no_replay_section():
+    result = given.a_cve_result("CVE-X", CVEStatus.MISSED)
+
+    markdown = render_markdown(given.a_benchmark_report([result]))
+
+    assert "Replay credits" not in markdown
+
+
 def test_render_appends_the_gate_verdict_and_a_line_per_target():
     report = given.a_benchmark_report([]).model_copy(update={"gate": given.a_red_gate()})
 

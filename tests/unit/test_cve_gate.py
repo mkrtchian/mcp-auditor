@@ -139,6 +139,30 @@ def test_a_not_run_target_is_not_comparable():
     assert any(given.CVE_ID in reason for reason in result.reasons)
 
 
+@pytest.mark.parametrize(
+    "baseline",
+    [None, given.a_gated_baseline()],
+    ids=["no baseline", "gated"],
+)
+def test_a_run_that_depends_on_unchecked_credits_is_not_comparable(
+    baseline: CVETargetBaseline | None,
+):
+    candidate = given.a_candidate([DETECTED] * 3, depends_on_unchecked=True)
+
+    comparison = compare_target(baseline, candidate)
+
+    assert comparison.outcome == TargetOutcome.UNCHECKED_DECIDES
+    assert judge([comparison], []).verdict == CVEGateVerdict.NOT_COMPARABLE
+
+
+def test_unchecked_credits_that_change_no_status_stay_comparable():
+    candidate = given.a_candidate([DETECTED] * 3, depends_on_unchecked=False)
+
+    comparison = compare_target(given.a_gated_baseline(), candidate)
+
+    assert comparison.outcome == TargetOutcome.HELD
+
+
 def test_an_undecided_replay_is_not_comparable():
     pending = given.a_comparison(TargetOutcome.PENDING_REPLAY)
     undecided = settle(pending, [True, True], ReplayRule())

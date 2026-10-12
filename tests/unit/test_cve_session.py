@@ -103,6 +103,56 @@ async def test_a_passing_target_is_audited_while_a_failing_one_is_not_run_in_tar
     assert outcomes[given.KUBERNETES.cve_id] == TargetOutcome.NO_BASELINE
 
 
+async def test_a_run_depending_on_unchecked_credits_is_not_comparable(tmp_path: Path):
+    audit = given.ScriptedAudit(
+        {given.KUBERNETES.cve_id: [given.an_unchecked_detected_grade()] * 3}
+    )
+
+    result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
+
+    assert result.gate is not None
+    [comparison] = result.gate.targets
+    assert comparison.outcome == TargetOutcome.UNCHECKED_DECIDES
+    assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
+
+
+async def test_unchecked_credits_that_change_no_status_stay_comparable(tmp_path: Path):
+    audit = given.ScriptedAudit({given.KUBERNETES.cve_id: [given.a_detected_grade()] * 3})
+
+    result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
+
+    assert result.gate is not None
+    [comparison] = result.gate.targets
+    assert comparison.outcome == TargetOutcome.NO_BASELINE
+
+
+async def test_a_settlement_meeting_an_unchecked_replay_ends_unchecked(tmp_path: Path):
+    given.a_gated_file(tmp_path)
+    miss = given.a_miss()
+    audit = given.ScriptedAudit(
+        {given.KUBERNETES.cve_id: [miss, miss, miss, given.an_unchecked_detected_grade()]}
+    )
+
+    result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
+
+    assert result.gate is not None
+    [comparison] = result.gate.targets
+    assert comparison.outcome == TargetOutcome.UNCHECKED_DECIDES
+    assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
+
+
+async def test_a_recording_with_an_unchecked_dependent_run_is_refused(tmp_path: Path):
+    audit = given.ScriptedAudit(
+        {given.KUBERNETES.cve_id: [given.an_unchecked_detected_grade()] * 3}
+    )
+
+    result = await run_gated(given.options(record_baseline=True), given.a_harness(audit, tmp_path))
+
+    assert result.written == []
+    assert any(given.KUBERNETES.cve_id in reason for reason in result.recording_refused)
+    assert not list(tmp_path.glob("*.json"))
+
+
 async def test_an_ungated_run_still_reports_a_failing_check_in_not_run(tmp_path: Path):
     check = given.ScriptedCheck({given.KUBERNETES.cve_id: ["keeps no place"]})
     audit = given.ScriptedAudit()

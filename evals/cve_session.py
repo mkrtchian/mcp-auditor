@@ -16,6 +16,7 @@ from evals.cve_gate import (
     TargetOutcome,
     compare_target,
     condition_mismatches,
+    depends_on_unchecked,
     exit_code,
     judge,
     settle,
@@ -178,6 +179,7 @@ def _candidate(target_runs: TargetRuns, places: Places) -> TargetCandidate:
         fixture_fingerprint=fixture_fingerprint(target_runs.target, places),
         runs=[grade.status for grade in target_runs.grades],
         completed=target_runs.completed,
+        depends_on_unchecked=any(depends_on_unchecked(grade) for grade in target_runs.grades),
     )
 
 
@@ -187,11 +189,20 @@ async def _replayed(
     baseline: CVETargetBaseline,
     harness: CVEHarness,
 ) -> TargetComparison:
-    """One audit at a time, until the replay rule decides or a replay does not complete."""
+    """One audit at a time, until the replay rule decides or a replay does not complete. A replay
+    audit whose status depends on unchecked credits ends the settlement as UNCHECKED_DECIDES, not
+    as a reproduced or cleared miss (ADR 030)."""
     replays: list[bool | None] = []
     settled = comparison
     while settled.outcome == TargetOutcome.PENDING_REPLAY:
         audit = await harness.audit(target)
+        if audit is not None and depends_on_unchecked(audit.grade):
+            return comparison.model_copy(
+                update={
+                    "outcome": TargetOutcome.UNCHECKED_DECIDES,
+                    "detail": "a replay's status rests on credits the replay could not check",
+                }
+            )
         replays.append(None if audit is None else audit.grade.status not in DETECTION_RUNGS)
         settled = settle(comparison, replays, baseline.replay_rule)
     return settled

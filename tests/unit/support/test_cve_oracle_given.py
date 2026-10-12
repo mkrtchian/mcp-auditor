@@ -57,6 +57,8 @@ def a_cve_result(
     aimed_runs: int = 0,
     fail_without_proof_runs: int = 0,
     miss_class: MissClass | None = None,
+    struck_places: list[list[str]] | None = None,
+    unchecked_places: list[list[str]] | None = None,
 ) -> CVEResult:
     return CVEResult(
         cve_id=cve_id,
@@ -72,6 +74,8 @@ def a_cve_result(
         aimed_runs=aimed_runs,
         fail_without_proof_runs=fail_without_proof_runs,
         budget=10,
+        struck_places=struck_places or [],
+        unchecked_places=unchecked_places or [],
     )
 
 

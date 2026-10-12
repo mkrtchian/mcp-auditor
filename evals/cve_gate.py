@@ -1,7 +1,10 @@
 """The CVE acceptance gate (ADR 024): a target detected in every run of a confirmed baseline
 is gated, and a candidate that misses it is replayed under the replay rule of ADR 016. A target
 that failed the no-LLM pre-run check reads NOT_RUN and leaves the gate not comparable, whatever
-its baseline, so a gate cannot read green with a target missing."""
+its baseline, so a gate cannot read green with a target missing. A target with a run whose
+status would change if its unchecked replay credits were misses reads UNCHECKED_DECIDES and is
+not comparable either, whatever its baseline, so a verdict never rests on a credit the replay
+could not check (ADR 030)."""
 
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
@@ -10,7 +13,7 @@ from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline
-from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
+from evals.cve_grammar import DETECTION_RUNGS, CVEStatus, RunGrade
 from evals.gate import ReplayRule
 
 _BASELINE_DIRECTORY = "evals/baselines/cve"
@@ -30,6 +33,7 @@ class TargetOutcome(StrEnum):
     NO_BASELINE = "no_baseline"
     INCOMPLETE = "incomplete"
     NOT_RUN = "not_run"
+    UNCHECKED_DECIDES = "unchecked_decides"
 
 
 class CVEGateVerdict(StrEnum):
@@ -44,6 +48,15 @@ class TargetCandidate(BaseModel):
     runs: list[CVEStatus]
     # False when a run did not complete: the runs then hold the completed ones only.
     completed: bool
+    # True when a run's status would change if its unchecked replay credits were misses.
+    depends_on_unchecked: bool = False
+
+
+def depends_on_unchecked(grade: RunGrade) -> bool:
+    """A run whose status rests on credits the replay could not check: its status differs from
+    the status it would have if every unchecked credit counted as a miss."""
+    missed = grade.status_if_unchecked_missed
+    return missed is not None and grade.status != missed
 
 
 class TargetComparison(BaseModel):
@@ -80,6 +93,8 @@ def compare_target(
             cve_id=candidate.cve_id, outcome=value, candidate_runs=candidate.runs, detail=detail
         )
 
+    if candidate.depends_on_unchecked:
+        return outcome(TargetOutcome.UNCHECKED_DECIDES, _unchecked_detail(candidate))
     if baseline is None:
         return outcome(TargetOutcome.NO_BASELINE)
     if baseline.fixture_fingerprint != candidate.fixture_fingerprint:
@@ -91,6 +106,11 @@ def compare_target(
     if all(status in DETECTION_RUNGS for status in candidate.runs):
         return outcome(TargetOutcome.HELD)
     return outcome(TargetOutcome.PENDING_REPLAY)
+
+
+def _unchecked_detail(candidate: TargetCandidate) -> str:
+    runs = ", ".join(status.value for status in candidate.runs)
+    return f"a run's status rests on credits the replay could not check (runs: {runs})"
 
 
 def _file_name(cve_id: str) -> str:
@@ -134,9 +154,11 @@ def settle(
 
 
 def judge(comparisons: Sequence[TargetComparison], mismatches: list[str]) -> CVEGateResult:
-    # A not-run target, and a miss whose replays never decided, say nothing either way.
+    # A not-run target, a target the replay could not settle, and a miss whose replays never
+    # decided say nothing either way.
     not_comparable = [
         *_named(comparisons, TargetOutcome.NOT_RUN),
+        *_named(comparisons, TargetOutcome.UNCHECKED_DECIDES),
         *_named(comparisons, TargetOutcome.INCOMPLETE),
         *_named(comparisons, TargetOutcome.PENDING_REPLAY),
     ]

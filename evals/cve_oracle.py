@@ -64,6 +64,9 @@ class CVEResult(BaseModel):
     evidence: str | None = None
     category: JudgeCategory | None = None
     not_run_conditions: list[str] = []  # the pre-run check's dead conditions, when NOT_RUN
+    surfaced_places: list[list[str]] = []  # per run: the places whose nonce surfaced
+    struck_places: list[list[str]] = []  # per run: the credits the replay refused
+    unchecked_places: list[list[str]] = []  # per run: the credits the replay could not check
 
 
 class CVEBenchmarkReport(BaseModel):
@@ -96,6 +99,9 @@ def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> C
         budget=budget,
         evidence=resolution.evidence,
         category=resolution.category,
+        surfaced_places=resolution.surfaced_places,
+        struck_places=resolution.struck_places,
+        unchecked_places=resolution.unchecked_places,
     )
 
 
@@ -152,10 +158,27 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
             "",
             f"Statuses: {tally}.",
             *_render_not_run(report.results),
+            *_render_replay_credits(report.results),
             *gate,
             *refusal,
         ]
     )
+
+
+def _render_replay_credits(results: Sequence[CVEResult]) -> list[str]:
+    # The strike and the unchecked credits go in a section after the table, place ids only.
+    lines = [line for result in results if (line := _replay_credits_line(result)) is not None]
+    return ["", "Replay credits (place ids):", *lines] if lines else []
+
+
+def _replay_credits_line(result: CVEResult) -> str | None:
+    refused = sorted({place for run in result.struck_places for place in run})
+    unchecked = sorted({place for run in result.unchecked_places for place in run})
+    if not refused and not unchecked:
+        return None
+    parts = [f"refused ({', '.join(refused)})"] if refused else []
+    parts += [f"unchecked ({', '.join(unchecked)})"] if unchecked else []
+    return f"- {result.cve_id}: {', '.join(parts)}"
 
 
 def _render_not_run(results: Sequence[CVEResult]) -> list[str]:

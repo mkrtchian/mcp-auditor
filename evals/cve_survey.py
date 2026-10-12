@@ -18,12 +18,12 @@ from dataclasses import dataclass
 
 from rich.console import Console
 
-from evals.cve_calibration import Exchange, RecordingClient
 from evals.cve_environments import connect
 from evals.cve_grammar import PlantedTarget
 from evals.cve_places import Place, Places, PlantKind
 from evals.cve_planting import RANDOM_NONCES, NonceSource, PlantingHost, planting_spec
 from evals.cve_proofs import proofs_in
+from evals.cve_recording_client import Exchange, RecordingClient
 from evals.cve_targets import CVETarget, TargetVersion
 from evals.cve_units import Unit, unit_of_exchanges
 from mcp_auditor.domain.ports import MCPClientPort

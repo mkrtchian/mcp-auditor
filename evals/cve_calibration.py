@@ -15,7 +15,7 @@ import json
 import tempfile
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import IO, Any, cast
+from typing import IO, cast
 
 from rich.console import Console
 from rich.markup import escape
@@ -24,14 +24,11 @@ from evals.cve_environments import connect
 from evals.cve_grammar import GradedTarget, PlantedTarget, ProofKind
 from evals.cve_places import Place, Places, kept_records
 from evals.cve_proofs import is_aimed, proofs_in
+from evals.cve_recording_client import Exchange, RecordingClient
 from evals.cve_targets import CVETarget, TargetVersion
 from evals.cve_units import Unit, unit_of_exchanges
-from mcp_auditor.domain.models import ToolDefinition, ToolResponse
-from mcp_auditor.domain.ports import MCPClientPort
 
 console = Console()
-
-type Exchange = tuple[str, dict[str, Any], ToolResponse]
 
 
 async def calibrate_all(
@@ -187,25 +184,6 @@ def _print_tail(server_stderr: IO[str], lines: int = 10) -> None:
     server_stderr.seek(0)
     for line in server_stderr.read().splitlines()[-lines:]:
         console.print(f"  {line}", markup=False, highlight=False)
-
-
-class RecordingClient:
-    """Records each tool call and its response, so calibration grades what the server
-    returned and a dead fixture can be post-mortemed: the exchanges show which step
-    swallowed the proof (a server-side error-as-value or an empty response), or what the
-    benign call surfaced."""
-
-    def __init__(self, inner: MCPClientPort) -> None:
-        self._inner = inner
-        self.exchanges: list[Exchange] = []
-
-    async def list_tools(self) -> list[ToolDefinition]:
-        return await self._inner.list_tools()
-
-    async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
-        response = await self._inner.call_tool(name, args)
-        self.exchanges.append((name, args, response))
-        return response
 
 
 def _report_dead(

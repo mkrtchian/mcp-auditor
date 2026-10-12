@@ -10,9 +10,11 @@ from rich.console import Console
 from rich.markup import escape
 
 from evals.cve_environments import Launch, connect
-from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, PlantedTarget, RunGrade, grade_run
+from evals.cve_grammar import DETECTION_RUNGS, PlantedTarget, RunGrade, grade_run
 from evals.cve_places import Places, kept_records
 from evals.cve_planting import PlantingFailed
+from evals.cve_recording_client import RecordingClient
+from evals.cve_replay import RecordedCall, RunToCheck, replay_credit
 from evals.cve_report_units import units_of
 from evals.cve_session_model import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
@@ -87,30 +89,50 @@ async def _attempt(
     # An unknown kept id or a planting_spec refusal is a configuration error: it is not
     # caught here, so it crashes the run rather than reading as a skip the gate cannot compare.
     records = kept_records(target.kept_places, places)
-    outcome: GradedAudit | RefusedAttempt | None = None
+    run: RunToCheck | None = None
     try:
         async with target.launched(records) as planted:
-            report = await _audit(planted.launch, target, auditor)
+            report, calls = await _audit(planted.launch, target, auditor)
             throttles.count(report)
             _print_incidents(target, report)
-            # Graded before __exit__ fires so a best-effort teardown error
-            # cannot erase a completed run's grade. The nonces travel per launch, so the
-            # graded target is built here, not frozen on CVETarget.
-            graded = PlantedTarget(target.mechanism, target.aim, planted.nonces)
-            grade = graded_or_refused(graded, report)
-            if isinstance(grade, RunGrade):
-                console.print(f"{target.cve_id}: {grade.status}")
-            outcome = GradedAudit(grade, report) if isinstance(grade, RunGrade) else grade
+            # Captured before __exit__ fires, so a best-effort teardown error cannot erase a
+            # completed run. The nonces travel per launch, so the graded target is built here.
+            run = RunToCheck(
+                target=target,
+                run_target=PlantedTarget(target.mechanism, target.aim, planted.nonces),
+                report=report,
+                recorded_calls=calls,
+                records=records,
+            )
     except (LaunchError, PlantingFailed, subprocess.CalledProcessError) as exc:
-        failure = "run skipped" if outcome is None else "teardown failed"
+        failure = "run skipped" if run is None else "teardown failed"
         console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {exc}")
+    if run is None:
+        return None
+    # The replay launches the patched version, so it runs only once the vulnerable one has exited.
+    grade = await _checked_grade(run)
+    outcome = graded_or_refused(grade, run.report)
+    if isinstance(outcome, RunGrade):
+        console.print(f"{target.cve_id}: {outcome.status}")
+        return GradedAudit(outcome, run.report)
     return outcome
 
 
-def graded_or_refused(target: GradedTarget, report: AuditReport) -> RunGrade | RefusedAttempt:
-    """A detection carries its own proof and stands whatever step was refused. A run that
-    did not detect with a refused step says nothing of detection."""
-    grade = grade_run(target, units_of(report))
+async def _checked_grade(run: RunToCheck) -> RunGrade:
+    """The run's final grade: a detecting run is replayed against the patched version and graded
+    on the credits that survive the strike. A run that did not detect needs no check, since the
+    strike only removes a detection."""
+    units = units_of(run.report)
+    grade = grade_run(run.run_target, units)
+    if grade.status not in DETECTION_RUNGS:
+        return grade
+    check = await replay_credit(run)
+    return grade_run(run.run_target, units, check)
+
+
+def graded_or_refused(grade: RunGrade, report: AuditReport) -> RunGrade | RefusedAttempt:
+    """A detection carries its own proof and stands whatever step was refused. A run that did
+    not detect with a refused step says nothing of detection, the struck credit included."""
     if report.refused_steps and grade.status not in DETECTION_RUNGS:
         return RefusedAttempt()
     return grade
@@ -131,12 +153,15 @@ def _print_incidents(target: CVETarget, report: AuditReport) -> None:
         )
 
 
-async def _audit(launch: Launch, target: CVETarget, auditor: _Auditor) -> AuditReport:
+async def _audit(
+    launch: Launch, target: CVETarget, auditor: _Auditor
+) -> tuple[AuditReport, list[RecordedCall]]:
     try:
         async with _silent_client(launch) as mcp_client:
+            recorder = RecordingClient(mcp_client)
             graph = build_graph(
                 auditor.llm,
-                AuditedServer(mcp_client),
+                AuditedServer(recorder),
                 judge_llm=auditor.judge_llm,
                 tools_filter=target.tools_filter,
             )
@@ -149,7 +174,7 @@ async def _audit(launch: Launch, target: CVETarget, auditor: _Auditor) -> AuditR
                     "max_chain_steps": launch.max_chain_steps,
                 }
             )
-            return result["audit_report"]
+            return result["audit_report"], [(name, args) for name, args, _ in recorder.exchanges]
     except Exception as exc:
         raise LaunchError(str(exc)) from exc
 

@@ -6,11 +6,11 @@ from pathlib import Path
 import pytest
 import yaml
 
-from evals.cve_calibration import RecordingClient
 from evals.cve_environments import Launch
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting import PlantingSpec
 from evals.cve_proofs import is_aimed
+from evals.cve_recording_client import RecordingClient
 from evals.cve_targets import CVE_TARGETS, CVETarget, TargetVersion, image_tag
 from evals.cve_units import Unit, unit_of_exchanges
 from mcp_auditor.domain.ports import MCPClientPort

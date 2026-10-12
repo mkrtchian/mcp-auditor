@@ -11,7 +11,7 @@ from evals.cve_baseline import (
     load_baselines,
     write_baseline,
 )
-from evals.cve_gate import WHOLE_RESET, CVEGateResult, condition_mismatches
+from evals.cve_gate import WHOLE_RESET, CVEGateResult, condition_mismatches, depends_on_unchecked
 from evals.cve_places import Places, PlantKind, kept_records
 from evals.cve_planting import SENTINEL_SERVICE
 from evals.cve_recording import (
@@ -66,6 +66,9 @@ def record(
 ) -> list[WrittenBaseline] | RecordingRefused:
     if session.tree is None:
         return []
+    unchecked = _unchecked_refusals(runs)
+    if unchecked:
+        return RecordingRefused(reasons=unchecked)
     drift = _recording_drift(session, session.tree)
     if drift:
         return RecordingRefused(reasons=drift)
@@ -84,6 +87,15 @@ def record(
     return [
         WrittenBaseline(b.cve_id, b.status, leaves_gated_set(baselines.get(b.cve_id), b))
         for b in decided
+    ]
+
+
+def _unchecked_refusals(runs: list[TargetRuns]) -> list[str]:
+    """A gated baseline never rests on a credit the replay could not check (ADR 030)."""
+    return [
+        f"{target_runs.target.cve_id}: a run's status rests on credits the replay could not check"
+        for target_runs in runs
+        if any(depends_on_unchecked(grade) for grade in target_runs.grades)
     ]
 
 
