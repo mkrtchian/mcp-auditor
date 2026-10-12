@@ -8,6 +8,7 @@ import tests.integration.support.test_cve_calibration_given as given
 from evals.concurrency import bounded
 from evals.cve_calibration import calibrate_all, calibrate_one
 from evals.cve_places import Places
+from evals.cve_survey import TargetSurvey, survey_all, survey_one
 from evals.cve_targets import CVETarget
 
 
@@ -19,6 +20,10 @@ def docker_on_the_host(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) 
 
 def _calibrate(places: Places, limit: int) -> Callable[[CVETarget], Awaitable[bool]]:
     return bounded(lambda target: calibrate_one(target, places), limit)
+
+
+def _survey(places: Places, limit: int) -> Callable[[CVETarget], Awaitable[TargetSurvey]]:
+    return bounded(lambda target: survey_one(target, places), limit)
 
 
 @pytest.mark.usefixtures("docker_on_the_host")
@@ -77,5 +82,71 @@ async def test_an_aim_that_matches_no_call_leaves_the_target_dead(
 
     output = capsys.readouterr().out
     assert not all_live
-    assert "exploit not aimed" in output
+    assert "exploit 0 not aimed" in output
     assert "dead  CVE-NOAIM" in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_kept_place_the_exploit_misses_reads_dead(capsys: pytest.CaptureFixture[str]):
+    all_live = await calibrate_all(
+        [given.a_target_whose_exploit_misses("CVE-MISS")], _calibrate(given.a_places_mapping(), 1)
+    )
+
+    output = capsys.readouterr().out
+    assert not all_live
+    assert "exploit surfaces no nonce for fict-flag" in output
+    assert "dead  CVE-MISS" in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_target_with_no_kept_place_reads_dead(capsys: pytest.CaptureFixture[str]):
+    all_live = await calibrate_all(
+        [given.a_target_with_no_kept_place("CVE-EMPTY")], _calibrate(given.a_places_mapping(), 1)
+    )
+
+    output = capsys.readouterr().out
+    assert not all_live
+    assert "keeps no place" in output
+    assert "dead  CVE-EMPTY" in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_patched_version_that_still_surfaces_a_nonce_reads_dead(
+    capsys: pytest.CaptureFixture[str],
+):
+    all_live = await calibrate_all(
+        [given.a_target_whose_patched_version_still_surfaces("CVE-UNPATCHED")],
+        _calibrate(given.a_places_mapping(), 1),
+    )
+
+    output = capsys.readouterr().out
+    assert not all_live
+    assert "patched: exploit 0 still surfaces fict-flag" in output
+    assert "dead  CVE-UNPATCHED" in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_patched_benign_call_that_errors_reads_dead(capsys: pytest.CaptureFixture[str]):
+    all_live = await calibrate_all(
+        [given.a_target_whose_patched_benign_errors("CVE-BENIGN-ERR")],
+        _calibrate(given.a_places_mapping(), 1),
+    )
+
+    output = capsys.readouterr().out
+    assert not all_live
+    assert "patched: benign call errored" in output
+    assert "dead  CVE-BENIGN-ERR" in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_survey_reports_the_three_facts_per_candidate_without_a_verdict(
+    capsys: pytest.CaptureFixture[str],
+):
+    places = given.a_survey_places_mapping()
+
+    await survey_all([given.a_survey_target("CVE-SURVEY")], _survey(places, 1))
+
+    output = capsys.readouterr().out
+    assert "fict-inside (fictional): exploit no, benign yes, patched no" in output
+    assert "fict-outside (fictional): exploit yes, benign no, patched yes" in output
+    assert "live" not in output and "dead" not in output

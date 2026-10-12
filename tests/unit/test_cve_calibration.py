@@ -4,7 +4,12 @@ from dataclasses import dataclass
 
 import pytest
 
-from evals.cve_calibration import RecordingClient, calibrate_one, dead_conditions
+from evals.cve_calibration import (
+    RecordingClient,
+    calibrate_one,
+    dead_conditions,
+    patched_dead_conditions,
+)
 from evals.cve_grammar import MechanismClass
 from evals.cve_targets import CVE_TARGETS
 from evals.cve_units import unit_of_exchanges
@@ -27,6 +32,7 @@ class FakeTarget:
 COMMAND_TARGET = FakeTarget(
     MechanismClass.COMMAND_EXECUTION, {"planted": NONCE}, re.compile(r"[;&|`]|\$\(")
 )
+NO_PLACE_TARGET = dataclasses.replace(COMMAND_TARGET, nonces={})
 
 
 async def test_an_unknown_kept_id_raises_out_of_calibrate_one_before_any_launch():
@@ -54,9 +60,9 @@ async def test_recording_client_passes_response_through_and_records_the_exchange
         (
             (INJECTED, ID_OUTPUT),
             (PLAIN, "Client Version: v1"),
-            ["exploit surfaces no planted_nonce proof"],
+            ["exploit surfaces no nonce for planted"],
         ),
-        ((PLAIN, f"{ID_OUTPUT}\n{NONCE}"), (PLAIN, "Client Version: v1"), ["exploit not aimed"]),
+        ((PLAIN, f"{ID_OUTPUT}\n{NONCE}"), (PLAIN, "Client Version: v1"), ["exploit 0 not aimed"]),
         (
             (INJECTED, f"{ID_OUTPUT}\n{NONCE}"),
             (PLAIN, f"leaked {NONCE}"),
@@ -84,5 +90,41 @@ def test_dead_conditions_name_each_failed_condition(
     result = dead_conditions(
         COMMAND_TARGET, [unit_of_exchanges([exploit])], unit_of_exchanges([benign])
     )
+
+    assert result == conditions
+
+
+def test_a_target_that_keeps_no_place_reads_dead():
+    result = dead_conditions(
+        NO_PLACE_TARGET,
+        [unit_of_exchanges([(INJECTED, ID_OUTPUT)])],
+        unit_of_exchanges([(PLAIN, "v1")]),
+    )
+
+    assert result == ["keeps no place"]
+
+
+@pytest.mark.parametrize(
+    ("exploit", "benign_errored", "conditions"),
+    [
+        ((INJECTED, ID_OUTPUT), False, []),
+        (
+            (INJECTED, f"{ID_OUTPUT}\n{NONCE}"),
+            False,
+            ["patched: exploit 0 still surfaces planted"],
+        ),
+        ((INJECTED, ID_OUTPUT), True, ["patched: benign call errored"]),
+        (
+            (INJECTED, f"{ID_OUTPUT}\n{NONCE}"),
+            True,
+            ["patched: exploit 0 still surfaces planted", "patched: benign call errored"],
+        ),
+    ],
+    ids=["clean", "still_surfaces", "benign_errored", "both"],
+)
+def test_patched_dead_conditions_name_a_surviving_flaw_or_an_erroring_benign_call(
+    exploit: tuple[dict[str, str], str], benign_errored: bool, conditions: list[str]
+):
+    result = patched_dead_conditions(COMMAND_TARGET, [unit_of_exchanges([exploit])], benign_errored)
 
     assert result == conditions

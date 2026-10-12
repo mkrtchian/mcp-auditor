@@ -30,6 +30,7 @@ from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_preflight import preflight_ok
 from evals.cve_session import CVESessionResult, run_gated
 from evals.cve_session_model import CVEHarness, CVEOptions
+from evals.cve_survey import survey_all, survey_one
 from evals.cve_targets import (
     CVE_TARGETS,
     OUT_OF_SCOPE_CVES,
@@ -95,9 +96,12 @@ def main() -> None:
 async def _run(
     args: argparse.Namespace, graded: list[CVETarget], tracked: list[OutOfScopeCVE]
 ) -> int:
-    # Calibration runs under the same crash handler as the graded path, so a configuration
-    # error out of it exits 4, not Python's exit 1, which reads as a dead fixture.
+    # Calibration and the survey run under the same crash handler as the graded path, so a
+    # configuration error out of either exits 4, not Python's exit 1, which reads as a dead fixture.
     places = load_places(HOLDOUT_PLACES)
+    if args.survey:
+        await survey_all(graded, bounded(lambda t: survey_one(t, places), args.concurrency))
+        return 0
     if args.calibrate:
 
         async def calibrate(target: CVETarget) -> bool:
@@ -123,9 +127,14 @@ def _parse_args() -> argparse.Namespace:
         "--calibrate",
         action="store_true",
         help=(
-            "No-LLM exploit and benign call per target; "
-            "confirms each fixture is live and its benign call is clean."
+            "No-LLM exploits and benign call per target; confirms each fixture is live on "
+            "the vulnerable version and fixed on the patched one."
         ),
+    )
+    parser.add_argument(
+        "--survey",
+        action="store_true",
+        help="No-LLM survey: plant every in-scope candidate and report what each surfaces.",
     )
     parser.add_argument(
         "--cve",
@@ -155,6 +164,8 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _flag_refusal(args: argparse.Namespace) -> str | None:
+    if args.survey and (args.calibrate or args.record_baseline or args.ungated):
+        return "--survey runs no audit: it neither records nor gates"
     if args.calibrate and (args.record_baseline or args.ungated):
         return "--calibrate runs no audit: it neither records nor gates"
     if args.record_baseline and args.ungated:

@@ -22,12 +22,13 @@ uv run python -m evals.draw_judge_cases --honeypot-export PATH --honeypot-export
 uv run python -m evals.draw_judge_cases --honeypot-export PATH --honeypot-export PATH --cve-export PATH --complement  # Once every drawn case is labeled and FAIL cases are 40 % or more of the pass or fail ones: one more case per PASS cell, same exports
 
 docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable and patched server images (one-time, prerequisite for the CVE benchmark)
-uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live and its benign call is clean (Docker, no LLM)
-uv run python -m evals.run_cve_benchmark              # CVE acceptance gate (Docker + an LLM key): compares each target to evals/baselines/cve/, exit 0 green, 1 red, 3 not comparable, 4 crash (the preflight included, --calibrate too)
+uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live on the vulnerable version (exploits surface the nonce, benign call clean) and fixed on the patched one (no nonce surfaces, benign call does not error), Docker, no LLM
+uv run python -m evals.run_cve_benchmark --survey           # CVE benchmark: plant every in-scope candidate place and print, per target and candidate, what the exploits and the benign call surface on each version (Docker, no LLM, no verdict, feeds the kept-place choice)
+uv run python -m evals.run_cve_benchmark              # CVE acceptance gate (Docker + an LLM key): compares each target to evals/baselines/cve/, exit 0 green, 1 red, 3 not comparable, 4 crash (the preflight included, --calibrate and --survey too)
 uv run python -m evals.run_cve_benchmark --record-baseline  # Record one file per target in evals/baselines/cve/ from a clean tree: run it twice at one commit on the local images (exploratory, then confirmed), then commit evals/baselines/cve/ by hand
 uv run python -m evals.run_cve_benchmark --ungated          # CVE graded run with no comparison to the baseline, exit 0
 uv run python -m evals.run_cve_benchmark --concurrency N    # Audits (or calibrations) in flight at once, default 6, 1 for the old sequence (combines with any graded mode and --calibrate)
-uv run python -m tests.unit.support.test_cve_grammar_golden_given  # Regenerate the CVE grammar golden master, only in a commit that changes what the grammar grades or a target's mechanism or aim, never in a refactoring
+uv run python -m tests.unit.support.test_cve_grammar_golden_given  # Regenerate the CVE grammar golden master, only in a commit that changes what the grammar grades, what dead_conditions or patched_dead_conditions reports, or a target's mechanism or aim, never in a refactoring
 uv run python -m evals.run_census prefilter          # CVE holdout census: write the undecided pre-filter hits of each export into output/holdout_census/work/ (exports downloaded by hand, see evals/holdout_census_method.md, no LLM)
 uv run python -m evals.run_census status             # What the census still lacks (undecided hits, gaps to widen, unconfirmed absences), exit 0 complete, 1 otherwise
 uv run python -m evals.run_census classify-dossier --out DIR  # Write the classifiers' input outside the repository, once the census is complete

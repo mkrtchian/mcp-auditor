@@ -536,43 +536,43 @@
     ]
   },
   "dead_conditions/CVE-2025-53109/16dc8fc2429b406b": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-53109/70c0a82182501d2c": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-53109/7cde8d7d4e2b16e7": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-53110/139837768dbf40e7": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-53110/1bd34b1116070f03": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-53110/9e21d0c88a2d982e": [
     "negative control: benign call reads as aimed"
   ],
   "dead_conditions/CVE-2025-53355/2408cfbcf161b971": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-53355/d6e753db6ac1a9a2": [
     "negative control: benign call reads as aimed"
   ],
   "dead_conditions/CVE-2025-53355/db4f9795d19e00da": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-65513/14c23b05fd176310": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-65513/8e0a6cc08886cf2b": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-65513/b32cbcdfa17696c7": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-68143/778083fe8ebf0b2d": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-68143/7e10eae7aeac6a30": [
     "negative control: benign call reads as aimed"
@@ -581,13 +581,67 @@
     "negative control: benign call reads as aimed"
   ],
   "dead_conditions/CVE-2025-68145/299a26557c7674cc": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-68145/39e1994c0f9f37b0": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-68145/ca03d12903e6e812": [
-    "exploit not aimed"
+    "exploit 0 not aimed"
+  ],
+  "patched_dead_conditions/CVE-2025-53109/16dc8fc2429b406b": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-53109/70c0a82182501d2c": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-53109/7cde8d7d4e2b16e7": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-53110/139837768dbf40e7": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-53110/1bd34b1116070f03": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-53110/9e21d0c88a2d982e": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-53355/2408cfbcf161b971": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-53355/d6e753db6ac1a9a2": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-53355/db4f9795d19e00da": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-65513/14c23b05fd176310": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-65513/8e0a6cc08886cf2b": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-65513/b32cbcdfa17696c7": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-68143/778083fe8ebf0b2d": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-68143/7e10eae7aeac6a30": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-68143/cf0b0ffd63fae844": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-68145/299a26557c7674cc": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-68145/39e1994c0f9f37b0": [
+    "patched: exploit 0 still surfaces planted"
+  ],
+  "patched_dead_conditions/CVE-2025-68145/ca03d12903e6e812": [
+    "patched: exploit 0 still surfaces planted"
   ],
   "real/CVE-2025-53109/16dc8fc2429b406b/fail": {
     "grade": {

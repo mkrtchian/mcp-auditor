@@ -168,8 +168,11 @@ The CVE benchmark runs against real, pinned-vulnerable MCP servers (filesystem, 
 # 2. Build the pinned server images, vulnerable and patched, one-time.
 docker compose -f evals/docker/compose.yml build
 
-# 3. Calibrate: no LLM, runs each target's exploit and a benign call, and confirms the fixture is live and the benign call clean.
+# 3. Calibrate: no LLM, runs each target's exploits and a benign call, and confirms the fixture is live on the vulnerable version and fixed on the patched one.
 uv run python -m evals.run_cve_benchmark --calibrate
+
+# Survey (no LLM, no verdict): plant every in-scope candidate place and report, per candidate, what the exploits and the benign call surface on each version.
+uv run python -m evals.run_cve_benchmark --survey
 
 # 4. Graded run, the acceptance gate: the auditor discovers the exploits blind, and each target is compared to its baseline file.
 uv run python -m evals.run_cve_benchmark

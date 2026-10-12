@@ -17,6 +17,9 @@ from mcp_auditor.domain.models import AuditReport, ProviderUsage
         ["--record-baseline", "--ungated"],
         ["--calibrate", "--ungated"],
         ["--calibrate", "--record-baseline"],
+        ["--survey", "--calibrate"],
+        ["--survey", "--record-baseline"],
+        ["--survey", "--ungated"],
     ],
 )
 def test_incompatible_flags_are_refused_as_not_comparable(
@@ -50,6 +53,21 @@ def test_a_calibration_that_raises_exits_as_a_crash(monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setattr(run_cve_benchmark, "calibrate_all", boom)
     monkeypatch.setattr("sys.argv", ["run_cve_benchmark", "--calibrate"])
+
+    with pytest.raises(SystemExit) as exit_:
+        run_cve_benchmark.main()
+
+    assert exit_.value.code == 4
+
+
+def test_a_survey_that_raises_exits_as_a_crash(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
+
+    async def boom(*_args: object, **_kwargs: object) -> None:
+        raise ValueError("a kept id with no record")
+
+    monkeypatch.setattr(run_cve_benchmark, "survey_all", boom)
+    monkeypatch.setattr("sys.argv", ["run_cve_benchmark", "--survey"])
 
     with pytest.raises(SystemExit) as exit_:
         run_cve_benchmark.main()

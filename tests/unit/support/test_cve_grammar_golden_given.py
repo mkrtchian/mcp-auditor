@@ -1,6 +1,6 @@
 """The golden master of the CVE grammar: what `grade_run`, `proofs_in`, `is_aimed`, `resolve`,
-`dead_conditions` and `struck_by_replay` return on a fixed corpus, recorded in
-`cve_grammar_golden.json`.
+`dead_conditions`, `patched_dead_conditions` and `struck_by_replay` return on a fixed corpus,
+recorded in `cve_grammar_golden.json`.
 
 The corpus is built by `cve_grammar_golden_corpus`: the reports and units of the grammar unit
 tests, the CVE cases of the judge fixture pinned by id, each judged FAIL and PASS with nonce
@@ -8,9 +8,9 @@ variants and chains of each target's cases, and the credit-check and replay-stri
 case is graded against its target's mechanism and aim, with the planted nonce as the only
 proof.
 
-The file is regenerated only in a commit that changes what the grammar grades, beside its
-labeling log entry, or in the commit of a fixture that changes a target's mechanism or aim.
-A refactoring never regenerates it.
+The file is regenerated only in a commit that changes what the grammar grades, or what
+`dead_conditions` or `patched_dead_conditions` reports, beside its labeling log entry, or in the
+commit of a fixture that changes a target's mechanism or aim. A refactoring never regenerates it.
 """
 
 import json
@@ -21,7 +21,7 @@ from typing import Any
 import tests.unit.support.cve_grammar_golden_corpus as corpus
 import tests.unit.support.test_cve_grammar_given as given
 import tests.unit.support.test_cve_strike_given as strike
-from evals.cve_calibration import dead_conditions
+from evals.cve_calibration import dead_conditions, patched_dead_conditions
 from evals.cve_grammar import CreditCheck, GradedTarget, grade_run, resolve
 from evals.cve_proofs import GradedRun, UnitPlace, is_aimed, proofs_in, struck_by_replay
 from evals.cve_report_units import units_of
@@ -91,12 +91,23 @@ def _target_entries(cve_id: str, cases: list[JudgeCase]) -> dict[str, Any]:
             f"dead_conditions/{cve_id}/{case.id}": _dead_conditions(target, case.inputs)
             for case in cases
         },
+        **{
+            f"patched_dead_conditions/{cve_id}/{case.id}": _patched_dead_conditions(
+                target, case.inputs
+            )
+            for case in cases
+        },
     }
 
 
 def _dead_conditions(target: GradedTarget, inputs: JudgeInputs) -> list[str]:
     exploit, benign = corpus.dead_conditions_units(inputs)
     return dead_conditions(target, [exploit], benign)
+
+
+def _patched_dead_conditions(target: GradedTarget, inputs: JudgeInputs) -> list[str]:
+    exploit, _ = corpus.dead_conditions_units(inputs)
+    return patched_dead_conditions(target, [exploit], benign_errored=False)
 
 
 def _graded_target(cve_id: str) -> given.FakeTarget:
