@@ -12,6 +12,8 @@ from evals.cve_baseline import (
     write_baseline,
 )
 from evals.cve_gate import WHOLE_RESET, CVEGateResult, condition_mismatches
+from evals.cve_places import Places, PlantKind, kept_records
+from evals.cve_planting import SENTINEL_SERVICE
 from evals.cve_recording import (
     TargetRecording,
     decide_recording,
@@ -19,6 +21,7 @@ from evals.cve_recording import (
     leaves_gated_set,
 )
 from evals.cve_session_model import Baselines, GatedSession, TargetRuns
+from evals.cve_targets import CVETarget
 from evals.eval_session import RECORDING_REFUSED, Refused, TreeState, tree_drift
 from evals.recording import RecordingRefused
 
@@ -108,7 +111,21 @@ def _recordings(
             recorded_at=recorded_at,
             runs=[grade.status for grade in target_runs.grades],
             completed=target_runs.completed,
-            image_ids=session.harness.image_ids(target_runs.target.images),
+            image_ids=session.harness.image_ids(
+                _recorded_images(target_runs.target, session.harness.places)
+            ),
         )
         for target_runs in runs
     }
+
+
+def _recorded_images(target: CVETarget, places: Places) -> tuple[str, ...]:
+    """Every image a launch of the target runs, as provenance: both versions of the server,
+    and the sentinel when a kept http_endpoint needs it on a target that does not already run
+    it (it serves the endpoint and holds its namespace, ADR 024)."""
+    images = (*target.images, target.patched_image)
+    records = kept_records(target.kept_places, places)
+    serves_endpoint = any(record.kind is PlantKind.HTTP_ENDPOINT for record in records)
+    if serves_endpoint and SENTINEL_SERVICE not in target.images:
+        return (*images, SENTINEL_SERVICE)
+    return images

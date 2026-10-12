@@ -77,11 +77,13 @@ def fixture_fingerprint(
     the oracle (ADR 020's principle, read per target by ADR 024).
 
     In: the environment, places and seeding modules (AST fingerprint, so comments, formatting
-    and module docstrings are out), each Dockerfile of the target's images without its comment
-    and blank lines, the builder's name, the server image, the mechanism, the aim, the tools
-    filter, the flaw's reach, the planting host, the loaded record of each kept place (its id,
-    kind, coordinates and reach, in kept_places order) and the sentinel Dockerfile whenever a
-    kept record is an http_endpoint, since the sentinel image serves it on any target. Out:
+    and module docstrings are out), each Dockerfile of the target's images and the patched
+    twin's Dockerfile (both without their comment and blank lines, so a patched pin that moves
+    moves the fingerprint), the builder's name, the server image, the mechanism, the aim, the
+    tools filter, the flaw's reach, the planting host, the loaded record of each kept place
+    (its id, kind, coordinates and reach, in kept_places order) and the sentinel Dockerfile
+    whenever a kept record is an http_endpoint, since the sentinel image serves it on any
+    target. Out:
     the exploits and benign call (calibration only), the severity, the note, the awaited
     capability (report text), the drawn nonces (random per launch), the CI skip, the kept
     places' family (plants nothing), and what each caller chooses to plant and launch (the
@@ -95,6 +97,7 @@ def fixture_fingerprint(
             _dockerfile_instructions(image_dockerfile(name, docker_directory))
             for name in target.images
         ],
+        _dockerfile_instructions(image_dockerfile(target.patched_image, docker_directory)),
         target.builder.__name__,
         target.server_image,
         None if target.mechanism is None else target.mechanism.value,

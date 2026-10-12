@@ -2,14 +2,34 @@
 before any mode so a missing prerequisite reads as a crash and not as a detection miss."""
 
 import subprocess
+from collections.abc import Sequence
 
 from rich.console import Console
 
-from evals.cve_targets import CVE_TARGETS, image_tag
+from evals.cve_planting import SENTINEL_IMAGE
+from evals.cve_targets import CVE_TARGETS, CVETarget, image_tag
 
-EXPECTED_IMAGES = tuple(
-    image_tag(name) for name in dict.fromkeys(n for t in CVE_TARGETS for n in t.images)
-)
+
+def vulnerable_images(targets: Sequence[CVETarget]) -> tuple[str, ...]:
+    return tuple(image_tag(name) for name in dict.fromkeys(n for t in targets for n in t.images))
+
+
+def expected_images(targets: Sequence[CVETarget]) -> tuple[str, ...]:
+    # Both versions of every server, plus the sentinel image unconditionally: a kept
+    # http_endpoint and its namespace holder need it on any target, so dropping the fetch
+    # target must not drop the sentinel from the preflight.
+    services = dict.fromkeys(
+        [name for t in targets for name in t.images] + [t.patched_image for t in targets]
+    )
+    tags = dict.fromkeys([image_tag(name) for name in services] + [SENTINEL_IMAGE])
+    return tuple(tags)
+
+
+# What capture_probe_corpus needs (it lists tools on the vulnerable images only), and what the
+# benchmark preflight checks (both versions and the sentinel, so a missing patched image is a
+# clear preflight error, not a replay whose every credit reads unchecked).
+VULNERABLE_IMAGES = vulnerable_images(CVE_TARGETS)
+EXPECTED_IMAGES = expected_images(CVE_TARGETS)
 _BUILD_HINT = "run `docker compose -f evals/docker/compose.yml build`"
 
 console = Console()

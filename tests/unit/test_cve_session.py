@@ -90,6 +90,16 @@ async def test_a_second_recording_at_the_same_commit_confirms_one_file_per_targe
     assert all(len(baseline.runs) == 6 for baseline in files.values())
 
 
+async def test_a_recording_records_the_patched_image_id_beside_the_server_image(tmp_path: Path):
+    recording = given.options(record_baseline=True)
+
+    await run_gated(recording, given.a_harness(given.ScriptedAudit(), tmp_path))
+
+    baseline = load_baselines(tmp_path)[given.KUBERNETES.cve_id]
+    assert given.KUBERNETES.patched_image in baseline.image_ids
+    assert given.KUBERNETES.server_image in baseline.image_ids
+
+
 async def test_a_recording_refused_after_the_runs_still_returns_the_graded_runs(tmp_path: Path):
     given.a_gated_file(tmp_path)
     audit = given.ScriptedAudit({given.KUBERNETES.cve_id: [given.a_miss()] * 7})

@@ -24,6 +24,7 @@ from evals.cve_places import Place
 logger = logging.getLogger(__name__)
 
 LABEL = "mcp-auditor-cve"
+SENTINEL_SERVICE = "sentinel"  # the sentinel's compose service, image_tag(SENTINEL_SERVICE)
 SENTINEL_IMAGE = "mcp-auditor-cve-sentinel:local"
 
 

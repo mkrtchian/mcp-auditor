@@ -11,7 +11,7 @@ from evals.cve_environments import Launch
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting import PlantingSpec
 from evals.cve_proofs import is_aimed
-from evals.cve_targets import CVE_TARGETS, CVETarget, image_tag
+from evals.cve_targets import CVE_TARGETS, CVETarget, TargetVersion, image_tag
 from evals.cve_units import Unit, unit_of_exchanges
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
@@ -49,11 +49,13 @@ async def test_every_exploit_reads_as_aimed_and_the_benign_call_does_not(target:
 
 
 @pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])
-def test_every_image_of_a_target_is_a_compose_service(target: CVETarget):
+def test_every_server_and_patched_image_of_a_target_is_a_compose_service(target: CVETarget):
     services = yaml.safe_load(COMPOSE_PATH.read_text())["services"]
 
     assert target.images
     assert set(target.images) <= set(services)
+    assert target.server_image in services
+    assert target.patched_image in services
 
 
 def test_the_environment_calls_its_builder_with_the_server_image_and_spec_and_yields_its_nonces():
@@ -71,6 +73,22 @@ def test_the_environment_calls_its_builder_with_the_server_image_and_spec_and_yi
         assert planted.nonces == spec.nonces
 
     assert calls == [(image_tag(SSRF_TARGET.server_image), spec)]
+
+
+def test_the_patched_version_launches_the_patched_image_tag():
+    calls: list[str] = []
+
+    @contextmanager
+    def recording_builder(image: str, spec: PlantingSpec) -> Generator[Launch]:
+        calls.append(image)
+        yield Launch("docker", [])
+
+    target = dataclasses.replace(SSRF_TARGET, builder=recording_builder)
+
+    with target.environment(target.planting_spec(()), TargetVersion.PATCHED):
+        pass
+
+    assert calls == [image_tag(SSRF_TARGET.patched_image)]
 
 
 def test_an_empty_spec_plants_no_nonce():

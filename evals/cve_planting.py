@@ -22,6 +22,9 @@ from evals.cve_planting_base import (
     SENTINEL_IMAGE as SENTINEL_IMAGE,
 )
 from evals.cve_planting_base import (
+    SENTINEL_SERVICE as SENTINEL_SERVICE,
+)
+from evals.cve_planting_base import (
     AccountIntent,
     PlantedArgs,
     PlantingDocker,
@@ -55,6 +58,7 @@ from evals.cve_planting_spec import planting_spec as planting_spec
 __all__ = [
     "RANDOM_NONCES",
     "SENTINEL_IMAGE",
+    "SENTINEL_SERVICE",
     "DockerPlanting",
     "ImageAccounts",
     "NonceSource",

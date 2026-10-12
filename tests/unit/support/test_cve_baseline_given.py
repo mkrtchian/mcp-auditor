@@ -93,6 +93,17 @@ def _appending_to_the_sentinel_dockerfile(line: str) -> TargetChange:
     return change
 
 
+def _appending_to_the_patched_dockerfile(line: str) -> TargetChange:
+    def change(
+        target: CVETarget, places: Places, docker_directory: Path
+    ) -> tuple[CVETarget, Places]:
+        dockerfile = docker_directory / f"Dockerfile.{target.patched_image}"
+        dockerfile.write_text(f"{dockerfile.read_text()}\n{line}\n")
+        return target, places
+
+    return change
+
+
 def _replacing(**fields: object) -> TargetChange:
     def change(
         target: CVETarget, places: Places, _docker_directory: Path
@@ -140,6 +151,7 @@ async def _another_exploit(client: MCPClientPort) -> None:
 # Applied to a_target_keeping_an_endpoint (so the sentinel Dockerfile is in the fingerprint).
 FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "dockerfile instruction": _appending_to_its_dockerfile("RUN true"),
+    "patched dockerfile instruction": _appending_to_the_patched_dockerfile("RUN true"),
     "aim": _replacing(aim=re.compile(r"[;&]")),
     "mechanism": _replacing(mechanism=MechanismClass.READ_OUTSIDE_SCOPE),
     "tools filter": _replacing(tools_filter=frozenset({"kubectl_generic", "kubectl_get"})),

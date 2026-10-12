@@ -21,7 +21,7 @@ uv run python -m evals.run_judge_eval --concurrency N    # Judge calls in flight
 uv run python -m evals.draw_judge_cases --honeypot-export PATH --honeypot-export PATH --cve-export PATH  # Draw the unlabeled judge cases into evals/fixtures/judge_cases_drawn.json from clean source runs at one commit (no LLM), then commit it by hand
 uv run python -m evals.draw_judge_cases --honeypot-export PATH --honeypot-export PATH --cve-export PATH --complement  # Once every drawn case is labeled and FAIL cases are 40 % or more of the pass or fail ones: one more case per PASS cell, same exports
 
-docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable-server images (one-time, prerequisite for the CVE benchmark)
+docker compose -f evals/docker/compose.yml build      # Build the pinned vulnerable and patched server images (one-time, prerequisite for the CVE benchmark)
 uv run python -m evals.run_cve_benchmark --calibrate  # CVE benchmark: confirm each fixture is live and its benign call is clean (Docker, no LLM)
 uv run python -m evals.run_cve_benchmark              # CVE acceptance gate (Docker + an LLM key): compares each target to evals/baselines/cve/, exit 0 green, 1 red, 3 not comparable, 4 crash (the preflight included, --calibrate too)
 uv run python -m evals.run_cve_benchmark --record-baseline  # Record one file per target in evals/baselines/cve/ from a clean tree: run it twice at one commit on the local images (exploratory, then confirmed), then commit evals/baselines/cve/ by hand

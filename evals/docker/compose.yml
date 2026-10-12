@@ -1,8 +1,10 @@
-# Build manifest only, never `compose up`. Build all five images with:
+# Build manifest only, never `compose up`. Build all ten images with:
 #   docker compose -f evals/docker/compose.yml build
 # The benchmark runner launches each server with `docker run -i`, not compose.
-# Five images cover the six targets: filesystem serves CVE-2025-53109 + 53110,
-# git serves CVE-2025-68143 + 68145, plus kubernetes, fetch, and the sentinel sidecar.
+# Ten images cover the six targets on both versions: filesystem serves CVE-2025-53109 + 53110
+# and git serves CVE-2025-68143 + 68145, each with one patched twin per patched version
+# (the two git CVEs patch at different releases), plus kubernetes, fetch and the sentinel
+# sidecar. The sentinel has no patched twin: it is not a server image.
 services:
   filesystem:
     build:
@@ -10,11 +12,29 @@ services:
       dockerfile: Dockerfile.filesystem
     image: mcp-auditor-cve-filesystem:local
 
+  filesystem-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.filesystem-patched
+    image: mcp-auditor-cve-filesystem-patched:local
+
   git:
     build:
       context: .
       dockerfile: Dockerfile.git
     image: mcp-auditor-cve-git:local
+
+  git-patched-68143:
+    build:
+      context: .
+      dockerfile: Dockerfile.git-patched-68143
+    image: mcp-auditor-cve-git-patched-68143:local
+
+  git-patched-68145:
+    build:
+      context: .
+      dockerfile: Dockerfile.git-patched-68145
+    image: mcp-auditor-cve-git-patched-68145:local
 
   kubernetes:
     build:
@@ -22,11 +42,23 @@ services:
       dockerfile: Dockerfile.kubernetes
     image: mcp-auditor-cve-kubernetes:local
 
+  kubernetes-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.kubernetes-patched
+    image: mcp-auditor-cve-kubernetes-patched:local
+
   fetch:
     build:
       context: .
       dockerfile: Dockerfile.fetch
     image: mcp-auditor-cve-fetch:local
+
+  fetch-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.fetch-patched
+    image: mcp-auditor-cve-fetch-patched:local
 
   sentinel:
     build:

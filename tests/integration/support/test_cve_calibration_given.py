@@ -94,6 +94,7 @@ def _a_target(
         kept_places=(KEPT_FLAG_ID,),
         images=(),
         server_image="stub",
+        patched_image="stub-patched",
         planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
         builder=builder,
         exploits=(_reading("/outside/flag"),),
