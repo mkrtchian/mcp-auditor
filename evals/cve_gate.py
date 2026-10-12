@@ -1,5 +1,7 @@
 """The CVE acceptance gate (ADR 024): a target detected in every run of a confirmed baseline
-is gated, and a candidate that misses it is replayed under the replay rule of ADR 016."""
+is gated, and a candidate that misses it is replayed under the replay rule of ADR 016. A target
+that failed the no-LLM pre-run check reads NOT_RUN and leaves the gate not comparable, whatever
+its baseline, so a gate cannot read green with a target missing."""
 
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
@@ -27,6 +29,7 @@ class TargetOutcome(StrEnum):
     FIXTURE_CHANGED = "fixture_changed"
     NO_BASELINE = "no_baseline"
     INCOMPLETE = "incomplete"
+    NOT_RUN = "not_run"
 
 
 class CVEGateVerdict(StrEnum):
@@ -131,14 +134,15 @@ def settle(
 
 
 def judge(comparisons: Sequence[TargetComparison], mismatches: list[str]) -> CVEGateResult:
-    # A miss whose replays never decided says nothing either way on a gated target.
-    incomplete = [
+    # A not-run target, and a miss whose replays never decided, say nothing either way.
+    not_comparable = [
+        *_named(comparisons, TargetOutcome.NOT_RUN),
         *_named(comparisons, TargetOutcome.INCOMPLETE),
         *_named(comparisons, TargetOutcome.PENDING_REPLAY),
     ]
-    if mismatches or incomplete:
+    if mismatches or not_comparable:
         reasons = [*mismatches, WHOLE_RESET] if mismatches else []
-        return _result(CVEGateVerdict.NOT_COMPARABLE, [*reasons, *incomplete], comparisons)
+        return _result(CVEGateVerdict.NOT_COMPARABLE, [*reasons, *not_comparable], comparisons)
     regressions = _named(comparisons, TargetOutcome.REGRESSION)
     if regressions:
         return _result(CVEGateVerdict.RED, regressions, comparisons)

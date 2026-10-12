@@ -1,6 +1,8 @@
-"""One gated CVE benchmark run (ADR 024): the runs, the gate and the replays of fallen gated
-targets, with git, Docker, the clock and the baseline directory injected. The value objects
-live in cve_session_model, the baseline recording in cve_session_recording."""
+"""One gated CVE benchmark run (ADR 024): a no-LLM pre-run check of every target, then the runs
+of the targets it passed, the gate and the replays of fallen gated targets, with git, Docker, the
+clock and the baseline directory injected. A target the check fails is not audited, reads not_run
+with its conditions, and leaves the gate not comparable (ADR 030). The value objects live in
+cve_session_model, the baseline recording in cve_session_recording."""
 
 import asyncio
 from collections.abc import Sequence
@@ -30,7 +32,7 @@ from evals.cve_session_model import (
 )
 from evals.cve_session_recording import WrittenBaseline, load_checked, record, recording_tree
 from evals.cve_targets import CVETarget
-from evals.eval_session import REFUSED_BEFORE_ANY_LLM_CALL
+from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused
 from evals.recording import RecordingRefused
 
 
@@ -39,6 +41,7 @@ class CVESessionResult:
     grades: dict[str, list[RunGrade]]  # the completed runs of each target, for the report
     audits: list[CVEAudit]  # the completed main runs, never a replay
     gate: CVEGateResult | None  # None under --ungated
+    not_run: dict[str, list[str]]  # target to the pre-run check's dead conditions, every mode
     orphans: list[str]  # baseline files of targets no longer benchmarked
     written: list[WrittenBaseline]
     recording_refused: list[str]  # why a recording was refused once the runs were paid for
@@ -48,19 +51,49 @@ class CVESessionResult:
 async def run_gated(options: CVEOptions, harness: CVEHarness) -> CVESessionResult:
     """Raises Refused on a run that cannot be compared or recorded before it starts."""
     session = _open(options, harness)
-    runs = await _run_targets(session)
-    gate = None if options.ungated else await _gate(session, runs)
+    not_run = await _checked(session)
+    runs = await _run_targets(session, not_run)
+    gate = None if options.ungated else await _gate(session, runs, not_run)
     recorded = record(session, runs, gate) if gate is not None else []
     refused = isinstance(recorded, RecordingRefused)
+    grades = {target_runs.target.cve_id: target_runs.grades for target_runs in runs}
+    grades.update({cve_id: [] for cve_id in not_run})
     return CVESessionResult(
-        grades={target_runs.target.cve_id: target_runs.grades for target_runs in runs},
+        grades=grades,
         audits=[audit for target_runs in runs for audit in target_runs.audits],
         gate=gate,
+        not_run=not_run,
         orphans=session.orphans(),
         written=[] if refused else recorded,
         recording_refused=recorded.reasons if refused else [],
         exit_code=0 if gate is None else exit_code(gate.verdict),
     )
+
+
+async def _checked(session: GatedSession) -> dict[str, list[str]]:
+    """The pre-run check gathered over every target, before any audit. A configuration error it
+    raises propagates out of the gather, so the run crashes (exit 4) before any audit instead of
+    reading a target not_run. Under --record-baseline a failing target refuses the recording."""
+    targets = session.options.targets
+    conditions = await asyncio.gather(*(session.harness.check(target) for target in targets))
+    not_run = {
+        target.cve_id: target_conditions
+        for target, target_conditions in zip(targets, conditions, strict=True)
+        if target_conditions
+    }
+    _refuse_recording_of_not_run(session, not_run)
+    return not_run
+
+
+def _refuse_recording_of_not_run(session: GatedSession, not_run: dict[str, list[str]]) -> None:
+    if not session.options.record_baseline or not not_run:
+        return
+    reasons = [
+        f"{cve_id}: {condition}"
+        for cve_id, conditions in not_run.items()
+        for condition in conditions
+    ]
+    raise Refused(RECORDING_REFUSED, reasons)
 
 
 def _open(options: CVEOptions, harness: CVEHarness) -> GatedSession:
@@ -71,9 +104,9 @@ def _open(options: CVEOptions, harness: CVEHarness) -> GatedSession:
     return GatedSession(options, harness, files, tree=recording_tree(session))
 
 
-async def _run_targets(session: GatedSession) -> list[TargetRuns]:
+async def _run_targets(session: GatedSession, not_run: dict[str, list[str]]) -> list[TargetRuns]:
     count = session.options.conditions.runs
-    targets = session.options.targets
+    targets = [t for t in session.options.targets if t.cve_id not in not_run]
     # gather keeps submission order, so each target's runs keep the order of a sequence.
     outcomes = await asyncio.gather(
         *(session.harness.audit(target) for target in targets for _ in range(count))
@@ -96,22 +129,38 @@ def _target_runs(target: CVETarget, outcomes: Sequence[GradedAudit | None]) -> T
     return TargetRuns(target, grades, completed, audits)
 
 
-async def _gate(session: GatedSession, runs: list[TargetRuns]) -> CVEGateResult:
+async def _gate(
+    session: GatedSession, runs: list[TargetRuns], not_run: dict[str, list[str]]
+) -> CVEGateResult:
     baselines = session.baselines()
     mismatches = condition_mismatches(baselines, session.options.conditions)
     places = session.harness.places
-    comparisons = [
-        compare_target(baselines.get(target_runs.target.cve_id), _candidate(target_runs, places))
-        for target_runs in runs
+    audited = [
+        compare_target(baselines.get(tr.target.cve_id), _candidate(tr, places)) for tr in runs
     ]
     if not mismatches:
-        comparisons = await asyncio.gather(
-            *(
-                _settled(comparison, target_runs.target, session)
-                for comparison, target_runs in zip(comparisons, runs, strict=True)
+        audited = list(
+            await asyncio.gather(
+                *(_settled(c, tr.target, session) for c, tr in zip(audited, runs, strict=True))
             )
         )
+    by_id = {tr.target.cve_id: comparison for tr, comparison in zip(runs, audited, strict=True)}
+    comparisons = [
+        _not_run_comparison(target.cve_id, not_run[target.cve_id])
+        if target.cve_id in not_run
+        else by_id[target.cve_id]
+        for target in session.options.targets
+    ]
     return judge(comparisons, mismatches)
+
+
+def _not_run_comparison(cve_id: str, conditions: list[str]) -> TargetComparison:
+    return TargetComparison(
+        cve_id=cve_id,
+        outcome=TargetOutcome.NOT_RUN,
+        candidate_runs=[],
+        detail=", ".join(conditions),
+    )
 
 
 async def _settled(

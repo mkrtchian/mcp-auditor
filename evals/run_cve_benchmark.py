@@ -16,8 +16,7 @@ from evals.baseline import BaselineStatus, fingerprint_sources
 from evals.concurrency import bounded, positive_int
 from evals.cve_audit import audit_target
 from evals.cve_baseline import CVE_BASELINE_DIRECTORY, CVERunConditions
-from evals.cve_calibration import calibrate_all, calibrate_one
-from evals.cve_grammar import RunGrade
+from evals.cve_calibration import calibrate_all, calibrate_one, check_target
 from evals.cve_oracle import (
     CVEBenchmarkReport,
     CVEResult,
@@ -103,11 +102,9 @@ async def _run(
         await survey_all(graded, bounded(lambda t: survey_one(t, places), args.concurrency))
         return 0
     if args.calibrate:
-
-        async def calibrate(target: CVETarget) -> bool:
-            return await calibrate_one(target, places)
-
-        all_live = await calibrate_all(graded, bounded(calibrate, args.concurrency), ci=args.ci)
+        all_live = await calibrate_all(
+            graded, bounded(lambda t: calibrate_one(t, places), args.concurrency), ci=args.ci
+        )
         return 0 if all_live else 1
     return await _run_graded(args, graded, tracked, places)
 
@@ -184,7 +181,7 @@ async def _run_graded(
     options = CVEOptions(graded, conditions, args.ungated, args.record_baseline)
     throttles = SessionThrottles()
     session = await run_gated(options, _harness(args, throttles, places))
-    results = [_result(target, session.grades[target.cve_id], args.budget) for target in graded]
+    results = [_result(target, session, args.budget) for target in graded]
     results.extend(out_of_scope_results(tracked))
     report = CVEBenchmarkReport(
         conditions=conditions,
@@ -206,13 +203,16 @@ async def _run_graded(
     return session.exit_code
 
 
-def _result(target: CVETarget, grades: list[RunGrade], budget: int) -> CVEResult:
-    return not_run(target) if not grades else result_for(target, grades, budget)
+def _result(target: CVETarget, session: CVESessionResult, budget: int) -> CVEResult:
+    grades = session.grades[target.cve_id]
+    conditions = session.not_run.get(target.cve_id, [])
+    return result_for(target, grades, budget) if grades else not_run(target, conditions)
 
 
 def _harness(args: argparse.Namespace, throttles: SessionThrottles, places: Places) -> CVEHarness:
     return CVEHarness(
         audit=bounded(audit_target(args.budget, throttles, places), args.concurrency),
+        check=bounded(lambda target: check_target(target, places), args.concurrency),
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
         image_ids=_image_ids,
@@ -274,7 +274,6 @@ def _write_reports(report: CVEBenchmarkReport, report_path: Path) -> None:
     report_path.write_text(json.dumps(report.model_dump(mode="json"), indent=2))
     markdown = render_markdown(report)
     report_path.with_suffix(".md").write_text(markdown)
-
     console.print(markdown)
     console.print(f"Report written to {report_path}")
 

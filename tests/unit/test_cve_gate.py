@@ -132,6 +132,13 @@ def test_a_gated_incomplete_target_is_not_comparable():
     assert any(given.CVE_ID in reason for reason in result.reasons)
 
 
+def test_a_not_run_target_is_not_comparable():
+    result = judge([given.a_comparison(TargetOutcome.NOT_RUN)], [])
+
+    assert result.verdict == CVEGateVerdict.NOT_COMPARABLE
+    assert any(given.CVE_ID in reason for reason in result.reasons)
+
+
 def test_an_undecided_replay_is_not_comparable():
     pending = given.a_comparison(TargetOutcome.PENDING_REPLAY)
     undecided = settle(pending, [True, True], ReplayRule())

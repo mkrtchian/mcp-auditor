@@ -5,7 +5,7 @@ from pathlib import Path
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline, fixture_fingerprint
 from evals.cve_baseline import write_baseline as _write_baseline
 from evals.cve_grammar import CVEStatus, MissClass, RunGrade
-from evals.cve_session_model import AuditTarget, CVEHarness, CVEOptions, GradedAudit
+from evals.cve_session_model import AuditTarget, CheckTarget, CVEHarness, CVEOptions, GradedAudit
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.eval_session import TreeState
 from tests.unit.support.test_cve_gate_given import (
@@ -64,9 +64,31 @@ class OverlappingAudit:
         return GradedAudit(a_detected_grade(), a_report())
 
 
-def a_harness(audit: AuditTarget, baselines: Path, tree: TreeState | None = None) -> CVEHarness:
+@dataclass
+class ScriptedCheck:
+    """The pre-run check: each target's dead conditions, empty (live) by default. Records the
+    targets checked, and raises `error` to stand for a configuration error."""
+
+    conditions: dict[str, list[str]] = field(default_factory=lambda: {})
+    error: Exception | None = None
+    checked: list[str] = field(default_factory=lambda: [])
+
+    async def __call__(self, target: CVETarget) -> list[str]:
+        self.checked.append(target.cve_id)
+        if self.error is not None:
+            raise self.error
+        return self.conditions.get(target.cve_id, [])
+
+
+def a_harness(
+    audit: AuditTarget,
+    baselines: Path,
+    tree: TreeState | None = None,
+    check: CheckTarget | None = None,
+) -> CVEHarness:
     return CVEHarness(
         audit=audit,
+        check=check or ScriptedCheck(),
         baselines=baselines,
         read_tree=lambda: tree or TreeState(commit=COMMIT, dirty=False),
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},

@@ -122,6 +122,7 @@ async def _no_audit_session(options: CVEOptions, harness: CVEHarness) -> CVESess
         grades={target.cve_id: [] for target in options.targets},
         audits=[],
         gate=None,
+        not_run={},
         orphans=[],
         written=[],
         recording_refused=[],

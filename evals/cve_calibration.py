@@ -90,26 +90,38 @@ def patched_dead_conditions(
     return conditions
 
 
-async def calibrate_one(target: CVETarget, places: Places) -> bool:
-    # An unknown kept id or a planting_spec refusal is a configuration error, resolved and
-    # checked before any launch, so it propagates instead of reading dead.
+async def check_target(target: CVETarget, places: Places) -> list[str]:
+    """The dead conditions of a target on both versions, empty when it is live: the no-LLM check
+    the pre-run check (`cve_session`) and calibration share. It resolves the kept records and
+    checks the spec before any launch, so a configuration error (an unknown kept id, a
+    planting_spec refusal) propagates instead of reading dead, then exercises the vulnerable
+    version and, once it is torn down, the patched one."""
     records = kept_records(target.kept_places, places)
     target.planting_spec(records)
     vulnerable = await _exercise(target, records, TargetVersion.VULNERABLE)
     if vulnerable is None:
-        return False
+        return [_launch_failed(TargetVersion.VULNERABLE)]
     conditions = dead_conditions(
         _graded(target, vulnerable), _units(vulnerable.exploits), _unit(vulnerable.benign)
     )
     patched = await _exercise(target, records, TargetVersion.PATCHED)
     if patched is None:
-        return False
-    conditions += patched_dead_conditions(
-        _graded(target, patched), _units(patched.exploits), _any_error(patched.benign)
-    )
+        conditions.append(_launch_failed(TargetVersion.PATCHED))
+    else:
+        conditions += patched_dead_conditions(
+            _graded(target, patched), _units(patched.exploits), _any_error(patched.benign)
+        )
     if conditions:
         _report_dead(target.cve_id, conditions, vulnerable.exploits, vulnerable.benign)
-    return not conditions
+    return conditions
+
+
+async def calibrate_one(target: CVETarget, places: Places) -> bool:
+    return not await check_target(target, places)
+
+
+def _launch_failed(version: TargetVersion) -> str:
+    return f"the {version.value} version did not launch"
 
 
 @dataclass(frozen=True)

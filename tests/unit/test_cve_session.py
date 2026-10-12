@@ -65,6 +65,82 @@ async def test_a_replay_that_does_not_complete_makes_the_run_not_comparable(tmp_
     assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
 
 
+async def test_a_target_failing_the_pre_run_check_is_not_run_and_the_gate_is_not_comparable(
+    tmp_path: Path,
+):
+    check = given.ScriptedCheck({given.KUBERNETES.cve_id: ["keeps no place"]})
+    audit = given.ScriptedAudit()
+
+    result = await run_gated(given.options(), given.a_harness(audit, tmp_path, check=check))
+
+    assert audit.calls == []
+    assert result.not_run == {given.KUBERNETES.cve_id: ["keeps no place"]}
+    assert result.grades[given.KUBERNETES.cve_id] == []
+    assert result.gate is not None
+    [comparison] = result.gate.targets
+    assert comparison.outcome == TargetOutcome.NOT_RUN
+    assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
+
+
+async def test_a_passing_target_is_audited_while_a_failing_one_is_not_run_in_target_order(
+    tmp_path: Path,
+):
+    targets = [given.KUBERNETES, given.SYMLINK]
+    check = given.ScriptedCheck({given.SYMLINK.cve_id: ["keeps no place"]})
+    audit = given.ScriptedAudit()
+
+    result = await run_gated(
+        given.options(targets=targets), given.a_harness(audit, tmp_path, check=check)
+    )
+
+    assert given.SYMLINK.cve_id not in audit.calls
+    assert len(result.grades[given.KUBERNETES.cve_id]) == 3
+    assert result.grades[given.SYMLINK.cve_id] == []
+    assert result.gate is not None
+    assert [c.cve_id for c in result.gate.targets] == [t.cve_id for t in targets]
+    outcomes = {c.cve_id: c.outcome for c in result.gate.targets}
+    assert outcomes[given.SYMLINK.cve_id] == TargetOutcome.NOT_RUN
+    assert outcomes[given.KUBERNETES.cve_id] == TargetOutcome.NO_BASELINE
+
+
+async def test_an_ungated_run_still_reports_a_failing_check_in_not_run(tmp_path: Path):
+    check = given.ScriptedCheck({given.KUBERNETES.cve_id: ["keeps no place"]})
+    audit = given.ScriptedAudit()
+
+    result = await run_gated(
+        given.options(ungated=True), given.a_harness(audit, tmp_path, check=check)
+    )
+
+    assert audit.calls == []
+    assert result.gate is None
+    assert result.not_run == {given.KUBERNETES.cve_id: ["keeps no place"]}
+    assert result.grades[given.KUBERNETES.cve_id] == []
+    assert result.exit_code == 0
+
+
+async def test_a_failing_check_refuses_a_recording_before_any_audit(tmp_path: Path):
+    check = given.ScriptedCheck({given.KUBERNETES.cve_id: ["keeps no place"]})
+    audit = given.ScriptedAudit()
+
+    with pytest.raises(Refused) as refusal:
+        await run_gated(
+            given.options(record_baseline=True), given.a_harness(audit, tmp_path, check=check)
+        )
+
+    assert audit.calls == []
+    assert any("keeps no place" in reason for reason in refusal.value.reasons)
+
+
+async def test_a_check_that_raises_a_configuration_error_crashes_before_any_audit(tmp_path: Path):
+    check = given.ScriptedCheck(error=ValueError("a kept id with no record"))
+    audit = given.ScriptedAudit()
+
+    with pytest.raises(ValueError, match="a kept id with no record"):
+        await run_gated(given.options(), given.a_harness(audit, tmp_path, check=check))
+
+    assert audit.calls == []
+
+
 async def test_an_ungated_run_compares_nothing_and_exits_zero(tmp_path: Path):
     given.a_gated_file(tmp_path)
     audit = given.ScriptedAudit({given.KUBERNETES.cve_id: [given.a_miss()]})

@@ -63,6 +63,7 @@ class CVEResult(BaseModel):
     budget: int = 0
     evidence: str | None = None
     category: JudgeCategory | None = None
+    not_run_conditions: list[str] = []  # the pre-run check's dead conditions, when NOT_RUN
 
 
 class CVEBenchmarkReport(BaseModel):
@@ -98,7 +99,7 @@ def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> C
     )
 
 
-def not_run(target: TargetInfo) -> CVEResult:
+def not_run(target: TargetInfo, conditions: list[str] | None = None) -> CVEResult:
     return CVEResult(
         cve_id=target.cve_id,
         severity=target.severity,
@@ -106,6 +107,7 @@ def not_run(target: TargetInfo) -> CVEResult:
         mechanism=target.mechanism,
         status=UngradedStatus.NOT_RUN,
         awaited_capability=target.awaited_capability,
+        not_run_conditions=conditions or [],
     )
 
 
@@ -149,10 +151,21 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
             *rows,
             "",
             f"Statuses: {tally}.",
+            *_render_not_run(report.results),
             *gate,
             *refusal,
         ]
     )
+
+
+def _render_not_run(results: Sequence[CVEResult]) -> list[str]:
+    # A line between two rows would end the table, so the conditions go in a section after it.
+    lines = [
+        f"- {result.cve_id}: {', '.join(result.not_run_conditions)}"
+        for result in results
+        if result.not_run_conditions
+    ]
+    return ["", "Not run, pre-run check failed:", *lines] if lines else []
 
 
 def _render_conditions(report: CVEBenchmarkReport) -> str:

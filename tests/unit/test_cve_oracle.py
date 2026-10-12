@@ -181,6 +181,19 @@ def test_render_tallies_the_ungraded_statuses_after_the_ladder():
     assert markdown.endswith("Statuses: 1 detected, 1 missed, 1 not_run, 1 out_of_scope.")
 
 
+def test_render_lists_the_not_run_conditions_in_a_section_after_the_table():
+    results = [
+        not_run(given.FakeTarget(), ["keeps no place", "exploit 0 not aimed"]),
+        given.a_cve_result("CVE-2025-53109", CVEStatus.DETECTED, detected_runs=2),
+    ]
+
+    markdown = render_markdown(given.a_benchmark_report(results))
+
+    assert "Not run, pre-run check failed:" in markdown
+    assert "- CVE-2025-0001: keeps no place, exploit 0 not aimed" in markdown
+    assert markdown.index("Not run, pre-run check failed:") > markdown.index("Statuses:")
+
+
 def test_render_appends_the_gate_verdict_and_a_line_per_target():
     report = given.a_benchmark_report([]).model_copy(update={"gate": given.a_red_gate()})
 

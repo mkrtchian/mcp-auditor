@@ -23,6 +23,12 @@ type AuditTarget = Callable[[CVETarget], Awaitable[GradedAudit | None]]
 """One audit of one target, None when it did not complete (launch or infra failure). The
 session may call it concurrently: it decides itself how many audits run at once."""
 
+type CheckTarget = Callable[[CVETarget], Awaitable[list[str]]]
+"""The no-LLM pre-run check of one target: its dead conditions, empty when it is live. The
+session gathers it over every target before any audit. A configuration error it raises (an
+unknown kept id, a planting_spec refusal) is not a dead condition: it propagates and crashes
+the run before any audit. The session calls it concurrently, like the audit."""
+
 type Baselines = dict[str, CVETargetBaseline]
 
 
@@ -37,6 +43,7 @@ class CVEOptions:
 @dataclass(frozen=True)
 class CVEHarness:
     audit: AuditTarget
+    check: CheckTarget  # the pre-run check, gathered over every target before any audit
     baselines: Path
     read_tree: Callable[[], TreeState]
     image_ids: Callable[[Sequence[str]], dict[str, str]]
