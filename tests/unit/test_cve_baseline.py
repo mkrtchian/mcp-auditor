@@ -23,11 +23,12 @@ def test_the_fixture_fingerprint_moves_with_what_builds_or_reaches_the_target(
     change: given.TargetChange, tmp_path: Path
 ):
     docker_directory = given.a_docker_directory(tmp_path)
-    before = fixture_fingerprint(given.KUBERNETES_TARGET, docker_directory)
+    target, places = given.a_target_keeping_an_endpoint()
+    before = fixture_fingerprint(target, places, docker_directory)
 
-    changed = change(given.KUBERNETES_TARGET, docker_directory)
+    changed_target, changed_places = change(target, places, docker_directory)
 
-    assert fixture_fingerprint(changed, docker_directory) != before
+    assert fixture_fingerprint(changed_target, changed_places, docker_directory) != before
 
 
 @pytest.mark.parametrize(
@@ -37,17 +38,20 @@ def test_the_fixture_fingerprint_ignores_what_neither_builds_nor_reaches_the_tar
     change: given.TargetChange, tmp_path: Path
 ):
     docker_directory = given.a_docker_directory(tmp_path)
-    before = fixture_fingerprint(given.KUBERNETES_TARGET, docker_directory)
+    target, places = given.a_target_keeping_a_file()
+    before = fixture_fingerprint(target, places, docker_directory)
 
-    changed = change(given.KUBERNETES_TARGET, docker_directory)
+    changed_target, changed_places = change(target, places, docker_directory)
 
-    assert fixture_fingerprint(changed, docker_directory) == before
+    assert fixture_fingerprint(changed_target, changed_places, docker_directory) == before
 
 
 def test_two_targets_sharing_an_image_and_a_builder_but_not_an_aim_differ():
     prefix_collision = given.a_prefix_collision_target_built_like_the_symlink_one()
 
-    assert fixture_fingerprint(prefix_collision) != fixture_fingerprint(given.SYMLINK_TARGET)
+    assert fixture_fingerprint(prefix_collision, {}) != fixture_fingerprint(
+        given.SYMLINK_TARGET, {}
+    )
 
 
 @pytest.mark.parametrize(

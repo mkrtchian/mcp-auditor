@@ -103,7 +103,7 @@ def _recordings(
         target_runs.target.cve_id: TargetRecording(
             cve_id=target_runs.target.cve_id,
             conditions=session.options.conditions,
-            fixture_fingerprint=fixture_fingerprint(target_runs.target),
+            fixture_fingerprint=fixture_fingerprint(target_runs.target, session.harness.places),
             commit=tree.commit,
             recorded_at=recorded_at,
             runs=[grade.status for grade in target_runs.grades],

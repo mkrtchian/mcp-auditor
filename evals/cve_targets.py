@@ -15,6 +15,7 @@ from evals.cve_environments import (
     ssrf_env,
 )
 from evals.cve_grammar import MechanismClass
+from evals.cve_planting import PlantingHost, SymbolicUser
 from mcp_auditor.domain.ports import MCPClientPort
 
 # The filesystem CVEs surface the leak through a read tool, but the blind
@@ -39,8 +40,11 @@ class CVETarget:
     sentinel: str
     mechanism: MechanismClass | None
     aim: re.Pattern[str]
+    reaches: frozenset[str]  # the flaw's reachable_by tokens, among the three in cve_places
+    kept_places: tuple[str, ...]  # location ids the flaw alone reaches, empty until filled
     images: tuple[str, ...]  # services of evals/docker/compose.yml
     server_image: str  # the service of images that runs the server under audit
+    planting_host: PlantingHost  # what this target's launch can hold (user, cwd, network)
     # The builder takes the image tag, then the sentinel.
     builder: Callable[[str, str], AbstractContextManager[Launch]]
     exploits: tuple[Callable[[MCPClientPort], Awaitable[None]], ...]
@@ -71,6 +75,12 @@ _REPOSITORY_BYPASS_SENTINEL = _sentinel()
 _GIT_INIT_TRAVERSAL_SENTINEL = _sentinel()
 _KUBERNETES_INJECTION_SENTINEL = _sentinel()
 _FETCH_SSRF_SENTINEL = _sentinel()
+
+
+# The user, working directory and network each builder launches with today (no -w, so cwd is /).
+_HOST_NO_NETWORK = PlantingHost(SymbolicUser.HOST, "/", has_network=False)
+_UNPRIVILEGED_NO_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
+_UNPRIVILEGED_WITH_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
 
 async def _exploit_symlink_traversal(client: MCPClientPort) -> None:
@@ -160,8 +170,11 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_SYMLINK_TRAVERSAL_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PLANTED_LINK_AIM,
+        reaches=frozenset({"arbitrary_read"}),
+        kept_places=(),
         images=("filesystem",),
         server_image="filesystem",
+        planting_host=_HOST_NO_NETWORK,
         builder=filesystem_env,
         exploits=(_exploit_symlink_traversal,),
         benign=_list_sandbox,
@@ -179,8 +192,11 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_PREFIX_COLLISION_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PREFIX_SIBLING_AIM,
+        reaches=frozenset({"arbitrary_read"}),
+        kept_places=(),
         images=("filesystem",),
         server_image="filesystem",
+        planting_host=_HOST_NO_NETWORK,
         builder=prefix_collision_env,
         exploits=(_exploit_prefix_collision,),
         benign=_list_sandbox,
@@ -194,8 +210,11 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_REPOSITORY_BYPASS_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
+        reaches=frozenset({"arbitrary_read"}),
+        kept_places=(),
         images=("git",),
         server_image="git",
+        planting_host=_HOST_NO_NETWORK,
         builder=repository_bypass_env,
         exploits=(_exploit_repository_bypass,),
         benign=_benign_repository_bypass,
@@ -209,8 +228,11 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_GIT_INIT_TRAVERSAL_SENTINEL,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
+        reaches=frozenset({"arbitrary_read"}),
+        kept_places=(),
         images=("git",),
         server_image="git",
+        planting_host=_HOST_NO_NETWORK,
         builder=git_init_traversal_env,
         exploits=(_exploit_git_init_traversal,),
         benign=_benign_git_init_traversal,
@@ -228,8 +250,11 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_KUBERNETES_INJECTION_SENTINEL,
         mechanism=MechanismClass.COMMAND_EXECUTION,
         aim=_SHELL_METACHARACTER_AIM,
+        reaches=frozenset({"command_execution"}),
+        kept_places=(),
         images=("kubernetes",),
         server_image="kubernetes",
+        planting_host=_UNPRIVILEGED_NO_NETWORK,
         builder=command_injection_env,
         exploits=(_exploit_kubernetes_injection,),
         benign=_benign_kubernetes_injection,
@@ -246,8 +271,11 @@ CVE_TARGETS: list[CVETarget] = [
         sentinel=_FETCH_SSRF_SENTINEL,
         mechanism=MechanismClass.INTERNAL_FETCH,
         aim=_INTERNAL_HOST_AIM,
+        reaches=frozenset({"internal_fetch"}),
+        kept_places=(),
         images=("fetch", "sentinel"),
         server_image="fetch",
+        planting_host=_UNPRIVILEGED_WITH_NETWORK,
         builder=ssrf_env,
         exploits=(_exploit_fetch_ssrf,),
         benign=_benign_fetch_ssrf,

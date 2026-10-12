@@ -74,9 +74,7 @@ def test_a_graded_run_reports_the_tree_it_ran_on_and_the_tokens_billed(
     assert report["provider_usage"]["input_tokens"] == 500
 
 
-def _billing_audit_target(
-    budget: int, concurrency: int, throttles: SessionThrottles
-) -> AuditTarget:
+def _billing_audit_target(budget: int, throttles: SessionThrottles) -> AuditTarget:
     usage = ProviderUsage(input_tokens=500, output_tokens=50)
     throttles.count(AuditReport(target="test", tool_reports=[], provider_usage=usage))
 

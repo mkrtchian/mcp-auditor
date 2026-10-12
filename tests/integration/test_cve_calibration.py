@@ -4,7 +4,8 @@ import pathlib
 import pytest
 
 import tests.integration.support.test_cve_calibration_given as given
-from evals.cve_calibration import calibrate_all
+from evals.concurrency import bounded
+from evals.cve_calibration import calibrate_all, calibrate_one
 
 
 @pytest.fixture
@@ -22,7 +23,7 @@ async def test_a_server_dead_at_startup_fails_calibration_and_the_next_target_st
         given.a_live_target("CVE-LIVE"),
     ]
 
-    all_live = await calibrate_all(targets, concurrency=2)
+    all_live = await calibrate_all(targets, bounded(calibrate_one, 2))
 
     output = capsys.readouterr().out
     assert not all_live
@@ -35,7 +36,7 @@ async def test_a_server_dead_at_startup_fails_calibration_and_the_next_target_st
 async def test_a_target_whose_exploit_surfaces_the_nonce_and_whose_benign_call_is_clean_is_live(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    all_live = await calibrate_all([given.a_live_target("CVE-LIVE")])
+    all_live = await calibrate_all([given.a_live_target("CVE-LIVE")], bounded(calibrate_one, 1))
 
     assert all_live
     assert "live  CVE-LIVE" in capsys.readouterr().out
@@ -45,7 +46,9 @@ async def test_a_target_whose_exploit_surfaces_the_nonce_and_whose_benign_call_i
 async def test_a_benign_call_that_leaks_the_nonce_fails_the_negative_control(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    all_live = await calibrate_all([given.a_target_whose_benign_call_leaks("CVE-LEAK")])
+    all_live = await calibrate_all(
+        [given.a_target_whose_benign_call_leaks("CVE-LEAK")], bounded(calibrate_one, 1)
+    )
 
     output = capsys.readouterr().out
     assert not all_live
@@ -57,7 +60,9 @@ async def test_a_benign_call_that_leaks_the_nonce_fails_the_negative_control(
 async def test_an_aim_that_matches_no_call_leaves_the_target_dead(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    all_live = await calibrate_all([given.a_target_whose_aim_matches_nothing("CVE-NOAIM")])
+    all_live = await calibrate_all(
+        [given.a_target_whose_aim_matches_nothing("CVE-NOAIM")], bounded(calibrate_one, 1)
+    )
 
     output = capsys.readouterr().out
     assert not all_live

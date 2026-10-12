@@ -5,14 +5,18 @@ from typing import Any
 import pytest
 
 import tests.unit.support.test_cve_places_given as given
+import tests.unit.support.test_cve_planting_given as planting_given
 from evals.cve_places import (
     HOLDOUT_PLACES,
     REACHABLE_BY,
     Place,
     PlantKind,
     is_endpoint_host,
+    kept_records,
     load_places,
 )
+from evals.cve_planting import planting_spec
+from evals.cve_targets import CVE_TARGETS
 
 RECORDED_HASH = "2e3b5263207c62af01c15c9b52fecc4857787e4048887cea178e9d17fd0e9ee3"
 
@@ -177,3 +181,44 @@ def test_an_entry_with_an_extra_top_level_field_raises(tmp_path: Path):
 def test_duplicate_ids_raise(tmp_path: Path):
     with pytest.raises(ValueError, match="dup"):
         given.loaded(tmp_path, [given.an_entry("dup"), given.an_entry("dup")])
+
+
+# The guards below read ids, kinds, reach tokens and spec refusals only, never a coordinate
+# value, and are trivially satisfied while every target keeps no place: they guard the step
+# that fills kept_places from the real file.
+
+
+def test_every_target_reaches_only_the_closed_vocabulary():
+    for target in CVE_TARGETS:
+        assert target.reaches <= REACHABLE_BY, (
+            f"{target.cve_id}: reaches holds a token outside the closed vocabulary"
+        )
+
+
+def test_every_kept_place_is_offered_by_the_file_within_its_target_reach():
+    places = load_places(HOLDOUT_PLACES)
+    for target in CVE_TARGETS:
+        for place_id in target.kept_places:
+            assert place_id in places, f"{target.cve_id}: keeps {place_id}, absent from the file"
+            assert places[place_id].reachable_by & target.reaches, (
+                f"{target.cve_id}: keeps {place_id}, reachable by none of its reach"
+            )
+
+
+def test_no_target_keeps_an_unplaceable_place():
+    places = load_places(HOLDOUT_PLACES)
+    for target in CVE_TARGETS:
+        for record in kept_records(target.kept_places, places):
+            assert record.kind is not PlantKind.UNPLACEABLE, (
+                f"{target.cve_id}: keeps {record.id}, an unplaceable place that plants nothing"
+            )
+
+
+def test_every_target_kept_list_plants_together():
+    places = load_places(HOLDOUT_PLACES)
+    for target in CVE_TARGETS:
+        planting_spec(
+            kept_records(target.kept_places, places),
+            target.planting_host,
+            planting_given.FakeNonces(),
+        )

@@ -13,10 +13,10 @@ from rich.console import Console
 from evals import cve_grammar, cve_proofs, cve_report_units, cve_units
 from evals import eval_display as display
 from evals.baseline import BaselineStatus, fingerprint_sources
-from evals.concurrency import positive_int
+from evals.concurrency import bounded, positive_int
 from evals.cve_audit import audit_target
 from evals.cve_baseline import CVE_BASELINE_DIRECTORY, CVERunConditions
-from evals.cve_calibration import calibrate_all
+from evals.cve_calibration import calibrate_all, calibrate_one
 from evals.cve_grammar import RunGrade
 from evals.cve_oracle import (
     CVEBenchmarkReport,
@@ -26,6 +26,7 @@ from evals.cve_oracle import (
     render_markdown,
     result_for,
 )
+from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_preflight import preflight_ok
 from evals.cve_session import CVESessionResult, run_gated
 from evals.cve_session_model import CVEHarness, CVEOptions
@@ -81,12 +82,11 @@ def main() -> None:
         sys.exit(CRASHED_EXIT)
 
     if args.calibrate:
-        sys.exit(
-            0 if asyncio.run(calibrate_all(graded, ci=args.ci, concurrency=args.concurrency)) else 1
-        )
+        calibrate = bounded(calibrate_one, args.concurrency)
+        sys.exit(0 if asyncio.run(calibrate_all(graded, calibrate, ci=args.ci)) else 1)
 
     try:
-        code = asyncio.run(_run_graded(args, graded, tracked))
+        code = asyncio.run(_run_graded(args, graded, tracked, load_places(HOLDOUT_PLACES)))
     except Refused as refused:
         display.print_refusal(refused.title, refused.reasons)
         code = NOT_COMPARABLE_EXIT
@@ -151,13 +151,16 @@ def _flag_refusal(args: argparse.Namespace) -> str | None:
 
 
 async def _run_graded(
-    args: argparse.Namespace, graded: list[CVETarget], tracked: list[OutOfScopeCVE]
+    args: argparse.Namespace,
+    graded: list[CVETarget],
+    tracked: list[OutOfScopeCVE],
+    places: Places,
 ) -> int:
     tree = read_tree()
     conditions = _run_conditions(load_settings(), args.runs, args.budget)
     options = CVEOptions(graded, conditions, args.ungated, args.record_baseline)
     throttles = SessionThrottles()
-    session = await run_gated(options, _harness(args.budget, args.concurrency, throttles))
+    session = await run_gated(options, _harness(args, throttles, places))
     results = [_result(target, session.grades[target.cve_id], args.budget) for target in graded]
     results.extend(out_of_scope_results(tracked))
     report = CVEBenchmarkReport(
@@ -184,13 +187,14 @@ def _result(target: CVETarget, grades: list[RunGrade], budget: int) -> CVEResult
     return not_run(target) if not grades else result_for(target, grades, budget)
 
 
-def _harness(budget: int, concurrency: int, throttles: SessionThrottles) -> CVEHarness:
+def _harness(args: argparse.Namespace, throttles: SessionThrottles, places: Places) -> CVEHarness:
     return CVEHarness(
-        audit=audit_target(budget, concurrency, throttles),
+        audit=bounded(audit_target(args.budget, throttles), args.concurrency),
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
         image_ids=_image_ids,
         clock=lambda: datetime.now(UTC).isoformat(),
+        places=places,
     )
 
 

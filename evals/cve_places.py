@@ -77,6 +77,17 @@ def load_places(path: Path) -> dict[str, Place]:
     return places
 
 
+def kept_records(ids: tuple[str, ...], places: Places) -> tuple[Place, ...]:
+    """The loaded records of a target's kept ids, in order. Raises on an id the mapping
+    lacks, naming it: an unknown kept id is a configuration error, not a skipped run."""
+    records: list[Place] = []
+    for place_id in ids:
+        if place_id not in places:
+            raise ValueError(f"{place_id}: no such place in the loaded mapping")
+        records.append(places[place_id])
+    return tuple(records)
+
+
 def _place(entry: Any) -> Place:
     if not isinstance(entry, dict):
         raise ValueError("a places entry is not an object")

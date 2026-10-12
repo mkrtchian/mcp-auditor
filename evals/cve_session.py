@@ -19,6 +19,7 @@ from evals.cve_gate import (
     settle,
 )
 from evals.cve_grammar import DETECTION_RUNGS, RunGrade
+from evals.cve_places import Places
 from evals.cve_session_model import (
     CVEAudit,
     CVEHarness,
@@ -98,8 +99,9 @@ def _target_runs(target: CVETarget, outcomes: Sequence[GradedAudit | None]) -> T
 async def _gate(session: GatedSession, runs: list[TargetRuns]) -> CVEGateResult:
     baselines = session.baselines()
     mismatches = condition_mismatches(baselines, session.options.conditions)
+    places = session.harness.places
     comparisons = [
-        compare_target(baselines.get(target_runs.target.cve_id), _candidate(target_runs))
+        compare_target(baselines.get(target_runs.target.cve_id), _candidate(target_runs, places))
         for target_runs in runs
     ]
     if not mismatches:
@@ -121,10 +123,10 @@ async def _settled(
     return await _replayed(comparison, target, baseline, session.harness)
 
 
-def _candidate(target_runs: TargetRuns) -> TargetCandidate:
+def _candidate(target_runs: TargetRuns, places: Places) -> TargetCandidate:
     return TargetCandidate(
         cve_id=target_runs.target.cve_id,
-        fixture_fingerprint=fixture_fingerprint(target_runs.target),
+        fixture_fingerprint=fixture_fingerprint(target_runs.target, places),
         runs=[grade.status for grade in target_runs.grades],
         completed=target_runs.completed,
     )

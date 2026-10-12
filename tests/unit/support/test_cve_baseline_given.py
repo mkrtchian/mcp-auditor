@@ -7,11 +7,16 @@ from pathlib import Path
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_grammar import CVEStatus, MechanismClass
+from evals.cve_places import Coordinates, Place, Places, PlantKind
+from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_targets import CVE_TARGETS, DOCKER_DIRECTORY, CVETarget
 from evals.gate import ReplayRule
 from mcp_auditor.domain.ports import MCPClientPort
 
-type TargetChange = Callable[[CVETarget, Path], CVETarget]
+type TargetChange = Callable[[CVETarget, Places, Path], tuple[CVETarget, Places]]
+
+KEPT_ENDPOINT_ID = "fict-endpoint"
+KEPT_FILE_ID = "fict-file"
 
 KUBERNETES_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53355")
 SYMLINK_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53109")
@@ -29,18 +34,101 @@ def a_docker_directory(tmp_path: Path) -> Path:
     return directory
 
 
+def _an_endpoint_record(
+    *, path: str = "/fictional/meta", family: str = "fictional-family"
+) -> Place:
+    return Place(
+        id=KEPT_ENDPOINT_ID,
+        family=family,
+        reachable_by=frozenset({"internal_fetch"}),
+        kind=PlantKind.HTTP_ENDPOINT,
+        coordinates=Coordinates(PlantKind.HTTP_ENDPOINT, host="fictional-service", path=path),
+    )
+
+
+def _a_file_record(
+    entry_id: str = KEPT_FILE_ID,
+    *,
+    path: str = "/fictional/secret",
+    family: str = "fictional-family",
+) -> Place:
+    return Place(
+        id=entry_id,
+        family=family,
+        reachable_by=frozenset({"arbitrary_read"}),
+        kind=PlantKind.FILE,
+        coordinates=Coordinates(PlantKind.FILE, path=path),
+    )
+
+
+def a_target_keeping_an_endpoint() -> tuple[CVETarget, Places]:
+    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_ENDPOINT_ID,))
+    return target, {KEPT_ENDPOINT_ID: _an_endpoint_record()}
+
+
+def a_target_keeping_a_file() -> tuple[CVETarget, Places]:
+    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_FILE_ID,))
+    return target, {KEPT_FILE_ID: _a_file_record()}
+
+
 def _appending_to_its_dockerfile(line: str) -> TargetChange:
-    def change(target: CVETarget, docker_directory: Path) -> CVETarget:
+    def change(
+        target: CVETarget, places: Places, docker_directory: Path
+    ) -> tuple[CVETarget, Places]:
         dockerfile = docker_directory / f"Dockerfile.{target.images[0]}"
         dockerfile.write_text(f"{dockerfile.read_text()}\n{line}\n")
-        return target
+        return target, places
+
+    return change
+
+
+def _appending_to_the_sentinel_dockerfile(line: str) -> TargetChange:
+    def change(
+        target: CVETarget, places: Places, docker_directory: Path
+    ) -> tuple[CVETarget, Places]:
+        dockerfile = docker_directory / "Dockerfile.sentinel"
+        dockerfile.write_text(f"{dockerfile.read_text()}\n{line}\n")
+        return target, places
 
     return change
 
 
 def _replacing(**fields: object) -> TargetChange:
-    def change(target: CVETarget, _docker_directory: Path) -> CVETarget:
-        return dataclasses.replace(target, **fields)
+    def change(
+        target: CVETarget, places: Places, _docker_directory: Path
+    ) -> tuple[CVETarget, Places]:
+        return dataclasses.replace(target, **fields), places
+
+    return change
+
+
+def _keeping_another_record() -> TargetChange:
+    def change(target: CVETarget, places: Places, _docker: Path) -> tuple[CVETarget, Places]:
+        extra = _a_file_record("fict-extra")
+        kept = (*target.kept_places, extra.id)
+        return dataclasses.replace(target, kept_places=kept), {**places, extra.id: extra}
+
+    return change
+
+
+def _moving_the_kept_endpoint_record() -> TargetChange:
+    def change(target: CVETarget, places: Places, _docker: Path) -> tuple[CVETarget, Places]:
+        return target, {**places, KEPT_ENDPOINT_ID: _an_endpoint_record(path="/fictional/moved")}
+
+    return change
+
+
+def _adding_a_record_the_target_does_not_keep() -> TargetChange:
+    def change(target: CVETarget, places: Places, _docker: Path) -> tuple[CVETarget, Places]:
+        other = _a_file_record("fict-unkept")
+        return target, {**places, other.id: other}
+
+    return change
+
+
+def _changing_the_kept_record_family() -> TargetChange:
+    def change(target: CVETarget, places: Places, _docker: Path) -> tuple[CVETarget, Places]:
+        return target, {**places, KEPT_FILE_ID: _a_file_record(family="another-family")}
 
     return change
 
@@ -49,14 +137,21 @@ async def _another_exploit(client: MCPClientPort) -> None:
     await client.call_tool("kubectl_generic", {"command": "version && id"})
 
 
+# Applied to a_target_keeping_an_endpoint (so the sentinel Dockerfile is in the fingerprint).
 FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "dockerfile instruction": _appending_to_its_dockerfile("RUN true"),
     "aim": _replacing(aim=re.compile(r"[;&]")),
     "mechanism": _replacing(mechanism=MechanismClass.READ_OUTSIDE_SCOPE),
     "tools filter": _replacing(tools_filter=frozenset({"kubectl_generic", "kubectl_get"})),
     "server image": _replacing(server_image="another-service"),
+    "reaches": _replacing(reaches=frozenset({"arbitrary_read"})),
+    "planting host": _replacing(planting_host=PlantingHost(SymbolicUser.HOST, "/elsewhere", True)),
+    "a fictional kept id added": _keeping_another_record(),
+    "a kept record moved in the mapping": _moving_the_kept_endpoint_record(),
+    "the sentinel Dockerfile (a kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
 }
 
+# Applied to a_target_keeping_a_file (so no kept endpoint, the sentinel Dockerfile is out).
 UNFINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "dockerfile comment": _appending_to_its_dockerfile("# a comment"),
     "dockerfile blank line": _appending_to_its_dockerfile("   "),
@@ -65,6 +160,9 @@ UNFINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "awaited capability": _replacing(awaited_capability="cross-tool chains"),
     "exploits": _replacing(exploits=(_another_exploit,)),
     "sentinel": _replacing(sentinel="MCPAUDIT-another"),
+    "a record the target does not keep": _adding_a_record_the_target_does_not_keep(),
+    "a kept record's family": _changing_the_kept_record_family(),
+    "the sentinel Dockerfile (no kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
 }
 
 

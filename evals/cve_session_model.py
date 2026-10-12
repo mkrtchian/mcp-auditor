@@ -7,6 +7,7 @@ from pathlib import Path
 
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_grammar import RunGrade
+from evals.cve_places import Places
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.eval_session import TreeState
 from mcp_auditor.domain.models import AuditReport
@@ -40,6 +41,7 @@ class CVEHarness:
     read_tree: Callable[[], TreeState]
     image_ids: Callable[[Sequence[str]], dict[str, str]]
     clock: Callable[[], str]  # ISO timestamp for recorded_at
+    places: Places  # loaded once by the composition root, read by the fixture fingerprint
 
 
 @dataclass(frozen=True)

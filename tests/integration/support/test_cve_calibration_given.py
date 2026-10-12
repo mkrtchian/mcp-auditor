@@ -6,6 +6,7 @@ from contextlib import contextmanager
 
 from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
+from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -74,8 +75,11 @@ def _a_target(
         sentinel=NONCE,
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=aim,
+        reaches=frozenset({"arbitrary_read"}),
+        kept_places=(),
         images=(),
         server_image="stub",
+        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
         builder=builder,
         exploits=(_reading("/outside/flag"),),
         benign=benign,

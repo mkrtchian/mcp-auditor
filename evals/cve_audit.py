@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from rich.console import Console
 from rich.markup import escape
 
-from evals.concurrency import bounded, entered_in_thread
+from evals.concurrency import entered_in_thread
 from evals.cve_environments import Launch, connect
 from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, PlantedTarget, RunGrade, grade_run
 from evals.cve_report_units import units_of
@@ -41,16 +41,17 @@ class _Auditor:
     budget: int
 
 
-def audit_target(budget: int, concurrency: int, throttles: SessionThrottles) -> AuditTarget:
+def audit_target(budget: int, throttles: SessionThrottles) -> AuditTarget:
     # Built once, before any container: a bad model configuration is a crash, never a
-    # run skipped, which would read as a gate that cannot compare.
+    # run skipped, which would read as a gate that cannot compare. The composition root
+    # bounds the returned audit to the chosen concurrency.
     settings = load_settings()
     auditor = _Auditor(create_llm(settings), create_judge_llm(settings), budget)
 
     async def audit(target: CVETarget) -> GradedAudit | None:
         return await graded_despite_refusals(target, lambda: _attempt(target, auditor, throttles))
 
-    return bounded(audit, concurrency)
+    return audit
 
 
 @dataclass(frozen=True)

@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from evals import (
     cve_environments,
+    cve_places,
     cve_planting,
     cve_planting_base,
     cve_planting_docker,
@@ -15,6 +16,8 @@ from evals import (
 )
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
 from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
+from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
+from evals.cve_planting import PlantingHost
 from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, image_dockerfile
 from evals.gate import ReplayRule
 
@@ -24,6 +27,7 @@ CVE_BASELINE_DIRECTORY = Path(__file__).parent / "baselines" / "cve"
 _ENVIRONMENT_PATHS = (
     Path(cve_environments.__file__),
     Path(cve_seeding.__file__),
+    Path(cve_places.__file__),
     Path(cve_planting.__file__),
     Path(cve_planting_base.__file__),
     Path(cve_planting_spec.__file__),
@@ -66,17 +70,25 @@ class CVETargetBaseline(BaseModel):
         return self.status == BaselineStatus.CONFIRMED and all(self.detected_runs())
 
 
-def fixture_fingerprint(target: CVETarget, docker_directory: Path = DOCKER_DIRECTORY) -> str:
+def fixture_fingerprint(
+    target: CVETarget, places: Places, docker_directory: Path = DOCKER_DIRECTORY
+) -> str:
     """What builds, seeds and launches the target, and what of it reaches the auditor or
     the oracle (ADR 020's principle, read per target by ADR 024).
 
-    In: the environment and seeding modules (AST fingerprint, so comments, formatting and
-    module docstrings are out), each Dockerfile of the target's images without its comment
-    and blank lines, the builder's name, the server image, the mechanism, the aim and the
-    tools filter. Out: the exploits and benign call (calibration only), the severity, the
-    note, the awaited capability (report text), the sentinel (random per process) and the CI
-    skip. A change to the shared environment code moves every target's fingerprint.
+    In: the environment, places and seeding modules (AST fingerprint, so comments, formatting
+    and module docstrings are out), each Dockerfile of the target's images without its comment
+    and blank lines, the builder's name, the server image, the mechanism, the aim, the tools
+    filter, the flaw's reach, the planting host, the loaded record of each kept place (its id,
+    kind, coordinates and reach, in kept_places order) and the sentinel Dockerfile whenever a
+    kept record is an http_endpoint, since the sentinel image serves it on any target. Out:
+    the exploits and benign call (calibration only), the severity, the note, the awaited
+    capability (report text), the sentinel string (random per process), the CI skip, the kept
+    places' family (plants nothing), and what each caller chooses to plant and launch (the
+    kept places for a graded run, every candidate for the survey), which live in the callers.
+    A change to the shared environment code moves every target's fingerprint.
     """
+    records = kept_records(target.kept_places, places)
     parts: list[object] = [
         fingerprint_sources([path.read_text() for path in _ENVIRONMENT_PATHS]),
         [
@@ -88,8 +100,36 @@ def fixture_fingerprint(target: CVETarget, docker_directory: Path = DOCKER_DIREC
         None if target.mechanism is None else target.mechanism.value,
         target.aim.pattern,
         None if target.tools_filter is None else sorted(target.tools_filter),
+        sorted(target.reaches),
+        _planting_host_parts(target.planting_host),
+        [_record_parts(record) for record in records],
     ]
+    if any(record.kind is PlantKind.HTTP_ENDPOINT for record in records):
+        parts.append(_dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
+
+
+def _planting_host_parts(host: PlantingHost) -> list[object]:
+    return [host.user.value, host.working_directory, host.has_network]
+
+
+def _record_parts(record: Place) -> list[object]:
+    return [
+        record.id,
+        record.kind.value,
+        _coordinate_parts(record.coordinates),
+        sorted(record.reachable_by),
+    ]
+
+
+def _coordinate_parts(coordinates: Coordinates) -> dict[str, object]:
+    fields: dict[str, object | None] = {
+        "path": coordinates.path,
+        "paths": None if coordinates.paths is None else list(coordinates.paths),
+        "name": coordinates.name,
+        "host": coordinates.host,
+    }
+    return {key: fields[key] for key in sorted(fields) if fields[key] is not None}
 
 
 def _dockerfile_instructions(path: Path) -> list[str]:

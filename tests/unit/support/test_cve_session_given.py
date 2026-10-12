@@ -71,6 +71,7 @@ def a_harness(audit: AuditTarget, baselines: Path, tree: TreeState | None = None
         read_tree=lambda: tree or TreeState(commit=COMMIT, dirty=False),
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
         clock=lambda: RECORDED_AT,
+        places={},
     )
 
 
@@ -106,5 +107,5 @@ def an_orphaned_file(directory: Path) -> str:
 def _write(
     directory: Path, baseline: CVETargetBaseline, target: CVETarget, recorded: CVERunConditions
 ) -> None:
-    update = {"fixture_fingerprint": fixture_fingerprint(target), "conditions": recorded}
+    update = {"fixture_fingerprint": fixture_fingerprint(target, {}), "conditions": recorded}
     _write_baseline(directory, baseline.model_copy(update=update))

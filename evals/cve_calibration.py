@@ -9,13 +9,13 @@ The benign call runs first, so the negative control reads a state the exploits h
 import asyncio
 import json
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from typing import IO, Any, cast
 
 from rich.console import Console
 from rich.markup import escape
 
-from evals.concurrency import bounded, entered_in_thread
+from evals.concurrency import entered_in_thread
 from evals.cve_environments import connect
 from evals.cve_grammar import GradedTarget, PlantedTarget, ProofKind
 from evals.cve_proofs import is_aimed, proofs_in
@@ -29,7 +29,11 @@ console = Console()
 type Exchange = tuple[str, dict[str, Any], ToolResponse]
 
 
-async def calibrate_all(targets: list[CVETarget], ci: bool = False, concurrency: int = 1) -> bool:
+async def calibrate_all(
+    targets: list[CVETarget],
+    calibrate: Callable[[CVETarget], Awaitable[bool]],
+    ci: bool = False,
+) -> bool:
     console.print("[bold]Calibration[/bold] (no LLM): exploit and benign call per target\n")
     calibrated: list[CVETarget] = []
     for target in targets:
@@ -37,7 +41,6 @@ async def calibrate_all(targets: list[CVETarget], ci: bool = False, concurrency:
             console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
         else:
             calibrated.append(target)
-    calibrate = bounded(_calibrate_one, concurrency)
     verdicts = await asyncio.gather(*(calibrate(target) for target in calibrated))
     for target, live in zip(calibrated, verdicts, strict=True):
         status = "[green]live[/green]" if live else "[red]dead[/red]"
@@ -65,7 +68,7 @@ def dead_conditions(target: GradedTarget, exploits: Sequence[Unit], benign: Unit
     return conditions
 
 
-async def _calibrate_one(target: CVETarget) -> bool:
+async def calibrate_one(target: CVETarget) -> bool:
     # Any failure reads as not live and the next target still runs. A server that dies
     # before the handshake only says "Connection closed", so its stderr carries the cause.
     # Reports print with no await between their lines, so targets calibrated side by side
