@@ -5,15 +5,30 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals import cve_environments, cve_seeding
+from evals import (
+    cve_environments,
+    cve_planting,
+    cve_planting_base,
+    cve_planting_docker,
+    cve_planting_spec,
+    cve_seeding,
+)
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
 from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
 from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, image_dockerfile
 from evals.gate import ReplayRule
 
 CVE_BASELINE_DIRECTORY = Path(__file__).parent / "baselines" / "cve"
-# Fingerprinted in this fixed order, as part of every target's fixture.
-_ENVIRONMENT_PATHS = (Path(cve_environments.__file__), Path(cve_seeding.__file__))
+# Fingerprinted in this fixed order, as part of every target's fixture. The planting layer
+# decides what reaches the auditor, so a semantic change to it moves every target's fingerprint.
+_ENVIRONMENT_PATHS = (
+    Path(cve_environments.__file__),
+    Path(cve_seeding.__file__),
+    Path(cve_planting.__file__),
+    Path(cve_planting_base.__file__),
+    Path(cve_planting_spec.__file__),
+    Path(cve_planting_docker.__file__),
+)
 
 
 class CVERunConditions(BaseModel):
