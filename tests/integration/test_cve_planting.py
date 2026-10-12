@@ -5,12 +5,16 @@
 #
 # Skipped without Docker, as `test_confined_launch.py` is, and skipped when the sentinel
 # image is absent: the CI integration job has Docker but builds no image, so a missing image
-# must skip rather than trigger a registry pull. A stale image (built before the entrypoint
+# must skip rather than trigger a registry pull. The CVE calibration job builds the image and
+# sets `CVE_PLANTING_REQUIRED=1`, which turns a missing prerequisite into a failure: a green
+# step there must mean the planting path ran. A stale image (built before the entrypoint
 # wrote `$FLAG` at `SERVE_FILE`, the file the harness computes with `served_file`) serves
 # nothing at the planted path, so every case fails: rebuild with
 # `docker compose -f evals/docker/compose.yml build`.
+import os
 import subprocess
 import time
+from collections.abc import Sequence
 
 import pytest
 
@@ -24,11 +28,27 @@ from evals.cve_planting import (
     planted,
     planting_spec,
 )
-from evals.cve_planting_base import LABEL, SENTINEL_IMAGE
+from evals.cve_planting_base import SENTINEL_IMAGE
 from evals.cve_planting_spec import request_target
 from mcp_auditor.adapters.docker import DockerRuntime
 
-_HAS_DOCKER = DockerRuntime().available()
+
+@pytest.fixture(autouse=True, scope="module")
+def _planting_prerequisites() -> None:
+    missing = _missing_prerequisite()
+    if missing is None:
+        return
+    if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
+        pytest.fail(missing)
+    pytest.skip(missing)
+
+
+def _missing_prerequisite() -> str | None:
+    if not DockerRuntime().available():
+        return "CVE planting needs Docker"
+    if not _sentinel_image_present():
+        return f"{SENTINEL_IMAGE} absent: docker compose -f evals/docker/compose.yml build"
+    return None
 
 
 def _sentinel_image_present() -> bool:
@@ -37,12 +57,6 @@ def _sentinel_image_present() -> bool:
     )
     return result.returncode == 0
 
-
-requires_docker = pytest.mark.skipif(not _HAS_DOCKER, reason="CVE planting needs Docker")
-requires_sentinel_image = pytest.mark.skipif(
-    _HAS_DOCKER and not _sentinel_image_present(),
-    reason=f"{SENTINEL_IMAGE} absent: docker compose -f evals/docker/compose.yml build",
-)
 
 _IP_LITERAL = "198.51.100.5"  # RFC 5737 documentation range: routes nowhere
 
@@ -82,24 +96,32 @@ def _read_in_namespace(args: PlantedArgs, host: str, path: str) -> str:
     return result.stdout
 
 
-def _labelled_containers() -> set[str]:
-    result = subprocess.run(
-        ["docker", "ps", "-aq", "--filter", f"label={LABEL}"], capture_output=True, text=True
-    )
-    return set(result.stdout.split())
+class _RecordingPlanting(DockerPlanting):
+    def __init__(self) -> None:
+        self.networks: list[str] = []
+        self.containers: list[str] = []
+
+    def create_network(self) -> str:
+        name = super().create_network()
+        self.networks.append(name)
+        return name
+
+    def start_holder(self, run_args: Sequence[str]) -> str:
+        name = super().start_holder(run_args)
+        self.containers.append(name)
+        return name
+
+    def start_sentinel(self, run_args: Sequence[str]) -> str:
+        name = super().start_sentinel(run_args)
+        self.containers.append(name)
+        return name
 
 
-def _labelled_networks() -> set[str]:
-    result = subprocess.run(
-        ["docker", "network", "ls", "-q", "--filter", f"label={LABEL}"],
-        capture_output=True,
-        text=True,
-    )
-    return set(result.stdout.split())
+def _exists(kind: str, name: str) -> bool:
+    result = subprocess.run(["docker", kind, "inspect", name], capture_output=True, text=True)
+    return result.returncode == 0
 
 
-@requires_docker
-@requires_sentinel_image
 def test_a_planted_ip_literal_endpoint_serves_its_nonce():
     spec = _spec_of(_IP_LITERAL, "/fict/secret")
 
@@ -109,9 +131,7 @@ def test_a_planted_ip_literal_endpoint_serves_its_nonce():
     assert body == spec.nonces["endpoint-1"]
 
 
-@requires_docker
-@requires_sentinel_image
-def test_two_concurrent_launches_each_serve_their_own_nonce():
+def test_two_coexisting_launches_each_serve_their_own_nonce():
     spec_a = _spec_of(_IP_LITERAL, "/fict/a")
     spec_b = _spec_of(_IP_LITERAL, "/fict/b")
 
@@ -127,8 +147,6 @@ def test_two_concurrent_launches_each_serve_their_own_nonce():
     assert body_a != body_b
 
 
-@requires_docker
-@requires_sentinel_image
 @pytest.mark.parametrize(
     "path",
     ["/fict/dir/", "/fict/meta?api-version=1", "/fict/a#frag", "/fict/sp ace/x", "/fict/a%20b"],
@@ -142,8 +160,6 @@ def test_a_path_a_client_rewrites_on_the_wire_serves_the_nonce(path: str):
     assert body == spec.nonces["endpoint-1"]
 
 
-@requires_docker
-@requires_sentinel_image
 @pytest.mark.parametrize(
     ("host", "has_network"),
     [("meta.fict", False), ("meta.fict", True), ("localhost", False)],
@@ -158,8 +174,6 @@ def test_a_name_host_serves_its_nonce_read_by_name(host: str, has_network: bool)
     assert body == spec.nonces["endpoint-1"]
 
 
-@requires_docker
-@requires_sentinel_image
 def test_a_one_sentinel_launch_tears_down_well_under_the_sigterm_grace():
     spec = _spec_of(_IP_LITERAL, "/fict/secret")
 
@@ -171,16 +185,14 @@ def test_a_one_sentinel_launch_tears_down_well_under_the_sigterm_grace():
     assert teardown < 8.0  # `docker rm -f`, never the 10 s `docker stop` SIGTERM grace
 
 
-@requires_docker
-@requires_sentinel_image
 def test_no_labelled_container_or_network_outlives_two_launches():
-    before_containers = _labelled_containers()
-    before_networks = _labelled_networks()
+    docker = _RecordingPlanting()
 
     for suffix in ("/fict/one", "/fict/two"):
         spec = _spec_of(_IP_LITERAL, suffix, has_network=True)
-        with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
+        with planted(spec, SENTINEL_IMAGE, docker) as args:
             assert _read_in_namespace(args, _IP_LITERAL, suffix) == spec.nonces["endpoint-1"]
 
-    assert _labelled_containers() <= before_containers
-    assert _labelled_networks() <= before_networks
+    assert docker.networks and docker.containers
+    assert not [name for name in docker.containers if _exists("container", name)]
+    assert not [name for name in docker.networks if _exists("network", name)]
