@@ -15,13 +15,25 @@ from dataclasses import dataclass, field
 from ipaddress import AddressValueError, IPv4Address
 
 from evals.cve_places import Coordinates, Place, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting import (
+    NonceSource,
+    PlantingHost,
+    PlantingSpec,
+    SymbolicUser,
+    planting_spec,
+)
 from evals.cve_planting_base import ImageAccounts
 
 IMAGE_PASSWD = (
     "root:x:0:0:root:/root:/bin/sh\nnobody:x:65534:65534:nobody:/nonexistent:/bin/false\n"
 )
 IMAGE_GROUP = "root:x:0:\nnobody:x:65534:\n"
+
+
+def spec_of(
+    places: list[Place], host: PlantingHost | None = None, nonces: NonceSource | None = None
+) -> PlantingSpec:
+    return planting_spec(places, host or unprivileged_host(), nonces or FakeNonces())
 
 
 def unprivileged_host(
@@ -178,7 +190,7 @@ class FakePlantingDocker:
         return _env_value(run_args, "FLAG")
 
     def _answers(self, run_args: Sequence[str], host: str) -> bool:
-        alias = _following(run_args, "--network-alias")
+        alias = _first_after(run_args, "--network-alias")
         if alias is not None:
             return alias not in self.dead_sentinels and host.lower() == alias.lower()
         bind_address = _env_value(run_args, "BIND_ADDR")
@@ -193,8 +205,8 @@ class FakePlantingDocker:
             return host
         if host.lower() == "localhost":
             return "127.0.0.1"
-        holder = (_following(run_args, "--network") or "").removeprefix("container:")
-        for entry in _all_following(self.holders.get(holder, []), "--add-host"):
+        holder = (_first_after(run_args, "--network") or "").removeprefix("container:")
+        for entry in _all_after(self.holders.get(holder, []), "--add-host"):
             name, _, address = entry.partition(":")
             if name.lower() == host.lower():
                 return address
@@ -235,6 +247,23 @@ class FakePlantingDocker:
             raise RuntimeError(f"teardown {operation} failed")
 
 
+def only(registry: dict[str, list[str]]) -> str:
+    assert len(registry) == 1
+    return next(iter(registry))
+
+
+def only_list(items: list[list[str]]) -> list[str]:
+    assert len(items) == 1
+    return items[0]
+
+
+def following(args: list[str] | tuple[str, ...], flag: str, *, prefix: str | None = None) -> str:
+    args = list(args)
+    if prefix is not None:
+        return next(value for value in args if value.startswith(prefix))
+    return args[args.index(flag) + 1]
+
+
 def _attached_network(run_args: Sequence[str]) -> str | None:
     for flag, value in itertools.pairwise(run_args):
         if flag == "--network" and not value.startswith("container:"):
@@ -247,11 +276,11 @@ def _env_value(run_args: Sequence[str], name: str) -> str | None:
     return next((arg[len(prefix) :] for arg in run_args if arg.startswith(prefix)), None)
 
 
-def _following(run_args: Sequence[str], flag: str) -> str | None:
-    return next(iter(_all_following(run_args, flag)), None)
+def _first_after(run_args: Sequence[str], flag: str) -> str | None:
+    return next(iter(_all_after(run_args, flag)), None)
 
 
-def _all_following(run_args: Sequence[str], flag: str) -> list[str]:
+def _all_after(run_args: Sequence[str], flag: str) -> list[str]:
     return [value for option, value in itertools.pairwise(run_args) if option == flag]
 
 
