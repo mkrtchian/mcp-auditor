@@ -34,7 +34,7 @@ class FakeOutOfScopeCVE:
 def a_detected_grade() -> RunGrade:
     return RunGrade(
         status=CVEStatus.DETECTED,
-        surfaced=True,
+        surfaced_places=frozenset({"planted"}),
         aimed=True,
         evidence=f"leaked {SENTINEL}",
         category=JudgeCategory("injection"),
@@ -106,7 +106,7 @@ def a_red_gate() -> CVEGateResult:
                 candidate_runs=[
                     CVEStatus.DETECTED,
                     CVEStatus.MISSED,
-                    CVEStatus.DETECTED_EXECUTION_ONLY,
+                    CVEStatus.REACHED_BUT_JUDGED_PASS,
                 ],
                 replays=[True] * 4,
             ),

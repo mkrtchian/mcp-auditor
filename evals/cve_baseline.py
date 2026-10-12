@@ -37,7 +37,7 @@ class CVETargetBaseline(BaseModel):
     replay_rule: ReplayRule
     commit: str
     recorded_at: str
-    # One status per run, the rung kept for the reader: either detection rung detects.
+    # One status per run, the rung kept for the reader: the planted nonce is the one detection.
     runs: list[CVEStatus]
     confirms: RecordingRef | None = None
     replaces: RecordingRef | None = None

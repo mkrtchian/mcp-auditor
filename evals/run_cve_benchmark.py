@@ -10,7 +10,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from evals import cve_grammar, cve_report_units, cve_units
+from evals import cve_grammar, cve_proofs, cve_report_units, cve_units
 from evals import eval_display as display
 from evals.baseline import BaselineStatus, fingerprint_sources
 from evals.concurrency import positive_int
@@ -48,6 +48,7 @@ CRASHED_EXIT = 4
 # Fingerprinted in this fixed order, so the fingerprint names one version of the grammar.
 GRAMMAR_PATHS = (
     Path(cve_grammar.__file__),
+    Path(cve_proofs.__file__),
     Path(cve_units.__file__),
     Path(cve_report_units.__file__),
 )

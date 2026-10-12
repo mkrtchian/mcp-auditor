@@ -1,10 +1,9 @@
 """Calibration: replays each target's hand-written exploit and benign call with no LLM, and
 grades both through the grammar's own proof and aim evaluation.
 
-A target is live when its exploit surfaces every proof kind its class admits and reads as
-aimed, and its benign call, a call inside the declared scope, surfaces no proof and does not
-read as aimed. The benign call runs first, so the negative control reads a state the exploit
-has not touched.
+A target is live when its exploit surfaces the planted nonce and reads as aimed, and its
+benign call, a call inside the declared scope, surfaces no nonce and does not read as aimed.
+The benign call runs first, so the negative control reads a state the exploit has not touched.
 """
 
 import asyncio
@@ -17,7 +16,8 @@ from rich.markup import escape
 
 from evals.concurrency import bounded, entered_in_thread
 from evals.cve_environments import connect
-from evals.cve_grammar import PROOFS_BY_CLASS, GradedTarget, ProofKind, is_aimed, proofs_in
+from evals.cve_grammar import GradedTarget, PlantedTarget, ProofKind
+from evals.cve_proofs import is_aimed, proofs_in
 from evals.cve_targets import CVETarget
 from evals.cve_units import Unit, unit_of_exchanges
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
@@ -50,18 +50,15 @@ async def calibrate_all(targets: list[CVETarget], ci: bool = False, concurrency:
 
 
 def dead_conditions(target: GradedTarget, exploit: Unit, benign: Unit) -> list[str]:
-    exploit_proofs = proofs_in(exploit, target)
-    conditions = [
-        f"exploit surfaces no {kind} proof"
-        for kind in ProofKind
-        if kind in PROOFS_BY_CLASS[target.mechanism] and kind not in exploit_proofs
-    ]
-    if not is_aimed(exploit, target):
+    nonce = ProofKind.PLANTED_NONCE.value
+    conditions: list[str] = []
+    if not proofs_in(exploit, target):
+        conditions.append(f"exploit surfaces no {nonce} proof")
+    if not is_aimed(exploit, target.aim):
         conditions.append("exploit not aimed")
-    conditions.extend(
-        f"negative control: benign call surfaces {kind}" for kind in proofs_in(benign, target)
-    )
-    if is_aimed(benign, target):
+    if proofs_in(benign, target):
+        conditions.append(f"negative control: benign call surfaces {nonce}")
+    if is_aimed(benign, target.aim):
         conditions.append("negative control: benign call reads as aimed")
     return conditions
 
@@ -87,7 +84,8 @@ async def _calibrate_one(target: CVETarget) -> bool:
             console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {escape(reason)}")
             _print_tail(server_stderr)
             return False
-    conditions = dead_conditions(target, _unit(exploit.exchanges), _unit(benign.exchanges))
+    planted = PlantedTarget(target.mechanism, target.aim, {"planted": target.sentinel})
+    conditions = dead_conditions(planted, _unit(exploit.exchanges), _unit(benign.exchanges))
     if conditions:
         _report_dead(target.cve_id, conditions, exploit.exchanges, benign.exchanges)
     return not conditions

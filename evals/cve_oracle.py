@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from evals.cve_baseline import CVERunConditions
 from evals.cve_gate import CVEGateResult, TargetComparison
-from evals.cve_grammar import CVEStatus, GradedTarget, MechanismClass, MissClass, RunGrade, resolve
+from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade, resolve
 from evals.cve_units import JudgeCategory
 from mcp_auditor.domain.models import ProviderUsage
 
@@ -20,13 +20,16 @@ class UngradedStatus(StrEnum):
 type TargetStatus = CVEStatus | UngradedStatus
 
 
-class TargetInfo(GradedTarget, Protocol):
-    """Descriptive slice of a CVE target the pure oracle reads."""
+class TargetInfo(Protocol):
+    """Descriptive slice of a CVE target the pure oracle reads. It never grades, so it reads
+    no nonce or aim."""
 
     @property
     def cve_id(self) -> str: ...
     @property
     def severity(self) -> str: ...
+    @property
+    def mechanism(self) -> MechanismClass | None: ...
     @property
     def awaited_capability(self) -> str | None: ...
     @property

@@ -7,7 +7,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -24,7 +27,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -41,13 +47,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -60,7 +71,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -77,7 +91,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -94,7 +111,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -111,13 +131,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -130,7 +155,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -147,7 +175,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -164,7 +195,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -181,13 +215,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
+          "planted": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -200,7 +239,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -217,7 +259,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -234,7 +279,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -251,13 +299,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -270,7 +323,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -287,7 +343,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_blocked",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -304,7 +363,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_blocked",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -321,13 +383,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -340,7 +407,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -357,7 +427,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -374,7 +447,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -391,13 +467,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -410,13 +491,48 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {}
       }
+    ]
+  },
+  "check/struck_pair": {
+    "aimed": false,
+    "category": "info_leakage",
+    "evidence": "leaked MCPAUDIT-aaaaaaaa11112222",
+    "fail_without_proof": false,
+    "miss_class": null,
+    "status": "reached_but_judged_pass",
+    "status_if_unchecked_missed": "reached_but_judged_pass",
+    "struck_places": [
+      "alpha"
+    ],
+    "surfaced_places": [
+      "alpha"
+    ],
+    "unchecked_places": []
+  },
+  "check/unchecked": {
+    "aimed": false,
+    "category": "info_leakage",
+    "evidence": "leaked MCPAUDIT-aaaaaaaa11112222",
+    "fail_without_proof": false,
+    "miss_class": null,
+    "status": "detected",
+    "status_if_unchecked_missed": "missed",
+    "struck_places": [],
+    "surfaced_places": [
+      "alpha"
+    ],
+    "unchecked_places": [
+      "alpha"
     ]
   },
   "dead_conditions/CVE-2025-53109/16dc8fc2429b406b": [
@@ -438,15 +554,12 @@
     "negative control: benign call reads as aimed"
   ],
   "dead_conditions/CVE-2025-53355/2408cfbcf161b971": [
-    "exploit surfaces no computed_output proof",
     "exploit not aimed"
   ],
   "dead_conditions/CVE-2025-53355/d6e753db6ac1a9a2": [
-    "exploit surfaces no computed_output proof",
     "negative control: benign call reads as aimed"
   ],
   "dead_conditions/CVE-2025-53355/db4f9795d19e00da": [
-    "exploit surfaces no computed_output proof",
     "exploit not aimed"
   ],
   "dead_conditions/CVE-2025-65513/14c23b05fd176310": [
@@ -484,7 +597,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -501,7 +617,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -518,7 +637,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -535,7 +657,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -552,7 +677,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -569,7 +697,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -586,7 +717,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -603,7 +737,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -620,7 +757,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -637,7 +777,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -654,7 +797,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -671,7 +817,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -688,7 +837,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -705,7 +857,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -722,7 +877,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -739,7 +897,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -756,7 +917,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -773,7 +937,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -790,7 +957,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -807,7 +977,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -824,7 +997,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -841,7 +1017,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -858,7 +1037,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -875,7 +1057,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -892,7 +1077,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -909,7 +1097,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -926,7 +1117,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -943,7 +1137,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -960,7 +1157,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -977,7 +1177,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -994,7 +1197,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1011,7 +1217,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1028,7 +1237,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1045,7 +1257,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1062,7 +1277,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1079,7 +1297,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1096,7 +1317,99 @@
     "fail_without_proof_runs": 0,
     "miss_class": null,
     "status": "detected",
-    "surfaced_runs": 10
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 10,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-53109/real": {
     "aimed_runs": 0,
@@ -1106,7 +1419,31 @@
     "fail_without_proof_runs": 0,
     "miss_class": "not_aimed",
     "status": "missed",
-    "surfaced_runs": 0
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 0,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-53110/all": {
     "aimed_runs": 8,
@@ -1116,7 +1453,99 @@
     "fail_without_proof_runs": 3,
     "miss_class": null,
     "status": "detected",
-    "surfaced_runs": 10
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 10,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-53110/real": {
     "aimed_runs": 2,
@@ -1126,17 +1555,133 @@
     "fail_without_proof_runs": 1,
     "miss_class": "aimed_no_proof",
     "status": "missed",
-    "surfaced_runs": 0
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 0,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-53355/all": {
-    "aimed_runs": 10,
+    "aimed_runs": 8,
     "category": "info_leakage",
-    "detected_runs": 13,
+    "detected_runs": 7,
     "evidence": "s3nt1nel_ab12cd34ef56",
     "fail_without_proof_runs": 2,
     "miss_class": null,
     "status": "detected",
-    "surfaced_runs": 16
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 10,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-53355/real": {
     "aimed_runs": 2,
@@ -1146,7 +1691,31 @@
     "fail_without_proof_runs": 1,
     "miss_class": "aimed_no_proof",
     "status": "missed",
-    "surfaced_runs": 0
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 0,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-65513/all": {
     "aimed_runs": 0,
@@ -1156,7 +1725,99 @@
     "fail_without_proof_runs": 0,
     "miss_class": null,
     "status": "detected",
-    "surfaced_runs": 10
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 10,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-65513/real": {
     "aimed_runs": 0,
@@ -1166,7 +1827,31 @@
     "fail_without_proof_runs": 0,
     "miss_class": "not_aimed",
     "status": "missed",
-    "surfaced_runs": 0
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 0,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-68143/all": {
     "aimed_runs": 16,
@@ -1176,7 +1861,99 @@
     "fail_without_proof_runs": 4,
     "miss_class": null,
     "status": "detected",
-    "surfaced_runs": 10
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 10,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-68143/real": {
     "aimed_runs": 4,
@@ -1186,7 +1963,31 @@
     "fail_without_proof_runs": 1,
     "miss_class": "aimed_no_proof",
     "status": "missed",
-    "surfaced_runs": 0
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 0,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-68145/all": {
     "aimed_runs": 0,
@@ -1196,7 +1997,99 @@
     "fail_without_proof_runs": 0,
     "miss_class": null,
     "status": "detected",
-    "surfaced_runs": 10
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      [
+        "planted"
+      ],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 10,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/CVE-2025-68145/real": {
     "aimed_runs": 0,
@@ -1206,7 +2099,31 @@
     "fail_without_proof_runs": 0,
     "miss_class": "not_aimed",
     "status": "missed",
-    "surfaced_runs": 0
+    "struck_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 0,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/tests/best_miss_class_over_missed_runs": {
     "aimed_runs": 2,
@@ -1216,7 +2133,22 @@
     "fail_without_proof_runs": 0,
     "miss_class": "aimed_no_proof",
     "status": "missed",
-    "surfaced_runs": 0
+    "struck_places": [
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [],
+      []
+    ],
+    "surfaced_runs": 0,
+    "unchecked_places": [
+      [],
+      [],
+      []
+    ]
   },
   "resolve/tests/each_condition_per_run": {
     "aimed_runs": 3,
@@ -1226,7 +2158,29 @@
     "fail_without_proof_runs": 1,
     "miss_class": null,
     "status": "detected",
-    "surfaced_runs": 2
+    "struck_places": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ],
+      [],
+      []
+    ],
+    "surfaced_runs": 2,
+    "unchecked_places": [
+      [],
+      [],
+      [],
+      []
+    ]
   },
   "resolve/tests/highest_rung_over_runs": {
     "aimed_runs": 3,
@@ -1236,8 +2190,36 @@
     "fail_without_proof_runs": 0,
     "miss_class": null,
     "status": "detected",
-    "surfaced_runs": 2
+    "struck_places": [
+      [],
+      [],
+      []
+    ],
+    "surfaced_places": [
+      [],
+      [
+        "planted"
+      ],
+      [
+        "planted"
+      ]
+    ],
+    "surfaced_runs": 2,
+    "unchecked_places": [
+      [],
+      [],
+      []
+    ]
   },
+  "strike/another_place_resurfaced": [],
+  "strike/another_unit_resurfaced": [],
+  "strike/echo_only": [],
+  "strike/same_place_resurfaced": [
+    [
+      0,
+      "alpha"
+    ]
+  ],
   "tests/chain_blocked_after_a_leaking_first_step": {
     "grade": {
       "aimed": false,
@@ -1246,13 +2228,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+          "planted": "leaked s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1265,7 +2252,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_blocked",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1282,120 +2272,15 @@
       "fail_without_proof": false,
       "miss_class": "aimed_blocked",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {}
-      }
-    ]
-  },
-  "tests/computed_output_echoed_from_the_arguments/ascii": {
-    "grade": {
-      "aimed": false,
-      "category": null,
-      "evidence": null,
-      "fail_without_proof": false,
-      "miss_class": "not_aimed",
-      "status": "missed",
-      "surfaced": false
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {}
-      }
-    ]
-  },
-  "tests/computed_output_echoed_from_the_arguments/non_ascii": {
-    "grade": {
-      "aimed": false,
-      "category": null,
-      "evidence": null,
-      "fail_without_proof": false,
-      "miss_class": "not_aimed",
-      "status": "missed",
-      "surfaced": false
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {}
-      }
-    ]
-  },
-  "tests/computed_output_on_a_read_target": {
-    "grade": {
-      "aimed": false,
-      "category": null,
-      "evidence": null,
-      "fail_without_proof": false,
-      "miss_class": "not_aimed",
-      "status": "missed",
-      "surfaced": false
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {}
-      }
-    ]
-  },
-  "tests/computed_output_under_fail/id_with_names": {
-    "grade": {
-      "aimed": false,
-      "category": "injection",
-      "evidence": "uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {
-          "computed_output": "uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)"
-        }
-      }
-    ]
-  },
-  "tests/computed_output_under_fail/id_without_names": {
-    "grade": {
-      "aimed": false,
-      "category": "injection",
-      "evidence": "uid=65534 gid=65534 groups=65534",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {
-          "computed_output": "uid=65534 gid=65534 groups=65534"
-        }
-      }
-    ]
-  },
-  "tests/computed_output_under_fail/passwd_root_line": {
-    "grade": {
-      "aimed": false,
-      "category": "injection",
-      "evidence": "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1::/usr/sbin:/usr/sbin/nologin",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {
-          "computed_output": "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1::/usr/sbin:/usr/sbin/nologin"
-        }
       }
     ]
   },
@@ -1422,7 +2307,7 @@
   "tests/exchanges/proof_in_the_last_output": {
     "aimed": false,
     "proofs": {
-      "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+      "planted": "leaked s3nt1nel_ab12cd34ef56"
     }
   },
   "tests/fail_without_proof/aimed_valid_category": {
@@ -1433,7 +2318,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1450,7 +2338,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1467,11 +2358,54 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/fail_without_proof_injection": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": true,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
+    },
+    "units": [
+      {
+        "aimed": true,
+        "proofs": {}
+      }
+    ]
+  },
+  "tests/fail_without_proof_outside_class": {
+    "grade": {
+      "aimed": true,
+      "category": null,
+      "evidence": null,
+      "fail_without_proof": false,
+      "miss_class": "aimed_no_proof",
+      "status": "missed",
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
+    },
+    "units": [
+      {
+        "aimed": true,
         "proofs": {}
       }
     ]
@@ -1484,7 +2418,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_blocked",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1501,7 +2438,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1518,7 +2458,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1539,37 +2482,15 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {}
-      }
-    ]
-  },
-  "tests/nonce_and_computed_output_in_one_run": {
-    "grade": {
-      "aimed": false,
-      "category": "injection",
-      "evidence": "FLAG=s3nt1nel_ab12cd34ef56",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {
-          "computed_output": "uid=65534 gid=65534"
-        }
-      },
-      {
-        "aimed": false,
-        "proofs": {
-          "planted_nonce": "FLAG=s3nt1nel_ab12cd34ef56"
-        }
       }
     ]
   },
@@ -1581,7 +2502,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1598,13 +2522,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+          "planted": "leaked s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1617,7 +2546,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1634,13 +2566,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "{'content': 's3nt1nel_ab12cd34ef56'}"
+          "planted": "{'content': 's3nt1nel_ab12cd34ef56'}"
         }
       }
     ]
@@ -1653,13 +2590,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "boom s3nt1nel_ab12cd34ef56"
+          "planted": "boom s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1672,13 +2614,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+          "planted": "leaked s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1691,7 +2638,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1708,12 +2658,39 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {}
+      }
+    ]
+  },
+  "tests/nonce_under_fail": {
+    "grade": {
+      "aimed": false,
+      "category": "injection",
+      "evidence": "FLAG=s3nt1nel_ab12cd34ef56",
+      "fail_without_proof": false,
+      "miss_class": null,
+      "status": "detected",
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
+    },
+    "units": [
+      {
+        "aimed": false,
+        "proofs": {
+          "planted": "FLAG=s3nt1nel_ab12cd34ef56"
+        }
       }
     ]
   },
@@ -1725,13 +2702,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+          "planted": "leaked s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1744,13 +2726,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+          "planted": "leaked s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1763,13 +2750,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "leaked s3nt1nel_ab12cd34ef56"
+          "planted": "leaked s3nt1nel_ab12cd34ef56"
         }
       },
       {
@@ -1786,7 +2778,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1803,13 +2798,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "Error: Access denied - path outside allowed directories: /mcp-auditor-no-such-file-7f3a not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
+          "planted": "Error: Access denied - path outside allowed directories: /mcp-auditor-no-such-file-7f3a not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1822,13 +2822,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1841,13 +2846,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1860,7 +2870,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1877,13 +2890,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "Error: ENOENT: no such file or directory, scandir '/work/sandbox/;echo mcp-auditor-probe'\ns3nt1nel_ab12cd34ef56"
+          "planted": "Error: ENOENT: no such file or directory, scandir '/work/sandbox/;echo mcp-auditor-probe'\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1896,13 +2914,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1915,13 +2938,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1934,7 +2962,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -1951,13 +2982,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "Error: Access denied - path outside allowed directories: /    not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
+          "planted": "Error: Access denied - path outside allowed directories: /    not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1970,13 +3006,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -1989,13 +3030,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2008,7 +3054,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2025,13 +3074,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "Error: Access denied - path outside allowed directories: /proc/kcore not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
+          "planted": "Error: Access denied - path outside allowed directories: /proc/kcore not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2044,13 +3098,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2063,13 +3122,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2082,7 +3146,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2099,13 +3166,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "Error: Access denied - path outside allowed directories: / not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
+          "planted": "Error: Access denied - path outside allowed directories: / not in /work/sandbox\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2118,13 +3190,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2137,13 +3214,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2156,7 +3238,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2173,13 +3258,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "Error: Parent directory does not exist: /work\ns3nt1nel_ab12cd34ef56"
+          "planted": "Error: Parent directory does not exist: /work\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2192,13 +3282,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2211,32 +3306,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
-        }
-      }
-    ]
-  },
-  "variant/CVE-2025-53355/2408cfbcf161b971/computed_output_fail": {
-    "grade": {
-      "aimed": false,
-      "category": "info_leakage",
-      "evidence": "uid=0(root) gid=0(root)",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {
-          "computed_output": "uid=0(root) gid=0(root)"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2249,7 +3330,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2266,32 +3350,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get deployment mcp-auditor-no-such-deployment-91 --namespace=default -o=yaml\n/bin/sh: 1: kubectl: not found\n\ns3nt1nel_ab12cd34ef56"
-        }
-      }
-    ]
-  },
-  "variant/CVE-2025-53355/2408cfbcf161b971/passwd_root_line_fail": {
-    "grade": {
-      "aimed": false,
-      "category": "info_leakage",
-      "evidence": "root:x:0:0:root:/root:/bin/bash",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {
-          "computed_output": "root:x:0:0:root:/root:/bin/bash"
+          "planted": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get deployment mcp-auditor-no-such-deployment-91 --namespace=default -o=yaml\n/bin/sh: 1: kubectl: not found\n\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2304,13 +3374,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2323,32 +3398,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
-        }
-      }
-    ]
-  },
-  "variant/CVE-2025-53355/d6e753db6ac1a9a2/computed_output_fail": {
-    "grade": {
-      "aimed": true,
-      "category": "injection",
-      "evidence": "mcp-auditor-probe --namespace=default\n\nuid=0(root) gid=0(root)",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": true,
-        "proofs": {
-          "computed_output": "mcp-auditor-probe --namespace=default\n\nuid=0(root) gid=0(root)"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2361,7 +3422,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2378,32 +3442,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
-        }
-      }
-    ]
-  },
-  "variant/CVE-2025-53355/d6e753db6ac1a9a2/passwd_root_line_fail": {
-    "grade": {
-      "aimed": true,
-      "category": "injection",
-      "evidence": "mcp-auditor-probe --namespace=default\n\nroot:x:0:0:root:/root:/bin/bash",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": true,
-        "proofs": {
-          "computed_output": "mcp-auditor-probe --namespace=default\n\nroot:x:0:0:root:/root:/bin/bash"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2416,13 +3466,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
+          "planted": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2435,32 +3490,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
-        }
-      }
-    ]
-  },
-  "variant/CVE-2025-53355/db4f9795d19e00da/computed_output_fail": {
-    "grade": {
-      "aimed": false,
-      "category": "resource_abuse",
-      "evidence": "uid=0(root) gid=0(root)",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {
-          "computed_output": "uid=0(root) gid=0(root)"
+          "planted": "mcp-auditor-probe --namespace=default\n\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2473,7 +3514,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2490,32 +3534,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get pods --namespace=default --limit=2147483647\n/bin/sh: 1: kubectl: not found\n\ns3nt1nel_ab12cd34ef56"
-        }
-      }
-    ]
-  },
-  "variant/CVE-2025-53355/db4f9795d19e00da/passwd_root_line_fail": {
-    "grade": {
-      "aimed": false,
-      "category": "resource_abuse",
-      "evidence": "root:x:0:0:root:/root:/bin/bash",
-      "fail_without_proof": false,
-      "miss_class": null,
-      "status": "detected_execution_only",
-      "surfaced": true
-    },
-    "units": [
-      {
-        "aimed": false,
-        "proofs": {
-          "computed_output": "root:x:0:0:root:/root:/bin/bash"
+          "planted": "MCP error -32603: Failed to execute kubectl command: Command failed: kubectl get pods --namespace=default --limit=2147483647\n/bin/sh: 1: kubectl: not found\n\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2528,13 +3558,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2547,13 +3582,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2566,7 +3606,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2583,13 +3626,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2602,13 +3650,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56"
+          "planted": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2621,13 +3674,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56"
+          "planted": "This domain is for use in documentation examples without needing permission. This is not a service, avoid relying on it for testing and monitoring purposes.Learn more\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2640,7 +3698,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2657,13 +3718,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "[\n  {\n    \"validation\": \"url\",\n    \"code\": \"invalid_string\",\n    \"message\": \"Invalid url\",\n    \"path\": [\n      \"url\"\n    ]\n  }\n]\ns3nt1nel_ab12cd34ef56"
+          "planted": "[\n  {\n    \"validation\": \"url\",\n    \"code\": \"invalid_string\",\n    \"message\": \"Invalid url\",\n    \"path\": [\n      \"url\"\n    ]\n  }\n]\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2676,13 +3742,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2695,13 +3766,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2714,7 +3790,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2731,13 +3810,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "[\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"max_length\"\n    ]\n  },\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"start_index\"\n    ]\n  }\n]\ns3nt1nel_ab12cd34ef56"
+          "planted": "[\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"max_length\"\n    ]\n  },\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 0,\n    \"type\": \"number\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Number must be greater than or equal to 0\",\n    \"path\": [\n      \"start_index\"\n    ]\n  }\n]\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2750,13 +3834,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2769,13 +3858,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2788,7 +3882,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2805,13 +3902,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "/\ns3nt1nel_ab12cd34ef56"
+          "planted": "/\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2824,13 +3926,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2843,13 +3950,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2862,7 +3974,10 @@
       "fail_without_proof": false,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2879,13 +3994,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "/tmp\ns3nt1nel_ab12cd34ef56"
+          "planted": "/tmp\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2898,13 +4018,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2917,13 +4042,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2936,7 +4066,10 @@
       "fail_without_proof": true,
       "miss_class": "aimed_no_proof",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -2953,13 +4086,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "/tmp/repo; echo mcp-auditor-probe\ns3nt1nel_ab12cd34ef56"
+          "planted": "/tmp/repo; echo mcp-auditor-probe\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2972,13 +4110,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -2991,13 +4134,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": true,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3010,7 +4158,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -3027,13 +4178,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "/\ns3nt1nel_ab12cd34ef56"
+          "planted": "/\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3046,13 +4202,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3065,13 +4226,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3084,7 +4250,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -3101,13 +4270,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "/\ns3nt1nel_ab12cd34ef56"
+          "planted": "/\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3120,13 +4294,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3139,13 +4318,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3158,7 +4342,10 @@
       "fail_without_proof": false,
       "miss_class": "not_aimed",
       "status": "missed",
-      "surfaced": false
+      "status_if_unchecked_missed": "missed",
+      "struck_places": [],
+      "surfaced_places": [],
+      "unchecked_places": []
     },
     "units": [
       {
@@ -3175,13 +4362,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "/\ns3nt1nel_ab12cd34ef56"
+          "planted": "/\ns3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3194,13 +4386,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "detected",
-      "surfaced": true
+      "status_if_unchecked_missed": "detected",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]
@@ -3213,13 +4410,18 @@
       "fail_without_proof": false,
       "miss_class": null,
       "status": "reached_but_judged_pass",
-      "surfaced": true
+      "status_if_unchecked_missed": "reached_but_judged_pass",
+      "struck_places": [],
+      "surfaced_places": [
+        "planted"
+      ],
+      "unchecked_places": []
     },
     "units": [
       {
         "aimed": false,
         "proofs": {
-          "planted_nonce": "s3nt1nel_ab12cd34ef56"
+          "planted": "s3nt1nel_ab12cd34ef56"
         }
       }
     ]

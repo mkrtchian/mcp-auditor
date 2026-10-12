@@ -189,7 +189,7 @@ def test_render_appends_the_gate_verdict_and_a_line_per_target():
     assert "Gate: red." in markdown
     assert "- CVE-2025-53355: regression, the miss reproduced in 4 of 4 replays" in markdown
     assert (
-        "- CVE-2025-53355: regression. Runs: detected, missed, detected_execution_only. "
+        "- CVE-2025-53355: regression. Runs: detected, missed, reached_but_judged_pass. "
         "Replays: reproduced, reproduced, reproduced, reproduced."
     ) in markdown
     assert "- CVE-2025-53109: held. Runs: detected, detected, detected." in markdown

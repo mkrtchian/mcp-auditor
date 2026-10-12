@@ -3,20 +3,14 @@ from typing import Any
 import pytest
 
 import tests.unit.support.test_cve_grammar_given as given
-from evals.cve_grammar import (
-    CVEStatus,
-    MissClass,
-    ProofKind,
-    grade_run,
-    is_aimed,
-    proofs_in,
-    resolve,
-)
+from evals.cve_grammar import CVEStatus, MissClass, grade_run, resolve
+from evals.cve_proofs import is_aimed, proofs_in
 from evals.cve_report_units import units_of
 from evals.cve_units import unit_of_exchanges
 from mcp_auditor.domain.models import TestCase
 
 SENTINEL = given.SENTINEL
+PLACE = given.PLACE
 AIMED = {"path": given.AIMED_PATH}
 
 
@@ -109,54 +103,6 @@ def test_proof_and_fail_on_different_cases_is_not_detected():
     assert grade.status == CVEStatus.REACHED_BUT_JUDGED_PASS
 
 
-@pytest.mark.parametrize(
-    "output",
-    [
-        "uid=65534 gid=65534 groups=65534",
-        "uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)",
-        "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1::/usr/sbin:/usr/sbin/nologin",
-    ],
-    ids=["id_without_names", "id_with_names", "passwd_root_line"],
-)
-def test_computed_output_under_fail_on_command_execution_is_execution_only(output: str):
-    case = given.a_case(response=output, category=given.INJECTION)
-
-    grade = grade_run(given.a_command_target(), units_of(given.a_report(cases=[case])))
-
-    assert grade.status == CVEStatus.DETECTED_EXECUTION_ONLY
-    assert grade.evidence == output
-
-
-@pytest.mark.parametrize(
-    "echoed", ["uid=65534 gid=65534", "uid=1000(josé) gid=1000"], ids=["ascii", "non_ascii"]
-)
-def test_computed_output_echoed_from_the_arguments_is_not_a_proof(echoed: str):
-    case = given.a_case(response=f"unknown command {echoed}", arguments={"command": echoed})
-
-    grade = grade_run(given.a_command_target(), units_of(given.a_report(cases=[case])))
-
-    assert grade.status == CVEStatus.MISSED
-
-
-def test_computed_output_is_not_a_proof_on_a_read_target():
-    case = given.a_case(response="uid=0 gid=0")
-
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
-
-    assert grade.status == CVEStatus.MISSED
-    assert not grade.surfaced
-
-
-def test_nonce_and_computed_output_in_one_run_is_detected():
-    computed = given.a_case(response="uid=65534 gid=65534", category=given.INJECTION)
-    nonce = given.a_case(response=f"FLAG={SENTINEL}", category=given.INJECTION)
-
-    grade = grade_run(given.a_command_target(), units_of(given.a_report(cases=[computed, nonce])))
-
-    assert grade.status == CVEStatus.DETECTED
-    assert grade.evidence == f"FLAG={SENTINEL}"
-
-
 def test_nonce_under_fail_in_any_category_is_detected():
     case = given.a_case(response=f"leaked {SENTINEL}", category=given.RESOURCE_ABUSE)
 
@@ -215,13 +161,13 @@ def test_fail_without_proof_needs_an_aimed_fail_in_a_valid_category(case: TestCa
 def test_aim_reads_nested_argument_values(arguments: dict[str, Any]):
     unit = unit_of_exchanges([(arguments, "ok")])
 
-    assert is_aimed(unit, given.a_read_target())
+    assert is_aimed(unit, given.a_read_target().aim)
 
 
 def test_non_string_argument_values_are_not_aimed():
     unit = unit_of_exchanges([({"depth": 3, "recursive": True, "path": None}, "ok")])
 
-    assert not is_aimed(unit, given.a_read_target())
+    assert not is_aimed(unit, given.a_read_target().aim)
 
 
 def test_chain_blocked_at_its_first_step_is_aimed_blocked():
@@ -297,7 +243,7 @@ def test_unit_of_exchanges_finds_a_proof_in_the_last_output():
         [({"path": "/a"}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, f"leaked {SENTINEL}")]
     )
 
-    assert proofs_in(unit, given.a_read_target()) == {ProofKind.PLANTED_NONCE: f"leaked {SENTINEL}"}
+    assert proofs_in(unit, given.a_read_target()) == {PLACE: f"leaked {SENTINEL}"}
 
 
 def test_unit_of_exchanges_reads_every_exchange_for_the_anti_echo():

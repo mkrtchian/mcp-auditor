@@ -1,4 +1,5 @@
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -21,6 +22,7 @@ from mcp_auditor.domain.models import (
 )
 
 SENTINEL = "s3nt1nel_ab12cd34ef56"
+PLACE = "planted"
 AIMED_PATH = "/outside/flag"
 UNAIMED_PATH = "/inside/file"
 FAIL = EvalVerdict.FAIL
@@ -32,17 +34,21 @@ RESOURCE_ABUSE = AuditCategory.RESOURCE_ABUSE
 
 @dataclass(frozen=True)
 class FakeTarget:
-    mechanism: MechanismClass
-    sentinel: str
+    mechanism: MechanismClass | None
+    nonces: Mapping[str, str]
     aim: re.Pattern[str]
 
 
 def a_read_target() -> FakeTarget:
-    return FakeTarget(MechanismClass.READ_OUTSIDE_SCOPE, SENTINEL, re.compile(r"^/outside/"))
+    return FakeTarget(
+        MechanismClass.READ_OUTSIDE_SCOPE, {PLACE: SENTINEL}, re.compile(r"^/outside/")
+    )
 
 
 def a_command_target() -> FakeTarget:
-    return FakeTarget(MechanismClass.COMMAND_EXECUTION, SENTINEL, re.compile(r"[;&|`]|\$\("))
+    return FakeTarget(
+        MechanismClass.COMMAND_EXECUTION, {PLACE: SENTINEL}, re.compile(r"[;&|`]|\$\(")
+    )
 
 
 def a_case(
@@ -124,7 +130,7 @@ def a_report(
 def a_detected_run() -> RunGrade:
     return RunGrade(
         status=CVEStatus.DETECTED,
-        surfaced=True,
+        surfaced_places=frozenset({PLACE}),
         aimed=True,
         evidence=f"leaked {SENTINEL}",
         category=JudgeCategory(INFO_LEAKAGE.value),
@@ -145,7 +151,7 @@ def a_missed_run(
 def a_reached_run() -> RunGrade:
     return RunGrade(
         status=CVEStatus.REACHED_BUT_JUDGED_PASS,
-        surfaced=True,
+        surfaced_places=frozenset({PLACE}),
         aimed=True,
         evidence=f"leaked {SENTINEL}",
         category=JudgeCategory(INFO_LEAKAGE.value),

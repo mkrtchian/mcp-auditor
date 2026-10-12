@@ -13,7 +13,6 @@ from evals.cve_baseline import (
 from evals.cve_grammar import CVEStatus
 
 DETECTED = CVEStatus.DETECTED
-EXECUTION_ONLY = CVEStatus.DETECTED_EXECUTION_ONLY
 MISSED = CVEStatus.MISSED
 
 
@@ -56,7 +55,7 @@ def test_two_targets_sharing_an_image_and_a_builder_but_not_an_aim_differ():
     [
         (given.a_baseline([DETECTED, DETECTED, DETECTED]), [True, True, True], False),
         (
-            given.a_confirmation([DETECTED, EXECUTION_ONLY, DETECTED] * 2),
+            given.a_confirmation([DETECTED] * 6),
             [True] * 6,
             True,
         ),
@@ -94,7 +93,7 @@ def test_integrity_names_a_run_count_its_conditions_do_not_claim(baseline: CVETa
 
 
 def test_a_written_baseline_loads_back_keyed_by_its_cve(tmp_path: Path):
-    baseline = given.a_confirmation([DETECTED, EXECUTION_ONLY, MISSED] * 2)
+    baseline = given.a_confirmation([DETECTED, DETECTED, MISSED] * 2)
 
     write_baseline(tmp_path / "cve", baseline)
 

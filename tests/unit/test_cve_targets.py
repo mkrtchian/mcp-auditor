@@ -8,7 +8,7 @@ import yaml
 
 from evals.cve_calibration import RecordingClient
 from evals.cve_environments import Launch
-from evals.cve_grammar import is_aimed
+from evals.cve_proofs import is_aimed
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.cve_units import Unit, unit_of_exchanges
 from mcp_auditor.domain.ports import MCPClientPort
@@ -23,8 +23,8 @@ async def test_the_exploit_reads_as_aimed_and_the_benign_call_does_not(target: C
     exploit = await _recorded(target.exploit)
     benign = await _recorded(target.benign)
 
-    assert is_aimed(exploit, target)
-    assert not is_aimed(benign, target)
+    assert is_aimed(exploit, target.aim)
+    assert not is_aimed(benign, target.aim)
 
 
 @pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])

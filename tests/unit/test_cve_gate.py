@@ -15,7 +15,6 @@ from evals.cve_grammar import CVEStatus
 from evals.gate import ReplayRule
 
 DETECTED = given.DETECTED
-EXECUTION_ONLY = given.EXECUTION_ONLY
 MISSED = given.MISSED
 
 
@@ -71,10 +70,9 @@ def test_a_confirmed_file_with_a_miss_does_not_gate():
     ("runs", "outcome"),
     [
         ([DETECTED] * 3, TargetOutcome.HELD),
-        ([EXECUTION_ONLY, DETECTED, EXECUTION_ONLY], TargetOutcome.HELD),
         ([DETECTED, MISSED, DETECTED], TargetOutcome.PENDING_REPLAY),
     ],
-    ids=["detected", "execution only still detects", "missed once"],
+    ids=["detected", "missed once"],
 )
 def test_a_gated_target(runs: list[CVEStatus], outcome: TargetOutcome):
     comparison = compare_target(given.a_gated_baseline(), given.a_candidate(runs))

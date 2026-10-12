@@ -18,11 +18,13 @@ PLAIN = {"command": "version"}
 @dataclass(frozen=True)
 class FakeTarget:
     mechanism: MechanismClass
-    sentinel: str
+    nonces: dict[str, str]
     aim: re.Pattern[str]
 
 
-COMMAND_TARGET = FakeTarget(MechanismClass.COMMAND_EXECUTION, NONCE, re.compile(r"[;&|`]|\$\("))
+COMMAND_TARGET = FakeTarget(
+    MechanismClass.COMMAND_EXECUTION, {"planted": NONCE}, re.compile(r"[;&|`]|\$\(")
+)
 
 
 async def test_recording_client_passes_response_through_and_records_the_exchange():
@@ -41,9 +43,9 @@ async def test_recording_client_passes_response_through_and_records_the_exchange
     [
         ((INJECTED, f"{ID_OUTPUT}\n{NONCE}"), (PLAIN, "Client Version: v1"), []),
         (
-            (INJECTED, NONCE),
+            (INJECTED, ID_OUTPUT),
             (PLAIN, "Client Version: v1"),
-            ["exploit surfaces no computed_output proof"],
+            ["exploit surfaces no planted_nonce proof"],
         ),
         ((PLAIN, f"{ID_OUTPUT}\n{NONCE}"), (PLAIN, "Client Version: v1"), ["exploit not aimed"]),
         (
@@ -59,7 +61,7 @@ async def test_recording_client_passes_response_through_and_records_the_exchange
     ],
     ids=[
         "live",
-        "missing_proof_kind",
+        "exploit_surfaces_no_nonce",
         "exploit_not_aimed",
         "benign_surfaces_a_proof",
         "benign_aimed",

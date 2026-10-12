@@ -11,7 +11,7 @@ from rich.markup import escape
 
 from evals.concurrency import bounded, entered_in_thread
 from evals.cve_environments import Launch, connect
-from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, RunGrade, grade_run
+from evals.cve_grammar import DETECTION_RUNGS, GradedTarget, PlantedTarget, RunGrade, grade_run
 from evals.cve_report_units import units_of
 from evals.cve_session import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
@@ -87,8 +87,10 @@ async def _attempt(
             throttles.count(report)
             _print_incidents(target, report)
             # Graded before __exit__ fires so a best-effort teardown error
-            # cannot erase a completed run's grade.
-            grade = graded_or_refused(target, report)
+            # cannot erase a completed run's grade. The nonce travels per launch, so the
+            # graded target is built here, not frozen on CVETarget (removed in a later step).
+            planted = PlantedTarget(target.mechanism, target.aim, {"planted": target.sentinel})
+            grade = graded_or_refused(planted, report)
             if isinstance(grade, RunGrade):
                 console.print(f"{target.cve_id}: {grade.status}")
             outcome = GradedAudit(grade, report) if isinstance(grade, RunGrade) else grade
