@@ -259,7 +259,9 @@ def _surfaced_places(graded: list[_GradedUnit]) -> frozenset[str]:
 def _unchecked_places(graded: list[_GradedUnit], check: CreditCheck) -> frozenset[str]:
     if not check.unchecked:
         return frozenset()
-    return frozenset(place_id for g in graded for place_id in g.proofs)
+    return frozenset(
+        place_id for g in graded if g.unit.verdict is not None for place_id in g.proofs
+    )
 
 
 def _status_if_unchecked_missed(

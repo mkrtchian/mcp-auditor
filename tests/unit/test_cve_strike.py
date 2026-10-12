@@ -94,6 +94,29 @@ def test_an_unchecked_check_keeps_the_status_and_records_the_missed_status():
     assert grade.unchecked_places == frozenset({given.PLACE_A})
 
 
+def test_a_nonce_in_an_unjudged_unit_is_neither_surfaced_nor_unchecked():
+    case = grammar.a_case(response=f"leaked {given.NONCE_A}", verdict=None)
+    target = given.a_target({given.PLACE_A: given.NONCE_A})
+
+    grade = grade_run(
+        target, units_of(grammar.a_report(cases=[case])), CreditCheck(frozenset(), unchecked=True)
+    )
+
+    assert grade.surfaced_places == frozenset()
+    assert grade.unchecked_places == frozenset()
+
+
+def test_a_nonce_in_a_judged_unit_is_reported_unchecked_under_an_unchecked_check():
+    case = grammar.a_case(response=f"leaked {given.NONCE_A}", verdict=grammar.FAIL)
+    target = given.a_target({given.PLACE_A: given.NONCE_A})
+
+    grade = grade_run(
+        target, units_of(grammar.a_report(cases=[case])), CreditCheck(frozenset(), unchecked=True)
+    )
+
+    assert grade.unchecked_places == frozenset({given.PLACE_A})
+
+
 def test_a_target_with_no_class_counts_every_category_in_fail_without_proof():
     case = grammar.a_case(response="denied", arguments=AIMED, category=grammar.RESOURCE_ABUSE)
     target = given.a_target({given.PLACE_A: given.NONCE_A}, mechanism=None)
