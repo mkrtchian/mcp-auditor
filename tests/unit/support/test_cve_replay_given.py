@@ -24,7 +24,7 @@ def a_blocked_case_report() -> AuditReport:
 
 
 def calls(*paths: str) -> list[RecordedCall]:
-    return [("read", {"path": path}) for path in paths]
+    return [("read", {"path": path}, a_response(None, "ok")) for path in paths]
 
 
 def a_response(error_type: str | None, content: str) -> ToolResponse:

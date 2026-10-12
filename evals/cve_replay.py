@@ -7,26 +7,31 @@ flaw. The replay decides nothing about credit itself. What it plants and that it
 patched version live here, in the caller, not in the fingerprint (section 3).
 
 A patched server gone mid-call looks like an ordinary error, so the replay counts an attempt as
-failed when a response reads as a lost connection or when entering or leaving the launch raises.
-It stops at the first lost-connection response, retries at most twice, and then keeps the run's
-credits unchecked. The calls and patched outputs stay in memory and are never written.
+failed when a response reads as a lost connection at a call the vulnerable run still answered, or
+when entering or leaving the launch raises. A failed attempt is retried at most twice, and the
+run's credits are then kept unchecked. When the patched connection is lost at a call the vulnerable
+run had already lost, the replay instead ends there, with the outputs gathered so far: the
+vulnerable run earned no credit past its own death, so the replay need not outlive it either. The
+calls and patched outputs stay in memory and are never written.
 """
 
 import os
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
 
 from evals.cve_environments import TOOL_CALL_TIMEOUT, connect
 from evals.cve_grammar import CreditCheck, PlantedTarget
 from evals.cve_places import Place
 from evals.cve_proofs import GradedRun, UnitPlace, struck_by_replay
+from evals.cve_recording_client import Exchange
 from evals.cve_report_units import units_of
 from evals.cve_targets import CVETarget, TargetVersion
 from evals.cve_units import Step, Unit
 from mcp_auditor.domain.models import AuditReport, ToolResponse
 
-type RecordedCall = tuple[str, dict[str, Any]]
+# Each recorded call keeps the vulnerable response it drew, so the replay can end where the
+# vulnerable run itself ended (a lost connection) instead of retrying a death it cannot outlive.
+type RecordedCall = Exchange
 
 # A patched server gone mid-call looks like an ordinary error: SDK 1.30 turns a call in flight
 # when the server exits into an McpError reading "Connection closed", and the stdio transport
@@ -83,19 +88,27 @@ async def _run_patched(
     target: CVETarget, records: tuple[Place, ...], calls: Sequence[RecordedCall], timeout: int
 ) -> tuple[Mapping[str, str], list[str]] | None:
     """The patched outputs of one fresh launch, or None when the launch could not be reached:
-    a lost-connection response, or an exception entering or leaving the launch or its client."""
+    a lost connection at a call the vulnerable run still answered, or an exception entering or
+    leaving the launch or its client. A patched loss at a call the vulnerable run had already
+    lost ends the replay where that run itself ended, with the outputs gathered so far."""
     try:
         async with target.launched(records, version=TargetVersion.PATCHED) as planted:
             with open(os.devnull, "w") as devnull:
                 async with connect(planted.launch, devnull, tool_call_timeout=timeout) as client:
                     outputs: list[str] = []
-                    for name, args in calls:
+                    vulnerable_lost = False
+                    for name, args, vulnerable in calls:
+                        vulnerable_lost = vulnerable_lost or _lost_connection(vulnerable)
                         response = await client.call_tool(name, args)
                         if _lost_connection(response):
-                            return None
+                            return (planted.nonces, outputs) if vulnerable_lost else None
                         outputs.append(response.content)
                     return planted.nonces, outputs
     except Exception:
+        # The records arrive pre-resolved and pre-planted by `_attempt` on the vulnerable version,
+        # so a `planting_spec` config error cannot reach here: only launch and connection failures
+        # of this fresh patched launch are. Narrowing this to a hand-picked exception set would
+        # crash the whole benchmark on a transient infra blip, worse than the unchecked it returns.
         return None
 
 
@@ -104,7 +117,7 @@ def _replayed_units(units: Sequence[Unit], outputs: Sequence[str]) -> list[Unit]
     return [
         Unit(
             tuple(
-                Step(step.arguments, (next(remaining),) if _sent_a_call(unit, step) else ())
+                Step(step.arguments, _next_output(remaining) if _sent_a_call(unit, step) else ())
                 for step in unit.steps
             ),
             unit.verdict,
@@ -115,13 +128,20 @@ def _replayed_units(units: Sequence[Unit], outputs: Sequence[str]) -> list[Unit]
     ]
 
 
+def _next_output(remaining: Iterator[str]) -> tuple[str, ...]:
+    # A unit straddling the crash has sending steps past the last patched output: those take no
+    # output rather than raising, so the replay keeps its pre-crash outputs and empty later steps.
+    output = next(remaining, None)
+    return () if output is None else (output,)
+
+
 def _arguments_agree(units: Sequence[Unit], calls: Sequence[RecordedCall]) -> bool:
     """Each recorded call attaches to the next step that sent one, and its arguments must equal
     the step's. A count or argument mismatch means the sequence and the report disagree."""
     sending = [step for unit in units for step in unit.steps if _sent_a_call(unit, step)]
     if len(sending) != len(calls):
         return False
-    return all(step.arguments == args for step, (_, args) in zip(sending, calls, strict=True))
+    return all(step.arguments == args for step, (_, args, _) in zip(sending, calls, strict=True))
 
 
 def _sent_a_call(unit: Unit, step: Step) -> bool:

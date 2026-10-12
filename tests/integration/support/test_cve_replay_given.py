@@ -19,7 +19,7 @@ from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
 from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser
 from evals.cve_replay import RecordedCall, RunToCheck
 from evals.cve_targets import CVETarget
-from mcp_auditor.domain.models import AuditReport
+from mcp_auditor.domain.models import AuditReport, ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 
 STUB_PATH = pathlib.Path(__file__).resolve().parent / "cve_replay_stub_server.py"
@@ -127,6 +127,49 @@ def a_server_dying_after_a_call_run() -> RunToCheck:
     )
 
 
+def a_detection_kept_when_the_patched_dies_where_the_vulnerable_did_run() -> RunToCheck:
+    # Detected at call 1, then call 2 lost the vulnerable connection. The patched server also
+    # dies on call 2, so the replay ends where the vulnerable run did and keeps the call-1 credit.
+    report = grammar.a_report(
+        cases=[
+            grammar.a_case(response=f"leaked {OLD_FLAW}", arguments={"path": FLAW_PATH}),
+            grammar.a_case(
+                response="Connection closed", arguments={"path": PREP_PATH}, verdict=grammar.PASS
+            ),
+        ]
+    )
+    return _run(
+        _serving({}, exit_on_call=2),
+        (FLAW_ID,),
+        report,
+        _calls_ending_in_lost_connection(FLAW_PATH, PREP_PATH),
+        {FLAW_ID: OLD_FLAW},
+    )
+
+
+def a_straddling_chain_struck_despite_a_lost_connection_run() -> RunToCheck:
+    # The credit is earned at step 1, the vulnerable connection is lost at step 2, but the patched
+    # server survives and serves the fresh nonce at step 2: ending at the first vulnerable loss
+    # would leave step 2 empty and keep a credit the full replay strikes.
+    report = grammar.a_report(
+        chains=[
+            grammar.a_chain(
+                [
+                    grammar.a_step(arguments={"path": FLAW_PATH}, response=f"leaked {OLD_FLAW}"),
+                    grammar.a_step(arguments={"path": PREP_PATH}, response="Connection closed"),
+                ]
+            )
+        ]
+    )
+    return _run(
+        _serving({PREP_PATH: FLAW_ID}),
+        (FLAW_ID,),
+        report,
+        _calls_ending_in_lost_connection(FLAW_PATH, PREP_PATH),
+        {FLAW_ID: OLD_FLAW},
+    )
+
+
 # --- builders and run assembly ---
 
 
@@ -158,7 +201,17 @@ def _flaw_report() -> AuditReport:
 
 
 def _calls(*paths: str) -> list[RecordedCall]:
-    return [("read", {"path": path}) for path in paths]
+    return [("read", {"path": path}, _a_response(None, "ok")) for path in paths]
+
+
+def _calls_ending_in_lost_connection(*paths: str) -> list[RecordedCall]:
+    *answered, last = paths
+    lost = _a_response("McpError", "Connection closed")
+    return [*_calls(*answered), ("read", {"path": last}, lost)]
+
+
+def _a_response(error_type: str | None, content: str) -> ToolResponse:
+    return ToolResponse(content=content, is_error=error_type is not None, error_type=error_type)
 
 
 def _serving(paths_to_ids: dict[str, str], *, exit_on_call: int = 0) -> Serve:

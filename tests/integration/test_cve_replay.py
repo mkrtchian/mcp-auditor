@@ -101,3 +101,24 @@ async def test_a_patched_server_dying_after_a_call_leaves_the_credit_unchecked()
 
     assert check.unchecked
     assert check.struck == frozenset()
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_detection_before_a_shared_death_is_decided_and_kept():
+    run = given.a_detection_kept_when_the_patched_dies_where_the_vulnerable_did_run()
+
+    check = await replay_credit(run)
+
+    assert not check.unchecked
+    assert check.struck == frozenset()
+    assert grade_run(run.run_target, units_of(run.report), check).status == CVEStatus.DETECTED
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_straddling_credit_is_struck_when_the_patched_server_survives():
+    run = given.a_straddling_chain_struck_despite_a_lost_connection_run()
+
+    check = await replay_credit(run)
+
+    assert not check.unchecked
+    assert {pair.place_id for pair in check.struck} == {given.FLAW_ID}

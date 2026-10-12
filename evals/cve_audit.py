@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.markup import escape
 
 from evals.cve_environments import Launch, connect
-from evals.cve_grammar import DETECTION_RUNGS, PlantedTarget, RunGrade, grade_run
+from evals.cve_grammar import DETECTION_RUNGS, CreditCheck, PlantedTarget, RunGrade, grade_run
 from evals.cve_places import Places, kept_records
 from evals.cve_planting import PlantingFailed
 from evals.cve_recording_client import RecordingClient
@@ -118,7 +118,11 @@ async def _attempt(
     return outcome
 
 
-async def _checked_grade(run: RunToCheck) -> RunGrade:
+async def _checked_grade(
+    run: RunToCheck,
+    *,
+    replay: Callable[[RunToCheck], Awaitable[CreditCheck]] = replay_credit,
+) -> RunGrade:
     """The run's final grade: a detecting run is replayed against the patched version and graded
     on the credits that survive the strike. A run that did not detect needs no check, since the
     strike only removes a detection."""
@@ -126,7 +130,7 @@ async def _checked_grade(run: RunToCheck) -> RunGrade:
     grade = grade_run(run.run_target, units)
     if grade.status not in DETECTION_RUNGS:
         return grade
-    check = await replay_credit(run)
+    check = await replay(run)
     return grade_run(run.run_target, units, check)
 
 
@@ -174,7 +178,7 @@ async def _audit(
                     "max_chain_steps": launch.max_chain_steps,
                 }
             )
-            return result["audit_report"], [(name, args) for name, args, _ in recorder.exchanges]
+            return result["audit_report"], recorder.exchanges
     except Exception as exc:
         raise LaunchError(str(exc)) from exc
 

@@ -116,7 +116,11 @@ async def test_a_run_depending_on_unchecked_credits_is_not_comparable(tmp_path: 
     assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
 
 
-async def test_unchecked_credits_that_change_no_status_stay_comparable(tmp_path: Path):
+async def test_a_run_with_no_unchecked_credits_stays_comparable(tmp_path: Path):
+    # A detected grade carries no unchecked credit, so its status equals status_if_unchecked_missed
+    # and the run is comparable. The "unchecked but status-preserving" case does not occur: a
+    # replayed unchecked run's only proofs are its credits, so an unchecked credit always leaves
+    # status_if_unchecked_missed at MISSED. No test constructs that unreachable case.
     audit = given.ScriptedAudit({given.KUBERNETES.cve_id: [given.a_detected_grade()] * 3})
 
     result = await run_gated(given.options(), given.a_harness(audit, tmp_path))

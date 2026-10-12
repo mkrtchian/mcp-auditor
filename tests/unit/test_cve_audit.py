@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 from io import StringIO
 
 import pytest
@@ -11,7 +12,10 @@ from evals.cve_audit import (
     graded_despite_refusals,
     graded_or_refused,
 )
-from evals.cve_grammar import CVEStatus, MissClass, RunGrade
+from evals.cve_grammar import CreditCheck, CVEStatus, MissClass, PlantedTarget, RunGrade, grade_run
+from evals.cve_proofs import UnitPlace
+from evals.cve_replay import RunToCheck
+from evals.cve_report_units import units_of
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS
 from evals.metrics import SessionThrottles
@@ -120,6 +124,51 @@ def test_a_struck_only_credit_with_a_refused_step_reads_as_refused():
     outcome = graded_or_refused(struck, _refused(grammar.a_report()))
 
     assert isinstance(outcome, RefusedAttempt)
+
+
+async def test_a_non_detecting_run_is_graded_without_replaying():
+    run = _a_run(grammar.a_report(cases=[grammar.a_case(verdict=grammar.PASS)]))
+
+    grade = await cve_audit._checked_grade(run, replay=_replay_that_must_not_run)  # pyright: ignore[reportPrivateUsage]
+
+    assert grade.status == grade_run(run.run_target, units_of(run.report)).status
+
+
+async def test_a_detecting_run_is_regraded_on_the_credits_the_replay_strikes():
+    report = grammar.a_report(
+        cases=[
+            grammar.a_case(
+                response=f"leaked {grammar.SENTINEL}", arguments={"path": grammar.AIMED_PATH}
+            )
+        ]
+    )
+    run = _a_run(report, {grammar.PLACE: grammar.SENTINEL})
+    struck = CreditCheck(frozenset({UnitPlace(0, grammar.PLACE)}), unchecked=False)
+
+    grade = await cve_audit._checked_grade(run, replay=_replay_returning(struck))  # pyright: ignore[reportPrivateUsage]
+
+    assert grade.status == CVEStatus.MISSED
+
+
+def _a_run(report: AuditReport, nonces: dict[str, str] | None = None) -> RunToCheck:
+    return RunToCheck(
+        target=TARGET,
+        run_target=PlantedTarget(TARGET.mechanism, TARGET.aim, nonces or {}),
+        report=report,
+        recorded_calls=[],
+        records=(),
+    )
+
+
+async def _replay_that_must_not_run(_run: RunToCheck) -> CreditCheck:
+    raise AssertionError("a non-detecting run must be graded without replaying")
+
+
+def _replay_returning(check: CreditCheck) -> Callable[[RunToCheck], Awaitable[CreditCheck]]:
+    async def replay(_run: RunToCheck) -> CreditCheck:
+        return check
+
+    return replay
 
 
 def _refused(report: AuditReport) -> AuditReport:
