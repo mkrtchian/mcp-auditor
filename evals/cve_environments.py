@@ -44,14 +44,9 @@ networks, since a network with a container attached cannot be removed:
     docker network rm $(docker network ls -q --filter label=mcp-auditor-cve)
 """
 
-# This module is part of every CVE baseline's fixture fingerprint, which hashes annotations:
-# renaming the Iterator return types pyright deprecates would reset the whole baseline.
-# To drop with the next reset of that baseline.
-# pyright: reportDeprecated=false
-
 import os
 import tempfile
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -72,10 +67,6 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.ports import MCPClientPort
 
-_FILESYSTEM_IMAGE = "mcp-auditor-cve-filesystem:local"
-_GIT_IMAGE = "mcp-auditor-cve-git:local"
-_FETCH_IMAGE = "mcp-auditor-cve-fetch:local"
-
 
 @dataclass(frozen=True)
 class Launch:
@@ -86,7 +77,7 @@ class Launch:
 
 
 @asynccontextmanager
-async def connect(launch: Launch, server_stderr: IO[str]) -> AsyncIterator[MCPClientPort]:
+async def connect(launch: Launch, server_stderr: IO[str]) -> AsyncGenerator[MCPClientPort]:
     async with StdioMCPClient.connect(
         ServerLaunch.declared_container(launch.command, launch.args, docker_client_env(os.environ)),
         errlog=server_stderr,
@@ -95,40 +86,40 @@ async def connect(launch: Launch, server_stderr: IO[str]) -> AsyncIterator[MCPCl
 
 
 @contextmanager
-def filesystem_env(sentinel: str) -> Iterator[Launch]:
+def filesystem_env(image: str, sentinel: str) -> Generator[Launch]:
     with _temp_root() as root:
         (root / "sandbox").mkdir(parents=True)
         flag = make_dir_with_file(root / "outside", "flag.txt", sentinel)
         plant_symlink(root / "sandbox" / "report", flag)
-        yield _filesystem_launch(root)
+        yield _filesystem_launch(root, image)
 
 
 @contextmanager
-def prefix_collision_env(sentinel: str) -> Iterator[Launch]:
+def prefix_collision_env(image: str, sentinel: str) -> Generator[Launch]:
     with _temp_root() as root:
         (root / "sandbox").mkdir(parents=True)
         make_dir_with_file(root / "sandbox_secret", "flag.txt", sentinel)
-        yield _filesystem_launch(root)
+        yield _filesystem_launch(root, image)
 
 
 @contextmanager
-def repository_bypass_env(sentinel: str) -> Iterator[Launch]:
+def repository_bypass_env(image: str, sentinel: str) -> Generator[Launch]:
     with _temp_root() as root:
         init_git_repo_with_commit(root / "repo", "initial commit")
         init_git_repo_with_commit(root / "other", sentinel)
-        yield _git_launch(root)
+        yield _git_launch(root, image)
 
 
 @contextmanager
-def git_init_traversal_env(sentinel: str) -> Iterator[Launch]:
+def git_init_traversal_env(image: str, sentinel: str) -> Generator[Launch]:
     with _temp_root() as root:
         init_git_repo_with_commit(root / "repo", "initial commit")
         make_dir_with_file(root / "secret", "flag.txt", sentinel)
-        yield _git_launch(root, chain_budget=3, max_chain_steps=5)
+        yield _git_launch(root, image, chain_budget=3, max_chain_steps=5)
 
 
 @contextmanager
-def command_injection_env(image: str, sentinel: str) -> Iterator[Launch]:
+def command_injection_env(image: str, sentinel: str) -> Generator[Launch]:
     yield Launch(
         command="docker",
         args=[
@@ -146,7 +137,7 @@ def command_injection_env(image: str, sentinel: str) -> Iterator[Launch]:
 
 
 @contextmanager
-def ssrf_env(sentinel: str) -> Iterator[Launch]:
+def ssrf_env(image: str, sentinel: str) -> Generator[Launch]:
     with (
         docker_network() as network,
         sidecar(
@@ -174,13 +165,13 @@ def ssrf_env(sentinel: str) -> Iterator[Launch]:
                 *unprivileged_user_args(),
                 "--network",
                 network,
-                _FETCH_IMAGE,
+                image,
             ],
         )
 
 
 @contextmanager
-def _temp_root() -> Iterator[Path]:
+def _temp_root() -> Generator[Path]:
     # Containers run as the host user (see host_user_args), so bind-mount files
     # are host-owned and rmtree normally succeeds. ignore_cleanup_errors stays as
     # a fallback so a stray un-removable file never crashes a run at __exit__.
@@ -188,7 +179,7 @@ def _temp_root() -> Iterator[Path]:
         yield Path(name)
 
 
-def _filesystem_launch(root: Path) -> Launch:
+def _filesystem_launch(root: Path, image: str) -> Launch:
     return Launch(
         command="docker",
         args=[
@@ -200,13 +191,13 @@ def _filesystem_launch(root: Path) -> Launch:
             *host_user_args(),
             "-v",
             f"{root}:/work",
-            _FILESYSTEM_IMAGE,
+            image,
             "/work/sandbox",
         ],
     )
 
 
-def _git_launch(root: Path, chain_budget: int = 0, max_chain_steps: int = 3) -> Launch:
+def _git_launch(root: Path, image: str, chain_budget: int = 0, max_chain_steps: int = 3) -> Launch:
     return Launch(
         command="docker",
         args=[
@@ -218,7 +209,7 @@ def _git_launch(root: Path, chain_budget: int = 0, max_chain_steps: int = 3) -> 
             *host_user_args(),
             "-v",
             f"{root}:/work",
-            _GIT_IMAGE,
+            image,
             "--repository",
             "/work/repo",
         ],

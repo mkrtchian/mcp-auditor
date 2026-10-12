@@ -32,20 +32,18 @@ def image_dockerfile(name: str, docker_directory: Path = DOCKER_DIRECTORY) -> Pa
     return docker_directory / f"Dockerfile.{name}"
 
 
-_KUBERNETES_IMAGE = image_tag("kubernetes")
-
-
 @dataclass(frozen=True)
 class CVETarget:
     cve_id: str
     severity: str
     sentinel: str
-    mechanism: MechanismClass
+    mechanism: MechanismClass | None
     aim: re.Pattern[str]
     images: tuple[str, ...]  # services of evals/docker/compose.yml
-    builder: Callable[..., AbstractContextManager[Launch]]
-    builder_args: tuple[str, ...]  # passed before the sentinel
-    exploit: Callable[[MCPClientPort], Awaitable[None]]
+    server_image: str  # the service of images that runs the server under audit
+    # The builder takes the image tag, then the sentinel.
+    builder: Callable[[str, str], AbstractContextManager[Launch]]
+    exploits: tuple[Callable[[MCPClientPort], Awaitable[None]], ...]
     benign: Callable[[MCPClientPort], Awaitable[None]]
     awaited_capability: str | None
     note: str
@@ -53,7 +51,7 @@ class CVETarget:
     ci_skip_reason: str | None = None
 
     def environment(self) -> AbstractContextManager[Launch]:
-        return self.builder(*self.builder_args, self.sentinel)
+        return self.builder(image_tag(self.server_image), self.sentinel)
 
 
 @dataclass(frozen=True)
@@ -163,9 +161,9 @@ CVE_TARGETS: list[CVETarget] = [
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PLANTED_LINK_AIM,
         images=("filesystem",),
+        server_image="filesystem",
         builder=filesystem_env,
-        builder_args=(),
-        exploit=_exploit_symlink_traversal,
+        exploits=(_exploit_symlink_traversal,),
         benign=_list_sandbox,
         awaited_capability="cross-tool chains",
         note=(
@@ -182,9 +180,9 @@ CVE_TARGETS: list[CVETarget] = [
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_PREFIX_SIBLING_AIM,
         images=("filesystem",),
+        server_image="filesystem",
         builder=prefix_collision_env,
-        builder_args=(),
-        exploit=_exploit_prefix_collision,
+        exploits=(_exploit_prefix_collision,),
         benign=_list_sandbox,
         awaited_capability="declared-scope awareness",
         note="Prefix-collision sibling is derivable only from the declared boundary.",
@@ -197,9 +195,9 @@ CVE_TARGETS: list[CVETarget] = [
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
         images=("git",),
+        server_image="git",
         builder=repository_bypass_env,
-        builder_args=(),
-        exploit=_exploit_repository_bypass,
+        exploits=(_exploit_repository_bypass,),
         benign=_benign_repository_bypass,
         awaited_capability="declared-scope awareness",
         note="--repository bypass needs the generator to aim outside the declared repo.",
@@ -212,9 +210,9 @@ CVE_TARGETS: list[CVETarget] = [
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=_OUTSIDE_REPO_AIM,
         images=("git",),
+        server_image="git",
         builder=git_init_traversal_env,
-        builder_args=(),
-        exploit=_exploit_git_init_traversal,
+        exploits=(_exploit_git_init_traversal,),
         benign=_benign_git_init_traversal,
         awaited_capability="cross-tool chains + declared-scope awareness",
         note="git_init(out-of-scope) -> git_add(.) -> git_diff_staged surfaces the content.",
@@ -231,9 +229,9 @@ CVE_TARGETS: list[CVETarget] = [
         mechanism=MechanismClass.COMMAND_EXECUTION,
         aim=_SHELL_METACHARACTER_AIM,
         images=("kubernetes",),
+        server_image="kubernetes",
         builder=command_injection_env,
-        builder_args=(_KUBERNETES_IMAGE,),
-        exploit=_exploit_kubernetes_injection,
+        exploits=(_exploit_kubernetes_injection,),
         benign=_benign_kubernetes_injection,
         awaited_capability=None,
         note=(
@@ -249,9 +247,9 @@ CVE_TARGETS: list[CVETarget] = [
         mechanism=MechanismClass.INTERNAL_FETCH,
         aim=_INTERNAL_HOST_AIM,
         images=("fetch", "sentinel"),
+        server_image="fetch",
         builder=ssrf_env,
-        builder_args=(),
-        exploit=_exploit_fetch_ssrf,
+        exploits=(_exploit_fetch_ssrf,),
         benign=_benign_fetch_ssrf,
         awaited_capability="declared-scope awareness",
         note="SSRF via is_ip_private bypass; a Docker sidecar serves the internal endpoint.",

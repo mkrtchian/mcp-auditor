@@ -9,7 +9,7 @@ import yaml
 from evals.cve_calibration import RecordingClient
 from evals.cve_environments import Launch
 from evals.cve_proofs import is_aimed
-from evals.cve_targets import CVE_TARGETS, CVETarget
+from evals.cve_targets import CVE_TARGETS, CVETarget, image_tag
 from evals.cve_units import Unit, unit_of_exchanges
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
@@ -19,11 +19,11 @@ COMPOSE_PATH = Path(__file__).resolve().parents[2] / "evals" / "docker" / "compo
 
 
 @pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])
-async def test_the_exploit_reads_as_aimed_and_the_benign_call_does_not(target: CVETarget):
-    exploit = await _recorded(target.exploit)
+async def test_every_exploit_reads_as_aimed_and_the_benign_call_does_not(target: CVETarget):
+    for exploit in target.exploits:
+        assert is_aimed(await _recorded(exploit), target.aim)
     benign = await _recorded(target.benign)
 
-    assert is_aimed(exploit, target.aim)
     assert not is_aimed(benign, target.aim)
 
 
@@ -35,7 +35,7 @@ def test_every_image_of_a_target_is_a_compose_service(target: CVETarget):
     assert set(target.images) <= set(services)
 
 
-def test_the_environment_calls_its_builder_with_its_arguments_then_the_sentinel():
+def test_the_environment_calls_its_builder_with_the_server_image_then_the_sentinel():
     calls: list[tuple[str, ...]] = []
 
     @contextmanager
@@ -43,14 +43,12 @@ def test_the_environment_calls_its_builder_with_its_arguments_then_the_sentinel(
         calls.append(args)
         yield Launch("docker", [])
 
-    target = dataclasses.replace(
-        SSRF_TARGET, builder=recording_builder, builder_args=("an-image", "a-flag")
-    )
+    target = dataclasses.replace(SSRF_TARGET, builder=recording_builder)
 
     with target.environment():
         pass
 
-    assert calls == [("an-image", "a-flag", SSRF_TARGET.sentinel)]
+    assert calls == [(image_tag(SSRF_TARGET.server_image), SSRF_TARGET.sentinel)]
 
 
 @pytest.mark.parametrize(

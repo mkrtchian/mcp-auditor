@@ -72,10 +72,10 @@ def fixture_fingerprint(target: CVETarget, docker_directory: Path = DOCKER_DIREC
 
     In: the environment and seeding modules (AST fingerprint, so comments, formatting and
     module docstrings are out), each Dockerfile of the target's images without its comment
-    and blank lines, the builder's name and arguments, the mechanism, the aim and the tools
-    filter. Out: the exploit and benign call (calibration only), the severity, the note,
-    the awaited capability (report text), the sentinel (random per process) and the CI skip.
-    A change to the shared environment code moves every target's fingerprint.
+    and blank lines, the builder's name, the server image, the mechanism, the aim and the
+    tools filter. Out: the exploits and benign call (calibration only), the severity, the
+    note, the awaited capability (report text), the sentinel (random per process) and the CI
+    skip. A change to the shared environment code moves every target's fingerprint.
     """
     parts: list[object] = [
         fingerprint_sources([path.read_text() for path in _ENVIRONMENT_PATHS]),
@@ -84,8 +84,8 @@ def fixture_fingerprint(target: CVETarget, docker_directory: Path = DOCKER_DIREC
             for name in target.images
         ],
         target.builder.__name__,
-        list(target.builder_args),
-        target.mechanism.value,
+        target.server_image,
+        None if target.mechanism is None else target.mechanism.value,
         target.aim.pattern,
         None if target.tools_filter is None else sorted(target.tools_filter),
     ]

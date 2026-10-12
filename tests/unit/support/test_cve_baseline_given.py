@@ -54,7 +54,7 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "aim": _replacing(aim=re.compile(r"[;&]")),
     "mechanism": _replacing(mechanism=MechanismClass.READ_OUTSIDE_SCOPE),
     "tools filter": _replacing(tools_filter=frozenset({"kubectl_generic", "kubectl_get"})),
-    "builder argument": _replacing(builder_args=("another-image:local",)),
+    "server image": _replacing(server_image="another-service"),
 }
 
 UNFINGERPRINTED_CHANGES: dict[str, TargetChange] = {
@@ -63,7 +63,7 @@ UNFINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "note": _replacing(note="another note"),
     "severity": _replacing(severity="CVSS 9.8 (v3.1, CNA)"),
     "awaited capability": _replacing(awaited_capability="cross-tool chains"),
-    "exploit": _replacing(exploit=_another_exploit),
+    "exploits": _replacing(exploits=(_another_exploit,)),
     "sentinel": _replacing(sentinel="MCPAUDIT-another"),
 }
 

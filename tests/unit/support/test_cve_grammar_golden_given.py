@@ -96,7 +96,7 @@ def _target_entries(cve_id: str, cases: list[JudgeCase]) -> dict[str, Any]:
 
 def _dead_conditions(target: GradedTarget, inputs: JudgeInputs) -> list[str]:
     exploit, benign = corpus.dead_conditions_units(inputs)
-    return dead_conditions(target, exploit, benign)
+    return dead_conditions(target, [exploit], benign)
 
 
 def _graded_target(cve_id: str) -> given.FakeTarget:

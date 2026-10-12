@@ -6,7 +6,7 @@ from mcp_auditor.domain.models import ExecutionRegime
 
 
 def test_the_filesystem_fixture_launches_as_a_declared_container():
-    with filesystem_env("sentinel") as launch:
+    with filesystem_env("img", "sentinel") as launch:
         assert ServerLaunch.declared_container(launch.command, launch.args, {}).regime == (
             ExecutionRegime.DECLARED_CONTAINER
         )

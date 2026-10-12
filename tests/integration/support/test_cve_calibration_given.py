@@ -65,7 +65,7 @@ def _a_target(
     aim: re.Pattern[str] = OUTSIDE_AIM,
 ) -> CVETarget:
     @contextmanager
-    def builder(_sentinel: str) -> Generator[Launch]:
+    def builder(_image: str, _sentinel: str) -> Generator[Launch]:
         yield launch
 
     return CVETarget(
@@ -75,9 +75,9 @@ def _a_target(
         mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=aim,
         images=(),
+        server_image="stub",
         builder=builder,
-        builder_args=(),
-        exploit=_reading("/outside/flag"),
+        exploits=(_reading("/outside/flag"),),
         benign=benign,
         awaited_capability=None,
         note="",

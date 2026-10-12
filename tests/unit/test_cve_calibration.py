@@ -73,7 +73,7 @@ def test_dead_conditions_name_each_failed_condition(
     conditions: list[str],
 ):
     result = dead_conditions(
-        COMMAND_TARGET, unit_of_exchanges([exploit]), unit_of_exchanges([benign])
+        COMMAND_TARGET, [unit_of_exchanges([exploit])], unit_of_exchanges([benign])
     )
 
     assert result == conditions
