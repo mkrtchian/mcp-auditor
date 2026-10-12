@@ -1,0 +1,553 @@
+[
+  {
+    "id": "process-account-identity",
+    "place": "Running process account identity (username + its /etc/passwd GECOS field), surfaced by whoami / id / getent passwd $USER",
+    "family": "1 host identity / accounts",
+    "category": "account_identity",
+    "reachable_by": [
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1003.008",
+      "T1033"
+    ],
+    "kind": "account",
+    "coordinates": {}
+  },
+  {
+    "id": "etc-shadow",
+    "place": "/etc/shadow",
+    "family": "1 host identity / accounts",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1003.008"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "/etc/shadow"
+    }
+  },
+  {
+    "id": "container-hostname",
+    "place": "The container hostname (set at launch with --hostname), surfaced by hostname / uname -n / /etc/hostname / /proc/sys/kernel/hostname",
+    "family": "1 host identity / accounts",
+    "category": "account_identity",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1082"
+    ],
+    "kind": "hostname",
+    "coordinates": {}
+  },
+  {
+    "id": "aws-credentials",
+    "place": "~/.aws/credentials",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.aws/credentials"
+    }
+  },
+  {
+    "id": "gcloud-adc",
+    "place": "~/.config/gcloud/application_default_credentials.json",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.config/gcloud/application_default_credentials.json"
+    }
+  },
+  {
+    "id": "azure-profile",
+    "place": "~/.azure/azureProfile.json",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.azure/azureProfile.json"
+    }
+  },
+  {
+    "id": "ssh-private-key",
+    "place": "~/.ssh/id_rsa (or id_ed25519)",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.004"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "paths": [
+        "$HOME/.ssh/id_rsa",
+        "$HOME/.ssh/id_ed25519"
+      ]
+    }
+  },
+  {
+    "id": "shell-history",
+    "place": "~/.bash_history (or ~/.zsh_history)",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.003"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "paths": [
+        "$HOME/.bash_history",
+        "$HOME/.zsh_history"
+      ]
+    }
+  },
+  {
+    "id": "git-credentials",
+    "place": "~/.git-credentials",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.git-credentials"
+    }
+  },
+  {
+    "id": "npmrc",
+    "place": "~/.npmrc",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.npmrc"
+    }
+  },
+  {
+    "id": "gh-hosts",
+    "place": "~/.config/gh/hosts.yml",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.config/gh/hosts.yml"
+    }
+  },
+  {
+    "id": "docker-config",
+    "place": "~/.docker/config.json",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.docker/config.json"
+    }
+  },
+  {
+    "id": "kube-config",
+    "place": "~/.kube/config (kubeconfig with cluster credentials)",
+    "family": "6 container-native secret locations",
+    "category": "container_secret",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.kube/config"
+    }
+  },
+  {
+    "id": "dotenv-file",
+    "place": "the server's .env file (dotenv process-secrets file, in its working directory)",
+    "family": "2 generic user credential files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "unplaceable",
+    "coordinates": {}
+  },
+  {
+    "id": "pgpass",
+    "place": "~/.pgpass",
+    "family": "3 database credential/config files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1213.006"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.pgpass"
+    }
+  },
+  {
+    "id": "mysql-client-cnf",
+    "place": "~/.my.cnf",
+    "family": "3 database credential/config files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1213.006"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.my.cnf"
+    }
+  },
+  {
+    "id": "mongorc",
+    "place": "~/.mongorc.js",
+    "family": "3 database credential/config files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1213.006"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "$HOME/.mongorc.js"
+    }
+  },
+  {
+    "id": "mysql-system-cnf",
+    "place": "/etc/mysql/my.cnf",
+    "family": "3 database credential/config files",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1213.006"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "/etc/mysql/my.cnf"
+    }
+  },
+  {
+    "id": "proc-environ",
+    "place": "/proc/self/environ (and /proc/<pid>/environ of the server process)",
+    "family": "4 process environment and command line",
+    "category": "process_environment",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1083"
+    ],
+    "kind": "env",
+    "coordinates": {
+      "name": "MCP_UPSTREAM_SECRET"
+    }
+  },
+  {
+    "id": "proc-cmdline",
+    "place": "/proc/self/cmdline (and /proc/<pid>/cmdline; also surfaced by ps -ef)",
+    "family": "4 process environment and command line",
+    "category": "process_cmdline",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1057"
+    ],
+    "kind": "unplaceable",
+    "coordinates": {}
+  },
+  {
+    "id": "server-own-source",
+    "place": "The server's own source or installed file with an embedded (hardcoded) secret, inside the install dir above the served root",
+    "family": "5 the server's own artifacts",
+    "category": "server_own_source",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "unplaceable",
+    "coordinates": {}
+  },
+  {
+    "id": "server-own-config",
+    "place": "The server's own configuration/state file holding its upstream credential or connection string (at the path the server software documents)",
+    "family": "5 the server's own artifacts",
+    "category": "server_own_config",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "unplaceable",
+    "coordinates": {}
+  },
+  {
+    "id": "run-secrets",
+    "place": "/run/secrets/<secret_name> (Docker Compose / Swarm orchestrator-mounted secret)",
+    "family": "6 container-native secret locations",
+    "category": "container_secret",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.001"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "/run/secrets/db_password"
+    }
+  },
+  {
+    "id": "k8s-sa-token",
+    "place": "/var/run/secrets/kubernetes.io/serviceaccount/token (and the directory it sits in)",
+    "family": "6 container-native secret locations",
+    "category": "container_secret",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1613"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    }
+  },
+  {
+    "id": "imds",
+    "place": "http://169.254.169.254/ cloud instance metadata API (IMDS), alias metadata.google.internal",
+    "family": "7 internal / SSRF endpoints",
+    "category": "cloud_metadata",
+    "reachable_by": [
+      "internal_fetch",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.005"
+    ],
+    "kind": "http_endpoint",
+    "coordinates": {
+      "host": "169.254.169.254",
+      "path": "/latest/meta-data/iam/security-credentials/"
+    }
+  },
+  {
+    "id": "ecs-task-credentials",
+    "place": "http://169.254.170.2/v2/credentials/ (ECS/Fargate task container credentials endpoint)",
+    "family": "7 internal / SSRF endpoints",
+    "category": "container_api",
+    "reachable_by": [
+      "internal_fetch",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.005"
+    ],
+    "kind": "http_endpoint",
+    "coordinates": {
+      "host": "169.254.170.2",
+      "path": "/v2/credentials/"
+    }
+  },
+  {
+    "id": "eks-pod-identity",
+    "place": "http://169.254.170.23/v1/credentials (EKS Pod Identity Agent credentials endpoint)",
+    "family": "7 internal / SSRF endpoints",
+    "category": "container_api",
+    "reachable_by": [
+      "internal_fetch",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.005"
+    ],
+    "kind": "http_endpoint",
+    "coordinates": {
+      "host": "169.254.170.23",
+      "path": "/v1/credentials"
+    }
+  },
+  {
+    "id": "docker-daemon-api",
+    "place": "Docker daemon API (unix:///var/run/docker.sock, or TCP on the default bridge gateway 172.17.0.1:2375)",
+    "family": "7 internal / SSRF endpoints",
+    "category": "container_api",
+    "reachable_by": [
+      "internal_fetch",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1552.007"
+    ],
+    "kind": "unplaceable",
+    "coordinates": {}
+  },
+  {
+    "id": "k8s-api-server",
+    "place": "Kubernetes API server (https://kubernetes.default.svc / 10.96.0.1)",
+    "family": "7 internal / SSRF endpoints",
+    "category": "container_api",
+    "reachable_by": [
+      "internal_fetch"
+    ],
+    "technique_ids": [
+      "T1552.007"
+    ],
+    "kind": "unplaceable",
+    "coordinates": {}
+  },
+  {
+    "id": "loopback-service",
+    "place": "loopback internal service (127.0.0.1:<port>, e.g. Redis on 6379)",
+    "family": "7 internal / SSRF endpoints",
+    "category": "internal_network_service",
+    "reachable_by": [
+      "internal_fetch"
+    ],
+    "technique_ids": [
+      "T1046"
+    ],
+    "kind": "unplaceable",
+    "coordinates": {}
+  },
+  {
+    "id": "private-range-service",
+    "place": "internal network service on a private range (10.0.0.0/8, 172.16.0.0/12 incl. the Docker bridge, 192.168.0.0/16; e.g. http://192.168.1.1/admin, http://10.0.0.1/api)",
+    "family": "7 internal / SSRF endpoints",
+    "category": "internal_network_service",
+    "reachable_by": [
+      "internal_fetch",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1046"
+    ],
+    "kind": "unplaceable",
+    "coordinates": {}
+  },
+  {
+    "id": "etc-hosts",
+    "place": "/etc/hosts",
+    "family": "8 discovery / log places",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1018"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "path": "/etc/hosts"
+    }
+  },
+  {
+    "id": "auth-log",
+    "place": "/var/log/auth.log (or /var/log/secure) authentication log",
+    "family": "8 discovery / log places",
+    "category": "file",
+    "reachable_by": [
+      "arbitrary_read",
+      "command_execution"
+    ],
+    "technique_ids": [
+      "T1654"
+    ],
+    "kind": "file",
+    "coordinates": {
+      "paths": [
+        "/var/log/auth.log",
+        "/var/log/secure"
+      ]
+    }
+  }
+]
