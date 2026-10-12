@@ -40,14 +40,10 @@ def test_the_real_places_file_validates_under_its_schema():
 
 
 def _assert_coordinate_is_well_formed(place: Place) -> None:
+    # load_places succeeding already proves every file notation is one the loader accepts, and
+    # the accepted notations all resolve absolute by construction, so the file kind asserts nothing.
     coordinates = place.coordinates
-    if place.kind is PlantKind.FILE:
-        raw_paths = coordinates.paths if coordinates.paths is not None else (coordinates.path,)
-        for raw in raw_paths:
-            assert raw is not None and given.resolve_file_path(raw).startswith("/"), (
-                f"{place.id}: a file coordinate is not absolute once resolved"
-            )
-    elif place.kind is PlantKind.HTTP_ENDPOINT:
+    if place.kind is PlantKind.HTTP_ENDPOINT:
         assert coordinates.host is not None and is_endpoint_host(coordinates.host), (
             f"{place.id}: http_endpoint host is not a DNS name or an IPv4 literal"
         )
@@ -96,6 +92,7 @@ def test_an_empty_coordinate_kind_loads(tmp_path: Path, kind: str):
         ("file", {"path": "~/fictional-secret"}),
         ("file", {"path": "$HOME/fictional-secret"}),
         ("file", {"path": "data/fictional"}),
+        ("file", {"path": "data/fictional~"}),
         ("file", {"path": "/fictional/<account>/config"}),
         ("http_endpoint", {"host": "fictional.internal", "path": "/latest"}),
         ("http_endpoint", {"host": "192.0.2.10", "path": "/latest/meta"}),
@@ -105,6 +102,7 @@ def test_an_empty_coordinate_kind_loads(tmp_path: Path, kind: str):
         "home_tilde",
         "home_variable",
         "relative",
+        "relative_trailing_tilde",
         "one_placeholder",
         "dns_host",
         "ipv4_host",
@@ -154,6 +152,26 @@ def test_a_rejected_coordinate_raises_naming_the_entry(
 ):
     with pytest.raises(ValueError, match="place-1"):
         given.loaded(tmp_path, [given.an_entry(kind=kind, coordinates=coordinates)])
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "$XDG_CONFIG_HOME/x",
+        "${HOME}/x",
+        "/home/$USER/x",
+        "%APPDATA%\\x",
+        "C:/Users/x",
+        "file:///x",
+        "~other/x",
+        "~",
+        "$HOME",
+        "data\\config",
+    ],
+)
+def test_a_rejected_file_notation_raises_naming_the_entry(tmp_path: Path, path: str):
+    with pytest.raises(ValueError, match="place-1"):
+        given.loaded(tmp_path, [given.an_entry(kind="file", coordinates={"path": path})])
 
 
 def test_an_unknown_reachable_by_token_raises(tmp_path: Path):

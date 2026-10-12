@@ -188,6 +188,15 @@ def _endpoint_path(entry_id: str, value: Any) -> str:
 def _check_file_notation(entry_id: str, path: str) -> None:
     if any(char in path for char in _GLOB_CHARS):
         raise ValueError(f"{entry_id}: file coordinate uses a glob")
+    if "\\" in path or "%" in path:
+        raise ValueError(f"{entry_id}: file coordinate uses a backslash or Windows path")
+    if ":" in path:
+        raise ValueError(f"{entry_id}: file coordinate uses a URL scheme or drive letter")
+    remainder = path[len("$HOME/") :] if path.startswith("$HOME/") else path
+    if "$" in remainder:
+        raise ValueError(f"{entry_id}: file coordinate uses an unresolved variable")
+    if path.startswith("~") and not path.startswith("~/"):
+        raise ValueError(f"{entry_id}: file coordinate uses an unknown home reference")
     placeholders = 0
     for segment in path.split("/"):
         if "<" in segment or ">" in segment:
