@@ -43,7 +43,7 @@ def a_places_mapping() -> Places:
     }
 
 
-# --- the seven runs, each a RunToCheck the replay settles ---
+# --- the runs, each a RunToCheck the replay settles ---
 
 
 def a_declared_run() -> RunToCheck:
@@ -151,6 +151,25 @@ def a_straddling_chain_struck_despite_a_lost_connection_run() -> RunToCheck:
     # The credit is earned at step 1, the vulnerable connection is lost at step 2, but the patched
     # server survives and serves the fresh nonce at step 2: ending at the first vulnerable loss
     # would leave step 2 empty and keep a credit the full replay strikes.
+    return _straddling_run(_serving({PREP_PATH: FLAW_ID}))
+
+
+def a_transient_patched_death_at_the_vulnerable_loss_run() -> RunToCheck:
+    # The first patched launch dies by chance at step 2, where the vulnerable run lost its
+    # connection. Later launches survive and serve the fresh nonce there, so a retry strikes.
+    return _straddling_run(_dying_by_launch({PREP_PATH: FLAW_ID}, (2,)))
+
+
+def a_truncated_then_failed_attempts_run() -> RunToCheck:
+    # Truncated at step 2 on the first launch, then lost at step 1, which the vulnerable run
+    # answered, on the two later launches: no attempt completes.
+    return _straddling_run(_dying_by_launch({PREP_PATH: FLAW_ID}, (2, 1, 1)))
+
+
+# --- builders and run assembly ---
+
+
+def _straddling_run(serve: Serve) -> RunToCheck:
     report = grammar.a_report(
         chains=[
             grammar.a_chain(
@@ -162,15 +181,12 @@ def a_straddling_chain_struck_despite_a_lost_connection_run() -> RunToCheck:
         ]
     )
     return _run(
-        _serving({PREP_PATH: FLAW_ID}),
+        serve,
         (FLAW_ID,),
         report,
         _calls_ending_in_lost_connection(FLAW_PATH, PREP_PATH),
         {FLAW_ID: OLD_FLAW},
     )
-
-
-# --- builders and run assembly ---
 
 
 def _single_run(serve: Serve | None, kept: tuple[str, ...]) -> RunToCheck:
@@ -220,6 +236,17 @@ def _serving(paths_to_ids: dict[str, str], *, exit_on_call: int = 0) -> Serve:
         if exit_on_call:
             args.append(f"exit_on_call={exit_on_call}")
         return args
+
+    return serve
+
+
+def _dying_by_launch(paths_to_ids: dict[str, str], exits: tuple[int, ...]) -> Serve:
+    # The target's builder calls serve once per launch, so the n-th call picks the n-th exit.
+    # 0, or a launch past the end of exits, serves without exiting.
+    remaining = iter(exits)
+
+    def serve(spec: PlantingSpec) -> list[str]:
+        return _serving(paths_to_ids, exit_on_call=next(remaining, 0))(spec)
 
     return serve
 

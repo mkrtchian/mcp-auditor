@@ -4,7 +4,7 @@ the attachment and lost-connection reading are pure, so they are tested without 
 
 import tests.unit.support.test_cve_grammar_given as grammar
 from evals.cve_replay import RecordedCall
-from mcp_auditor.domain.models import AuditReport, ToolResponse
+from mcp_auditor.domain.models import AttackChain, AuditReport, ToolResponse
 
 FLAW_PATH = "/outside/flag"
 OTHER_PATH = "/outside/other"
@@ -15,12 +15,23 @@ def a_case_report(path: str = FLAW_PATH) -> AuditReport:
 
 
 def a_chain_report(first: str, second: str) -> AuditReport:
-    steps = [grammar.a_step(arguments={"path": first}), grammar.a_step(arguments={"path": second})]
-    return grammar.a_report(chains=[grammar.a_chain(steps)])
+    return grammar.a_report(chains=[_a_chain(first, second)])
 
 
 def a_blocked_case_report() -> AuditReport:
     return grammar.a_report(cases=[grammar.a_blocked_case({"path": FLAW_PATH})])
+
+
+def a_blocked_case_and_chain_report(first: str, second: str) -> AuditReport:
+    # One tool report, so the blocked case, which sent no call, comes before the chain's steps.
+    return grammar.a_report(
+        cases=[grammar.a_blocked_case({"path": FLAW_PATH})], chains=[_a_chain(first, second)]
+    )
+
+
+def _a_chain(first: str, second: str) -> AttackChain:
+    steps = [grammar.a_step(arguments={"path": first}), grammar.a_step(arguments={"path": second})]
+    return grammar.a_chain(steps)
 
 
 def calls(*paths: str) -> list[RecordedCall]:

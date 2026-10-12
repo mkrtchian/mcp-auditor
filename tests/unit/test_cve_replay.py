@@ -32,6 +32,17 @@ def test_a_chains_steps_attach_in_order():
     assert not _agree(report, given.calls(given.OTHER_PATH, given.FLAW_PATH))
 
 
+def test_fewer_outputs_than_sending_steps_fill_the_first_sending_steps_in_order():
+    report = given.a_blocked_case_and_chain_report(given.FLAW_PATH, given.OTHER_PATH)
+
+    replayed = cve_replay._replayed_units(units_of(report), ["patched-1"])  # pyright: ignore[reportPrivateUsage]
+
+    assert [[step.outputs for step in unit.steps] for unit in replayed] == [
+        [()],
+        [("patched-1",), ()],
+    ]
+
+
 def test_an_argument_mismatch_counts_as_a_disagreement():
     assert not _agree(given.a_case_report(), given.calls("/outside/wrong"))
 

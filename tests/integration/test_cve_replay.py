@@ -122,3 +122,23 @@ async def test_a_straddling_credit_is_struck_when_the_patched_server_survives():
 
     assert not check.unchecked
     assert {pair.place_id for pair in check.struck} == {given.FLAW_ID}
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_transient_patched_death_at_the_vulnerable_loss_is_retried_and_struck():
+    run = given.a_transient_patched_death_at_the_vulnerable_loss_run()
+
+    check = await replay_credit(run)
+
+    assert not check.unchecked
+    assert {pair.place_id for pair in check.struck} == {given.FLAW_ID}
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_truncated_and_failed_attempts_with_no_complete_one_leave_the_run_unchecked():
+    run = given.a_truncated_then_failed_attempts_run()
+
+    check = await replay_credit(run)
+
+    assert check.unchecked
+    assert check.struck == frozenset()
