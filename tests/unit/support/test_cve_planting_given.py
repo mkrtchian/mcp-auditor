@@ -12,6 +12,7 @@ import itertools
 import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from ipaddress import AddressValueError, IPv4Address
 
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
@@ -116,7 +117,7 @@ class FakePlantingDocker:
     fail: Mapping[str, int] = field(default_factory=dict[str, int])
     fail_errors: Mapping[str, Exception] = field(default_factory=dict[str, Exception])
     fail_teardown: frozenset[str] = frozenset()
-    dead_sentinels: frozenset[str] = frozenset()  # keyed by the sentinel's recorded host
+    dead_sentinels: frozenset[str] = frozenset()  # keyed by the alias, else the BIND_ADDR
     host_files: dict[str, HostFile] = field(default_factory=dict[str, HostFile])
     networks: set[str] = field(default_factory=set[str])
     holders: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
@@ -126,8 +127,6 @@ class FakePlantingDocker:
     def __post_init__(self) -> None:
         self._fail = dict(self.fail)
         self._attached: dict[str, str] = {}
-        self._sentinel_nonces: dict[str, str] = {}
-        self._sentinel_hosts: dict[str, str] = {}
         self._counter = 0
 
     def image_accounts(self, image_tag: str) -> ImageAccounts:
@@ -165,22 +164,41 @@ class FakePlantingDocker:
         self._attached.pop(name, None)
 
     def start_sentinel(self, run_args: Sequence[str]) -> str:
-        name = self._start("sentinel", self.sentinels, run_args)
-        self._sentinel_nonces[name] = _flag_of(run_args)
-        host = _host_of(run_args)
-        if host is not None:
-            self._sentinel_hosts[name] = host
-        return name
+        return self._start("sentinel", self.sentinels, run_args)
 
     def remove_sentinel(self, name: str) -> None:
         self._maybe_fail_teardown("remove_sentinel")
         self.sentinels.pop(name, None)
         self._attached.pop(name, None)
 
-    def sentinel_body(self, name: str, authority: str, path: str) -> str | None:
-        if self._sentinel_hosts.get(name) in self.dead_sentinels:
+    def sentinel_body(self, name: str, host: str, request_target: str) -> str | None:
+        run_args = self.sentinels.get(name)
+        if run_args is None or not self._answers(run_args, host):
             return None
-        return self._sentinel_nonces.get(name)
+        return _env_value(run_args, "FLAG")
+
+    def _answers(self, run_args: Sequence[str], host: str) -> bool:
+        alias = _following(run_args, "--network-alias")
+        if alias is not None:
+            return alias not in self.dead_sentinels and host.lower() == alias.lower()
+        bind_address = _env_value(run_args, "BIND_ADDR")
+        if bind_address is None or bind_address in self.dead_sentinels:
+            return False
+        return self._resolved(run_args, host) == bind_address
+
+    def _resolved(self, run_args: Sequence[str], host: str) -> str | None:
+        # The order a joined namespace resolves a name in: a literal, Docker's own localhost
+        # line, then the holder's --add-host lines, all case-insensitively.
+        if _is_ipv4(host):
+            return host
+        if host.lower() == "localhost":
+            return "127.0.0.1"
+        holder = (_following(run_args, "--network") or "").removeprefix("container:")
+        for entry in _all_following(self.holders.get(holder, []), "--add-host"):
+            name, _, address = entry.partition(":")
+            if name.lower() == host.lower():
+                return address
+        return None
 
     def run_address_setup(self, run_args: Sequence[str]) -> None:
         self._maybe_fail("run_address_setup")
@@ -224,14 +242,22 @@ def _attached_network(run_args: Sequence[str]) -> str | None:
     return None
 
 
-def _flag_of(run_args: Sequence[str]) -> str:
-    return next((arg[len("FLAG=") :] for arg in run_args if arg.startswith("FLAG=")), "")
+def _env_value(run_args: Sequence[str], name: str) -> str | None:
+    prefix = f"{name}="
+    return next((arg[len(prefix) :] for arg in run_args if arg.startswith(prefix)), None)
 
 
-def _host_of(run_args: Sequence[str]) -> str | None:
-    for flag, value in itertools.pairwise(run_args):
-        if flag == "--network-alias":
-            return value
-    return next(
-        (arg[len("BIND_ADDR=") :] for arg in run_args if arg.startswith("BIND_ADDR=")), None
-    )
+def _following(run_args: Sequence[str], flag: str) -> str | None:
+    return next(iter(_all_following(run_args, flag)), None)
+
+
+def _all_following(run_args: Sequence[str], flag: str) -> list[str]:
+    return [value for option, value in itertools.pairwise(run_args) if option == flag]
+
+
+def _is_ipv4(host: str) -> bool:
+    try:
+        IPv4Address(host)
+    except AddressValueError:
+        return False
+    return True

@@ -175,7 +175,7 @@ def _endpoint_host(entry_id: str, value: Any) -> str:
     host = _string(entry_id, "host", value)
     if not is_endpoint_host(host):
         raise ValueError(f"{entry_id}: http_endpoint host is not a bare DNS name or IPv4 literal")
-    return host
+    return host.lower()  # DNS names are case-insensitive: every consumer reads one spelling
 
 
 def _endpoint_path(entry_id: str, value: Any) -> str:

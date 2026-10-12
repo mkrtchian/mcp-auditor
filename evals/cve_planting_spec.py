@@ -12,6 +12,7 @@ import posixpath
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from ipaddress import AddressValueError, IPv4Address, IPv4Network
+from urllib.parse import quote, unquote
 
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting_base import (
@@ -52,11 +53,21 @@ def planting_spec(
     return draft.finish(to_plant)
 
 
+def served_file(path: str) -> str:
+    """The file under the doc root busybox `httpd` maps a request for `path` to."""
+    decoded = unquote(path.partition("#")[0].partition("?")[0])
+    return f"{decoded}index.html" if decoded.endswith("/") else decoded
+
+
+def request_target(path: str) -> str:
+    """What a client puts on the request line for `path`: no fragment, unsafe bytes escaped."""
+    return quote(path.partition("#")[0], safe="/?=&;:@!$'()*+,%")
+
+
 @dataclass
 class _SpecDraft:
     host: PlantingHost
-    files: list[FileIntent] = field(default_factory=list[FileIntent])
-    file_paths: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
+    files: list[tuple[str, FileIntent]] = field(default_factory=list[tuple[str, FileIntent]])
     env: list[EnvIntent] = field(default_factory=list[EnvIntent])
     account: AccountIntent | None = None
     hostname: str | None = None
@@ -76,7 +87,7 @@ class _SpecDraft:
             host=self.host,
             places=tuple(place for place in to_plant if place.id in self.nonces),
             nonces=dict(self.nonces),
-            files=tuple(self.files),
+            files=tuple(intent for _, intent in self.files),
             env=tuple(self.env),
             account=self.account,
             hostname=self.hostname,
@@ -92,7 +103,8 @@ class _SpecDraft:
         # Order-independent: an account place may follow a colliding file place in the list.
         if self.account is None:
             return
-        for entry_id, path in self.file_paths:
+        for entry_id, intent in self.files:
+            path = intent.container_path
             if any(_overlaps(path, reserved) for reserved in _ACCOUNT_RESERVED_PATHS):
                 raise ValueError(f"{entry_id}: a file path over the account passwd or group mount")
 
@@ -103,8 +115,7 @@ def _plant_file(place: Place, host: PlantingHost, nonces: NonceSource, draft: _S
     for raw in _coordinate_paths(place.coordinates):
         container_path = _resolve_container_path(raw, host)
         _reject_overlap(place.id, container_path, draft)
-        draft.files.append(FileIntent(container_path, content))
-        draft.file_paths.append((place.id, container_path))
+        draft.files.append((place.id, FileIntent(container_path, content)))
 
 
 def _plant_env(place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft) -> None:
@@ -155,8 +166,11 @@ def _plant_http_endpoint(
             raise ValueError(f"{place.id}: a second http_endpoint place on the same bind address")
         draft.bind_addresses.add(bind_address)
     draft.nonces[place.id] = content
+    path = _require(place.coordinates.path)
     draft.sentinels.append(
-        SentinelIntent(endpoint_host, _require(place.coordinates.path), content, bind_address)
+        SentinelIntent(
+            endpoint_host, path, served_file(path), request_target(path), content, bind_address
+        )
     )
 
 
@@ -234,7 +248,7 @@ def _is_placeholder(segment: str) -> bool:
 
 
 def _reject_overlap(entry_id: str, path: str, draft: _SpecDraft) -> None:
-    for existing in draft.files:
+    for _, existing in draft.files:
         if _overlaps(path, existing.container_path):
             raise ValueError(f"{entry_id}: a file path equal to or nested with another planted one")
 

@@ -155,9 +155,10 @@ def _hold_endpoints(
         name = docker.start_sentinel(_sentinel_args(sentinel, network, holder))
         stack.callback(quiet, docker.remove_sentinel, name)
         held.append((sentinel, name))
-    for sentinel, name in held:  # a positive probe: a running sentinel can still serve a 404
-        authority = sentinel.bind_address if sentinel.bind_address is not None else "127.0.0.1"
-        if docker.sentinel_body(name, authority, sentinel.path) != sentinel.content:
+    # A positive probe by the endpoint's name, from the sentinel, which resolves it as the
+    # target does: a running sentinel can still serve a 404, or answer under another name.
+    for sentinel, name in held:
+        if docker.sentinel_body(name, sentinel.host, sentinel.request_target) != sentinel.content:
             raise PlantingFailed(f"sentinel for {sentinel.host} is not serving")
     return holder
 
@@ -196,7 +197,7 @@ def _sentinel_args(sentinel: SentinelIntent, network: str | None, holder: str | 
         "-e",
         f"FLAG={sentinel.content}",
     ]
-    served += ["-e", f"SERVE_PATH={sentinel.path}"]
+    served += ["-e", f"SERVE_FILE={sentinel.served_file}"]
     if sentinel.bind_address is None:
         assert network is not None  # a bridge alias exists only on a launch with a network
         return [*served, "--network", network, "--network-alias", sentinel.host, SENTINEL_IMAGE]

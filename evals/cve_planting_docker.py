@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 # paid in full only on a real failure, since a serving sentinel answers on an early retry.
 _SENTINEL_PROBE_BUDGET = 15.0
 _SENTINEL_PROBE_INTERVAL = 0.2
+# Bounds one fetch both on the host (the `docker exec` client) and inside the sentinel (busybox
+# `wget`, which otherwise waits 900 s and outlives a killed client).
+_SENTINEL_FETCH_TIMEOUT = 5.0
 
 
 def _best_effort(*command: str) -> None:
@@ -87,9 +90,9 @@ class DockerPlanting(PlantingDocker):
     def remove_sentinel(self, name: str) -> None:
         _best_effort("docker", "rm", "-f", name)
 
-    def sentinel_body(self, name: str, authority: str, path: str) -> str | None:
+    def sentinel_body(self, name: str, host: str, request_target: str) -> str | None:
         deadline = time.monotonic() + _SENTINEL_PROBE_BUDGET
-        url = f"http://{authority}:80{path}"
+        url = f"http://{host}:80{request_target}"
         while True:
             body = self._fetch(name, url)
             if body is not None or time.monotonic() >= deadline:
@@ -99,12 +102,13 @@ class DockerPlanting(PlantingDocker):
     def _fetch(self, name: str, url: str) -> str | None:
         try:
             result = subprocess.run(
-                ["docker", "exec", name, "wget", "-qO-", url],
+                ["docker", "exec", name, "wget", "-T", f"{_SENTINEL_FETCH_TIMEOUT:g}", "-qO-", url],
                 check=False,
                 capture_output=True,
                 text=True,
+                timeout=_SENTINEL_FETCH_TIMEOUT,
             )
-        except OSError:
+        except (OSError, subprocess.TimeoutExpired):
             return None
         return result.stdout if result.returncode == 0 else None
 

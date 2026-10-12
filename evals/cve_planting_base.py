@@ -89,7 +89,9 @@ class AccountIntent:
 @dataclass(frozen=True)
 class SentinelIntent:
     host: str
-    path: str
+    path: str  # the coordinate, for messages
+    served_file: str
+    request_target: str
     content: str
     bind_address: str | None  # None => a DNS alias on the bridge, else bound inside a holder
 
@@ -141,7 +143,7 @@ class PlantingDocker(Protocol):
     def remove_holder(self, name: str) -> None: ...
     def start_sentinel(self, run_args: Sequence[str]) -> str: ...
     def remove_sentinel(self, name: str) -> None: ...
-    def sentinel_body(self, name: str, authority: str, path: str) -> str | None: ...
+    def sentinel_body(self, name: str, host: str, request_target: str) -> str | None: ...
     def run_address_setup(self, run_args: Sequence[str]) -> None: ...
 
 

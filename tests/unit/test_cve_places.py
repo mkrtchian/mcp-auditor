@@ -117,6 +117,17 @@ def test_an_accepted_coordinate_notation_loads(
 
 
 @pytest.mark.parametrize(
+    ("host", "expected"), [("META.Fict", "meta.fict"), ("LOCALHOST", "localhost")]
+)
+def test_an_endpoint_host_loads_lower_cased(tmp_path: Path, host: str, expected: str):
+    coordinates = {"host": host, "path": "/fictional"}
+
+    places = given.loaded(tmp_path, [given.an_entry(kind="http_endpoint", coordinates=coordinates)])
+
+    assert places["place-1"].coordinates.host == expected
+
+
+@pytest.mark.parametrize(
     ("kind", "coordinates"),
     [
         ("file", {}),

@@ -6,8 +6,8 @@
 # Skipped without Docker, as `test_confined_launch.py` is, and skipped when the sentinel
 # image is absent: the CI integration job has Docker but builds no image, so a missing image
 # must skip rather than trigger a registry pull. A stale image (built before the entrypoint
-# learned to strip the query string and map a trailing slash to index.html) fails the
-# trailing-slash and query-string cases: rebuild with
+# wrote `$FLAG` at `SERVE_FILE`, the file the harness computes with `served_file`) serves
+# nothing at the planted path, so every case fails: rebuild with
 # `docker compose -f evals/docker/compose.yml build`.
 import subprocess
 import time
@@ -25,6 +25,7 @@ from evals.cve_planting import (
     planting_spec,
 )
 from evals.cve_planting_base import LABEL, SENTINEL_IMAGE
+from evals.cve_planting_spec import request_target
 from mcp_auditor.adapters.docker import DockerRuntime
 
 _HAS_DOCKER = DockerRuntime().available()
@@ -62,24 +63,18 @@ def _spec_of(host: str, path: str, *, has_network: bool = False):
     return planting_spec([place], planting_host, RANDOM_NONCES)
 
 
-def _holder_of(args: PlantedArgs) -> str:
-    assert args.network[0] == "--network"
-    return args.network[1].removeprefix("container:")
-
-
-def _read_in_namespace(holder: str, authority: str, path: str) -> str:
+def _read_in_namespace(args: PlantedArgs, host: str, path: str) -> str:
     result = subprocess.run(
         [
             "docker",
             "run",
             "--rm",
-            "--network",
-            f"container:{holder}",
+            *args.network,
             "--entrypoint",
             "wget",
             SENTINEL_IMAGE,
             "-qO-",
-            f"http://{authority}:80{path}",
+            f"http://{host}:80{request_target(path)}",
         ],
         capture_output=True,
         text=True,
@@ -109,7 +104,7 @@ def test_a_planted_ip_literal_endpoint_serves_its_nonce():
     spec = _spec_of(_IP_LITERAL, "/fict/secret")
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
-        body = _read_in_namespace(_holder_of(args), _IP_LITERAL, "/fict/secret")
+        body = _read_in_namespace(args, _IP_LITERAL, "/fict/secret")
 
     assert body == spec.nonces["endpoint-1"]
 
@@ -124,8 +119,8 @@ def test_two_concurrent_launches_each_serve_their_own_nonce():
         planted(spec_a, SENTINEL_IMAGE, DockerPlanting()) as args_a,
         planted(spec_b, SENTINEL_IMAGE, DockerPlanting()) as args_b,
     ):
-        body_a = _read_in_namespace(_holder_of(args_a), _IP_LITERAL, "/fict/a")
-        body_b = _read_in_namespace(_holder_of(args_b), _IP_LITERAL, "/fict/b")
+        body_a = _read_in_namespace(args_a, _IP_LITERAL, "/fict/a")
+        body_b = _read_in_namespace(args_b, _IP_LITERAL, "/fict/b")
 
     assert body_a == spec_a.nonces["endpoint-1"]
     assert body_b == spec_b.nonces["endpoint-1"]
@@ -134,12 +129,31 @@ def test_two_concurrent_launches_each_serve_their_own_nonce():
 
 @requires_docker
 @requires_sentinel_image
-@pytest.mark.parametrize("path", ["/fict/dir/", "/fict/meta?api-version=1"])
-def test_a_trailing_slash_or_query_string_path_serves_the_nonce(path: str):
+@pytest.mark.parametrize(
+    "path",
+    ["/fict/dir/", "/fict/meta?api-version=1", "/fict/a#frag", "/fict/sp ace/x", "/fict/a%20b"],
+)
+def test_a_path_a_client_rewrites_on_the_wire_serves_the_nonce(path: str):
     spec = _spec_of(_IP_LITERAL, path)
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
-        body = _read_in_namespace(_holder_of(args), _IP_LITERAL, path)
+        body = _read_in_namespace(args, _IP_LITERAL, path)
+
+    assert body == spec.nonces["endpoint-1"]
+
+
+@requires_docker
+@requires_sentinel_image
+@pytest.mark.parametrize(
+    ("host", "has_network"),
+    [("meta.fict", False), ("meta.fict", True), ("localhost", False)],
+    ids=["reserved_block_add_host", "bridge_alias", "localhost"],
+)
+def test_a_name_host_serves_its_nonce_read_by_name(host: str, has_network: bool):
+    spec = _spec_of(host, "/fict/secret", has_network=has_network)
+
+    with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
+        body = _read_in_namespace(args, host, "/fict/secret")
 
     assert body == spec.nonces["endpoint-1"]
 
@@ -150,7 +164,7 @@ def test_a_one_sentinel_launch_tears_down_well_under_the_sigterm_grace():
     spec = _spec_of(_IP_LITERAL, "/fict/secret")
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
-        assert _read_in_namespace(_holder_of(args), _IP_LITERAL, "/fict/secret")
+        assert _read_in_namespace(args, _IP_LITERAL, "/fict/secret")
         start = time.monotonic()
     teardown = time.monotonic() - start
 
@@ -166,10 +180,7 @@ def test_no_labelled_container_or_network_outlives_two_launches():
     for suffix in ("/fict/one", "/fict/two"):
         spec = _spec_of(_IP_LITERAL, suffix, has_network=True)
         with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
-            assert (
-                _read_in_namespace(_holder_of(args), _IP_LITERAL, suffix)
-                == spec.nonces["endpoint-1"]
-            )
+            assert _read_in_namespace(args, _IP_LITERAL, suffix) == spec.nonces["endpoint-1"]
 
     assert _labelled_containers() <= before_containers
     assert _labelled_networks() <= before_networks

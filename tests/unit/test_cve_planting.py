@@ -18,7 +18,7 @@ from evals.cve_planting import (
     planted,
     planting_spec,
 )
-from evals.cve_planting_spec import RESERVED_NAME_BLOCK
+from evals.cve_planting_spec import RESERVED_NAME_BLOCK, served_file
 
 
 def _spec_of(
@@ -355,6 +355,48 @@ def test_a_name_host_without_network_adds_a_reserved_address_and_binds_the_senti
         assert _following(docker.holders[holder], "--add-host") == f"internal.fictional:{reserved}"
         sentinel = _only(docker.sentinels)
         assert f"BIND_ADDR={reserved}" in docker.sentinels[sentinel]
+
+
+def test_a_sentinel_is_told_the_file_httpd_serves_the_path_from():
+    spec = _spec_of([given.endpoint_place(host="198.51.100.5", path="/fictional/dir/")])
+    docker = given.FakePlantingDocker()
+
+    with planted(spec, "image:tag", docker):
+        sentinel = docker.sentinels[_only(docker.sentinels)]
+        assert f"SERVE_FILE={served_file('/fictional/dir/')}" in sentinel
+        assert not any(arg.startswith("SERVE_PATH=") for arg in sentinel)
+
+
+def test_two_holder_bound_name_hosts_differing_only_in_case_raise_and_leave_nothing_alive():
+    # Built directly, past the loader's lower-casing: the second name resolves to the first
+    # sentinel, so a probe by name reads it as not serving.
+    spec = _spec_of(
+        [
+            given.endpoint_place("endpoint-1", host="meta.fict"),
+            given.endpoint_place("endpoint-2", host="META.fict"),
+        ],
+        host=given.unprivileged_host(),
+    )
+    docker = given.FakePlantingDocker()
+
+    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
+        pass
+
+    assert docker.networks == set()
+    assert docker.holders == {}
+    assert docker.sentinels == {}
+
+
+def test_an_upper_case_localhost_without_network_raises():
+    spec = _spec_of([given.endpoint_place(host="LOCALHOST")], host=given.unprivileged_host())
+    docker = given.FakePlantingDocker()
+
+    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
+        pass
+
+    assert docker.networks == set()
+    assert docker.holders == {}
+    assert docker.sentinels == {}
 
 
 def test_one_network_without_a_fixed_subnet_is_created_per_launch_with_a_network():
