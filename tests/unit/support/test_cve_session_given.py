@@ -5,7 +5,7 @@ from pathlib import Path
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline, fixture_fingerprint
 from evals.cve_baseline import write_baseline as _write_baseline
 from evals.cve_grammar import CVEStatus, MissClass, RunGrade
-from evals.cve_session import AuditTarget, CVEHarness, CVEOptions, GradedAudit
+from evals.cve_session_model import AuditTarget, CVEHarness, CVEOptions, GradedAudit
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.eval_session import TreeState
 from tests.unit.support.test_cve_gate_given import (

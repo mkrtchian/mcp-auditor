@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.cve_session import CVEAudit
+from evals.cve_session_model import CVEAudit
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AttackChain, AuditReport, TestCase
 

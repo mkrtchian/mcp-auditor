@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import tests.unit.support.test_export_given as given
-from evals.cve_session import CVEAudit
+from evals.cve_session_model import CVEAudit
 from evals.export import export_cve_judged_cases, export_judged_cases
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict

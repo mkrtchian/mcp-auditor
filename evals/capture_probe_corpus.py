@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from rich.console import Console
 
 from evals.cve_environments import Launch
+from evals.cve_preflight import EXPECTED_IMAGES, image_exists
 from evals.cve_targets import CVE_TARGETS
 from evals.honeypots import HONEYPOTS, REPO_ROOT, AuditModels, audit_honeypot, models_for
 from evals.probe_candidates import REFERENCE
@@ -28,7 +29,6 @@ from evals.probe_corpus import (
     sample_judge_calls,
     write_corpus,
 )
-from evals.run_cve_benchmark import EXPECTED_IMAGES
 from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
@@ -93,15 +93,7 @@ def _refuse(reason: str, details: list[str]) -> None:
 
 
 def _cve_image_problems() -> list[str]:
-    return [f"missing image {image}" for image in EXPECTED_IMAGES if not _image_exists(image)]
-
-
-def _image_exists(image: str) -> bool:
-    try:
-        inspect = subprocess.run(["docker", "image", "inspect", image], capture_output=True)
-    except OSError:
-        return False
-    return inspect.returncode == 0
+    return [f"missing image {image}" for image in EXPECTED_IMAGES if not image_exists(image)]
 
 
 async def _capture(settings: Settings) -> ProbeCorpus:

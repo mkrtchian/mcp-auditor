@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 from evals import run_cve_benchmark
-from evals.cve_session import AuditTarget, CVEHarness, CVEOptions, CVESessionResult
+from evals.cve_session import CVESessionResult
+from evals.cve_session_model import AuditTarget, CVEHarness, CVEOptions
 from evals.eval_session import TreeState
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
@@ -60,7 +61,7 @@ def test_a_graded_run_reports_the_tree_it_ran_on_and_the_tokens_billed(
     monkeypatch.setattr(
         "sys.argv", ["run_cve_benchmark", "--ungated", "--report", str(report_path)]
     )
-    monkeypatch.setattr(run_cve_benchmark, "_preflight_ok", lambda: True)
+    monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
     monkeypatch.setattr(run_cve_benchmark, "read_tree", lambda: TreeState("c0ffee", dirty=True))
     monkeypatch.setattr(run_cve_benchmark, "audit_target", _billing_audit_target)
     monkeypatch.setattr(run_cve_benchmark, "run_gated", _no_audit_session)

@@ -26,7 +26,9 @@ from evals.cve_oracle import (
     render_markdown,
     result_for,
 )
-from evals.cve_session import CVEHarness, CVEOptions, CVESessionResult, run_gated
+from evals.cve_preflight import preflight_ok
+from evals.cve_session import CVESessionResult, run_gated
+from evals.cve_session_model import CVEHarness, CVEOptions
 from evals.cve_targets import (
     CVE_TARGETS,
     OUT_OF_SCOPE_CVES,
@@ -53,11 +55,6 @@ GRAMMAR_PATHS = (
     Path(cve_report_units.__file__),
 )
 
-EXPECTED_IMAGES = tuple(
-    image_tag(name) for name in dict.fromkeys(n for t in CVE_TARGETS for n in t.images)
-)
-_BUILD_HINT = "run `docker compose -f evals/docker/compose.yml build`"
-
 console = Console()
 
 
@@ -80,7 +77,7 @@ def main() -> None:
         sys.exit(NOT_COMPARABLE_EXIT)
 
     # Says nothing of detection nor of the fixtures, so a crash in every mode.
-    if not _preflight_ok():
+    if not preflight_ok():
         sys.exit(CRASHED_EXIT)
 
     if args.calibrate:
@@ -253,48 +250,6 @@ def _write_reports(report: CVEBenchmarkReport, report_path: Path) -> None:
 
     console.print(markdown)
     console.print(f"Report written to {report_path}")
-
-
-def _preflight_ok() -> bool:
-    if not _docker_ready():
-        console.print(f"[red]Docker daemon unreachable.[/red] Start Docker, then {_BUILD_HINT}.")
-        return False
-    missing = [image for image in EXPECTED_IMAGES if not _image_exists(image)]
-    if missing:
-        console.print(f"[red]Missing images:[/red] {', '.join(missing)}. To build: {_BUILD_HINT}.")
-        return False
-    _warn_if_pids_limit_discarded()
-    return True
-
-
-def _warn_if_pids_limit_discarded() -> None:
-    # Docker does not fail on a limit its host cannot enforce, it warns on
-    # stderr and runs without it, and the launchers discard stderr.
-    result = subprocess.run(
-        ["docker", "info", "--format", "{{.PidsLimit}}"],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.stdout.strip() == "false":
-        console.print(
-            "[yellow]This Docker host cannot enforce --pids-limit, targets run without it.[/yellow]"
-        )
-
-
-def _docker_ready() -> bool:
-    return _docker_command_succeeds(["docker", "info"])
-
-
-def _image_exists(image: str) -> bool:
-    return _docker_command_succeeds(["docker", "image", "inspect", image])
-
-
-def _docker_command_succeeds(command: list[str]) -> bool:
-    try:
-        return subprocess.run(command, capture_output=True).returncode == 0
-    except OSError:
-        return False
 
 
 def _filter_by_cve[T: (CVETarget, OutOfScopeCVE)](items: list[T], ids: list[str] | None) -> list[T]:

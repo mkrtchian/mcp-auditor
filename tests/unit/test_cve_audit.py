@@ -12,7 +12,7 @@ from evals.cve_audit import (
     graded_or_refused,
 )
 from evals.cve_grammar import CVEStatus, RunGrade
-from evals.cve_session import GradedAudit
+from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, AuditStep, ProviderUsage, RefusedStep
