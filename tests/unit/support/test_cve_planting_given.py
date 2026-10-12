@@ -116,6 +116,7 @@ class FakePlantingDocker:
     fail: Mapping[str, int] = field(default_factory=dict[str, int])
     fail_errors: Mapping[str, Exception] = field(default_factory=dict[str, Exception])
     fail_teardown: frozenset[str] = frozenset()
+    dead_sentinels: frozenset[str] = frozenset()  # keyed by the sentinel's recorded host
     host_files: dict[str, HostFile] = field(default_factory=dict[str, HostFile])
     networks: set[str] = field(default_factory=set[str])
     holders: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
@@ -125,6 +126,8 @@ class FakePlantingDocker:
     def __post_init__(self) -> None:
         self._fail = dict(self.fail)
         self._attached: dict[str, str] = {}
+        self._sentinel_nonces: dict[str, str] = {}
+        self._sentinel_hosts: dict[str, str] = {}
         self._counter = 0
 
     def image_accounts(self, image_tag: str) -> ImageAccounts:
@@ -162,12 +165,22 @@ class FakePlantingDocker:
         self._attached.pop(name, None)
 
     def start_sentinel(self, run_args: Sequence[str]) -> str:
-        return self._start("sentinel", self.sentinels, run_args)
+        name = self._start("sentinel", self.sentinels, run_args)
+        self._sentinel_nonces[name] = _flag_of(run_args)
+        host = _host_of(run_args)
+        if host is not None:
+            self._sentinel_hosts[name] = host
+        return name
 
     def remove_sentinel(self, name: str) -> None:
         self._maybe_fail_teardown("remove_sentinel")
         self.sentinels.pop(name, None)
         self._attached.pop(name, None)
+
+    def sentinel_body(self, name: str, authority: str, path: str) -> str | None:
+        if self._sentinel_hosts.get(name) in self.dead_sentinels:
+            return None
+        return self._sentinel_nonces.get(name)
 
     def run_address_setup(self, run_args: Sequence[str]) -> None:
         self._maybe_fail("run_address_setup")
@@ -209,3 +222,16 @@ def _attached_network(run_args: Sequence[str]) -> str | None:
         if flag == "--network" and not value.startswith("container:"):
             return value
     return None
+
+
+def _flag_of(run_args: Sequence[str]) -> str:
+    return next((arg[len("FLAG=") :] for arg in run_args if arg.startswith("FLAG=")), "")
+
+
+def _host_of(run_args: Sequence[str]) -> str | None:
+    for flag, value in itertools.pairwise(run_args):
+        if flag == "--network-alias":
+            return value
+    return next(
+        (arg[len("BIND_ADDR=") :] for arg in run_args if arg.startswith("BIND_ADDR=")), None
+    )

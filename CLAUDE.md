@@ -5,7 +5,7 @@
 ```bash
 uv run pytest -n auto            # Unit + integration tests
 uv run pytest tests/unit         # Unit tests only
-uv run pytest tests/integration -n auto  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker)
+uv run pytest tests/integration -n auto  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker; the CVE planting test also needs the sentinel image, it skips without it: docker compose -f evals/docker/compose.yml build)
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)

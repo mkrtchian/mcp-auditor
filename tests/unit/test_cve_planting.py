@@ -113,7 +113,7 @@ def test_the_spec_holds_no_host_path_container_or_network_name_nor_argv():
 
 
 def test_two_locations_of_the_same_kind_take_two_distinct_values():
-    spec = _spec_of([given.env_place("env-1"), given.env_place("env-2")])
+    spec = _spec_of([given.env_place("env-1", name="A"), given.env_place("env-2", name="B")])
 
     assert spec.nonces["env-1"] != spec.nonces["env-2"]
 
@@ -157,6 +157,67 @@ def test_two_http_endpoint_places_on_the_same_host_raise():
             ],
             host=given.unprivileged_host(has_network=True),
         )
+
+
+def test_two_http_endpoint_places_on_the_same_bind_address_raise():
+    # distinct hosts (localhost, 127.0.0.1) but one bind address, so the host-name dedup misses
+    with pytest.raises(ValueError, match="endpoint-2"):
+        _spec_of(
+            [
+                given.endpoint_place("endpoint-1", host="localhost"),
+                given.endpoint_place("endpoint-2", host="127.0.0.1"),
+            ],
+            host=given.unprivileged_host(has_network=True),
+        )
+
+
+def test_two_env_places_with_the_same_name_raise():
+    with pytest.raises(ValueError, match="env-2"):
+        _spec_of([given.env_place("env-1", name="TOKEN"), given.env_place("env-2", name="TOKEN")])
+
+
+def test_an_env_place_named_home_raises():
+    with pytest.raises(ValueError, match="env-1"):
+        _spec_of([given.env_place("env-1", name="HOME")])
+
+
+def test_a_file_over_the_account_passwd_mount_raises_with_the_file_first():
+    with pytest.raises(ValueError, match="file-1"):
+        _spec_of([given.file_place("file-1", path="/etc/passwd"), given.account_place("account-1")])
+
+
+def test_a_file_over_the_account_passwd_mount_raises_with_the_account_first():
+    with pytest.raises(ValueError, match="file-1"):
+        _spec_of([given.account_place("account-1"), given.file_place("file-1", path="/etc/passwd")])
+
+
+def test_two_file_places_equal_after_normalising_dot_segments_raise():
+    with pytest.raises(ValueError, match="file-2"):
+        _spec_of(
+            [given.file_place("file-1", path="/a/b"), given.file_place("file-2", path="/a/./b")]
+        )
+
+
+def test_two_file_places_equal_after_collapsing_leading_slashes_raise():
+    with pytest.raises(ValueError, match="file-2"):
+        _spec_of(
+            [given.file_place("file-1", path="/a/b"), given.file_place("file-2", path="//a/b")]
+        )
+
+
+def test_a_sentinel_that_does_not_serve_raises_and_leaves_nothing_alive():
+    spec = _spec_of([given.endpoint_place(host="198.51.100.5")], host=given.unprivileged_host())
+    docker = given.FakePlantingDocker(dead_sentinels=frozenset({"198.51.100.5"}))
+
+    with (
+        pytest.raises(PlantingFailed, match=re.escape("198.51.100.5")),
+        planted(spec, "image:tag", docker),
+    ):
+        pass
+
+    assert docker.networks == set()
+    assert docker.holders == {}
+    assert docker.sentinels == {}
 
 
 def test_an_ip_literal_host_inside_the_reserved_block_raises():

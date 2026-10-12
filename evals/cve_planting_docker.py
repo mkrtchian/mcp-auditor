@@ -11,6 +11,7 @@ import os
 import secrets
 import subprocess
 import tempfile
+import time
 from collections.abc import Sequence
 
 from evals.cve_planting_base import (
@@ -25,6 +26,11 @@ from evals.cve_planting_base import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Generous enough for a healthy sentinel under concurrency, and to wait out httpd start-up:
+# paid in full only on a real failure, since a serving sentinel answers on an early retry.
+_SENTINEL_PROBE_BUDGET = 15.0
+_SENTINEL_PROBE_INTERVAL = 0.2
 
 
 def _best_effort(*command: str) -> None:
@@ -80,6 +86,27 @@ class DockerPlanting(PlantingDocker):
 
     def remove_sentinel(self, name: str) -> None:
         _best_effort("docker", "rm", "-f", name)
+
+    def sentinel_body(self, name: str, authority: str, path: str) -> str | None:
+        deadline = time.monotonic() + _SENTINEL_PROBE_BUDGET
+        url = f"http://{authority}:80{path}"
+        while True:
+            body = self._fetch(name, url)
+            if body is not None or time.monotonic() >= deadline:
+                return body
+            time.sleep(_SENTINEL_PROBE_INTERVAL)
+
+    def _fetch(self, name: str, url: str) -> str | None:
+        try:
+            result = subprocess.run(
+                ["docker", "exec", name, "wget", "-qO-", url],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except OSError:
+            return None
+        return result.stdout if result.returncode == 0 else None
 
     def run_address_setup(self, run_args: Sequence[str]) -> None:
         subprocess.run(

@@ -8,6 +8,7 @@ value is hard-coded: the generic placeholder a `<segment>` resolves to and the p
 a name host without a network is served on are harness constants, fingerprinted here.
 """
 
+import posixpath
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from ipaddress import AddressValueError, IPv4Address, IPv4Network
@@ -32,6 +33,7 @@ _HOME = "/tmp"
 _ACCOUNT_UID = 60123
 _ACCOUNT_GID = 60123
 _PLACEHOLDER = "mcpaudit-placeholder"
+_ACCOUNT_RESERVED_PATHS = ("/etc/passwd", "/etc/group")  # the mounts an account place adds
 RESERVED_NAME_BLOCK = IPv4Network("10.255.255.0/24")
 _LOOPBACK = IPv4Network("127.0.0.0/8")
 _NON_UNICAST_BLOCKS = (
@@ -54,6 +56,7 @@ def planting_spec(
 class _SpecDraft:
     host: PlantingHost
     files: list[FileIntent] = field(default_factory=list[FileIntent])
+    file_paths: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     env: list[EnvIntent] = field(default_factory=list[EnvIntent])
     account: AccountIntent | None = None
     hostname: str | None = None
@@ -61,11 +64,14 @@ class _SpecDraft:
     address_setups: list[str] = field(default_factory=list[str])
     host_entries: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     endpoint_hosts: set[str] = field(default_factory=set[str])
+    bind_addresses: set[str] = field(default_factory=set[str])
+    env_names: set[str] = field(default_factory=set[str])
     nonces: dict[str, str] = field(default_factory=dict[str, str])
     unplaceable: int = 0
     reserved_index: int = 0
 
     def finish(self, to_plant: Sequence[Place]) -> PlantingSpec:
+        self._reject_account_mounts()
         return PlantingSpec(
             host=self.host,
             places=tuple(place for place in to_plant if place.id in self.nonces),
@@ -82,6 +88,14 @@ class _SpecDraft:
             unplaceable=self.unplaceable,
         )
 
+    def _reject_account_mounts(self) -> None:
+        # Order-independent: an account place may follow a colliding file place in the list.
+        if self.account is None:
+            return
+        for entry_id, path in self.file_paths:
+            if any(_overlaps(path, reserved) for reserved in _ACCOUNT_RESERVED_PATHS):
+                raise ValueError(f"{entry_id}: a file path over the account passwd or group mount")
+
 
 def _plant_file(place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft) -> None:
     content = nonces.token()
@@ -90,12 +104,19 @@ def _plant_file(place: Place, host: PlantingHost, nonces: NonceSource, draft: _S
         container_path = _resolve_container_path(raw, host)
         _reject_overlap(place.id, container_path, draft)
         draft.files.append(FileIntent(container_path, content))
+        draft.file_paths.append((place.id, container_path))
 
 
 def _plant_env(place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft) -> None:
+    name = _require(place.coordinates.name)
+    if name == "HOME":
+        raise ValueError(f"{place.id}: an env place named HOME would move the planted home")
+    if name in draft.env_names:
+        raise ValueError(f"{place.id}: a second env place with the same name")
+    draft.env_names.add(name)
     content = nonces.token()
     draft.nonces[place.id] = content
-    draft.env.append(EnvIntent(_require(place.coordinates.name), content))
+    draft.env.append(EnvIntent(name, content))
 
 
 def _plant_account(
@@ -128,8 +149,12 @@ def _plant_http_endpoint(
         raise ValueError(f"{place.id}: a second http_endpoint place on the same host")
     draft.endpoint_hosts.add(endpoint_host)
     content = nonces.token()
-    draft.nonces[place.id] = content
     bind_address = _endpoint_bind_address(place.id, endpoint_host, host, draft)
+    if bind_address is not None:  # a holder-bound sentinel: two hosts can share one address
+        if bind_address in draft.bind_addresses:
+            raise ValueError(f"{place.id}: a second http_endpoint place on the same bind address")
+        draft.bind_addresses.add(bind_address)
+    draft.nonces[place.id] = content
     draft.sentinels.append(
         SentinelIntent(endpoint_host, _require(place.coordinates.path), content, bind_address)
     )
@@ -192,12 +217,16 @@ def _resolve_container_path(path: str, host: PlantingHost) -> str:
     segments = [_PLACEHOLDER if _is_placeholder(part) else part for part in path.split("/")]
     resolved = "/".join(segments)
     if resolved.startswith("~/"):
-        return f"{_HOME}/{resolved[2:]}"
-    if resolved.startswith("$HOME/"):
-        return f"{_HOME}/{resolved[len('$HOME/') :]}"
-    if resolved.startswith("/"):
-        return resolved
-    return f"{host.working_directory}/{resolved}"
+        absolute = f"{_HOME}/{resolved[2:]}"
+    elif resolved.startswith("$HOME/"):
+        absolute = f"{_HOME}/{resolved[len('$HOME/') :]}"
+    elif resolved.startswith("/"):
+        absolute = resolved
+    else:
+        absolute = f"{host.working_directory}/{resolved}"
+    # normpath preserves exactly two leading slashes (POSIX), so collapse the run first: a
+    # coordinate `//a/b` means the same mount as `/a/b` and must read as equal to it.
+    return posixpath.normpath("/" + absolute.lstrip("/"))
 
 
 def _is_placeholder(segment: str) -> bool:
@@ -206,9 +235,12 @@ def _is_placeholder(segment: str) -> bool:
 
 def _reject_overlap(entry_id: str, path: str, draft: _SpecDraft) -> None:
     for existing in draft.files:
-        other = existing.container_path
-        if path == other or path.startswith(f"{other}/") or other.startswith(f"{path}/"):
+        if _overlaps(path, existing.container_path):
             raise ValueError(f"{entry_id}: a file path equal to or nested with another planted one")
+
+
+def _overlaps(path: str, other: str) -> bool:
+    return path == other or path.startswith(f"{other}/") or other.startswith(f"{path}/")
 
 
 def _as_ipv4(host: str) -> IPv4Address | None:

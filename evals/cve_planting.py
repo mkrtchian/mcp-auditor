@@ -150,9 +150,15 @@ def _hold_endpoints(
         stack.callback(quiet, docker.remove_holder, holder)
     for address in spec.address_setups:
         docker.run_address_setup(_address_setup_args(holder, address))
+    held: list[tuple[SentinelIntent, str]] = []
     for sentinel in spec.sentinels:
         name = docker.start_sentinel(_sentinel_args(sentinel, network, holder))
         stack.callback(quiet, docker.remove_sentinel, name)
+        held.append((sentinel, name))
+    for sentinel, name in held:  # a positive probe: a running sentinel can still serve a 404
+        authority = sentinel.bind_address if sentinel.bind_address is not None else "127.0.0.1"
+        if docker.sentinel_body(name, authority, sentinel.path) != sentinel.content:
+            raise PlantingFailed(f"sentinel for {sentinel.host} is not serving")
     return holder
 
 
