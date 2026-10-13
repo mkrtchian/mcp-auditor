@@ -89,6 +89,10 @@ class FakePlantingDocker:
         self.sentinels.pop(name, None)
         self._attached.pop(name, None)
 
+    def run_address_setup(self, run_args: Sequence[str]) -> None:
+        self._maybe_fail("run_address_setup")
+        self.address_setups.append(list(run_args))
+
     def probe_endpoint(self, target_args: Sequence[str], url: str) -> str | None:
         host = (urlsplit(url).hostname or "").lower()
         if host in _OWN_LOOPBACK_NAMES or self._unresolved(target_args, host):
@@ -168,10 +172,6 @@ class FakePlantingDocker:
             ):
                 return run_args
         return None
-
-    def run_address_setup(self, run_args: Sequence[str]) -> None:
-        self._maybe_fail("run_address_setup")
-        self.address_setups.append(list(run_args))
 
     def _start(self, kind: str, registry: dict[str, list[str]], run_args: Sequence[str]) -> str:
         self._maybe_fail(f"start_{kind}")
