@@ -1,4 +1,7 @@
 # pyright: reportArgumentType=false
+import subprocess
+import sys
+
 import httpx
 import pytest
 from pydantic import BaseModel
@@ -308,3 +311,25 @@ class TestMakeChatModel:
 
         with pytest.raises(ValueError, match="DASHSCOPE_API_KEY"):
             make_chat_model(settings, settings.resolve_model())
+
+
+_PROVIDER_SDKS = (
+    "langchain_anthropic",
+    "langchain_fireworks",
+    "langchain_google_genai",
+    "langchain_openai",
+)
+_PRINT_THE_SDKS_THE_CLI_LOADS = (
+    f"import sys, mcp_auditor.cli; print(*(m for m in {_PROVIDER_SDKS!r} if m in sys.modules))"
+)
+
+
+def test_starting_the_cli_loads_no_provider_sdk():
+    loaded = subprocess.run(
+        [sys.executable, "-c", _PRINT_THE_SDKS_THE_CLI_LOADS],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+
+    assert loaded == []

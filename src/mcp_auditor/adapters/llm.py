@@ -3,12 +3,8 @@ from dataclasses import dataclass
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import httpx
-from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
 from langchain_core.runnables import Runnable
-from langchain_fireworks import ChatFireworks
-from langchain_google_genai import ChatGoogleGenerativeAI  # pyright: ignore[reportMissingTypeStubs]
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, SecretStr, ValidationError
 
 from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
@@ -49,6 +45,8 @@ _STRUCTURED_OUTPUT = {
 }
 
 
+# Each factory imports its provider's SDK, so an audit loads the one it uses and starting the
+# CLI pays for none of the others.
 def make_chat_model(settings: Settings, model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
     reasoning = settings.resolve_reasoning(model)
     if settings.provider == "anthropic":
@@ -68,10 +66,16 @@ def make_chat_model(settings: Settings, model: str) -> BaseChatModel:  # pyright
 
 
 def _make_anthropic_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    from langchain_anthropic import ChatAnthropic
+
     return ChatAnthropic(model=model, max_retries=3)  # type: ignore[arg-type]
 
 
 def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    from langchain_google_genai import (
+        ChatGoogleGenerativeAI,  # pyright: ignore[reportMissingTypeStubs]
+    )
+
     # An httpx transport keeps google-genai off aiohttp, so its 429s reach the httpx log the
     # throttle count reads. It also reaches the sync client, which would fail a sync call:
     # the auditor makes none, LLM only calls ainvoke.
@@ -95,6 +99,8 @@ _MAX_OUTPUT_TOKENS = 8192
 
 
 def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    from langchain_openai import ChatOpenAI
+
     # ChatOpenAI raises openai.OpenAIError on a missing key, which the CLI does not catch.
     if not os.environ.get("OPENAI_API_KEY"):
         raise ValueError("OPENAI_API_KEY is not set.")
@@ -117,6 +123,8 @@ def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # p
 
 
 def _make_fireworks_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    from langchain_fireworks import ChatFireworks
+
     if reasoning is None:
         return ChatFireworks(
             model=model,
@@ -137,6 +145,8 @@ _ALIBABA_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 
 
 def _make_alibaba_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    from langchain_openai import ChatOpenAI
+
     api_key = os.environ.get("DASHSCOPE_API_KEY")
     if not api_key:
         raise ValueError("DASHSCOPE_API_KEY is not set.")
