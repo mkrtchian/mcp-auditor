@@ -9,13 +9,16 @@ from evals.cve_planting import (
     PlantingHost,
     PlantingSpec,
     SymbolicUser,
+    confinement_args,
     planting_spec,
 )
-from evals.cve_planting_base import SENTINEL_IMAGE
+from evals.cve_planting_base import LABEL, SENTINEL_IMAGE
 from evals.cve_planting_spec import request_target
 from mcp_auditor.adapters.docker import DockerRuntime
 
 IP_LITERAL = "198.51.100.5"  # RFC 5737 documentation range: routes nowhere
+# wget's own 5 s bound plus the start-up of the fresh container each read runs in.
+_READ_TIMEOUT = 10.0
 
 
 def missing_prerequisite() -> str | None:
@@ -45,22 +48,33 @@ def spec_of(host: str, path: str, *, has_network: bool = False) -> PlantingSpec:
     return planting_spec([place], planting_host, RANDOM_NONCES)
 
 
-def read_in_namespace(args: PlantedArgs, host: str, path: str) -> str:
-    result = subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            *args.network,
-            "--entrypoint",
-            "wget",
-            SENTINEL_IMAGE,
-            "-qO-",
-            f"http://{host}:80{request_target(path)}",
-        ],
-        capture_output=True,
-        text=True,
-    )
+def read_as_target(args: PlantedArgs, host: str, path: str) -> str:
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "run",
+                "--rm",
+                "--label",
+                LABEL,
+                *confinement_args(),
+                *args.run_args(),
+                "--entrypoint",
+                "/bin/wget",
+                SENTINEL_IMAGE,
+                "-Y",
+                "off",
+                "-qO-",
+                "-T",
+                "5",
+                f"http://{host}:80{request_target(path)}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=_READ_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        return ""
     return result.stdout
 
 

@@ -1,6 +1,7 @@
 import pytest
 
 import tests.unit.support.test_cve_planting_given as given
+import tests.unit.support.test_cve_planting_then as then
 from evals.cve_planting import PlantingFailed, planted
 from evals.cve_planting_spec import RESERVED_NAME_BLOCK, served_file
 
@@ -136,9 +137,7 @@ def test_two_holder_bound_name_hosts_differing_only_in_case_raise_and_leave_noth
     with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
         pass
 
-    assert docker.networks == set()
-    assert docker.holders == {}
-    assert docker.sentinels == {}
+    then.nothing_left_alive(docker)
 
 
 def test_an_upper_case_localhost_without_network_raises():
@@ -148,9 +147,7 @@ def test_an_upper_case_localhost_without_network_raises():
     with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
         pass
 
-    assert docker.networks == set()
-    assert docker.holders == {}
-    assert docker.sentinels == {}
+    then.nothing_left_alive(docker)
 
 
 def test_one_network_without_a_fixed_subnet_is_created_per_launch_with_a_network():
