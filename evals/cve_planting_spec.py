@@ -155,23 +155,59 @@ def _plant_hostname(
 def _plant_http_endpoint(
     place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft
 ) -> None:
+    path = _require(place.coordinates.path)
+    _reject_unservable_path(place.id, path)
     endpoint_host = _require(place.coordinates.host)
     if endpoint_host in draft.endpoint_hosts:
         raise ValueError(f"{place.id}: a second http_endpoint place on the same host")
     draft.endpoint_hosts.add(endpoint_host)
     content = nonces.token()
     bind_address = _endpoint_bind_address(place.id, endpoint_host, host, draft)
-    if bind_address is not None:  # a holder-bound sentinel: two hosts can share one address
-        if bind_address in draft.bind_addresses:
-            raise ValueError(f"{place.id}: a second http_endpoint place on the same bind address")
-        draft.bind_addresses.add(bind_address)
+    _claim_bind_address(place.id, bind_address, draft)
     draft.nonces[place.id] = content
-    path = _require(place.coordinates.path)
     draft.sentinels.append(
         SentinelIntent(
-            endpoint_host, path, served_file(path), request_target(path), content, bind_address
+            host=endpoint_host,
+            path=path,
+            served_file=served_file(path),
+            request_target=request_target(path),
+            content=content,
+            bind_address=bind_address,
         )
     )
+
+
+def _reject_unservable_path(entry_id: str, path: str) -> None:
+    if _unservable(path):
+        raise ValueError(f"{entry_id}: an http_endpoint path the sentinel cannot serve")
+
+
+def _unservable(path: str) -> bool:
+    # A NUL crashes the sentinel's launch, a climb writes the nonce outside the doc root, and
+    # busybox `httpd` answers an encoded slash with 404.
+    served = served_file(path)
+    raw = path.partition("#")[0].partition("?")[0]
+    return "\0" in served or _climbs_above_root(served) or "%2f" in raw.lower()
+
+
+def _climbs_above_root(served: str) -> bool:
+    depth = 0
+    for segment in served.split("/"):
+        if segment == "..":
+            depth -= 1
+        elif segment not in ("", "."):
+            depth += 1
+        if depth < 0:
+            return True
+    return False
+
+
+def _claim_bind_address(entry_id: str, bind_address: str | None, draft: _SpecDraft) -> None:
+    if bind_address is None:  # a bridge alias: only a holder-bound sentinel claims an address
+        return
+    if bind_address in draft.bind_addresses:  # two hosts can resolve to one holder address
+        raise ValueError(f"{entry_id}: a second http_endpoint place on the same bind address")
+    draft.bind_addresses.add(bind_address)
 
 
 def _plant_unplaceable(

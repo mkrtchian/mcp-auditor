@@ -162,3 +162,75 @@ def test_one_network_without_a_fixed_subnet_is_created_per_launch_with_a_network
     docker_b = given.FakePlantingDocker()
     with planted(without, "image:tag", docker_b):
         assert docker_b.networks == set()
+
+
+def test_a_file_place_over_etc_hosts_beside_a_name_host_without_network_raises():
+    spec = given.spec_of(
+        [given.file_place(path="/etc/hosts"), given.endpoint_place(host="meta.fict")],
+        host=given.unprivileged_host(),
+    )
+    docker = given.FakePlantingDocker()
+
+    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
+        pass
+
+    then.nothing_left_alive(docker)
+
+
+def test_a_file_place_over_resolv_conf_beside_a_bridge_alias_raises():
+    spec = given.spec_of(
+        [given.file_place(path="/etc/resolv.conf"), given.endpoint_place(host="fictional-service")],
+        host=given.unprivileged_host(has_network=True),
+    )
+    docker = given.FakePlantingDocker()
+
+    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
+        pass
+
+    then.nothing_left_alive(docker)
+
+
+def test_an_ip6_localhost_host_on_a_launch_with_a_network_raises():
+    # The spec places the name as a bridge alias, but inside the target it is the target's ::1.
+    spec = given.spec_of(
+        [given.endpoint_place(host="ip6-localhost")],
+        host=given.unprivileged_host(has_network=True),
+    )
+    docker = given.FakePlantingDocker()
+
+    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
+        pass
+
+    then.nothing_left_alive(docker)
+
+
+def test_a_file_place_over_etc_hosts_beside_an_ip_literal_plants():
+    spec = given.spec_of(
+        [given.file_place(path="/etc/hosts"), given.endpoint_place(host="198.51.100.5")]
+    )
+
+    with planted(spec, "image:tag", given.FakePlantingDocker()) as args:
+        assert args.network
+
+
+def test_a_file_place_over_etc_hosts_beside_a_bridge_alias_plants():
+    spec = given.spec_of(
+        [given.file_place(path="/etc/hosts"), given.endpoint_place(host="fictional-service")],
+        host=given.unprivileged_host(has_network=True),
+    )
+
+    with planted(spec, "image:tag", given.FakePlantingDocker()) as args:
+        assert args.network
+
+
+@pytest.mark.parametrize("path", ["/%2e%2e/fict", "/fict/%2Fx", "/fict/%2fx", "/fict/%00x"])
+def test_an_endpoint_path_the_sentinel_cannot_serve_is_refused_naming_the_entry(path: str):
+    with pytest.raises(ValueError, match=r"^endpoint-1: "):
+        given.spec_of([given.endpoint_place("endpoint-1", host="198.51.100.5", path=path)])
+
+
+@pytest.mark.parametrize("path", ["/fict/a/../b", "/fict/a%20b", "/fict/dir/"])
+def test_an_endpoint_path_the_sentinel_can_serve_plants(path: str):
+    spec = given.spec_of([given.endpoint_place("endpoint-1", host="198.51.100.5", path=path)])
+
+    assert len(spec.sentinels) == 1

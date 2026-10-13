@@ -18,7 +18,7 @@ import pytest
 
 import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
-from evals.cve_planting import DockerPlanting, planted
+from evals.cve_planting import DockerPlanting, PlantingFailed, planted
 from evals.cve_planting_base import SENTINEL_IMAGE
 
 
@@ -90,6 +90,26 @@ def test_a_name_host_serves_its_nonce_read_by_name(host: str, has_network: bool)
         body = given.read_as_target(args, host, "/fict/secret")
 
     assert body == spec.nonces["endpoint-1"]
+
+
+def test_a_file_place_over_etc_hosts_beside_a_name_host_fails_the_probe(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr("evals.cve_planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
+    spec = given.spec_of("meta.fict", "/fict/secret", file_at="/etc/hosts")
+
+    with pytest.raises(PlantingFailed), planted(spec, SENTINEL_IMAGE, DockerPlanting()):
+        pass
+
+
+def test_a_file_place_over_resolv_conf_beside_a_bridge_alias_fails_the_probe(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr("evals.cve_planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
+    spec = given.spec_of("meta.fict", "/fict/secret", has_network=True, file_at="/etc/resolv.conf")
+
+    with pytest.raises(PlantingFailed), planted(spec, SENTINEL_IMAGE, DockerPlanting()):
+        pass
 
 
 def test_a_one_sentinel_launch_tears_down_well_under_the_sigterm_grace():

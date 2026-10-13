@@ -9,6 +9,7 @@ import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from ipaddress import AddressValueError, IPv4Address
+from urllib.parse import urlsplit
 
 from evals.cve_planting_base import ImageAccounts
 
@@ -16,6 +17,8 @@ IMAGE_PASSWD = (
     "root:x:0:0:root:/root:/bin/sh\nnobody:x:65534:65534:nobody:/nonexistent:/bin/false\n"
 )
 IMAGE_GROUP = "root:x:0:\nnobody:x:65534:\n"
+# Names Docker writes into every container's /etc/hosts as the container itself.
+_OWN_LOOPBACK_NAMES = ("ip6-localhost", "ip6-loopback")
 
 
 @dataclass
@@ -86,33 +89,84 @@ class FakePlantingDocker:
         self.sentinels.pop(name, None)
         self._attached.pop(name, None)
 
-    def sentinel_body(self, name: str, host: str, request_target: str) -> str | None:
-        run_args = self.sentinels.get(name)
-        if run_args is None or not self._answers(run_args, host):
+    def probe_endpoint(self, target_args: Sequence[str], url: str) -> str | None:
+        host = (urlsplit(url).hostname or "").lower()
+        if host in _OWN_LOOPBACK_NAMES or self._unresolved(target_args, host):
             return None
-        return _env_value(run_args, "FLAG")
+        sentinel = self._reached(target_args, host)
+        return None if sentinel is None else _env_value(sentinel, "FLAG")
 
-    def _answers(self, run_args: Sequence[str], host: str) -> bool:
-        alias = _first_after(run_args, "--network-alias")
-        if alias is not None:
-            return alias not in self.dead_sentinels and host.lower() == alias.lower()
-        bind_address = _env_value(run_args, "BIND_ADDR")
-        if bind_address is None or bind_address in self.dead_sentinels:
+    def _unresolved(self, target_args: Sequence[str], host: str) -> bool:
+        if _is_ipv4(host):
             return False
-        return self._resolved(run_args, host) == bind_address
+        mounted = [mount.split(":")[1] for mount in _all_after(target_args, "-v")]
+        hosts_shadowed = _shadows(mounted, "/etc/hosts")
+        resolv_shadowed = _shadows(mounted, "/etc/resolv.conf")
+        if host == "localhost":
+            # On a launch with a network Docker's embedded DNS still answers localhost through
+            # the host's resolver, which this fake models as answering.
+            return hosts_shadowed and (resolv_shadowed or not self._has_network(target_args))
+        if host in self._added_names(target_args):
+            return hosts_shadowed
+        return resolv_shadowed
 
-    def _resolved(self, run_args: Sequence[str], host: str) -> str | None:
+    def _has_network(self, target_args: Sequence[str]) -> bool:
+        network = _first_after(target_args, "--network") or "none"
+        if network.startswith("container:"):
+            network = _first_after(self._holder_of(target_args), "--network") or "none"
+        return network != "none"
+
+    def _added_names(self, target_args: Sequence[str]) -> set[str]:
+        entries = _all_after(self._holder_of(target_args), "--add-host")
+        return {entry.partition(":")[0].lower() for entry in entries}
+
+    def _holder_of(self, target_args: Sequence[str]) -> list[str]:
+        network = _first_after(target_args, "--network") or ""
+        return self.holders.get(network.removeprefix("container:"), [])
+
+    def _reached(self, target_args: Sequence[str], host: str) -> list[str] | None:
+        network = _first_after(target_args, "--network") or "none"
+        if network.startswith("container:"):
+            bound = self._bound_sentinel(network, self._address_in(target_args, host))
+            if bound is not None:
+                return bound
+            network = _first_after(self._holder_of(target_args), "--network") or "none"
+        return self._aliased_sentinel(network, host)
+
+    def _address_in(self, target_args: Sequence[str], host: str) -> str | None:
         # The order a joined namespace resolves a name in: a literal, Docker's own localhost
         # line, then the holder's --add-host lines, all case-insensitively.
         if _is_ipv4(host):
             return host
-        if host.lower() == "localhost":
+        if host == "localhost":
             return "127.0.0.1"
-        holder = (_first_after(run_args, "--network") or "").removeprefix("container:")
-        for entry in _all_after(self.holders.get(holder, []), "--add-host"):
+        for entry in _all_after(self._holder_of(target_args), "--add-host"):
             name, _, address = entry.partition(":")
-            if name.lower() == host.lower():
+            if name.lower() == host:
                 return address
+        return None
+
+    def _bound_sentinel(self, network: str, address: str | None) -> list[str] | None:
+        if address is None or address in self.dead_sentinels:
+            return None
+        for run_args in self.sentinels.values():
+            if (
+                _first_after(run_args, "--network") == network
+                and _env_value(run_args, "BIND_ADDR") == address
+            ):
+                return run_args
+        return None
+
+    def _aliased_sentinel(self, network: str, host: str) -> list[str] | None:
+        for run_args in self.sentinels.values():
+            alias = _first_after(run_args, "--network-alias")
+            if (
+                alias is not None
+                and alias not in self.dead_sentinels
+                and _first_after(run_args, "--network") == network
+                and alias.lower() == host
+            ):
+                return run_args
         return None
 
     def run_address_setup(self, run_args: Sequence[str]) -> None:
@@ -168,6 +222,10 @@ def _first_after(run_args: Sequence[str], flag: str) -> str | None:
 
 def _all_after(run_args: Sequence[str], flag: str) -> list[str]:
     return [value for option, value in itertools.pairwise(run_args) if option == flag]
+
+
+def _shadows(mounted: Sequence[str], path: str) -> bool:
+    return any(path == target or path.startswith(f"{target.rstrip('/')}/") for target in mounted)
 
 
 def _is_ipv4(host: str) -> bool:

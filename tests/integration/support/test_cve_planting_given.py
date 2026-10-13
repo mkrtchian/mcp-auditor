@@ -36,16 +36,25 @@ def _sentinel_image_present() -> bool:
     return result.returncode == 0
 
 
-def spec_of(host: str, path: str, *, has_network: bool = False) -> PlantingSpec:
-    place = Place(
-        id="endpoint-1",
+def spec_of(
+    host: str, path: str, *, has_network: bool = False, file_at: str | None = None
+) -> PlantingSpec:
+    places: list[Place] = []
+    if file_at is not None:
+        places.append(_place("file-1", Coordinates(PlantKind.FILE, path=file_at)))
+    places.append(_place("endpoint-1", Coordinates(PlantKind.HTTP_ENDPOINT, host=host, path=path)))
+    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", has_network)
+    return planting_spec(places, planting_host, RANDOM_NONCES)
+
+
+def _place(entry_id: str, coordinates: Coordinates) -> Place:
+    return Place(
+        id=entry_id,
         family="fictional-family",
         reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.HTTP_ENDPOINT,
-        coordinates=Coordinates(PlantKind.HTTP_ENDPOINT, host=host, path=path),
+        kind=coordinates.kind,
+        coordinates=coordinates,
     )
-    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", has_network)
-    return planting_spec([place], planting_host, RANDOM_NONCES)
 
 
 def read_as_target(args: PlantedArgs, host: str, path: str) -> str:

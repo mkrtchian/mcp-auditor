@@ -1,8 +1,9 @@
 """Generic planting: a nonce dropped into one of the frozen list's locations, by kind.
 
 `planted` carries a `PlantingSpec` out through the injected `PlantingDocker`: it writes the
-host files, creates the network, stands the namespace holder and the sentinels up, and
-yields the target's `docker run` arguments as `PlantedArgs`. Setup undoes itself and raises
+host files, creates the network, stands the namespace holder and the sentinels up, probes
+each sentinel from a stand-in started with the target's own arguments, and yields the
+target's `docker run` arguments as `PlantedArgs`. Setup undoes itself and raises
 `PlantingFailed` on any failure (a non-zero Docker call or a host file that cannot be
 written). Teardown is best-effort and never raises. It owns the network of a launch that has
 one, as a plain labelled bridge, so no planting touches the host's routing table.
@@ -106,7 +107,7 @@ def _set_up(
         stack.callback(quiet, docker.remove_network, network)
     holder = _hold_endpoints(spec, network, docker, stack)
     hostname = ("--hostname", spec.hostname) if spec.hostname is not None and holder is None else ()
-    return PlantedArgs(
+    args = PlantedArgs(
         user=user,
         working_directory=("-w", spec.host.working_directory),
         env=_env_args(spec),
@@ -114,6 +115,19 @@ def _set_up(
         hostname=hostname,
         network=_network_args(network, holder),
     )
+    _probe_endpoints(spec, args, docker)
+    return args
+
+
+def _probe_endpoints(spec: PlantingSpec, args: PlantedArgs, docker: PlantingDocker) -> None:
+    # A positive probe by the endpoint's name, from a stand-in started with the target's own
+    # arguments: name resolution reads files and a namespace that are the target's, not the
+    # sentinel's, and a running sentinel can still serve a 404 or answer under another name.
+    stand_in = [*confinement_args(), *args.run_args()]
+    for sentinel in spec.sentinels:
+        url = f"http://{sentinel.host}:80{sentinel.request_target}"
+        if docker.probe_endpoint(stand_in, url) != sentinel.content:
+            raise PlantingFailed(f"sentinel for {sentinel.host} is not serving")
 
 
 def _user_and_mounts(
@@ -150,16 +164,9 @@ def _hold_endpoints(
         stack.callback(quiet, docker.remove_holder, holder)
     for address in spec.address_setups:
         docker.run_address_setup(_address_setup_args(holder, address))
-    held: list[tuple[SentinelIntent, str]] = []
     for sentinel in spec.sentinels:
         name = docker.start_sentinel(_sentinel_args(sentinel, network, holder))
         stack.callback(quiet, docker.remove_sentinel, name)
-        held.append((sentinel, name))
-    # A positive probe by the endpoint's name, from the sentinel, which resolves it as the
-    # target does: a running sentinel can still serve a 404, or answer under another name.
-    for sentinel, name in held:
-        if docker.sentinel_body(name, sentinel.host, sentinel.request_target) != sentinel.content:
-            raise PlantingFailed(f"sentinel for {sentinel.host} is not serving")
     return holder
 
 
