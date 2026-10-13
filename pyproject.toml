@@ -63,6 +63,11 @@ packages = ["src/mcp_auditor"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Under -n, the default distribution hands out tests in fixed batches, so a worker that draws
+# several slow integration tests finishes long after the rest. Work stealing rebalances them.
+# Without -n it does nothing. It needs the xdist plugin loaded: run sequentially with -n 0, not
+# with -p no:xdist, which rejects --dist.
+addopts = "--dist worksteal"
 filterwarnings = [
     "ignore::pytest.PytestCollectionWarning",
     "ignore:Core Pydantic V1 functionality:UserWarning",
