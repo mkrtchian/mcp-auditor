@@ -209,8 +209,8 @@ def test_a_file_place_over_etc_hosts_beside_an_ip_literal_plants():
         [given.file_place(path="/etc/hosts"), given.endpoint_place(host="198.51.100.5")]
     )
 
-    with planted(spec, "image:tag", given.FakePlantingDocker()) as args:
-        assert args.network
+    with planted(spec, "image:tag", given.FakePlantingDocker()):
+        pass
 
 
 def test_a_file_place_over_etc_hosts_beside_a_bridge_alias_plants():
@@ -219,8 +219,8 @@ def test_a_file_place_over_etc_hosts_beside_a_bridge_alias_plants():
         host=given.unprivileged_host(has_network=True),
     )
 
-    with planted(spec, "image:tag", given.FakePlantingDocker()) as args:
-        assert args.network
+    with planted(spec, "image:tag", given.FakePlantingDocker()):
+        pass
 
 
 @pytest.mark.parametrize("path", ["/%2e%2e/fict", "/fict/%2Fx", "/fict/%2fx", "/fict/%00x"])

@@ -92,6 +92,16 @@ def test_a_name_host_serves_its_nonce_read_by_name(host: str, has_network: bool)
     assert body == spec.nonces["endpoint-1"]
 
 
+@pytest.mark.parametrize("has_network", [False, True], ids=["no_network", "network"])
+def test_a_file_place_beside_a_name_host_still_serves_its_nonce(has_network: bool):
+    spec = given.spec_of("meta.fict", "/fict/secret", has_network=has_network, file_at="/etc/fict")
+
+    with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
+        body = given.read_as_target(args, "meta.fict", "/fict/secret")
+
+    assert body == spec.nonces["endpoint-1"]
+
+
 def test_a_file_place_over_etc_hosts_beside_a_name_host_fails_the_probe(
     monkeypatch: pytest.MonkeyPatch,
 ):
