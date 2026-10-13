@@ -3,8 +3,8 @@
 ## Commands
 
 ```bash
-uv run pytest -n auto            # Unit + integration tests
-uv run pytest tests/unit         # Unit tests only
+uv run pytest -n auto            # Unit + integration tests, the full check that closes a step
+uv run pytest tests/unit         # Unit tests only, serial, the short loop
 uv run pytest tests/integration -n auto  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker; the CVE planting test also needs the sentinel image, it skips without it: docker compose -f evals/docker/compose.yml build)
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
@@ -94,7 +94,7 @@ Governed by ADR 016, amended by ADR 020 for the honeypot suite (`docs/adr/016-ev
 ## Workflow
 
 - **Test-first**: write tests before implementation, run them to confirm they fail, then write the code to make them pass — a test that was never red might pass for the wrong reason.
-- **Run unit tests frequently** — after each meaningful change, not just at the end.
+- **Run unit tests frequently** — after each meaningful change, not just at the end. The short loop is `uv run pytest tests/unit`, serial: on unit tests alone `-n auto` is slower, starting the workers costs more than it saves. The integration tests launch servers and containers and take most of a full run, so in the loop run only the integration files you are writing or that import a module you changed. In the loop, type-check only the files you changed, tests and new files included, with `uv run pyright <files>` from the repository root: it misses an error a changed signature causes in a caller, which the full run catches. `ruff` always runs on the whole project, it is instant. Every pass that closes a step (the implementer's final check, a hardening or review pass) still runs `uv run pytest -n auto`, `uv run ruff check .` and `uv run pyright` with no file argument, even when a previous pass just ran them.
 - **Refactor continuously.** After green tests, look for simplification opportunities before moving on.
 - **Update the living docs as part of the change, not after.** When an implementation adds or changes a command, prerequisite, env var, CLI flag, or user-facing behavior, update the living docs in the same work: `README.md`, this `CLAUDE.md` (the Commands list especially), `CONTRIBUTING.md`, and the `[Unreleased]` section of `CHANGELOG.md` for user-facing changes. These are the only Markdown that tracks the current state. Do **not** touch `plans/` or `docs/adr/` for this — they are immutable historical artifacts (a decision change is a new ADR, not an edit). A feature isn't done until the living docs match it.
 
