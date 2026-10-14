@@ -109,10 +109,10 @@ async def _run(
         # ADR 031 admission, confirmed before a draw: Docker-dependent, deterministic, run only
         # under the maintainer paths (calibrate and record-baseline), never on a gated comparison
         # and not beside the synchronous preflight (no container exists there).
-        await confirm_admission(graded, places)
+        await confirm_admission(graded, places, ci=args.ci)
         return 0 if all_live else 1
     if args.record_baseline:
-        await confirm_admission(graded, places)
+        await confirm_admission(graded, places, ci=args.ci)
     return await _run_graded(args, graded, tracked, places)
 
 

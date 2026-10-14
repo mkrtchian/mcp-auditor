@@ -47,9 +47,12 @@ def layout_effect(
     )
 
 
-async def confirm_admission(targets: list[CVETarget], places: Places) -> None:
+async def confirm_admission(targets: list[CVETarget], places: Places, ci: bool = False) -> None:
     console.print("\n[bold]Admission[/bold] (no LLM): layout effect then discovery route\n")
     for target in targets:
+        if ci and target.ci_skip_reason is not None:
+            console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
+            continue
         empty, _ = await _observe(target, (), places)
         planted, nonces = await _observe(target, target.kept_places, places)
         _report_effect(target.cve_id, layout_effect(_surface(empty), _surface(planted), nonces))

@@ -17,18 +17,24 @@ from evals.cve_route import RouteObservations, route_admits
 
 GOLDEN_PATH = Path(__file__).parent / "cve_route_golden.json"
 
-# A git server scoped on /srv/app: the scope reveals /srv/app and its parent /srv, and the
-# checkout's .git/config disclosure names /srv/app.git as the origin.
+# A filesystem server scoped on /srv/app: the scope names /srv/app, the dotenv kind documents its
+# parent /srv, and the checkout's .git/config disclosure names /srv/app.git as the origin.
 _SCOPED = RouteObservations(
     launch_command=("run", "--rm", "image", "/srv/app"),
+    scope="/srv/app",
     tool_names=("list_directory", "read_file"),
     responses=("leak0\nleak7\n", '[remote "origin"]\n\turl = /srv/app.git\n'),
+    call_errored=(False, False),
+    tools_list_succeeded=True,
 )
 # A kubernetes server with no filesystem scope: nothing names a layout anchor.
 _NO_SCOPE = RouteObservations(
     launch_command=("run", "--rm", "image"),
+    scope=None,
     tool_names=("kubectl_generic",),
     responses=("Client Version: v1.30.0\n",),
+    call_errored=(False,),
+    tools_list_succeeded=True,
 )
 
 

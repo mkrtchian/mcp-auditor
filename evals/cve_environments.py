@@ -83,6 +83,7 @@ class Launch:
     args: list[str]
     chain_budget: int = 0
     max_chain_steps: int = 3  # only consulted when chain_budget > 0
+    scope: str | None = None  # the scope the layout dictates, the route check reads it here
 
 
 @dataclass(frozen=True)
@@ -189,6 +190,7 @@ def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
             image,
             _PROJECT,
         ],
+        scope=_PROJECT,
     )
 
 
@@ -212,4 +214,5 @@ def _git_launch(
         ],
         chain_budget=chain_budget,
         max_chain_steps=max_chain_steps,
+        scope=_PROJECT,
     )
