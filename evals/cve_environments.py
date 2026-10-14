@@ -28,9 +28,9 @@ would be counted as a missed detection and not as a skipped run, because the
 client turns a closed connection into an error response and nothing reads the
 container's kill state. The bound waits for that reader.
 
-Seeding and the planting layer's setup (`docker network create`, a sidecar
-`run -d`) raise before the yield on any failure: the runner maps that to a
-skipped run. Teardown is best-effort: a cleanup error must never raise out of
+Building the layout tree and the planting layer's setup (`docker network
+create`, a sidecar `run -d`) raise before the yield on any failure: the runner
+maps that to a skipped run. Teardown is best-effort: a cleanup error must never raise out of
 `__exit__` and turn a run that already produced a report into a skip. The
 benchmark enters and leaves these environments in a worker thread
 (`entered_in_thread`). A namespace holder runs a `sleep` and a sentinel's

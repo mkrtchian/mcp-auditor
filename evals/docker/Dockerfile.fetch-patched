@@ -1,10 +1,12 @@
 # CVE-2025-65513 patched twin candidate: mcp-fetch-server. Same digest-pinned base and
-# floating transitive deps as Dockerfile.fetch; only the server version moves to 1.1.0. The
-# advisory GHSA-8fxj-2g9q-8fjw names no fixed version, so 1.1.0 is a candidate and
-# calibration decides: if it still surfaces the nonce, the target is dropped.
+# floating transitive deps as Dockerfile.fetch, only the server version moves to 1.1.1, the
+# earliest release above the affected range (<= 1.0.2), so the twin stays closest to the
+# vulnerable server. The advisory GHSA-8fxj-2g9q-8fjw names no fixed version, so 1.1.1 is a
+# candidate and calibration decides: if it still surfaces the nonce or the twin is not
+# faithful, the target is dropped.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
-RUN npm i -g mcp-fetch-server@1.1.0
+RUN npm i -g mcp-fetch-server@1.1.1
 
 # Reaches the sentinel sidecar over the SSRF sidecar network. The server speaks MCP
 # over stdio: keep stdout clean (JSON-RPC only), so no ENTRYPOINT banner / echo.

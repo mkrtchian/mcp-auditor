@@ -181,7 +181,7 @@ def unprivileged_user_args() -> list[str]:
 
 
 def host_user_args() -> list[str]:
-    # Run the bind-mount containers as the host user so files the server writes into /work
+    # Run the bind-mount containers as the host user so files the server writes into /srv
     # (e.g. git_init's .git) are host-owned. The CVE is a scope/path bug, independent of the
     # container uid, so this preserves the exploit while letting teardown remove the files and
     # git operate on a repo it owns. HOME is set because git needs a writable home for a uid
