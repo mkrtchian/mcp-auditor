@@ -8,7 +8,9 @@ import tests.unit.support.test_cve_places_given as given
 import tests.unit.support.test_cve_planting_given as planting_given
 from evals.cve_places import (
     HOLDOUT_PLACES,
+    LAYOUT_KINDS,
     REACHABLE_BY,
+    LayoutAnchor,
     Place,
     PlantKind,
     is_endpoint_host,
@@ -18,7 +20,7 @@ from evals.cve_places import (
 from evals.cve_planting import planting_spec
 from evals.cve_targets import CVE_TARGETS
 
-RECORDED_HASH = "2e3b5263207c62af01c15c9b52fecc4857787e4048887cea178e9d17fd0e9ee3"
+RECORDED_HASH = "240a7b83a977d0aca9e05952132d1d49acb581631360aee6793043fbff664f4b"
 
 
 def test_the_imported_places_file_matches_the_recorded_hash():
@@ -30,8 +32,8 @@ def test_the_imported_places_file_matches_the_recorded_hash():
 def test_the_real_places_file_validates_under_its_schema():
     places = load_places(HOLDOUT_PLACES)
 
-    assert len(places) == 33
-    assert len({place.id for place in places.values()}) == 33
+    assert len(places) == 36
+    assert len({place.id for place in places.values()}) == 36
     for place in places.values():
         assert place.reachable_by <= REACHABLE_BY, (
             f"{place.id}: reachable_by holds a token outside the closed vocabulary"
@@ -40,8 +42,8 @@ def test_the_real_places_file_validates_under_its_schema():
 
 
 def _assert_coordinate_is_well_formed(place: Place) -> None:
-    # load_places succeeding already proves every file notation is one the loader accepts, and
-    # the accepted notations all resolve absolute by construction, so the file kind asserts nothing.
+    # load_places succeeding already proves every file notation is one the loader accepts, and a
+    # catalogue file notation resolves absolute by construction, so the file kind asserts nothing.
     coordinates = place.coordinates
     if place.kind is PlantKind.HTTP_ENDPOINT:
         assert coordinates.host is not None and is_endpoint_host(coordinates.host), (
@@ -49,6 +51,13 @@ def _assert_coordinate_is_well_formed(place: Place) -> None:
         )
         assert coordinates.path is not None and coordinates.path.startswith("/"), (
             f"{place.id}: http_endpoint path is not absolute"
+        )
+    if place.kind in LAYOUT_KINDS:
+        assert isinstance(coordinates.anchor, LayoutAnchor), (
+            f"{place.id}: layout coordinate has no anchor node"
+        )
+        assert coordinates.relpath is not None and not coordinates.relpath.startswith("/"), (
+            f"{place.id}: layout coordinate relpath is not relative"
         )
 
 
@@ -190,7 +199,7 @@ def test_an_unknown_reachable_by_token_raises(tmp_path: Path):
         given.loaded(tmp_path, [given.an_entry(reachable_by=["arbitrary_read", "mystery_token"])])
 
 
-@pytest.mark.parametrize("missing", ["category", "technique_ids", "place"])
+@pytest.mark.parametrize("missing", ["source", "category", "technique_ids", "place"])
 def test_an_entry_missing_a_required_top_level_field_raises(tmp_path: Path, missing: str):
     entry = given.an_entry()
     del entry[missing]
@@ -210,6 +219,73 @@ def test_an_entry_with_an_extra_top_level_field_raises(tmp_path: Path):
 def test_duplicate_ids_raise(tmp_path: Path):
     with pytest.raises(ValueError, match="dup"):
         given.loaded(tmp_path, [given.an_entry("dup"), given.an_entry("dup")])
+
+
+@pytest.mark.parametrize("kind", ["git_remote_url", "git_history", "dotenv"])
+def test_a_layout_place_keeps_its_anchor_and_relpath(tmp_path: Path, kind: str):
+    coordinates = {"anchor": "project_bare", "relpath": "sub/fictional"}
+
+    [place] = given.loaded(
+        tmp_path, [given.an_entry(kind=kind, source="layout", coordinates=coordinates)]
+    ).values()
+
+    assert place.kind is PlantKind(kind)
+    assert place.coordinates.anchor is LayoutAnchor.PROJECT_BARE
+    assert place.coordinates.relpath == "sub/fictional"
+
+
+@pytest.mark.parametrize(
+    "coordinates",
+    [
+        {"anchor": "workspace"},
+        {"relpath": "config"},
+        {"anchor": "nowhere", "relpath": "config"},
+        {"anchor": "workspace", "relpath": "/config"},
+        {"anchor": "workspace", "relpath": "../config"},
+        {"anchor": "workspace", "relpath": "$HOME/config"},
+        {"anchor": "workspace", "relpath": "a/*.log"},
+        {"anchor": "workspace", "relpath": ""},
+        {"anchor": "workspace", "relpath": "config", "extra": "x"},
+    ],
+    ids=[
+        "no_relpath",
+        "no_anchor",
+        "unknown_anchor",
+        "absolute_relpath",
+        "dotdot_segment",
+        "variable_relpath",
+        "glob_relpath",
+        "empty_relpath",
+        "extra_key",
+    ],
+)
+def test_a_rejected_layout_coordinate_raises_naming_the_entry(
+    tmp_path: Path, coordinates: dict[str, Any]
+):
+    with pytest.raises(ValueError, match="place-1"):
+        given.loaded(
+            tmp_path, [given.an_entry(kind="dotenv", source="layout", coordinates=coordinates)]
+        )
+
+
+@pytest.mark.parametrize(
+    ("kind", "source", "coordinates"),
+    [
+        ("dotenv", "catalogue", {"anchor": "workspace", "relpath": ".env"}),
+        ("file", "layout", {"path": "/fictional/config"}),
+    ],
+    ids=["layout_kind_catalogue_source", "catalogue_kind_layout_source"],
+)
+def test_a_kind_that_does_not_match_its_source_raises(
+    tmp_path: Path, kind: str, source: str, coordinates: dict[str, Any]
+):
+    with pytest.raises(ValueError, match=r"place-1.*source"):
+        given.loaded(tmp_path, [given.an_entry(kind=kind, source=source, coordinates=coordinates)])
+
+
+def test_an_unknown_source_raises(tmp_path: Path):
+    with pytest.raises(ValueError, match=r"place-1.*source"):
+        given.loaded(tmp_path, [given.an_entry(source="mystery")])
 
 
 # The guards below read ids, kinds, reach tokens and spec refusals only, never a coordinate

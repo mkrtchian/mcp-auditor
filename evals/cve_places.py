@@ -7,10 +7,12 @@ the imported data fails the suite.
 `load_places` parses it into frozen `Place` value objects keyed by `id`, keeping only the
 fields a consumer reads. It validates each entry strictly: the exact top-level fields, the
 closed `reachable_by` vocabulary, the per-kind coordinate keys, and the coordinate notations
-the rule's source manifest uses. Any other notation raises, naming the entry and the failing
-property but never the value, so the schema test can run on the real file without reading a
-single coordinate. The composition root loads the file once and injects the mapping. Every
-consumer, and every test, receives `Places` as an argument and passes fictional records.
+the rule's source manifest uses. A catalogue place sits at an absolute host path; a layout
+place sits inside the frozen deployment layout (ADR 031) at a node anchor and a relative path,
+and its `source` must match its kind. Any other notation raises, naming the entry and the
+failing property but never the value, so the schema test can run on the real file without
+reading a single coordinate. The composition root loads the file once and injects the mapping.
+Every consumer, and every test, receives `Places` as an argument and passes fictional records.
 """
 
 import json
@@ -27,7 +29,17 @@ HOLDOUT_PLACES = Path(__file__).parent / "holdout_places.json"
 REACHABLE_BY = frozenset({"arbitrary_read", "command_execution", "internal_fetch"})
 
 _ENTRY_FIELDS = frozenset(
-    {"id", "family", "reachable_by", "kind", "coordinates", "category", "technique_ids", "place"}
+    {
+        "id",
+        "source",
+        "family",
+        "reachable_by",
+        "kind",
+        "coordinates",
+        "category",
+        "technique_ids",
+        "place",
+    }
 )
 _GLOB_CHARS = "*?[]"
 _PLACEHOLDER = re.compile(r"^<[^<>/]+>$")
@@ -41,6 +53,25 @@ class PlantKind(StrEnum):
     HOSTNAME = "hostname"
     HTTP_ENDPOINT = "http_endpoint"
     UNPLACEABLE = "unplaceable"
+    GIT_REMOTE_URL = "git_remote_url"
+    GIT_HISTORY = "git_history"
+    DOTENV = "dotenv"
+
+
+class PlaceSource(StrEnum):
+    CATALOGUE = "catalogue"
+    LAYOUT = "layout"
+
+
+# The kinds a nonce reaches inside the frozen deployment layout (ADR 031), each anchored to a
+# layout node rather than an absolute host path. Their source is LAYOUT, not CATALOGUE.
+LAYOUT_KINDS = frozenset({PlantKind.GIT_REMOTE_URL, PlantKind.GIT_HISTORY, PlantKind.DOTENV})
+
+
+class LayoutAnchor(StrEnum):
+    WORKSPACE = "workspace"
+    PROJECT = "project"
+    PROJECT_BARE = "project_bare"
 
 
 @dataclass(frozen=True)
@@ -50,6 +81,8 @@ class Coordinates:
     paths: tuple[str, ...] | None = None
     name: str | None = None
     host: str | None = None
+    anchor: LayoutAnchor | None = None
+    relpath: str | None = None
 
 
 @dataclass(frozen=True)
@@ -97,6 +130,9 @@ def _place(entry: Any) -> Place:
         raise ValueError("a places entry has no string id")
     _check_entry_fields(entry_id, set(fields))
     kind = _kind(entry_id, fields["kind"])
+    source = _source(entry_id, fields["source"])
+    if (kind in LAYOUT_KINDS) != (source is PlaceSource.LAYOUT):
+        raise ValueError(f"{entry_id}: kind does not belong to its source")
     return Place(
         id=entry_id,
         family=_string(entry_id, "family", fields["family"]),
@@ -124,6 +160,15 @@ def _kind(entry_id: str, value: Any) -> PlantKind:
         raise ValueError(f"{entry_id}: unknown kind") from None
 
 
+def _source(entry_id: str, value: Any) -> PlaceSource:
+    if not isinstance(value, str):
+        raise ValueError(f"{entry_id}: source is not a string")
+    try:
+        return PlaceSource(value)
+    except ValueError:
+        raise ValueError(f"{entry_id}: unknown source") from None
+
+
 def _reachable_by(entry_id: str, value: Any) -> frozenset[str]:
     if not isinstance(value, list):
         raise ValueError(f"{entry_id}: reachable_by is not a list")
@@ -142,6 +187,8 @@ def _coordinates(entry_id: str, kind: PlantKind, value: Any) -> Coordinates:
         raise ValueError(f"{entry_id}: coordinates is not an object")
     keys = set(cast(dict[str, Any], value))
     raw = cast(dict[str, Any], value)
+    if kind in LAYOUT_KINDS:
+        return _layout_coordinates(entry_id, kind, keys, raw)
     if kind is PlantKind.FILE:
         return _file_coordinates(entry_id, keys, raw)
     if kind is PlantKind.ENV:
@@ -169,6 +216,20 @@ def _file_coordinates(entry_id: str, keys: set[str], raw: dict[str, Any]) -> Coo
             _check_file_notation(entry_id, path)
         return Coordinates(PlantKind.FILE, paths=tuple(paths))
     raise ValueError(f"{entry_id}: file coordinates need exactly 'path' or 'paths'")
+
+
+def _layout_coordinates(
+    entry_id: str, kind: PlantKind, keys: set[str], raw: dict[str, Any]
+) -> Coordinates:
+    _require_keys(entry_id, keys, {"anchor", "relpath"})
+    anchor = _string(entry_id, "anchor", raw["anchor"])
+    try:
+        layout_anchor = LayoutAnchor(anchor)
+    except ValueError:
+        raise ValueError(f"{entry_id}: unknown anchor") from None
+    relpath = _string(entry_id, "relpath", raw["relpath"])
+    _check_relpath(entry_id, relpath)
+    return Coordinates(kind, anchor=layout_anchor, relpath=relpath)
 
 
 def _endpoint_host(entry_id: str, value: Any) -> str:
@@ -205,6 +266,20 @@ def _check_file_notation(entry_id: str, path: str) -> None:
             placeholders += 1
     if placeholders > 1:
         raise ValueError(f"{entry_id}: file coordinate has more than one placeholder")
+
+
+def _check_relpath(entry_id: str, relpath: str) -> None:
+    """A layout coordinate is relative to its anchor node: a relative path, no absolute root,
+    no variable, no Windows or URL notation, no glob, and no empty or dot segment."""
+    if relpath.startswith("/"):
+        raise ValueError(f"{entry_id}: layout coordinate relpath is absolute")
+    if any(char in relpath for char in _GLOB_CHARS):
+        raise ValueError(f"{entry_id}: layout coordinate relpath uses a glob")
+    if any(char in relpath for char in "$<>\\%:"):
+        raise ValueError(f"{entry_id}: layout coordinate relpath uses a forbidden character")
+    for segment in relpath.split("/"):
+        if not segment or segment in (".", ".."):
+            raise ValueError(f"{entry_id}: layout coordinate relpath has an empty or dot segment")
 
 
 def is_endpoint_host(host: str) -> bool:

@@ -11,6 +11,7 @@ from evals.cve_baseline import (
     write_baseline,
 )
 from evals.cve_grammar import CVEStatus
+from evals.cve_places import LayoutAnchor
 
 DETECTED = CVEStatus.DETECTED
 MISSED = CVEStatus.MISSED
@@ -52,6 +53,17 @@ def test_two_targets_sharing_an_image_and_a_builder_but_not_an_aim_differ():
     assert fixture_fingerprint(prefix_collision, {}) != fixture_fingerprint(
         given.SYMLINK_TARGET, {}
     )
+
+
+def test_the_fixture_fingerprint_moves_when_a_kept_layout_coordinate_moves():
+    target, places = given.a_target_keeping_a_layout_place()
+    before = fixture_fingerprint(target, places)
+
+    moved_relpath = {given.KEPT_LAYOUT_ID: given.a_layout_record(relpath="other")}
+    moved_anchor = {given.KEPT_LAYOUT_ID: given.a_layout_record(anchor=LayoutAnchor.WORKSPACE)}
+
+    assert fixture_fingerprint(target, moved_relpath) != before
+    assert fixture_fingerprint(target, moved_anchor) != before
 
 
 @pytest.mark.parametrize(

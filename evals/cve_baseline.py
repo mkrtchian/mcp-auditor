@@ -131,6 +131,8 @@ def _coordinate_parts(coordinates: Coordinates) -> dict[str, object]:
         "paths": None if coordinates.paths is None else list(coordinates.paths),
         "name": coordinates.name,
         "host": coordinates.host,
+        "anchor": None if coordinates.anchor is None else coordinates.anchor.value,
+        "relpath": coordinates.relpath,
     }
     return {key: fields[key] for key in sorted(fields) if fields[key] is not None}
 

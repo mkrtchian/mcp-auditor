@@ -7,7 +7,7 @@ from pathlib import Path
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_grammar import CVEStatus, MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
+from evals.cve_places import Coordinates, LayoutAnchor, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_targets import CVE_TARGETS, DOCKER_DIRECTORY, CVETarget
 from evals.gate import ReplayRule
@@ -17,6 +17,7 @@ type TargetChange = Callable[[CVETarget, Places, Path], tuple[CVETarget, Places]
 
 KEPT_ENDPOINT_ID = "fict-endpoint"
 KEPT_FILE_ID = "fict-file"
+KEPT_LAYOUT_ID = "fict-layout"
 
 KUBERNETES_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53355")
 SYMLINK_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53109")
@@ -69,6 +70,23 @@ def a_target_keeping_an_endpoint() -> tuple[CVETarget, Places]:
 def a_target_keeping_a_file() -> tuple[CVETarget, Places]:
     target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_FILE_ID,))
     return target, {KEPT_FILE_ID: _a_file_record()}
+
+
+def a_layout_record(
+    *, relpath: str = "config", anchor: LayoutAnchor = LayoutAnchor.PROJECT_BARE
+) -> Place:
+    return Place(
+        id=KEPT_LAYOUT_ID,
+        family="fictional-family",
+        reachable_by=frozenset({"arbitrary_read"}),
+        kind=PlantKind.GIT_REMOTE_URL,
+        coordinates=Coordinates(PlantKind.GIT_REMOTE_URL, anchor=anchor, relpath=relpath),
+    )
+
+
+def a_target_keeping_a_layout_place() -> tuple[CVETarget, Places]:
+    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_LAYOUT_ID,))
+    return target, {KEPT_LAYOUT_ID: a_layout_record()}
 
 
 def _appending_to_its_dockerfile(line: str) -> TargetChange:

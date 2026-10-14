@@ -17,9 +17,11 @@ def an_entry(
     coordinates: dict[str, Any] | None = None,
     reachable_by: list[str] | None = None,
     family: str = "fictional-family",
+    source: str = "catalogue",
 ) -> dict[str, Any]:
     return {
         "id": entry_id,
+        "source": source,
         "family": family,
         "reachable_by": ["arbitrary_read"] if reachable_by is None else reachable_by,
         "kind": kind,
