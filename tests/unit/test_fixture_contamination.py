@@ -13,3 +13,11 @@ class TestShippedConstantsNameNoHoneypotLiteral:
         literals = given.discriminating_literals()
 
         then.no_constant_contains_any_of(constants, literals)
+
+
+class TestShippedConstantsNameNoLayoutLiteral:
+    def test_no_constant_of_src_contains_a_layout_literal(self):
+        constants = given.shipped_constants()
+        literals = given.layout_literals()
+
+        then.no_constant_contains_any_substring(constants, literals)

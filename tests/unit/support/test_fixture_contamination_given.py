@@ -20,6 +20,13 @@ def discriminating_literals() -> set[str]:
     return {text for text in candidates if _is_discriminating(text)}
 
 
+def layout_literals() -> set[str]:
+    # The deployment layout's instantiation literals (ADR 031). `/srv/` carries the trailing
+    # slash so the FHS refused root `/srv` (ADR 017, confinement.py) is not a false positive:
+    # only a layout path (`/srv/app`, `/srv/.env`, `/srv/app.git`) matches.
+    return {"/srv/", "app.git"}
+
+
 def shipped_constants() -> list[tuple[Path, str]]:
     return [
         (path, text)

@@ -12,6 +12,22 @@ class Leak:
     matched: str
 
 
+def no_constant_contains_any_substring(
+    constants: list[tuple[Path, str]], substrings: set[str]
+) -> None:
+    # A plain substring check, not the whole-word honeypot matcher: a layout path is a literal
+    # fragment that must not appear anywhere in a shipped constant.
+    leaks = [
+        (path, substring)
+        for path, text in constants
+        for substring in sorted(substrings)
+        if substring in text
+    ]
+    assert not leaks, "Shipped constants name layout literals:\n" + "\n".join(
+        f"{path}: {substring}" for path, substring in leaks
+    )
+
+
 def no_constant_contains_any_of(constants: list[tuple[Path, str]], literals: set[str]) -> None:
     prepared_literals = [_Literal.of(literal) for literal in sorted(literals)]
     leaks = [

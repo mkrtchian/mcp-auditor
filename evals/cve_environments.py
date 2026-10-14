@@ -1,10 +1,10 @@
 """Per-target CVE environment context managers.
 
-Each builder seeds a throwaway environment (a temp root mounted into the
-container, the two git repos), enters the generic planting layer for the
-per-launch nonces and the network and sidecars a kept place needs, yields the
-Docker `Launch` that stands the vulnerable server up, and tears everything down
-on exit, even on failure.
+Each builder materialises the frozen `/srv` deployment layout (ADR 031) under a temp root
+mounted into the container, adds whatever target-specific vulnerable structure its flaw needs,
+enters the generic planting layer for the per-launch nonces and the network and sidecars a
+kept place needs, yields the Docker `Launch` that stands the vulnerable server up, and tears
+everything down on exit, even on failure.
 
 Every container the benchmark starts runs under `confinement_args`, and the
 vulnerable servers whose image has no `USER` run as an unprivileged user. The
@@ -56,6 +56,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO
 
+from evals.cve_layout import ANCHOR_PATHS, build_layout
+from evals.cve_places import LayoutAnchor
 from evals.cve_planting import (
     DockerPlanting,
     PlantedArgs,
@@ -63,7 +65,6 @@ from evals.cve_planting import (
     confinement_args,
     planted,
 )
-from evals.cve_seeding import init_git_repo_with_commit, make_dir_with_file, plant_symlink
 from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
@@ -71,11 +72,9 @@ from mcp_auditor.domain.ports import MCPClientPort
 
 TOOL_CALL_TIMEOUT = 30  # the client's own default, the replay passes a short one to stay fast
 
-# No per-launch nonce is written by hand any more: the proof is planted at a kept place
-# through `planted`. The builders keep their vulnerable structure (the symlink, the sibling
-# directory, the two repos) and seed it with this neutral marker, which the deferred fixture
-# shaping repoints at a planted file.
-_UNPLANTED = "unplanted"
+_WORKSPACE = ANCHOR_PATHS[LayoutAnchor.WORKSPACE]  # the mount target, /srv
+_PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]  # the in-scope checkout, /srv/app
+_CHECKOUT = Path(_PROJECT).relative_to(_WORKSPACE)  # the checkout's path under the temp root
 
 
 @dataclass(frozen=True)
@@ -107,51 +106,75 @@ async def connect(
 @contextmanager
 def filesystem_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        (root / "sandbox").mkdir(parents=True)
-        flag = make_dir_with_file(root / "outside", "flag.txt", _UNPLANTED)
-        plant_symlink(root / "sandbox" / "report", flag)
+        build_layout(root, spec.layout)
+        # One leak<N>/report symlink inside the in-scope checkout per planted file place,
+        # pointing (absolute) at the coordinate where the nonce is mounted. The flaw follows it
+        # out of scope; the patched server does not. The exploit discovers them by listing the
+        # checkout. The prefix-collision sibling needs no extra structure: app.git is in the tree.
+        checkout = root / _CHECKOUT
+        for index, intent in enumerate(spec.files):
+            leak = checkout / f"leak{index}"
+            leak.mkdir()
+            os.symlink(intent.container_path, leak / "report")
         yield _filesystem_launch(root, image, args)
 
 
 @contextmanager
 def prefix_collision_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        (root / "sandbox").mkdir(parents=True)
-        make_dir_with_file(root / "sandbox_secret", "flag.txt", _UNPLANTED)
+        build_layout(root, spec.layout)
         yield _filesystem_launch(root, image, args)
 
 
 @contextmanager
 def repository_bypass_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        init_git_repo_with_commit(root / "repo", "initial commit")
-        init_git_repo_with_commit(root / "other", _UNPLANTED)
+        build_layout(root, spec.layout)
         yield _git_launch(root, image, args)
 
 
 @contextmanager
 def git_init_traversal_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        init_git_repo_with_commit(root / "repo", "initial commit")
-        make_dir_with_file(root / "secret", "flag.txt", _UNPLANTED)
+        build_layout(root, spec.layout)
         yield _git_launch(root, image, args, chain_budget=3, max_chain_steps=5)
 
 
 @contextmanager
 def command_injection_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
-    with planted(spec, image, DockerPlanting()) as args:
+    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
+        build_layout(root, spec.layout)
         yield Launch(
             command="docker",
-            args=["run", "-i", "--rm", *confinement_args(), *args.run_args(), image],
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                *args.run_args(),
+                "-v",
+                f"{root}:{_WORKSPACE}:ro",
+                image,
+            ],
         )
 
 
 @contextmanager
 def ssrf_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
-    with planted(spec, image, DockerPlanting()) as args:
+    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
+        build_layout(root, spec.layout)
         yield Launch(
             command="docker",
-            args=["run", "-i", "--rm", *confinement_args(), *args.run_args(), image],
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                *args.run_args(),
+                "-v",
+                f"{root}:{_WORKSPACE}:ro",
+                image,
+            ],
         )
 
 
@@ -165,6 +188,8 @@ def _temp_root() -> Generator[Path]:
 
 
 def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
+    # Read-only: the filesystem server only reads, and git_init (the one writer) belongs to the
+    # git targets, which mount read-write.
     return Launch(
         command="docker",
         args=[
@@ -174,9 +199,9 @@ def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
             *confinement_args(),
             *args.run_args(),
             "-v",
-            f"{root}:/work",
+            f"{root}:{_WORKSPACE}:ro",
             image,
-            "/work/sandbox",
+            _PROJECT,
         ],
     )
 
@@ -184,6 +209,7 @@ def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
 def _git_launch(
     root: Path, image: str, args: PlantedArgs, chain_budget: int = 0, max_chain_steps: int = 3
 ) -> Launch:
+    # Read-write: git_init writes a .git into /srv, and git operates on a repo it owns.
     return Launch(
         command="docker",
         args=[
@@ -193,10 +219,10 @@ def _git_launch(
             *confinement_args(),
             *args.run_args(),
             "-v",
-            f"{root}:/work",
+            f"{root}:{_WORKSPACE}",
             image,
             "--repository",
-            "/work/repo",
+            _PROJECT,
         ],
         chain_budget=chain_budget,
         max_chain_steps=max_chain_steps,

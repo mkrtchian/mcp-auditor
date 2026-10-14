@@ -8,12 +8,12 @@ from pydantic import BaseModel
 from evals import (
     cve_endpoint_address,
     cve_environments,
+    cve_layout,
     cve_places,
     cve_planting,
     cve_planting_base,
     cve_planting_docker,
     cve_planting_spec,
-    cve_seeding,
 )
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
 from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
@@ -27,7 +27,7 @@ CVE_BASELINE_DIRECTORY = Path(__file__).parent / "baselines" / "cve"
 # decides what reaches the auditor, so a semantic change to it moves every target's fingerprint.
 _ENVIRONMENT_PATHS = (
     Path(cve_environments.__file__),
-    Path(cve_seeding.__file__),
+    Path(cve_layout.__file__),
     Path(cve_places.__file__),
     Path(cve_planting.__file__),
     Path(cve_planting_base.__file__),
@@ -78,7 +78,7 @@ def fixture_fingerprint(
     """What builds, seeds and launches the target, and what of it reaches the auditor or
     the oracle (ADR 020's principle, read per target by ADR 024).
 
-    In: the environment, places and seeding modules (AST fingerprint, so comments, formatting
+    In: the environment and places modules (AST fingerprint, so comments, formatting
     and module docstrings are out), each Dockerfile of the target's images and the patched
     twin's Dockerfile (both without their comment and blank lines, so a patched pin that moves
     moves the fingerprint), the builder's name, the server image, the mechanism, the aim, the
