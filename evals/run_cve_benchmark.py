@@ -17,6 +17,7 @@ from evals.concurrency import bounded, positive_int
 from evals.cve_audit import audit_target
 from evals.cve_baseline import CVE_BASELINE_DIRECTORY, CVERunConditions
 from evals.cve_calibration import calibrate_all, calibrate_one, check_target
+from evals.cve_layout_check import confirm_admission
 from evals.cve_oracle import (
     CVEBenchmarkReport,
     CVEResult,
@@ -105,7 +106,13 @@ async def _run(
         all_live = await calibrate_all(
             graded, bounded(lambda t: calibrate_one(t, places), args.concurrency), ci=args.ci
         )
+        # ADR 031 admission, confirmed before a draw: Docker-dependent, deterministic, run only
+        # under the maintainer paths (calibrate and record-baseline), never on a gated comparison
+        # and not beside the synchronous preflight (no container exists there).
+        await confirm_admission(graded, places)
         return 0 if all_live else 1
+    if args.record_baseline:
+        await confirm_admission(graded, places)
     return await _run_graded(args, graded, tracked, places)
 
 

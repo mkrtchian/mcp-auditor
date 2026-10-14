@@ -1,0 +1,8 @@
+{
+  "bare_url_refused_without_scope_or_disclosure": false,
+  "bare_url_revealed_by_origin_record": true,
+  "catalogue_place_is_on_the_route": true,
+  "history_env_revealed_by_origin_record": true,
+  "workspace_dotenv_refused_without_scope": false,
+  "workspace_dotenv_revealed_as_scope_parent": true
+}

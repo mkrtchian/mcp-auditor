@@ -1,0 +1,14 @@
+{
+  "nonce_leaks_into_the_ordinary_surface": {
+    "nonce_in_surface": true,
+    "surface_unchanged": false
+  },
+  "planted_surface_differs": {
+    "nonce_in_surface": false,
+    "surface_unchanged": false
+  },
+  "tree_invisible_to_the_ordinary_surface": {
+    "nonce_in_surface": false,
+    "surface_unchanged": true
+  }
+}
