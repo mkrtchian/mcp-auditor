@@ -112,7 +112,7 @@ def _plant_file(place: Place, host: PlantingHost, nonces: NonceSource, draft: _S
     content = nonces.token()
     draft.nonces[place.id] = content
     for raw in _coordinate_paths(place.coordinates):
-        container_path = _resolve_container_path(raw, host)
+        container_path = resolve_container_path(raw, host.working_directory)
         _reject_overlap(place.id, container_path, draft)
         draft.files.append((place.id, FileIntent(container_path, content)))
 
@@ -252,7 +252,10 @@ def _coordinate_paths(coordinates: Coordinates) -> tuple[str, ...]:
     return (_require(coordinates.path),)
 
 
-def _resolve_container_path(path: str, host: PlantingHost) -> str:
+def resolve_container_path(path: str, working_directory: str = "/") -> str:
+    """The container path a coordinate mounts at. Shared with the kubernetes exploit so the
+    planted path and the swept path cannot drift. A command-execution coordinate is absolute or
+    `$HOME`-rooted, so the exploit needs no working directory; the planter passes the host's."""
     segments = [_PLACEHOLDER if _is_placeholder(part) else part for part in path.split("/")]
     resolved = "/".join(segments)
     if resolved.startswith("~/"):
@@ -262,7 +265,7 @@ def _resolve_container_path(path: str, host: PlantingHost) -> str:
     elif resolved.startswith("/"):
         absolute = resolved
     else:
-        absolute = f"{host.working_directory}/{resolved}"
+        absolute = f"{working_directory}/{resolved}"
     # normpath preserves exactly two leading slashes (POSIX), so collapse the run first: a
     # coordinate `//a/b` means the same mount as `/a/b` and must read as equal to it.
     return posixpath.normpath("/" + absolute.lstrip("/"))

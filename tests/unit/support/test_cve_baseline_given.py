@@ -162,7 +162,7 @@ def _changing_the_kept_record_family() -> TargetChange:
     return change
 
 
-async def _another_exploit(client: MCPClientPort) -> None:
+async def _another_exploit(_places: Places, client: MCPClientPort) -> None:
     await client.call_tool("kubectl_generic", {"command": "version && id"})
 
 

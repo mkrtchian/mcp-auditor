@@ -87,24 +87,26 @@ async def survey_one(target: CVETarget, places: Places) -> TargetSurvey:
     facts: list[PlaceFacts] = []
     not_surveyed: list[Place] = []
     for group in grouped.groups:
-        surveyed = await _survey_group(target, group)
+        surveyed = await _survey_group(target, group, places)
         if surveyed is not None:
             facts += surveyed
         else:
             for place in group:  # retry one launch per place so one bad candidate hides no other
-                single = await _survey_group(target, (place,))
+                single = await _survey_group(target, (place,), places)
                 facts += single if single is not None else []
                 if single is None:
                     not_surveyed.append(place)
     return TargetSurvey(target.cve_id, facts, grouped.not_plantable, not_surveyed)
 
 
-async def _survey_group(target: CVETarget, group: tuple[Place, ...]) -> list[PlaceFacts] | None:
+async def _survey_group(
+    target: CVETarget, group: tuple[Place, ...], places: Places
+) -> list[PlaceFacts] | None:
     target.planting_spec(group)  # a refusal the grouping should have prevented crashes the survey
-    vulnerable = await _exercise(target, group, TargetVersion.VULNERABLE, benign=True)
+    vulnerable = await _exercise(target, group, TargetVersion.VULNERABLE, places, benign=True)
     if vulnerable is None:
         return None
-    patched = await _exercise(target, group, TargetVersion.PATCHED, benign=False)
+    patched = await _exercise(target, group, TargetVersion.PATCHED, places, benign=False)
     if patched is None:
         return None
     return [
@@ -125,7 +127,12 @@ class _Surfaced:
 
 
 async def _exercise(
-    target: CVETarget, group: tuple[Place, ...], version: TargetVersion, *, benign: bool
+    target: CVETarget,
+    group: tuple[Place, ...],
+    version: TargetVersion,
+    places: Places,
+    *,
+    benign: bool,
 ) -> _Surfaced | None:
     with tempfile.TemporaryFile("w+") as server_stderr:
         try:
@@ -133,8 +140,10 @@ async def _exercise(
                 target.launched(group, version=version) as planted,
                 connect(planted.launch, server_stderr) as client,
             ):
-                benign_exchanges = await _call(target.benign, client) if benign else []
-                exploit_exchanges = [await _call(exploit, client) for exploit in target.exploits]
+                benign_exchanges = await _call(target.benign, places, client) if benign else []
+                exploit_exchanges = [
+                    await _call(exploit, places, client) for exploit in target.exploits
+                ]
         except Exception:  # a Docker or setup failure, retried per place, never a spec refusal
             return None
     graded = PlantedTarget(target.mechanism, target.aim, planted.nonces)
@@ -142,10 +151,12 @@ async def _exercise(
 
 
 async def _call(
-    action: Callable[[MCPClientPort], Awaitable[None]], client: MCPClientPort
+    action: Callable[[Places, MCPClientPort], Awaitable[None]],
+    places: Places,
+    client: MCPClientPort,
 ) -> list[Exchange]:
     recorder = RecordingClient(client)
-    await action(recorder)
+    await action(places, recorder)
     return recorder.exchanges
 
 

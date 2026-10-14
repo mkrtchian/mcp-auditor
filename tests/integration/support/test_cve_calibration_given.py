@@ -126,8 +126,8 @@ def _a_file_place(place_id: str, path: str) -> Place:
     )
 
 
-def _reading(path: str) -> Callable[[MCPClientPort], Awaitable[None]]:
-    async def read(client: MCPClientPort) -> None:
+def _reading(path: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def read(_places: Places, client: MCPClientPort) -> None:
         await client.call_tool("read", {"path": path})
 
     return read
@@ -136,7 +136,7 @@ def _reading(path: str) -> Callable[[MCPClientPort], Awaitable[None]]:
 def _a_target(
     cve_id: str,
     builder: Builder,
-    benign: Callable[[MCPClientPort], Awaitable[None]],
+    benign: Callable[[Places, MCPClientPort], Awaitable[None]],
     aim: re.Pattern[str] = OUTSIDE_AIM,
     kept_places: tuple[str, ...] = (KEPT_FLAG_ID,),
 ) -> CVETarget:

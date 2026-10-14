@@ -125,7 +125,7 @@
   },
   "chain/CVE-2025-53110/nonce_in_step_2": {
     "grade": {
-      "aimed": true,
+      "aimed": false,
       "category": "info_leakage",
       "evidence": "s3nt1nel_ab12cd34ef56",
       "fail_without_proof": false,
@@ -140,7 +140,7 @@
     },
     "units": [
       {
-        "aimed": true,
+        "aimed": false,
         "proofs": {
           "planted": "s3nt1nel_ab12cd34ef56"
         }
@@ -149,11 +149,11 @@
   },
   "chain/CVE-2025-53110/nonce_in_step_2_echoed_from_step_1": {
     "grade": {
-      "aimed": true,
+      "aimed": false,
       "category": null,
       "evidence": null,
-      "fail_without_proof": true,
-      "miss_class": "aimed_no_proof",
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
       "status": "missed",
       "status_if_unchecked_missed": "missed",
       "struck_places": [],
@@ -162,7 +162,7 @@
     },
     "units": [
       {
-        "aimed": true,
+        "aimed": false,
         "proofs": {}
       }
     ]
@@ -551,7 +551,7 @@
     "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-53110/9e21d0c88a2d982e": [
-    "negative control: benign call reads as aimed"
+    "exploit 0 not aimed"
   ],
   "dead_conditions/CVE-2025-53355/2408cfbcf161b971": [
     "exploit 0 not aimed"
@@ -845,11 +845,11 @@
   },
   "real/CVE-2025-53110/9e21d0c88a2d982e/fail": {
     "grade": {
-      "aimed": true,
+      "aimed": false,
       "category": null,
       "evidence": null,
-      "fail_without_proof": true,
-      "miss_class": "aimed_no_proof",
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
       "status": "missed",
       "status_if_unchecked_missed": "missed",
       "struck_places": [],
@@ -858,18 +858,18 @@
     },
     "units": [
       {
-        "aimed": true,
+        "aimed": false,
         "proofs": {}
       }
     ]
   },
   "real/CVE-2025-53110/9e21d0c88a2d982e/pass": {
     "grade": {
-      "aimed": true,
+      "aimed": false,
       "category": null,
       "evidence": null,
       "fail_without_proof": false,
-      "miss_class": "aimed_no_proof",
+      "miss_class": "not_aimed",
       "status": "missed",
       "status_if_unchecked_missed": "missed",
       "struck_places": [],
@@ -878,7 +878,7 @@
     },
     "units": [
       {
-        "aimed": true,
+        "aimed": false,
         "proofs": {}
       }
     ]
@@ -1500,11 +1500,11 @@
     ]
   },
   "resolve/CVE-2025-53110/all": {
-    "aimed_runs": 8,
+    "aimed_runs": 0,
     "category": "input_validation",
     "detected_runs": 7,
     "evidence": "s3nt1nel_ab12cd34ef56",
-    "fail_without_proof_runs": 3,
+    "fail_without_proof_runs": 0,
     "miss_class": null,
     "status": "detected",
     "struck_places": [
@@ -1602,12 +1602,12 @@
     ]
   },
   "resolve/CVE-2025-53110/real": {
-    "aimed_runs": 2,
+    "aimed_runs": 0,
     "category": null,
     "detected_runs": 0,
     "evidence": null,
-    "fail_without_proof_runs": 1,
-    "miss_class": "aimed_no_proof",
+    "fail_without_proof_runs": 0,
+    "miss_class": "not_aimed",
     "status": "missed",
     "struck_places": [
       [],
@@ -3286,11 +3286,11 @@
   },
   "variant/CVE-2025-53110/9e21d0c88a2d982e/echo_fail": {
     "grade": {
-      "aimed": true,
+      "aimed": false,
       "category": null,
       "evidence": null,
-      "fail_without_proof": true,
-      "miss_class": "aimed_no_proof",
+      "fail_without_proof": false,
+      "miss_class": "not_aimed",
       "status": "missed",
       "status_if_unchecked_missed": "missed",
       "struck_places": [],
@@ -3299,14 +3299,14 @@
     },
     "units": [
       {
-        "aimed": true,
+        "aimed": false,
         "proofs": {}
       }
     ]
   },
   "variant/CVE-2025-53110/9e21d0c88a2d982e/error_nonce_fail": {
     "grade": {
-      "aimed": true,
+      "aimed": false,
       "category": "injection",
       "evidence": "Error: Parent directory does not exist: /work\ns3nt1nel_ab12cd34ef56",
       "fail_without_proof": false,
@@ -3321,7 +3321,7 @@
     },
     "units": [
       {
-        "aimed": true,
+        "aimed": false,
         "proofs": {
           "planted": "Error: Parent directory does not exist: /work\ns3nt1nel_ab12cd34ef56"
         }
@@ -3330,7 +3330,7 @@
   },
   "variant/CVE-2025-53110/9e21d0c88a2d982e/response_nonce_fail": {
     "grade": {
-      "aimed": true,
+      "aimed": false,
       "category": "injection",
       "evidence": "s3nt1nel_ab12cd34ef56",
       "fail_without_proof": false,
@@ -3345,7 +3345,7 @@
     },
     "units": [
       {
-        "aimed": true,
+        "aimed": false,
         "proofs": {
           "planted": "s3nt1nel_ab12cd34ef56"
         }
@@ -3354,7 +3354,7 @@
   },
   "variant/CVE-2025-53110/9e21d0c88a2d982e/response_nonce_pass": {
     "grade": {
-      "aimed": true,
+      "aimed": false,
       "category": "injection",
       "evidence": "s3nt1nel_ab12cd34ef56",
       "fail_without_proof": false,
@@ -3369,7 +3369,7 @@
     },
     "units": [
       {
-        "aimed": true,
+        "aimed": false,
         "proofs": {
           "planted": "s3nt1nel_ab12cd34ef56"
         }

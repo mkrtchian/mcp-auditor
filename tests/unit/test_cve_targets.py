@@ -6,19 +6,54 @@ from pathlib import Path
 import pytest
 import yaml
 
+from evals import cve_exploits
 from evals.cve_environments import Launch
-from evals.cve_places import Coordinates, Place, PlantKind
+from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingSpec
 from evals.cve_proofs import is_aimed
 from evals.cve_recording_client import RecordingClient
 from evals.cve_targets import CVE_TARGETS, CVETarget, TargetVersion, image_tag
 from evals.cve_units import Unit, unit_of_exchanges
+from mcp_auditor.domain import AuditCategory, AuditPayload, BlockedPayload, ToolDefinition
+from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
 
 SSRF_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-65513")
 KUBERNETES_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53355")
 COMPOSE_PATH = Path(__file__).resolve().parents[2] / "evals" / "docker" / "compose.yml"
+
+ExploitCall = Callable[[Places, MCPClientPort], Awaitable[None]]
+
+
+def _a_fictional_places() -> Places:
+    """One place per catalogue reach the sweeping exploits read: a command-execution file and
+    env for the kubernetes sweep, an internal-fetch endpoint for the SSRF sweep. The layout
+    exploits read the frozen /srv constants, not these records."""
+    return {
+        "fict-file": Place(
+            id="fict-file",
+            family="fictional",
+            reachable_by=frozenset({"arbitrary_read", "command_execution"}),
+            kind=PlantKind.FILE,
+            coordinates=Coordinates(PlantKind.FILE, path="/etc/fict-secret"),
+        ),
+        "fict-env": Place(
+            id="fict-env",
+            family="fictional",
+            reachable_by=frozenset({"command_execution"}),
+            kind=PlantKind.ENV,
+            coordinates=Coordinates(PlantKind.ENV, name="FICT_SECRET"),
+        ),
+        "fict-endpoint": Place(
+            id="fict-endpoint",
+            family="fictional",
+            reachable_by=frozenset({"internal_fetch"}),
+            kind=PlantKind.HTTP_ENDPOINT,
+            coordinates=Coordinates(PlantKind.HTTP_ENDPOINT, host="169.254.169.254", path="/fict"),
+        ),
+    }
 
 
 class _FakeNonces:
@@ -46,6 +81,29 @@ async def test_every_exploit_reads_as_aimed_and_the_benign_call_does_not(target:
     benign = await _recorded(target.benign)
 
     assert not is_aimed(benign, target.aim)
+
+
+async def test_the_git_init_exploit_stages_exact_relative_paths_outside_the_checkout():
+    client = FakeMCPClient([])
+
+    await cve_exploits.exploit_git_init_traversal(_a_fictional_places(), client)
+
+    staged = [args for name, args in client.calls if name == "git_add"]
+    assert staged == [{"repo_path": "/srv", "files": ["app.git/config", ".env"]}]
+    files = [path for call in staged for path in call["files"]]
+    assert "." not in files  # "." freezes git on binary objects (smoke-check)
+    assert all(not path.startswith("app/") for path in files)  # the checkout is a gitlink
+
+
+async def test_the_destructive_payload_guard_permits_the_git_init_chain_on_srv():
+    client = FakeMCPClient([])
+    await cve_exploits.exploit_git_init_traversal(_a_fictional_places(), client)
+    guard = AuditedServer(FakeMCPClient([]))
+    tool = ToolDefinition(name="git", description="git", input_schema={"type": "object"})
+
+    for _name, args in client.calls:
+        outcome = await guard.attempt(tool, _a_payload(args))
+        assert not isinstance(outcome, BlockedPayload), args
 
 
 @pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])
@@ -147,7 +205,14 @@ def test_the_ssrf_aim_does_not_read_a_public_host_as_aimed(url: str):
     assert not SSRF_TARGET.aim.search(url)
 
 
-async def _recorded(call: Callable[[MCPClientPort], Awaitable[None]]) -> Unit:
-    recorder = RecordingClient(FakeMCPClient([]))
-    await call(recorder)
+def _a_payload(arguments: dict[str, object]) -> AuditPayload:
+    return AuditPayload(category=AuditCategory.INJECTION, description="probe", arguments=arguments)
+
+
+async def _recorded(call: ExploitCall) -> Unit:
+    # The symlink traversal discovers the planted leaks by listing the checkout, so the fake
+    # names at least one leak<N> for its read chain to issue an aimed read_file.
+    listing = ToolResponse(content="leak0\nleak7\n")
+    recorder = RecordingClient(FakeMCPClient([], responses={"list_directory": listing}))
+    await call(_a_fictional_places(), recorder)
     return unit_of_exchanges([(args, response.content) for _, args, response in recorder.exchanges])

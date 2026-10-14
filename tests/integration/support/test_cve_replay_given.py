@@ -287,8 +287,8 @@ def _a_target(serve: Serve | None, kept: tuple[str, ...]) -> CVETarget:
     )
 
 
-def _reading(path: str) -> Callable[[MCPClientPort], Awaitable[None]]:
-    async def read(client: MCPClientPort) -> None:
+def _reading(path: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def read(_places: Places, client: MCPClientPort) -> None:
         await client.call_tool("read", {"path": path})
 
     return read

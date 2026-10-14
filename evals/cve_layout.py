@@ -35,6 +35,15 @@ _HISTORY_ENV = ".env"
 _WORKSPACE_ENV = ".env"
 _CONFIG = "config"
 
+# The absolute paths the layout exploits aim at, derived once so an exploit reads one spelling
+# of a node instead of re-anchoring it. The container paths of the three anchors, the bare's
+# config file (the prefix-collision and git_init target), and the workspace dotenv.
+WORKSPACE = ANCHOR_PATHS[LayoutAnchor.WORKSPACE]
+PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]
+PROJECT_BARE = ANCHOR_PATHS[LayoutAnchor.PROJECT_BARE]
+BARE_CONFIG = f"{PROJECT_BARE}/{_CONFIG}"
+WORKSPACE_DOTENV = f"{WORKSPACE}/{_WORKSPACE_ENV}"
+
 # The neutral-content templates: a remote URL whose userinfo carries the value, and a dotenv
 # line whose value carries it. Only the value changes between a kept and an unkept node.
 _REMOTE_USER = "deploy"

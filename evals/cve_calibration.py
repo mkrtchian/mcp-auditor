@@ -95,13 +95,13 @@ async def check_target(target: CVETarget, places: Places) -> list[str]:
     version and, once it is torn down, the patched one."""
     records = kept_records(target.kept_places, places)
     target.planting_spec(records)
-    vulnerable = await _exercise(target, records, TargetVersion.VULNERABLE)
+    vulnerable = await _exercise(target, records, TargetVersion.VULNERABLE, places)
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
     conditions = dead_conditions(
         _graded(target, vulnerable), _units(vulnerable.exploits), _unit(vulnerable.benign)
     )
-    patched = await _exercise(target, records, TargetVersion.PATCHED)
+    patched = await _exercise(target, records, TargetVersion.PATCHED, places)
     if patched is None:
         conditions.append(_launch_failed(TargetVersion.PATCHED))
     else:
@@ -129,7 +129,7 @@ class _Exercised:
 
 
 async def _exercise(
-    target: CVETarget, records: tuple[Place, ...], version: TargetVersion
+    target: CVETarget, records: tuple[Place, ...], version: TargetVersion, places: Places
 ) -> _Exercised | None:
     # Any failure reads as not live and the next target still runs. A server that dies before
     # the handshake only says "Connection closed", so its stderr carries the cause. Reports
@@ -142,11 +142,11 @@ async def _exercise(
                 connect(planted.launch, server_stderr) as client,
             ):
                 benign = RecordingClient(client)
-                await target.benign(benign)
+                await target.benign(places, benign)
                 exploits: list[RecordingClient] = []
                 for exploit in target.exploits:
                     recorder = RecordingClient(client)
-                    await exploit(recorder)
+                    await exploit(places, recorder)
                     exploits.append(recorder)
         except Exception as exc:
             cause = _root_cause(exc)
