@@ -6,6 +6,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals import (
+    cve_endpoint_address,
     cve_environments,
     cve_places,
     cve_planting,
@@ -32,6 +33,7 @@ _ENVIRONMENT_PATHS = (
     Path(cve_planting_base.__file__),
     Path(cve_planting_spec.__file__),
     Path(cve_planting_docker.__file__),
+    Path(cve_endpoint_address.__file__),
 )
 
 

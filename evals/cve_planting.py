@@ -43,6 +43,9 @@ from evals.cve_planting_base import (
     ImageAccounts as ImageAccounts,
 )
 from evals.cve_planting_base import (
+    LayoutNode as LayoutNode,
+)
+from evals.cve_planting_base import (
     NonceSource as NonceSource,
 )
 from evals.cve_planting_base import (
@@ -62,6 +65,7 @@ __all__ = [
     "SENTINEL_SERVICE",
     "DockerPlanting",
     "ImageAccounts",
+    "LayoutNode",
     "NonceSource",
     "PlantedArgs",
     "PlantingDocker",

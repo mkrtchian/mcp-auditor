@@ -2,8 +2,9 @@ import pytest
 
 import tests.unit.support.test_cve_planting_given as given
 import tests.unit.support.test_cve_planting_then as then
+from evals.cve_endpoint_address import RESERVED_NAME_BLOCK
 from evals.cve_planting import PlantingFailed, planted
-from evals.cve_planting_spec import RESERVED_NAME_BLOCK, served_file
+from evals.cve_planting_spec import served_file
 
 
 def test_a_name_host_on_a_launch_with_a_network_is_an_alias_on_the_bridge_with_no_holder():

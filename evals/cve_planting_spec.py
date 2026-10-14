@@ -4,21 +4,23 @@
 container-side intent and draws its nonce from the injected `NonceSource`. It refuses a
 place a launch cannot hold with a `ValueError` naming the entry id and the property, never
 the value, so a caller can validate a kept list without reading a coordinate. No coordinate
-value is hard-coded: the generic placeholder a `<segment>` resolves to and the private block
-a name host without a network is served on are harness constants, fingerprinted here.
+value is hard-coded: the generic placeholder a `<segment>` resolves to is a harness constant,
+fingerprinted here, and the endpoint bind-address resolution lives in `cve_endpoint_address`.
 """
 
 import posixpath
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from ipaddress import AddressValueError, IPv4Address, IPv4Network
 from urllib.parse import quote, unquote
 
+from evals.cve_endpoint_address import claim_bind_address, endpoint_bind_address
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting_base import (
     AccountIntent,
     EnvIntent,
     FileIntent,
+    LayoutNode,
     NonceSource,
     PlantingHost,
     PlantingSpec,
@@ -27,21 +29,16 @@ from evals.cve_planting_base import (
 )
 
 # The home of the account every launch runs as (matching the user arguments), the uid and
-# gid an `account` place runs under (high, so no stock image names them), the placeholder a
-# `<segment>` resolves to, and the private /24 a name host without a network is served on:
-# inside 10.0.0.0/8, outside Docker's default pools and outside 169.254.0.0/16.
+# gid an `account` place runs under (high, so no stock image names them), and the placeholder
+# a `<segment>` resolves to. The endpoint bind-address constants live in the sibling module.
 _HOME = "/tmp"
 _ACCOUNT_UID = 60123
 _ACCOUNT_GID = 60123
 _PLACEHOLDER = "mcpaudit-placeholder"
 _ACCOUNT_RESERVED_PATHS = ("/etc/passwd", "/etc/group")  # the mounts an account place adds
-RESERVED_NAME_BLOCK = IPv4Network("10.255.255.0/24")
-_LOOPBACK = IPv4Network("127.0.0.0/8")
-_NON_UNICAST_BLOCKS = (
-    IPv4Network("0.0.0.0/8"),
-    IPv4Network("224.0.0.0/4"),
-    IPv4Network("240.0.0.0/4"),
-)
+# A git_remote_url nonce is planted in the userinfo of a remote URL, so it must carry no byte
+# that would end or split the userinfo. The production token (MCPAUDIT-<hex>) is unreserved.
+URL_SAFE_USERINFO = re.compile(r"[A-Za-z0-9._~-]+")
 
 
 def planting_spec(
@@ -72,6 +69,7 @@ class _SpecDraft:
     account: AccountIntent | None = None
     hostname: str | None = None
     sentinels: list[SentinelIntent] = field(default_factory=list[SentinelIntent])
+    layout: list[LayoutNode] = field(default_factory=list[LayoutNode])
     address_setups: list[str] = field(default_factory=list[str])
     host_entries: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     endpoint_hosts: set[str] = field(default_factory=set[str])
@@ -97,6 +95,7 @@ class _SpecDraft:
             needs_network=self.host.has_network,
             needs_holder=any(sentinel.bind_address is not None for sentinel in self.sentinels),
             unplaceable=self.unplaceable,
+            layout=tuple(self.layout),
         )
 
     def _reject_account_mounts(self) -> None:
@@ -162,8 +161,8 @@ def _plant_http_endpoint(
         raise ValueError(f"{place.id}: a second http_endpoint place on the same host")
     draft.endpoint_hosts.add(endpoint_host)
     content = nonces.token()
-    bind_address = _endpoint_bind_address(place.id, endpoint_host, host, draft)
-    _claim_bind_address(place.id, bind_address, draft)
+    bind_address = endpoint_bind_address(place.id, endpoint_host, host, draft)
+    claim_bind_address(place.id, bind_address, draft)
     draft.nonces[place.id] = content
     draft.sentinels.append(
         SentinelIntent(
@@ -202,18 +201,36 @@ def _climbs_above_root(served: str) -> bool:
     return False
 
 
-def _claim_bind_address(entry_id: str, bind_address: str | None, draft: _SpecDraft) -> None:
-    if bind_address is None:  # a bridge alias: only a holder-bound sentinel claims an address
-        return
-    if bind_address in draft.bind_addresses:  # two hosts can resolve to one holder address
-        raise ValueError(f"{entry_id}: a second http_endpoint place on the same bind address")
-    draft.bind_addresses.add(bind_address)
-
-
 def _plant_unplaceable(
     place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft
 ) -> None:
     draft.unplaceable += 1
+
+
+def _plant_git_remote_url(
+    place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft
+) -> None:
+    content = nonces.token()
+    if URL_SAFE_USERINFO.fullmatch(content) is None:
+        raise ValueError(f"{place.id}: a git_remote_url nonce that is not URL-safe in a userinfo")
+    _record_layout_node(place, content, draft)
+
+
+def _plant_git_history(
+    place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft
+) -> None:
+    _record_layout_node(place, nonces.token(), draft)
+
+
+def _plant_dotenv(place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft) -> None:
+    _record_layout_node(place, nonces.token(), draft)
+
+
+def _record_layout_node(place: Place, content: str, draft: _SpecDraft) -> None:
+    anchor = _require(place.coordinates.anchor)
+    relpath = _require(place.coordinates.relpath)
+    draft.nonces[place.id] = content
+    draft.layout.append(LayoutNode(anchor, relpath, content))
 
 
 _PLANTERS = {
@@ -223,38 +240,10 @@ _PLANTERS = {
     PlantKind.HOSTNAME: _plant_hostname,
     PlantKind.HTTP_ENDPOINT: _plant_http_endpoint,
     PlantKind.UNPLACEABLE: _plant_unplaceable,
+    PlantKind.GIT_REMOTE_URL: _plant_git_remote_url,
+    PlantKind.GIT_HISTORY: _plant_git_history,
+    PlantKind.DOTENV: _plant_dotenv,
 }
-
-
-def _endpoint_bind_address(
-    entry_id: str, endpoint_host: str, host: PlantingHost, draft: _SpecDraft
-) -> str | None:
-    if endpoint_host == "localhost":
-        return "127.0.0.1"  # a loopback name: served on the holder's lo, no address setup
-    literal = _as_ipv4(endpoint_host)
-    if literal is not None:
-        return _literal_bind_address(entry_id, literal, draft)
-    if host.has_network:
-        return None  # a DNS name on a launch with a network: a bridge alias, no holder
-    return _name_host_bind_address(endpoint_host, draft)
-
-
-def _literal_bind_address(entry_id: str, literal: IPv4Address, draft: _SpecDraft) -> str:
-    if literal in RESERVED_NAME_BLOCK:
-        raise ValueError(f"{entry_id}: an http_endpoint IP literal inside the reserved block")
-    if any(literal in block for block in _NON_UNICAST_BLOCKS):
-        raise ValueError(f"{entry_id}: an http_endpoint IP literal is not a unicast host address")
-    if literal not in _LOOPBACK:
-        draft.address_setups.append(str(literal))
-    return str(literal)
-
-
-def _name_host_bind_address(endpoint_host: str, draft: _SpecDraft) -> str:
-    draft.reserved_index += 1
-    address = str(RESERVED_NAME_BLOCK.network_address + draft.reserved_index)
-    draft.address_setups.append(address)
-    draft.host_entries.append((endpoint_host, address))
-    return address
 
 
 def _coordinate_paths(coordinates: Coordinates) -> tuple[str, ...]:
@@ -291,13 +280,6 @@ def _reject_overlap(entry_id: str, path: str, draft: _SpecDraft) -> None:
 
 def _overlaps(path: str, other: str) -> bool:
     return path == other or path.startswith(f"{other}/") or other.startswith(f"{path}/")
-
-
-def _as_ipv4(host: str) -> IPv4Address | None:
-    try:
-        return IPv4Address(host)
-    except AddressValueError:
-        return None
 
 
 def _require[T](value: T | None) -> T:

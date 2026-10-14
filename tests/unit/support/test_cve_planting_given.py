@@ -5,7 +5,7 @@ nothing can be mistaken for the imported data.
 
 from collections.abc import Sequence
 
-from evals.cve_places import Coordinates, Place, PlantKind
+from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
 from evals.cve_planting import (
     NonceSource,
     PlantingHost,
@@ -74,6 +74,30 @@ def endpoint_place(
 
 def unplaceable_place(entry_id: str = "unplaceable-1") -> Place:
     return _place(entry_id, PlantKind.UNPLACEABLE, Coordinates(PlantKind.UNPLACEABLE))
+
+
+def git_remote_url_place(entry_id: str = "bare-remote-url-fic") -> Place:
+    return _place(
+        entry_id,
+        PlantKind.GIT_REMOTE_URL,
+        Coordinates(PlantKind.GIT_REMOTE_URL, anchor=LayoutAnchor.PROJECT_BARE, relpath="config"),
+    )
+
+
+def git_history_place(entry_id: str = "bare-history-fic") -> Place:
+    return _place(
+        entry_id,
+        PlantKind.GIT_HISTORY,
+        Coordinates(PlantKind.GIT_HISTORY, anchor=LayoutAnchor.PROJECT_BARE, relpath=".env"),
+    )
+
+
+def dotenv_place(entry_id: str = "ws-dotenv-fic") -> Place:
+    return _place(
+        entry_id,
+        PlantKind.DOTENV,
+        Coordinates(PlantKind.DOTENV, anchor=LayoutAnchor.WORKSPACE, relpath=".env"),
+    )
 
 
 def _place(entry_id: str, kind: PlantKind, coordinates: Coordinates) -> Place:

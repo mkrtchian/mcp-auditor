@@ -7,6 +7,7 @@ import pytest
 
 import tests.unit.support.test_cve_planting_given as given
 import tests.unit.support.test_cve_planting_then as then
+from evals.cve_endpoint_address import RESERVED_NAME_BLOCK
 from evals.cve_places import is_endpoint_host
 from evals.cve_planting import (
     RANDOM_NONCES,
@@ -17,7 +18,6 @@ from evals.cve_planting import (
     planted,
     planting_spec,
 )
-from evals.cve_planting_spec import RESERVED_NAME_BLOCK
 
 
 def _args_in(spec: PlantingSpec, docker: given.FakePlantingDocker | None = None) -> PlantedArgs:

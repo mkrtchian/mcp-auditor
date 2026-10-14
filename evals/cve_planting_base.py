@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from evals.cve_places import Place
+from evals.cve_places import LayoutAnchor, Place
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +97,13 @@ class SentinelIntent:
 
 
 @dataclass(frozen=True)
+class LayoutNode:
+    anchor: LayoutAnchor
+    relpath: str
+    content: str  # the nonce for a kept node, built into the frozen /srv tree
+
+
+@dataclass(frozen=True)
 class PlantingSpec:
     host: PlantingHost
     places: tuple[Place, ...]
@@ -111,6 +118,7 @@ class PlantingSpec:
     needs_network: bool
     needs_holder: bool
     unplaceable: int
+    layout: tuple[LayoutNode, ...] = ()
 
 
 @dataclass(frozen=True)
