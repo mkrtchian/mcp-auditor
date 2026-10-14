@@ -110,8 +110,14 @@ def _patched_dead_conditions(target: GradedTarget, inputs: JudgeInputs) -> list[
     return patched_dead_conditions(target, [exploit], benign_errored=False)
 
 
+# The filesystem sibling CVE-2025-53110 merged into the keeper CVE-2025-53109 (one patched twin
+# fixes both), so its historical judge cases grade against the keeper's merged target.
+_MERGED_SIBLINGS = {"CVE-2025-53110": "CVE-2025-53109"}
+
+
 def _graded_target(cve_id: str) -> given.FakeTarget:
-    [target] = [target for target in CVE_TARGETS if target.cve_id == cve_id]
+    keeper = _MERGED_SIBLINGS.get(cve_id, cve_id)
+    [target] = [target for target in CVE_TARGETS if target.cve_id == keeper]
     return given.FakeTarget(target.mechanism, {given.PLACE: given.SENTINEL}, target.aim)
 
 

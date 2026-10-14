@@ -106,6 +106,47 @@ async def test_the_destructive_payload_guard_permits_the_git_init_chain_on_srv()
         assert not isinstance(outcome, BlockedPayload), args
 
 
+def test_five_targets_remain_and_the_prefix_collision_merged_into_the_symlink_target():
+    ids = [target.cve_id for target in CVE_TARGETS]
+
+    assert len(ids) == 5
+    assert "CVE-2025-53110" not in ids
+
+
+def test_the_filesystem_target_aims_at_both_scope_escapes():
+    filesystem = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53109")
+
+    assert filesystem.aim.search("/srv/app/leak0/report")  # the symlink out of scope
+    assert filesystem.aim.search("/srv/app.git/config")  # the prefix-collision sibling
+
+
+def test_the_two_git_targets_keep_distinct_patched_twins():
+    twins = {
+        target.patched_image
+        for target in CVE_TARGETS
+        if target.cve_id in {"CVE-2025-68145", "CVE-2025-68143"}
+    }
+
+    assert len(twins) == 2
+
+
+@pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])
+async def test_the_tools_filter_names_exactly_the_tools_its_exploits_call(target: CVETarget):
+    called: set[str] = set()
+    for exploit in target.exploits:
+        client = FakeMCPClient(
+            [],
+            responses={
+                "list_directory": ToolResponse(content="leak0\n"),
+                "git_log": ToolResponse(content="a" * 40),
+            },
+        )
+        await exploit(_a_fictional_places(), client)
+        called.update(name for name, _ in client.calls)
+
+    assert target.tools_filter == frozenset(called)
+
+
 @pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])
 def test_every_server_and_patched_image_of_a_target_is_a_compose_service(target: CVETarget):
     services = yaml.safe_load(COMPOSE_PATH.read_text())["services"]

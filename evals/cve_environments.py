@@ -120,13 +120,6 @@ def filesystem_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
 
 
 @contextmanager
-def prefix_collision_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        build_layout(root, spec.layout)
-        yield _filesystem_launch(root, image, args)
-
-
-@contextmanager
 def repository_bypass_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
         build_layout(root, spec.layout)

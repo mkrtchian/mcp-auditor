@@ -21,9 +21,6 @@ KEPT_LAYOUT_ID = "fict-layout"
 
 KUBERNETES_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53355")
 SYMLINK_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53109")
-PREFIX_COLLISION_TARGET = next(
-    target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53110"
-)
 RECORDED_COMMIT = "0123abc"
 
 
@@ -193,10 +190,6 @@ UNFINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "a kept record's family": _changing_the_kept_record_family(),
     "the sentinel Dockerfile (no kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
 }
-
-
-def a_prefix_collision_target_built_like_the_symlink_one() -> CVETarget:
-    return dataclasses.replace(PREFIX_COLLISION_TARGET, builder=SYMLINK_TARGET.builder)
 
 
 def conditions(runs: int = 3) -> CVERunConditions:

@@ -1,3 +1,5 @@
+import dataclasses
+import re
 from pathlib import Path
 
 import pytest
@@ -48,11 +50,10 @@ def test_the_fixture_fingerprint_ignores_what_neither_builds_nor_reaches_the_tar
 
 
 def test_two_targets_sharing_an_image_and_a_builder_but_not_an_aim_differ():
-    prefix_collision = given.a_prefix_collision_target_built_like_the_symlink_one()
+    one = dataclasses.replace(given.SYMLINK_TARGET, aim=re.compile(r"(^|/)report$"))
+    other = dataclasses.replace(given.SYMLINK_TARGET, aim=re.compile(r"^/srv/app[^/]"))
 
-    assert fixture_fingerprint(prefix_collision, {}) != fixture_fingerprint(
-        given.SYMLINK_TARGET, {}
-    )
+    assert fixture_fingerprint(one, {}) != fixture_fingerprint(other, {})
 
 
 def test_the_fixture_fingerprint_moves_when_a_kept_layout_coordinate_moves():
