@@ -7,7 +7,7 @@ FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e16
 
 RUN npm i -g @modelcontextprotocol/server-filesystem@0.6.2
 
-# The allowed dir (/work/sandbox) is supplied as a `docker run` arg by the
+# The allowed dir (/srv/app) is supplied as a `docker run` arg by the
 # environment, not baked. The server speaks MCP over stdio: keep stdout clean
 # (JSON-RPC only), so no ENTRYPOINT banner / echo.
 ENTRYPOINT ["mcp-server-filesystem"]
