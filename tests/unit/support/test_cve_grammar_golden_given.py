@@ -114,9 +114,17 @@ def _patched_dead_conditions(target: GradedTarget, inputs: JudgeInputs) -> list[
 # fixes both), so its historical judge cases grade against the keeper's merged target.
 _MERGED_SIBLINGS = {"CVE-2025-53110": "CVE-2025-53109"}
 
+# CVE-2025-68145 left the acceptance layer (its out-of-scope bare place has no route), but its
+# judge cases stay pinned in the corpus. They grade under CVE-2025-68143, the surviving target
+# of the same mechanism (READ_OUTSIDE_SCOPE) and aim (_OUTSIDE_REPO_AIM), so the golden values
+# are unchanged. Nothing is merged: this is a removed target graded under one of identical
+# mechanism. Fragile: a change to CVE-2025-68143's aim would move these entries with no reason
+# of their own.
+_REMOVED_GRADED_UNDER = {"CVE-2025-68145": "CVE-2025-68143"}
+
 
 def _graded_target(cve_id: str) -> given.FakeTarget:
-    keeper = _MERGED_SIBLINGS.get(cve_id, cve_id)
+    keeper = _REMOVED_GRADED_UNDER.get(cve_id) or _MERGED_SIBLINGS.get(cve_id, cve_id)
     [target] = [target for target in CVE_TARGETS if target.cve_id == keeper]
     return given.FakeTarget(target.mechanism, {given.PLACE: given.SENTINEL}, target.aim)
 

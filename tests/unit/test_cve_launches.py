@@ -11,7 +11,6 @@ from evals.cve_environments import (
     command_injection_env,
     filesystem_env,
     git_init_traversal_env,
-    repository_bypass_env,
     ssrf_env,
 )
 from evals.cve_layout import NEUTRAL_TOKEN
@@ -53,7 +52,7 @@ def test_the_command_injection_fixture_launches_as_a_declared_container():
 
 
 def test_the_git_hosts_mount_the_tree_read_write():
-    for builder in (repository_bypass_env, git_init_traversal_env):
+    for builder in (git_init_traversal_env,):
         with builder("img", _empty_spec()) as launch:
             assert _mount(launch).endswith(":/srv")
 

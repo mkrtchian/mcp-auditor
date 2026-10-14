@@ -12,7 +12,7 @@ from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingSpec
 from evals.cve_proofs import is_aimed
 from evals.cve_recording_client import RecordingClient
-from evals.cve_targets import CVE_TARGETS, CVETarget, TargetVersion, image_tag
+from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, TargetVersion, image_tag
 from evals.cve_units import Unit, unit_of_exchanges
 from mcp_auditor.domain import AuditCategory, AuditPayload, BlockedPayload, ToolDefinition
 from mcp_auditor.domain.audited_server import AuditedServer
@@ -106,11 +106,12 @@ async def test_the_destructive_payload_guard_permits_the_git_init_chain_on_srv()
         assert not isinstance(outcome, BlockedPayload), args
 
 
-def test_five_targets_remain_and_the_prefix_collision_merged_into_the_symlink_target():
+def test_four_targets_remain_and_the_prefix_collision_merged_into_the_symlink_target():
     ids = [target.cve_id for target in CVE_TARGETS]
 
-    assert len(ids) == 5
+    assert len(ids) == 4
     assert "CVE-2025-53110" not in ids
+    assert "CVE-2025-68145" not in ids
 
 
 def test_the_filesystem_target_aims_at_both_scope_escapes():
@@ -120,14 +121,11 @@ def test_the_filesystem_target_aims_at_both_scope_escapes():
     assert filesystem.aim.search("/srv/app.git/config")  # the prefix-collision sibling
 
 
-def test_the_two_git_targets_keep_distinct_patched_twins():
-    twins = {
-        target.patched_image
-        for target in CVE_TARGETS
-        if target.cve_id in {"CVE-2025-68145", "CVE-2025-68143"}
-    }
+def test_the_repository_bypass_cve_is_out_of_scope_with_a_reason():
+    assert "CVE-2025-68145" not in {target.cve_id for target in CVE_TARGETS}
 
-    assert len(twins) == 2
+    bypass = next(cve for cve in OUT_OF_SCOPE_CVES if cve.cve_id == "CVE-2025-68145")
+    assert bypass.reason
 
 
 @pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])
@@ -136,10 +134,7 @@ async def test_the_tools_filter_names_exactly_the_tools_its_exploits_call(target
     for exploit in target.exploits:
         client = FakeMCPClient(
             [],
-            responses={
-                "list_directory": ToolResponse(content="leak0\n"),
-                "git_log": ToolResponse(content="a" * 40),
-            },
+            responses={"list_directory": ToolResponse(content="leak0\n")},
         )
         await exploit(_a_fictional_places(), client)
         called.update(name for name, _ in client.calls)

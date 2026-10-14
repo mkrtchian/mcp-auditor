@@ -1,6 +1,6 @@
-# CVE-2025-68143 / CVE-2025-68145 target: mcp-server-git.
+# CVE-2025-68143 target: mcp-server-git.
 # The vulnerable SERVER version is pinned exactly (a pre-2025.9.25 version carries
-# both git CVEs); transitive pip deps stay floating (no lockfile) since reproducing
+# git_init before it was removed); transitive pip deps stay floating (no lockfile) since reproducing
 # the vulnerable behaviour, not a byte-identical image, is the goal (decided 2026-07-08).
 # The one exception is mcp: the server declares mcp>=1.0.0 unbounded, and mcp 2 removed
 # the decorator API it registers its tools with, so it crashes at startup.

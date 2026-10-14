@@ -1,11 +1,10 @@
-# Build manifest only, never `compose up`. Build all ten images with:
+# Build manifest only, never `compose up`. Build all nine images with:
 #   docker compose -f evals/docker/compose.yml build
 # The benchmark runner launches each server with `docker run -i`, not compose.
-# Ten images cover the five targets (six CVEs) on both versions: filesystem serves
-# CVE-2025-53109 + 53110 (one merged target) and git serves CVE-2025-68143 + 68145 (two
-# targets), each with one patched twin per patched version
-# (the two git CVEs patch at different releases), plus kubernetes, fetch and the sentinel
-# sidecar. The sentinel has no patched twin: it is not a server image.
+# Nine images cover the four targets (five CVEs) on both versions: filesystem serves
+# CVE-2025-53109 + 53110 (one merged target) and git serves CVE-2025-68143 (one target),
+# each with its patched twin, plus kubernetes, fetch and the sentinel sidecar. The sentinel
+# has no patched twin: it is not a server image.
 services:
   filesystem:
     build:
@@ -30,12 +29,6 @@ services:
       context: .
       dockerfile: Dockerfile.git-patched-68143
     image: mcp-auditor-cve-git-patched-68143:local
-
-  git-patched-68145:
-    build:
-      context: .
-      dockerfile: Dockerfile.git-patched-68145
-    image: mcp-auditor-cve-git-patched-68145:local
 
   kubernetes:
     build:

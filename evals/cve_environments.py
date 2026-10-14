@@ -120,13 +120,6 @@ def filesystem_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
 
 
 @contextmanager
-def repository_bypass_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        build_layout(root, spec.layout)
-        yield _git_launch(root, image, args)
-
-
-@contextmanager
 def git_init_traversal_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
         build_layout(root, spec.layout)
@@ -182,7 +175,7 @@ def _temp_root() -> Generator[Path]:
 
 def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
     # Read-only: the filesystem server only reads, and git_init (the one writer) belongs to the
-    # git targets, which mount read-write.
+    # git target, which mounts read-write.
     return Launch(
         command="docker",
         args=[
