@@ -12,6 +12,7 @@ starts only once the vulnerable one is torn down.
 
 import asyncio
 import json
+import socket
 import tempfile
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -87,6 +88,30 @@ def patched_dead_conditions(
     return conditions
 
 
+_EGRESS_CANARY = "example.com"
+
+
+def egress_warning(needs_network: bool, benign_errored: bool, egress_reachable: bool) -> str | None:
+    """A note that a dead reading is probably a missing-egress artifact, not a broken patch. The
+    benign call of a network target (an SSRF fix) fetches a public host on purpose, so with no
+    outbound egress it errors for lack of network rather than because the patch broke a legitimate
+    fetch. The verdict stays dead either way, this only says why. None when it does not apply."""
+    if needs_network and benign_errored and not egress_reachable:
+        return (
+            f"no outbound egress ({_EGRESS_CANARY} unreachable): the patched benign call likely "
+            "failed for lack of network, not a broken patch"
+        )
+    return None
+
+
+def _egress_reachable(host: str = _EGRESS_CANARY, timeout: float = 5.0) -> bool:
+    try:
+        with socket.create_connection((host, 80), timeout):
+            return True
+    except OSError:
+        return False
+
+
 async def check_target(target: CVETarget, places: Places) -> list[str]:
     """The dead conditions of a target on both versions, empty when it is live: the no-LLM check
     the pre-run check (`cve_session`) and calibration share. It resolves the kept records and
@@ -105,9 +130,15 @@ async def check_target(target: CVETarget, places: Places) -> list[str]:
     if patched is None:
         conditions.append(_launch_failed(TargetVersion.PATCHED))
     else:
+        benign_errored = _any_error(patched.benign)
         conditions += patched_dead_conditions(
-            _graded(target, patched), _units(patched.exploits), _any_error(patched.benign)
+            _graded(target, patched), _units(patched.exploits), benign_errored
         )
+        needs_network = target.planting_host.has_network
+        reachable = _egress_reachable() if needs_network and benign_errored else True
+        warning = egress_warning(needs_network, benign_errored, reachable)
+        if warning is not None:
+            console.print(f"[yellow]{target.cve_id} egress[/yellow]: {warning}")
     if conditions:
         _report_dead(target.cve_id, conditions, vulnerable.exploits, vulnerable.benign)
     return conditions

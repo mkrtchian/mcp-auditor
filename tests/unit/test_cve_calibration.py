@@ -7,6 +7,7 @@ import pytest
 from evals.cve_calibration import (
     calibrate_one,
     dead_conditions,
+    egress_warning,
     patched_dead_conditions,
 )
 from evals.cve_grammar import MechanismClass
@@ -114,3 +115,21 @@ def test_patched_dead_conditions_name_a_surviving_flaw_or_an_erroring_benign_cal
     result = patched_dead_conditions(COMMAND_TARGET, [unit_of_exchanges([exploit])], benign_errored)
 
     assert result == conditions
+
+
+@pytest.mark.parametrize(
+    ("needs_network", "benign_errored", "egress_reachable", "warns"),
+    [
+        (True, True, False, True),
+        (True, True, True, False),
+        (True, False, False, False),
+        (False, True, False, False),
+    ],
+    ids=["no_egress_warns", "egress_present", "benign_ok", "no_network"],
+)
+def test_egress_warning_fires_only_on_a_network_target_whose_benign_errored_without_egress(
+    needs_network: bool, benign_errored: bool, egress_reachable: bool, warns: bool
+):
+    result = egress_warning(needs_network, benign_errored, egress_reachable)
+
+    assert (result is not None) == warns
