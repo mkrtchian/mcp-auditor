@@ -1,6 +1,6 @@
 # Model probe: method note
 
-The probe (`uv run python -m evals.run_probe [--report PATH]`) replays a frozen corpus of prompts against the reference model and each candidate, and reports per model its statistics and its defects. They feed the written judgment an ADR takes when it chooses a model (ADR 021). The candidates, `gpt-6-luna` at `none` and at `low`, Gemini 3.5 Flash-Lite at `minimal` and `claude-haiku-5-5` at `none` and at `low`, and their prices are in `evals/probe_candidates.py`. The ADR 019 run is reported in ADR 019 and in `evals/probe_runs/2026-09-25_adr-019.json`. This note defines what the probe measures and what it reports.
+The probe (`uv run python -m evals.run_probe [--report PATH]`) replays a frozen corpus of prompts against the reference model and each candidate, and reports per model its statistics and its defects. They feed the written judgment an ADR takes when it chooses a model (ADR 021). The candidates, `gpt-6-luna` at `none` and at `low`, Gemini 3.5 Flash-Lite at `minimal` and `claude-haiku-5-5` at `none` and at `low`, and GLM 5.3 (`z-ai/glm-5.3`) at `low` through OpenRouter on two pinned hosts, Sail Research (fp8) and DeepInfra (fp4), and their prices are in `evals/probe_candidates.py`. The ADR 019 run is reported in ADR 019 and in `evals/probe_runs/2026-09-25_adr-019.json`. This note defines what the probe measures and what it reports.
 
 ## What the probe measures, and what it does not
 
@@ -24,9 +24,9 @@ A `TestCaseBatch` call is a refusal when its output does not parse within the ad
 
 The defects, listed per model under the table and in the report, the reference's included:
 
-- **Parse failures** after the adapter's 3 attempts, per schema (`TestCaseBatch`, `Judgment`, `AttackContext`, `ChainPlanBatch`, `StepObservation`, `AuditPayload`). A call the provider refuses on policy grounds is a parse failure too, with the provider's message in the observation's `error`, whether the refusal comes as the model's answer or as a 400 before the model (OpenAI's `invalid_prompt`, Alibaba's `DataInspectionFailed`, Anthropic's `stop_reason: "refusal"` with its category). On a `TestCaseBatch` call it therefore counts as a refusal.
+- **Parse failures** after the adapter's 3 attempts, per schema (`TestCaseBatch`, `Judgment`, `AttackContext`, `ChainPlanBatch`, `StepObservation`, `AuditPayload`). A call the provider refuses on policy grounds is a parse failure too, with the provider's message in the observation's `error`, whether the refusal comes as the model's answer or as a 400 before the model (OpenAI's `invalid_prompt`, Alibaba's `DataInspectionFailed`, Anthropic's `stop_reason: "refusal"` with its category). Through OpenRouter, a host-level block comes in one of two shapes: a 403 whose error metadata reads `error_type` `content_policy_violation` or `refusal`, its message followed by `(provider <host>, code <host code>)`, or a `finish_reason: "content_filter"`, whose message is the model's `refusal` text when it gives one and `finish_reason content_filter` otherwise (an Alibaba `content_filter` finish reads the same). On a `TestCaseBatch` call it therefore counts as a refusal.
 - **Refusals**, by the rule above.
-- **Errors**: any exception other than a parse failure or a policy refusal, such as an API error, or an OpenAI, Anthropic, Fireworks or Alibaba call that exceeds its 120-second timeout on every retry. A model that did not answer every call was not measured on the whole corpus. **On an error, rerun the probe** rather than read it as a fact about the model.
+- **Errors**: any exception other than a parse failure or a policy refusal, such as an API error, or an OpenAI, Anthropic, Fireworks, Alibaba or OpenRouter call that exceeds its 120-second timeout on every retry. A model that did not answer every call was not measured on the whole corpus. **On an error, rerun the probe** rather than read it as a fact about the model.
 - **Reasoning tokens at odds with the setting**: see below.
 
 The numbers, per model: the weighted corpus cost and its ratio to the reference's, the median latency per call in each role, and the reasoning tokens. They are not judged against a threshold: each ADR that chooses a model states how it weighs them.
@@ -41,7 +41,7 @@ Per call, with list prices in dollars per million tokens:
 ((input - cached_input) * input_price + cached_input * cached_input_price + output * output_price) / 1e6
 ```
 
-Output tokens include reasoning tokens: `langchain-google-genai` adds `thoughts_token_count` into `output_tokens`, OpenAI bills reasoning tokens as output tokens, counted inside `output_tokens`, and so does Anthropic with thinking tokens.
+Output tokens include reasoning tokens: `langchain-google-genai` adds `thoughts_token_count` into `output_tokens`, OpenAI bills reasoning tokens as output tokens, counted inside `output_tokens`, and so does Anthropic with thinking tokens. OpenRouter returns GLM's reasoning inside `completion_tokens`, its count in `completion_tokens_details.reasoning_tokens`.
 
 The weighted corpus cost sums that cost over a candidate's calls, each judge call multiplied by `judge_calls_captured / judge calls in the corpus`. The corpus holds every non-judge call of the capture run but only 60 of its judge calls, so the weight restores the share of judging in an audit. The CVE generation calls keep weight 1: the weighted cost approximates the capture run's audits plus those extra generator calls.
 
@@ -53,10 +53,14 @@ Prices are the list prices of 2026-10-15 (`PRICES_DATE`), per million tokens (in
 | `gpt-6-luna` | 0.10 | 0.01 | 0.50 |
 | Gemini 3.5 Flash-Lite | 0.30 | 0.03 | 2.50 |
 | `claude-haiku-5-5` | 0.10 | 0.01 | 0.50 |
+| GLM 5.3 on Sail Research (`sail-research`) | 0.15 | 0.14 | 3.40 |
+| GLM 5.3 on DeepInfra (`deepinfra/fp4`) | 0.5625 | 0.125 | 2.50 |
 
-An OpenAI, Anthropic, Fireworks or Alibaba answer cut by the 8,192-token output cap counts as a parse failure, not as a parsed call: LangChain would otherwise repair the truncated JSON. A call that fails to parse costs the usage of all its attempts, truncated ones included, and counts as a parse failure anyway.
+The two GLM 5.3 rows are OpenRouter's per-token list prices for the pinned endpoint, read as net of the 0.375 discount OpenRouter's endpoint listing shows on DeepInfra. OpenRouter also charges a 5.5 % fee on credit purchases by card, which the prices leave out, so the report's cost for these two candidates is about 5 % below what they cost.
 
-**Once, after the first run:** compare the cost the report computes for each provider, Anthropic included, with that provider's billing console over the run's time window. A gap means the token accounting or the prices are wrong, and the cost cannot be read until it is explained.
+An OpenAI, Anthropic, Fireworks, Alibaba or OpenRouter answer cut by the 8,192-token output cap counts as a parse failure, not as a parsed call: LangChain would otherwise repair the truncated JSON. A call that fails to parse costs the usage of all its attempts, truncated ones included, and counts as a parse failure anyway.
+
+**Once, after the first run:** compare the cost the report computes for each provider, Anthropic included, with that provider's billing console over the run's time window, OpenRouter's activity page for the GLM 5.3 candidates, which also shows the host that answered each call. A gap means the token accounting or the prices are wrong, and the cost cannot be read until it is explained.
 
 ## Reasoning check per candidate
 
@@ -70,6 +74,8 @@ A reasoning-token count at odds with the setting is a defect: the setting did no
 | Gemini 3.5 Flash-Lite | thinking level `minimal` | not checked, as for the reference |
 | `claude-haiku-5-5 none` | thinking `disabled` | 0 |
 | `claude-haiku-5-5 low` | adaptive thinking, effort `low` | more than 0 |
+| `glm-5.3 low sail-research` | `reasoning.effort` `low` | more than 0 |
+| `glm-5.3 low deepinfra-fp4` | `reasoning.effort` `low` | more than 0 |
 
 ## Observations before the ADR 019 revision
 
@@ -88,8 +94,9 @@ Calls made on 2026-09-24 before ADR 019 revised its challenger list, kept here a
 - **Alibaba Cloud Model Studio**: "Alibaba Cloud strictly protects your data privacy and will never use your data for model training." No retention period is stated. Source: https://www.alibabacloud.com/help/en/model-studio/privacy-notice.
 - **Fireworks serverless**: "Fireworks does not log or store prompt or generation data for any open models, without explicit user opt-in." Source: https://docs.fireworks.ai/guides/security_compliance/data_handling.
 - **Anthropic API**: prompts and outputs are not retained by default for Haiku 5.5 (retention applies to Fable and Mythos only), and are never used for training without express permission. Source: https://platform.claude.com/docs/en/manage-claude/api-and-data-retention.
+- **OpenRouter, and its two GLM 5.3 hosts**: "OpenRouter does not store your prompts or responses, unless you opt in", and its own use of them to improve the product is "Off by default" (https://openrouter.ai/docs/guides/privacy/data-collection). What the host does is the host's policy, filtered by the user's account settings (data collection, zero data retention), which the probe does not set. Sail Research's terms: "Sail may store responses (...) and that the ability to disable such storage is not currently available", and Sail "will not use Customer Data (including Inputs and Outputs) to train", except with opt-in or "as necessary to provide the Services" (https://www.sailresearch.com/terms, section 3.3). DeepInfra: "Input data is not stored to disk during inference", outputs "once sent back to you, they are deleted", and "We do not use data you submit to our APIs for training models", Google and Anthropic models excepted (https://docs.deepinfra.com/account/data-privacy).
 
-Checked on 2026-09-24, Alibaba on 2026-09-25, Anthropic on 2026-10-15.
+Checked on 2026-09-24, Alibaba on 2026-09-25, Anthropic, OpenRouter, Sail Research and DeepInfra on 2026-10-15.
 
 ## Order of calls
 
@@ -97,7 +104,7 @@ The calls run in corpus order, one at a time. On each call every candidate answe
 
 ## Running it
 
-Set the API key of every candidate before running: `GOOGLE_API_KEY`, `OPENAI_API_KEY` and `ANTHROPIC_API_KEY`. A candidate whose models cannot be built stops the probe before any call. A key rejected only at the first call shows as an error on every call of that candidate.
+Set the API key of every candidate before running: `GOOGLE_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` and `OPENROUTER_API_KEY`. A candidate whose models cannot be built stops the probe before any call. A key rejected only at the first call shows as an error on every call of that candidate.
 
 The report goes to `output/probe_report.json` by default: the observations, the statistics and the defects of every measured model. The command exits 0 whatever it finds. Each observation is also appended to `output/probe_report.jsonl` as soon as it is measured, with one progress line per call on the console, so a run stopped by hand keeps what it measured. There is no resume: a stopped run is rerun from the start.
 
@@ -117,3 +124,4 @@ A *parse failure with truncation* is a parse failure where at least one attempt 
 - **Median, not p95.** A p95 over about 60 judge calls rests on its third-largest value, so the median is the statistic.
 - **A loop that a retry recovers from is not counted as a parse failure.** When an answer is cut at the output cap, the adapter retries it, and a retry that parses makes the call a parsed one, with `truncated_attempts` left at 0. The cut attempt shows only in the call's cost and latency.
 - **Errors carry no cost.** An exception raised inside the provider client carries no token usage, so an error counts 0. A model answer holding an integer past the 4,300 digits Python converts is one: its tokens were billed but are not counted.
+- **A refused call's cost is undercounted.** A policy refusal raised as an error (an OpenAI or Alibaba 400, an OpenRouter 403 or `content_filter` finish) carries no token usage, so its attempt counts 0 tokens, whatever the host billed.

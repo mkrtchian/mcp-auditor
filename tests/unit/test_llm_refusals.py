@@ -4,6 +4,9 @@ from typing import Any
 import httpx2
 import openai
 import pytest
+from openai.types.chat import ChatCompletion
+from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput
@@ -29,6 +32,29 @@ def _bad_request(message: str, code: str | None) -> openai.BadRequestError:
     response = httpx2.Response(400, request=request)
     body = {"message": message, "type": "invalid_request_error", "code": code}
     return openai.BadRequestError(f"Error code: 400 - {body}", response=response, body=body)
+
+
+def _permission_denied(body: dict[str, Any]) -> openai.PermissionDeniedError:
+    request = httpx2.Request("POST", "https://openrouter.ai/api/v1/chat/completions")
+    response = httpx2.Response(403, request=request)
+    return openai.PermissionDeniedError(f"Error code: 403 - {body}", response=response, body=body)
+
+
+def _content_filtered(refusal: str | None) -> openai.ContentFilterFinishReasonError:
+    completion = ChatCompletion(
+        id="filtered",
+        created=0,
+        model="z-ai/glm-5.3",
+        object="chat.completion",
+        choices=[
+            Choice(
+                index=0,
+                finish_reason="content_filter",
+                message=ChatCompletionMessage(role="assistant", content=None, refusal=refusal),
+            )
+        ],
+    )
+    return openai.ContentFilterFinishReasonError(completion=completion)
 
 
 def _wrapped(cause: Exception) -> Exception:
@@ -113,6 +139,55 @@ class TestRefusalAsAnError:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.usage == ProviderUsage(input_tokens=100, output_tokens=8192)
+
+
+class TestHostLevelBlock:
+    @pytest.mark.parametrize("error_type", ["content_policy_violation", "refusal"])
+    @pytest.mark.asyncio
+    async def test_an_openrouter_403_block_raises_a_refusal_naming_the_host(self, error_type: str):
+        metadata = {
+            "error_type": error_type,
+            "provider_name": "Sail Research",
+            "provider_code": "1301",
+        }
+        error = _permission_denied({"message": "blocked", "metadata": metadata})
+        llm = LLM(FakeChatModel([error]), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(ProviderRefusal) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        message = raised.value.provider_message
+        assert "blocked" in message
+        assert "Sail Research" in message
+        assert "1301" in message
+
+    @pytest.mark.asyncio
+    async def test_a_403_without_metadata_propagates_unchanged(self):
+        error = _permission_denied({"message": "Guardrail blocked the request."})
+        llm = LLM(FakeChatModel([error]), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(openai.PermissionDeniedError) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value is error
+
+    @pytest.mark.asyncio
+    async def test_a_content_filter_finish_with_a_refusal_raises_it_without_a_retry(self):
+        llm = LLM(FakeChatModel([_content_filtered("I cannot help")]), _DICT_SCHEMA, 3)
+
+        with pytest.raises(ProviderRefusal) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.provider_message == "I cannot help"
+
+    @pytest.mark.asyncio
+    async def test_a_content_filter_finish_without_a_refusal_names_the_finish(self):
+        llm = LLM(FakeChatModel([_content_filtered(None)]), _DICT_SCHEMA, 3)
+
+        with pytest.raises(ProviderRefusal) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.provider_message == "finish_reason content_filter"
 
 
 class TestRefusalInTheResponse:

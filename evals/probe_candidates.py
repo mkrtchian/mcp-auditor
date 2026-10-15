@@ -78,4 +78,28 @@ CANDIDATES = [
         prices=Prices(input=0.10, cached_input=0.01, output=0.50),
         reasoning_expected=True,
     ),
+    Candidate(
+        name="glm-5.3 low sail-research",
+        settings=Settings(
+            provider="openrouter",
+            model="z-ai/glm-5.3",
+            judge_model="",
+            reasoning="low",
+            openrouter_hosts="sail-research",
+        ),
+        prices=Prices(input=0.15, cached_input=0.14, output=3.40),
+        reasoning_expected=True,
+    ),
+    Candidate(
+        name="glm-5.3 low deepinfra-fp4",
+        settings=Settings(
+            provider="openrouter",
+            model="z-ai/glm-5.3",
+            judge_model="",
+            reasoning="low",
+            openrouter_hosts="deepinfra/fp4",
+        ),
+        prices=Prices(input=0.5625, cached_input=0.125, output=2.50),
+        reasoning_expected=True,
+    ),
 ]
