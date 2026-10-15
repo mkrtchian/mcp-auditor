@@ -13,6 +13,7 @@ author, date and message, so the tree is reproducible and the fixture fingerprin
 """
 
 import os
+import posixpath
 import subprocess
 import tempfile
 from collections.abc import Mapping, Sequence
@@ -70,6 +71,19 @@ def build_layout(root: Path, nodes: Sequence[LayoutNode]) -> None:
     (root / _WORKSPACE_ENV).write_text(
         _dotenv_line(_value(kept, LayoutAnchor.WORKSPACE, _WORKSPACE_ENV))
     )
+
+
+def build_empty_layout(root: Path) -> None:
+    """The rule's reference arm (holdout-rule.md:159): an empty directory at each layout path
+    instead of the full neutral tree, so the break detector can compare the server launched with
+    and without the layout. For this layout, "an empty directory at each path" reads as an empty
+    directory at each of the three anchors (/srv, /srv/app, /srv/app.git), none carrying the normal
+    tree's content: no bare repository, no checkout, no workspace dotenv. Host-side only (a mkdir
+    per anchor under the temp root), no git and no Docker."""
+    for anchor_path in ANCHOR_PATHS.values():
+        relative = posixpath.relpath(anchor_path, WORKSPACE)
+        directory = root if relative == "." else root / relative
+        directory.mkdir(parents=True, exist_ok=True)
 
 
 def _value(kept: Mapping[tuple[LayoutAnchor, str], str], anchor: LayoutAnchor, relpath: str) -> str:

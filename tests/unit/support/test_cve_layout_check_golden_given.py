@@ -1,45 +1,70 @@
-"""The golden master of the layout-effect check: what `layout_effect` returns on a fixed corpus
-of (empty surface, planted surface, nonces) cases, recorded in `cve_layout_check_golden.json`.
+"""The golden master of the layout check: what the break detector (`layout_breaks`) and the
+anti-leak guard (`nonce_in_surface`) return on a fixed corpus of surfaces, recorded in
+`cve_layout_check_golden.json`.
 
-The corpus is fictional: a healthy case where the ordinary surface is identical with and without
-the nonces and no nonce leaks, a case where the planted surface differs, and a case where a nonce
-leaks into the ordinary surface. Regenerate only in a commit that changes what `layout_effect`
-grades, never on a refactor:
+The corpus is fictional. For the break detector, two collected surfaces for one version (one
+launched with an empty directory at each layout path, one with the layout): a healthy pair (no
+break), a pair where tools/list is lost with the layout, a pair where a call errors only with the
+layout, and the two false reds the old byte-for-byte check produced (a discovery symlink in a
+listing and a shifted deterministic HEAD SHA), which are not breaks. For the anti-leak guard, a
+planted surface where a nonce leaks into the ordinary surface and one where none does. Regenerate
+only in a commit that changes what the layout check grades, never on a refactor:
 
     uv run python -m tests.unit.support.test_cve_layout_check_golden_given
 """
 
 import json
-from dataclasses import asdict
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from evals.cve_layout_check import LayoutSurface, layout_effect
+from evals.cve_layout_check import LayoutSurface, layout_breaks, nonce_in_surface
 
 GOLDEN_PATH = Path(__file__).parent / "cve_layout_check_golden.json"
 
 _NONCE = "MCPAUDIT-7f3a9c"
-_SURFACE = LayoutSurface(
+_HEALTHY = LayoutSurface(
     tool_names=("git_log", "git_show"),
     responses=("commit 0abc...\n", "leak0\nleak7\n"),
+    call_errored=(False, False),
+    tools_list_succeeded=True,
 )
 
 
-def _cases() -> dict[str, tuple[LayoutSurface, LayoutSurface, tuple[str, ...]]]:
-    changed = LayoutSurface(_SURFACE.tool_names, ("commit 0abc...\n", "leak0\nleak7\nleak9\n"))
-    leaking = LayoutSurface(_SURFACE.tool_names, (f"commit 0abc...\n{_NONCE}\n", "leak0\nleak7\n"))
+def _break_cases() -> dict[str, tuple[LayoutSurface, LayoutSurface]]:
+    tools_list_lost = replace(_HEALTHY, responses=(), call_errored=(), tools_list_succeeded=False)
+    call_errors = replace(_HEALTHY, call_errored=(False, True))
+    discovery_symlink = replace(
+        _HEALTHY, responses=("commit 0abc...\n", "leak0\nleak7\nreport -> /srv/app.git\n")
+    )
+    shifted_sha = replace(_HEALTHY, responses=("commit 9f2e...\n", "leak0\nleak7\n"))
     return {
-        "tree_invisible_to_the_ordinary_surface": (_SURFACE, _SURFACE, (_NONCE,)),
-        "planted_surface_differs": (_SURFACE, changed, (_NONCE,)),
-        "nonce_leaks_into_the_ordinary_surface": (_SURFACE, leaking, (_NONCE,)),
+        "both_healthy_no_break": (_HEALTHY, _HEALTHY),
+        "tools_list_lost_with_the_layout": (_HEALTHY, tools_list_lost),
+        "call_errors_only_with_the_layout": (_HEALTHY, call_errors),
+        "discovery_symlink_in_a_listing_is_not_a_break": (_HEALTHY, discovery_symlink),
+        "shifted_head_sha_is_not_a_break": (_HEALTHY, shifted_sha),
+    }
+
+
+def _leak_cases() -> dict[str, tuple[LayoutSurface, tuple[str, ...]]]:
+    leaking = replace(_HEALTHY, responses=(f"commit 0abc...\n{_NONCE}\n", "leak0\nleak7\n"))
+    return {
+        "nonce_leaks_into_the_ordinary_surface": (leaking, (_NONCE,)),
+        "no_nonce_in_the_ordinary_surface": (_HEALTHY, (_NONCE,)),
     }
 
 
 def golden_entries() -> dict[str, dict[str, Any]]:
-    return {
-        name: asdict(layout_effect(empty, planted, nonces))
-        for name, (empty, planted, nonces) in _cases().items()
+    entries = {
+        name: {"breaks": layout_breaks(reference, with_layout)}
+        for name, (reference, with_layout) in _break_cases().items()
     }
+    entries |= {
+        name: {"leaks": nonce_in_surface(planted, nonces)}
+        for name, (planted, nonces) in _leak_cases().items()
+    }
+    return entries
 
 
 if __name__ == "__main__":

@@ -53,10 +53,11 @@ import tempfile
 from collections.abc import AsyncGenerator, Generator, Mapping
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import IO
 
-from evals.cve_layout import ANCHOR_PATHS, build_layout
+from evals.cve_layout import ANCHOR_PATHS, build_empty_layout, build_layout
 from evals.cve_places import LayoutAnchor
 from evals.cve_planting import (
     DockerPlanting,
@@ -71,6 +72,23 @@ from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.ports import MCPClientPort
 
 TOOL_CALL_TIMEOUT = 30  # the client's own default, the replay passes a short one to stay fast
+
+
+class LaunchShape(StrEnum):
+    """Which tree a builder materialises under the mount. NORMAL is the frozen layout the
+    benchmark runs under; EMPTY_LAYOUT is the rule's reference arm for the break detector, an
+    empty directory at each layout anchor (holdout-rule.md:159). The fallback shape is Step 4."""
+
+    NORMAL = "normal"
+    EMPTY_LAYOUT = "empty_layout"
+
+
+def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
+    if shape is LaunchShape.EMPTY_LAYOUT:
+        build_empty_layout(root)
+    else:
+        build_layout(root, spec.layout)
+
 
 _WORKSPACE = ANCHOR_PATHS[LayoutAnchor.WORKSPACE]  # the mount target, /srv
 _PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]  # the in-scope checkout, /srv/app
@@ -105,32 +123,40 @@ async def connect(
 
 
 @contextmanager
-def filesystem_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
+def filesystem_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        build_layout(root, spec.layout)
+        _materialise(root, spec, shape)
         # One leak<N>/report symlink inside the in-scope checkout per planted file place,
         # pointing (absolute) at the coordinate where the nonce is mounted. The flaw follows it
         # out of scope; the patched server does not. The exploit discovers them by listing the
         # checkout. The prefix-collision sibling needs no extra structure: app.git is in the tree.
-        checkout = root / _CHECKOUT
-        for index, intent in enumerate(spec.files):
-            leak = checkout / f"leak{index}"
-            leak.mkdir()
-            os.symlink(intent.container_path, leak / "report")
+        # The reference arm plants nothing and has no checkout to hang a symlink off.
+        if shape is LaunchShape.NORMAL:
+            checkout = root / _CHECKOUT
+            for index, intent in enumerate(spec.files):
+                leak = checkout / f"leak{index}"
+                leak.mkdir()
+                os.symlink(intent.container_path, leak / "report")
         yield _filesystem_launch(root, image, args)
 
 
 @contextmanager
-def git_init_traversal_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
+def git_init_traversal_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        build_layout(root, spec.layout)
+        _materialise(root, spec, shape)
         yield _git_launch(root, image, args, chain_budget=3, max_chain_steps=5)
 
 
 @contextmanager
-def command_injection_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
+def command_injection_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        build_layout(root, spec.layout)
+        _materialise(root, spec, shape)
         yield Launch(
             command="docker",
             args=[
@@ -147,9 +173,11 @@ def command_injection_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
 
 
 @contextmanager
-def ssrf_env(image: str, spec: PlantingSpec) -> Generator[Launch]:
+def ssrf_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        build_layout(root, spec.layout)
+        _materialise(root, spec, shape)
         yield Launch(
             command="docker",
             args=[

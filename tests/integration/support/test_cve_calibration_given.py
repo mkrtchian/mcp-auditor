@@ -4,7 +4,7 @@ import sys
 from collections.abc import Awaitable, Callable, Generator
 from contextlib import AbstractContextManager, contextmanager
 
-from evals.cve_environments import Launch
+from evals.cve_environments import Launch, LaunchShape
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser
@@ -17,7 +17,7 @@ OUTSIDE_ID = "fict-outside"
 INSIDE_ID = "fict-inside"
 OUTSIDE_AIM = re.compile(r"^/outside/")
 
-Builder = Callable[[str, PlantingSpec], AbstractContextManager[Launch]]
+Builder = Callable[[str, PlantingSpec, LaunchShape], AbstractContextManager[Launch]]
 
 
 def a_docker_that_runs_its_command_on_the_host(directory: pathlib.Path) -> pathlib.Path:
@@ -46,7 +46,7 @@ def a_survey_places_mapping() -> Places:
 
 def a_target_whose_server_exits_at_startup(cve_id: str, last_words: str) -> CVETarget:
     @contextmanager
-    def builder(_image: str, _spec: PlantingSpec) -> Generator[Launch]:
+    def builder(_image: str, _spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
         yield Launch(
             "docker", ["run", sys.executable, "-c", f"import sys; sys.exit({last_words!r})"]
         )
@@ -98,7 +98,7 @@ def _serving_builder(
     vulnerable: bool = True, patched: bool = False, patched_error_paths: tuple[str, ...] = ()
 ) -> Builder:
     @contextmanager
-    def builder(image: str, spec: PlantingSpec) -> Generator[Launch]:
+    def builder(image: str, spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
         is_patched = "patched" in image
         args = _serve_args(spec) if (patched if is_patched else vulnerable) else []
         if is_patched:

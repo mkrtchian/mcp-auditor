@@ -1,15 +1,23 @@
-"""The layout-effect check (ADR 031).
+"""The layout break detector and the anti-leak guard (ADR 031).
 
-The server's ordinary surface, its tools/list and the tools called at minimal arguments, is the
-same whether the tree carries neutral content (empty) or the target's nonces (planted), so the
-layout's presence changes only what the flaw reaches through an exploit, never the server's
-ordinary behaviour, and no nonce surfaces in that ordinary surface. The benign call is not run
-here. `layout_effect` is a pure comparator over two collected surfaces, pinned by a golden master.
+The rule gates a fallback launch on a break: launch each version once with an empty directory at
+each path of the layout (the reference arm) and once with the layout, and call it a break when
+the launch or tools/list succeeded without the layout and failed with it, or when a call that
+returned no error without the layout returns one with it (holdout-rule.md:159). `layout_breaks` is
+the pure detector over the two collected surfaces for one version. A changed response body (a
+discovery symlink in a listing, a shifted deterministic HEAD SHA) is not a break: only a lost
+tools/list or a newly-erroring call counts.
+
+The anti-leak guard (`nonce_in_surface`) is a separate pure verdict on the planted surface,
+implementing a distinct clause of the rule: a place the server itself reads at launch is not kept
+(holdout-rule.md:157), so no planted nonce may appear in the server's ordinary surface. Both are
+pinned by a golden master. The benign call is not run here.
 
 `confirm_admission` is the Docker orchestration run under the maintainer paths (--calibrate and
---record-baseline, never a gated run): per target it launches the empty tree, then the planted
-tree it retains for the route check, compares the surfaces (the layout check) and judges each kept
-place's route (the route check), reporting both. It gates nothing on the model.
+--record-baseline, never a gated run): per target it launches the reference arm (an empty
+directory at each layout path), then the planted tree it retains for the route check, reports the
+break and the leak (the layout check) and judges each kept place's route (the route check). It
+gates nothing on the model.
 """
 
 import tempfile
@@ -18,7 +26,7 @@ from dataclasses import dataclass
 
 from rich.console import Console
 
-from evals.cve_environments import connect
+from evals.cve_environments import LaunchShape, connect
 from evals.cve_places import Place, Places, kept_records
 from evals.cve_route import RouteObservations, route_admits, route_observations
 from evals.cve_targets import CVETarget
@@ -30,44 +38,49 @@ console = Console()
 class LayoutSurface:
     tool_names: tuple[str, ...]
     responses: tuple[str, ...]
+    call_errored: tuple[bool, ...]  # per call, whether it returned an error
+    tools_list_succeeded: bool  # whether tools/list itself returned (a failed launch sets it False)
 
 
-@dataclass(frozen=True)
-class LayoutEffect:
-    surface_unchanged: bool  # the ordinary surface is identical with and without the nonces
-    nonce_in_surface: bool  # a planted nonce leaked into the ordinary surface (never, when healthy)
-
-
-def layout_effect(
-    empty: LayoutSurface, planted: LayoutSurface, nonces: Sequence[str]
-) -> LayoutEffect:
-    return LayoutEffect(
-        surface_unchanged=empty == planted,
-        nonce_in_surface=any(nonce in body for body in planted.responses for nonce in nonces),
+def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
+    """Whether the layout breaks the version by the rule's criterion (holdout-rule.md:159). The
+    two surfaces run the same route procedure, so a call's error state aligns by position."""
+    if reference.tools_list_succeeded and not with_layout.tools_list_succeeded:
+        return True
+    return any(
+        not before and after
+        for before, after in zip(reference.call_errored, with_layout.call_errored, strict=False)
     )
 
 
+def nonce_in_surface(planted: LayoutSurface, nonces: Sequence[str]) -> bool:
+    return any(nonce in body for body in planted.responses for nonce in nonces)
+
+
 async def confirm_admission(targets: list[CVETarget], places: Places, ci: bool = False) -> None:
-    console.print("\n[bold]Admission[/bold] (no LLM): layout effect then discovery route\n")
+    console.print("\n[bold]Admission[/bold] (no LLM): layout break then discovery route\n")
     for target in targets:
         if ci and target.ci_skip_reason is not None:
             console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
             continue
-        empty, _ = await _observe(target, (), places)
+        reference, _ = await _observe(target, (), places, shape=LaunchShape.EMPTY_LAYOUT)
         planted, nonces = await _observe(target, target.kept_places, places)
-        _report_effect(target.cve_id, layout_effect(_surface(empty), _surface(planted), nonces))
+        _report_break(target.cve_id, layout_breaks(_surface(reference), _surface(planted)))
+        _report_leak(target.cve_id, nonce_in_surface(_surface(planted), nonces))
         for place in kept_records(target.kept_places, places):
             _report_route(target.cve_id, place, route_admits(place, planted))
 
 
-def _report_effect(cve_id: str, effect: LayoutEffect) -> None:
-    healthy = effect.surface_unchanged and not effect.nonce_in_surface
-    status = "[green]layout ok[/green]" if healthy else "[red]layout effect[/red]"
+def _report_break(cve_id: str, breaks: bool) -> None:
+    status = "[red]layout break[/red]" if breaks else "[green]no break[/green]"
     console.print(f"{status}  {cve_id}")
-    if not effect.surface_unchanged:
-        console.print("  the tree changes the server's ordinary surface")
-    if effect.nonce_in_surface:
-        console.print("  a nonce surfaces in the ordinary surface")
+    if breaks:
+        console.print("  the layout breaks the server (set the fallback launch-mode)")
+
+
+def _report_leak(cve_id: str, leaks: bool) -> None:
+    if leaks:
+        console.print(f"[red]nonce leak[/red]  {cve_id}: a nonce surfaces in the ordinary surface")
 
 
 def _report_route(cve_id: str, place: Place, admits: bool) -> None:
@@ -76,12 +89,15 @@ def _report_route(cve_id: str, place: Place, admits: bool) -> None:
 
 
 async def _observe(
-    target: CVETarget, kept: tuple[str, ...], places: Places
+    target: CVETarget,
+    kept: tuple[str, ...],
+    places: Places,
+    shape: LaunchShape = LaunchShape.NORMAL,
 ) -> tuple[RouteObservations, tuple[str, ...]]:
     records = kept_records(kept, places)
     with tempfile.TemporaryFile("w+") as server_stderr:
         async with (
-            target.launched(records) as planted,
+            target.launched(records, shape=shape) as planted,
             connect(planted.launch, server_stderr) as client,
         ):
             observations = await route_observations(target, client, planted.launch)
@@ -89,4 +105,9 @@ async def _observe(
 
 
 def _surface(observations: RouteObservations) -> LayoutSurface:
-    return LayoutSurface(observations.tool_names, observations.responses)
+    return LayoutSurface(
+        observations.tool_names,
+        observations.responses,
+        observations.call_errored,
+        observations.tools_list_succeeded,
+    )

@@ -13,7 +13,7 @@ from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
 
 import tests.unit.support.test_cve_grammar_given as grammar
-from evals.cve_environments import Launch
+from evals.cve_environments import Launch, LaunchShape
 from evals.cve_grammar import MechanismClass, PlantedTarget
 from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
 from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser
@@ -261,7 +261,7 @@ def _dead() -> Serve | None:
 
 def _a_target(serve: Serve | None, kept: tuple[str, ...]) -> CVETarget:
     @contextmanager
-    def builder(_image: str, spec: PlantingSpec) -> Generator[Launch]:
+    def builder(_image: str, spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
         if serve is None:
             yield Launch("docker", ["run", sys.executable, "-c", "import sys; sys.exit('boom')"])
         else:

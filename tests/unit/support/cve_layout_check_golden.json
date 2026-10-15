@@ -1,14 +1,23 @@
 {
+  "both_healthy_no_break": {
+    "breaks": false
+  },
+  "call_errors_only_with_the_layout": {
+    "breaks": true
+  },
+  "discovery_symlink_in_a_listing_is_not_a_break": {
+    "breaks": false
+  },
+  "no_nonce_in_the_ordinary_surface": {
+    "leaks": false
+  },
   "nonce_leaks_into_the_ordinary_surface": {
-    "nonce_in_surface": true,
-    "surface_unchanged": false
+    "leaks": true
   },
-  "planted_surface_differs": {
-    "nonce_in_surface": false,
-    "surface_unchanged": false
+  "shifted_head_sha_is_not_a_break": {
+    "breaks": false
   },
-  "tree_invisible_to_the_ordinary_surface": {
-    "nonce_in_surface": false,
-    "surface_unchanged": true
+  "tools_list_lost_with_the_layout": {
+    "breaks": true
   }
 }

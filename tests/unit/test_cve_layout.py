@@ -1,9 +1,27 @@
 import subprocess
 from pathlib import Path
 
-from evals.cve_layout import ANCHOR_PATHS, NEUTRAL_TOKEN, build_layout
+from evals.cve_layout import ANCHOR_PATHS, NEUTRAL_TOKEN, build_empty_layout, build_layout
 from evals.cve_places import LayoutAnchor
 from evals.cve_planting_base import LayoutNode
+
+
+def test_the_empty_layout_builds_a_directory_at_each_anchor(tmp_path: Path):
+    build_empty_layout(tmp_path)
+
+    assert tmp_path.is_dir()
+    assert (tmp_path / "app").is_dir()
+    assert (tmp_path / "app.git").is_dir()
+    assert list((tmp_path / "app").iterdir()) == []
+    assert list((tmp_path / "app.git").iterdir()) == []
+
+
+def test_the_empty_layout_carries_none_of_the_normal_tree(tmp_path: Path):
+    build_empty_layout(tmp_path)
+
+    assert not (tmp_path / "app" / ".git").exists()
+    assert not (tmp_path / "app.git" / "config").exists()
+    assert not (tmp_path / ".env").exists()
 
 
 def _git_log_patch(bare: Path) -> str:

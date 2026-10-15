@@ -9,6 +9,7 @@ from evals import cve_exploits
 from evals.concurrency import entered_in_thread
 from evals.cve_environments import (
     Launch,
+    LaunchShape,
     PlantedLaunch,
     command_injection_env,
     filesystem_env,
@@ -60,7 +61,9 @@ class CVETarget:
     server_image: str  # the service of images that runs the server under audit
     patched_image: str  # the patched twin of server_image (never the sentinel sidecar)
     planting_host: PlantingHost  # what this target's launch can hold (user, cwd, network)
-    builder: Callable[[str, PlantingSpec], AbstractContextManager[Launch]]  # (image tag, spec)
+    builder: Callable[  # (image tag, spec, launch shape)
+        [str, PlantingSpec, LaunchShape], AbstractContextManager[Launch]
+    ]
     exploits: tuple[Callable[[Places, MCPClientPort], Awaitable[None]], ...]
     benign: Callable[[Places, MCPClientPort], Awaitable[None]]
     awaited_capability: str | None
@@ -75,10 +78,13 @@ class CVETarget:
 
     @contextmanager
     def environment(
-        self, spec: PlantingSpec, version: TargetVersion = TargetVersion.VULNERABLE
+        self,
+        spec: PlantingSpec,
+        version: TargetVersion = TargetVersion.VULNERABLE,
+        shape: LaunchShape = LaunchShape.NORMAL,
     ) -> Generator[PlantedLaunch]:
         service = self.patched_image if version is TargetVersion.PATCHED else self.server_image
-        with self.builder(image_tag(service), spec) as launch:
+        with self.builder(image_tag(service), spec, shape) as launch:
             yield PlantedLaunch(launch, spec.nonces)
 
     @asynccontextmanager
@@ -88,9 +94,10 @@ class CVETarget:
         *,
         version: TargetVersion = TargetVersion.VULNERABLE,
         nonces: NonceSource = RANDOM_NONCES,
+        shape: LaunchShape = LaunchShape.NORMAL,
     ) -> AsyncGenerator[PlantedLaunch]:
         spec = self.planting_spec(to_plant, nonces)
-        async with entered_in_thread(self.environment(spec, version)) as planted_launch:
+        async with entered_in_thread(self.environment(spec, version, shape)) as planted_launch:
             yield planted_launch
 
 

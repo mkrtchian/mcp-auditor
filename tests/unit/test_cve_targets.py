@@ -7,7 +7,7 @@ import pytest
 import yaml
 
 from evals import cve_exploits
-from evals.cve_environments import Launch
+from evals.cve_environments import Launch, LaunchShape
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingSpec
 from evals.cve_proofs import is_aimed
@@ -153,11 +153,11 @@ def test_every_server_and_patched_image_of_a_target_is_a_compose_service(target:
 
 
 def test_the_environment_calls_its_builder_with_the_server_image_and_spec_and_yields_its_nonces():
-    calls: list[tuple[str, PlantingSpec]] = []
+    calls: list[tuple[str, PlantingSpec, LaunchShape]] = []
 
     @contextmanager
-    def recording_builder(image: str, spec: PlantingSpec) -> Generator[Launch]:
-        calls.append((image, spec))
+    def recording_builder(image: str, spec: PlantingSpec, shape: LaunchShape) -> Generator[Launch]:
+        calls.append((image, spec, shape))
         yield Launch("docker", [])
 
     target = dataclasses.replace(SSRF_TARGET, builder=recording_builder)
@@ -166,14 +166,30 @@ def test_the_environment_calls_its_builder_with_the_server_image_and_spec_and_yi
     with target.environment(spec) as planted:
         assert planted.nonces == spec.nonces
 
-    assert calls == [(image_tag(SSRF_TARGET.server_image), spec)]
+    assert calls == [(image_tag(SSRF_TARGET.server_image), spec, LaunchShape.NORMAL)]
+
+
+def test_the_environment_passes_the_requested_launch_shape_to_its_builder():
+    shapes: list[LaunchShape] = []
+
+    @contextmanager
+    def recording_builder(image: str, spec: PlantingSpec, shape: LaunchShape) -> Generator[Launch]:
+        shapes.append(shape)
+        yield Launch("docker", [])
+
+    target = dataclasses.replace(SSRF_TARGET, builder=recording_builder)
+
+    with target.environment(target.planting_spec(()), shape=LaunchShape.EMPTY_LAYOUT):
+        pass
+
+    assert shapes == [LaunchShape.EMPTY_LAYOUT]
 
 
 def test_the_patched_version_launches_the_patched_image_tag():
     calls: list[str] = []
 
     @contextmanager
-    def recording_builder(image: str, spec: PlantingSpec) -> Generator[Launch]:
+    def recording_builder(image: str, spec: PlantingSpec, shape: LaunchShape) -> Generator[Launch]:
         calls.append(image)
         yield Launch("docker", [])
 
