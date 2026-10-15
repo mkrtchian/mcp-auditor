@@ -36,7 +36,7 @@ class StructuredOutput:
     schema_as_dict: bool = False
 
 
-# OpenAI and Alibaba, both through ChatOpenAI, get a dict: ChatOpenAI makes a Pydantic
+# OpenAI, Alibaba and OpenRouter, all through ChatOpenAI, get a dict: ChatOpenAI makes a Pydantic
 # class strict, and strict mode rejects the open object AuditPayload.arguments.
 # Anthropic binds the schema as a tool itself, so an answer without the tool call (a
 # refusal, a cut during thinking) still reaches the refusal and truncation checks.
@@ -46,6 +46,7 @@ _STRUCTURED_OUTPUT = {
     "openai": StructuredOutput(method="json_schema", schema_as_dict=True),
     "fireworks": StructuredOutput(method="json_schema"),
     "alibaba": StructuredOutput(method="json_schema", schema_as_dict=True),
+    "openrouter": StructuredOutput(method="json_schema", schema_as_dict=True),
 }
 
 

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `python -m evals.run_cve_benchmark --survey` plants every in-scope candidate place and prints, per target and candidate, what the exploits surface on the vulnerable version, what the benign call surfaces there, and what the exploits surface on the patched version, with no live or dead verdict. It needs Docker and no LLM, runs behind the same preflight and crash handler as the graded run, and feeds the choice of each target's kept places.
 - `python -m evals.run_census` builds the CVE holdout census, `evals/holdout_census.json`, from the GitHub Advisory Database, NVD and OSV exports and the output files of the census agents. `prefilter` writes the pre-filter hits no collector has decided yet, `status` lists what is left and exits `0` once the census is complete, `classify-dossier` writes the classifiers' input, and `assemble` builds the census, recomputes its figures and refuses to write one that does not load. See `evals/holdout_census_method.md`.
+- An `openrouter` provider reaches OpenRouter's Chat Completions API with `OPENROUTER_API_KEY`. Its default model is GLM 5.3 (`z-ai/glm-5.3`) at reasoning effort `low`, `MCP_AUDITOR_REASONING` takes OpenRouter's `reasoning.effort` levels (`none` to `max`), and every call requires a host that supports every parameter sent.
+- `MCP_AUDITOR_OPENROUTER_HOSTS` pins the `openrouter` calls to a comma-separated list of OpenRouter provider slugs, in order and with no fallback, so an audit never lands on a host that filters security content or serves a lower quantization. Unset, OpenRouter routes the calls. The other providers ignore it.
 
 ### Changed
 

@@ -60,7 +60,7 @@ def test_unknown_provider_names_every_provider(monkeypatch: pytest.MonkeyPatch) 
 
     with pytest.raises(ValueError, match="Unknown provider") as error:
         settings.resolve_model()
-    for provider in ("google", "anthropic", "openai", "fireworks", "alibaba"):
+    for provider in ("google", "anthropic", "openai", "fireworks", "alibaba", "openrouter"):
         assert provider in str(error.value)
 
 
@@ -168,3 +168,41 @@ def test_alibaba_takes_no_reasoning_setting() -> None:
 
     with pytest.raises(ValueError, match="takes no reasoning setting"):
         settings.resolve_reasoning(settings.resolve_model())
+
+
+def test_openrouter_resolves_glm_at_low_reasoning_by_default() -> None:
+    settings = _settings("openrouter")
+
+    model = settings.resolve_model()
+
+    assert model == "z-ai/glm-5.3"
+    assert settings.resolve_reasoning(model) == "low"
+
+
+def test_openrouter_passes_an_explicit_reasoning_through() -> None:
+    settings = _settings("openrouter", reasoning="high")
+
+    assert settings.resolve_reasoning(settings.resolve_model()) == "high"
+
+
+def test_openrouter_rejects_an_unknown_reasoning_naming_its_accepted_values() -> None:
+    settings = _settings("openrouter", reasoning="extreme")
+
+    with pytest.raises(ValueError, match="none, minimal, low, medium, high, xhigh, max"):
+        settings.resolve_reasoning(settings.resolve_model())
+
+
+@pytest.mark.parametrize(
+    ("hosts", "expected"),
+    [
+        ("", ()),
+        ("sail-research", ("sail-research",)),
+        (" sail-research , ,deepinfra/fp4", ("sail-research", "deepinfra/fp4")),
+    ],
+)
+def test_openrouter_hosts_resolve_to_the_listed_slugs(
+    hosts: str, expected: tuple[str, ...]
+) -> None:
+    settings = Settings(provider="openrouter", openrouter_hosts=hosts)
+
+    assert settings.resolve_openrouter_hosts() == expected

@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     judge_model: str = ""
     reasoning: str = ""
     tool_call_timeout: int = 30
+    openrouter_hosts: str = ""
 
     def resolve_model(self) -> str:
         if self.model:
@@ -31,6 +32,9 @@ class Settings(BaseSettings):
         if model == defaults.model:
             return defaults.reasoning
         return None
+
+    def resolve_openrouter_hosts(self) -> tuple[str, ...]:
+        return tuple(host.strip() for host in self.openrouter_hosts.split(",") if host.strip())
 
 
 @dataclass(frozen=True)
@@ -67,6 +71,11 @@ _PROVIDERS = {
         reasoning=None,
         accepted_reasoning=(),
     ),
+    "openrouter": _ProviderDefaults(
+        model="z-ai/glm-5.3",
+        reasoning="low",
+        accepted_reasoning=("none", "minimal", "low", "medium", "high", "xhigh", "max"),
+    ),
 }
 
 
@@ -78,7 +87,7 @@ def _provider_defaults(provider: str) -> _ProviderDefaults:
     if provider not in _PROVIDERS:
         raise ValueError(
             f"Unknown provider: {provider!r}. "
-            "Use 'openai', 'google', 'anthropic', 'fireworks' or 'alibaba'."
+            "Use 'openai', 'google', 'anthropic', 'fireworks', 'alibaba' or 'openrouter'."
         )
     return _PROVIDERS[provider]
 

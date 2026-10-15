@@ -159,6 +159,71 @@ class TestMakeChatModel:
         with pytest.raises(ValueError, match="DASHSCOPE_API_KEY"):
             make_chat_model(settings, settings.resolve_model())
 
+    def test_openrouter_builds_glm_at_low_reasoning_on_open_routing(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
+        settings = _openrouter_settings()
+
+        chat_model = make_chat_model(settings, settings.resolve_model())
+
+        assert getattr(chat_model, "model_name", None) == "z-ai/glm-5.3"
+        assert str(getattr(chat_model, "openai_api_base", "")) == "https://openrouter.ai/api/v1"
+        assert getattr(chat_model, "use_responses_api", None) is False
+        assert getattr(chat_model, "max_tokens", None) == 8192
+        assert getattr(chat_model, "request_timeout", None) == 120
+        assert getattr(chat_model, "extra_body", None) == {
+            "provider": {"require_parameters": True},
+            "reasoning": {"effort": "low"},
+        }
+
+    def test_openrouter_pins_the_listed_hosts_without_fallback(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
+        settings = _openrouter_settings(openrouter_hosts="sail-research")
+
+        chat_model = make_chat_model(settings, settings.resolve_model())
+
+        extra_body: dict[str, object] = getattr(chat_model, "extra_body", None) or {}
+        assert extra_body["provider"] == {
+            "require_parameters": True,
+            "order": ["sail-research"],
+            "allow_fallbacks": False,
+        }
+
+    def test_openrouter_model_override_sends_no_reasoning(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
+        settings = _openrouter_settings(model="z-ai/glm-5.3-flash")
+
+        chat_model = make_chat_model(settings, settings.resolve_model())
+
+        extra_body: dict[str, object] = getattr(chat_model, "extra_body", None) or {}
+        assert "reasoning" not in extra_body
+
+    @pytest.mark.parametrize("key", [None, ""])
+    def test_openrouter_without_its_key_raises_naming_it(
+        self, monkeypatch: pytest.MonkeyPatch, key: str | None
+    ):
+        if key is None:
+            monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+        else:
+            monkeypatch.setenv("OPENROUTER_API_KEY", key)
+        settings = _openrouter_settings()
+
+        with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
+            make_chat_model(settings, settings.resolve_model())
+
+
+def _openrouter_settings(model: str = "", openrouter_hosts: str = "") -> Settings:
+    return Settings(
+        provider="openrouter",
+        model=model,
+        judge_model="",
+        reasoning="",
+        openrouter_hosts=openrouter_hosts,
+    )
+
 
 _PROVIDER_SDKS = (
     "langchain_anthropic",

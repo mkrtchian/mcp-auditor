@@ -22,9 +22,11 @@ def make_chat_model(settings: Settings, model: str) -> BaseChatModel:  # pyright
         return _make_fireworks_model(model, reasoning)
     if settings.provider == "alibaba":
         return _make_alibaba_model(model)
+    if settings.provider == "openrouter":
+        return _make_openrouter_model(model, reasoning, settings.resolve_openrouter_hosts())
     raise ValueError(
         f"Unknown provider: {settings.provider!r}. "
-        "Use 'google', 'anthropic', 'openai', 'fireworks' or 'alibaba'."
+        "Use 'google', 'anthropic', 'openai', 'fireworks', 'alibaba' or 'openrouter'."
     )
 
 
@@ -142,3 +144,41 @@ def _make_alibaba_model(model: str) -> BaseChatModel:  # pyright: ignore[reportM
         timeout=_REQUEST_TIMEOUT_SECONDS,
         max_completion_tokens=_MAX_OUTPUT_TOKENS,
     )
+
+
+_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+
+def _make_openrouter_model(
+    model: str, reasoning: str | None, hosts: tuple[str, ...]
+) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+    from langchain_openai import ChatOpenAI
+
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY is not set.")
+    return ChatOpenAI(
+        model=model,
+        base_url=_OPENROUTER_BASE_URL,
+        api_key=SecretStr(api_key),
+        use_responses_api=False,
+        extra_body=_openrouter_body(reasoning, hosts),
+        max_retries=3,
+        timeout=_REQUEST_TIMEOUT_SECONDS,
+        max_completion_tokens=_MAX_OUTPUT_TOKENS,
+    )
+
+
+# require_parameters keeps off a host that ignores response_format or reasoning. Pinned hosts
+# get no fallback, so a failure on them is an error rather than a silent switch to a host
+# that may filter security content or serve a lower quantization.
+def _openrouter_body(reasoning: str | None, hosts: tuple[str, ...]) -> dict[str, Any]:
+    provider: dict[str, Any] = {"require_parameters": True}
+    if hosts:
+        provider["order"] = list(hosts)
+        provider["allow_fallbacks"] = False
+    body: dict[str, Any] = {"provider": provider}
+    # reasoning.effort, unlike the top-level reasoning_effort, takes max.
+    if reasoning is not None:
+        body["reasoning"] = {"effort": reasoning}
+    return body
