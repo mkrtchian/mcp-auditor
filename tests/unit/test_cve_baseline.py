@@ -50,8 +50,9 @@ def test_the_fixture_fingerprint_ignores_what_neither_builds_nor_reaches_the_tar
 
 
 def test_two_targets_sharing_an_image_and_a_builder_but_not_an_aim_differ():
-    one = dataclasses.replace(given.SYMLINK_TARGET, aim=re.compile(r"(^|/)report$"))
-    other = dataclasses.replace(given.SYMLINK_TARGET, aim=re.compile(r"^/srv/app[^/]"))
+    base = dataclasses.replace(given.SYMLINK_TARGET, kept_places=())
+    one = dataclasses.replace(base, aim=re.compile(r"(^|/)report$"))
+    other = dataclasses.replace(base, aim=re.compile(r"^/srv/app[^/]"))
 
     assert fixture_fingerprint(one, {}) != fixture_fingerprint(other, {})
 

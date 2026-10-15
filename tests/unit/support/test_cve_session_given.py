@@ -5,6 +5,7 @@ from pathlib import Path
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline, fixture_fingerprint
 from evals.cve_baseline import write_baseline as _write_baseline
 from evals.cve_grammar import CVEStatus, MissClass, RunGrade
+from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.cve_session_model import AuditTarget, CheckTarget, CVEHarness, CVEOptions, GradedAudit
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.eval_session import TreeState
@@ -18,6 +19,9 @@ from tests.unit.support.test_cve_oracle_given import a_detected_grade, a_missed_
 
 __all__ = ["a_detected_grade", "conditions"]
 
+# The real loaded places, so the real targets' kept ids resolve (fixture_fingerprint and the
+# session both read them); no Docker, load_places only reads the frozen JSON.
+PLACES = load_places(HOLDOUT_PLACES)
 KUBERNETES = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53355")
 SYMLINK = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53109")
 COMMIT = "0123abc"
@@ -105,7 +109,7 @@ def a_harness(
         read_tree=lambda: tree or TreeState(commit=COMMIT, dirty=False),
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
         clock=lambda: RECORDED_AT,
-        places={},
+        places=PLACES,
     )
 
 
@@ -141,5 +145,5 @@ def an_orphaned_file(directory: Path) -> str:
 def _write(
     directory: Path, baseline: CVETargetBaseline, target: CVETarget, recorded: CVERunConditions
 ) -> None:
-    update = {"fixture_fingerprint": fixture_fingerprint(target, {}), "conditions": recorded}
+    update = {"fixture_fingerprint": fixture_fingerprint(target, PLACES), "conditions": recorded}
     _write_baseline(directory, baseline.model_copy(update=update))
