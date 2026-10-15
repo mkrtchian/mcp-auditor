@@ -89,6 +89,8 @@ class LaunchShape(StrEnum):
 def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
     # EMPTY_LAYOUT builds the rule's reference arm (an empty directory at each anchor); NORMAL and
     # FALLBACK both build the full neutral tree, since the fallback keeps the layout mounted.
+    # The FALLBACK launch applies only FALLBACK_SCOPE, not a target's FallbackScope shape: honouring
+    # an arbitrary per-target fallback scope (EMPTY_OUTSIDE, a non-_PROJECT path) is deferred below.
     if shape is LaunchShape.EMPTY_LAYOUT:
         build_empty_layout(root)
     else:
@@ -104,6 +106,11 @@ _CHECKOUT = Path(_PROJECT).relative_to(_WORKSPACE)  # the checkout's path under 
 # (ADR 031). Unexercised today, every acceptance target keeps the normal launch-mode and no target
 # breaks (the behaviour smoke-check started all servers in the tree), so the fallback scope equals
 # the normal scope here; a target the layout breaks would carry its own fallback scope on the card.
+# The per-target CVETarget.fallback_scope is read only by fixture_fingerprint today, never by a
+# builder. Wiring an arbitrary fallback scope (its three shapes) into the launch waits for the
+# holdout-run machinery that does not exist yet, so a FALLBACK launch-mode with a scope other than
+# this _PROJECT default would not be honoured yet. It stays inert while every target keeps the
+# normal launch-mode.
 FALLBACK_SCOPE = _PROJECT
 
 
