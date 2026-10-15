@@ -1,5 +1,14 @@
 # pyright: reportArgumentType=false
+import openai
 import pytest
+from openai.types.chat import ChatCompletion
+from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
+from openai.types.completion_usage import (
+    CompletionTokensDetails,
+    CompletionUsage,
+    PromptTokensDetails,
+)
 from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput
@@ -22,6 +31,33 @@ def _details(cache_read: int, reasoning: int) -> dict[str, dict[str, int]]:
         "input_token_details": {"cache_read": cache_read},
         "output_token_details": {"reasoning": reasoning},
     }
+
+
+def _cut_completion(usage: CompletionUsage | None) -> openai.LengthFinishReasonError:
+    completion = ChatCompletion(
+        id="cut",
+        created=0,
+        model="qwen",
+        object="chat.completion",
+        choices=[
+            Choice(
+                index=0,
+                finish_reason="length",
+                message=ChatCompletionMessage(role="assistant", content='{"value": "c'),
+            )
+        ],
+        usage=usage,
+    )
+    return openai.LengthFinishReasonError(completion=completion)
+
+
+_CUT_USAGE = CompletionUsage(
+    prompt_tokens=100,
+    completion_tokens=50,
+    total_tokens=150,
+    prompt_tokens_details=PromptTokensDetails(cached_tokens=20),
+    completion_tokens_details=CompletionTokensDetails(reasoning_tokens=10),
+)
 
 
 class TestTokenAccumulationOnRetry:
@@ -183,6 +219,42 @@ class TestTruncatedOutput:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.truncated_attempts == 1
+
+    @pytest.mark.asyncio
+    async def test_a_cut_on_the_parse_path_on_every_attempt_counts_as_truncated(self):
+        responses = [_cut_completion(_CUT_USAGE) for _ in range(3)]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(UnparseableOutput) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.truncated_attempts == 3
+        assert raised.value.usage == ProviderUsage(
+            input_tokens=300, output_tokens=150, cached_input_tokens=60, reasoning_tokens=30
+        )
+
+    @pytest.mark.asyncio
+    async def test_a_cut_on_the_parse_path_is_retried(self):
+        responses = [_cut_completion(_CUT_USAGE), raw_response(_DummyOutput(value="ok"), 100, 50)]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        output, usage = await llm.generate_structured("prompt", _DummyOutput)
+
+        assert output == _DummyOutput(value="ok")
+        assert usage == ProviderUsage(
+            input_tokens=200, output_tokens=100, cached_input_tokens=20, reasoning_tokens=10
+        )
+
+    @pytest.mark.asyncio
+    async def test_a_cut_on_the_parse_path_without_usage_counts_no_tokens(self):
+        responses = [_cut_completion(None) for _ in range(3)]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(UnparseableOutput) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.truncated_attempts == 3
+        assert raised.value.usage == ProviderUsage()
 
 
 class TestThrottledRequests:

@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
+import openai
 from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
 from langchain_core.runnables import Runnable
+from openai.types.completion_usage import CompletionUsage
 from pydantic import BaseModel, ValidationError
 
 from mcp_auditor.adapters.chat_model_factory import make_chat_model
@@ -80,8 +82,7 @@ class LLM:
         accumulated_usage = ProviderUsage()
         truncated_attempts = 0
         for _attempt in range(self._max_parse_attempts):
-            raw_response, throttled_requests = await _invoke(structured, prompt, accumulated_usage)
-            attempt = self._unpack_raw_response(raw_response, throttled_requests)
+            attempt = await self._attempt(structured, prompt, accumulated_usage)
             accumulated_usage = accumulated_usage.add(attempt.usage)
             if attempt.refusal is not None:
                 raise ProviderRefusal(attempt.refusal, accumulated_usage)
@@ -107,6 +108,24 @@ class LLM:
             output_schema, method=method, include_raw=True
         )
 
+    async def _attempt(
+        self, structured: Runnable[str, object], prompt: str, usage_so_far: ProviderUsage
+    ) -> "_Attempt":
+        with counting_throttles() as tally:
+            try:
+                raw_response = await structured.ainvoke(prompt)
+            except openai.LengthFinishReasonError as error:
+                # The SDK's parse path raises on a cut answer before any message exists.
+                usage = _completion_usage(error.completion.usage, tally.requests)
+                return _Attempt(parsed=None, usage=usage, truncated=True, refusal=None)
+            except Exception as error:
+                refusal = refusal_from_error(error)
+                if refusal is None:
+                    raise
+                usage = usage_so_far.add(ProviderUsage(throttled_requests=tally.requests))
+                raise ProviderRefusal(refusal, usage) from error
+        return self._unpack_raw_response(raw_response, tally.requests)
+
     def _unpack_raw_response(self, raw_response: object, throttled_requests: int) -> "_Attempt":
         """Langchain's include_raw=True returns {"raw": AIMessage, "parsed": BaseModel}.
 
@@ -129,21 +148,6 @@ class _Attempt:
     usage: ProviderUsage
     truncated: bool
     refusal: str | None
-
-
-async def _invoke(
-    structured: Runnable[str, object], prompt: str, usage_so_far: ProviderUsage
-) -> tuple[object, int]:
-    with counting_throttles() as tally:
-        try:
-            raw_response = await structured.ainvoke(prompt)
-        except Exception as error:
-            refusal = refusal_from_error(error)
-            if refusal is None:
-                raise
-            usage = usage_so_far.add(ProviderUsage(throttled_requests=tally.requests))
-            raise ProviderRefusal(refusal, usage) from error
-    return raw_response, tally.requests
 
 
 def _was_truncated(response_metadata: dict[str, Any]) -> bool:
@@ -172,5 +176,19 @@ def _to_provider_usage(metadata: _UsageMetadata | None, throttled_requests: int)
         output_tokens=metadata["output_tokens"],
         cached_input_tokens=metadata.get("input_token_details", {}).get("cache_read", 0),
         reasoning_tokens=metadata.get("output_token_details", {}).get("reasoning", 0),
+        throttled_requests=throttled_requests,
+    )
+
+
+def _completion_usage(usage: CompletionUsage | None, throttled_requests: int) -> ProviderUsage:
+    if usage is None:
+        return ProviderUsage(throttled_requests=throttled_requests)
+    prompt_details = usage.prompt_tokens_details
+    completion_details = usage.completion_tokens_details
+    return ProviderUsage(
+        input_tokens=usage.prompt_tokens,
+        output_tokens=usage.completion_tokens,
+        cached_input_tokens=(prompt_details and prompt_details.cached_tokens) or 0,
+        reasoning_tokens=(completion_details and completion_details.reasoning_tokens) or 0,
         throttled_requests=throttled_requests,
     )
