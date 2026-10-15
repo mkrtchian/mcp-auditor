@@ -75,15 +75,20 @@ TOOL_CALL_TIMEOUT = 30  # the client's own default, the replay passes a short on
 
 
 class LaunchShape(StrEnum):
-    """Which tree a builder materialises under the mount. NORMAL is the frozen layout the
-    benchmark runs under; EMPTY_LAYOUT is the rule's reference arm for the break detector, an
-    empty directory at each layout anchor (holdout-rule.md:159). The fallback shape is Step 4."""
+    """Which tree a builder materialises under the mount, and the scope it runs with. NORMAL is
+    the frozen layout the benchmark runs under; EMPTY_LAYOUT is the rule's reference arm for the
+    break detector, an empty directory at each layout anchor (holdout-rule.md:159); FALLBACK keeps
+    the layout mounted but scopes a scope-carrying server to its documented default, the launch the
+    rule gates on a break (ADR 031). FALLBACK and NORMAL share the full tree."""
 
     NORMAL = "normal"
     EMPTY_LAYOUT = "empty_layout"
+    FALLBACK = "fallback"
 
 
 def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
+    # EMPTY_LAYOUT builds the rule's reference arm (an empty directory at each anchor); NORMAL and
+    # FALLBACK both build the full neutral tree, since the fallback keeps the layout mounted.
     if shape is LaunchShape.EMPTY_LAYOUT:
         build_empty_layout(root)
     else:
@@ -93,6 +98,13 @@ def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
 _WORKSPACE = ANCHOR_PATHS[LayoutAnchor.WORKSPACE]  # the mount target, /srv
 _PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]  # the in-scope checkout, /srv/app
 _CHECKOUT = Path(_PROJECT).relative_to(_WORKSPACE)  # the checkout's path under the temp root
+
+# The documented default scope a scope-carrying server falls back to when the layout breaks it
+# (holdout-rule.md:159): the in-scope checkout the deployment documents as the server's scope
+# (ADR 031). Unexercised today, every acceptance target keeps the normal launch-mode and no target
+# breaks (the behaviour smoke-check started all servers in the tree), so the fallback scope equals
+# the normal scope here; a target the layout breaks would carry its own fallback scope on the card.
+FALLBACK_SCOPE = _PROJECT
 
 
 @dataclass(frozen=True)
@@ -132,8 +144,9 @@ def filesystem_env(
         # pointing (absolute) at the coordinate where the nonce is mounted. The flaw follows it
         # out of scope; the patched server does not. The exploit discovers them by listing the
         # checkout. The prefix-collision sibling needs no extra structure: app.git is in the tree.
-        # The reference arm plants nothing and has no checkout to hang a symlink off.
-        if shape is LaunchShape.NORMAL:
+        # The reference arm (EMPTY_LAYOUT) plants nothing and has no checkout to hang a symlink off;
+        # the fallback keeps the full tree, so it plants them like the normal launch.
+        if shape is not LaunchShape.EMPTY_LAYOUT:
             checkout = root / _CHECKOUT
             for index, intent in enumerate(spec.files):
                 leak = checkout / f"leak{index}"

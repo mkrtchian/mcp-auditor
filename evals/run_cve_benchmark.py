@@ -103,13 +103,14 @@ async def _run(
         await survey_all(graded, bounded(lambda t: survey_one(t, places), args.concurrency))
         return 0
     if args.calibrate:
+        # ADR 031 admission, confirmed before a draw: Docker-dependent, deterministic, run only
+        # under the maintainer paths (calibrate and record-baseline), never on a gated comparison
+        # and not beside the synchronous preflight (no container exists there). The rule runs the
+        # layout check before the exploits (holdout-rule.md:159), so it reports its break first.
+        await confirm_admission(graded, places, ci=args.ci)
         all_live = await calibrate_all(
             graded, bounded(lambda t: calibrate_one(t, places), args.concurrency), ci=args.ci
         )
-        # ADR 031 admission, confirmed before a draw: Docker-dependent, deterministic, run only
-        # under the maintainer paths (calibrate and record-baseline), never on a gated comparison
-        # and not beside the synchronous preflight (no container exists there).
-        await confirm_admission(graded, places, ci=args.ci)
         return 0 if all_live else 1
     if args.record_baseline:
         await confirm_admission(graded, places, ci=args.ci)

@@ -9,7 +9,7 @@ from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_grammar import CVEStatus, MechanismClass
 from evals.cve_places import Coordinates, LayoutAnchor, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_targets import CVE_TARGETS, DOCKER_DIRECTORY, CVETarget
+from evals.cve_targets import CVE_TARGETS, DOCKER_DIRECTORY, CVETarget, LaunchMode
 from evals.gate import ReplayRule
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -176,6 +176,7 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "a fictional kept id added": _keeping_another_record(),
     "a kept record moved in the mapping": _moving_the_kept_endpoint_record(),
     "the sentinel Dockerfile (a kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
+    "launch mode": _replacing(launch_mode=LaunchMode.FALLBACK),
 }
 
 # Applied to a_target_keeping_a_file (so no kept endpoint, the sentinel Dockerfile is out).

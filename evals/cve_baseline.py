@@ -19,7 +19,7 @@ from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
 from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
 from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
 from evals.cve_planting import PlantingHost
-from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, image_dockerfile
+from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, LaunchMode, image_dockerfile
 from evals.gate import ReplayRule
 
 CVE_BASELINE_DIRECTORY = Path(__file__).parent / "baselines" / "cve"
@@ -83,7 +83,8 @@ def fixture_fingerprint(
     twin's Dockerfile (both without their comment and blank lines, so a patched pin that moves
     moves the fingerprint), the builder's name, the server image, the mechanism, the aim, the
     tools filter, the flaw's reach, the planting host, the loaded record of each kept place
-    (its id, kind, coordinates and reach, in kept_places order) and the sentinel Dockerfile
+    (its id, kind, coordinates and reach, in kept_places order), the launch-mode field (and the
+    fallback scope under the fallback launch-mode, holdout-rule.md:231) and the sentinel Dockerfile
     whenever a kept record is an http_endpoint, since the sentinel image serves it on any
     target. Out:
     the exploits and benign call (calibration only), the severity, the note, the awaited
@@ -108,7 +109,12 @@ def fixture_fingerprint(
         sorted(target.reaches),
         _planting_host_parts(target.planting_host),
         [_record_parts(record) for record in records],
+        target.launch_mode.value,
     ]
+    # The fingerprint covers the launch the target runs under with the fallback included
+    # (holdout-rule.md:231): under the fallback launch-mode the fallback scope is part of it.
+    if target.launch_mode is LaunchMode.FALLBACK:
+        parts.append([target.fallback_scope.kind.value, target.fallback_scope.path])
     if any(record.kind is PlantKind.HTTP_ENDPOINT for record in records):
         parts.append(_dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()

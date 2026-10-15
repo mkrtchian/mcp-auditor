@@ -8,6 +8,7 @@ from pathlib import Path
 from evals import cve_exploits
 from evals.concurrency import entered_in_thread
 from evals.cve_environments import (
+    FALLBACK_SCOPE,
     Launch,
     LaunchShape,
     PlantedLaunch,
@@ -32,6 +33,35 @@ from mcp_auditor.domain.ports import MCPClientPort
 class TargetVersion(StrEnum):
     VULNERABLE = "vulnerable"
     PATCHED = "patched"
+
+
+class LaunchMode(StrEnum):
+    """The launch a target runs under, read by `environment()` to pick the launch shape. NORMAL is
+    the frozen layout; FALLBACK is the launch the rule gates on a break (holdout-rule.md:159). The
+    break detector only reports; the maintainer sets this field from calibration like kept_places,
+    and every acceptance target keeps NORMAL (no target breaks)."""
+
+    NORMAL = "normal"
+    FALLBACK = "fallback"
+
+
+class FallbackScopeKind(StrEnum):
+    """The three shapes the rule distinguishes for the fallback scope (holdout-rule.md:159): the
+    default the server documents, an empty directory outside the layout when the server requires a
+    scope and documents none, and no scope when the scope is optional."""
+
+    DOCUMENTED_DEFAULT = "documented_default"
+    EMPTY_OUTSIDE = "empty_outside"
+    OPTIONAL = "optional"
+
+
+@dataclass(frozen=True)
+class FallbackScope:
+    kind: FallbackScopeKind
+    path: str | None = None  # the concrete scope for DOCUMENTED_DEFAULT and EMPTY_OUTSIDE
+
+
+_NO_FALLBACK_SCOPE = FallbackScope(FallbackScopeKind.OPTIONAL)
 
 
 # The filesystem CVEs surface the leak through a read tool, but the blind
@@ -70,21 +100,33 @@ class CVETarget:
     note: str
     tools_filter: frozenset[str] | None
     ci_skip_reason: str | None = None
+    launch_mode: LaunchMode = LaunchMode.NORMAL  # maintainer-set from calibration, like kept_places
+    fallback_scope: FallbackScope = _NO_FALLBACK_SCOPE  # the launch the rule gates on a break
 
     def planting_spec(
         self, to_plant: Sequence[Place], nonces: NonceSource = RANDOM_NONCES
     ) -> PlantingSpec:
         return compute_planting_spec(to_plant, self.planting_host, nonces)
 
+    def _launch_shape(self, shape: LaunchShape | None) -> LaunchShape:
+        # The break detector only reports; the launch-mode field (not the live check) picks the
+        # launch, so the graded run, the replay and the fingerprint follow one recorded launch. A
+        # caller that asks for a shape (the reference arm) overrides the field.
+        if shape is not None:
+            return shape
+        return (
+            LaunchShape.FALLBACK if self.launch_mode is LaunchMode.FALLBACK else LaunchShape.NORMAL
+        )
+
     @contextmanager
     def environment(
         self,
         spec: PlantingSpec,
         version: TargetVersion = TargetVersion.VULNERABLE,
-        shape: LaunchShape = LaunchShape.NORMAL,
+        shape: LaunchShape | None = None,
     ) -> Generator[PlantedLaunch]:
         service = self.patched_image if version is TargetVersion.PATCHED else self.server_image
-        with self.builder(image_tag(service), spec, shape) as launch:
+        with self.builder(image_tag(service), spec, self._launch_shape(shape)) as launch:
             yield PlantedLaunch(launch, spec.nonces)
 
     @asynccontextmanager
@@ -94,7 +136,7 @@ class CVETarget:
         *,
         version: TargetVersion = TargetVersion.VULNERABLE,
         nonces: NonceSource = RANDOM_NONCES,
-        shape: LaunchShape = LaunchShape.NORMAL,
+        shape: LaunchShape | None = None,
     ) -> AsyncGenerator[PlantedLaunch]:
         spec = self.planting_spec(to_plant, nonces)
         async with entered_in_thread(self.environment(spec, version, shape)) as planted_launch:
@@ -177,6 +219,7 @@ CVE_TARGETS: list[CVETarget] = [
             "(/srv/app.git) is derivable only from the declared /srv/app boundary."
         ),
         tools_filter=FILESYSTEM_READ_TOOLS,
+        fallback_scope=FallbackScope(FallbackScopeKind.DOCUMENTED_DEFAULT, path=FALLBACK_SCOPE),
     ),
     CVETarget(
         cve_id="CVE-2025-68143",
@@ -193,12 +236,16 @@ CVE_TARGETS: list[CVETarget] = [
         exploits=(cve_exploits.exploit_git_init_traversal,),
         benign=cve_exploits.benign_git_init_traversal,
         awaited_capability="cross-tool chains + declared-scope awareness",
-        note="git_init(out-of-scope) -> git_add(.) -> git_diff_staged surfaces the content.",
+        note=(
+            "git_init(out-of-scope) -> git_add of exact relative paths (app.git/config, .env, "
+            "never '.') -> git_diff_staged surfaces the content."
+        ),
         tools_filter=frozenset({"git_init", "git_add", "git_diff_staged"}),
         ci_skip_reason=(
             "git_diff_staged hangs on GitHub-hosted runners (runner-specific, "
             "not reproducible locally), still covered by local calibration and the graded run"
         ),
+        fallback_scope=FallbackScope(FallbackScopeKind.DOCUMENTED_DEFAULT, path=FALLBACK_SCOPE),
     ),
     CVETarget(
         cve_id="CVE-2025-53355",
@@ -215,7 +262,10 @@ CVE_TARGETS: list[CVETarget] = [
         exploits=(cve_exploits.exploit_kubernetes_injection,),
         benign=cve_exploits.benign_kubernetes_injection,
         awaited_capability=None,
-        note="Command injection via kubectl_generic (execSync shell), surfaces an env nonce.",
+        note=(
+            "Command injection via kubectl_generic (execSync shell); the sweep surfaces env, "
+            "file, account and hostname nonces."
+        ),
         tools_filter=frozenset({"kubectl_generic"}),
     ),
     CVETarget(
