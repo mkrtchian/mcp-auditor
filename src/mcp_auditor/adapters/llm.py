@@ -123,7 +123,7 @@ class LLM:
                 refusal = refusal_from_error(error)
                 if refusal is None:
                     raise
-                usage = usage_so_far.add(ProviderUsage(throttled_requests=tally.requests))
+                usage = usage_so_far.add(_refused_usage(error, tally.requests))
                 raise ProviderRefusal(refusal, usage) from error
         return self._unpack_raw_response(raw_response, tally.requests)
 
@@ -179,6 +179,13 @@ def _to_provider_usage(metadata: _UsageMetadata | None, throttled_requests: int)
         reasoning_tokens=metadata.get("output_token_details", {}).get("reasoning", 0),
         throttled_requests=throttled_requests,
     )
+
+
+def _refused_usage(error: Exception, throttled_requests: int) -> ProviderUsage:
+    # A content_filter finish is raised as an error, yet its completion carries the billed tokens.
+    if isinstance(error, openai.ContentFilterFinishReasonError) and error.completion is not None:
+        return _completion_usage(error.completion.usage, throttled_requests)
+    return ProviderUsage(throttled_requests=throttled_requests)
 
 
 def _completion_usage(usage: CompletionUsage | None, throttled_requests: int) -> ProviderUsage:

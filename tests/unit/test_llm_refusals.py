@@ -7,6 +7,11 @@ import pytest
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion import Choice
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
+from openai.types.completion_usage import (
+    CompletionTokensDetails,
+    CompletionUsage,
+    PromptTokensDetails,
+)
 from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput
@@ -40,7 +45,9 @@ def _permission_denied(body: dict[str, Any]) -> openai.PermissionDeniedError:
     return openai.PermissionDeniedError(f"Error code: 403 - {body}", response=response, body=body)
 
 
-def _content_filtered(refusal: str | None) -> openai.ContentFilterFinishReasonError:
+def _content_filtered(
+    refusal: str | None, usage: CompletionUsage | None = None
+) -> openai.ContentFilterFinishReasonError:
     completion = ChatCompletion(
         id="filtered",
         created=0,
@@ -53,8 +60,18 @@ def _content_filtered(refusal: str | None) -> openai.ContentFilterFinishReasonEr
                 message=ChatCompletionMessage(role="assistant", content=None, refusal=refusal),
             )
         ],
+        usage=usage,
     )
     return openai.ContentFilterFinishReasonError(completion=completion)
+
+
+_FILTERED_USAGE = CompletionUsage(
+    prompt_tokens=100,
+    completion_tokens=50,
+    total_tokens=150,
+    prompt_tokens_details=PromptTokensDetails(cached_tokens=20),
+    completion_tokens_details=CompletionTokensDetails(reasoning_tokens=10),
+)
 
 
 def _wrapped(cause: Exception) -> Exception:
@@ -188,6 +205,32 @@ class TestHostLevelBlock:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.provider_message == "finish_reason content_filter"
+
+    @pytest.mark.asyncio
+    async def test_a_content_filter_finish_carries_the_usage_of_its_completion(self):
+        llm = LLM(FakeChatModel([_content_filtered(None, _FILTERED_USAGE)]), _DICT_SCHEMA, 3)
+
+        with pytest.raises(ProviderRefusal) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.usage == ProviderUsage(
+            input_tokens=100, output_tokens=50, cached_input_tokens=20, reasoning_tokens=10
+        )
+
+    @pytest.mark.asyncio
+    async def test_a_content_filter_finish_after_a_cut_carries_the_usage_of_both(self):
+        responses: list[dict[str, Any] | Exception] = [
+            truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
+            _content_filtered(None, _FILTERED_USAGE),
+        ]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(ProviderRefusal) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.usage == ProviderUsage(
+            input_tokens=200, output_tokens=8242, cached_input_tokens=20, reasoning_tokens=10
+        )
 
 
 class TestRefusalInTheResponse:
