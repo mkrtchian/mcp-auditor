@@ -107,13 +107,14 @@ async def _run(
         # under the maintainer paths (calibrate and record-baseline), never on a gated comparison
         # and not beside the synchronous preflight (no container exists there). The rule runs the
         # layout check before the exploits (holdout-rule.md:159), so it reports its break first.
-        await confirm_admission(graded, places, ci=args.ci)
+        admission_failures = await confirm_admission(graded, places, ci=args.ci)
         all_live = await calibrate_all(
             graded, bounded(lambda t: calibrate_one(t, places), args.concurrency), ci=args.ci
         )
-        return 0 if all_live else 1
-    if args.record_baseline:
-        await confirm_admission(graded, places, ci=args.ci)
+        return 0 if all_live and not admission_failures else 1
+    # A kept layout place without a route is a misconfigured fixture: refuse before recording.
+    if args.record_baseline and await confirm_admission(graded, places, ci=args.ci):
+        return 1
     return await _run_graded(args, graded, tracked, places)
 
 

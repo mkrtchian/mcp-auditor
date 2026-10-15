@@ -75,8 +75,22 @@ def admission_gave_up(target: CVETarget, planted: RouteObservations) -> str | No
     return None
 
 
-async def confirm_admission(targets: list[CVETarget], places: Places, ci: bool = False) -> None:
+def unrouted_kept_places(records: Sequence[Place], observations: RouteObservations) -> list[Place]:
+    """The kept layout places the route check does not admit. Keeping a layout place needs a route
+    the server's own output reveals (holdout-rule.md:157), so one without a route breaks the rule's
+    keeping condition and fails the admission. A catalogue place carries no anchor and route_admits
+    always admits it, so it never appears here."""
+    return [place for place in records if not route_admits(place, observations)]
+
+
+async def confirm_admission(
+    targets: list[CVETarget], places: Places, ci: bool = False
+) -> list[str]:
+    """Report each target's layout break, nonce leak and per-kept-place route, and return the
+    admission failures: a kept layout place without a route breaks the rule's keeping condition
+    (holdout-rule.md:157), so the caller fails the maintainer run on it (never a gated run)."""
     console.print("\n[bold]Admission[/bold] (no LLM): layout break then discovery route\n")
+    failures: list[str] = []
     for target in targets:
         if ci and target.ci_skip_reason is not None:
             console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
@@ -89,8 +103,16 @@ async def confirm_admission(targets: list[CVETarget], places: Places, ci: bool =
             continue
         _report_break(target.cve_id, layout_breaks(_surface(reference), _surface(planted)))
         _report_leak(target.cve_id, nonce_in_surface(_surface(planted), nonces))
-        for place in kept_records(target.kept_places, places):
+        records = kept_records(target.kept_places, places)
+        for place in records:
             _report_route(target.cve_id, place, route_admits(place, planted))
+        failures += [
+            f"{target.cve_id}: kept layout place {place.id} has no route"
+            for place in unrouted_kept_places(records, planted)
+        ]
+    if failures:
+        console.print("\n[red]Kept layout places with no route[/red]: drop or route them.")
+    return failures
 
 
 def _report_give_up(cve_id: str, reason: str) -> None:

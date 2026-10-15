@@ -2,11 +2,23 @@ import dataclasses
 import json
 
 import tests.unit.support.test_cve_layout_check_golden_given as given
-from evals.cve_layout_check import admission_gave_up
+from evals.cve_layout_check import admission_gave_up, unrouted_kept_places
+from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
 from evals.cve_route import RouteObservations
 from evals.cve_targets import CVE_TARGETS, LaunchMode
 
 _A_TARGET = CVE_TARGETS[0]
+
+# A server scoped on /srv/app that discloses no path: the scope and its workspace parent are
+# revealed, but nothing names the bare /srv/app.git.
+_SCOPED_NO_DISCLOSURE = RouteObservations(
+    launch_command=(),
+    scope="/srv/app",
+    tool_names=(),
+    responses=(),
+    call_errored=(),
+    tools_list_succeeded=True,
+)
 
 
 def _observed(*, started: bool) -> RouteObservations:
@@ -18,6 +30,43 @@ def _observed(*, started: bool) -> RouteObservations:
         call_errored=(),
         tools_list_succeeded=started,
     )
+
+
+def _layout_place(place_id: str, anchor: LayoutAnchor, kind: PlantKind) -> Place:
+    return Place(
+        id=place_id,
+        family="deployment layout",
+        reachable_by=frozenset({"arbitrary_read"}),
+        kind=kind,
+        coordinates=Coordinates(kind, anchor=anchor, relpath="config"),
+    )
+
+
+def _catalogue_place() -> Place:
+    return Place(
+        id="etc-shadow",
+        family="fictional",
+        reachable_by=frozenset({"arbitrary_read"}),
+        kind=PlantKind.FILE,
+        coordinates=Coordinates(PlantKind.FILE, path="/etc/shadow"),
+    )
+
+
+def test_unrouted_kept_places_lists_only_the_unadmitted_layout_place():
+    catalogue = _catalogue_place()
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlantKind.GIT_REMOTE_URL)
+
+    unrouted = unrouted_kept_places((catalogue, dotenv, bare_url), _SCOPED_NO_DISCLOSURE)
+
+    assert unrouted == [bare_url]
+
+
+def test_unrouted_kept_places_is_empty_when_every_kept_place_is_admitted():
+    catalogue = _catalogue_place()
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
+
+    assert unrouted_kept_places((catalogue, dotenv), _SCOPED_NO_DISCLOSURE) == []
 
 
 def test_a_fallback_mode_target_gives_up_when_its_fallback_launch_fails_to_start():
