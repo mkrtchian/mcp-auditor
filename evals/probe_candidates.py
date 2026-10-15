@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from mcp_auditor.config import Settings
 
-PRICES_DATE = "2026-09-24"
+PRICES_DATE = "2026-10-15"
 
 
 @dataclass(frozen=True)
@@ -61,5 +61,21 @@ CANDIDATES = [
         ),
         prices=Prices(input=0.30, cached_input=0.03, output=2.50),
         reasoning_expected=None,
+    ),
+    Candidate(
+        name="claude-haiku-5-5 none",
+        settings=Settings(
+            provider="anthropic", model="claude-haiku-5-5", judge_model="", reasoning="none"
+        ),
+        prices=Prices(input=0.10, cached_input=0.01, output=0.50),
+        reasoning_expected=False,
+    ),
+    Candidate(
+        name="claude-haiku-5-5 low",
+        settings=Settings(
+            provider="anthropic", model="claude-haiku-5-5", judge_model="", reasoning="low"
+        ),
+        prices=Prices(input=0.10, cached_input=0.01, output=0.50),
+        reasoning_expected=True,
     ),
 ]

@@ -54,7 +54,7 @@ See the README for the reproducibility rationale and the safety note (deliberate
 
 ### Model probe
 
-The probe reports the defects, cost and latency of candidate models on a frozen corpus of prompts, to inform the choice of a model. The corpus is captured once on the reference settings, `gemini-3.1-flash-lite` at `minimal` for both roles, which are no longer the default and are set explicitly below. It needs Docker, the CVE images and `GOOGLE_API_KEY`, and is committed by hand. The probe then needs the key of every candidate (`GOOGLE_API_KEY`, `OPENAI_API_KEY`):
+The probe reports the defects, cost and latency of candidate models on a frozen corpus of prompts, to inform the choice of a model. The corpus is captured once on the reference settings, `gemini-3.1-flash-lite` at `minimal` for both roles, which are no longer the default and are set explicitly below. It needs Docker, the CVE images and `GOOGLE_API_KEY`, and is committed by hand. The probe then needs the key of every candidate (`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`):
 
 ```bash
 MCP_AUDITOR_PROVIDER=google MCP_AUDITOR_MODEL=gemini-3.1-flash-lite MCP_AUDITOR_JUDGE_MODEL= MCP_AUDITOR_REASONING=minimal \
