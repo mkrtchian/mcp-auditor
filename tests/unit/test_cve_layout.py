@@ -6,22 +6,33 @@ from evals.cve_places import LayoutAnchor
 from evals.cve_planting_base import LayoutNode
 
 
-def test_the_empty_layout_builds_a_directory_at_each_anchor(tmp_path: Path):
+def test_the_empty_reference_arm_builds_a_valid_repository_at_each_repo_anchor(tmp_path: Path):
     build_empty_layout(tmp_path)
 
-    assert tmp_path.is_dir()
-    assert (tmp_path / "app").is_dir()
-    assert (tmp_path / "app.git").is_dir()
-    assert list((tmp_path / "app").iterdir()) == []
-    assert list((tmp_path / "app.git").iterdir()) == []
+    checkout = _git(["-C", str(tmp_path / "app"), "rev-parse", "--git-dir"])
+    bare = _git(["--git-dir", str(tmp_path / "app.git"), "rev-parse", "--is-bare-repository"])
+
+    assert checkout.returncode == 0
+    assert bare.stdout.strip() == "true"
+    assert sorted(entry.name for entry in tmp_path.iterdir()) == ["app", "app.git"]
 
 
-def test_the_empty_layout_carries_none_of_the_normal_tree(tmp_path: Path):
+def test_the_empty_reference_arm_carries_none_of_the_normal_tree(tmp_path: Path):
     build_empty_layout(tmp_path)
 
-    assert not (tmp_path / "app" / ".git").exists()
-    assert not (tmp_path / "app.git" / "config").exists()
+    config = (tmp_path / "app.git" / "config").read_text()
+    checkout_log = _git(["-C", str(tmp_path / "app"), "log", "--all"])
+    bare_log = _git(["--git-dir", str(tmp_path / "app.git"), "log", "--all"])
+
+    assert NEUTRAL_TOKEN not in config
+    assert "origin" not in config  # no remote.origin.url
     assert not (tmp_path / ".env").exists()
+    assert not checkout_log.stdout.strip()  # no commit in the checkout
+    assert not bare_log.stdout.strip()  # no commit in the bare
+
+
+def _git(args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", *args], capture_output=True, text=True)
 
 
 def _git_log_patch(bare: Path) -> str:

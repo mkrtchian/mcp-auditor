@@ -1,12 +1,13 @@
 """The layout break detector and the anti-leak guard (ADR 031).
 
-The rule gates a fallback launch on a break: launch each version once with an empty directory at
-each path of the layout (the reference arm) and once with the layout, and call it a break when
-the launch or tools/list succeeded without the layout and failed with it, or when a call that
-returned no error without the layout returns one with it (holdout-rule.md:159). `layout_breaks` is
-the pure detector over the two collected surfaces for one version. A changed response body (a
-discovery symlink in a listing, a shifted deterministic HEAD SHA) is not a break: only a lost
-tools/list or a newly-erroring call counts.
+The rule gates a fallback launch on a break: launch each version once with a minimal valid empty
+node at each layout path, by node type (the reference arm), and once with the layout, and call it a
+break when the launch or tools/list succeeded without the layout and failed with it, or when a call
+that returned no error without the layout returns one with it (holdout-rule.md:159). `layout_breaks`
+is the pure detector over the two collected surfaces for one version, `layout_breaks_any` over both
+versions (a break on either is a break). A changed response body (a discovery symlink in a listing,
+a shifted deterministic HEAD SHA) is not a break: only a lost tools/list or a newly-erroring call
+counts.
 
 The anti-leak guard (`nonce_in_surface`) is a separate pure verdict on the planted surface,
 implementing a distinct clause of the rule: a place the server itself reads at launch is not kept
@@ -15,9 +16,10 @@ pinned by a golden master. The benign call is not run here.
 
 `confirm_admission` is the Docker orchestration run under the maintainer paths (--calibrate and
 --record-baseline, never a gated run), before the exploit calibration so the break is reported
-first. Per target it launches the reference arm (an empty directory at each layout path), then the
-launch its launch-mode field selects (normal, or the fallback), reports the break and the leak (the
-layout check) and judges each kept place's route (the route check). The break detector only reports;
+first. Per target it launches, on both the vulnerable and the patched version, the reference arm (a
+minimal valid empty node at each layout path) then the launch its launch-mode field selects (normal,
+or the fallback); it reports the break (on either version) and, on the vulnerable version, the leak
+(the layout check) and each kept place's route (the route check). The break detector only reports;
 the maintainer sets the fallback launch-mode. It gives up (`admission_gave_up`) only when a target
 already in the fallback launch-mode cannot start even that launch. It gates nothing on the model.
 """
@@ -33,7 +35,7 @@ from rich.markup import escape
 from evals.cve_environments import LaunchShape, connect
 from evals.cve_places import Place, Places, kept_records
 from evals.cve_route import RouteObservations, route_admits, route_observations
-from evals.cve_targets import CVETarget, LaunchMode
+from evals.cve_targets import CVETarget, LaunchMode, TargetVersion
 
 console = Console()
 
@@ -50,6 +52,13 @@ class LayoutSurface:
     tools_list_succeeded: bool  # whether tools/list itself returned (a failed launch sets it False)
 
 
+@dataclass(frozen=True)
+class VersionObservation:
+    reference: RouteObservations
+    planted: RouteObservations
+    nonces: tuple[str, ...]  # the planted arm's nonces; the reference arm plants none
+
+
 def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
     """Whether the layout breaks the version by the rule's criterion (holdout-rule.md:159). The
     two surfaces run the same route procedure, so a call's error state aligns by position."""
@@ -59,6 +68,12 @@ def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
         not before and after
         for before, after in zip(reference.call_errored, with_layout.call_errored, strict=False)
     )
+
+
+def layout_breaks_any(pairs: Sequence[tuple[LayoutSurface, LayoutSurface]]) -> bool:
+    """Whether the layout breaks any of the version pairs. The rule launches each version once with
+    and once without the layout, and a break on either version is a break (holdout-rule.md:159)."""
+    return any(layout_breaks(reference, with_layout) for reference, with_layout in pairs)
 
 
 def nonce_in_surface(planted: LayoutSurface, nonces: Sequence[str]) -> bool:
@@ -95,20 +110,24 @@ async def confirm_admission(
         if ci and target.ci_skip_reason is not None:
             console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
             continue
-        reference, _ = await _observe(target, (), places, shape=LaunchShape.EMPTY_LAYOUT)
-        planted, nonces = await _observe(target, target.kept_places, places)
-        gave_up = admission_gave_up(target, planted)
+        vuln = await _observe_version(target, places, TargetVersion.VULNERABLE)
+        patched = await _observe_version(target, places, TargetVersion.PATCHED)
+        gave_up = admission_gave_up(target, vuln.planted) or admission_gave_up(
+            target, patched.planted
+        )
         if gave_up is not None:
             _report_give_up(target.cve_id, gave_up)
             continue
-        _report_break(target.cve_id, layout_breaks(_surface(reference), _surface(planted)))
-        _report_leak(target.cve_id, nonce_in_surface(_surface(planted), nonces))
+        _report_break(
+            target.cve_id, layout_breaks_any([_surface_pair(vuln), _surface_pair(patched)])
+        )
+        _report_leak(target.cve_id, nonce_in_surface(_surface(vuln.planted), vuln.nonces))
         records = kept_records(target.kept_places, places)
         for place in records:
-            _report_route(target.cve_id, place, route_admits(place, planted))
+            _report_route(target.cve_id, place, route_admits(place, vuln.planted))
         failures += [
             f"{target.cve_id}: kept layout place {place.id} has no route"
-            for place in unrouted_kept_places(records, planted)
+            for place in unrouted_kept_places(records, vuln.planted)
         ]
     if failures:
         console.print("\n[red]Kept layout places with no route[/red]: drop or route them.")
@@ -136,11 +155,22 @@ def _report_route(cve_id: str, place: Place, admits: bool) -> None:
     console.print(f"  {status}  {cve_id} -> {place.id}")
 
 
+async def _observe_version(
+    target: CVETarget, places: Places, version: TargetVersion
+) -> VersionObservation:
+    reference, _ = await _observe(
+        target, (), places, shape=LaunchShape.EMPTY_LAYOUT, version=version
+    )
+    planted, nonces = await _observe(target, target.kept_places, places, version=version)
+    return VersionObservation(reference, planted, nonces)
+
+
 async def _observe(
     target: CVETarget,
     kept: tuple[str, ...],
     places: Places,
     shape: LaunchShape | None = None,
+    version: TargetVersion = TargetVersion.VULNERABLE,
 ) -> tuple[RouteObservations, tuple[str, ...]]:
     # A server that fails to start, or a connection that drops, is a break observation
     # (tools/list did not succeed), not a benchmark crash: the break detector's criterion names a
@@ -150,7 +180,7 @@ async def _observe(
     with tempfile.TemporaryFile("w+") as server_stderr:
         try:
             async with (
-                target.launched(records, shape=shape) as planted,
+                target.launched(records, shape=shape, version=version) as planted,
                 connect(planted.launch, server_stderr) as client,
             ):
                 observations = await route_observations(target, client, planted.launch)
@@ -185,3 +215,7 @@ def _surface(observations: RouteObservations) -> LayoutSurface:
         observations.call_errored,
         observations.tools_list_succeeded,
     )
+
+
+def _surface_pair(observation: VersionObservation) -> tuple[LayoutSurface, LayoutSurface]:
+    return _surface(observation.reference), _surface(observation.planted)

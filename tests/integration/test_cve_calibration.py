@@ -7,6 +7,7 @@ import pytest
 import tests.integration.support.test_cve_calibration_given as given
 from evals.concurrency import bounded
 from evals.cve_calibration import calibrate_all, calibrate_one
+from evals.cve_layout_check import confirm_admission
 from evals.cve_places import Places
 from evals.cve_survey import TargetSurvey, survey_all, survey_one
 from evals.cve_targets import CVETarget
@@ -136,6 +137,36 @@ async def test_a_patched_benign_call_that_errors_reads_dead(capsys: pytest.Captu
     assert not all_live
     assert "patched: benign call errored" in output
     assert "dead  CVE-BENIGN-ERR" in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_confirm_admission_reports_a_break_when_the_layout_breaks_either_version(
+    capsys: pytest.CaptureFixture[str],
+):
+    targets = [
+        given.a_target_whose_layout_breaks_the_patched_version("CVE-BREAK"),
+        given.a_live_target("CVE-LIVE"),
+    ]
+
+    failures = await confirm_admission(targets, given.a_places_mapping())
+
+    output = capsys.readouterr().out
+    assert failures == []
+    assert "layout break  CVE-BREAK" in output
+    assert "no break  CVE-LIVE" in output
+
+
+async def test_the_git_target_starts_on_the_valid_reference_arm(capsys: pytest.CaptureFixture[str]):
+    missing = given.missing_git_images()
+    if missing is not None:
+        pytest.skip(missing)
+
+    failures = await confirm_admission([given.the_git_target()], given.the_holdout_places())
+
+    output = capsys.readouterr().out
+    assert "admission launch error" not in output
+    assert "no break  CVE-2025-68143" in output
+    assert failures == []
 
 
 @pytest.mark.usefixtures("docker_on_the_host")

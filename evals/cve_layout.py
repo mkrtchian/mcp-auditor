@@ -13,7 +13,6 @@ author, date and message, so the tree is reproducible and the fixture fingerprin
 """
 
 import os
-import posixpath
 import subprocess
 import tempfile
 from collections.abc import Mapping, Sequence
@@ -74,16 +73,19 @@ def build_layout(root: Path, nodes: Sequence[LayoutNode]) -> None:
 
 
 def build_empty_layout(root: Path) -> None:
-    """The rule's reference arm (holdout-rule.md:159): an empty directory at each layout path
-    instead of the full neutral tree, so the break detector can compare the server launched with
-    and without the layout. For this layout, "an empty directory at each path" reads as an empty
-    directory at each of the three anchors (/srv, /srv/app, /srv/app.git), none carrying the normal
-    tree's content: no bare repository, no checkout, no workspace dotenv. Host-side only (a mkdir
-    per anchor under the temp root), no git and no Docker."""
-    for anchor_path in ANCHOR_PATHS.values():
-        relative = posixpath.relpath(anchor_path, WORKSPACE)
-        directory = root if relative == "." else root / relative
-        directory.mkdir(parents=True, exist_ok=True)
+    """The rule's reference arm (holdout-rule.md:159): a minimal valid empty node at each layout
+    path, by the node's type, so the break detector can compare the server launched with and
+    without the layout even when the server requires its scope to be a valid repository (a bare
+    empty directory kills such a server before tools/list). The workspace anchor (/srv) is an empty
+    directory, the checkout anchor (/srv/app) an empty initialised repository, the bare anchor
+    (/srv/app.git) an empty bare repository. None carries the normal tree's content: no remote, no
+    history, no workspace dotenv, only a valid empty instance of each node's type. Host-side only,
+    the built tree need not be byte-reproducible."""
+    root.mkdir(parents=True, exist_ok=True)
+    checkout = root / _CHECKOUT
+    checkout.mkdir()
+    _git(checkout, "-c", "init.defaultBranch=main", "init", "--quiet")
+    _git(root, "init", "--bare", "--quiet", _BARE)
 
 
 def _value(kept: Mapping[tuple[LayoutAnchor, str], str], anchor: LayoutAnchor, relpath: str) -> str:

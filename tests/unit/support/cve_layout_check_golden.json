@@ -2,6 +2,9 @@
   "both_healthy_no_break": {
     "breaks": false
   },
+  "break_on_the_patched_version_only": {
+    "breaks": true
+  },
   "call_errors_only_with_the_layout": {
     "breaks": true
   },

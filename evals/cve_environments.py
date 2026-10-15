@@ -77,9 +77,10 @@ TOOL_CALL_TIMEOUT = 30  # the client's own default, the replay passes a short on
 class LaunchShape(StrEnum):
     """Which tree a builder materialises under the mount, and the scope it runs with. NORMAL is
     the frozen layout the benchmark runs under; EMPTY_LAYOUT is the rule's reference arm for the
-    break detector, an empty directory at each layout anchor (holdout-rule.md:159); FALLBACK keeps
-    the layout mounted but scopes a scope-carrying server to its documented default, the launch the
-    rule gates on a break (ADR 031). FALLBACK and NORMAL share the full tree."""
+    break detector, a minimal valid empty node at each layout anchor by node type
+    (holdout-rule.md:159); FALLBACK keeps the layout mounted but scopes a scope-carrying server to
+    its documented default, the launch the rule gates on a break (ADR 031). FALLBACK and NORMAL
+    share the full tree."""
 
     NORMAL = "normal"
     EMPTY_LAYOUT = "empty_layout"
@@ -87,8 +88,9 @@ class LaunchShape(StrEnum):
 
 
 def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
-    # EMPTY_LAYOUT builds the rule's reference arm (an empty directory at each anchor); NORMAL and
-    # FALLBACK both build the full neutral tree, since the fallback keeps the layout mounted.
+    # EMPTY_LAYOUT builds the rule's reference arm (a minimal valid empty node at each anchor by
+    # node type); NORMAL and FALLBACK both build the full neutral tree, since the fallback keeps the
+    # layout mounted.
     # The FALLBACK launch applies only FALLBACK_SCOPE, not a target's FallbackScope shape: honouring
     # an arbitrary per-target fallback scope (EMPTY_OUTSIDE, a non-_PROJECT path) is deferred below.
     if shape is LaunchShape.EMPTY_LAYOUT:

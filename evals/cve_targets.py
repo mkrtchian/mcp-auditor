@@ -271,7 +271,10 @@ CVE_TARGETS: list[CVETarget] = [
             "git_diff_staged hangs on GitHub-hosted runners (runner-specific, "
             "not reproducible locally), still covered by local calibration and the graded run"
         ),
-        fallback_scope=FallbackScope(FallbackScopeKind.DOCUMENTED_DEFAULT, path=FALLBACK_SCOPE),
+        # mcp-server-git's --repository is optional (each tool carries a per-call repo_path), so the
+        # rule's optional-scope branch applies: the fallback launches with no scope
+        # (holdout-rule.md:159).
+        fallback_scope=_NO_FALLBACK_SCOPE,
     ),
     CVETarget(
         cve_id="CVE-2025-53355",

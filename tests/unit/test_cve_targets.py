@@ -240,6 +240,12 @@ def test_every_surviving_target_carries_a_fallback_scope_and_the_normal_launch_m
     assert isinstance(target.fallback_scope.kind, FallbackScopeKind)
 
 
+def test_the_git_target_falls_back_to_no_scope_because_its_scope_is_optional():
+    git = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-68143")
+
+    assert git.fallback_scope.kind is FallbackScopeKind.OPTIONAL
+
+
 def test_the_git_init_note_no_longer_stages_the_dot_path():
     git = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-68143")
 

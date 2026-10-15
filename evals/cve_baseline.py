@@ -92,6 +92,10 @@ def fixture_fingerprint(
     places' family (plants nothing), and what each caller chooses to plant and launch (the
     kept places for a graded run, every candidate for the survey), which live in the callers.
     A change to the shared environment code moves every target's fingerprint.
+
+    The environment modules are fingerprinted whole, the admission reference arm
+    (`build_empty_layout`, inert on the graded run) included, by choice of granularity: a rare
+    false-positive reset is the price of an instrument with no silent hole.
     """
     records = kept_records(target.kept_places, places)
     parts: list[object] = [

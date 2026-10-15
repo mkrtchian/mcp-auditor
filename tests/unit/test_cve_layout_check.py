@@ -2,7 +2,12 @@ import dataclasses
 import json
 
 import tests.unit.support.test_cve_layout_check_golden_given as given
-from evals.cve_layout_check import admission_gave_up, unrouted_kept_places
+from evals.cve_layout_check import (
+    LayoutSurface,
+    admission_gave_up,
+    layout_breaks_any,
+    unrouted_kept_places,
+)
 from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
 from evals.cve_route import RouteObservations
 from evals.cve_targets import CVE_TARGETS, LaunchMode
@@ -108,6 +113,18 @@ def test_a_discovery_symlink_in_a_listing_is_not_a_break():
 
 def test_a_shifted_head_sha_is_not_a_break():
     assert given.golden_entries()["shifted_head_sha_is_not_a_break"]["breaks"] is False
+
+
+def test_the_two_version_break_fires_when_only_the_patched_pair_breaks():
+    assert given.golden_entries()["break_on_the_patched_version_only"]["breaks"] is True
+
+
+def test_the_two_version_break_is_silent_when_no_version_pair_breaks():
+    healthy = LayoutSurface(
+        tool_names=(), responses=(), call_errored=(False,), tools_list_succeeded=True
+    )
+
+    assert layout_breaks_any([(healthy, healthy), (healthy, healthy)]) is False
 
 
 def test_the_anti_leak_guard_flags_a_nonce_in_the_ordinary_surface():

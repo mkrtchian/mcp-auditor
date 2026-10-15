@@ -1,14 +1,16 @@
 import pathlib
 import re
+import subprocess
 import sys
 from collections.abc import Awaitable, Callable, Generator
 from contextlib import AbstractContextManager, contextmanager
 
 from evals.cve_environments import Launch, LaunchShape
 from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
+from evals.cve_places import HOLDOUT_PLACES, Coordinates, Place, Places, PlantKind, load_places
 from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser
-from evals.cve_targets import CVETarget
+from evals.cve_targets import CVE_TARGETS, CVETarget, image_tag
+from mcp_auditor.adapters.docker import DockerRuntime
 from mcp_auditor.domain.ports import MCPClientPort
 
 STUB_PATH = pathlib.Path(__file__).resolve().parent / "cve_stub_server.py"
@@ -16,6 +18,7 @@ KEPT_FLAG_ID = "fict-flag"
 OUTSIDE_ID = "fict-outside"
 INSIDE_ID = "fict-inside"
 OUTSIDE_AIM = re.compile(r"^/outside/")
+GIT_CVE_ID = "CVE-2025-68143"
 
 Builder = Callable[[str, PlantingSpec, LaunchShape], AbstractContextManager[Launch]]
 
@@ -56,6 +59,20 @@ def a_target_whose_server_exits_at_startup(cve_id: str, last_words: str) -> CVET
 
 def a_live_target(cve_id: str) -> CVETarget:
     return _a_target(cve_id, _serving_builder(), benign=_reading("/inside/file"))
+
+
+def a_target_whose_layout_breaks_the_patched_version(cve_id: str) -> CVETarget:
+    # The patched twin exits at startup with the layout mounted but serves on the empty reference
+    # arm, so the layout break shows on the patched version only. The vulnerable version serves on
+    # both arms, so a one-version check would miss it.
+    @contextmanager
+    def builder(image: str, spec: PlantingSpec, shape: LaunchShape) -> Generator[Launch]:
+        if "patched" in image and shape is not LaunchShape.EMPTY_LAYOUT:
+            yield Launch("docker", ["run", sys.executable, "-c", "import sys; sys.exit(1)"])
+        else:
+            yield Launch("docker", ["run", sys.executable, str(STUB_PATH), *_serve_args(spec)])
+
+    return _a_target(cve_id, builder, benign=_reading("/inside/file"))
 
 
 def a_target_whose_benign_call_leaks(cve_id: str) -> CVETarget:
@@ -114,6 +131,32 @@ def _serve_args(spec: PlantingSpec) -> list[str]:
         for place in spec.places
         if place.coordinates.path is not None
     ]
+
+
+def the_git_target() -> CVETarget:
+    return next(target for target in CVE_TARGETS if target.cve_id == GIT_CVE_ID)
+
+
+def the_holdout_places() -> Places:
+    return load_places(HOLDOUT_PLACES)
+
+
+def missing_git_images() -> str | None:
+    """Why the git reference-arm check cannot run, or None. It needs Docker and the pinned
+    vulnerable and patched git images, as the planting acceptance test needs the sentinel image."""
+    if not DockerRuntime().available():
+        return "the git reference-arm check needs Docker"
+    target = the_git_target()
+    for service in (target.server_image, target.patched_image):
+        tag = image_tag(service)
+        if not _image_present(tag):
+            return f"{tag} absent: docker compose -f evals/docker/compose.yml build"
+    return None
+
+
+def _image_present(tag: str) -> bool:
+    result = subprocess.run(["docker", "image", "inspect", tag], capture_output=True, text=True)
+    return result.returncode == 0
 
 
 def _a_file_place(place_id: str, path: str) -> Place:
