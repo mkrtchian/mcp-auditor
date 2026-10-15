@@ -49,7 +49,7 @@ _PROVIDERS = {
     "anthropic": _ProviderDefaults(
         model="claude-haiku-4-5-20251001",
         reasoning=None,
-        accepted_reasoning=(),
+        accepted_reasoning=("none", "low", "medium", "high", "xhigh", "max"),
     ),
     "openai": _ProviderDefaults(
         model="gpt-6-luna",

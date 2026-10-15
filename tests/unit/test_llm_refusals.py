@@ -154,6 +154,37 @@ class TestRefusalInTheResponse:
         assert raised.value.usage == ProviderUsage(input_tokens=100, output_tokens=5)
 
     @pytest.mark.asyncio
+    async def test_an_anthropic_refusal_names_its_category(self):
+        stop_details = {"type": "refusal", "category": "cyber", "explanation": None}
+        refused = _with_raw(
+            raw_response(None, 100, 5),
+            response_metadata={"stop_reason": "refusal", "stop_details": stop_details},
+        )
+        llm = LLM(FakeChatModel([refused]), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(ProviderRefusal, match="category cyber"):
+            await llm.generate_structured("prompt", _DummyOutput)
+
+    @pytest.mark.parametrize(
+        "stop_details",
+        [None, {"type": "refusal", "category": None}, {"type": "refusal", "category": 3}],
+    )
+    @pytest.mark.asyncio
+    async def test_an_anthropic_refusal_without_a_category_keeps_the_plain_message(
+        self, stop_details: object
+    ):
+        refused = _with_raw(
+            raw_response(None, 100, 5),
+            response_metadata={"stop_reason": "refusal", "stop_details": stop_details},
+        )
+        llm = LLM(FakeChatModel([refused]), _DICT_SCHEMA, max_parse_attempts=3)
+
+        with pytest.raises(ProviderRefusal) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.provider_message == "Anthropic stopped the answer: stop_reason refusal"
+
+    @pytest.mark.asyncio
     async def test_the_model_refusal_text_becomes_the_provider_message(self):
         refused = _with_raw(
             raw_response(None, 100, 5),

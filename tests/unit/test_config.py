@@ -109,10 +109,17 @@ def test_a_reasoning_the_provider_does_not_accept_raises_naming_the_accepted_val
         settings.resolve_reasoning(settings.resolve_model())
 
 
-def test_anthropic_with_any_reasoning_raises() -> None:
-    settings = _settings("anthropic", reasoning="low")
+@pytest.mark.parametrize("reasoning", ["none", "low"])
+def test_anthropic_passes_an_accepted_reasoning_through(reasoning: str) -> None:
+    settings = _settings("anthropic", reasoning=reasoning)
 
-    with pytest.raises(ValueError, match="takes no reasoning setting"):
+    assert settings.resolve_reasoning("claude-haiku-5-5") == reasoning
+
+
+def test_anthropic_rejects_minimal_naming_its_accepted_values() -> None:
+    settings = _settings("anthropic", reasoning="minimal")
+
+    with pytest.raises(ValueError, match="none, low, medium, high, xhigh, max"):
         settings.resolve_reasoning(settings.resolve_model())
 
 

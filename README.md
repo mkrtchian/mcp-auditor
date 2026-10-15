@@ -209,7 +209,7 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `MCP_AUDITOR_PROVIDER`     | `openai`             | LLM provider: `openai`, `google`, `anthropic`, `fireworks` or `alibaba` |
 | `MCP_AUDITOR_MODEL`        | per-provider default | Override the main model name              |
 | `MCP_AUDITOR_JUDGE_MODEL`  | same as main model   | Separate model for verdict classification |
-| `MCP_AUDITOR_REASONING`    | per-provider default | Reasoning setting sent to the main and judge models: `minimal`, `low`, `medium` or `high` for `google`, `none`, `low`, `medium`, `high`, `xhigh` or `max` for `openai`, `low`, `medium` or `high` for `fireworks`, not accepted for `anthropic` or `alibaba` |
+| `MCP_AUDITOR_REASONING`    | per-provider default | Reasoning setting sent to the main and judge models: `minimal`, `low`, `medium` or `high` for `google`, `none`, `low`, `medium`, `high`, `xhigh` or `max` for `openai`, `low`, `medium` or `high` for `fireworks`, `none`, `low`, `medium`, `high`, `xhigh` or `max` for `anthropic` (`none` turns thinking off), not accepted for `alibaba` |
 | `OPENAI_API_KEY`           | --                   | Required when provider is `openai`        |
 | `GOOGLE_API_KEY`           | --                   | Required when provider is `google`        |
 | `ANTHROPIC_API_KEY`        | --                   | Required when provider is `anthropic`     |

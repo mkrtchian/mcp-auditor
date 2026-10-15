@@ -48,10 +48,15 @@ def refusal_from_metadata(raw_message: Any) -> str | None:
 
 
 def _anthropic_refusal(response_metadata: dict[str, Any]) -> str | None:
-    # langchain-anthropic copies the API's stop_reason into response_metadata.
-    if response_metadata.get("stop_reason") == "refusal":
-        return "Anthropic stopped the answer: stop_reason refusal"
-    return None
+    # langchain-anthropic copies the API's stop_reason and stop_details into response_metadata.
+    if response_metadata.get("stop_reason") != "refusal":
+        return None
+    message = "Anthropic stopped the answer: stop_reason refusal"
+    stop_details: object = response_metadata.get("stop_details")
+    if not isinstance(stop_details, dict):
+        return message
+    category = cast(dict[str, Any], stop_details).get("category")
+    return f"{message}, category {category}" if isinstance(category, str) else message
 
 
 # The safety values of google-genai's FinishReason, whose name langchain-google-genai
