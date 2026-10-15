@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import Any
 
 import tests.unit.support.test_census_figures_given as figures
+import tests.unit.support.test_census_grouping_given as grouping
 import tests.unit.support.test_census_identity_given as identity
 from evals.census_classification import Classification, Criterion
 from evals.census_figures import Share, compute_figures
+from evals.census_grouping import READERS, ProofJudgment, gap_population, known_gap
 from evals.census_identity import merge
 from evals.census_prefilter import INITIAL_TERMS
 from evals.census_sources import AdvisoryRecord, SourceFile, SourceName, SourceProvenance
@@ -20,6 +22,7 @@ from evals.holdout_census import (
     TermHits,
     census_flaw,
     date_mismatches,
+    draw_candidates,
 )
 
 FLAW_WITH_A_CVE = "CVE-2025-0001"
@@ -45,14 +48,25 @@ def a_census() -> HoldoutCensus:
     dates = {flaw.identifier: flaw.disclosure_date for flaw in flaws}
     classifications = {
         classifier: [
-            figures.a_classification(flaw=flaw, disclosure_date=disclosed)
+            figures.a_classification(
+                flaw=flaw,
+                disclosure_date=disclosed,
+                **(grouping.OUTSIDE_THE_GRAMMAR if flaw == GHSA_ONLY_FLAW else {}),
+            )
             for flaw, disclosed in dates.items()
         ]
         for classifier in CLASSIFIERS
     }
+    groupings = {reader: [grouping.no_proof(GHSA_ONLY_FLAW)] for reader in READERS}
     return HoldoutCensus(
         sources=_provenance(),
-        agents=[AgentRecord(role=AgentRole.COLLECTOR, scope="ghsa", model="claude-opus-5-5")],
+        agents=[
+            AgentRecord(role=AgentRole.COLLECTOR, scope="ghsa", model="claude-opus-5-5"),
+            *(
+                AgentRecord(role=AgentRole.READER, scope=reader, model="claude-opus-4-8")
+                for reader in READERS
+            ),
+        ],
         prefilter=[TermHits(term=term, hit_count=2) for term in INITIAL_TERMS],
         hits=[_a_hit(ITS_GHSA), _a_hit(GHSA_ONLY_FLAW)],
         flaws=flaws,
@@ -62,6 +76,8 @@ def a_census() -> HoldoutCensus:
         classifications=classifications,
         date_mismatches=[],
         figures=compute_figures(classifications, dates, withdrawn=set()),
+        groupings=groupings,
+        known_gap=known_gap(groupings, gap_population(classifications, draw_candidates(flaws))),
     )
 
 
@@ -159,6 +175,40 @@ def with_stale_figures(census: HoldoutCensus) -> HoldoutCensus:
     return census.model_copy(update={"figures": stale})
 
 
+def with_a_reader_missing_a_grouped_flaw(census: HoldoutCensus) -> HoldoutCensus:
+    return _recomputed(_with_groupings(census, READERS[1], lambda own: []))
+
+
+def with_a_reader_grouping_a_flaw_outside_the_population(census: HoldoutCensus) -> HoldoutCensus:
+    extra = grouping.a_judgment(FLAW_WITH_A_CVE)
+    return _recomputed(_with_groupings(census, READERS[0], lambda own: [*own, extra]))
+
+
+def with_a_flaw_grouped_twice(census: HoldoutCensus) -> HoldoutCensus:
+    return _recomputed(_with_groupings(census, READERS[0], lambda own: [*own, own[0]]))
+
+
+def with_a_judgment_without_a_reason(census: HoldoutCensus) -> HoldoutCensus:
+    return _with_groupings(
+        census, READERS[0], lambda own: [own[0].model_copy(update={"reason": " "}), *own[1:]]
+    )
+
+
+def with_three_readers(census: HoldoutCensus) -> HoldoutCensus:
+    third = {"reader_3": census.groupings[READERS[0]]}
+    return census.model_copy(update={"groupings": census.groupings | third})
+
+
+def with_a_reader_without_an_agent_record(census: HoldoutCensus) -> HoldoutCensus:
+    agents = [agent for agent in census.agents if agent.scope != READERS[1]]
+    return census.model_copy(update={"agents": agents})
+
+
+def with_a_stale_known_gap(census: HoldoutCensus) -> HoldoutCensus:
+    stale = {reader: Share(count=0, denominator=1) for reader in READERS}
+    return census.model_copy(update={"known_gap": stale})
+
+
 def with_a_classifier_date_differing_from_the_computed_one(
     census: HoldoutCensus,
 ) -> HoldoutCensus:
@@ -178,10 +228,12 @@ def with_stale_date_mismatches(census: HoldoutCensus) -> HoldoutCensus:
 def _recomputed(census: HoldoutCensus) -> HoldoutCensus:
     dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
     withdrawn = {flaw.identifier for flaw in census.flaws if flaw.withdrawn}
+    population = gap_population(census.classifications, draw_candidates(census.flaws))
     return census.model_copy(
         update={
             "figures": compute_figures(census.classifications, dates, withdrawn),
             "date_mismatches": date_mismatches(census.classifications, dates),
+            "known_gap": known_gap(census.groupings, population),
         }
     )
 
@@ -207,6 +259,15 @@ def _with_classifications(
         classifier: change(census.classifications[classifier])
     }
     return census.model_copy(update={"classifications": classifications})
+
+
+def _with_groupings(
+    census: HoldoutCensus,
+    reader: str,
+    change: Callable[[list[ProofJudgment]], list[ProofJudgment]],
+) -> HoldoutCensus:
+    groupings = census.groupings | {reader: change(census.groupings[reader])}
+    return census.model_copy(update={"groupings": groupings})
 
 
 def _a_hit(source_id: str) -> HitDecision:

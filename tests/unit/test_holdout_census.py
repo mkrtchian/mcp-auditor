@@ -60,6 +60,22 @@ DEFECTS: list[tuple[Callable[[HoldoutCensus], HoldoutCensus], str]] = [
         "flaw GHSA-dddd-eeee-ffff is disclosed on 2026-10-08, after the bound 2026-10-07",
     ),
     (given.with_stale_figures, "figures differ from their computation"),
+    (
+        given.with_a_reader_missing_a_grouped_flaw,
+        "reader_2 does not group flaw GHSA-dddd-eeee-ffff",
+    ),
+    (
+        given.with_a_reader_grouping_a_flaw_outside_the_population,
+        "reader_1 groups CVE-2025-0001, which the rule does not give to the readers",
+    ),
+    (given.with_a_flaw_grouped_twice, "reader_1 groups flaw GHSA-dddd-eeee-ffff 2 times"),
+    (
+        given.with_a_judgment_without_a_reason,
+        "reader_1: the judgment of flaw GHSA-dddd-eeee-ffff has no proof or no reason",
+    ),
+    (given.with_three_readers, "readers must be reader_1, reader_2"),
+    (given.with_a_reader_without_an_agent_record, "reader_2 has no agent record"),
+    (given.with_a_stale_known_gap, "known gap differs from its computation"),
     (given.with_stale_date_mismatches, "date mismatches differ from their computation"),
 ]
 

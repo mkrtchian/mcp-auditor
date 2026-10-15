@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from evals import eval_display as display
 from evals.census_classification import Classification
+from evals.census_grouping import READERS, ProofJudgment
 from evals.census_identity import Flaw
 from evals.census_prefilter import PrefilterTerm
 from evals.census_progress import AssemblyInputs, Collection, CollectionWork
@@ -155,6 +156,7 @@ def _assemble(args: argparse.Namespace) -> int:
         sources=_provenance(args.sources, args.work),
         agents=_read_all(args.work, "agents", AgentRecord),
         classifications=_classifications(args.work, identifiers),
+        groupings=_groupings(args.work),
     )
     census = collection.census(inputs)
     path: Path = args.census
@@ -256,6 +258,14 @@ def _classifications(work: Path, identifiers: list[str]) -> dict[str, list[Class
     if problems:
         raise Refused("Assembly refused: a classifier output is incomplete.", problems)
     return classifications
+
+
+def _groupings(work: Path) -> dict[str, list[ProofJudgment]]:
+    paths = {reader: work / f"grouping_{reader}.jsonl" for reader in READERS}
+    missing = [str(path) for path in paths.values() if not path.exists()]
+    if missing:
+        raise Refused("Assembly refused: a reader's grouping is missing.", missing)
+    return {reader: read_jsonl(path, ProofJudgment) for reader, path in paths.items()}
 
 
 if __name__ == "__main__":

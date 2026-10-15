@@ -6,6 +6,7 @@ import pytest
 import tests.unit.support.test_census_sources_given as sources
 import tests.unit.support.test_run_census_given as given
 from evals import run_census
+from evals.census_grouping import READERS
 from evals.census_sources import SourceName
 from evals.holdout_census import Discovery, load_census
 
@@ -144,6 +145,22 @@ def test_assemble_refuses_when_a_classifier_misses_a_flaw(tmp_path: Path):
         tmp_path,
         decisions=[given.kept(GHSA, A_GHSA), given.kept(GHSA, OTHER_GHSA)],
         classifiers=given.both_classifiers_classifying((A_GHSA, date(2025, 6, 10))),
+    )
+    census = tmp_path / "holdout_census.json"
+
+    exit_code = given.run("assemble", sources_directory, work, "--census", str(census))
+
+    assert exit_code == REFUSED
+    assert not census.exists()
+
+
+def test_assemble_refuses_when_a_reader_grouping_is_missing(tmp_path: Path):
+    sources_directory = given.a_sources_directory(tmp_path, ghsa=[given.an_mcp_advisory(A_GHSA)])
+    work = given.a_work_directory(
+        tmp_path,
+        decisions=[given.kept(GHSA, A_GHSA)],
+        classifiers=given.both_classifiers_classifying((A_GHSA, date(2025, 6, 10))),
+        readers=READERS[:1],
     )
     census = tmp_path / "holdout_census.json"
 

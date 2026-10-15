@@ -2,7 +2,8 @@
 
 Everything derived in the file is recomputed on load and compared: each flaw's
 identifier and disclosure date from its source records, its withdrawn flag, the date
-mismatches and the figures. The stored copies are a cache, never an independent claim.
+mismatches, the figures and the known gap. The stored copies are a cache, never an
+independent claim.
 """
 
 from collections import Counter, defaultdict
@@ -15,11 +16,12 @@ from typing import Literal
 from pydantic import BaseModel, Field, computed_field
 
 from evals.census_classification import Classification, is_consistent
-from evals.census_figures import CensusFigures, compute_figures
+from evals.census_figures import CensusFigures, Share, compute_figures
+from evals.census_grouping import READERS, ProofJudgment, gap_population, grouped_flaws, known_gap
 from evals.census_identity import Flaw, census_identifier, disclosure_date
 from evals.census_prefilter import PrefilterTerm
 from evals.census_sources import SourceProvenance, SourceRecord
-from evals.census_work import AgentRecord, HitDecision, VulnerableMcpEntry
+from evals.census_work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
 
 BOUND = date(2026, 10, 7)
 CLASSIFIERS = ("classifier_1", "classifier_2")
@@ -72,6 +74,8 @@ class HoldoutCensus(BaseModel):
     classifications: dict[str, list[Classification]]
     date_mismatches: list[DateMismatch]
     figures: CensusFigures
+    groupings: dict[str, list[ProofJudgment]]
+    known_gap: dict[str, Share]
 
 
 def census_flaw(flaw: Flaw, found_by: Sequence[Discovery]) -> CensusFlaw:
@@ -109,6 +113,13 @@ def date_mismatches(
     ]
 
 
+def draw_candidates(flaws: Sequence[CensusFlaw]) -> set[str]:
+    """The flaws the draw can reach before any criterion: a census identifier, not withdrawn."""
+    return {
+        flaw.identifier for flaw in flaws if not flaw.no_census_identifier and not flaw.withdrawn
+    }
+
+
 def load_census(path: Path) -> HoldoutCensus:
     census = HoldoutCensus.model_validate_json(path.read_text())
     coverage = _coverage_problems(census)
@@ -122,10 +133,12 @@ def load_census(path: Path) -> HoldoutCensus:
         ),
         *coverage,
         *_consistency_problems(census.classifications),
+        *_reader_problems(census),
     ]
-    # The derived parts pair the two classifiers flaw by flaw, which needs full coverage.
+    # The grouping and the derived parts pair the two classifiers flaw by flaw, which needs
+    # full coverage.
     if not coverage:
-        problems += _derived_problems(census)
+        problems += _grouping_problems(census) + _derived_problems(census)
     if problems:
         raise ValueError(f"invalid holdout census {path}: {'; '.join(problems)}")
     return census
@@ -209,12 +222,48 @@ def _consistency_problems(classifications: dict[str, list[Classification]]) -> l
     ]
 
 
+def _reader_problems(census: HoldoutCensus) -> list[str]:
+    if tuple(census.groupings) != READERS:
+        return [f"readers must be {', '.join(READERS)}"]
+    recorded = {agent.scope for agent in census.agents if agent.role == AgentRole.READER}
+    problems = [f"{reader} has no agent record" for reader in READERS if reader not in recorded]
+    return problems + [
+        f"{reader}: the judgment of flaw {judgment.flaw} has no proof or no reason"
+        for reader, own in census.groupings.items()
+        for judgment in own
+        if not judgment.proof.strip() or not judgment.reason.strip()
+    ]
+
+
+def _grouping_problems(census: HoldoutCensus) -> list[str]:
+    given = grouped_flaws(census.classifications, draw_candidates(census.flaws))
+    problems: list[str] = []
+    for reader, own in census.groupings.items():
+        counts = Counter(judgment.flaw for judgment in own)
+        problems += [
+            f"{reader} does not group flaw {flaw}" for flaw in sorted(given - counts.keys())
+        ]
+        problems += [
+            f"{reader} groups flaw {flaw} {count} times"
+            for flaw, count in counts.items()
+            if count > 1
+        ]
+        problems += [
+            f"{reader} groups {flaw}, which the rule does not give to the readers"
+            for flaw in sorted(counts.keys() - given)
+        ]
+    return problems
+
+
 def _derived_problems(census: HoldoutCensus) -> list[str]:
     dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
     withdrawn = {flaw.identifier for flaw in census.flaws if flaw.withdrawn}
+    population = gap_population(census.classifications, draw_candidates(census.flaws))
     problems: list[str] = []
     if census.date_mismatches != date_mismatches(census.classifications, dates):
         problems.append("date mismatches differ from their computation")
     if census.figures != compute_figures(census.classifications, dates, withdrawn):
         problems.append("figures differ from their computation")
+    if census.known_gap != known_gap(census.groupings, population):
+        problems.append("known gap differs from its computation")
     return problems

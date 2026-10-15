@@ -13,6 +13,7 @@ from functools import cached_property
 
 from evals.census_classification import Classification
 from evals.census_figures import compute_figures
+from evals.census_grouping import ProofJudgment, gap_population, known_gap
 from evals.census_identity import Flaw, disclosure_date, merge
 from evals.census_prefilter import INITIAL_TERMS, PrefilterTerm, matches
 from evals.census_sources import AdvisoryRecord, SourceName, SourceProvenance
@@ -31,6 +32,7 @@ from evals.holdout_census import (
     TermHits,
     census_flaw,
     date_mismatches,
+    draw_candidates,
 )
 
 
@@ -52,6 +54,7 @@ class AssemblyInputs:
     sources: SourceProvenance
     agents: list[AgentRecord]
     classifications: dict[str, list[Classification]]
+    groupings: dict[str, list[ProofJudgment]]
 
 
 class Collection:
@@ -134,6 +137,10 @@ class Collection:
             classifications=inputs.classifications,
             date_mismatches=date_mismatches(inputs.classifications, dates),
             figures=compute_figures(inputs.classifications, dates, withdrawn),
+            groupings=inputs.groupings,
+            known_gap=known_gap(
+                inputs.groupings, gap_population(inputs.classifications, draw_candidates(flaws))
+            ),
         )
 
     def _found_by_agents(self) -> dict[str, set[Discovery]]:

@@ -62,6 +62,7 @@ class AgentRole(StrEnum):
     RECALL = "recall"
     VULNERABLEMCP = "vulnerablemcp"
     CLASSIFIER = "classifier"
+    READER = "reader"
 
 
 class AgentRecord(BaseModel):

@@ -8,9 +8,10 @@ import tests.unit.support.test_census_figures_given as figures
 import tests.unit.support.test_census_sources_given as sources
 from evals import run_census
 from evals.census_classification import Classification, SoftwareKind
+from evals.census_grouping import READERS
 from evals.census_prefilter import PrefilterTerm
 from evals.census_sources import AdvisoryRecord, SourceName
-from evals.census_work import Downloads, Gap, HitDecision, read_jsonl
+from evals.census_work import AgentRecord, AgentRole, Downloads, Gap, HitDecision, read_jsonl
 
 DOWNLOADED = date(2026, 10, 8)
 MCP_SUMMARY = "Path traversal in an MCP filesystem server"
@@ -48,7 +49,10 @@ def a_work_directory(
     gaps: Sequence[Gap] = (),
     widenings: Sequence[PrefilterTerm] = (),
     classifiers: Sequence[Sequence[Classification]] = (),
+    readers: Sequence[str] = READERS,
 ) -> Path:
+    """Each reader of `readers` groups no flaw, which fits classifications that place every
+    flaw in the grammar."""
     work = tmp_path / "work"
     work.mkdir()
     _write_jsonl(work / "decisions_ghsa.jsonl", decisions)
@@ -56,6 +60,15 @@ def a_work_directory(
     _write_jsonl(work / "widenings.jsonl", widenings)
     for name, own in zip(("classifier_1", "classifier_2"), classifiers, strict=False):
         _write_jsonl(work / f"{name}.jsonl", own)
+    for reader in readers:
+        _write_jsonl(work / f"grouping_{reader}.jsonl", [])
+    _write_jsonl(
+        work / "agents_readers.jsonl",
+        [
+            AgentRecord(role=AgentRole.READER, scope=reader, model="claude-opus-4-8")
+            for reader in readers
+        ],
+    )
     downloads = Downloads(nvd={"nvdcve-2.0-2025.json.gz": DOWNLOADED}, osv=DOWNLOADED)
     (work / "downloads.json").write_text(downloads.model_dump_json())
     return work
