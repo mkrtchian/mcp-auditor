@@ -8,6 +8,7 @@ from langchain_core.runnables import Runnable
 from pydantic import BaseModel, SecretStr, ValidationError
 
 from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
+from mcp_auditor.adapters.llm_tool_binding import bind_schema_as_tool
 from mcp_auditor.adapters.throttling import counting_throttles, install_throttle_log_handler
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import ProviderUsage
@@ -30,15 +31,17 @@ def _create_for_provider(settings: Settings, model: str) -> "LLM":
 
 @dataclass(frozen=True)
 class StructuredOutput:
-    method: Literal["json_schema", "function_calling"]
+    method: Literal["json_schema", "function_calling", "tool_binding"]
     schema_as_dict: bool = False
 
 
 # OpenAI and Alibaba, both through ChatOpenAI, get a dict: ChatOpenAI makes a Pydantic
 # class strict, and strict mode rejects the open object AuditPayload.arguments.
+# Anthropic binds the schema as a tool itself, so an answer without the tool call (a
+# refusal, a cut during thinking) still reaches the refusal and truncation checks.
 _STRUCTURED_OUTPUT = {
     "google": StructuredOutput(method="json_schema"),
-    "anthropic": StructuredOutput(method="function_calling"),
+    "anthropic": StructuredOutput(method="tool_binding"),
     "openai": StructuredOutput(method="json_schema", schema_as_dict=True),
     "fireworks": StructuredOutput(method="json_schema"),
     "alibaba": StructuredOutput(method="json_schema", schema_as_dict=True),
@@ -211,6 +214,10 @@ class LLM:
 
     def _bind(self, output_schema: type[BaseModel]) -> Runnable[str, object]:
         method = self._structured_output.method
+        if method == "tool_binding":
+            return bind_schema_as_tool(
+                self._model, output_schema, self._structured_output.schema_as_dict
+            )
         if self._structured_output.schema_as_dict:
             return self._model.with_structured_output(  # pyright: ignore[reportUnknownMemberType]
                 output_schema.model_json_schema(), method=method, strict=False, include_raw=True
@@ -263,6 +270,7 @@ def _was_truncated(response_metadata: dict[str, Any]) -> bool:
     return (
         response_metadata.get("status") == "incomplete"
         or response_metadata.get("finish_reason") == "length"
+        or response_metadata.get("stop_reason") == "max_tokens"
     )
 
 

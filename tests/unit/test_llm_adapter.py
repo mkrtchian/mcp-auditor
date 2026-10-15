@@ -163,6 +163,19 @@ class TestTruncatedOutput:
         assert raised.value.usage == ProviderUsage(input_tokens=200, output_tokens=16384)
 
     @pytest.mark.asyncio
+    async def test_a_response_stopped_at_max_tokens_on_every_attempt_counts_as_truncated(self):
+        responses = [
+            truncated(raw_response(_DummyOutput(value="cut"), 100, 8192), stop_reason="max_tokens")
+            for _ in range(2)
+        ]
+        llm = LLM(FakeChatModel(responses), _PYDANTIC_SCHEMA, max_parse_attempts=2)
+
+        with pytest.raises(UnparseableOutput) as raised:
+            await llm.generate_structured("prompt", _DummyOutput)
+
+        assert raised.value.truncated_attempts == 2
+
+    @pytest.mark.asyncio
     async def test_a_truncated_attempt_among_malformed_ones_is_counted_alone(self):
         responses = [
             truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
