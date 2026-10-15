@@ -29,7 +29,7 @@ async def test_an_answer_without_a_tool_call_is_retried_then_unparseable():
 async def test_a_refusal_raises_provider_refusal_on_the_first_attempt():
     llm = given.an_llm_answering(given.a_refusal())
 
-    with pytest.raises(ProviderRefusal, match="stop_reason refusal") as raised:
+    with pytest.raises(ProviderRefusal, match="stop_reason refusal, category cyber") as raised:
         await llm.generate_structured("prompt", given.Finding)
 
     assert raised.value.usage == ProviderUsage(input_tokens=100, output_tokens=10)
