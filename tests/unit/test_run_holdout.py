@@ -6,6 +6,43 @@ import pytest
 import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_holdout_census_given as given
 from evals import run_holdout
+from evals.census_draw import Side
+from evals.cve_targets import CVE_TARGETS
+from evals.holdout_targets import HoldoutTarget
+
+
+def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
+    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
+
+
+def test_run_without_a_drawn_target_exits_zero_and_says_so(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _no_tracing(monkeypatch)
+    monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", ())
+
+    exit_code = run_holdout.main(["run"])
+
+    assert exit_code == 0
+    assert "no holdout target is drawn" in capsys.readouterr().out
+
+
+def test_run_refuses_when_tracing_is_on(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("LANGSMITH_TRACING", "true")
+
+    assert run_holdout.main(["run"]) == run_holdout.REFUSED_EXIT
+
+
+def test_run_refuses_the_incomplete_committed_conditions_once_a_target_is_in_play(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _no_tracing(monkeypatch)
+    monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
+    entry = HoldoutTarget(target=CVE_TARGETS[0], side=Side.PRE_CUTOFF)
+    monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (entry,))
+
+    assert run_holdout.main(["run"]) == run_holdout.REFUSED_EXIT
 
 
 def test_draw_order_exits_zero_and_prints_a_per_side_tally(

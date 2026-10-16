@@ -1,5 +1,6 @@
 import subprocess
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from pydantic import ValidationError
 
@@ -247,6 +248,11 @@ def read_tree() -> TreeState:
         commit=_git("rev-parse", "HEAD"),
         dirty=_tree_is_dirty(),
     )
+
+
+def last_commit(path: Path) -> str:
+    """The most recent commit that touched `path`, recorded as a run's census provenance."""
+    return _git("log", "-n", "1", "--format=%H", "--", str(path))
 
 
 def _tree_is_dirty() -> bool:
