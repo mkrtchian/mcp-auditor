@@ -24,6 +24,23 @@ def test_matches_the_offline_scipy_anchor():
     assert abs(interval.high - 0.917) < 0.01
 
 
+# All-extreme anchors pinned against the module's own output under the untruncated prior
+# (D_MIN = 1e-3, D_POINTS = 128), obtained by calling the two functions directly and reading
+# back the bounds. They guard against a future re-truncation of the Gamma prior: raising D_MIN
+# back to 0.1 shifts the all-detected lower bound by ~0.008 and the contrast lower bound by
+# ~0.028, both far outside the tolerance below.
+def test_all_detected_matches_the_offline_untruncated_value():
+    interval = hierarchical_interval([3] * 20, RUNS, GammaPrior(1.0, 1.0))
+    assert abs(interval.low - 0.879671) < 1e-4
+    assert abs(interval.high - 0.997629) < 1e-4
+
+
+def test_contrast_all_extreme_matches_the_offline_untruncated_value():
+    interval = contrast_hierarchical([3] * 5, [0] * 5, RUNS, GammaPrior(1.0, 1.0))
+    assert abs(interval.low - 0.407671) < 1e-4
+    assert abs(interval.high - 0.970353) < 1e-4
+
+
 def test_stable_between_the_module_grid_and_a_finer_grid():
     prior = GammaPrior(1.0, 1.0)
     module = hierarchical_interval(DETECTED, RUNS, prior)

@@ -13,7 +13,7 @@ from evals.holdout_intervals import Interval
 
 THETA_POINTS = 320
 D_POINTS = 128
-D_MIN = 0.1
+D_MIN = 1e-3
 D_MAX = 2000.0
 
 
