@@ -28,6 +28,7 @@ class GraphState(TypedDict):
     judged_cases: list[TestCase]
     tool_reports: Annotated[list[ToolReport], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
+    judge_usage: Annotated[list[ProviderUsage], operator.add]
     refused_steps: Annotated[list[RefusedStep], operator.add]
     audit_report: AuditReport | None
     attack_context: AttackContext
@@ -44,6 +45,7 @@ class AuditToolState(TypedDict):
     current_case: TestCase | None
     judged_cases: Annotated[list[TestCase], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
+    judge_usage: Annotated[list[ProviderUsage], operator.add]
     refused_steps: Annotated[list[RefusedStep], operator.add]
     attack_context: AttackContext
     coverage_gap: CoverageGap | None
@@ -70,6 +72,7 @@ class ChainAuditState(TypedDict):
     chain_step_refused: bool
     completed_chains: Annotated[list[AttackChain], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
+    judge_usage: Annotated[list[ProviderUsage], operator.add]
     refused_steps: Annotated[list[RefusedStep], operator.add]
 
 

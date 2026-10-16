@@ -19,6 +19,7 @@ from mcp_auditor.graph.nodes import (
     make_discover_tools,
     make_execute_tool,
     make_extract_attack_context,
+    make_generate_test_cases,
     make_judge_response,
     prepare_tool,
     route_after_discovery,
@@ -230,6 +231,21 @@ class TestJudgeResponse:
         assert result["current_case"] is None
         then.refused_step_recorded(result, tool_name="read_file", step=AuditStep.JUDGMENT)
         assert result["provider_usage"] == [refusal.usage]
+        assert result["judge_usage"] == [refusal.usage]
+
+    async def test_a_refused_generation_does_not_bill_the_judge(self):
+        refusal = given.a_provider_refusal()
+        node = make_generate_test_cases(FakeLLM([refusal]))
+        state = {
+            "current_tool": given.a_tool(name="read_file"),
+            "test_budget": 2,
+            "attack_context": AttackContext(),
+        }
+
+        result = await node(state)
+
+        assert result["provider_usage"] == [refusal.usage]
+        assert "judge_usage" not in result
 
 
 class TestFinalizeToolAudit:

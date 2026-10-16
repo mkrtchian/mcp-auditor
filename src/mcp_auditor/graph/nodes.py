@@ -182,7 +182,12 @@ def make_judge_response(llm: LLMPort, redacting: bool = False):
             severity=judgment.severity,
         )
         judged_case = case.model_copy(update={"eval_result": eval_result})
-        return {"judged_cases": [judged_case], "current_case": None, "provider_usage": [usage]}
+        return {
+            "judged_cases": [judged_case],
+            "current_case": None,
+            "provider_usage": [usage],
+            "judge_usage": [usage],
+        }
 
     return judge_response
 
@@ -221,10 +226,12 @@ async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
     target = state["target"]
     reports = state.get("tool_reports", [])
     usage = _sum_provider_usage(state.get("provider_usage", []))
+    judge_usage = _sum_provider_usage(state.get("judge_usage", []))
     report = AuditReport(
         target=target,
         tool_reports=reports,
         provider_usage=usage,
+        judge_usage=judge_usage,
         refused_steps=state.get("refused_steps", []),
     )
     return {"audit_report": report}

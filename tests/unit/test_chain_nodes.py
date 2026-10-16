@@ -282,7 +282,8 @@ class TestMakeJudgeChain:
 
     @pytest.mark.asyncio
     async def test_a_refused_judgment_completes_the_chain_unjudged(self):
-        node = make_judge_chain(FakeLLM([given.a_provider_refusal()]))
+        refusal = given.a_provider_refusal()
+        node = make_judge_chain(FakeLLM([refusal]))
         state = given.a_chain_audit_state(
             current_chain_goal=given.a_chain_goal(),
             current_chain_steps=[given.a_chain_step()],
@@ -297,6 +298,7 @@ class TestMakeJudgeChain:
         assert chain.eval_result is None
         then.refused_step_recorded(result, AuditStep.CHAIN_JUDGMENT)
         assert result["chain_step_refused"] is False
+        assert result["judge_usage"] == [refusal.usage]
 
 
 class TestRouteAfterObserve:

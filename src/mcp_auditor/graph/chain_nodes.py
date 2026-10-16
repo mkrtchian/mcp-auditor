@@ -150,7 +150,7 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
         judgment, usage = outcome
         eval_result = _chain_eval_result(tool.name, chain, judgment)
         judged_chain = chain.model_copy(update={"eval_result": eval_result})
-        return {**_completion(judged_chain), "provider_usage": [usage]}
+        return {**_completion(judged_chain), "provider_usage": [usage], "judge_usage": [usage]}
 
     return judge_chain
 

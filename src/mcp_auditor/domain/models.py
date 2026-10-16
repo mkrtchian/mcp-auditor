@@ -210,6 +210,15 @@ class ProviderUsage(BaseModel):
             throttled_requests=self.throttled_requests + other.throttled_requests,
         )
 
+    def sub(self, other: "ProviderUsage") -> "ProviderUsage":
+        return ProviderUsage(
+            input_tokens=self.input_tokens - other.input_tokens,
+            output_tokens=self.output_tokens - other.output_tokens,
+            cached_input_tokens=self.cached_input_tokens - other.cached_input_tokens,
+            reasoning_tokens=self.reasoning_tokens - other.reasoning_tokens,
+            throttled_requests=self.throttled_requests - other.throttled_requests,
+        )
+
 
 class CoverageGap(BaseModel):
     requested_cases: int
@@ -295,6 +304,13 @@ class AuditStep(StrEnum):
     CHAIN_JUDGMENT = "chain_judgment"
 
 
+JUDGE_STEPS = frozenset({AuditStep.JUDGMENT, AuditStep.CHAIN_JUDGMENT})
+
+
+def is_judge_step(step: AuditStep) -> bool:
+    return step in JUDGE_STEPS
+
+
 class RefusedStep(BaseModel):
     tool_name: str
     step: AuditStep
@@ -305,8 +321,13 @@ class AuditReport(BaseModel):
     target: str
     tool_reports: list[ToolReport]
     provider_usage: ProviderUsage
+    judge_usage: ProviderUsage = ProviderUsage()
     execution: ExecutionRecord | None = None
     refused_steps: list[RefusedStep] = []
+
+    @property
+    def generator_usage(self) -> ProviderUsage:
+        return self.provider_usage.sub(self.judge_usage)
 
     @property
     def is_complete(self) -> bool:

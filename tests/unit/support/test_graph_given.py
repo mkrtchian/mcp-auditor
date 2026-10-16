@@ -115,6 +115,43 @@ def a_provider_refusal() -> ProviderRefusal:
     return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
 
 
+class PerRoleBillingLLM(FakeLLM):
+    """Bills judge calls (the Judgment schema) apart from generator calls."""
+
+    def __init__(
+        self,
+        responses: list[BaseModel],
+        judge_usage: ProviderUsage,
+        generator_usage: ProviderUsage,
+    ):
+        super().__init__(responses)
+        self._judge_usage = judge_usage
+        self._generator_usage = generator_usage
+
+    async def generate_structured[T: BaseModel](
+        self, prompt: str, output_schema: type[T]
+    ) -> tuple[T, ProviderUsage]:
+        self.prompts.append(prompt)
+        response = self._responses.popleft()
+        if not isinstance(response, output_schema):
+            raise TypeError(f"Expected {output_schema.__name__}, got {type(response).__name__}")
+        usage = self._judge_usage if output_schema is Judgment else self._generator_usage
+        self.total_usage = self.total_usage.add(usage)
+        return response, usage  # type: ignore[return-value]
+
+
+def a_fake_llm_billing_judge_apart(
+    judge_usage: ProviderUsage, generator_usage: ProviderUsage, num_cases: int = 1
+) -> PerRoleBillingLLM:
+    batch = a_complete_batch(num_cases)
+    judgments = [a_judgment() for _ in range(num_cases)]
+    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
+    step_obs = StepObservation(observation="dead end", should_continue=False)
+    responses: list[BaseModel] = [batch, *judgments, chain_plan, step_obs, a_judgment()]
+    responses.append(AttackContext())
+    return PerRoleBillingLLM(responses, judge_usage, generator_usage)
+
+
 # The graph wrappers below look trivial but are a typing seam: langgraph's
 # CompiledStateGraph is partially unknown under strict pyright, so tests go
 # through these Any-typed helpers instead of calling ainvoke directly.

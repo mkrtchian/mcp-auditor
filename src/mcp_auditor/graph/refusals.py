@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain.models import AuditStep, ProviderUsage, RefusedStep
+from mcp_auditor.domain.models import AuditStep, ProviderUsage, RefusedStep, is_judge_step
 from mcp_auditor.domain.ports import LLMPort, ProviderRefusal
 
 
@@ -19,9 +19,16 @@ class ModelCall[T: BaseModel]:
 class Refused:
     refused_step: RefusedStep
     usage: ProviderUsage
+    is_judge: bool
 
     def state_update(self) -> dict[str, Any]:
-        return {"refused_steps": [self.refused_step], "provider_usage": [self.usage]}
+        update: dict[str, Any] = {
+            "refused_steps": [self.refused_step],
+            "provider_usage": [self.usage],
+        }
+        if self.is_judge:
+            update["judge_usage"] = [self.usage]
+        return update
 
 
 async def call_model[T: BaseModel](
@@ -33,4 +40,4 @@ async def call_model[T: BaseModel](
         step = RefusedStep(
             tool_name=call.tool_name, step=call.step, provider_message=refusal.provider_message
         )
-        return Refused(refused_step=step, usage=refusal.usage)
+        return Refused(refused_step=step, usage=refusal.usage, is_judge=is_judge_step(call.step))

@@ -96,6 +96,48 @@ class TestProviderUsage:
         assert a.input_tokens == 100
         assert a.output_tokens == 50
 
+    def test_sub_is_the_field_by_field_inverse_of_add(self):
+        a = ProviderUsage(
+            input_tokens=100,
+            output_tokens=50,
+            cached_input_tokens=40,
+            reasoning_tokens=10,
+            throttled_requests=2,
+        )
+        b = ProviderUsage(
+            input_tokens=30,
+            output_tokens=12,
+            cached_input_tokens=9,
+            reasoning_tokens=3,
+            throttled_requests=1,
+        )
+
+        assert a.add(b).sub(b) == a
+
+    def test_sub_subtracts_every_field(self):
+        a = ProviderUsage(
+            input_tokens=300,
+            output_tokens=150,
+            cached_input_tokens=100,
+            reasoning_tokens=40,
+            throttled_requests=3,
+        )
+        b = ProviderUsage(
+            input_tokens=200,
+            output_tokens=100,
+            cached_input_tokens=60,
+            reasoning_tokens=30,
+            throttled_requests=1,
+        )
+
+        assert a.sub(b) == ProviderUsage(
+            input_tokens=100,
+            output_tokens=50,
+            cached_input_tokens=40,
+            reasoning_tokens=10,
+            throttled_requests=2,
+        )
+
 
 class TestSeverityComparison:
     def test_critical_is_greater_than_low(self):

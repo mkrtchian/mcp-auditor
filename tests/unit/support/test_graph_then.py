@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import AttackChain, ToolReport
+from mcp_auditor.domain import AttackChain, ProviderUsage, ToolReport
 from mcp_auditor.domain.models import AuditStep, RefusedStep
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM
@@ -38,6 +38,26 @@ def provider_usage_is_positive(result: dict[str, Any]) -> None:
     usage = result["audit_report"].provider_usage
     assert usage.input_tokens > 0
     assert usage.output_tokens > 0
+
+
+def report_splits_usage(
+    result: dict[str, Any],
+    judge_calls: int,
+    judge_usage: ProviderUsage,
+    generator_calls: int,
+    generator_usage: ProviderUsage,
+) -> None:
+    report = result["audit_report"]
+    assert report.judge_usage == _times(judge_usage, judge_calls)
+    assert report.generator_usage == _times(generator_usage, generator_calls)
+    assert report.provider_usage == report.judge_usage.add(report.generator_usage)
+
+
+def _times(usage: ProviderUsage, count: int) -> ProviderUsage:
+    total = ProviderUsage()
+    for _ in range(count):
+        total = total.add(usage)
+    return total
 
 
 def attack_context_is_non_empty(result: dict[str, Any]) -> None:

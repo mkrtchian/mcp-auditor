@@ -238,6 +238,26 @@ async def test_a_refused_judgment_does_not_stop_the_audit():
 
 
 @pytest.mark.asyncio
+async def test_the_report_splits_judge_usage_from_generator_usage():
+    judge_usage = given.ProviderUsage(input_tokens=3, output_tokens=2)
+    generator_usage = given.ProviderUsage(input_tokens=11, output_tokens=7)
+    fake_llm = given.a_fake_llm_billing_judge_apart(judge_usage, generator_usage)
+    graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
+    state = given.an_initial_state(test_budget=1, chain_budget=1)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.report_splits_usage(
+        result,
+        judge_calls=2,
+        judge_usage=judge_usage,
+        generator_calls=4,
+        generator_usage=generator_usage,
+    )
+    assert result["audit_report"].provider_usage == fake_llm.total_usage
+
+
+@pytest.mark.asyncio
 async def test_a_refused_first_generation_leaves_its_tool_untested_and_audits_the_next():
     tools = [given.a_tool(name="get_user"), given.a_tool(name="list_users")]
     fake_llm = given.a_fake_llm_refusing_the_first_tool_generation(cases_per_tool=2)
