@@ -315,7 +315,6 @@ def _assemble_run(
         targets=results,
         not_run=not_run,
         refused_run_count=sum(result.refused_runs for result in results),
-        refused_run_targets=[result.cve_id for result in results if result.refused_runs > 0],
         total_cost=sum(result.run_cost for result in results),
         prices_as_of=ctx.conditions.prices_as_of,
     )

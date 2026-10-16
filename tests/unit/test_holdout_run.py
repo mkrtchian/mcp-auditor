@@ -200,7 +200,6 @@ async def test_a_refused_run_counts_as_not_detected_and_is_billed():
     assert target.detected_runs == 1
     assert target.refused_runs == 2
     assert result.refused_run_count == 2
-    assert result.refused_run_targets == [cve_id]
     assert target.run_cost == pytest.approx(3 * call_cost(provider, LUNA_PRICE))
 
 

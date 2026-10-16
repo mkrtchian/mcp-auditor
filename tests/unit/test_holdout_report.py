@@ -69,7 +69,6 @@ def _run_result() -> HoldoutRunResult:
         targets=tuple(targets),
         not_run=(NotRunTarget(cve_id="CVE-C", reason="dead condition on the patched version"),),
         refused_run_count=1,
-        refused_run_targets=("CVE-B",),
         total_cost=0.06,
         prices_as_of=date(2026, 10, 15),
     )

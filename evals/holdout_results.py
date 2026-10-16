@@ -56,6 +56,5 @@ class HoldoutRunResult:
     targets: Sequence[HoldoutTargetResult]
     not_run: Sequence[NotRunTarget]
     refused_run_count: int
-    refused_run_targets: Sequence[str]
     total_cost: float
     prices_as_of: date
