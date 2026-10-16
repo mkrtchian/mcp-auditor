@@ -38,22 +38,35 @@ class LaunchError(Exception):
 
 
 @dataclass(frozen=True)
-class _Auditor:
+class Auditor:
     llm: LLMPort
     judge_llm: LLMPort
     budget: int
 
 
-def audit_target(budget: int, throttles: SessionThrottles, places: Places) -> AuditTarget:
-    # Built once, before any container: a bad model configuration is a crash, never a
-    # run skipped, which would read as a gate that cannot compare. The composition root
-    # bounds the returned audit to the chosen concurrency.
+@dataclass(frozen=True)
+class RunOverrides:
+    """Uniform run conditions the holdout applies to every target in place of the launch's own."""
+
+    chain_budget: int
+    max_chain_steps: int
+    tool_call_timeout: int
+
+
+def build_auditor(budget: int) -> Auditor:
+    # Built before any container: a bad model configuration is a crash, never a run skipped,
+    # which would read as a gate that cannot compare.
     settings = load_settings()
-    auditor = _Auditor(create_llm(settings), create_judge_llm(settings), budget)
+    return Auditor(create_llm(settings), create_judge_llm(settings), budget)
+
+
+def audit_target(budget: int, throttles: SessionThrottles, places: Places) -> AuditTarget:
+    # The composition root bounds the returned audit to the chosen concurrency.
+    auditor = build_auditor(budget)
 
     async def audit(target: CVETarget) -> GradedAudit | None:
         return await graded_despite_refusals(
-            target, lambda: _attempt(target, auditor, throttles, places)
+            target, lambda: attempt_once(target, auditor, throttles, places)
         )
 
     return audit
@@ -62,6 +75,8 @@ def audit_target(budget: int, throttles: SessionThrottles, places: Places) -> Au
 @dataclass(frozen=True)
 class RefusedAttempt:
     """An audit whose report holds a step the model provider refused."""
+
+    report: AuditReport
 
 
 async def graded_despite_refusals[T](
@@ -83,8 +98,12 @@ async def graded_despite_refusals[T](
     return None
 
 
-async def _attempt(
-    target: CVETarget, auditor: _Auditor, throttles: SessionThrottles, places: Places
+async def attempt_once(
+    target: CVETarget,
+    auditor: Auditor,
+    throttles: SessionThrottles,
+    places: Places,
+    overrides: RunOverrides | None = None,
 ) -> GradedAudit | RefusedAttempt | None:
     # An unknown kept id or a planting_spec refusal is a configuration error: it is not
     # caught here, so it crashes the run rather than reading as a skip the gate cannot compare.
@@ -92,7 +111,7 @@ async def _attempt(
     run: RunToCheck | None = None
     try:
         async with target.launched(records) as planted:
-            report, calls = await _audit(planted.launch, target, auditor)
+            report, calls = await _audit(planted.launch, target, auditor, overrides)
             throttles.count(report)
             _print_incidents(target, report)
             # Captured before __exit__ fires, so a best-effort teardown error cannot erase a
@@ -138,7 +157,7 @@ def graded_or_refused(grade: RunGrade, report: AuditReport) -> RunGrade | Refuse
     """A detection carries its own proof and stands whatever step was refused. A run that did
     not detect with a refused step says nothing of detection, the struck credit included."""
     if report.refused_steps and grade.status not in DETECTION_RUNGS:
-        return RefusedAttempt()
+        return RefusedAttempt(report)
     return grade
 
 
@@ -158,10 +177,12 @@ def _print_incidents(target: CVETarget, report: AuditReport) -> None:
 
 
 async def _audit(
-    launch: Launch, target: CVETarget, auditor: _Auditor
+    launch: Launch, target: CVETarget, auditor: Auditor, overrides: RunOverrides | None
 ) -> tuple[AuditReport, list[RecordedCall]]:
+    chain_budget = launch.chain_budget if overrides is None else overrides.chain_budget
+    max_chain_steps = launch.max_chain_steps if overrides is None else overrides.max_chain_steps
     try:
-        async with _silent_client(launch) as mcp_client:
+        async with _silent_client(launch, overrides) as mcp_client:
             recorder = RecordingClient(mcp_client)
             graph = build_graph(
                 auditor.llm,
@@ -174,8 +195,8 @@ async def _audit(
                     "target": f"{launch.command} {' '.join(launch.args)}",
                     "test_budget": auditor.budget,
                     "attack_context": AttackContext(),
-                    "chain_budget": launch.chain_budget,
-                    "max_chain_steps": launch.max_chain_steps,
+                    "chain_budget": chain_budget,
+                    "max_chain_steps": max_chain_steps,
                 }
             )
             return result["audit_report"], recorder.exchanges
@@ -184,7 +205,15 @@ async def _audit(
 
 
 @asynccontextmanager
-async def _silent_client(launch: Launch) -> AsyncGenerator[MCPClientPort]:
+async def _silent_client(
+    launch: Launch, overrides: RunOverrides | None
+) -> AsyncGenerator[MCPClientPort]:
     with open(os.devnull, "w") as devnull:
-        async with connect(launch, devnull) as client:
-            yield client
+        if overrides is None:
+            async with connect(launch, devnull) as client:
+                yield client
+        else:
+            async with connect(
+                launch, devnull, tool_call_timeout=overrides.tool_call_timeout
+            ) as client:
+                yield client

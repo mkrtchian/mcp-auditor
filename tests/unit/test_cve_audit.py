@@ -1,17 +1,21 @@
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from io import StringIO
 
 import pytest
 from rich.console import Console
 
-from evals import cve_audit
+from evals import cve_audit, cve_environments
 from evals.cve_audit import (
     REFUSAL_ATTEMPTS,
+    Auditor,
     RefusedAttempt,
+    RunOverrides,
     audit_target,
     graded_despite_refusals,
     graded_or_refused,
 )
+from evals.cve_environments import Launch
 from evals.cve_grammar import CreditCheck, CVEStatus, MissClass, PlantedTarget, RunGrade, grade_run
 from evals.cve_proofs import UnitPlace
 from evals.cve_replay import RunToCheck
@@ -20,6 +24,7 @@ from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, AuditStep, ProviderUsage, RefusedStep
+from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_cve_oracle_given import a_detected_grade
 
@@ -57,7 +62,7 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
 ):
     _captured_console(monkeypatch)
     graded = GradedAudit(a_detected_grade(), grammar.a_report(target="second attempt"))
-    attempt = _ScriptedAttempts([RefusedAttempt(), graded])
+    attempt = _ScriptedAttempts([RefusedAttempt(grammar.a_report()), graded])
 
     outcome = await graded_despite_refusals(TARGET, attempt)
 
@@ -69,7 +74,9 @@ async def test_an_audit_refused_at_every_attempt_is_a_run_not_completed(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = _captured_console(monkeypatch)
-    attempt = _ScriptedAttempts[GradedAudit]([RefusedAttempt()] * REFUSAL_ATTEMPTS)
+    attempt = _ScriptedAttempts[GradedAudit](
+        [RefusedAttempt(grammar.a_report())] * REFUSAL_ATTEMPTS
+    )
 
     grade = await graded_despite_refusals(TARGET, attempt)
 
@@ -148,6 +155,91 @@ async def test_a_detecting_run_is_regraded_on_the_credits_the_replay_strikes():
     grade = await cve_audit._checked_grade(run, replay=_replay_returning(struck))  # pyright: ignore[reportPrivateUsage]
 
     assert grade.status == CVEStatus.MISSED
+
+
+async def test_run_overrides_replace_the_launch_chain_settings_in_the_graph_input(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    recorded = _capture_graph_input(monkeypatch)
+    launch = Launch(command="x", args=[], chain_budget=3, max_chain_steps=5)
+    overrides = RunOverrides(chain_budget=7, max_chain_steps=9, tool_call_timeout=11)
+
+    await cve_audit._audit(launch, TARGET, _an_auditor(), overrides)  # pyright: ignore[reportPrivateUsage]
+
+    assert recorded["chain_budget"] == 7
+    assert recorded["max_chain_steps"] == 9
+
+
+async def test_no_overrides_keeps_the_launch_chain_settings_in_the_graph_input(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    recorded = _capture_graph_input(monkeypatch)
+    launch = Launch(command="x", args=[], chain_budget=3, max_chain_steps=5)
+
+    await cve_audit._audit(launch, TARGET, _an_auditor(), None)  # pyright: ignore[reportPrivateUsage]
+
+    assert recorded["chain_budget"] == 3
+    assert recorded["max_chain_steps"] == 5
+
+
+async def test_run_overrides_pass_the_timeout_to_the_client(monkeypatch: pytest.MonkeyPatch):
+    seen = _capture_connect_timeout(monkeypatch)
+    overrides = RunOverrides(chain_budget=1, max_chain_steps=1, tool_call_timeout=17)
+
+    async with cve_audit._silent_client(Launch("x", []), overrides):  # pyright: ignore[reportPrivateUsage]
+        pass
+
+    assert seen["timeout"] == 17
+
+
+async def test_no_overrides_leaves_the_client_default_timeout(monkeypatch: pytest.MonkeyPatch):
+    seen = _capture_connect_timeout(monkeypatch)
+
+    async with cve_audit._silent_client(Launch("x", []), None):  # pyright: ignore[reportPrivateUsage]
+        pass
+
+    assert seen["timeout"] == cve_environments.TOOL_CALL_TIMEOUT
+
+
+def _an_auditor() -> Auditor:
+    return Auditor(FakeLLM([]), FakeLLM([]), budget=10)
+
+
+def _capture_graph_input(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
+    recorded: dict[str, object] = {}
+
+    class _FakeGraph:
+        async def ainvoke(self, graph_input: dict[str, object]) -> dict[str, object]:
+            recorded.update(graph_input)
+            return {"audit_report": grammar.a_report()}
+
+    def _fake_build_graph(*_args: object, **_kwargs: object) -> _FakeGraph:
+        return _FakeGraph()
+
+    @asynccontextmanager
+    async def _fake_client(_launch: Launch, _overrides: RunOverrides | None):
+        yield FakeMCPClient([])
+
+    monkeypatch.setattr(cve_audit, "build_graph", _fake_build_graph)
+    monkeypatch.setattr(cve_audit, "_silent_client", _fake_client)
+    return recorded
+
+
+def _capture_connect_timeout(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
+    seen: dict[str, int] = {}
+
+    @asynccontextmanager
+    async def _fake_connect(
+        _launch: Launch,
+        _stderr: object,
+        *,
+        tool_call_timeout: int = cve_environments.TOOL_CALL_TIMEOUT,
+    ):
+        seen["timeout"] = tool_call_timeout
+        yield FakeMCPClient([])
+
+    monkeypatch.setattr(cve_audit, "connect", _fake_connect)
+    return seen
 
 
 def _a_run(report: AuditReport, nonces: dict[str, str] | None = None) -> RunToCheck:

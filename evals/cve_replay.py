@@ -133,10 +133,11 @@ async def _run_patched(
                         outputs.append(response.content)
                     return ReplayedRun(planted.nonces, outputs, complete=True)
     except Exception:
-        # The records arrive pre-resolved and pre-planted by `_attempt` on the vulnerable version,
-        # so a `planting_spec` config error cannot reach here: only launch and connection failures
-        # of this fresh patched launch are. Narrowing this to a hand-picked exception set would
-        # crash the whole benchmark on a transient infra blip, worse than the unchecked it returns.
+        # The records arrive pre-resolved and pre-planted by `attempt_once` on the vulnerable
+        # version, so a `planting_spec` config error cannot reach here: only launch and connection
+        # failures of this fresh patched launch are. Narrowing this to a hand-picked exception set
+        # would crash the whole benchmark on a transient infra blip, worse than the unchecked it
+        # returns.
         return None
 
 
