@@ -94,6 +94,30 @@ def _scripted(outcomes_by_id: Mapping[str, list[Outcome]]) -> Audit:
     return audit
 
 
+def _raising_deps() -> HoldoutDeps:
+    async def audit(_target: CVETarget) -> Outcome:
+        raise AssertionError("the audit was reached")
+
+    async def check(_target: CVETarget) -> list[str]:
+        raise AssertionError("the dead-condition check was reached")
+
+    async def layout(_target: CVETarget) -> LayoutCheck:
+        raise AssertionError("the layout observation was reached")
+
+    def rebuild(_services: object) -> None:
+        raise AssertionError("the image rebuild was reached")
+
+    def read_tree() -> TreeState:
+        raise AssertionError("read_tree was reached")
+
+    return HoldoutDeps(audit, check, layout, rebuild, lambda names: {}, read_tree)
+
+
+def _three_detections() -> list[Outcome]:
+    report = _report(ProviderUsage(input_tokens=10, output_tokens=20), ProviderUsage())
+    return [_graded(CVEStatus.DETECTED, report, aimed=True) for _ in range(3)]
+
+
 async def _run(
     targets: list[HoldoutTarget],
     audit: Audit,
@@ -181,33 +205,35 @@ async def test_a_refused_run_counts_as_not_detected_and_is_billed():
 
 
 async def test_a_target_dead_on_a_version_is_not_run():
-    entry = _entry(2)
-    cve_id = entry.target.cve_id
+    dead, healthy = _entry(2), _entry(0)
+    dead_id, healthy_id = dead.target.cve_id, healthy.target.cve_id
 
     result = await _run(
-        [entry],
-        _scripted({cve_id: []}),
-        check={cve_id: ["patched: exploit 0 still surfaces etc-shadow"]},
+        [dead, healthy],
+        _scripted({dead_id: [], healthy_id: _three_detections()}),
+        check={dead_id: ["patched: exploit 0 still surfaces etc-shadow"]},
     )
 
-    assert result.targets == []
+    assert [t.cve_id for t in result.targets] == [healthy_id]
     (not_run,) = result.not_run
-    assert not_run.cve_id == cve_id
+    assert not_run.cve_id == dead_id
     assert "patched: exploit 0 still surfaces etc-shadow" in not_run.reason
 
 
 async def test_a_normal_target_the_layout_breaks_is_dropped():
-    entry = _entry(2)  # NORMAL
-    cve_id = entry.target.cve_id
+    broken, healthy = _entry(2), _entry(0)  # both NORMAL
+    broken_id, healthy_id = broken.target.cve_id, healthy.target.cve_id
 
     result = await _run(
-        [entry],
-        _scripted({cve_id: []}),
-        layout={cve_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])},
+        [broken, healthy],
+        _scripted({broken_id: [], healthy_id: _three_detections()}),
+        layout={broken_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])},
     )
 
-    assert result.targets == []
-    assert result.not_run[0].reason == "the layout breaks the server under the normal launch"
+    assert [t.cve_id for t in result.targets] == [healthy_id]
+    (not_run,) = result.not_run
+    assert not_run.cve_id == broken_id
+    assert not_run.reason == "the layout breaks the server under the normal launch"
 
 
 async def test_a_fallback_target_the_layout_breaks_is_kept():
@@ -228,15 +254,20 @@ async def test_a_fallback_target_the_layout_breaks_is_kept():
 
 
 async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run():
-    entry = _entry(2)
-    cve_id = entry.target.cve_id
+    sick, healthy = _entry(2), _entry(0)
+    sick_id, healthy_id = sick.target.cve_id, healthy.target.cve_id
     report = _report(ProviderUsage(), ProviderUsage())
-    outcomes: list[Outcome] = [_graded(CVEStatus.DETECTED, report, aimed=True), None, None]
+    sick_outcomes: list[Outcome] = [_graded(CVEStatus.DETECTED, report, aimed=True), None, None]
 
-    result = await _run([entry], _scripted({cve_id: outcomes}))
+    result = await _run(
+        [sick, healthy],
+        _scripted({sick_id: sick_outcomes, healthy_id: _three_detections()}),
+    )
 
-    assert result.targets == []
-    assert result.not_run[0].reason == "a run failed to launch after retries"
+    assert [t.cve_id for t in result.targets] == [healthy_id]
+    (not_run,) = result.not_run
+    assert not_run.cve_id == sick_id
+    assert not_run.reason == "a run failed to launch after retries"
 
 
 async def test_a_drawn_target_with_a_tools_filter_refuses_before_any_check():
@@ -258,3 +289,110 @@ async def test_tracing_refuses_before_any_container(monkeypatch: pytest.MonkeyPa
 
     with pytest.raises(Refused, match="trace"):
         await _run([_entry(2)], audit)
+
+
+async def test_a_target_absent_from_the_census_refuses_before_any_dep():
+    entry = _entry(2)
+
+    with pytest.raises(Refused, match="census"):
+        await run_holdout(
+            [entry],
+            {},  # the drawn target's cve_id is absent
+            _conditions(),
+            SETTINGS,
+            PLACES,
+            census_commit="cafe",
+            deps=_raising_deps(),
+        )
+
+
+async def test_a_dirty_tree_refuses_before_rebuild_and_audit():
+    entry = _entry(2)
+    deps = dataclasses.replace(
+        _raising_deps(), read_tree=lambda: TreeState(commit="c0ffee", dirty=True)
+    )
+
+    with pytest.raises(Refused, match="dirty"):
+        await run_holdout(
+            [entry],
+            {entry.target.cve_id: date(2026, 1, 1)},
+            _conditions(),
+            SETTINGS,
+            PLACES,
+            census_commit="cafe",
+            deps=deps,
+        )
+
+
+async def test_every_target_dropped_refuses_with_the_reasons():
+    dead, broken = _entry(2), _entry(0)
+    dead_id, broken_id = dead.target.cve_id, broken.target.cve_id
+
+    with pytest.raises(Refused, match="no target survived") as caught:
+        await _run(
+            [dead, broken],
+            _scripted({dead_id: [], broken_id: []}),
+            check={dead_id: ["patched: exploit 0 still surfaces etc-shadow"]},
+            layout={broken_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])},
+        )
+
+    reasons = caught.value.reasons
+    assert any("etc-shadow" in reason for reason in reasons)
+    assert any("the layout breaks" in reason for reason in reasons)
+
+
+async def test_vetting_that_raises_once_then_succeeds_lets_the_target_through():
+    entry = _entry(2)
+    cve_id = entry.target.cve_id
+    calls = {"n": 0}
+
+    async def check(_target: CVETarget) -> list[str]:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("a transient docker error")
+        return []
+
+    deps = dataclasses.replace(_deps(_scripted({cve_id: _three_detections()})), check=check)
+
+    result = await run_holdout(
+        [entry],
+        {cve_id: date(2026, 1, 1)},
+        _conditions(),
+        SETTINGS,
+        PLACES,
+        census_commit="cafe",
+        deps=deps,
+    )
+
+    (target,) = result.targets
+    assert target.cve_id == cve_id
+    assert result.not_run == []
+
+
+async def test_vetting_that_always_raises_drops_that_target_only():
+    sick, healthy = _entry(2), _entry(0)
+    sick_id, healthy_id = sick.target.cve_id, healthy.target.cve_id
+
+    async def check(target: CVETarget) -> list[str]:
+        if target.cve_id == sick_id:
+            raise RuntimeError("docker is down for this target")
+        return []
+
+    deps = dataclasses.replace(
+        _deps(_scripted({sick_id: [], healthy_id: _three_detections()})), check=check
+    )
+
+    result = await run_holdout(
+        [sick, healthy],
+        {sick_id: date(2026, 1, 1), healthy_id: date(2026, 1, 1)},
+        _conditions(),
+        SETTINGS,
+        PLACES,
+        census_commit="cafe",
+        deps=deps,
+    )
+
+    assert [t.cve_id for t in result.targets] == [healthy_id]
+    (not_run,) = result.not_run
+    assert not_run.cve_id == sick_id
+    assert not_run.reason == "vetting failed to launch after retries"

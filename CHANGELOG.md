@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `python -m evals.run_holdout run` hardens its failure handling: an audit or a vetting step that raises any error, not only one that fails to launch, is retried up to three times and the target is dropped from N as not run rather than aborting the whole run (only the error's class name is printed, never its message). It refuses up front a drawn target absent from the census, a dirty git tree, and a run where no target survives the pre-run check (listing why each was dropped), instead of spending on the LLM and then crashing.
 - `MCP_AUDITOR_REASONING` is accepted with the `anthropic` provider: `none` turns thinking off, `low` to `max` set the effort with adaptive thinking. Unset, the default model still gets no reasoning setting.
 - The `anthropic` provider gives up on a request after 120 seconds and caps an answer at 8,192 output tokens, as `openai` and `fireworks` do, and fails at startup when `ANTHROPIC_API_KEY` is unset or empty. It detects an answer cut at the output cap (`stop_reason: "max_tokens"`) and retries it as a truncated attempt, instead of accepting a repaired JSON. It binds the output schema as a tool itself, so an answer without the tool call, a refusal or a cut during thinking included, reaches the refusal and truncation checks instead of failing as an unexplained parsing error.
 - A refusal by Anthropic's classifiers names its category in the coverage gap's provider message (`stop_reason refusal, category cyber`), when the API gives one.

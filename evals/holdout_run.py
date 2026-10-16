@@ -24,7 +24,7 @@ from evals.cve_session_model import GradedAudit
 from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, LaunchMode
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
-from evals.holdout_audit import RefusedRun, holdout_audit
+from evals.holdout_audit import RefusedRun, holdout_audit, retry_infra
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult, NotRunTarget
 from evals.holdout_targets import HoldoutTarget
@@ -77,16 +77,25 @@ async def run_holdout(
 ) -> HoldoutRunResult:
     _refuse_tracing()
     _refuse_tools_filter(targets)
+    _refuse_missing_census(targets, disclosure_dates)
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     ctx = _RunContext(
         conditions, settings, places, disclosure_dates, model_ids, runs, census_commit
     )
     conditions.require_ready(model_ids)
     deps = deps or default_deps(places, _overrides(conditions), concurrency)
+    tree = deps.read_tree()
+    _refuse_dirty_tree(tree)
     deps.rebuild(target_services([entry.target for entry in targets]))
     not_run, surviving = await _vet_all(targets, deps)
     assembled, dropped = await _run_all(surviving, deps, ctx)
-    return _assemble_run(ctx, deps, assembled, [*not_run, *dropped])
+    all_not_run = [*not_run, *dropped]
+    if not assembled:
+        raise Refused(
+            "holdout run refused",
+            ["no target survived the pre-run check", *(entry.reason for entry in all_not_run)],
+        )
+    return _assemble_run(ctx, deps, assembled, all_not_run, tree)
 
 
 def _refuse_tracing() -> None:
@@ -103,6 +112,25 @@ def _refuse_tools_filter(targets: Sequence[HoldoutTarget]) -> None:
         raise Refused(
             "holdout run refused",
             [f"the rule runs with no tools filter, but {name} carries one" for name in filtered],
+        )
+
+
+def _refuse_missing_census(
+    targets: Sequence[HoldoutTarget], disclosure_dates: Mapping[str, date]
+) -> None:
+    missing = [entry.identifier for entry in targets if entry.target.cve_id not in disclosure_dates]
+    if missing:
+        raise Refused(
+            "holdout run refused",
+            [f"{name} is drawn but absent from the census" for name in missing],
+        )
+
+
+def _refuse_dirty_tree(tree: TreeState) -> None:
+    if tree.dirty:
+        raise Refused(
+            "holdout run refused",
+            ["the git tree is dirty: a holdout run publishes from a clean tree"],
         )
 
 
@@ -154,9 +182,15 @@ async def _vet_all(
 
 
 async def _vet(target: CVETarget, deps: HoldoutDeps) -> str | None:
-    conditions = await deps.check(target)
-    layout = await deps.layout(target)
-    return vet_reason(target, conditions, layout)
+    async def observe() -> tuple[str | None]:  # wrapped: a bare None means "run it", not a retry
+        conditions = await deps.check(target)
+        layout = await deps.layout(target)
+        return (vet_reason(target, conditions, layout),)
+
+    outcome = await retry_infra(observe, f"{target.cve_id}: vetting failed")
+    if outcome is None:
+        return "vetting failed to launch after retries"
+    return outcome[0]
 
 
 def vet_reason(target: CVETarget, conditions: list[str], layout: LayoutCheck) -> str | None:
@@ -250,6 +284,7 @@ def _assemble_run(
     deps: HoldoutDeps,
     assembled: Sequence[tuple[HoldoutTarget, HoldoutTargetResult]],
     not_run: list[NotRunTarget],
+    tree: TreeState,
 ) -> HoldoutRunResult:
     settings = ctx.settings
     model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
@@ -269,7 +304,7 @@ def _assemble_run(
         tool_call_timeout=ctx.conditions.tool_call_timeout,
         grammar_fingerprint=grammar_fingerprint(),
         fixture_fingerprints={t.cve_id: fixture_fingerprint(t, ctx.places) for t in targets},
-        commit=deps.read_tree().commit,
+        commit=tree.commit,
         census_commit=ctx.census_commit,
         image_ids=deps.image_ids(target_services(targets)),
         targets=results,
