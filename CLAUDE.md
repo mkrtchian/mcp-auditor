@@ -33,6 +33,8 @@ uv run python -m evals.run_census prefilter          # CVE holdout census: write
 uv run python -m evals.run_census status             # What the census still lacks (undecided hits, gaps to widen, unconfirmed absences), exit 0 complete, 1 otherwise
 uv run python -m evals.run_census classify-dossier --out DIR  # Write the classifiers' input outside the repository, once the census is complete
 uv run python -m evals.run_census assemble           # Build, check with load_census and write evals/holdout_census.json from the exports and the work directory, then commit it by hand
+uv run python -m evals.run_holdout draw-order --cutoff YYYY-MM-DD  # CVE holdout: print the salted-SHA draw order of the draw-order candidates and a per-side tally for the cutoff (--census defaults to evals/holdout_census.json, no LLM, no network)
+uv run python -m evals.run_holdout calibration-dossier --cve ID --out DIR  # CVE holdout: write a self-contained, mcp_auditor-free calibration kit for one candidate to DIR, outside the repository (no LLM)
 uv run python -m evals.capture_probe_corpus           # Capture evals/fixtures/probe_corpus.json once, reference settings only (Docker, the CVE images, GOOGLE_API_KEY), then commit it by hand
 uv run python -m evals.run_probe                      # Model probe: replay the corpus against the reference and every candidate, report statistics and defects (needs GOOGLE_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY and OPENROUTER_API_KEY, see evals/probe_method.md)
 uv run python -m evals.run_probe --candidates "gpt-6-luna none" "gpt-6-luna low" --schema TestCaseBatch  # Subset run: debugging only, no statistics, needs the keys of the named candidates only
