@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from datetime import date
 from pathlib import Path
 
+from evals import calibration_dossier
 from evals import eval_display as display
 from evals.census_draw import Side
 from evals.eval_session import Refused
@@ -42,6 +43,13 @@ def _parser() -> argparse.ArgumentParser:
     draw.add_argument("--cutoff", type=date.fromisoformat, required=True)
     draw.add_argument("--cutoff-type", default=None)
     draw.add_argument("--cutoff-note", default=None)
+    dossier = commands.add_parser(
+        "calibration-dossier", help="write the isolated calibration kit for one candidate"
+    )
+    dossier.set_defaults(command=_calibration_dossier)
+    dossier.add_argument("--census", type=Path, default=CENSUS_PATH)
+    dossier.add_argument("--cve", required=True)
+    dossier.add_argument("--out", type=Path, required=True)
     return parser
 
 
@@ -57,6 +65,13 @@ def _draw_order(args: argparse.Namespace) -> int:
     tally = Counter(entry.side for entry in entries)
     for side in Side:
         print(f"{side}: {tally[side]}")
+    return 0
+
+
+def _calibration_dossier(args: argparse.Namespace) -> int:
+    census = load_census(args.census)
+    calibration_dossier.write_kit(census, args.cve, args.out)
+    print(f"Calibration kit for {args.cve} written to {args.out}")
     return 0
 
 
