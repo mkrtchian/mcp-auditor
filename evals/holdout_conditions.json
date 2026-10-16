@@ -1,0 +1,20 @@
+{
+  "chain_budget": null,
+  "max_chain_steps": null,
+  "tool_call_timeout": null,
+  "cutoffs": {
+    "gpt-6-luna": {
+      "date": "2026-05-18",
+      "type": "<vendor wording, confirmed at draw>",
+      "note": null
+    }
+  },
+  "prices": {
+    "gpt-6-luna": {
+      "input": 0.10,
+      "cached_input": 0.01,
+      "output": 0.50
+    }
+  },
+  "prices_as_of": "2026-10-15"
+}
