@@ -59,6 +59,17 @@ class VersionObservation:
     nonces: tuple[str, ...]  # the planted arm's nonces; the reference arm plants none
 
 
+@dataclass(frozen=True)
+class LayoutCheck:
+    """The verdict `confirm_admission` computes inline, exposed so the holdout orchestrator reads
+    it directly: the give-up reason (or None), whether the layout breaks either version, and the
+    kept layout places left without a route (holdout-rule.md:157, :159)."""
+
+    gave_up: str | None
+    breaks: bool
+    unrouted: list[str]
+
+
 def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
     """Whether the layout breaks the version by the rule's criterion (holdout-rule.md:159). The
     two surfaces run the same route procedure, so a call's error state aligns by position."""
@@ -98,6 +109,30 @@ def unrouted_kept_places(records: Sequence[Place], observations: RouteObservatio
     return [place for place in records if not route_admits(place, observations)]
 
 
+def layout_check(
+    target: CVETarget,
+    records: Sequence[Place],
+    vuln: VersionObservation,
+    patched: VersionObservation,
+) -> LayoutCheck:
+    """The admission verdict over the two versions' observations: the give-up reason, the break
+    on either version, and the kept layout places with no route (holdout-rule.md:157, :159)."""
+    gave_up = admission_gave_up(target, vuln.planted) or admission_gave_up(target, patched.planted)
+    breaks = layout_breaks_any([_surface_pair(vuln), _surface_pair(patched)])
+    unrouted = [place.id for place in unrouted_kept_places(records, vuln.planted)]
+    return LayoutCheck(gave_up, breaks, unrouted)
+
+
+async def observe_versions(
+    target: CVETarget, places: Places
+) -> tuple[VersionObservation, VersionObservation]:
+    """Launch and observe both versions of a target (the reference arm then the planted one on
+    each), the no-LLM observation the layout check reads."""
+    vuln = await _observe_version(target, places, TargetVersion.VULNERABLE)
+    patched = await _observe_version(target, places, TargetVersion.PATCHED)
+    return vuln, patched
+
+
 async def confirm_admission(
     targets: list[CVETarget], places: Places, ci: bool = False
 ) -> list[str]:
@@ -110,24 +145,18 @@ async def confirm_admission(
         if ci and target.ci_skip_reason is not None:
             console.print(f"[yellow]skip[/yellow]  {target.cve_id}: {target.ci_skip_reason}")
             continue
-        vuln = await _observe_version(target, places, TargetVersion.VULNERABLE)
-        patched = await _observe_version(target, places, TargetVersion.PATCHED)
-        gave_up = admission_gave_up(target, vuln.planted) or admission_gave_up(
-            target, patched.planted
-        )
-        if gave_up is not None:
-            _report_give_up(target.cve_id, gave_up)
-            continue
-        _report_break(
-            target.cve_id, layout_breaks_any([_surface_pair(vuln), _surface_pair(patched)])
-        )
-        _report_leak(target.cve_id, nonce_in_surface(_surface(vuln.planted), vuln.nonces))
+        vuln, patched = await observe_versions(target, places)
         records = kept_records(target.kept_places, places)
+        check = layout_check(target, records, vuln, patched)
+        if check.gave_up is not None:
+            _report_give_up(target.cve_id, check.gave_up)
+            continue
+        _report_break(target.cve_id, check.breaks)
+        _report_leak(target.cve_id, nonce_in_surface(_surface(vuln.planted), vuln.nonces))
         for place in records:
             _report_route(target.cve_id, place, route_admits(place, vuln.planted))
         failures += [
-            f"{target.cve_id}: kept layout place {place.id} has no route"
-            for place in unrouted_kept_places(records, vuln.planted)
+            f"{target.cve_id}: kept layout place {pid} has no route" for pid in check.unrouted
         ]
     if failures:
         console.print("\n[red]Kept layout places with no route[/red]: drop or route them.")

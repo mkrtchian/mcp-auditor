@@ -88,7 +88,7 @@ async def _run_one_eval(
 
 
 async def _traced(audit: Awaitable[AuditReport], trace_ids: list[UUID]) -> AuditReport:
-    if not _tracing_enabled():
+    if not tracing_enabled():
         return await audit
     with collect_runs() as collector:
         report = await audit
@@ -97,12 +97,12 @@ async def _traced(audit: Awaitable[AuditReport], trace_ids: list[UUID]) -> Audit
     return report
 
 
-def _tracing_enabled() -> bool:
+def tracing_enabled() -> bool:
     return bool(os.environ.get("LANGSMITH_TRACING") or os.environ.get("LANGCHAIN_TRACING_V2"))
 
 
 def _post_langsmith_feedback(run_detail: RunDetail, trace_ids: list[UUID]) -> None:
-    if not _tracing_enabled():
+    if not tracing_enabled():
         return
     try:
         from langsmith import Client  # type: ignore[import-untyped]

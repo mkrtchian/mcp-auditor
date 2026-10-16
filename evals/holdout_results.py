@@ -44,8 +44,8 @@ class HoldoutRunResult:
     provider: str
     model: str
     judge_model: str
-    reasoning: str
-    judge_reasoning: str
+    reasoning: str | None
+    judge_reasoning: str | None
     cutoffs: dict[str, Cutoff]
     chain_budget: int | None
     max_chain_steps: int | None

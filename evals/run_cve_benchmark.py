@@ -1,21 +1,23 @@
 import argparse
 import asyncio
 import json
-import subprocess
 import sys
 import traceback
-from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
 from rich.console import Console
 
-from evals import cve_grammar, cve_proofs, cve_report_units, cve_units
 from evals import eval_display as display
-from evals.baseline import BaselineStatus, fingerprint_sources
+from evals.baseline import BaselineStatus
 from evals.concurrency import bounded, positive_int
 from evals.cve_audit import audit_target
-from evals.cve_baseline import CVE_BASELINE_DIRECTORY, CVERunConditions
+from evals.cve_baseline import (
+    CVE_BASELINE_DIRECTORY,
+    CVERunConditions,
+    grammar_fingerprint,
+    image_ids,
+)
 from evals.cve_calibration import calibrate_all, calibrate_one, check_target
 from evals.cve_layout_check import confirm_admission
 from evals.cve_oracle import (
@@ -31,13 +33,7 @@ from evals.cve_preflight import preflight_ok
 from evals.cve_session import CVESessionResult, run_gated
 from evals.cve_session_model import CVEHarness, CVEOptions
 from evals.cve_survey import survey_all, survey_one
-from evals.cve_targets import (
-    CVE_TARGETS,
-    OUT_OF_SCOPE_CVES,
-    CVETarget,
-    OutOfScopeCVE,
-    image_tag,
-)
+from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
 from evals.export import export_cve_judged_cases
 from evals.metrics import SessionThrottles
@@ -49,13 +45,6 @@ CVE_CONCURRENCY = 6
 DEFAULT_REPORT_PATH = "output/cve_report.json"
 NOT_COMPARABLE_EXIT = 3
 CRASHED_EXIT = 4
-# Fingerprinted in this fixed order, so the fingerprint names one version of the grammar.
-GRAMMAR_PATHS = (
-    Path(cve_grammar.__file__),
-    Path(cve_proofs.__file__),
-    Path(cve_units.__file__),
-    Path(cve_report_units.__file__),
-)
 
 console = Console()
 
@@ -224,22 +213,10 @@ def _harness(args: argparse.Namespace, throttles: SessionThrottles, places: Plac
         check=bounded(lambda target: check_target(target, places), args.concurrency),
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
-        image_ids=_image_ids,
+        image_ids=image_ids,
         clock=lambda: datetime.now(UTC).isoformat(),
         places=places,
     )
-
-
-def _image_ids(names: Sequence[str]) -> dict[str, str]:
-    return {
-        name: subprocess.run(
-            ["docker", "image", "inspect", "--format", "{{.Id}}", image_tag(name)],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        for name in names
-    }
 
 
 def _print_session(session: CVESessionResult, report: CVEBenchmarkReport) -> None:
@@ -274,7 +251,7 @@ def _run_conditions(settings: Settings, runs: int, budget: int) -> CVERunConditi
         judge_model=settings.resolve_judge_model(),
         reasoning=settings.resolve_reasoning(settings.resolve_model()),
         judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
-        grammar_fingerprint=fingerprint_sources([path.read_text() for path in GRAMMAR_PATHS]),
+        grammar_fingerprint=grammar_fingerprint(),
     )
 
 

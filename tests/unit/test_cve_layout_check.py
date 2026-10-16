@@ -4,8 +4,10 @@ import json
 import tests.unit.support.test_cve_layout_check_golden_given as given
 from evals.cve_layout_check import (
     LayoutSurface,
+    VersionObservation,
     admission_gave_up,
     layout_breaks_any,
+    layout_check,
     unrouted_kept_places,
 )
 from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
@@ -137,3 +139,17 @@ def test_the_anti_leak_guard_passes_when_no_nonce_surfaces():
 
 def test_layout_check_verdicts_match_the_golden_master():
     assert given.golden_entries() == json.loads(given.GOLDEN_PATH.read_text())
+
+
+def test_layout_check_reports_the_break_and_the_unrouted_kept_places():
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlantKind.GIT_REMOTE_URL)
+    healthy = _observed(started=True)
+    vuln = VersionObservation(reference=healthy, planted=_SCOPED_NO_DISCLOSURE, nonces=())
+    patched = VersionObservation(reference=healthy, planted=_observed(started=False), nonces=())
+
+    check = layout_check(_A_TARGET, (dotenv, bare_url), vuln, patched)
+
+    assert check.breaks is True  # the patched planted arm lost tools/list
+    assert check.unrouted == ["bare-remote-url"]
+    assert check.gave_up is None

@@ -87,3 +87,18 @@ def test_the_report_holds_no_proof_text_fields():
     forbidden = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_class"}
     assert set(HoldoutReport.model_fields).isdisjoint(forbidden)
     assert set(TargetLine.model_fields).isdisjoint(forbidden)
+
+
+def test_build_report_carries_the_run_conditions_and_provenance():
+    report = build_report(_run_result(), RUN_CUTOFF)
+    assert report.model == "gpt-6-luna"
+    assert report.judge_model == "gpt-6-luna"
+    assert report.reasoning == "none"
+    assert report.runs == RUNS
+    assert report.budget == 10
+    assert report.chain_budget == 3
+    assert report.tool_call_timeout == 30
+    assert report.grammar_fingerprint == "grammar-abc"
+    assert report.fixture_fingerprints == {"CVE-A": "fa", "CVE-B": "fb"}
+    assert report.image_ids == {"vuln": "sha256:1"}
+    assert report.cutoffs["gpt-6-luna"].date == RUN_CUTOFF

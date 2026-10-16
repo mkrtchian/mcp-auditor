@@ -1,6 +1,8 @@
 import hashlib
 import json
 import os
+import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -8,21 +10,38 @@ from pydantic import BaseModel
 from evals import (
     cve_endpoint_address,
     cve_environments,
+    cve_grammar,
     cve_layout,
     cve_places,
     cve_planting,
     cve_planting_base,
     cve_planting_docker,
     cve_planting_spec,
+    cve_proofs,
+    cve_report_units,
+    cve_units,
 )
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
 from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
 from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
 from evals.cve_planting import PlantingHost
-from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, LaunchMode, image_dockerfile
+from evals.cve_targets import (
+    DOCKER_DIRECTORY,
+    CVETarget,
+    LaunchMode,
+    image_dockerfile,
+    image_tag,
+)
 from evals.gate import ReplayRule
 
 CVE_BASELINE_DIRECTORY = Path(__file__).parent / "baselines" / "cve"
+# Fingerprinted in this fixed order, so the fingerprint names one version of the grammar.
+GRAMMAR_PATHS = (
+    Path(cve_grammar.__file__),
+    Path(cve_proofs.__file__),
+    Path(cve_units.__file__),
+    Path(cve_report_units.__file__),
+)
 # Fingerprinted in this fixed order, as part of every target's fixture. The planting layer
 # decides what reaches the auditor, so a semantic change to it moves every target's fingerprint.
 _ENVIRONMENT_PATHS = (
@@ -152,6 +171,22 @@ def _coordinate_parts(coordinates: Coordinates) -> dict[str, object]:
 def _dockerfile_instructions(path: Path) -> list[str]:
     lines = (line.strip() for line in path.read_text().splitlines())
     return [line for line in lines if line and not line.startswith("#")]
+
+
+def grammar_fingerprint() -> str:
+    return fingerprint_sources([path.read_text() for path in GRAMMAR_PATHS])
+
+
+def image_ids(names: Sequence[str]) -> dict[str, str]:
+    return {
+        name: subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", image_tag(name)],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        for name in names
+    }
 
 
 def load_baselines(directory: Path) -> dict[str, CVETargetBaseline]:

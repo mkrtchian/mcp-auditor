@@ -8,6 +8,7 @@ from datetime import date
 from pydantic import BaseModel
 
 from evals.census_draw import Side
+from evals.holdout_conditions import Cutoff
 from evals.holdout_intervals import Interval
 from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult
 from evals.holdout_statistic import (
@@ -71,6 +72,16 @@ class NotRunLine(BaseModel):
     reason: str
 
 
+class CutoffModel(BaseModel):
+    date: date
+    type: str | None
+    note: str | None
+
+    @classmethod
+    def of(cls, cutoff: Cutoff) -> "CutoffModel":
+        return cls(date=cutoff.date, type=cutoff.type, note=cutoff.note)
+
+
 class HoldoutReport(BaseModel):
     primary_number: float
     cited_interval: IntervalModel
@@ -86,6 +97,21 @@ class HoldoutReport(BaseModel):
     prices_as_of: date
     commit: str
     census_commit: str
+    # The run conditions and provenance, so a reader can tell two runs apart (holdout-rule.md:247).
+    provider: str
+    model: str
+    judge_model: str
+    reasoning: str | None
+    judge_reasoning: str | None
+    runs: int
+    budget: int
+    cutoffs: dict[str, CutoffModel]
+    chain_budget: int | None
+    max_chain_steps: int | None
+    tool_call_timeout: int | None
+    grammar_fingerprint: str
+    fixture_fingerprints: dict[str, str]
+    image_ids: dict[str, str]
 
 
 def build_report(run: HoldoutRunResult, run_cutoff: date) -> HoldoutReport:
@@ -109,6 +135,20 @@ def build_report(run: HoldoutRunResult, run_cutoff: date) -> HoldoutReport:
         prices_as_of=run.prices_as_of,
         commit=run.commit,
         census_commit=run.census_commit,
+        provider=run.provider,
+        model=run.model,
+        judge_model=run.judge_model,
+        reasoning=run.reasoning,
+        judge_reasoning=run.judge_reasoning,
+        runs=run.runs,
+        budget=run.budget,
+        cutoffs={model: CutoffModel.of(cutoff) for model, cutoff in run.cutoffs.items()},
+        chain_budget=run.chain_budget,
+        max_chain_steps=run.max_chain_steps,
+        tool_call_timeout=run.tool_call_timeout,
+        grammar_fingerprint=run.grammar_fingerprint,
+        fixture_fingerprints=run.fixture_fingerprints,
+        image_ids=run.image_ids,
     )
 
 
