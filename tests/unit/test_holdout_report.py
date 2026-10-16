@@ -5,17 +5,27 @@ from datetime import date
 
 from evals.census_draw import Side
 from evals.holdout_conditions import Cutoff
-from evals.holdout_report import HoldoutReport, TargetLine, build_report, render_markdown
+from evals.holdout_report import (
+    ConclusionLine,
+    CutoffModel,
+    HoldoutReport,
+    IntervalModel,
+    MethodLine,
+    NotRunLine,
+    SideLine,
+    TargetLine,
+    build_report,
+    render_markdown,
+)
 from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult, NotRunTarget
 
 RUN_CUTOFF = date(2026, 5, 18)
 RUNS = 3
 
 
-def _target(cve_id: str, *, side: Side, disclosure_date: date, detected_runs: int):
+def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, refused_runs: int = 0):
     return HoldoutTargetResult(
         cve_id=cve_id,
-        side=side,
         disclosure_date=disclosure_date,
         mechanism_label="command_execution",
         tools_count=5,
@@ -29,15 +39,15 @@ def _target(cve_id: str, *, side: Side, disclosure_date: date, detected_runs: in
         unchecked_places=[[] for _ in range(RUNS)],
         aimed_runs=detected_runs,
         fail_without_proof_runs=0,
-        refused_runs=0,
+        refused_runs=refused_runs,
         run_cost=0.02,
     )
 
 
 def _run_result() -> HoldoutRunResult:
     targets = [
-        _target("CVE-A", side=Side.PRE_CUTOFF, disclosure_date=date(2026, 1, 1), detected_runs=3),
-        _target("CVE-B", side=Side.POST_CUTOFF, disclosure_date=date(2026, 12, 1), detected_runs=1),
+        _target("CVE-A", disclosure_date=date(2026, 1, 1), detected_runs=3),
+        _target("CVE-B", disclosure_date=date(2026, 12, 1), detected_runs=1, refused_runs=1),
     ]
     return HoldoutRunResult(
         runs=RUNS,
@@ -59,7 +69,7 @@ def _run_result() -> HoldoutRunResult:
         targets=tuple(targets),
         not_run=(NotRunTarget(cve_id="CVE-C", reason="dead condition on the patched version"),),
         refused_run_count=1,
-        refused_run_targets=("CVE-A",),
+        refused_run_targets=("CVE-B",),
         total_cost=0.06,
         prices_as_of=date(2026, 10, 15),
     )
@@ -81,12 +91,23 @@ def test_render_markdown_shows_the_number_ladder_split_controls_and_cost():
     assert "Controls" in markdown
     assert "$0.06" in markdown
     assert "dead condition on the patched version" in markdown  # a not-run reason
+    assert "Refused runs: 1 (CVE-B)" in markdown  # the count with the target it touches
 
 
 def test_the_report_holds_no_proof_text_fields():
     forbidden = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_class"}
-    assert set(HoldoutReport.model_fields).isdisjoint(forbidden)
-    assert set(TargetLine.model_fields).isdisjoint(forbidden)
+    models = [
+        HoldoutReport,
+        TargetLine,
+        SideLine,
+        MethodLine,
+        ConclusionLine,
+        NotRunLine,
+        CutoffModel,
+        IntervalModel,
+    ]
+    for model in models:
+        assert set(model.model_fields).isdisjoint(forbidden)
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():

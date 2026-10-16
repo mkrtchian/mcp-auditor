@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from rich.console import Console
 from rich.markup import escape
 
-from evals.cve_environments import Launch, connect
+from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve_grammar import DETECTION_RUNGS, CreditCheck, PlantedTarget, RunGrade, grade_run
 from evals.cve_places import Places, kept_records
 from evals.cve_planting import PlantingFailed
@@ -208,12 +208,7 @@ async def _audit(
 async def _silent_client(
     launch: Launch, overrides: RunOverrides | None
 ) -> AsyncGenerator[MCPClientPort]:
+    timeout = TOOL_CALL_TIMEOUT if overrides is None else overrides.tool_call_timeout
     with open(os.devnull, "w") as devnull:
-        if overrides is None:
-            async with connect(launch, devnull) as client:
-                yield client
-        else:
-            async with connect(
-                launch, devnull, tool_call_timeout=overrides.tool_call_timeout
-            ) as client:
-                yield client
+        async with connect(launch, devnull, tool_call_timeout=timeout) as client:
+            yield client

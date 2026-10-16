@@ -25,7 +25,6 @@ RUNS = 3
 def _result(
     cve_id: str = "CVE-0000-0000",
     *,
-    side: Side = Side.PRE_CUTOFF,
     disclosure_date: date = date(2026, 1, 1),
     detected_runs: int = 0,
     detected_runs_if_unchecked_missed: int = 0,
@@ -33,7 +32,6 @@ def _result(
 ) -> HoldoutTargetResult:
     return HoldoutTargetResult(
         cve_id=cve_id,
-        side=side,
         disclosure_date=disclosure_date,
         mechanism_label="read_outside_scope",
         tools_count=4,
@@ -70,12 +68,8 @@ def test_cited_interval_is_wilson_on_the_sum_of_shares():
 
 
 def test_split_by_side_recomputes_the_side_from_the_disclosure_date():
-    pre_by_date = _result(
-        "PRE", side=Side.POST_CUTOFF, disclosure_date=date(2026, 1, 1), detected_runs=3
-    )
-    post_by_date = _result(
-        "POST", side=Side.PRE_CUTOFF, disclosure_date=date(2026, 12, 1), detected_runs=0
-    )
+    pre_by_date = _result("PRE", disclosure_date=date(2026, 1, 1), detected_runs=3)
+    post_by_date = _result("POST", disclosure_date=date(2026, 12, 1), detected_runs=0)
     split = split_by_side([pre_by_date, post_by_date], RUN_CUTOFF)
     assert [r.cve_id for r in split[Side.PRE_CUTOFF].results] == ["PRE"]
     assert [r.cve_id for r in split[Side.POST_CUTOFF].results] == ["POST"]

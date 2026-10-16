@@ -6,14 +6,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from evals.census_draw import Side
 from evals.holdout_conditions import Cutoff
 
 
 @dataclass(frozen=True)
 class HoldoutTargetResult:
     cve_id: str
-    side: Side  # the drawn side (composition only); the split recomputes against the run cutoff
     disclosure_date: date
     mechanism_label: str | None
     tools_count: int

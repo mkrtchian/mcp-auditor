@@ -247,7 +247,6 @@ def _assemble_target(
     gen_price, judge_price = _prices(ctx)
     return HoldoutTargetResult(
         cve_id=target.cve_id,
-        side=entry.side,
         disclosure_date=ctx.disclosure_dates[target.cve_id],
         mechanism_label=None if target.mechanism is None else target.mechanism.value,
         tools_count=len(reports[0].tool_reports),

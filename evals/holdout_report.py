@@ -226,7 +226,7 @@ def render_markdown(report: HoldoutReport) -> str:
             *_split_section(report),
             *_controls_section(report),
             *_not_run_section(report),
-            f"Refused runs: {report.refused_run_count}",
+            _refused_runs_line(report),
             f"Total cost: ${report.total_cost:.2f}",
         ]
     )
@@ -272,6 +272,15 @@ def _not_run_section(report: HoldoutReport) -> list[str]:
         return ["## Not run", "- none", ""]
     lines = [f"- {line.cve_id}: {line.reason}" for line in report.not_run]
     return ["## Not run", *lines, ""]
+
+
+def _refused_runs_line(report: HoldoutReport) -> str:
+    """The count with the targets it touches (holdout-rule.md:249), derived from the per-target
+    refused-run counts."""
+    touched = [target.cve_id for target in report.targets if target.refused_runs > 0]
+    if not touched:
+        return f"Refused runs: {report.refused_run_count}"
+    return f"Refused runs: {report.refused_run_count} ({', '.join(touched)})"
 
 
 def _span(interval: IntervalModel) -> str:
