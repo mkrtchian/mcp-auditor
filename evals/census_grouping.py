@@ -44,8 +44,20 @@ def gap_population(
         flaw
         for flaw, seen in _by_flaw(classifications).items()
         if flaw in candidates
-        and _in_draw_order(flaw, seen)
+        and in_draw_order(flaw, seen)
         and any(classification.runs_in_container for classification in seen)
+    }
+
+
+def draw_order_flaws(
+    classifications: dict[str, list[Classification]], candidates: set[str]
+) -> set[str]:
+    """The flaws of `candidates` that meet the draw-order criteria, the container gate aside:
+    a flaw of a server judged unable to run in a container is still drawn and calibrated."""
+    return {
+        flaw
+        for flaw, seen in _by_flaw(classifications).items()
+        if flaw in candidates and in_draw_order(flaw, seen)
     }
 
 
@@ -82,7 +94,7 @@ def _by_flaw(classifications: dict[str, list[Classification]]) -> dict[str, list
     return seen
 
 
-def _in_draw_order(flaw: str, seen: Sequence[Classification]) -> bool:
+def in_draw_order(flaw: str, seen: Sequence[Classification]) -> bool:
     return (
         flaw not in BENCHMARK_FLAWS
         and all(
