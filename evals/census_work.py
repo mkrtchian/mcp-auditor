@@ -63,6 +63,8 @@ class AgentRole(StrEnum):
     VULNERABLEMCP = "vulnerablemcp"
     CLASSIFIER = "classifier"
     READER = "reader"
+    CALIBRATOR = "calibrator"
+    CARD_CHECKER = "card_checker"
 
 
 class AgentRecord(BaseModel):

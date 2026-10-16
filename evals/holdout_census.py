@@ -15,9 +15,18 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, computed_field
 
+from evals import cve_places
 from evals.census_classification import Classification, is_consistent
+from evals.census_draw import DrawRecord, draw_problems
 from evals.census_figures import CensusFigures, Share, compute_figures
-from evals.census_grouping import READERS, ProofJudgment, gap_population, grouped_flaws, known_gap
+from evals.census_grouping import (
+    READERS,
+    ProofJudgment,
+    draw_order_flaws,
+    gap_population,
+    grouped_flaws,
+    known_gap,
+)
 from evals.census_identity import Flaw, census_identifier, disclosure_date
 from evals.census_prefilter import PrefilterTerm
 from evals.census_sources import SourceProvenance, SourceRecord
@@ -76,6 +85,7 @@ class HoldoutCensus(BaseModel):
     figures: CensusFigures
     groupings: dict[str, list[ProofJudgment]]
     known_gap: dict[str, Share]
+    draw: DrawRecord | None = None
 
 
 def census_flaw(flaw: Flaw, found_by: Sequence[Discovery]) -> CensusFlaw:
@@ -139,6 +149,11 @@ def load_census(path: Path) -> HoldoutCensus:
     # full coverage.
     if not coverage:
         problems += _grouping_problems(census) + _derived_problems(census)
+    if census.draw is not None:
+        order = draw_order_flaws(census.classifications, draw_candidates(census.flaws))
+        place_ids = set(cve_places.load_places(cve_places.HOLDOUT_PLACES))
+        disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
+        problems += draw_problems(census.draw, order, disclosure_dates, place_ids, census.agents)
     if problems:
         raise ValueError(f"invalid holdout census {path}: {'; '.join(problems)}")
     return census
