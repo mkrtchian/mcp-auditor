@@ -341,58 +341,16 @@ async def test_every_target_dropped_refuses_with_the_reasons():
     assert any("the layout breaks" in reason for reason in reasons)
 
 
-async def test_vetting_that_raises_once_then_succeeds_lets_the_target_through():
-    entry = _entry(2)
-    cve_id = entry.target.cve_id
-    calls = {"n": 0}
+async def test_a_target_with_an_unknown_kept_place_refuses_before_any_dep():
+    entry = _entry(2, kept_places=("no-such-place",))
 
-    async def check(_target: CVETarget) -> list[str]:
-        calls["n"] += 1
-        if calls["n"] == 1:
-            raise RuntimeError("a transient docker error")
-        return []
-
-    deps = dataclasses.replace(_deps(_scripted({cve_id: _three_detections()})), check=check)
-
-    result = await run_holdout(
-        [entry],
-        {cve_id: date(2026, 1, 1)},
-        _conditions(),
-        SETTINGS,
-        PLACES,
-        census_commit="cafe",
-        deps=deps,
-    )
-
-    (target,) = result.targets
-    assert target.cve_id == cve_id
-    assert result.not_run == []
-
-
-async def test_vetting_that_always_raises_drops_that_target_only():
-    sick, healthy = _entry(2), _entry(0)
-    sick_id, healthy_id = sick.target.cve_id, healthy.target.cve_id
-
-    async def check(target: CVETarget) -> list[str]:
-        if target.cve_id == sick_id:
-            raise RuntimeError("docker is down for this target")
-        return []
-
-    deps = dataclasses.replace(
-        _deps(_scripted({sick_id: [], healthy_id: _three_detections()})), check=check
-    )
-
-    result = await run_holdout(
-        [sick, healthy],
-        {sick_id: date(2026, 1, 1), healthy_id: date(2026, 1, 1)},
-        _conditions(),
-        SETTINGS,
-        PLACES,
-        census_commit="cafe",
-        deps=deps,
-    )
-
-    assert [t.cve_id for t in result.targets] == [healthy_id]
-    (not_run,) = result.not_run
-    assert not_run.cve_id == sick_id
-    assert not_run.reason == "vetting failed to launch after retries"
+    with pytest.raises(Refused, match="no such place"):
+        await run_holdout(
+            [entry],
+            {entry.target.cve_id: date(2026, 1, 1)},
+            _conditions(),
+            SETTINGS,
+            PLACES,
+            census_commit="cafe",
+            deps=_raising_deps(),
+        )

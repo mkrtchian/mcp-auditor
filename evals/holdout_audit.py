@@ -29,40 +29,19 @@ async def holdout_audit(
 ) -> GradedAudit | RefusedRun | None:
     """One run of one target. A detection stands whatever step was refused. A refusal with no
     detection is a non-detection, not retried (unlike acceptance's keep-best-of-several). An
-    infra failure, whether a launch that returns `None` or any raised error, is retried, at most
-    `HOLDOUT_INFRA_ATTEMPTS` calls in all."""
-
-    async def one() -> GradedAudit | RefusedRun | None:
+    infra failure is retried, at most `HOLDOUT_INFRA_ATTEMPTS` calls in all."""
+    for number in range(1, HOLDOUT_INFRA_ATTEMPTS + 1):
         outcome = await attempt()
-        if isinstance(outcome, RefusedAttempt):  # a refusal stops here, non-None, no retry
+        if isinstance(outcome, GradedAudit):
+            return outcome
+        if isinstance(outcome, RefusedAttempt):
             console.print(
                 f"[yellow]{target.cve_id}: refused by the model provider, counted as not"
                 " detected[/yellow]"
             )
             return RefusedRun(outcome.report)
-        return outcome
-
-    return await retry_infra(one, f"{target.cve_id}: run failed")
-
-
-async def retry_infra[T](attempt: Callable[[], Awaitable[T | None]], label: str) -> T | None:
-    """Re-run an infra-bound awaitable up to `HOLDOUT_INFRA_ATTEMPTS` times, returning its first
-    non-`None` result or `None` on exhaustion. A raised exception and a `None` result both count
-    as an attempt and are retried. Only the exception's class name is printed, never `str(exc)`:
-    its message could echo server output, which a holdout run must never write (the rule's
-    "Reading")."""
-    for number in range(1, HOLDOUT_INFRA_ATTEMPTS + 1):
-        try:
-            result = await attempt()
-        except Exception as exc:
-            console.print(
-                f"[yellow]{label}: {type(exc).__name__},"
-                f" attempt {number}/{HOLDOUT_INFRA_ATTEMPTS}[/yellow]"
-            )
-            continue
-        if result is not None:
-            return result
         console.print(
-            f"[yellow]{label} to launch, attempt {number}/{HOLDOUT_INFRA_ATTEMPTS}[/yellow]"
+            f"[yellow]{target.cve_id}: run failed to launch,"
+            f" attempt {number}/{HOLDOUT_INFRA_ATTEMPTS}[/yellow]"
         )
     return None

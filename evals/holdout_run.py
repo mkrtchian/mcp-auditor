@@ -24,7 +24,7 @@ from evals.cve_session_model import GradedAudit
 from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, LaunchMode
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
-from evals.holdout_audit import RefusedRun, holdout_audit, retry_infra
+from evals.holdout_audit import RefusedRun, holdout_audit
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult, NotRunTarget
 from evals.holdout_targets import HoldoutTarget
@@ -78,6 +78,7 @@ async def run_holdout(
     _refuse_tracing()
     _refuse_tools_filter(targets)
     _refuse_missing_census(targets, disclosure_dates)
+    _refuse_unknown_places(targets, places)
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     ctx = _RunContext(
         conditions, settings, places, disclosure_dates, model_ids, runs, census_commit
@@ -124,6 +125,17 @@ def _refuse_missing_census(
             "holdout run refused",
             [f"{name} is drawn but absent from the census" for name in missing],
         )
+
+
+def _refuse_unknown_places(targets: Sequence[HoldoutTarget], places: Places) -> None:
+    reasons: list[str] = []
+    for entry in targets:
+        try:
+            entry.target.planting_spec(kept_records(entry.target.kept_places, places))
+        except ValueError as exc:
+            reasons.append(f"{entry.identifier}: {exc}")
+    if reasons:
+        raise Refused("holdout run refused", reasons)
 
 
 def _refuse_dirty_tree(tree: TreeState) -> None:
@@ -182,15 +194,9 @@ async def _vet_all(
 
 
 async def _vet(target: CVETarget, deps: HoldoutDeps) -> str | None:
-    async def observe() -> tuple[str | None]:  # wrapped: a bare None means "run it", not a retry
-        conditions = await deps.check(target)
-        layout = await deps.layout(target)
-        return (vet_reason(target, conditions, layout),)
-
-    outcome = await retry_infra(observe, f"{target.cve_id}: vetting failed")
-    if outcome is None:
-        return "vetting failed to launch after retries"
-    return outcome[0]
+    conditions = await deps.check(target)
+    layout = await deps.layout(target)
+    return vet_reason(target, conditions, layout)
 
 
 def vet_reason(target: CVETarget, conditions: list[str], layout: LayoutCheck) -> str | None:
