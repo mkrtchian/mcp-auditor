@@ -1,0 +1,89 @@
+"""The holdout report model and its markdown: the structural guarantee that a holdout run keeps
+no proof. The model carries no evidence, no judge input and no per-case verdict field."""
+
+from datetime import date
+
+from evals.census_draw import Side
+from evals.holdout_conditions import Cutoff
+from evals.holdout_report import HoldoutReport, TargetLine, build_report, render_markdown
+from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult, NotRunTarget
+
+RUN_CUTOFF = date(2026, 5, 18)
+RUNS = 3
+
+
+def _target(cve_id: str, *, side: Side, disclosure_date: date, detected_runs: int):
+    return HoldoutTargetResult(
+        cve_id=cve_id,
+        side=side,
+        disclosure_date=disclosure_date,
+        mechanism_label="command_execution",
+        tools_count=5,
+        ran_in_fallback=False,
+        runs=RUNS,
+        detected_runs=detected_runs,
+        detection_share=detected_runs / RUNS,
+        detected_runs_if_unchecked_missed=detected_runs,
+        surfaced_places=[["srv_config"]] * detected_runs + [[]] * (RUNS - detected_runs),
+        struck_places=[[] for _ in range(RUNS)],
+        unchecked_places=[[] for _ in range(RUNS)],
+        aimed_runs=detected_runs,
+        fail_without_proof_runs=0,
+        refused_runs=0,
+        run_cost=0.02,
+    )
+
+
+def _run_result() -> HoldoutRunResult:
+    targets = [
+        _target("CVE-A", side=Side.PRE_CUTOFF, disclosure_date=date(2026, 1, 1), detected_runs=3),
+        _target("CVE-B", side=Side.POST_CUTOFF, disclosure_date=date(2026, 12, 1), detected_runs=1),
+    ]
+    return HoldoutRunResult(
+        runs=RUNS,
+        budget=10,
+        provider="openai",
+        model="gpt-6-luna",
+        judge_model="gpt-6-luna",
+        reasoning="none",
+        judge_reasoning="none",
+        cutoffs={"gpt-6-luna": Cutoff(date=RUN_CUTOFF, type="training", note=None)},
+        chain_budget=3,
+        max_chain_steps=5,
+        tool_call_timeout=30,
+        grammar_fingerprint="grammar-abc",
+        fixture_fingerprints={"CVE-A": "fa", "CVE-B": "fb"},
+        commit="deadbeef",
+        census_commit="cafe1234",
+        image_ids={"vuln": "sha256:1"},
+        targets=tuple(targets),
+        not_run=(NotRunTarget(cve_id="CVE-C", reason="dead condition on the patched version"),),
+        refused_run_count=1,
+        refused_run_targets=("CVE-A",),
+        total_cost=0.06,
+        prices_as_of=date(2026, 10, 15),
+    )
+
+
+def test_build_report_carries_the_primary_number_and_the_split():
+    report = build_report(_run_result(), RUN_CUTOFF)
+    assert report.primary_number == (1.0 + 1 / 3) / 2
+    sides = {line.side: line for line in report.sides}
+    assert set(sides) == {Side.PRE_CUTOFF, Side.POST_CUTOFF}
+    assert report.total_cost == 0.06
+
+
+def test_render_markdown_shows_the_number_ladder_split_controls_and_cost():
+    markdown = render_markdown(build_report(_run_result(), RUN_CUTOFF))
+    assert "0.667" in markdown  # the primary number, three decimals
+    assert "Ladder" in markdown
+    assert "Split" in markdown
+    assert "Controls" in markdown
+    assert "$0.06" in markdown
+    assert "dead condition on the patched version" in markdown  # a not-run reason
+
+
+def test_the_report_holds_no_proof_text_fields():
+    forbidden = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_class"}
+    assert set(HoldoutReport.model_fields).isdisjoint(forbidden)
+    assert set(TargetLine.model_fields).isdisjoint(forbidden)
