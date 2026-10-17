@@ -15,8 +15,17 @@ from dataclasses import dataclass
 from langchain_core.exceptions import ModelRateLimitError
 
 _TOO_MANY_REQUESTS = 429
-# OpenAI's "no credit left", raised as a rate-limit error although waiting cannot cure it.
-_NO_CREDIT_CODE = "insufficient_quota"
+# OpenAI's billing limits, raised as rate-limit errors although waiting cannot cure them.
+_BILLING_TYPE = "insufficient_quota"
+_BILLING_CODES = frozenset(
+    {
+        "credit_balance_exhausted",
+        "organization_spend_limit_exceeded",
+        "project_spend_limit_exceeded",
+        "organization_usage_limit_exceeded",
+        "insufficient_quota",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -27,7 +36,7 @@ class Throttle:
 def throttle_of(error: Exception) -> Throttle | None:
     if not _is_rate_limit(error):
         return None
-    if getattr(error, "code", None) == _NO_CREDIT_CODE:
+    if _is_billing_limit(error):
         return None
     headers = _response_headers(error)
     if headers.get("x-should-retry") == "false":
@@ -39,6 +48,13 @@ def _is_rate_limit(error: Exception) -> bool:
     return (
         isinstance(error, ModelRateLimitError)
         or getattr(error, "status_code", None) == _TOO_MANY_REQUESTS
+    )
+
+
+def _is_billing_limit(error: Exception) -> bool:
+    return (
+        getattr(error, "type", None) == _BILLING_TYPE
+        or getattr(error, "code", None) in _BILLING_CODES
     )
 
 

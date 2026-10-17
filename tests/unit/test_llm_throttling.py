@@ -37,10 +37,30 @@ class TestThrottleOf:
     ):
         assert throttle_of(build({"x-should-retry": "false"})) is None
 
-    def test_an_exhausted_credit_is_no_throttle(self):
-        body = {"message": "You exceeded your current quota", "code": "insufficient_quota"}
+    @pytest.mark.parametrize(
+        "code",
+        [
+            "credit_balance_exhausted",
+            "organization_spend_limit_exceeded",
+            "project_spend_limit_exceeded",
+            "organization_usage_limit_exceeded",
+            "insufficient_quota",
+        ],
+    )
+    def test_a_billing_limit_is_no_throttle(self, code: str):
+        body = {"message": "You exceeded your current quota", "code": code}
 
         assert throttle_of(given.an_openai_rate_limit(body=body)) is None
+
+    def test_a_rate_limit_of_the_insufficient_quota_type_is_no_throttle(self):
+        body = {"message": "Credit balance exhausted", "type": "insufficient_quota", "code": None}
+
+        assert throttle_of(given.an_openai_rate_limit(body=body)) is None
+
+    def test_a_slow_down_is_a_throttle(self):
+        body = {"message": "Please slow down", "type": "rate_limit_error", "code": "slow_down"}
+
+        assert throttle_of(given.an_openai_rate_limit(body=body)) == Throttle(retry_after=None)
 
     def test_a_google_rate_limit_reads_the_hint_of_the_error_it_is_raised_from(self):
         error = given.a_google_rate_limit({"Retry-After": "7"})
