@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any
 
 from mcp_auditor.console import AuditDisplay
-from mcp_auditor.domain.models import ProviderUsage, ToolDefinition
+from mcp_auditor.domain.models import MissedStep, ProviderUsage, ToolDefinition
 from mcp_auditor.progress import CIProgress, ToolProgress
 
 
@@ -80,7 +80,8 @@ class AuditProgressReporter:
                 if last_case.eval_result is not None:
                     self._active_progress.advance(last_case.eval_result)
                 elif last_case.blocked_reason is None:
-                    self._active_progress.advance_unjudged()
+                    missed: list[MissedStep] = state_update["missed_steps"]
+                    self._active_progress.advance_unjudged(missed[-1].cause)
 
     def _on_chain_audit_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "plan_chains":

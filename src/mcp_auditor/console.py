@@ -24,6 +24,7 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.rendering import (
+    MISS_CAUSE_LABELS,
     ToolSummary,
     describe_coverage_gap,
     describe_missed_step,
@@ -102,10 +103,9 @@ class AuditDisplay:
 
     def print_missed_steps(self, missed_steps: list[MissedStep]) -> None:
         for missed in missed_steps:
+            cause = MISS_CAUSE_LABELS[missed.cause].lower()
             description = describe_missed_step(missed)
-            self.print_warning(
-                escape(f"{missed.tool_name}: refused by the model provider, {description}")
-            )
+            self.print_warning(escape(f"{missed.tool_name}: {cause}, {description}"))
 
     def print_findings_recap(self, report: AuditReport) -> None:
         findings = sorted(report.findings, key=lambda f: f.severity, reverse=True)

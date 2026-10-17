@@ -101,13 +101,14 @@ def and_a_blocked_chain(report: AuditReport, tool: str, category: AuditCategory)
 
 
 def and_a_refused_judgment(report: AuditReport, tool: str, provider_message: str) -> AuditReport:
-    refused = MissedStep(
-        tool_name=tool,
-        step=AuditStep.JUDGMENT,
-        cause=MissCause.PROVIDER_REFUSAL,
-        detail=provider_message,
-    )
-    return report.model_copy(update={"missed_steps": [*report.missed_steps, refused]})
+    return and_a_missed_judgment(report, tool, MissCause.PROVIDER_REFUSAL, provider_message)
+
+
+def and_a_missed_judgment(
+    report: AuditReport, tool: str, cause: MissCause, detail: str
+) -> AuditReport:
+    missed = MissedStep(tool_name=tool, step=AuditStep.JUDGMENT, cause=cause, detail=detail)
+    return report.model_copy(update={"missed_steps": [*report.missed_steps, missed]})
 
 
 def a_report_throttled(times: int) -> AuditReport:

@@ -5,11 +5,14 @@ from collections import Counter
 from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TaskID, TextColumn
 
-from mcp_auditor.domain.models import EvalResult, EvalVerdict, Severity
+from mcp_auditor.domain.models import EvalResult, EvalVerdict, MissCause, Severity
 from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.rendering import format_severity_breakdown
 
-UNJUDGED_LINE = "  ? not judged, the model provider refused the judgment"
+UNJUDGED_LINES = {
+    MissCause.PROVIDER_REFUSAL: "  ? not judged, the model provider refused the judgment",
+    MissCause.UNREADABLE_ANSWER: "  ? not judged, the model's answer was unreadable",
+}
 
 
 class CIProgress:
@@ -34,8 +37,8 @@ class CIProgress:
     def advance_blocked(self, reason: str) -> None:
         self._console.print(format_blocked_line(reason))
 
-    def advance_unjudged(self) -> None:
-        self._console.print(UNJUDGED_LINE)
+    def advance_unjudged(self, cause: MissCause) -> None:
+        self._console.print(UNJUDGED_LINES[cause])
 
 
 class ToolProgress:
@@ -80,8 +83,8 @@ class ToolProgress:
         if self._task_id is not None:
             self._progress.advance(self._task_id)
 
-    def advance_unjudged(self) -> None:
-        self._progress.console.print(UNJUDGED_LINE)
+    def advance_unjudged(self, cause: MissCause) -> None:
+        self._progress.console.print(UNJUDGED_LINES[cause])
         if self._task_id is not None:
             self._progress.advance(self._task_id)
 

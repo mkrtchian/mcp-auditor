@@ -80,21 +80,33 @@ class IncompleteAttempt:
     causes: frozenset[MissCause]
 
 
+_CAUSE_WORDING = {
+    MissCause.PROVIDER_REFUSAL: "refused by the model provider",
+    MissCause.UNREADABLE_ANSWER: "unreadable model answer",
+}
+
+
+def describe_miss_causes(causes: frozenset[MissCause]) -> str:
+    return " and ".join(wording for cause, wording in _CAUSE_WORDING.items() if cause in causes)
+
+
 async def graded_despite_refusals[T](
     target: CVETarget, attempt: Callable[[], Awaitable[T | IncompleteAttempt | None]]
 ) -> T | None:
-    """The first attempt not refused grades the run. None when every attempt is refused."""
+    """The first complete attempt grades the run. None when every attempt missed a step."""
+    causes: frozenset[MissCause] = frozenset()
     for number in range(1, INCOMPLETE_ATTEMPTS + 1):
         outcome = await attempt()
         if not isinstance(outcome, IncompleteAttempt):
             return outcome
+        causes |= outcome.causes
         console.print(
-            f"[yellow]{target.cve_id}: attempt {number}/{INCOMPLETE_ATTEMPTS} refused by the"
-            " model provider, not graded[/yellow]"
+            f"[yellow]{target.cve_id}: attempt {number}/{INCOMPLETE_ATTEMPTS}:"
+            f" {describe_miss_causes(outcome.causes)}, not graded[/yellow]"
         )
     console.print(
-        f"[yellow]{target.cve_id} run skipped:[/yellow] refused by the model provider"
-        f" at all {INCOMPLETE_ATTEMPTS} attempts"
+        f"[yellow]{target.cve_id} run skipped:[/yellow] a step missed at all"
+        f" {INCOMPLETE_ATTEMPTS} attempts ({describe_miss_causes(causes)})"
     )
     return None
 
@@ -166,9 +178,7 @@ def _print_incidents(target: CVETarget, report: AuditReport) -> None:
     for reason in blocked_reasons(report):
         console.print(f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]")
     for missed in missed_steps(report):
-        console.print(
-            f"[yellow]{target.cve_id}: refused by the model provider, {escape(missed)}[/yellow]"
-        )
+        console.print(f"[yellow]{target.cve_id}: {escape(missed)}[/yellow]")
     throttled = report.provider_usage.throttled_requests
     if throttled > 0:
         console.print(

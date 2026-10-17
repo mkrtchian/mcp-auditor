@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from rich.console import Console
 
-from evals.cve_audit import IncompleteAttempt
+from evals.cve_audit import IncompleteAttempt, describe_miss_causes
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.models import AuditReport
@@ -36,8 +36,8 @@ async def holdout_audit(
             return outcome
         if isinstance(outcome, IncompleteAttempt):
             console.print(
-                f"[yellow]{target.cve_id}: refused by the model provider, counted as not"
-                " detected[/yellow]"
+                f"[yellow]{target.cve_id}: {describe_miss_causes(outcome.causes)}, counted as"
+                " not detected[/yellow]"
             )
             return IncompleteRun(outcome.report)
         console.print(

@@ -455,8 +455,27 @@ def test_markdown_summary_flags_a_refused_step_and_an_incomplete_audit():
     summary = render_markdown(report).split("\n## get_user")[0]
 
     assert "**Refused by the model provider**: 1 step\n" in summary
+    assert "**Unreadable answer from the model**" not in summary
     assert "**Audit complete**: no" in summary
     assert summary.index("**Audit complete**") < summary.index("**Findings**")
+
+
+def test_markdown_summary_counts_each_cause_of_a_missed_step_on_its_own_line():
+    report = given.a_report_with_missed_judgments_on_get_user(refused=1, unreadable=2)
+
+    summary = render_markdown(report).split("\n## get_user")[0]
+
+    assert "**Refused by the model provider**: 1 step\n" in summary
+    assert "**Unreadable answer from the model**: 2 steps\n" in summary
+
+
+def test_markdown_summary_has_no_line_for_a_cause_no_step_missed_by():
+    report = given.a_report_with_missed_judgments_on_get_user(refused=0, unreadable=1)
+
+    summary = render_markdown(report).split("\n## get_user")[0]
+
+    assert "**Unreadable answer from the model**: 1 step\n" in summary
+    assert "**Refused by the model provider**" not in summary
 
 
 def test_markdown_summary_flags_a_coverage_gap_alone_as_an_incomplete_audit():
@@ -491,6 +510,18 @@ def test_markdown_tool_section_lists_its_refused_step():
     assert "Refused" not in list_items_section
 
 
+def test_markdown_tool_section_lists_its_unreadable_step():
+    report = given.a_report_with_missed_judgments_on_get_user(refused=0, unreadable=1)
+
+    sections = render_markdown(report).split("\n## ")
+    get_user_section = next(s for s in sections if s.startswith("get_user"))
+
+    assert (
+        f'**Unreadable answer from the model**: judgment, "{given.UNREADABLE_DETAIL}"'
+        in get_user_section
+    )
+
+
 def test_markdown_renders_a_case_with_no_verdict_and_no_block_as_not_judged():
     report = given.a_report_with_an_unjudged_case()
 
@@ -498,7 +529,7 @@ def test_markdown_renders_a_case_with_no_verdict_and_no_block_as_not_judged():
 
     assert "### NOT JUDGED -- injection" in result
     assert "ls; cat /etc/shadow" in result
-    assert "the model provider refused the judgment" in result
+    assert "the judgment step was missed, its cause is listed under the tool" in result
 
 
 def test_markdown_renders_a_chain_with_no_verdict_as_not_judged():

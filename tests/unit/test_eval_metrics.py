@@ -12,7 +12,7 @@ from evals.metrics import (
     compute_recall,
     label_scores,
 )
-from mcp_auditor.domain.models import AuditCategory, EvalVerdict, ProviderUsage
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict, MissCause, ProviderUsage
 
 FAIL = EvalVerdict.FAIL
 PASS = EvalVerdict.PASS
@@ -336,13 +336,19 @@ def test_a_run_detail_lists_no_refused_step_in_a_clean_report():
     assert detail.missed_steps == []
 
 
-def test_a_run_detail_lists_each_refused_step_with_its_tool_and_provider_message():
+def test_a_run_detail_lists_each_missed_step_with_its_cause_tool_and_detail():
     clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
-    report = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
+    refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
+    report = given.and_a_missed_judgment(
+        refused, "search", MissCause.UNREADABLE_ANSWER, "no answer matched"
+    )
 
     detail = build_run_detail(0, aggregate_verdicts(report), report, {})
 
-    assert detail.missed_steps == ["search: judgment, flagged by the usage policy"]
+    assert detail.missed_steps == [
+        "Refused by the model provider, search: judgment, flagged by the usage policy",
+        "Unreadable answer from the model, search: judgment, no answer matched",
+    ]
 
 
 def test_session_throttles_count_each_report_and_keep_the_total():

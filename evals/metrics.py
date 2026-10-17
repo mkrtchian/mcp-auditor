@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict, ProviderUsage
+from mcp_auditor.domain.rendering import MISS_CAUSE_LABELS
 
 type KeyedVerdicts[K] = dict[K, EvalVerdict | None]
 VerdictMap = KeyedVerdicts[tuple[str, AuditCategory]]
@@ -151,7 +152,10 @@ def blocked_reasons(report: AuditReport) -> list[str]:
 
 
 def missed_steps(report: AuditReport) -> list[str]:
-    return [f"{missed.tool_name}: {missed.step}, {missed.detail}" for missed in report.missed_steps]
+    return [
+        f"{MISS_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.step}, {missed.detail}"
+        for missed in report.missed_steps
+    ]
 
 
 @dataclass

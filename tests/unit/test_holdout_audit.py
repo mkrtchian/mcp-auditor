@@ -38,17 +38,20 @@ async def test_a_detection_with_a_refused_step_passes_through(monkeypatch: pytes
 
 
 async def test_a_refused_attempt_is_not_retried(monkeypatch: pytest.MonkeyPatch):
-    _captured_console(monkeypatch)
+    output = _captured_console(monkeypatch)
     report = grammar.a_report()
-    attempt = _ScriptedAttempts(
-        [IncompleteAttempt(report, frozenset({MissCause.PROVIDER_REFUSAL}))]
-    )
+    causes = frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER})
+    attempt = _ScriptedAttempts([IncompleteAttempt(report, causes)])
 
     outcome = await holdout_audit(TARGET, attempt)
 
     assert isinstance(outcome, IncompleteRun)
     assert outcome.report is report
     assert attempt.calls == 1
+    assert (
+        f"{TARGET.cve_id}: refused by the model provider and unreadable model answer,"
+        " counted as not detected"
+    ) in output.getvalue()
 
 
 async def test_an_infra_failure_is_retried_twice_then_gives_up(monkeypatch: pytest.MonkeyPatch):

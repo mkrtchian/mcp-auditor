@@ -71,19 +71,28 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
     assert attempt.calls == 2
 
 
-async def test_an_audit_refused_at_every_attempt_is_a_run_not_completed(
+async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = _captured_console(monkeypatch)
-    attempt = _ScriptedAttempts[GradedAudit](
-        [IncompleteAttempt(grammar.a_report(), _REFUSED)] * INCOMPLETE_ATTEMPTS
-    )
+    unreadable = IncompleteAttempt(grammar.a_report(), frozenset({MissCause.UNREADABLE_ANSWER}))
+    outcomes: list[GradedAudit | IncompleteAttempt | None] = [
+        IncompleteAttempt(grammar.a_report(), _REFUSED),
+        *[unreadable] * (INCOMPLETE_ATTEMPTS - 1),
+    ]
+    attempt = _ScriptedAttempts[GradedAudit](outcomes)
 
     grade = await graded_despite_refusals(TARGET, attempt)
 
     assert grade is None
     assert attempt.calls == INCOMPLETE_ATTEMPTS
-    assert f"{TARGET.cve_id} run skipped" in output.getvalue()
+    printed = " ".join(output.getvalue().split())
+    assert f"{TARGET.cve_id}: attempt 1/{INCOMPLETE_ATTEMPTS}: refused by the model provider" in (
+        printed
+    )
+    assert f"{TARGET.cve_id}: attempt 2/{INCOMPLETE_ATTEMPTS}: unreadable model answer" in printed
+    assert f"{TARGET.cve_id} run skipped" in printed
+    assert "refused by the model provider and unreadable model answer" in printed
 
 
 async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):

@@ -1,3 +1,4 @@
+import pytest
 from rich.text import Text
 
 import tests.unit.support.test_console_given as given
@@ -192,6 +193,22 @@ def test_a_refused_step_warning_prints_the_provider_message_verbatim():
     display.print_missed_steps([refused])
 
     assert message in _warnings(buffer.getvalue())[0]
+
+
+@pytest.mark.parametrize(
+    ("cause", "label"),
+    [
+        (MissCause.PROVIDER_REFUSAL, "refused by the model provider"),
+        (MissCause.UNREADABLE_ANSWER, "unreadable answer from the model"),
+    ],
+)
+def test_a_missed_step_warning_names_its_cause(cause: MissCause, label: str):
+    display, buffer = given.a_ci_display()
+    missed = MissedStep(tool_name="get_user", step=AuditStep.JUDGMENT, cause=cause, detail="x")
+
+    display.print_missed_steps([missed])
+
+    assert f'get_user: {label}, judgment, "x"' in _warnings(buffer.getvalue())[0]
 
 
 def test_summary_has_no_warning_without_a_coverage_gap():

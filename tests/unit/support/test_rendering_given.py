@@ -253,6 +253,26 @@ def a_report_with_a_refused_judgment_on_get_user() -> AuditReport:
     return report
 
 
+UNREADABLE_DETAIL = (
+    "no answer matched the expected format after 3 attempts (1 cut at the output limit)"
+)
+
+
+def a_report_with_missed_judgments_on_get_user(refused: int, unreadable: int) -> AuditReport:
+    report = a_two_tool_report()
+    causes = [MissCause.PROVIDER_REFUSAL] * refused + [MissCause.UNREADABLE_ANSWER] * unreadable
+    report.missed_steps = [
+        MissedStep(
+            tool_name="get_user",
+            step=AuditStep.JUDGMENT,
+            cause=cause,
+            detail=REFUSAL_MESSAGE if cause == MissCause.PROVIDER_REFUSAL else UNREADABLE_DETAIL,
+        )
+        for cause in causes
+    ]
+    return report
+
+
 def a_report_with_an_unjudged_case() -> AuditReport:
     unjudged = TestCase(
         payload=AuditPayload(

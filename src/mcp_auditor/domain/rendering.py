@@ -11,12 +11,18 @@ from mcp_auditor.domain.models import (
     EvalVerdict,
     ExecutionRecord,
     ExecutionRegime,
+    MissCause,
     MissedStep,
     Severity,
     TestCase,
     ToolReport,
 )
 from mcp_auditor.domain.owasp import category_with_owasp_label
+
+MISS_CAUSE_LABELS = {
+    MissCause.PROVIDER_REFUSAL: "Refused by the model provider",
+    MissCause.UNREADABLE_ANSWER: "Unreadable answer from the model",
+}
 
 
 def render_summary(report: AuditReport) -> str:
@@ -76,10 +82,12 @@ def _render_summary_section(report: AuditReport) -> str:
 
 def _render_completeness_lines(report: AuditReport) -> list[str]:
     lines: list[str] = []
-    missed_count = len(report.missed_steps)
-    if missed_count > 0:
-        noun = "step" if missed_count == 1 else "steps"
-        lines.append(f"**Refused by the model provider**: {missed_count} {noun}")
+    missed_counts = Counter(missed.cause for missed in report.missed_steps)
+    for cause, label in MISS_CAUSE_LABELS.items():
+        count = missed_counts[cause]
+        if count > 0:
+            noun = "step" if count == 1 else "steps"
+            lines.append(f"**{label}**: {count} {noun}")
     if not report.is_complete:
         lines.append("**Audit complete**: no")
     return lines
@@ -141,7 +149,8 @@ def _render_tool_section(tool_report: ToolReport, missed_steps: list[MissedStep]
     if tool_report.coverage_gap is not None:
         lines.append(f"**Coverage gap**: {describe_coverage_gap(tool_report.coverage_gap)}\n")
     for missed in missed_steps:
-        lines.append(f"**Refused by the model provider**: {describe_missed_step(missed)}\n")
+        label = MISS_CAUSE_LABELS[missed.cause]
+        lines.append(f"**{label}**: {describe_missed_step(missed)}\n")
     for case in tool_report.cases:
         lines.append(_render_case_section(case))
     for chain in tool_report.chains:
@@ -184,7 +193,7 @@ def _render_unjudged_section(case: TestCase) -> str:
     lines = [
         f"### NOT JUDGED -- {case.payload.category}",
         f"**Payload**: `{case.payload.arguments}`",
-        "**Reason**: the model provider refused the judgment",
+        "**Reason**: the judgment step was missed, its cause is listed under the tool",
     ]
     return "\n".join(lines)
 
