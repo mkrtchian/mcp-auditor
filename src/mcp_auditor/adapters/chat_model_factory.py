@@ -5,12 +5,15 @@ import httpx
 from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
 from pydantic import SecretStr
 
+from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
 from mcp_auditor.config import Settings
 
 
 # Each factory imports its provider's SDK, so an audit loads the one it uses and starting the
 # CLI pays for none of the others.
-def make_chat_model(settings: Settings, model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+def make_chat_model(
+    settings: Settings, model: str, efforts: OpenRouterEffortCatalog | None = None
+) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
     reasoning = settings.resolve_reasoning(model)
     if settings.provider == "anthropic":
         return _make_anthropic_model(model, reasoning)
@@ -23,6 +26,8 @@ def make_chat_model(settings: Settings, model: str) -> BaseChatModel:  # pyright
     if settings.provider == "alibaba":
         return _make_alibaba_model(model)
     if settings.provider == "openrouter":
+        if reasoning is not None:
+            (efforts or OpenRouterEffortCatalog()).check(model, reasoning)
         return _make_openrouter_model(model, reasoning, settings.resolve_openrouter_hosts())
     raise ValueError(
         f"Unknown provider: {settings.provider!r}. "

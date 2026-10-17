@@ -10,23 +10,29 @@ from pydantic import BaseModel, ValidationError
 from mcp_auditor.adapters.chat_model_factory import make_chat_model
 from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
 from mcp_auditor.adapters.llm_tool_binding import bind_schema_as_tool
+from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
 from mcp_auditor.adapters.throttling import counting_throttles, install_throttle_log_handler
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 
-
-def create_llm(settings: Settings) -> "LLM":
-    return _create_for_provider(settings, settings.resolve_model())
-
-
-def create_judge_llm(settings: Settings) -> "LLM":
-    return _create_for_provider(settings, settings.resolve_judge_model())
+# Shared so the generator and the judge on one model fetch OpenRouter's listing once.
+_PROCESS_EFFORTS = OpenRouterEffortCatalog()
 
 
-def _create_for_provider(settings: Settings, model: str) -> "LLM":
+def create_llm(settings: Settings, efforts: OpenRouterEffortCatalog = _PROCESS_EFFORTS) -> "LLM":
+    return _create_for_provider(settings, settings.resolve_model(), efforts)
+
+
+def create_judge_llm(
+    settings: Settings, efforts: OpenRouterEffortCatalog = _PROCESS_EFFORTS
+) -> "LLM":
+    return _create_for_provider(settings, settings.resolve_judge_model(), efforts)
+
+
+def _create_for_provider(settings: Settings, model: str, efforts: OpenRouterEffortCatalog) -> "LLM":
     install_throttle_log_handler()
-    chat_model = make_chat_model(settings, model)
+    chat_model = make_chat_model(settings, model, efforts)
     return LLM(chat_model, _STRUCTURED_OUTPUT[settings.provider], max_parse_attempts=3)
 
 

@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 from mcp_auditor.adapters.chat_model_factory import make_chat_model
+from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
 from mcp_auditor.config import Settings
 
 
@@ -165,7 +166,7 @@ class TestMakeChatModel:
         monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
         settings = _openrouter_settings()
 
-        chat_model = make_chat_model(settings, settings.resolve_model())
+        chat_model = make_chat_model(settings, settings.resolve_model(), _glm_efforts())
 
         assert getattr(chat_model, "model_name", None) == "z-ai/glm-5.3"
         assert str(getattr(chat_model, "openai_api_base", "")) == "https://openrouter.ai/api/v1"
@@ -183,7 +184,7 @@ class TestMakeChatModel:
         monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
         settings = _openrouter_settings(openrouter_hosts="sail-research")
 
-        chat_model = make_chat_model(settings, settings.resolve_model())
+        chat_model = make_chat_model(settings, settings.resolve_model(), _glm_efforts())
 
         extra_body: dict[str, object] = getattr(chat_model, "extra_body", None) or {}
         assert extra_body["provider"] == {
@@ -195,11 +196,25 @@ class TestMakeChatModel:
     def test_openrouter_model_override_sends_no_reasoning(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
         settings = _openrouter_settings(model="z-ai/glm-5.3-flash")
+        requests: list[httpx.Request] = []
+        efforts = OpenRouterEffortCatalog(httpx.MockTransport(_recording(requests)))
 
-        chat_model = make_chat_model(settings, settings.resolve_model())
+        chat_model = make_chat_model(settings, settings.resolve_model(), efforts)
 
         extra_body: dict[str, object] = getattr(chat_model, "extra_body", None) or {}
         assert "reasoning" not in extra_body
+        assert requests == []
+
+    def test_openrouter_refuses_an_effort_the_model_does_not_publish(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
+        settings = Settings(
+            provider="openrouter", model="", judge_model="", reasoning="medium", openrouter_hosts=""
+        )
+
+        with pytest.raises(ValueError, match="supports reasoning efforts max, high, low"):
+            make_chat_model(settings, settings.resolve_model(), _glm_efforts())
 
     @pytest.mark.parametrize("key", [None, ""])
     def test_openrouter_without_its_key_raises_naming_it(
@@ -212,7 +227,7 @@ class TestMakeChatModel:
         settings = _openrouter_settings()
 
         with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
-            make_chat_model(settings, settings.resolve_model())
+            make_chat_model(settings, settings.resolve_model(), _glm_efforts())
 
 
 def _openrouter_settings(model: str = "", openrouter_hosts: str = "") -> Settings:
@@ -223,6 +238,21 @@ def _openrouter_settings(model: str = "", openrouter_hosts: str = "") -> Setting
         reasoning="",
         openrouter_hosts=openrouter_hosts,
     )
+
+
+def _glm_efforts() -> OpenRouterEffortCatalog:
+    listing = {
+        "data": [{"id": "z-ai/glm-5.3", "reasoning": {"supported_efforts": ["max", "high", "low"]}}]
+    }
+    return OpenRouterEffortCatalog(httpx.MockTransport(lambda _: httpx.Response(200, json=listing)))
+
+
+def _recording(requests: list[httpx.Request]):
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"data": []})
+
+    return handle
 
 
 _PROVIDER_SDKS = (
