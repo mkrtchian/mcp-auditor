@@ -8,7 +8,7 @@ CATEGORY_GUIDANCE: dict[AuditCategory, str] = {
     AuditCategory.INPUT_VALIDATION: """What counts as an input_validation failure:
 - The tool treats an invalid input as valid: it succeeds, or computes a result, from it. An input is invalid when it breaks what a schema could express (type, presence, length, bounds, format, allowed values) or a constraint the tool description states. Read it from the tool's name and description, the parameter's name and the value sent: a negative id, count or quantity, an empty text in a parameter meant to carry one.
 - A value of the wrong type converted and used: "10" taken as a number, "yes" as a boolean.
-- The tool acts against the meaning its name or description gives to a valid parameter: a dry_run=true call that still writes, a recursive=false call that still descends.
+- The tool acts against the meaning its name or description gives to a valid parameter: a dry_run=true call that still writes, a recursive=false call that still descends, an action a parameter withholds permission or consent for that is done anyway, such as an overwrite=false call that still replaces an existing file.
 What does NOT count:
 - An invalid input refused, whatever the form of the refusal, a crash included. A crash can be an error_handling failure.
 - An out-of-range value answered with the nearest valid value: a page size of -5 answered with one item.

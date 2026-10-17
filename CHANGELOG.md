@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The judges' input_validation guidance counts an action a parameter withholds permission or consent for, done anyway (an `overwrite=false` call that still replaces an existing file), as acting against a valid parameter, beside `dry_run` and `recursive`.
 - The report's usage line reads `**Throttled by the model provider**: N requests (HTTP 429)`, its `, retried` dropped: the last 429 of a call that ran out of retries was not retried.
 - The e2e evals read a pass or a replay whose report holds a step throttled past every retry as a failed one, so the run is not comparable (exit `3`), the other passes kept. A refused or unreadable step still leaves a completed pass.
 - The CVE acceptance run skips an attempt whose report holds a throttled step, as it skips a crashed one: it is not graded, whatever it detected, never audited again as an incomplete attempt, and its detecting run is not replayed on the patched version. The holdout run retries such an attempt as an infrastructure failure, and a target whose attempts stay throttled is dropped with the cause `throttled`. The holdout report's `not_run` entries gain a `cause` (`pre_run_check`, `launch_failure` or `throttled`), and its Markdown not-run section opens with one count per in-run cause against the targets launched, so a throttled provider pushing large servers out of the count shows.
