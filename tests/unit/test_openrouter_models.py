@@ -78,6 +78,9 @@ class TestOpenRouterEffortCatalog:
             pytest.param(_Listing(httpx.Response(503)), id="http error"),
             pytest.param(_Listing(httpx.Response(200, text="<html>")), id="body not json"),
             pytest.param(_Listing(httpx.Response(200, json={})), id="body without data"),
+            pytest.param(
+                _Listing(httpx.Response(200, json={"data": "models"})), id="data not a list"
+            ),
             pytest.param(_Listing(httpx.ConnectError("refused")), id="transport error"),
             pytest.param(_Listing(httpx.ReadTimeout("slow")), id="timeout"),
         ],
@@ -90,6 +93,12 @@ class TestOpenRouterEffortCatalog:
         catalog.check(_GLM, "medium")
 
         assert len(_warnings(caplog)) == 1
+
+    def test_an_entry_that_is_not_a_model_is_skipped(self):
+        catalog = _catalog(_listing("garbage", _model(_GLM, ["high", "low"])))  # type: ignore[arg-type]
+
+        with pytest.raises(ValueError, match="got 'medium'"):
+            catalog.check(_GLM, "medium")
 
     def test_two_checks_of_one_model_fetch_the_listing_once(self):
         listing = _listing(_model(_GLM, ["high", "low"]))

@@ -47,4 +47,8 @@ class OpenRouterEffortCatalog:
         with httpx.Client(transport=self._transport, timeout=_TIMEOUT_SECONDS) as client:
             response = client.get(_MODELS_URL)
             response.raise_for_status()
-            return response.json()["data"]
+            data: object = response.json()["data"]
+        if not isinstance(data, list):
+            raise ValueError(f"'data' is a {type(data).__name__}, not a list")
+        entries = cast(list[object], data)
+        return [cast(dict[str, Any], entry) for entry in entries if isinstance(entry, dict)]
