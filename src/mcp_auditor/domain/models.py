@@ -200,6 +200,7 @@ class ProviderUsage(BaseModel):
     cached_input_tokens: int = 0  # subset of input_tokens
     reasoning_tokens: int = 0  # subset of output_tokens
     throttled_requests: int = 0
+    largest_input_tokens: int = 0  # of a single request, for vendors that bill by request size
 
     def add(self, other: "ProviderUsage") -> "ProviderUsage":
         return ProviderUsage(
@@ -208,6 +209,7 @@ class ProviderUsage(BaseModel):
             cached_input_tokens=self.cached_input_tokens + other.cached_input_tokens,
             reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
             throttled_requests=self.throttled_requests + other.throttled_requests,
+            largest_input_tokens=max(self.largest_input_tokens, other.largest_input_tokens),
         )
 
     def sub(self, other: "ProviderUsage") -> "ProviderUsage":
@@ -217,6 +219,7 @@ class ProviderUsage(BaseModel):
             cached_input_tokens=self.cached_input_tokens - other.cached_input_tokens,
             reasoning_tokens=self.reasoning_tokens - other.reasoning_tokens,
             throttled_requests=self.throttled_requests - other.throttled_requests,
+            largest_input_tokens=self.largest_input_tokens,  # a maximum does not subtract
         )
 
 
@@ -311,6 +314,20 @@ def is_judge_step(step: AuditStep) -> bool:
     return step in JUDGE_STEPS
 
 
+CHAIN_STEPS = frozenset(
+    {
+        AuditStep.CHAIN_PLANNING,
+        AuditStep.CHAIN_STEP_OBSERVATION,
+        AuditStep.CHAIN_STEP_PLANNING,
+        AuditStep.CHAIN_JUDGMENT,
+    }
+)
+
+
+def is_chain_step(step: AuditStep) -> bool:
+    return step in CHAIN_STEPS
+
+
 class MissCause(StrEnum):
     PROVIDER_REFUSAL = "provider_refusal"
     UNREADABLE_ANSWER = "unreadable_answer"
@@ -329,12 +346,17 @@ class AuditReport(BaseModel):
     tool_reports: list[ToolReport]
     provider_usage: ProviderUsage
     judge_usage: ProviderUsage = ProviderUsage()
+    chain_usage: ProviderUsage = ProviderUsage()  # the chain judgment counts here and as judge
     execution: ExecutionRecord | None = None
     missed_steps: list[MissedStep] = []
 
     @property
     def generator_usage(self) -> ProviderUsage:
         return self.provider_usage.sub(self.judge_usage)
+
+    @property
+    def single_step_usage(self) -> ProviderUsage:
+        return self.provider_usage.sub(self.chain_usage)
 
     @property
     def is_complete(self) -> bool:

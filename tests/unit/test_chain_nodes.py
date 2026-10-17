@@ -49,13 +49,15 @@ class TestMakePlanChains:
 
     @pytest.mark.asyncio
     async def test_a_refused_planning_plans_no_chain(self):
-        node = make_plan_chains(FakeLLM([given.a_provider_refusal()]))
+        refusal = given.a_provider_refusal()
+        node = make_plan_chains(FakeLLM([refusal]))
         state = given.a_chain_audit_state(chain_budget=2)
 
         result = await node(state)
 
         then.pending_chains_count(result, 0)
         then.refused_step_recorded(result, AuditStep.CHAIN_PLANNING)
+        assert result["chain_usage"] == [refusal.usage]
         assert route_after_planning({**state, **result}) == END
 
 
@@ -226,6 +228,7 @@ class TestMakeObserveStep:
 
         then.unreadable_step_recorded(result, AuditStep.CHAIN_STEP_OBSERVATION)
         assert result["provider_usage"] == [unreadable.usage]
+        assert result["chain_usage"] == [unreadable.usage]
         assert route_after_observe({**state, **result}) == "judge_chain"
 
 
@@ -314,6 +317,7 @@ class TestMakeJudgeChain:
         then.refused_step_recorded(result, AuditStep.CHAIN_JUDGMENT)
         assert result["chain_step_missed"] is False
         assert result["judge_usage"] == [refusal.usage]
+        assert result["chain_usage"] == [refusal.usage]
 
 
 class TestRouteAfterObserve:

@@ -171,6 +171,38 @@ def a_fake_llm_billing_judge_apart(
     return PerRoleBillingLLM(responses, judge_usage, generator_usage)
 
 
+class PerCallBillingLLM(FakeLLM):
+    """Bills each call a usage of its own, so a sum names the calls it covers."""
+
+    def __init__(self, responses: list[BaseModel]):
+        super().__init__(responses)
+        self.billed: list[ProviderUsage] = []
+
+    async def generate_structured[T: BaseModel](
+        self, prompt: str, output_schema: type[T]
+    ) -> tuple[T, ProviderUsage]:
+        self.prompts.append(prompt)
+        response = self._responses.popleft()
+        if not isinstance(response, output_schema):
+            raise TypeError(f"Expected {output_schema.__name__}, got {type(response).__name__}")
+        usage = ProviderUsage(input_tokens=2 ** len(self.billed), output_tokens=1)
+        self.billed.append(usage)
+        self.total_usage = self.total_usage.add(usage)
+        return response, usage  # type: ignore[return-value]
+
+
+# Chain planning, two observations, one step planning and the chain judgment.
+TWO_STEP_CHAIN_CALLS = slice(2, 7)
+
+
+def a_fake_llm_billing_each_call_apart_with_a_two_step_chain() -> PerCallBillingLLM:
+    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
+    continue_obs = StepObservation(observation="promising", should_continue=True)
+    stop_obs = StepObservation(observation="dead end", should_continue=False)
+    chain = [chain_plan, continue_obs, a_payload(), stop_obs, a_judgment()]
+    return PerCallBillingLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])
+
+
 # The graph wrappers below look trivial but are a typing seam: langgraph's
 # CompiledStateGraph is partially unknown under strict pyright, so tests go
 # through these Any-typed helpers instead of calling ainvoke directly.

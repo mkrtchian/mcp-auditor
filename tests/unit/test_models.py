@@ -138,6 +138,19 @@ class TestProviderUsage:
             throttled_requests=2,
         )
 
+    def test_add_keeps_the_larger_request(self):
+        a = ProviderUsage(input_tokens=100, largest_input_tokens=100)
+        b = ProviderUsage(input_tokens=500, largest_input_tokens=300)
+
+        assert a.add(b).largest_input_tokens == 300
+        assert b.add(a).largest_input_tokens == 300
+
+    def test_sub_keeps_the_minuends_larger_request(self):
+        total = ProviderUsage(input_tokens=600, largest_input_tokens=300)
+        part = ProviderUsage(input_tokens=500, largest_input_tokens=300)
+
+        assert total.sub(part).largest_input_tokens == 300
+
 
 class TestSeverityComparison:
     def test_critical_is_greater_than_low(self):

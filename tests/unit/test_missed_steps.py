@@ -22,6 +22,7 @@ async def test_an_unreadable_answer_is_a_missed_step_with_its_usage():
         ),
         usage=usage,
         is_judge=True,
+        is_chain=False,
     )
 
 
@@ -41,6 +42,7 @@ async def test_a_refusal_is_a_missed_step_with_the_provider_message():
         ),
         usage=usage,
         is_judge=True,
+        is_chain=False,
     )
 
 
@@ -61,4 +63,5 @@ async def test_a_throttled_call_is_a_missed_step_with_the_provider_message_and_i
         ),
         usage=usage,
         is_judge=True,
+        is_chain=False,
     )

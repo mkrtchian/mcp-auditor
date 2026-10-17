@@ -232,6 +232,7 @@ class TestJudgeResponse:
         then.refused_step_recorded(result, tool_name="read_file", step=AuditStep.JUDGMENT)
         assert result["provider_usage"] == [refusal.usage]
         assert result["judge_usage"] == [refusal.usage]
+        assert "chain_usage" not in result
 
     async def test_a_refused_generation_does_not_bill_the_judge(self):
         refusal = given.a_provider_refusal()

@@ -23,7 +23,9 @@ class TestPatientRetry:
         output, usage = await llm.generate_structured("prompt", given.Output)
 
         assert output == given.Output(value="ok")
-        assert usage == ProviderUsage(input_tokens=100, output_tokens=50, throttled_requests=2)
+        assert usage == ProviderUsage(
+            input_tokens=100, output_tokens=50, throttled_requests=2, largest_input_tokens=100
+        )
         assert sleep.delays == [10.0, 20.0]
 
     @pytest.mark.asyncio
@@ -107,7 +109,7 @@ class TestExhaustedPatience:
 
         assert sleep.delays == [10.0]
         assert raised.value.usage == ProviderUsage(
-            input_tokens=200, output_tokens=100, throttled_requests=2
+            input_tokens=200, output_tokens=100, throttled_requests=2, largest_input_tokens=100
         )
 
     @pytest.mark.asyncio

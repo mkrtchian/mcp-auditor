@@ -270,6 +270,7 @@ def _to_provider_usage(metadata: _UsageMetadata | None, throttled_requests: int)
         cached_input_tokens=metadata.get("input_token_details", {}).get("cache_read", 0),
         reasoning_tokens=metadata.get("output_token_details", {}).get("reasoning", 0),
         throttled_requests=throttled_requests,
+        largest_input_tokens=metadata["input_tokens"],
     )
 
 
@@ -291,4 +292,5 @@ def _completion_usage(usage: CompletionUsage | None, throttled_requests: int) ->
         cached_input_tokens=(prompt_details and prompt_details.cached_tokens) or 0,
         reasoning_tokens=(completion_details and completion_details.reasoning_tokens) or 0,
         throttled_requests=throttled_requests,
+        largest_input_tokens=usage.prompt_tokens,
     )

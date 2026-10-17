@@ -263,6 +263,31 @@ async def test_the_report_splits_judge_usage_from_generator_usage():
 
 
 @pytest.mark.asyncio
+async def test_the_report_splits_chain_usage_from_single_step_usage():
+    fake_llm = given.a_fake_llm_billing_each_call_apart_with_a_two_step_chain()
+    graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
+    state = given.an_initial_state(test_budget=1, chain_budget=1)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.report_bills_to_chains(result, fake_llm.billed[given.TWO_STEP_CHAIN_CALLS])
+    assert result["audit_report"].provider_usage == fake_llm.total_usage
+
+
+@pytest.mark.asyncio
+async def test_an_audit_without_chains_reports_no_chain_usage():
+    fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=2)
+    graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
+    state = given.an_initial_state(test_budget=2)
+
+    result = await given.invoke_graph(graph, state)
+
+    report = result["audit_report"]
+    assert report.chain_usage == given.ProviderUsage()
+    assert report.single_step_usage == report.provider_usage
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
 async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the_next(
     cause: MissCause,

@@ -72,7 +72,11 @@ class TestTokenAccumulationOnRetry:
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
         assert usage == ProviderUsage(
-            input_tokens=200, output_tokens=100, cached_input_tokens=50, reasoning_tokens=15
+            input_tokens=200,
+            output_tokens=100,
+            cached_input_tokens=50,
+            reasoning_tokens=15,
+            largest_input_tokens=100,
         )
 
     @pytest.mark.asyncio
@@ -84,7 +88,30 @@ class TestTokenAccumulationOnRetry:
 
         _, usage = await llm.generate_structured("prompt", _DummyOutput)
 
-        assert usage == ProviderUsage(input_tokens=100, output_tokens=50)
+        assert usage == ProviderUsage(input_tokens=100, output_tokens=50, largest_input_tokens=100)
+
+
+class TestLargestRequest:
+    @pytest.mark.asyncio
+    async def test_the_largest_request_is_the_largest_attempt(self):
+        responses = [
+            raw_response({"unexpected": 1}, 300, 50),
+            raw_response({"value": "ok"}, 120, 50),
+        ]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        _, usage = await llm.generate_structured("prompt", _DummyOutput)
+
+        assert usage.largest_input_tokens == 300
+
+    @pytest.mark.asyncio
+    async def test_a_cut_on_the_parse_path_counts_its_request(self):
+        responses = [_cut_completion(_CUT_USAGE), raw_response(_DummyOutput(value="ok"), 40, 50)]
+        llm = LLM(FakeChatModel(responses), _DICT_SCHEMA, max_parse_attempts=3)
+
+        _, usage = await llm.generate_structured("prompt", _DummyOutput)
+
+        assert usage.largest_input_tokens == _CUT_USAGE.prompt_tokens
 
 
 class TestTokenDetails:
@@ -132,7 +159,7 @@ class TestDictSchema:
         output, usage = await llm.generate_structured("prompt", _DummyOutput)
 
         assert output == _DummyOutput(value="ok")
-        assert usage == ProviderUsage(input_tokens=200, output_tokens=100)
+        assert usage == ProviderUsage(input_tokens=200, output_tokens=100, largest_input_tokens=100)
 
     @pytest.mark.asyncio
     async def test_dicts_failing_validation_on_every_attempt_raise(self):
@@ -150,7 +177,9 @@ class TestDictSchema:
         with pytest.raises(UnparseableOutput) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
 
-        assert raised.value.usage == ProviderUsage(input_tokens=300, output_tokens=153)
+        assert raised.value.usage == ProviderUsage(
+            input_tokens=300, output_tokens=153, largest_input_tokens=100
+        )
         assert raised.value.truncated_attempts == 0
 
 
@@ -166,7 +195,9 @@ class TestTruncatedOutput:
         output, usage = await llm.generate_structured("prompt", _DummyOutput)
 
         assert output == _DummyOutput(value="ok")
-        assert usage == ProviderUsage(input_tokens=200, output_tokens=4146)
+        assert usage == ProviderUsage(
+            input_tokens=200, output_tokens=4146, largest_input_tokens=100
+        )
 
     @pytest.mark.asyncio
     async def test_a_response_cut_at_the_length_limit_on_every_attempt_raises(self):
@@ -191,7 +222,9 @@ class TestTruncatedOutput:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.truncated_attempts == 2
-        assert raised.value.usage == ProviderUsage(input_tokens=200, output_tokens=16384)
+        assert raised.value.usage == ProviderUsage(
+            input_tokens=200, output_tokens=16384, largest_input_tokens=100
+        )
 
     @pytest.mark.asyncio
     async def test_a_response_stopped_at_max_tokens_on_every_attempt_counts_as_truncated(self):
@@ -230,7 +263,11 @@ class TestTruncatedOutput:
 
         assert raised.value.truncated_attempts == 3
         assert raised.value.usage == ProviderUsage(
-            input_tokens=300, output_tokens=150, cached_input_tokens=60, reasoning_tokens=30
+            input_tokens=300,
+            output_tokens=150,
+            cached_input_tokens=60,
+            reasoning_tokens=30,
+            largest_input_tokens=100,
         )
 
     @pytest.mark.asyncio
@@ -242,7 +279,11 @@ class TestTruncatedOutput:
 
         assert output == _DummyOutput(value="ok")
         assert usage == ProviderUsage(
-            input_tokens=200, output_tokens=100, cached_input_tokens=20, reasoning_tokens=10
+            input_tokens=200,
+            output_tokens=100,
+            cached_input_tokens=20,
+            reasoning_tokens=10,
+            largest_input_tokens=100,
         )
 
     @pytest.mark.asyncio

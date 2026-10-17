@@ -29,6 +29,7 @@ class GraphState(TypedDict):
     tool_reports: Annotated[list[ToolReport], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
     judge_usage: Annotated[list[ProviderUsage], operator.add]
+    chain_usage: Annotated[list[ProviderUsage], operator.add]
     missed_steps: Annotated[list[MissedStep], operator.add]
     audit_report: AuditReport | None
     attack_context: AttackContext
@@ -73,6 +74,7 @@ class ChainAuditState(TypedDict):
     completed_chains: Annotated[list[AttackChain], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
     judge_usage: Annotated[list[ProviderUsage], operator.add]
+    chain_usage: Annotated[list[ProviderUsage], operator.add]
     missed_steps: Annotated[list[MissedStep], operator.add]
 
 

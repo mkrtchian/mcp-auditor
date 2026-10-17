@@ -53,9 +53,21 @@ def report_splits_usage(
     assert report.provider_usage == report.judge_usage.add(report.generator_usage)
 
 
+def report_bills_to_chains(result: dict[str, Any], chain_calls: list[ProviderUsage]) -> None:
+    report = result["audit_report"]
+    chain_usage = _sum(chain_calls)
+    assert report.chain_usage == chain_usage
+    assert report.single_step_usage == report.provider_usage.sub(chain_usage)
+    assert report.single_step_usage.input_tokens > 0
+
+
 def _times(usage: ProviderUsage, count: int) -> ProviderUsage:
+    return _sum([usage] * count)
+
+
+def _sum(usages: list[ProviderUsage]) -> ProviderUsage:
     total = ProviderUsage()
-    for _ in range(count):
+    for usage in usages:
         total = total.add(usage)
     return total
 

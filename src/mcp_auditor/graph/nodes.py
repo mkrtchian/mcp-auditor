@@ -226,12 +226,12 @@ async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
     target = state["target"]
     reports = state.get("tool_reports", [])
     usage = _sum_provider_usage(state.get("provider_usage", []))
-    judge_usage = _sum_provider_usage(state.get("judge_usage", []))
     report = AuditReport(
         target=target,
         tool_reports=reports,
         provider_usage=usage,
-        judge_usage=judge_usage,
+        judge_usage=_sum_provider_usage(state.get("judge_usage", [])),
+        chain_usage=_sum_provider_usage(state.get("chain_usage", [])),
         missed_steps=state.get("missed_steps", []),
     )
     return {"audit_report": report}

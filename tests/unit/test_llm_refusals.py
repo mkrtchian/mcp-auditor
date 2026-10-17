@@ -155,7 +155,9 @@ class TestRefusalAsAnError:
         with pytest.raises(ProviderRefusal) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
 
-        assert raised.value.usage == ProviderUsage(input_tokens=100, output_tokens=8192)
+        assert raised.value.usage == ProviderUsage(
+            input_tokens=100, output_tokens=8192, largest_input_tokens=100
+        )
 
 
 class TestHostLevelBlock:
@@ -214,7 +216,11 @@ class TestHostLevelBlock:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.usage == ProviderUsage(
-            input_tokens=100, output_tokens=50, cached_input_tokens=20, reasoning_tokens=10
+            input_tokens=100,
+            output_tokens=50,
+            cached_input_tokens=20,
+            reasoning_tokens=10,
+            largest_input_tokens=100,
         )
 
     @pytest.mark.asyncio
@@ -229,7 +235,11 @@ class TestHostLevelBlock:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.usage == ProviderUsage(
-            input_tokens=200, output_tokens=8242, cached_input_tokens=20, reasoning_tokens=10
+            input_tokens=200,
+            output_tokens=8242,
+            cached_input_tokens=20,
+            reasoning_tokens=10,
+            largest_input_tokens=100,
         )
 
 
@@ -269,7 +279,9 @@ class TestRefusalInTheResponse:
             await llm.generate_structured("prompt", _DummyOutput)
 
         assert raised.value.provider_message
-        assert raised.value.usage == ProviderUsage(input_tokens=100, output_tokens=5)
+        assert raised.value.usage == ProviderUsage(
+            input_tokens=100, output_tokens=5, largest_input_tokens=100
+        )
 
     @pytest.mark.asyncio
     async def test_an_anthropic_refusal_names_its_category(self):
@@ -324,7 +336,9 @@ class TestRefusalInTheResponse:
         with pytest.raises(ProviderRefusal) as raised:
             await llm.generate_structured("prompt", _DummyOutput)
 
-        assert raised.value.usage == ProviderUsage(input_tokens=200, output_tokens=8197)
+        assert raised.value.usage == ProviderUsage(
+            input_tokens=200, output_tokens=8197, largest_input_tokens=100
+        )
 
     @pytest.mark.asyncio
     async def test_a_normal_google_stop_is_not_a_refusal(self):

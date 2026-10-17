@@ -8,6 +8,7 @@ from mcp_auditor.domain.models import (
     MissCause,
     MissedStep,
     ProviderUsage,
+    is_chain_step,
     is_judge_step,
 )
 from mcp_auditor.domain.ports import (
@@ -31,6 +32,7 @@ class Missed:
     missed_step: MissedStep
     usage: ProviderUsage
     is_judge: bool
+    is_chain: bool
 
     def state_update(self) -> dict[str, Any]:
         update: dict[str, Any] = {
@@ -39,6 +41,8 @@ class Missed:
         }
         if self.is_judge:
             update["judge_usage"] = [self.usage]
+        if self.is_chain:
+            update["chain_usage"] = [self.usage]
         return update
 
 
@@ -61,4 +65,9 @@ async def call_model[T: BaseModel](
 
 def _missed(call: ModelCall[Any], cause: MissCause, detail: str, usage: ProviderUsage) -> Missed:
     step = MissedStep(tool_name=call.tool_name, step=call.step, cause=cause, detail=detail)
-    return Missed(missed_step=step, usage=usage, is_judge=is_judge_step(call.step))
+    return Missed(
+        missed_step=step,
+        usage=usage,
+        is_judge=is_judge_step(call.step),
+        is_chain=is_chain_step(call.step),
+    )

@@ -13,7 +13,7 @@ async def test_a_tool_call_returns_the_schema_instance_and_its_usage(schema_as_d
     output, usage = await llm.generate_structured("prompt", given.Finding)
 
     assert output == given.Finding(value="ok")
-    assert usage == ProviderUsage(input_tokens=120, output_tokens=40)
+    assert usage == ProviderUsage(input_tokens=120, output_tokens=40, largest_input_tokens=120)
 
 
 async def test_an_answer_without_a_tool_call_is_retried_then_unparseable():
@@ -23,7 +23,9 @@ async def test_an_answer_without_a_tool_call_is_retried_then_unparseable():
         await llm.generate_structured("prompt", given.Finding)
 
     assert raised.value.truncated_attempts == 0
-    assert raised.value.usage == ProviderUsage(input_tokens=300, output_tokens=150)
+    assert raised.value.usage == ProviderUsage(
+        input_tokens=300, output_tokens=150, largest_input_tokens=100
+    )
 
 
 async def test_a_refusal_raises_provider_refusal_on_the_first_attempt():
@@ -32,7 +34,9 @@ async def test_a_refusal_raises_provider_refusal_on_the_first_attempt():
     with pytest.raises(ProviderRefusal, match="stop_reason refusal, category cyber") as raised:
         await llm.generate_structured("prompt", given.Finding)
 
-    assert raised.value.usage == ProviderUsage(input_tokens=100, output_tokens=10)
+    assert raised.value.usage == ProviderUsage(
+        input_tokens=100, output_tokens=10, largest_input_tokens=100
+    )
 
 
 async def test_an_answer_cut_during_thinking_counts_as_truncated():
