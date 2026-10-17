@@ -94,6 +94,11 @@ class TestCIExitCode:
 
         assert ci_exit_code(report, CI) == 3
 
+    def test_an_audit_with_a_throttled_step_exits_3(self):
+        report = given.a_report(missed=MissCause.PROVIDER_THROTTLED)
+
+        assert ci_exit_code(report, CI) == 3
+
     def test_a_coverage_gap_alone_exits_3(self):
         report = given.a_report(coverage_gap=True)
 

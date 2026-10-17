@@ -4,7 +4,7 @@ import pytest
 from rich.console import Console
 
 from evals import holdout_audit as holdout_audit_module
-from evals.cve_audit import IncompleteAttempt
+from evals.cve_audit import IncompleteAttempt, ThrottledAttempt
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_audit import (
@@ -100,12 +100,48 @@ async def test_an_infra_failure_is_retried_twice_then_gives_up(monkeypatch: pyte
     assert attempt.calls == HOLDOUT_INFRA_ATTEMPTS == 3
 
 
+async def test_a_throttled_attempt_is_retried_and_a_later_graded_attempt_stands(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = _captured_console(monkeypatch)
+    graded = GradedAudit(a_detected_grade(), grammar.a_report())
+    attempt = _ScriptedAttempts([ThrottledAttempt(), graded])
+
+    outcome = await holdout_audit(TARGET, attempt)
+
+    assert outcome is graded
+    assert attempt.calls == 2
+    assert (
+        f"{TARGET.cve_id}: throttled by the model provider past every retry,"
+        f" attempt 1/{HOLDOUT_INFRA_ATTEMPTS}"
+    ) in output.getvalue()
+
+
+@pytest.mark.parametrize(
+    "outcomes",
+    [
+        [ThrottledAttempt()] * HOLDOUT_INFRA_ATTEMPTS,
+        [None, ThrottledAttempt(), None],
+    ],
+)
+async def test_a_run_throttled_at_any_attempt_is_dropped_as_throttled(
+    monkeypatch: pytest.MonkeyPatch, outcomes: list[ThrottledAttempt | None]
+):
+    _captured_console(monkeypatch)
+
+    outcome = await holdout_audit(TARGET, _ScriptedAttempts([*outcomes]))
+
+    assert outcome == DroppedRun(NotRunCause.THROTTLED)
+
+
 class _ScriptedAttempts:
-    def __init__(self, outcomes: list[GradedAudit | IncompleteAttempt | None]) -> None:
+    def __init__(
+        self, outcomes: list[GradedAudit | IncompleteAttempt | ThrottledAttempt | None]
+    ) -> None:
         self._outcomes = outcomes
         self.calls = 0
 
-    async def __call__(self) -> GradedAudit | IncompleteAttempt | None:
+    async def __call__(self) -> GradedAudit | IncompleteAttempt | ThrottledAttempt | None:
         self.calls += 1
         return self._outcomes.pop(0)
 

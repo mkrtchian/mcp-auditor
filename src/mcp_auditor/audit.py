@@ -8,6 +8,7 @@ from typing import Any, NoReturn
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
 
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
+from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.adapters.log_redaction import redacted_sdk_logging
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.stderr_capture import RedactingStderr
@@ -135,7 +136,8 @@ class Audit:
         resuming = await resume_or_reset(graph, thread_id, self._config.execution.resume)
         if self._config.execution.resume and not resuming:
             self._display.print_info("nothing to resume for this target, starting a fresh audit")
-        return await self._stream(graph, thread_id, None if resuming else self._initial_state())
+        with one_audit():
+            return await self._stream(graph, thread_id, None if resuming else self._initial_state())
 
     async def _stream(
         self, graph: Any, thread_id: str, initial_state: dict[str, Any] | None
@@ -179,13 +181,14 @@ class Audit:
         graph = build_dry_run_graph(
             self._analysts.llm, server, tools_filter=self._config.tools_filter
         )
-        result = await graph.ainvoke(
-            {
-                "target": "",
-                "test_budget": self._config.execution.budget,
-                "attack_context": AttackContext(),
-            }
-        )
+        with one_audit():
+            result = await graph.ainvoke(
+                {
+                    "target": "",
+                    "test_budget": self._config.execution.budget,
+                    "attack_context": AttackContext(),
+                }
+            )
         tools = result.get("discovered_tools", [])
         self._display.print_discovery(len(tools), [t.name for t in tools])
         for report in result.get("tool_reports", []):

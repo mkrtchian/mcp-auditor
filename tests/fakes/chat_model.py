@@ -17,39 +17,44 @@ class FakeAIMessage:
 class FakeChatModel:
     """Mimics BaseChatModel.with_structured_output(include_raw=True).
 
-    Replays one scripted response per call. An exception in the script is raised.
-    A throttled response first logs an HTTP 429 the way the provider SDK's client does.
+    Replays one scripted response per call, across every structured output bound on it,
+    and counts the calls sent. An exception in the script is raised. A throttled response
+    first logs an HTTP 429 the way the provider SDK's client does, then is returned, or
+    raised when it is an exception.
     """
 
     def __init__(self, responses: Sequence["ScriptedResponse"]) -> None:
-        self._responses = responses
+        self._responses = list(responses)
+        self.calls = 0
 
     def with_structured_output(self, *_args: Any, **_kwargs: Any) -> "_FakeStructuredOutput":
-        return _FakeStructuredOutput(self._responses)
+        return _FakeStructuredOutput(self)
+
+    def next_response(self) -> dict[str, Any]:
+        response = self._responses[self.calls]
+        self.calls += 1
+        if isinstance(response, Throttled):
+            _log_throttled_request()
+            response = response.response
+        if isinstance(response, Exception):
+            raise response
+        return response
 
 
 @dataclass(frozen=True)
 class Throttled:
-    response: dict[str, Any]
+    response: dict[str, Any] | Exception
 
 
 type ScriptedResponse = dict[str, Any] | Exception | Throttled
 
 
 class _FakeStructuredOutput:
-    def __init__(self, responses: Sequence[ScriptedResponse]) -> None:
-        self._responses = list(responses)
-        self._call_index = 0
+    def __init__(self, model: FakeChatModel) -> None:
+        self._model = model
 
     async def ainvoke(self, _prompt: str) -> dict[str, Any]:
-        response = self._responses[self._call_index]
-        self._call_index += 1
-        if isinstance(response, Exception):
-            raise response
-        if isinstance(response, Throttled):
-            _log_throttled_request()
-            return response.response
-        return response
+        return self._model.next_response()
 
 
 def _log_throttled_request() -> None:

@@ -119,7 +119,7 @@ A *parse failure with truncation* is a parse failure where at least one attempt 
 ## Limits
 
 - **Watered-down payloads** are not detected (see the refusal rule).
-- **Retries on HTTP 429** happen inside the provider clients (`max_retries=3`) and count in the latency.
+- **Retries on HTTP 429** happen inside the provider clients (`max_retries=3`) and count in the latency. The probe builds its models with a zero-wait patience and opens no per-audit breaker: the auditor's own wait on a throttled provider would bring the provider's queue into the latency measured, and a breaker would turn one throttled call into an error on every later call of the candidate. A 429 that outlasts the clients' retries is an error on its own call, which keeps its throttled-request count, and the rule for it is to rerun the probe.
 - **Same-session load** (network, provider load) affects all candidates alike only as far as the rotation spreads it.
 - **Median, not p95.** A p95 over about 60 judge calls rests on its third-largest value, so the median is the statistic.
 - **A loop that a retry recovers from is not counted as a parse failure.** When an answer is cut at the output cap, the adapter retries it, and a retry that parses makes the call a parsed one, with `truncated_attempts` left at 0. The cut attempt shows only in the call's cost and latency.

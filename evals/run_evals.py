@@ -34,12 +34,19 @@ from evals.gate_verdict import GateMode, GateVerdict
 from evals.honeypots import (
     HONEYPOTS,
     MERGED_GROUND_TRUTH,
+    HoneypotAudit,
     HoneypotConfig,
     audit_honeypot,
     models_for,
 )
 from evals.judging import RunsOutcome, judge_runs
-from evals.metrics import SessionThrottles, VerdictMap, aggregate_verdicts
+from evals.metrics import (
+    SessionThrottles,
+    VerdictMap,
+    aggregate_verdicts,
+    quiet_throttle_waits,
+    raise_if_throttled,
+)
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
 from evals.replay import ReplayAudit, Replayer
 from mcp_auditor.domain.models import AuditReport
@@ -62,6 +69,7 @@ class EvalRunResult:
 
 
 def main() -> None:
+    quiet_throttle_waits()
     options = _parse_args()
     try:
         code = _evaluate(options)
@@ -156,7 +164,7 @@ async def run_evals(session: EvalSession, concurrency: int) -> EvalRunResult:
 
     metrics, consistency_details = outcome.metrics()
     replayer = Replayer(
-        audit=_replay_audit(audit),
+        audit=replay_audit(audit),
         honeypots=HONEYPOTS,
         announce=_announce_replay,
         warn=_warn_replay,
@@ -190,22 +198,33 @@ def _announced_audit(
     """One bound shared by every audit of the session, runs and replays alike."""
     models = models_for(session.settings)
 
+    async def audit_one(honeypot: HoneypotConfig) -> AuditReport:
+        return await audit_honeypot(models, honeypot, session.conditions.budget)
+
+    return bounded(counted_audit(audit_one, throttles), concurrency)
+
+
+def counted_audit(audit_one: HoneypotAudit, throttles: SessionThrottles) -> AnnouncedAudit:
+    """A throttled audit raises once its 429s are counted, so a throttled pass is a failed pass
+    and a throttled replay a failed replay, both leaving the run not comparable."""
+
     async def audit(honeypot: HoneypotConfig, announcement: str | None) -> AuditReport:
         if announcement:
             display.console.print(announcement)
-        report = await audit_honeypot(models, honeypot, session.conditions.budget)
+        report = await audit_one(honeypot)
         throttled = throttles.count(report)
         if throttled > 0:
             display.console.print(
                 f"[yellow]{honeypot.name} was throttled {throttled} time(s)"
                 " by the model provider (HTTP 429)[/yellow]"
             )
+        raise_if_throttled(report)
         return report
 
-    return bounded(audit, concurrency)
+    return audit
 
 
-def _replay_audit(audit: AnnouncedAudit) -> ReplayAudit:
+def replay_audit(audit: AnnouncedAudit) -> ReplayAudit:
     async def replay(honeypot: HoneypotConfig) -> VerdictMap:
         return aggregate_verdicts(await audit(honeypot, None))
 

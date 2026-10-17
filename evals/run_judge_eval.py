@@ -29,7 +29,7 @@ from evals.judge_metrics import (
 from evals.judge_outcomes import case_outcomes
 from evals.judge_session import NOT_COMPARABLE_EXIT, run_judge_gate
 from evals.judge_session_model import JudgeHarness, JudgeOptions, JudgeSessionResult
-from evals.metrics import SessionThrottles
+from evals.metrics import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.llm import create_judge_llm
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import (
@@ -50,6 +50,7 @@ CRASHED_EXIT = 4
 
 
 def main() -> None:
+    quiet_throttle_waits()
     args = _parse_args()
     try:
         code = _evaluate(args)

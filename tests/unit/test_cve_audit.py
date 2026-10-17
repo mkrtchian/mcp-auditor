@@ -1,34 +1,28 @@
-from collections.abc import Awaitable, Callable
-from contextlib import asynccontextmanager
-from io import StringIO
-
 import pytest
-from rich.console import Console
 
 from evals import cve_audit, cve_environments
 from evals.cve_audit import (
     INCOMPLETE_ATTEMPTS,
-    Auditor,
     IncompleteAttempt,
     RunOverrides,
+    ThrottledAttempt,
+    attempt_once,
     audit_target,
     graded_despite_missed_steps,
     graded_or_incomplete,
 )
 from evals.cve_environments import Launch
-from evals.cve_grammar import CreditCheck, CVEStatus, MissClass, PlantedTarget, RunGrade, grade_run
+from evals.cve_grammar import CreditCheck, CVEStatus, MissClass, RunGrade, grade_run
 from evals.cve_proofs import UnitPlace
-from evals.cve_replay import RunToCheck
 from evals.cve_report_units import units_of
 from evals.cve_session_model import GradedAudit
-from evals.cve_targets import CVE_TARGETS
 from evals.metrics import SessionThrottles
-from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep, ProviderUsage
-from tests.fakes import FakeLLM, FakeMCPClient
+from mcp_auditor.domain.models import MissCause
+from tests.unit.support import test_cve_audit_given as given
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_cve_oracle_given import a_detected_grade
 
-TARGET = CVE_TARGETS[0]
+TARGET = given.TARGET
 _REFUSED = frozenset({MissCause.PROVIDER_REFUSAL})
 
 
@@ -42,18 +36,18 @@ def test_a_misconfigured_model_fails_before_any_target_is_launched(
 
 
 def test_a_throttled_audit_is_reported_with_its_count(monkeypatch: pytest.MonkeyPatch):
-    output = _captured_console(monkeypatch)
+    output = given.captured_console(monkeypatch)
 
-    cve_audit._print_incidents(TARGET, _report_throttled(2))  # pyright: ignore[reportPrivateUsage]
+    cve_audit._print_incidents(TARGET, given.a_report_throttled(2))  # pyright: ignore[reportPrivateUsage]
 
     line = f"{TARGET.cve_id}: throttled 2 time(s) by the model provider (HTTP 429)"
     assert line in output.getvalue()
 
 
 def test_an_audit_never_throttled_says_nothing_of_throttling(monkeypatch: pytest.MonkeyPatch):
-    output = _captured_console(monkeypatch)
+    output = given.captured_console(monkeypatch)
 
-    cve_audit._print_incidents(TARGET, _report_throttled(0))  # pyright: ignore[reportPrivateUsage]
+    cve_audit._print_incidents(TARGET, given.a_report_throttled(0))  # pyright: ignore[reportPrivateUsage]
 
     assert "throttled" not in output.getvalue()
 
@@ -61,9 +55,9 @@ def test_an_audit_never_throttled_says_nothing_of_throttling(monkeypatch: pytest
 async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_not_refused(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _captured_console(monkeypatch)
+    given.captured_console(monkeypatch)
     graded = GradedAudit(a_detected_grade(), grammar.a_report(target="second attempt"))
-    attempt = _ScriptedAttempts([IncompleteAttempt(grammar.a_report(), _REFUSED), graded])
+    attempt = given.ScriptedAttempts([IncompleteAttempt(grammar.a_report(), _REFUSED), graded])
 
     outcome = await graded_despite_missed_steps(TARGET, attempt)
 
@@ -74,13 +68,13 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
 async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = _captured_console(monkeypatch)
+    output = given.captured_console(monkeypatch)
     unreadable = IncompleteAttempt(grammar.a_report(), frozenset({MissCause.UNREADABLE_ANSWER}))
-    outcomes: list[GradedAudit | IncompleteAttempt | None] = [
+    outcomes: list[GradedAudit | IncompleteAttempt | ThrottledAttempt | None] = [
         IncompleteAttempt(grammar.a_report(), _REFUSED),
         *[unreadable] * (INCOMPLETE_ATTEMPTS - 1),
     ]
-    attempt = _ScriptedAttempts[GradedAudit](outcomes)
+    attempt = given.ScriptedAttempts[GradedAudit](outcomes)
 
     grade = await graded_despite_missed_steps(TARGET, attempt)
 
@@ -96,8 +90,8 @@ async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
 
 
 async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
-    _captured_console(monkeypatch)
-    attempt = _ScriptedAttempts[GradedAudit]([None])
+    given.captured_console(monkeypatch)
+    attempt = given.ScriptedAttempts[GradedAudit]([None])
 
     grade = await graded_despite_missed_steps(TARGET, attempt)
 
@@ -107,7 +101,7 @@ async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.
 
 @pytest.mark.parametrize("cause", list(MissCause))
 def test_a_detection_is_kept_whatever_step_was_missed(cause: MissCause):
-    outcome = graded_or_incomplete(a_detected_grade(), _missing_a_step(grammar.a_report(), cause))
+    outcome = graded_or_incomplete(a_detected_grade(), given.a_report_missing(cause))
 
     assert isinstance(outcome, RunGrade)
     assert outcome.status == CVEStatus.DETECTED
@@ -117,7 +111,7 @@ def test_a_detection_is_kept_whatever_step_was_missed(cause: MissCause):
 def test_a_miss_with_a_missed_step_is_not_graded_and_carries_its_cause(cause: MissCause):
     missed = grammar.a_missed_run(MissClass.AIMED_NO_PROOF)
 
-    outcome = graded_or_incomplete(missed, _missing_a_step(grammar.a_report(), cause))
+    outcome = graded_or_incomplete(missed, given.a_report_missing(cause))
 
     assert isinstance(outcome, IncompleteAttempt)
     assert outcome.causes == {cause}
@@ -141,17 +135,15 @@ def test_a_struck_only_credit_with_a_refused_step_reads_as_refused():
         struck_places=frozenset({grammar.PLACE}),
     )
 
-    outcome = graded_or_incomplete(
-        struck, _missing_a_step(grammar.a_report(), MissCause.PROVIDER_REFUSAL)
-    )
+    outcome = graded_or_incomplete(struck, given.a_report_missing(MissCause.PROVIDER_REFUSAL))
 
     assert isinstance(outcome, IncompleteAttempt)
 
 
 async def test_a_non_detecting_run_is_graded_without_replaying():
-    run = _a_run(grammar.a_report(cases=[grammar.a_case(verdict=grammar.PASS)]))
+    run = given.a_run(grammar.a_report(cases=[grammar.a_case(verdict=grammar.PASS)]))
 
-    grade = await cve_audit._checked_grade(run, replay=_replay_that_must_not_run)  # pyright: ignore[reportPrivateUsage]
+    grade = await cve_audit._checked_grade(run, replay=given.a_replay_that_must_not_run)  # pyright: ignore[reportPrivateUsage]
 
     assert grade.status == grade_run(run.run_target, units_of(run.report)).status
 
@@ -164,10 +156,10 @@ async def test_a_detecting_run_is_regraded_on_the_credits_the_replay_strikes():
             )
         ]
     )
-    run = _a_run(report, {grammar.PLACE: grammar.SENTINEL})
+    run = given.a_run(report, {grammar.PLACE: grammar.SENTINEL})
     struck = CreditCheck(frozenset({UnitPlace(0, grammar.PLACE)}), unchecked=False)
 
-    grade = await cve_audit._checked_grade(run, replay=_replay_returning(struck))  # pyright: ignore[reportPrivateUsage]
+    grade = await cve_audit._checked_grade(run, replay=given.a_replay_returning(struck))  # pyright: ignore[reportPrivateUsage]
 
     assert grade.status == CVEStatus.MISSED
 
@@ -175,11 +167,11 @@ async def test_a_detecting_run_is_regraded_on_the_credits_the_replay_strikes():
 async def test_run_overrides_replace_the_launch_chain_settings_in_the_graph_input(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    recorded = _capture_graph_input(monkeypatch)
+    recorded = given.captured_graph_input(monkeypatch)
     launch = Launch(command="x", args=[], chain_budget=3, max_chain_steps=5)
     overrides = RunOverrides(chain_budget=7, max_chain_steps=9, tool_call_timeout=11)
 
-    await cve_audit._audit(launch, TARGET, _an_auditor(), overrides)  # pyright: ignore[reportPrivateUsage]
+    await cve_audit._audit(launch, TARGET, given.an_auditor(), overrides)  # pyright: ignore[reportPrivateUsage]
 
     assert recorded["chain_budget"] == 7
     assert recorded["max_chain_steps"] == 9
@@ -188,17 +180,17 @@ async def test_run_overrides_replace_the_launch_chain_settings_in_the_graph_inpu
 async def test_no_overrides_keeps_the_launch_chain_settings_in_the_graph_input(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    recorded = _capture_graph_input(monkeypatch)
+    recorded = given.captured_graph_input(monkeypatch)
     launch = Launch(command="x", args=[], chain_budget=3, max_chain_steps=5)
 
-    await cve_audit._audit(launch, TARGET, _an_auditor(), None)  # pyright: ignore[reportPrivateUsage]
+    await cve_audit._audit(launch, TARGET, given.an_auditor(), None)  # pyright: ignore[reportPrivateUsage]
 
     assert recorded["chain_budget"] == 3
     assert recorded["max_chain_steps"] == 5
 
 
 async def test_run_overrides_pass_the_timeout_to_the_client(monkeypatch: pytest.MonkeyPatch):
-    seen = _capture_connect_timeout(monkeypatch)
+    seen = given.captured_connect_timeout(monkeypatch)
     overrides = RunOverrides(chain_budget=1, max_chain_steps=1, tool_call_timeout=17)
 
     async with cve_audit._silent_client(Launch("x", []), overrides):  # pyright: ignore[reportPrivateUsage]
@@ -208,7 +200,7 @@ async def test_run_overrides_pass_the_timeout_to_the_client(monkeypatch: pytest.
 
 
 async def test_no_overrides_leaves_the_client_default_timeout(monkeypatch: pytest.MonkeyPatch):
-    seen = _capture_connect_timeout(monkeypatch)
+    seen = given.captured_connect_timeout(monkeypatch)
 
     async with cve_audit._silent_client(Launch("x", []), None):  # pyright: ignore[reportPrivateUsage]
         pass
@@ -216,92 +208,54 @@ async def test_no_overrides_leaves_the_client_default_timeout(monkeypatch: pytes
     assert seen["timeout"] == cve_environments.TOOL_CALL_TIMEOUT
 
 
-def _an_auditor() -> Auditor:
-    return Auditor(FakeLLM([]), FakeLLM([]), budget=10)
+async def test_a_throttled_attempt_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
+    given.captured_console(monkeypatch)
+    attempt = given.ScriptedAttempts[GradedAudit]([ThrottledAttempt()])
+
+    grade = await graded_despite_missed_steps(TARGET, attempt)
+
+    assert grade is None
+    assert attempt.calls == 1
 
 
-def _capture_graph_input(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
-    recorded: dict[str, object] = {}
+async def test_an_attempt_holding_a_throttled_step_is_thrown_away_before_any_grading(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.captured_console(monkeypatch)
+    given.an_audit_reporting(monkeypatch, given.a_report_missing(MissCause.PROVIDER_THROTTLED))
+    given.a_grading_that_must_not_run(monkeypatch)
+    target = given.a_target_launching_nothing()
 
-    class _FakeGraph:
-        async def ainvoke(self, graph_input: dict[str, object]) -> dict[str, object]:
-            recorded.update(graph_input)
-            return {"audit_report": grammar.a_report()}
+    outcome = await attempt_once(target, given.an_auditor(), SessionThrottles(), places={})
 
-    def _fake_build_graph(*_args: object, **_kwargs: object) -> _FakeGraph:
-        return _FakeGraph()
-
-    @asynccontextmanager
-    async def _fake_client(_launch: Launch, _overrides: RunOverrides | None):
-        yield FakeMCPClient([])
-
-    monkeypatch.setattr(cve_audit, "build_graph", _fake_build_graph)
-    monkeypatch.setattr(cve_audit, "_silent_client", _fake_client)
-    return recorded
-
-
-def _capture_connect_timeout(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
-    seen: dict[str, int] = {}
-
-    @asynccontextmanager
-    async def _fake_connect(
-        _launch: Launch,
-        _stderr: object,
-        *,
-        tool_call_timeout: int = cve_environments.TOOL_CALL_TIMEOUT,
-    ):
-        seen["timeout"] = tool_call_timeout
-        yield FakeMCPClient([])
-
-    monkeypatch.setattr(cve_audit, "connect", _fake_connect)
-    return seen
-
-
-def _a_run(report: AuditReport, nonces: dict[str, str] | None = None) -> RunToCheck:
-    return RunToCheck(
-        target=TARGET,
-        run_target=PlantedTarget(TARGET.mechanism, TARGET.aim, nonces or {}),
-        report=report,
-        recorded_calls=[],
-        records=(),
+    assert isinstance(outcome, ThrottledAttempt)
+    printed = " ".join(output.getvalue().split())
+    assert f"{target.cve_id} run skipped: throttled by the model provider past every retry" in (
+        printed
     )
 
 
-async def _replay_that_must_not_run(_run: RunToCheck) -> CreditCheck:
-    raise AssertionError("a non-detecting run must be graded without replaying")
+async def test_an_attempt_throttled_and_refused_reads_as_throttled(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    given.captured_console(monkeypatch)
+    report = given.a_report_missing(MissCause.PROVIDER_REFUSAL, MissCause.PROVIDER_THROTTLED)
+    given.an_audit_reporting(monkeypatch, report)
 
-
-def _replay_returning(check: CreditCheck) -> Callable[[RunToCheck], Awaitable[CreditCheck]]:
-    async def replay(_run: RunToCheck) -> CreditCheck:
-        return check
-
-    return replay
-
-
-def _missing_a_step(report: AuditReport, cause: MissCause) -> AuditReport:
-    missed = MissedStep(
-        tool_name="git_init", step=AuditStep.CHAIN_PLANNING, cause=cause, detail="Invalid prompt"
+    outcome = await attempt_once(
+        given.a_target_launching_nothing(), given.an_auditor(), SessionThrottles(), places={}
     )
-    return report.model_copy(update={"missed_steps": [missed]})
+
+    assert isinstance(outcome, ThrottledAttempt)
 
 
-class _ScriptedAttempts[T]:
-    def __init__(self, outcomes: list[T | IncompleteAttempt | None]) -> None:
-        self._outcomes = outcomes
-        self.calls = 0
+async def test_each_attempt_audits_under_a_breaker_of_its_own(monkeypatch: pytest.MonkeyPatch):
+    breakers = given.breakers_seen_by_the_graph(monkeypatch)
+    launch = Launch(command="x", args=[])
 
-    async def __call__(self) -> T | IncompleteAttempt | None:
-        self.calls += 1
-        return self._outcomes.pop(0)
+    await cve_audit._audit(launch, TARGET, given.an_auditor(), None)  # pyright: ignore[reportPrivateUsage]
+    await cve_audit._audit(launch, TARGET, given.an_auditor(), None)  # pyright: ignore[reportPrivateUsage]
 
-
-def _captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    output = StringIO()
-    monkeypatch.setattr(cve_audit, "console", Console(file=output, width=200))
-    return output
-
-
-def _report_throttled(times: int) -> AuditReport:
-    return AuditReport(
-        target="test", tool_reports=[], provider_usage=ProviderUsage(throttled_requests=times)
-    )
+    first, second = breakers
+    assert first is not None and second is not None
+    assert first is not second

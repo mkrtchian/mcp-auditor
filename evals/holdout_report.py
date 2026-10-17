@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from evals.census_draw import Side
 from evals.holdout_conditions import Cutoff
 from evals.holdout_intervals import Interval
+from evals.holdout_not_run import NotRunLine, not_run_section
 from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult
 from evals.holdout_statistic import (
     MethodPlacement,
@@ -65,11 +66,6 @@ class TargetLine(BaseModel):
     ran_in_fallback: bool
     tools_count: int
     cost: float
-
-
-class NotRunLine(BaseModel):
-    cve_id: str
-    reason: str
 
 
 class CutoffModel(BaseModel):
@@ -129,7 +125,7 @@ def build_report(run: HoldoutRunResult, run_cutoff: date) -> HoldoutReport:
         conclusion=_conclusion_line(pair, run.runs),
         ladder=dict(Counter(target.detected_runs for target in run.targets)),
         targets=[_target_line(target) for target in run.targets],
-        not_run=[NotRunLine(cve_id=t.cve_id, reason=t.reason) for t in run.not_run],
+        not_run=[NotRunLine.of(target) for target in run.not_run],
         incomplete_run_count=run.incomplete_run_count,
         total_cost=run.total_cost,
         prices_as_of=run.prices_as_of,
@@ -225,7 +221,7 @@ def render_markdown(report: HoldoutReport) -> str:
             *_ladder_section(report),
             *_split_section(report),
             *_controls_section(report),
-            *_not_run_section(report),
+            *not_run_section(report.not_run, len(report.targets)),
             _incomplete_runs_line(report),
             f"Total cost: ${report.total_cost:.2f}",
         ]
@@ -265,13 +261,6 @@ def _conclusion_text(conclusion: ConclusionLine | None) -> str:
 def _controls_section(report: HoldoutReport) -> list[str]:
     lines = [f"- {name}: {_span(interval)}" for name, interval in sorted(report.controls.items())]
     return ["## Controls", *lines, ""]
-
-
-def _not_run_section(report: HoldoutReport) -> list[str]:
-    if not report.not_run:
-        return ["## Not run", "- none", ""]
-    lines = [f"- {line.cve_id}: {line.reason}" for line in report.not_run]
-    return ["## Not run", *lines, ""]
 
 
 _INCOMPLETE_RUNS = "Incomplete runs (a step refused or unreadable)"

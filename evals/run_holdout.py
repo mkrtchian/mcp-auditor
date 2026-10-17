@@ -24,6 +24,7 @@ from evals.holdout_draw import draw_order
 from evals.holdout_report import HoldoutReport, build_report, render_markdown
 from evals.holdout_run import HOLDOUT_RUNS, run_holdout
 from evals.honeypots import REPO_ROOT
+from evals.metrics import quiet_throttle_waits
 from mcp_auditor.config import load_settings
 
 CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
@@ -32,6 +33,7 @@ REFUSED_EXIT = 3
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    quiet_throttle_waits()
     args = _parser().parse_args(argv)
     try:
         return args.command(args)

@@ -30,9 +30,10 @@ from evals.probe_subset import (
     select_candidates,
 )
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
+from mcp_auditor.adapters.llm_throttling import ThrottlePatience
 from mcp_auditor.domain.coverage import find_coverage_gap
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, ProviderUsage, TestCaseBatch
-from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, ProviderThrottled, UnparseableOutput
 
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 DEFAULT_REPORT_PATH = "output/probe_report.json"
@@ -104,12 +105,16 @@ def _run_subset(corpus: ProbeCorpus, args: argparse.Namespace) -> None:
     console.print(f"Observations written to {sink}")
 
 
+# Keeps the provider's queue out of the latency, a 429 is an error ("rerun the probe").
+_NO_PATIENCE = ThrottlePatience(max_total_wait=0.0)
+
+
 def _build_models(candidates: list[Candidate]) -> list[CandidateModels]:
     built: list[CandidateModels] = []
     for candidate in candidates:
         try:
-            main = create_llm(candidate.settings)
-            judge = create_judge_llm(candidate.settings)
+            main = create_llm(candidate.settings, patience=_NO_PATIENCE)
+            judge = create_judge_llm(candidate.settings, patience=_NO_PATIENCE)
         except Exception as error:
             console.print(f"[red]Cannot build the models of {candidate.name}:[/red] {error}")
             sys.exit(1)
@@ -168,6 +173,8 @@ async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> Prob
     except ProviderRefusal as refusal:
         outcome, usage = CallOutcome.PARSE_FAILURE, refusal.usage
         error = refusal.provider_message
+    except ProviderThrottled as throttled:
+        outcome, usage, error = CallOutcome.ERROR, throttled.usage, str(throttled)
     except Exception as exception:
         outcome, error = CallOutcome.ERROR, f"{type(exception).__name__}: {exception}"
     seconds = time.perf_counter() - started

@@ -1,7 +1,12 @@
+import logging
+
+import pytest
+
 import tests.unit.support.test_eval_metrics_given as given
 from evals.ground_truth import GroundTruth
 from evals.metrics import (
     SessionThrottles,
+    ThrottledAudit,
     VerdictMap,
     aggregate_verdicts,
     blocked_reasons,
@@ -11,6 +16,8 @@ from evals.metrics import (
     compute_precision,
     compute_recall,
     label_scores,
+    quiet_throttle_waits,
+    raise_if_throttled,
 )
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict, MissCause, ProviderUsage
 
@@ -377,3 +384,41 @@ def test_session_throttles_count_a_bare_usage():
 
     assert counted == 3
     assert (throttles.requests, throttles.usage.input_tokens) == (3, 50)
+
+
+def test_a_report_holding_a_throttled_step_raises_naming_it():
+    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+    report = given.and_a_missed_judgment(
+        clean, "search", MissCause.PROVIDER_THROTTLED, "300 s waited"
+    )
+
+    with pytest.raises(ThrottledAudit, match="search: judgment, 300 s waited"):
+        raise_if_throttled(report)
+
+
+def test_a_report_holding_only_refused_or_unreadable_steps_does_not_raise():
+    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+    refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
+    report = given.and_a_missed_judgment(
+        refused, "search", MissCause.UNREADABLE_ANSWER, "no answer matched"
+    )
+
+    raise_if_throttled(report)
+
+
+def test_quiet_throttle_waits_drops_a_wait_warning_and_keeps_an_error(
+    caplog: pytest.LogCaptureFixture, throttling_logger: logging.Logger
+):
+    quiet_throttle_waits()
+    throttling_logger.warning("waiting 10 s (retry 1)")
+    throttling_logger.error("something broke")
+
+    assert [record.getMessage() for record in caplog.records] == ["something broke"]
+
+
+@pytest.fixture
+def throttling_logger():
+    logger = logging.getLogger("mcp_auditor.throttling")
+    level = logger.level
+    yield logger
+    logger.setLevel(level)

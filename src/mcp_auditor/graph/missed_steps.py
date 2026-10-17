@@ -10,7 +10,12 @@ from mcp_auditor.domain.models import (
     ProviderUsage,
     is_judge_step,
 )
-from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.ports import (
+    LLMPort,
+    ProviderRefusal,
+    ProviderThrottled,
+    UnparseableOutput,
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +55,8 @@ async def call_model[T: BaseModel](
             f" ({unreadable.truncated_attempts} cut at the output limit)"
         )
         return _missed(call, MissCause.UNREADABLE_ANSWER, detail, unreadable.usage)
+    except ProviderThrottled as throttled:
+        return _missed(call, MissCause.PROVIDER_THROTTLED, str(throttled), throttled.usage)
 
 
 def _missed(call: ModelCall[Any], cause: MissCause, detail: str, usage: ProviderUsage) -> Missed:

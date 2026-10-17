@@ -8,7 +8,7 @@ from evals.probe_candidates import REFERENCE
 from evals.probe_corpus import ProbeCall
 from evals.run_probe import CandidateModels, append_observation, observe
 from mcp_auditor.domain.models import ProviderUsage
-from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
 
 A_JUDGE_CALL = ProbeCall(
     call_id="honeypot/Judgment/000",
@@ -77,6 +77,21 @@ async def test_any_other_value_error_is_an_error_carrying_its_message():
 
     assert observation.outcome == CallOutcome.ERROR
     assert observation.error == "ValueError: 400 invalid request"
+
+
+@pytest.mark.asyncio
+async def test_a_throttled_call_is_an_error_carrying_its_usage_and_the_provider_message():
+    usage = ProviderUsage(throttled_requests=4)
+    models = _models_raising(ProviderThrottled("Error code: 429 - slow down", 0.0, usage))
+
+    observation = await observe(models, A_JUDGE_CALL, budget=10)
+
+    assert observation.outcome == CallOutcome.ERROR
+    assert observation.usage == usage
+    assert observation.error == (
+        "the model provider throttled the request past every retry"
+        " (0 s waited by the auditor): Error code: 429 - slow down"
+    )
 
 
 @pytest.mark.asyncio

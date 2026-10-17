@@ -587,7 +587,7 @@ def test_markdown_summary_reports_the_throttled_requests_after_the_token_usage()
 
     result = render_markdown(report)
 
-    assert "**Throttled by the model provider**: 4 requests, retried" in result
+    assert "**Throttled by the model provider**: 4 requests (HTTP 429)\n" in result
     assert result.index("**Token usage**") < result.index("**Throttled by the model provider**")
 
 

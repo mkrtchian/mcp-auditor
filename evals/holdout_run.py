@@ -27,6 +27,7 @@ from evals.eval_session import Refused, TreeState, read_tree
 from evals.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_results import (
+    DROPPED_RUN_REASONS,
     HoldoutRunResult,
     HoldoutTargetResult,
     NotRunCause,
@@ -230,11 +231,8 @@ async def _run_all(
     dropped: list[NotRunTarget] = []
     for entry, outcomes in zip(surviving, runs_per, strict=True):
         if isinstance(outcomes, DroppedRun):
-            dropped.append(
-                NotRunTarget(
-                    entry.identifier, "a run failed to launch after retries", outcomes.cause
-                )
-            )
+            reason = DROPPED_RUN_REASONS[outcomes.cause]
+            dropped.append(NotRunTarget(entry.identifier, reason, outcomes.cause))
         else:
             assembled.append((entry, _assemble_target(entry, outcomes, ctx)))
     return assembled, dropped
@@ -244,12 +242,12 @@ async def _run_target(
     target: CVETarget, audit: Audit, runs: int
 ) -> list[GradedAudit | IncompleteRun] | DroppedRun:
     outcomes = await asyncio.gather(*(audit(target) for _ in range(runs)))
-    graded: list[GradedAudit | IncompleteRun] = []
-    for outcome in outcomes:
-        if isinstance(outcome, DroppedRun):
-            return outcome
-        graded.append(outcome)
-    return graded
+    causes = {outcome.cause for outcome in outcomes if isinstance(outcome, DroppedRun)}
+    if NotRunCause.THROTTLED in causes:
+        return DroppedRun(NotRunCause.THROTTLED)
+    if causes:
+        return DroppedRun(NotRunCause.LAUNCH_FAILURE)
+    return [outcome for outcome in outcomes if not isinstance(outcome, DroppedRun)]
 
 
 def _assemble_target(

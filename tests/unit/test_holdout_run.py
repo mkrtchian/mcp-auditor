@@ -277,6 +277,27 @@ async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run()
     assert not_run.cause is NotRunCause.LAUNCH_FAILURE
 
 
+async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
+    sick, healthy = _entry(2), _entry(0)
+    sick_id, healthy_id = sick.target.cve_id, healthy.target.cve_id
+    report = _report(ProviderUsage(), ProviderUsage())
+    sick_outcomes: list[Outcome] = [
+        DroppedRun(NotRunCause.LAUNCH_FAILURE),
+        DroppedRun(NotRunCause.THROTTLED),
+        _graded(CVEStatus.DETECTED, report, aimed=True),
+    ]
+
+    result = await _run(
+        [sick, healthy],
+        _scripted({sick_id: sick_outcomes, healthy_id: _three_detections()}),
+    )
+
+    (not_run,) = result.not_run
+    assert not_run.cve_id == sick_id
+    assert not_run.reason == "throttled by the model provider past every retry"
+    assert not_run.cause is NotRunCause.THROTTLED
+
+
 async def test_a_drawn_target_with_a_tools_filter_refuses_before_any_check():
     target = dataclasses.replace(CVE_TARGETS[2], tools_filter=frozenset({"kubectl_generic"}))
     entry = HoldoutTarget(target=target, side=Side.PRE_CUTOFF)

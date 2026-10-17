@@ -14,6 +14,7 @@ from evals.ground_truth import (
 )
 from evals.metrics import VerdictMap, aggregate_verdicts
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
+from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.config import Settings
@@ -118,13 +119,14 @@ async def audit_connected(
 ) -> AuditReport:
     config = honeypot.config
     graph = build_graph(models.llm, AuditedServer(honeypot.client), judge_llm=models.judge_llm)
-    result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-        {
-            "target": f"uv {' '.join(config.args)}",
-            "test_budget": budget,
-            "attack_context": AttackContext(),
-            "chain_budget": config.chain_budget,
-            "max_chain_steps": config.max_chain_steps,
-        }
-    )
+    with one_audit():
+        result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
+            {
+                "target": f"uv {' '.join(config.args)}",
+                "test_budget": budget,
+                "attack_context": AttackContext(),
+                "chain_budget": config.chain_budget,
+                "max_chain_steps": config.max_chain_steps,
+            }
+        )
     return result["audit_report"]

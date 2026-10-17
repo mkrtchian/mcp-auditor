@@ -20,6 +20,7 @@ from evals.cve_session_model import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
 from evals.metrics import SessionThrottles, blocked_reasons, missed_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
+from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
@@ -81,13 +82,22 @@ class IncompleteAttempt:
     causes: frozenset[MissCause]
 
 
+@dataclass(frozen=True)
+class ThrottledAttempt:
+    """An audit whose report holds a step throttled past every retry, thrown away ungraded."""
+
+
 async def graded_despite_missed_steps[T](
-    target: CVETarget, attempt: Callable[[], Awaitable[T | IncompleteAttempt | None]]
+    target: CVETarget,
+    attempt: Callable[[], Awaitable[T | IncompleteAttempt | ThrottledAttempt | None]],
 ) -> T | None:
-    """The first complete attempt grades the run. None when every attempt missed a step."""
+    """The first complete attempt grades the run. None when every attempt missed a step, and at
+    once on a throttled attempt, as on a run skipped at launch."""
     causes: frozenset[MissCause] = frozenset()
     for number in range(1, INCOMPLETE_ATTEMPTS + 1):
         outcome = await attempt()
+        if isinstance(outcome, ThrottledAttempt):
+            return None
         if not isinstance(outcome, IncompleteAttempt):
             return outcome
         causes |= outcome.causes
@@ -118,7 +128,7 @@ async def attempt_once(
     throttles: SessionThrottles,
     places: Places,
     overrides: RunOverrides | None = None,
-) -> GradedAudit | IncompleteAttempt | None:
+) -> GradedAudit | IncompleteAttempt | ThrottledAttempt | None:
     # An unknown kept id or a planting_spec refusal is a configuration error: it is not
     # caught here, so it crashes the run rather than reading as a skip the gate cannot compare.
     records = kept_records(target.kept_places, places)
@@ -142,11 +152,21 @@ async def attempt_once(
         console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {exc}")
     if run is None:
         return None
+    if any(missed.cause is MissCause.PROVIDER_THROTTLED for missed in run.report.missed_steps):
+        console.print(
+            f"[yellow]{target.cve_id} run skipped:[/yellow]"
+            " throttled by the model provider past every retry"
+        )
+        return ThrottledAttempt()
+    return await _graded(run)
+
+
+async def _graded(run: RunToCheck) -> GradedAudit | IncompleteAttempt:
     # The replay launches the patched version, so it runs only once the vulnerable one has exited.
     grade = await _checked_grade(run)
     outcome = graded_or_incomplete(grade, run.report)
     if isinstance(outcome, RunGrade):
-        console.print(f"{target.cve_id}: {outcome.status}")
+        console.print(f"{run.target.cve_id}: {outcome.status}")
         return GradedAudit(outcome, run.report)
     return outcome
 
@@ -202,15 +222,16 @@ async def _audit(
                 judge_llm=auditor.judge_llm,
                 tools_filter=target.tools_filter,
             )
-            result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                {
-                    "target": f"{launch.command} {' '.join(launch.args)}",
-                    "test_budget": auditor.budget,
-                    "attack_context": AttackContext(),
-                    "chain_budget": chain_budget,
-                    "max_chain_steps": max_chain_steps,
-                }
-            )
+            with one_audit():
+                result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
+                    {
+                        "target": f"{launch.command} {' '.join(launch.args)}",
+                        "test_budget": auditor.budget,
+                        "attack_context": AttackContext(),
+                        "chain_budget": chain_budget,
+                        "max_chain_steps": max_chain_steps,
+                    }
+                )
             return result["audit_report"], recorder.exchanges
     except Exception as exc:
         raise LaunchError(str(exc)) from exc

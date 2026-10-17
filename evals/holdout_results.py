@@ -36,6 +36,13 @@ class NotRunCause(StrEnum):
     THROTTLED = "throttled"
 
 
+# The reasons of a target dropped during the run, one per cause, so the report counts them.
+DROPPED_RUN_REASONS = {
+    NotRunCause.LAUNCH_FAILURE: "a run failed to launch after retries",
+    NotRunCause.THROTTLED: "throttled by the model provider past every retry",
+}
+
+
 @dataclass(frozen=True)
 class NotRunTarget:
     cve_id: str

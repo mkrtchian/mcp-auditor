@@ -1,9 +1,16 @@
+import logging
 from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
 from evals.ground_truth import GroundTruth
-from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict, ProviderUsage
+from mcp_auditor.domain.models import (
+    AuditCategory,
+    AuditReport,
+    EvalVerdict,
+    MissCause,
+    ProviderUsage,
+)
 from mcp_auditor.domain.rendering import MISS_CAUSE_LABELS
 
 type KeyedVerdicts[K] = dict[K, EvalVerdict | None]
@@ -156,6 +163,29 @@ def missed_steps(report: AuditReport) -> list[str]:
         f"{MISS_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.step}, {missed.detail}"
         for missed in report.missed_steps
     ]
+
+
+class ThrottledAudit(Exception):
+    """An audit throttled by the model provider past every retry, which says nothing about
+    detection: the evals read it as infrastructure noise, not as a result."""
+
+
+def raise_if_throttled(report: AuditReport) -> None:
+    throttled = [
+        f"{missed.tool_name}: {missed.step}, {missed.detail}"
+        for missed in report.missed_steps
+        if missed.cause is MissCause.PROVIDER_THROTTLED
+    ]
+    if throttled:
+        raise ThrottledAudit(
+            "throttled by the model provider past every retry: " + "; ".join(throttled)
+        )
+
+
+def quiet_throttle_waits() -> None:
+    """Many audits in flight would print a line per wait, and each eval prints the throttle
+    total already."""
+    logging.getLogger("mcp_auditor.throttling").setLevel(logging.ERROR)
 
 
 @dataclass

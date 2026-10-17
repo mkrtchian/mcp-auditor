@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import logging
+from dataclasses import dataclass, field
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import openai
@@ -9,31 +10,55 @@ from pydantic import BaseModel, ValidationError
 
 from mcp_auditor.adapters.chat_model_factory import make_chat_model
 from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
+from mcp_auditor.adapters.llm_throttling import (
+    Throttle,
+    ThrottlePatience,
+    current_breaker,
+    throttle_of,
+)
 from mcp_auditor.adapters.llm_tool_binding import bind_schema_as_tool
 from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
 from mcp_auditor.adapters.throttling import counting_throttles, install_throttle_log_handler
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import ProviderUsage
-from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
 
 # Shared so the generator and the judge on one model fetch OpenRouter's listing once.
 _PROCESS_EFFORTS = OpenRouterEffortCatalog()
+_DEFAULT_PATIENCE = ThrottlePatience()
+_THROTTLING_LOGGER = logging.getLogger("mcp_auditor.throttling")
 
 
-def create_llm(settings: Settings, efforts: OpenRouterEffortCatalog = _PROCESS_EFFORTS) -> "LLM":
-    return _create_for_provider(settings, settings.resolve_model(), efforts)
+def create_llm(
+    settings: Settings,
+    efforts: OpenRouterEffortCatalog = _PROCESS_EFFORTS,
+    patience: ThrottlePatience = _DEFAULT_PATIENCE,
+) -> "LLM":
+    return _create_for_provider(settings, _ModelChoice(settings.resolve_model(), patience), efforts)
 
 
 def create_judge_llm(
-    settings: Settings, efforts: OpenRouterEffortCatalog = _PROCESS_EFFORTS
+    settings: Settings,
+    efforts: OpenRouterEffortCatalog = _PROCESS_EFFORTS,
+    patience: ThrottlePatience = _DEFAULT_PATIENCE,
 ) -> "LLM":
-    return _create_for_provider(settings, settings.resolve_judge_model(), efforts)
+    choice = _ModelChoice(settings.resolve_judge_model(), patience)
+    return _create_for_provider(settings, choice, efforts)
 
 
-def _create_for_provider(settings: Settings, model: str, efforts: OpenRouterEffortCatalog) -> "LLM":
+@dataclass(frozen=True)
+class _ModelChoice:
+    model: str
+    patience: ThrottlePatience
+
+
+def _create_for_provider(
+    settings: Settings, choice: _ModelChoice, efforts: OpenRouterEffortCatalog
+) -> "LLM":
     install_throttle_log_handler()
-    chat_model = make_chat_model(settings, model, efforts)
-    return LLM(chat_model, _STRUCTURED_OUTPUT[settings.provider], max_parse_attempts=3)
+    chat_model = make_chat_model(settings, choice.model, efforts)
+    structured_output = _STRUCTURED_OUTPUT[settings.provider]
+    return LLM(chat_model, structured_output, max_parse_attempts=3, patience=choice.patience)
 
 
 @dataclass(frozen=True)
@@ -77,29 +102,31 @@ class LLM:
         model: BaseChatModel,  # pyright: ignore[reportMissingTypeStubs]
         structured_output: StructuredOutput,
         max_parse_attempts: int,
+        patience: ThrottlePatience = _DEFAULT_PATIENCE,
     ):
         self._model = model
         self._structured_output = structured_output
         self._max_parse_attempts = max_parse_attempts
+        self._patience = patience
 
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
     ) -> tuple[T, ProviderUsage]:
         structured = self._bind(output_schema)
-        accumulated_usage = ProviderUsage()
+        state = _CallState()
         truncated_attempts = 0
         for _attempt in range(self._max_parse_attempts):
-            attempt = await self._attempt(structured, prompt, accumulated_usage)
-            accumulated_usage = accumulated_usage.add(attempt.usage)
+            attempt = await self._attempt(structured, prompt, state)
+            state.usage = state.usage.add(attempt.usage)
             if attempt.refusal is not None:
-                raise ProviderRefusal(attempt.refusal, accumulated_usage)
+                raise ProviderRefusal(attempt.refusal, state.usage)
             if attempt.truncated:
                 truncated_attempts += 1
                 continue
             output = _validated(attempt.parsed, output_schema)
             if output is not None:
-                return output, accumulated_usage
-        raise UnparseableOutput(self._max_parse_attempts, truncated_attempts, accumulated_usage)
+                return output, state.usage
+        raise UnparseableOutput(self._max_parse_attempts, truncated_attempts, state.usage)
 
     def _bind(self, output_schema: type[BaseModel]) -> Runnable[str, object]:
         method = self._structured_output.method
@@ -116,8 +143,38 @@ class LLM:
         )
 
     async def _attempt(
-        self, structured: Runnable[str, object], prompt: str, usage_so_far: ProviderUsage
+        self, structured: Runnable[str, object], prompt: str, state: "_CallState"
     ) -> "_Attempt":
+        # The 429s of the throttled iterations go straight into the call's usage, so they
+        # survive whatever ends the call: an answer, a cut, a refusal or ProviderThrottled.
+        while True:
+            _refuse_if_breaker_tripped(state)
+            outcome = await self._call_once(structured, prompt, state.usage)
+            if isinstance(outcome, _Attempt):
+                return outcome
+            state.usage = state.usage.add(ProviderUsage(throttled_requests=outcome.requests))
+            await self._wait_out(outcome, state)
+
+    async def _wait_out(self, throttled: "_Throttled", state: "_CallState") -> None:
+        delay = self._patience.next_delay(state.retries, throttled.throttle.retry_after)
+        if self._patience.exhausted(state.waited, delay):
+            breaker = current_breaker()
+            if breaker is not None:
+                breaker.trip(throttled.provider_message)
+            raise ProviderThrottled(
+                throttled.provider_message, state.waited, state.usage
+            ) from throttled.error
+        _THROTTLING_LOGGER.warning(
+            f"the model provider is throttling requests, waiting {delay:.0f} s "
+            f"(retry {state.retries + 1})"
+        )
+        await self._patience.sleep(delay)
+        state.waited += delay
+        state.retries += 1
+
+    async def _call_once(
+        self, structured: Runnable[str, object], prompt: str, usage_so_far: ProviderUsage
+    ) -> "_Attempt | _Throttled":
         with counting_throttles() as tally:
             try:
                 raw_response = await structured.ainvoke(prompt)
@@ -126,6 +183,9 @@ class LLM:
                 usage = _completion_usage(error.completion.usage, tally.requests)
                 return _Attempt(parsed=None, usage=usage, truncated=True, refusal=None)
             except Exception as error:
+                throttle = throttle_of(error)
+                if throttle is not None:
+                    return _Throttled(throttle, str(error), tally.requests, error)
                 refusal = refusal_from_error(error)
                 if refusal is None:
                     raise
@@ -149,12 +209,38 @@ class LLM:
         )
 
 
+@dataclass
+class _CallState:
+    usage: ProviderUsage = field(default_factory=ProviderUsage)
+    waited: float = 0.0
+    retries: int = 0
+
+
 @dataclass(frozen=True)
 class _Attempt:
     parsed: object
     usage: ProviderUsage
     truncated: bool
     refusal: str | None
+
+
+@dataclass(frozen=True)
+class _Throttled:
+    throttle: Throttle
+    provider_message: str
+    requests: int
+    error: Exception
+
+
+def _refuse_if_breaker_tripped(state: _CallState) -> None:
+    breaker = current_breaker()
+    if breaker is not None and breaker.tripped_by is not None:
+        raise ProviderThrottled(
+            "not sent, an earlier call of this audit was throttled past every retry: "
+            f"{breaker.tripped_by}",
+            state.waited,
+            state.usage,
+        )
 
 
 def _was_truncated(response_metadata: dict[str, Any]) -> bool:

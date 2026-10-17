@@ -76,7 +76,7 @@ def _render_summary_section(report: AuditReport) -> str:
     if usage.throttled_requests > 0:
         noun = "request" if usage.throttled_requests == 1 else "requests"
         lines.append(
-            f"**Throttled by the model provider**: {usage.throttled_requests} {noun}, retried"
+            f"**Throttled by the model provider**: {usage.throttled_requests} {noun} (HTTP 429)"
         )
     return "\n".join(lines)
 

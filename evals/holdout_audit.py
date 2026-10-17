@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from rich.console import Console
 
-from evals.cve_audit import IncompleteAttempt, describe_miss_causes
+from evals.cve_audit import IncompleteAttempt, ThrottledAttempt, describe_miss_causes
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVETarget
 from evals.holdout_results import NotRunCause
@@ -33,11 +33,14 @@ class DroppedRun:
 
 
 async def holdout_audit(
-    target: CVETarget, attempt: Callable[[], Awaitable[GradedAudit | IncompleteAttempt | None]]
+    target: CVETarget,
+    attempt: Callable[[], Awaitable[GradedAudit | IncompleteAttempt | ThrottledAttempt | None]],
 ) -> GradedAudit | IncompleteRun | DroppedRun:
     """One run of one target. A detection stands whatever step was missed. A missed step with no
     detection is a non-detection, not retried (unlike acceptance's keep-best-of-several). An
-    infra failure is retried, at most `HOLDOUT_INFRA_ATTEMPTS` calls in all."""
+    infra failure or a throttled attempt is retried, at most `HOLDOUT_INFRA_ATTEMPTS` calls in
+    all, and the run drops as throttled when any of them was."""
+    throttled = False
     for number in range(1, HOLDOUT_INFRA_ATTEMPTS + 1):
         outcome = await attempt()
         if isinstance(outcome, GradedAudit):
@@ -48,8 +51,15 @@ async def holdout_audit(
                 " not detected[/yellow]"
             )
             return IncompleteRun(outcome.report)
+        throttled = throttled or isinstance(outcome, ThrottledAttempt)
         console.print(
-            f"[yellow]{target.cve_id}: run failed to launch,"
+            f"[yellow]{target.cve_id}: {_failure(outcome)},"
             f" attempt {number}/{HOLDOUT_INFRA_ATTEMPTS}[/yellow]"
         )
-    return DroppedRun(NotRunCause.LAUNCH_FAILURE)
+    return DroppedRun(NotRunCause.THROTTLED if throttled else NotRunCause.LAUNCH_FAILURE)
+
+
+def _failure(outcome: ThrottledAttempt | None) -> str:
+    if outcome is None:
+        return "run failed to launch"
+    return "throttled by the model provider past every retry"

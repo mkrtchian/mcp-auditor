@@ -36,7 +36,7 @@ from evals.cve_survey import survey_all, survey_one
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
 from evals.export import export_cve_judged_cases
-from evals.metrics import SessionThrottles
+from evals.metrics import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.config import Settings, load_settings
 
 CVE_RUNS = 3
@@ -58,6 +58,7 @@ _NEXT_STEP = {
 
 
 def main() -> None:
+    quiet_throttle_waits()
     args = _parse_args()
     graded = _filter_by_cve(CVE_TARGETS, args.cve)
     tracked = _filter_by_cve(OUT_OF_SCOPE_CVES, args.cve)

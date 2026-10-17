@@ -1,17 +1,18 @@
 """The holdout report model and its markdown: the structural guarantee that a holdout run keeps
 no proof. The model carries no evidence, no judge input and no per-case verdict field."""
 
+import dataclasses
 from datetime import date
 
 from evals.census_draw import Side
 from evals.holdout_conditions import Cutoff
+from evals.holdout_not_run import NotRunLine
 from evals.holdout_report import (
     ConclusionLine,
     CutoffModel,
     HoldoutReport,
     IntervalModel,
     MethodLine,
-    NotRunLine,
     SideLine,
     TargetLine,
     build_report,
@@ -104,6 +105,35 @@ def test_render_markdown_shows_the_number_ladder_split_controls_and_cost():
     assert (
         "Incomplete runs (a step refused or unreadable): 1 (CVE-B)" in markdown
     )  # the count with the target it touches
+
+
+def test_the_not_run_section_counts_the_in_run_drops_per_cause_against_the_targets_launched():
+    pre_run = NotRunTarget("CVE-C", "dead on a version: exploit 0", NotRunCause.PRE_RUN_CHECK)
+    throttled = "throttled by the model provider past every retry"
+    launch_failure = "a run failed to launch after retries"
+    run = dataclasses.replace(
+        _run_result(),
+        not_run=(
+            pre_run,
+            NotRunTarget("CVE-D", throttled, NotRunCause.THROTTLED),
+            NotRunTarget("CVE-E", throttled, NotRunCause.THROTTLED),
+            NotRunTarget("CVE-F", launch_failure, NotRunCause.LAUNCH_FAILURE),
+        ),
+    )
+
+    markdown = render_markdown(build_report(run, RUN_CUTOFF))
+
+    assert f"- 2 of the 5 target(s) launched: {throttled}" in markdown
+    assert f"- 1 of the 5 target(s) launched: {launch_failure}" in markdown
+    assert "- CVE-D: " + throttled in markdown
+    assert "- CVE-C: dead on a version: exploit 0" in markdown
+    assert "launched: dead on a version" not in markdown
+
+
+def test_the_not_run_section_counts_nothing_when_no_target_dropped_during_the_run():
+    markdown = render_markdown(build_report(_run_result(), RUN_CUTOFF))
+
+    assert "target(s) launched" not in markdown
 
 
 def test_the_report_holds_no_proof_text_fields():
