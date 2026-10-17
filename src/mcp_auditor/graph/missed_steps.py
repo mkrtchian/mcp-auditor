@@ -10,7 +10,7 @@ from mcp_auditor.domain.models import (
     ProviderUsage,
     is_judge_step,
 )
-from mcp_auditor.domain.ports import LLMPort, ProviderRefusal
+from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, UnparseableOutput
 
 
 @dataclass(frozen=True)
@@ -43,10 +43,15 @@ async def call_model[T: BaseModel](
     try:
         return await llm.generate_structured(call.prompt, call.output_schema)
     except ProviderRefusal as refusal:
-        step = MissedStep(
-            tool_name=call.tool_name,
-            step=call.step,
-            cause=MissCause.PROVIDER_REFUSAL,
-            detail=refusal.provider_message,
+        return _missed(call, MissCause.PROVIDER_REFUSAL, refusal.provider_message, refusal.usage)
+    except UnparseableOutput as unreadable:
+        detail = (
+            f"no answer matched the expected format after {unreadable.attempts} attempts"
+            f" ({unreadable.truncated_attempts} cut at the output limit)"
         )
-        return Missed(missed_step=step, usage=refusal.usage, is_judge=is_judge_step(call.step))
+        return _missed(call, MissCause.UNREADABLE_ANSWER, detail, unreadable.usage)
+
+
+def _missed(call: ModelCall[Any], cause: MissCause, detail: str, usage: ProviderUsage) -> Missed:
+    step = MissedStep(tool_name=call.tool_name, step=call.step, cause=cause, detail=detail)
+    return Missed(missed_step=step, usage=usage, is_judge=is_judge_step(call.step))

@@ -4,16 +4,19 @@ from collections.abc import Sequence
 from pydantic import BaseModel
 
 from mcp_auditor.domain.models import ProviderUsage
-from mcp_auditor.domain.ports import ProviderRefusal
+from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 
-_FAKE_USAGE = ProviderUsage(input_tokens=10, output_tokens=5)
+FAKE_USAGE = ProviderUsage(input_tokens=10, output_tokens=5)
+
+type ModelFailure = ProviderRefusal | UnparseableOutput
 
 
 class FakeLLM:
-    """Pops one scripted response per call. A `ProviderRefusal` in the script is raised."""
+    """Pops one scripted response per call. A `ProviderRefusal` or an `UnparseableOutput` in the
+    script is raised."""
 
-    def __init__(self, responses: Sequence[BaseModel | ProviderRefusal]):
-        self._responses: deque[BaseModel | ProviderRefusal] = deque(responses)
+    def __init__(self, responses: Sequence[BaseModel | ModelFailure]):
+        self._responses: deque[BaseModel | ModelFailure] = deque(responses)
         self.total_usage = ProviderUsage()
         self.prompts: list[str] = []
 
@@ -22,10 +25,10 @@ class FakeLLM:
     ) -> tuple[T, ProviderUsage]:
         self.prompts.append(prompt)
         response = self._responses.popleft()
-        if isinstance(response, ProviderRefusal):
+        if isinstance(response, ProviderRefusal | UnparseableOutput):
             self.total_usage = self.total_usage.add(response.usage)
             raise response
         if not isinstance(response, output_schema):
             raise TypeError(f"Expected {output_schema.__name__}, got {type(response).__name__}")
-        self.total_usage = self.total_usage.add(_FAKE_USAGE)
-        return response, _FAKE_USAGE  # type: ignore[return-value]
+        self.total_usage = self.total_usage.add(FAKE_USAGE)
+        return response, FAKE_USAGE  # type: ignore[return-value]

@@ -17,7 +17,7 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolResponse,
 )
-from mcp_auditor.domain.ports import ProviderRefusal
+from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 from tests.fakes import FakeMCPClient
 
 
@@ -161,3 +161,7 @@ def a_chain_audit_state(
 
 def a_provider_refusal() -> ProviderRefusal:
     return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
+
+
+def an_unreadable_answer() -> UnparseableOutput:
+    return UnparseableOutput(3, 1, ProviderUsage(input_tokens=40, output_tokens=12))

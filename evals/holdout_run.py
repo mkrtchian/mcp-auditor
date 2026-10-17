@@ -2,8 +2,8 @@
 conditions, keep no per-case trace, and assemble the per-target and whole-run results.
 
 A sibling of the acceptance gated session (`cve_session`): no gate, no baseline, no judged-case
-export, the opposite refusal policy (`holdout_audit`). The targets are passed in, never read from
-`HOLDOUT_TARGETS` here, so the tests hand it crafted ones. The heavy I/O is grouped in
+export, the opposite missed-step policy (`holdout_audit`). The targets are passed in, never read
+from `HOLDOUT_TARGETS` here, so the tests hand it crafted ones. The heavy I/O is grouped in
 `HoldoutDeps`, faked by the unit tests and built from the live settings by `default_deps`.
 """
 

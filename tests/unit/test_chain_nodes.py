@@ -213,6 +213,21 @@ class TestMakeObserveStep:
         then.refused_step_recorded(result, AuditStep.CHAIN_STEP_OBSERVATION)
         assert route_after_observe({**state, **result}) == "judge_chain"
 
+    @pytest.mark.asyncio
+    async def test_an_unreadable_observation_sends_the_chain_to_its_judgment(self):
+        unreadable = given.an_unreadable_answer()
+        node = make_observe_step(FakeLLM([unreadable]))
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[given.a_chain_step()],
+        )
+
+        result = await node(state)
+
+        then.unreadable_step_recorded(result, AuditStep.CHAIN_STEP_OBSERVATION)
+        assert result["provider_usage"] == [unreadable.usage]
+        assert route_after_observe({**state, **result}) == "judge_chain"
+
 
 class TestMakePlanStep:
     @pytest.mark.asyncio

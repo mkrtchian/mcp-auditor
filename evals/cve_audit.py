@@ -28,8 +28,9 @@ from mcp_auditor.graph.builder import build_graph
 
 console = Console()
 
-# A policy refusal stops a step, so the run says nothing of detection. The generated prompts
-# differ from one audit to the next, so a new attempt usually passes the provider's filter.
+# A missed step (a policy refusal or an unreadable answer) leaves the run saying nothing of
+# detection. The generated prompts differ from one audit to the next, so a new attempt usually
+# passes the provider's filter and gets a readable answer.
 INCOMPLETE_ATTEMPTS = 3
 
 
@@ -167,8 +168,8 @@ async def _checked_grade(
 
 
 def graded_or_incomplete(grade: RunGrade, report: AuditReport) -> RunGrade | IncompleteAttempt:
-    """A detection carries its own proof and stands whatever step was refused. A run that did
-    not detect with a refused step says nothing of detection, the struck credit included."""
+    """A detection carries its own proof and stands whatever step was missed. A run that did
+    not detect with a missed step says nothing of detection, the struck credit included."""
     if report.missed_steps and grade.status not in DETECTION_RUNGS:
         return IncompleteAttempt(report, frozenset(missed.cause for missed in report.missed_steps))
     return grade

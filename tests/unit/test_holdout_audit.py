@@ -37,10 +37,19 @@ async def test_a_detection_with_a_refused_step_passes_through(monkeypatch: pytes
     assert attempt.calls == 1
 
 
-async def test_a_refused_attempt_is_not_retried(monkeypatch: pytest.MonkeyPatch):
-    output = _captured_console(monkeypatch)
+@pytest.mark.parametrize(
+    "causes",
+    [
+        frozenset({MissCause.UNREADABLE_ANSWER}),
+        frozenset({MissCause.PROVIDER_REFUSAL}),
+        frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER}),
+    ],
+)
+async def test_an_incomplete_attempt_is_not_retried(
+    monkeypatch: pytest.MonkeyPatch, causes: frozenset[MissCause]
+):
+    _captured_console(monkeypatch)
     report = grammar.a_report()
-    causes = frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER})
     attempt = _ScriptedAttempts([IncompleteAttempt(report, causes)])
 
     outcome = await holdout_audit(TARGET, attempt)
@@ -48,10 +57,31 @@ async def test_a_refused_attempt_is_not_retried(monkeypatch: pytest.MonkeyPatch)
     assert isinstance(outcome, IncompleteRun)
     assert outcome.report is report
     assert attempt.calls == 1
+
+
+async def test_an_attempt_missing_steps_names_their_causes(monkeypatch: pytest.MonkeyPatch):
+    output = _captured_console(monkeypatch)
+    causes = frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER})
+
+    await holdout_audit(TARGET, _ScriptedAttempts([IncompleteAttempt(grammar.a_report(), causes)]))
+
     assert (
         f"{TARGET.cve_id}: refused by the model provider and unreadable model answer,"
         " counted as not detected"
     ) in output.getvalue()
+
+
+async def test_an_infra_failure_is_retried_and_a_later_graded_attempt_stands(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _captured_console(monkeypatch)
+    graded = GradedAudit(a_detected_grade(), grammar.a_report())
+    attempt = _ScriptedAttempts([None, graded])
+
+    outcome = await holdout_audit(TARGET, attempt)
+
+    assert outcome is graded
+    assert attempt.calls == 2
 
 
 async def test_an_infra_failure_is_retried_twice_then_gives_up(monkeypatch: pytest.MonkeyPatch):

@@ -1,7 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import AttackChain, ProviderUsage, ToolReport
-from mcp_auditor.domain.models import AuditStep, MissedStep
+from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM
 
@@ -87,6 +87,16 @@ def audit_report_has_missed_steps(
     result: dict[str, Any], expected: list[tuple[str, AuditStep]]
 ) -> None:
     _are_missed_steps(result["audit_report"].missed_steps, expected)
+
+
+def audit_report_misses_one_step(
+    result: dict[str, Any], tool_name: str, step: AuditStep, cause: MissCause
+) -> None:
+    report = result["audit_report"]
+    assert [(missed.tool_name, missed.step, missed.cause) for missed in report.missed_steps] == [
+        (tool_name, step, cause)
+    ]
+    assert not report.is_complete
 
 
 def state_has_missed_steps(result: dict[str, Any], expected: list[tuple[str, AuditStep]]) -> None:

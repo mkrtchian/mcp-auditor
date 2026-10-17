@@ -4,6 +4,7 @@ import tests.unit.support.test_cli_given as given
 from mcp_auditor.audit import CIOptions
 from mcp_auditor.cli import ci_exit_code, cli, parse_tools_filter
 from mcp_auditor.domain import Severity
+from mcp_auditor.domain.models import MissCause
 
 CI = CIOptions(enabled=True, severity_threshold=Severity.MEDIUM)
 
@@ -84,7 +85,12 @@ def test_a_plain_relay_steering_the_docker_client_is_refused():
 
 class TestCIExitCode:
     def test_an_incomplete_audit_without_findings_exits_3(self):
-        report = given.a_report(refused=True)
+        report = given.a_report(missed=MissCause.PROVIDER_REFUSAL)
+
+        assert ci_exit_code(report, CI) == 3
+
+    def test_an_audit_with_an_unreadable_answer_exits_3(self):
+        report = given.a_report(missed=MissCause.UNREADABLE_ANSWER)
 
         assert ci_exit_code(report, CI) == 3
 
@@ -99,7 +105,7 @@ class TestCIExitCode:
         assert ci_exit_code(report, CI) == 1
 
     def test_findings_take_precedence_over_an_incomplete_audit(self):
-        report = given.a_report(finding=Severity.HIGH, refused=True)
+        report = given.a_report(finding=Severity.HIGH, missed=MissCause.PROVIDER_REFUSAL)
 
         assert ci_exit_code(report, CI) == 1
 
@@ -114,6 +120,6 @@ class TestCIExitCode:
         assert ci_exit_code(report, CI) == 0
 
     def test_an_incomplete_audit_exits_0_outside_ci(self):
-        report = given.a_report(refused=True)
+        report = given.a_report(missed=MissCause.PROVIDER_REFUSAL)
 
         assert ci_exit_code(report, CIOptions(enabled=False)) == 0

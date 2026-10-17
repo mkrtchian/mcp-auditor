@@ -105,19 +105,22 @@ async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.
     assert attempt.calls == 1
 
 
-def test_a_detection_is_kept_whatever_step_the_provider_refused():
-    outcome = graded_or_incomplete(a_detected_grade(), _refused(grammar.a_report()))
+@pytest.mark.parametrize("cause", list(MissCause))
+def test_a_detection_is_kept_whatever_step_was_missed(cause: MissCause):
+    outcome = graded_or_incomplete(a_detected_grade(), _missing_a_step(grammar.a_report(), cause))
 
     assert isinstance(outcome, RunGrade)
     assert outcome.status == CVEStatus.DETECTED
 
 
-def test_a_miss_with_a_refused_step_is_not_graded():
+@pytest.mark.parametrize("cause", list(MissCause))
+def test_a_miss_with_a_missed_step_is_not_graded_and_carries_its_cause(cause: MissCause):
     missed = grammar.a_missed_run(MissClass.AIMED_NO_PROOF)
 
-    outcome = graded_or_incomplete(missed, _refused(grammar.a_report()))
+    outcome = graded_or_incomplete(missed, _missing_a_step(grammar.a_report(), cause))
 
     assert isinstance(outcome, IncompleteAttempt)
+    assert outcome.causes == {cause}
 
 
 def test_a_miss_with_no_refused_step_is_graded_a_miss():
@@ -138,7 +141,9 @@ def test_a_struck_only_credit_with_a_refused_step_reads_as_refused():
         struck_places=frozenset({grammar.PLACE}),
     )
 
-    outcome = graded_or_incomplete(struck, _refused(grammar.a_report()))
+    outcome = graded_or_incomplete(
+        struck, _missing_a_step(grammar.a_report(), MissCause.PROVIDER_REFUSAL)
+    )
 
     assert isinstance(outcome, IncompleteAttempt)
 
@@ -273,14 +278,11 @@ def _replay_returning(check: CreditCheck) -> Callable[[RunToCheck], Awaitable[Cr
     return replay
 
 
-def _refused(report: AuditReport) -> AuditReport:
-    refusal = MissedStep(
-        tool_name="git_init",
-        step=AuditStep.CHAIN_PLANNING,
-        cause=MissCause.PROVIDER_REFUSAL,
-        detail="Invalid prompt",
+def _missing_a_step(report: AuditReport, cause: MissCause) -> AuditReport:
+    missed = MissedStep(
+        tool_name="git_init", step=AuditStep.CHAIN_PLANNING, cause=cause, detail="Invalid prompt"
     )
-    return report.model_copy(update={"missed_steps": [refusal]})
+    return report.model_copy(update={"missed_steps": [missed]})
 
 
 class _ScriptedAttempts[T]:

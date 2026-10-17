@@ -1,5 +1,5 @@
-"""The holdout refusal and error policy, opposite to acceptance: a refused run stands as a
-non-detection and is never retried, only an infra failure is retried."""
+"""The holdout missed-step and error policy, opposite to acceptance: a run with a missed step
+stands as a non-detection and is never retried, only an infra failure is retried."""
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -27,7 +27,7 @@ class IncompleteRun:
 async def holdout_audit(
     target: CVETarget, attempt: Callable[[], Awaitable[GradedAudit | IncompleteAttempt | None]]
 ) -> GradedAudit | IncompleteRun | None:
-    """One run of one target. A detection stands whatever step was refused. A refusal with no
+    """One run of one target. A detection stands whatever step was missed. A missed step with no
     detection is a non-detection, not retried (unlike acceptance's keep-best-of-several). An
     infra failure is retried, at most `HOLDOUT_INFRA_ATTEMPTS` calls in all."""
     for number in range(1, HOLDOUT_INFRA_ATTEMPTS + 1):

@@ -18,10 +18,12 @@ from mcp_auditor.domain import (
     ToolResponse,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.ports import ProviderRefusal
+from mcp_auditor.domain.models import MissCause
+from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
+from tests.fakes.llm import ModelFailure
 
 
 def a_tool(
@@ -80,13 +82,15 @@ def a_fake_dry_run_llm_whose_batch_stays_short(budget: int) -> FakeLLM:
     return FakeLLM([short, short, a_complete_batch(1)])
 
 
-def a_fake_llm_refusing_the_first_of_two_judgments() -> FakeLLM:
-    return FakeLLM([a_complete_batch(2), a_provider_refusal(), a_judgment(), AttackContext()])
+def a_fake_llm_failing_the_first_of_two_judgments(failure: ModelFailure) -> FakeLLM:
+    return FakeLLM([a_complete_batch(2), failure, a_judgment(), AttackContext()])
 
 
-def a_fake_llm_refusing_the_first_tool_generation(cases_per_tool: int) -> FakeLLM:
+def a_fake_llm_failing_the_first_tool_generation(
+    failure: ModelFailure, cases_per_tool: int
+) -> FakeLLM:
     judgments = [a_judgment() for _ in range(cases_per_tool)]
-    first_tool = [a_provider_refusal(), AttackContext()]
+    first_tool = [failure, AttackContext()]
     second_tool = [a_complete_batch(cases_per_tool), *judgments, AttackContext()]
     return FakeLLM([*first_tool, *second_tool])
 
@@ -95,10 +99,10 @@ def a_fake_llm_refusing_the_chain_planning() -> FakeLLM:
     return FakeLLM([a_complete_batch(1), a_judgment(), a_provider_refusal(), AttackContext()])
 
 
-def a_fake_llm_refusing_the_first_chain_observation() -> FakeLLM:
+def a_fake_llm_failing_the_first_chain_observation(failure: ModelFailure) -> FakeLLM:
     chain_plan = ChainPlanBatch(chains=[a_chain_goal("first chain"), a_chain_goal("second chain")])
     stop_obs = StepObservation(observation="dead end", should_continue=False)
-    first_chain = [a_provider_refusal(), a_judgment()]
+    first_chain = [failure, a_judgment()]
     second_chain = [stop_obs, a_judgment()]
     single_step = [a_complete_batch(1), a_judgment()]
     return FakeLLM([*single_step, chain_plan, *first_chain, *second_chain, AttackContext()])
@@ -113,6 +117,16 @@ def a_fake_llm_refusing_the_chain_step_planning() -> FakeLLM:
 
 def a_provider_refusal() -> ProviderRefusal:
     return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
+
+
+def an_unreadable_answer() -> UnparseableOutput:
+    return UnparseableOutput(3, 1, ProviderUsage(input_tokens=40, output_tokens=12))
+
+
+MODEL_FAILURES = {
+    MissCause.PROVIDER_REFUSAL: a_provider_refusal,
+    MissCause.UNREADABLE_ANSWER: an_unreadable_answer,
+}
 
 
 class PerRoleBillingLLM(FakeLLM):

@@ -19,6 +19,7 @@ class UnparseableOutput(ValueError):
 
     def __init__(self, attempts: int, truncated_attempts: int, usage: ProviderUsage):
         super().__init__(f"LLM returned unparseable output after {attempts} attempts")
+        self.attempts = attempts
         self.truncated_attempts = truncated_attempts
         self.usage = usage
 

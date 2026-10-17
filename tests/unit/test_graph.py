@@ -4,9 +4,10 @@ from langgraph.checkpoint.memory import MemorySaver  # type: ignore[import-untyp
 import tests.unit.support.test_graph_given as given
 import tests.unit.support.test_graph_then as then
 from mcp_auditor.domain import AttackContext
-from mcp_auditor.domain.models import AuditStep
+from mcp_auditor.domain.models import AuditStep, MissCause
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
+from tests.fakes.llm import FAKE_USAGE
 
 
 @pytest.mark.asyncio
@@ -225,8 +226,10 @@ async def test_a_dry_run_carries_the_coverage_gap_to_its_tool_report():
 
 
 @pytest.mark.asyncio
-async def test_a_refused_judgment_does_not_stop_the_audit():
-    fake_llm = given.a_fake_llm_refusing_the_first_of_two_judgments()
+@pytest.mark.parametrize("cause", list(MissCause))
+async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissCause):
+    failure = given.MODEL_FAILURES[cause]()
+    fake_llm = given.a_fake_llm_failing_the_first_of_two_judgments(failure)
     graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
     state = given.an_initial_state(test_budget=2)
 
@@ -234,7 +237,9 @@ async def test_a_refused_judgment_does_not_stop_the_audit():
 
     report = then.tool_report_at(result, 0)
     assert [case.eval_result is None for case in report.cases] == [True, False]
-    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.JUDGMENT)])
+    then.audit_report_misses_one_step(result, "get_user", AuditStep.JUDGMENT, cause)
+    assert result["audit_report"].provider_usage == fake_llm.total_usage
+    assert result["audit_report"].judge_usage == failure.usage.add(FAKE_USAGE)
 
 
 @pytest.mark.asyncio
@@ -258,9 +263,13 @@ async def test_the_report_splits_judge_usage_from_generator_usage():
 
 
 @pytest.mark.asyncio
-async def test_a_refused_first_generation_leaves_its_tool_untested_and_audits_the_next():
+@pytest.mark.parametrize("cause", list(MissCause))
+async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the_next(
+    cause: MissCause,
+):
     tools = [given.a_tool(name="get_user"), given.a_tool(name="list_users")]
-    fake_llm = given.a_fake_llm_refusing_the_first_tool_generation(cases_per_tool=2)
+    failure = given.MODEL_FAILURES[cause]()
+    fake_llm = given.a_fake_llm_failing_the_first_tool_generation(failure, cases_per_tool=2)
     graph = given.a_graph(fake_llm, FakeMCPClient(tools))
     state = given.an_initial_state(test_budget=2)
 
@@ -270,7 +279,7 @@ async def test_a_refused_first_generation_leaves_its_tool_untested_and_audits_th
     then.report_has_cases(first, 0)
     then.report_has_a_gap_of(first, requested=2, received=0)
     then.report_has_cases(then.tool_report_at(result, 1), 2)
-    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
+    then.audit_report_misses_one_step(result, "get_user", AuditStep.TEST_GENERATION, cause)
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 
@@ -299,8 +308,9 @@ async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
 
 
 @pytest.mark.asyncio
-async def test_a_refused_observation_judges_its_chain_and_the_next_chain_runs():
-    fake_llm = given.a_fake_llm_refusing_the_first_chain_observation()
+@pytest.mark.parametrize("cause", list(MissCause))
+async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(cause: MissCause):
+    fake_llm = given.a_fake_llm_failing_the_first_chain_observation(given.MODEL_FAILURES[cause]())
     graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
     state = given.an_initial_state(test_budget=1, chain_budget=2)
 
@@ -310,7 +320,7 @@ async def test_a_refused_observation_judges_its_chain_and_the_next_chain_runs():
     then.report_has_chains(report, 2)
     then.chain_has_eval_result(report.chains[0])
     then.chain_has_eval_result(report.chains[1])
-    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.CHAIN_STEP_OBSERVATION)])
+    then.audit_report_misses_one_step(result, "get_user", AuditStep.CHAIN_STEP_OBSERVATION, cause)
 
 
 @pytest.mark.asyncio

@@ -34,6 +34,18 @@ def chain_eval_result_is(
     assert chain.eval_result.verdict == verdict
 
 
+def unreadable_step_recorded(result: dict[str, Any], step: AuditStep) -> None:
+    assert result["missed_steps"] == [
+        MissedStep(
+            tool_name="file_manager",
+            step=step,
+            cause=MissCause.UNREADABLE_ANSWER,
+            detail="no answer matched the expected format after 3 attempts"
+            " (1 cut at the output limit)",
+        )
+    ]
+
+
 def refused_step_recorded(result: dict[str, Any], step: AuditStep) -> None:
     assert result["missed_steps"] == [
         MissedStep(
