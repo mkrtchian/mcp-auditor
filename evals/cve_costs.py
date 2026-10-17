@@ -51,6 +51,10 @@ def target_costs(
     ]
 
 
+def _priced(usage: ProviderUsage, prices: Prices | None) -> float | None:
+    return None if prices is None else call_cost(usage, prices)
+
+
 @dataclass(frozen=True)
 class CostPricing:
     generator: Prices
@@ -59,10 +63,6 @@ class CostPricing:
 
     def costs(self, by_target: Mapping[str, PhaseUsage]) -> list[TargetCost]:
         return target_costs(by_target, self.generator, self.judge)
-
-
-def _priced(usage: ProviderUsage, prices: Prices | None) -> float | None:
-    return None if prices is None else call_cost(usage, prices)
 
 
 def render_cost_table(costs: Sequence[TargetCost]) -> list[str]:
