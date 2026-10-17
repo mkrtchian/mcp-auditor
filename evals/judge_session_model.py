@@ -34,6 +34,7 @@ class JudgeHarness:
     declarations: Callable[[], tuple[list[DeclaredFlip], bool]]
     clock: Callable[[], datetime]
     on_replays: Callable[[int], None]
+    throttled_judgments: Callable[[], list[str]]
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,7 @@ class JudgeSessionResult:
     gate: JudgeGateResult
     baseline: JudgeBaseline | None
     replay_observations: dict[str, list[Observation]]
+    throttled_judgments: list[str]
     declarations: ActiveDeclarations
     written: JudgeBaseline | None
     recording_refused: list[str]

@@ -2,6 +2,7 @@
 and the recording, with the judge, git, the declarations and the clock injected."""
 
 import asyncio
+from dataclasses import replace
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -56,6 +57,7 @@ async def run_judge_gate(
         gate=gate,
         baseline=session.baseline,
         replay_observations=replay_observations,
+        throttled_judgments=list(harness.throttled_judgments()),
         declarations=session.declarations,
         written=written,
         recording_refused=refused,
@@ -142,25 +144,46 @@ async def _gate(
     baseline = session.baseline
     mismatches = (
         judge_condition_mismatches(baseline.conditions, session.conditions) if baseline else []
-    )
-    # No baseline, an exploratory one or --ungated: the floors alone (ADR 025).
-    paired = baseline is not None and baseline.status == BaselineStatus.CONFIRMED
+    ) + _throttle_mismatches(session)
     observations: dict[str, list[Observation]] = {}
-    if baseline is not None and paired and not mismatches:
+    if baseline is not None and _paired(session) and not mismatches:
         observations = await replay_flips(_replay_context(session), baseline, runs)
-    gate_input = JudgeGateInput(
-        mode=GateMode.PAIRED if paired else GateMode.FLOORS_ONLY,
+        # A throttled replay reads as reproduced, so it would turn the gate red.
+        mismatches = _throttle_mismatches(session)
+    gate_input = _gate_input(session, runs, observations)
+    return judge_case_gate(replace(gate_input, mismatches=mismatches)), observations
+
+
+def _throttle_mismatches(session: JudgeSession) -> list[str]:
+    throttled = len(session.harness.throttled_judgments())
+    if not throttled:
+        return []
+    return [
+        f"{throttled} judgment(s) throttled by the model provider past every retry:"
+        " the run cannot be compared"
+    ]
+
+
+def _gate_input(
+    session: JudgeSession, runs: CaseRuns, observations: dict[str, list[Observation]]
+) -> JudgeGateInput:
+    return JudgeGateInput(
+        mode=GateMode.PAIRED if _paired(session) else GateMode.FLOORS_ONLY,
         runs=runs,
         ground_truth=session.ground_truth,
-        baseline=baseline,
+        baseline=session.baseline,
         replays={
             case: reproductions(replays, session.ground_truth[case])
             for case, replays in observations.items()
         },
         declared=session.declarations.keys,
-        mismatches=mismatches,
     )
-    return judge_case_gate(gate_input), observations
+
+
+def _paired(session: JudgeSession) -> bool:
+    """No baseline, an exploratory one or --ungated: the floors alone (ADR 025)."""
+    baseline = session.baseline
+    return baseline is not None and baseline.status == BaselineStatus.CONFIRMED
 
 
 def _replay_context(session: JudgeSession) -> ReplayContext:

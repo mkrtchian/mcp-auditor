@@ -3,6 +3,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -38,29 +39,38 @@ __all__ = [
 
 FAIL, PASS = EvalVerdict.FAIL, EvalVerdict.PASS
 BASE = "0123456789abcdef0123456789abcdef01234567"
+THROTTLED_JUDGMENT: Literal["throttled"] = "throttled"
+
+type ScriptedVerdict = EvalVerdict | Literal["throttled"] | None
 
 
 @dataclass
 class ScriptedJudge:
-    """Plays each case's script in call order, then judges it correctly."""
+    """Plays each case's script in call order, then judges it correctly. A throttled judgment
+    gives no verdict and is recorded, as the composition root's tracking does."""
 
-    scripts: dict[str, list[EvalVerdict | None]] = field(
-        default_factory=dict[str, list[EvalVerdict | None]]
+    scripts: dict[str, list[ScriptedVerdict]] = field(
+        default_factory=dict[str, list[ScriptedVerdict]]
     )
     calls: Counter[str] = field(default_factory=Counter[str])
+    throttled: list[str] = field(default_factory=list[str])
 
     async def __call__(self, case: JudgeCase) -> EvalVerdict | None:
         self.calls[case.id] += 1
         script = self.scripts.get(case.id)
-        if script:
-            return script.pop(0)
-        return a_ground_truth().get(case.id, PASS)
+        if not script:
+            return a_ground_truth().get(case.id, PASS)
+        verdict = script.pop(0)
+        if verdict == THROTTLED_JUDGMENT:
+            self.throttled.append(case.id)
+            return None
+        return verdict
 
     def total_calls(self) -> int:
         return sum(self.calls.values())
 
 
-def a_judge_flipping(case_id: str, *verdicts: EvalVerdict | None) -> ScriptedJudge:
+def a_judge_flipping(case_id: str, *verdicts: ScriptedVerdict) -> ScriptedJudge:
     return ScriptedJudge({case_id: list(verdicts)})
 
 
@@ -90,6 +100,7 @@ def a_harness(
         declarations=lambda: (declarations or [], False),
         clock=lambda: datetime(2026, 9, 28, 14, tzinfo=UTC),
         on_replays=on_replays,
+        throttled_judgments=lambda: judge.throttled,
     )
 
 

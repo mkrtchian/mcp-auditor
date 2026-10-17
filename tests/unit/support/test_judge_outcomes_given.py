@@ -64,6 +64,7 @@ def a_result(
         gate=_a_gate(cases),
         baseline=a_baseline(runs=baseline_runs) if with_baseline else None,
         replay_observations=replay_observations or {},
+        throttled_judgments=[],
         declarations=ActiveDeclarations(),
         written=None,
         recording_refused=[],

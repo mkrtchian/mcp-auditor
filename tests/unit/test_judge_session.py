@@ -300,6 +300,48 @@ async def test_other_conditions_than_the_baseline_are_not_comparable_and_replay_
     assert result.exit_code == 3
 
 
+def _throttle_mismatch(count: int) -> str:
+    return (
+        f"{count} judgment(s) throttled by the model provider past every retry:"
+        " the run cannot be compared"
+    )
+
+
+@pytest.mark.parametrize("ungated", [False, True])
+async def test_a_throttled_run_judgment_is_not_comparable_and_replays_nothing(
+    tmp_path: Path, ungated: bool
+):
+    judge = given.a_judge_flipping(PASS_ID, given.THROTTLED_JUDGMENT)
+
+    result = await run_judge_gate(
+        given.options(ungated=ungated),
+        given.a_judge_fixture(),
+        given.a_harness(judge, given.a_baseline_file(tmp_path)),
+    )
+
+    assert judge.calls[PASS_ID] == 3
+    assert result.replay_observations == {}
+    assert result.gate.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.gate.reasons == [_throttle_mismatch(1)]
+    assert result.throttled_judgments == [PASS_ID]
+    assert result.exit_code == 3
+
+
+async def test_a_throttled_replay_cannot_read_as_a_reproduced_flip(tmp_path: Path):
+    judge = given.a_judge_flipping(PASS_ID, FAIL, PASS, PASS, *(given.THROTTLED_JUDGMENT,) * 4)
+
+    result = await run_judge_gate(
+        given.options(),
+        given.a_judge_fixture(),
+        given.a_harness(judge, given.a_baseline_file(tmp_path)),
+    )
+
+    assert result.replay_observations == {PASS_ID: [Observation.UNCOVERED] * 4}
+    assert result.gate.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.gate.reasons == [_throttle_mismatch(4)]
+    assert result.exit_code == 3
+
+
 async def test_a_first_recording_writes_an_exploratory_baseline(tmp_path: Path):
     path = tmp_path / "judge_isolation.json"
 

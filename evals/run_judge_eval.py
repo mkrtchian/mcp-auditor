@@ -31,6 +31,7 @@ from evals.judge_session import NOT_COMPARABLE_EXIT, run_judge_gate
 from evals.judge_session_model import JudgeHarness, JudgeOptions, JudgeSessionResult
 from evals.metrics import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.llm import create_judge_llm
+from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import (
     AuditPayload,
@@ -40,7 +41,12 @@ from mcp_auditor.domain.models import (
     TestCase,
     ToolDefinition,
 )
-from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.ports import (
+    LLMPort,
+    ProviderRefusal,
+    ProviderThrottled,
+    UnparseableOutput,
+)
 from mcp_auditor.graph.prompts import build_judge_prompt
 
 FIXTURES_PATH = Path(__file__).resolve().parent / "fixtures" / "judge_cases.json"
@@ -72,7 +78,10 @@ def _evaluate(args: argparse.Namespace) -> int:
     with Progress(console=display.console) as progress:
         llm = create_judge_llm(options.settings)
         tracking = JudgeCallTracking(llm, progress, options.runs * len(fixture.cases))
-        result = asyncio.run(run_judge_gate(options, fixture, _harness(tracking)))
+        # The session is one audit: once a judgment is throttled past every retry the run is
+        # not comparable, so the later judgments are not sent.
+        with one_audit():
+            result = asyncio.run(run_judge_gate(options, fixture, _harness(tracking)))
     report = _build_report(result, fixture) | {
         "concurrency": options.concurrency,
         "throttled_requests": tracking.throttles.requests,
@@ -102,22 +111,29 @@ def _harness(tracking: "JudgeCallTracking") -> JudgeHarness:
         declarations=lambda: declarations_of_head(Suite.JUDGE),
         clock=lambda: datetime.now(UTC),
         on_replays=tracking.on_replays,
+        throttled_judgments=lambda: tracking.throttled_cases,
     )
 
 
 class JudgeCallTracking:
     """Advances the progress of the judge calls and counts their throttled requests, warning
-    once, at the first one: at 30 calls in flight, a line per throttled call would flood."""
+    once, at the first one: at 30 calls in flight, a line per throttled call would flood. A
+    judgment throttled past every retry gives no verdict and is recorded."""
 
     def __init__(self, llm: LLMPort, progress: Progress, run_calls: int) -> None:
         self.throttles = SessionThrottles()
+        self.throttled_cases: list[str] = []
         self._llm = llm
         self._progress = progress
         self._task = progress.add_task("Judging", total=run_calls)
         self._warned = False
 
     async def judge(self, case: JudgeCase) -> EvalVerdict | None:
-        verdict, usage = await judge_one_case(self._llm, case)
+        try:
+            verdict, usage = await judge_one_case(self._llm, case)
+        except ProviderThrottled as throttled:
+            self.throttled_cases.append(case.id)
+            verdict, usage = None, throttled.usage
         if self.throttles.count_usage(usage) > 0 and not self._warned:
             self._warned = True
             self._progress.console.print(
@@ -203,6 +219,7 @@ def _build_report(result: JudgeSessionResult, fixture: JudgeFixture) -> dict[str
             case: [seen.value for seen in observations]
             for case, observations in result.replay_observations.items()
         },
+        "throttled_judgments": result.throttled_judgments,
         "recorded": result.written.status.value if result.written else None,
         "recording_refused": result.recording_refused,
     }
