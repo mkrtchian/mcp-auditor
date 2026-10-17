@@ -1,13 +1,16 @@
 from collections import Counter
 from collections.abc import Sequence
+from datetime import date
 from enum import StrEnum
 from typing import Protocol
 
 from pydantic import BaseModel
 
 from evals.cve_baseline import CVERunConditions
+from evals.cve_costs import TargetCost, render_cost_table
 from evals.cve_gate import CVEGateResult, TargetComparison
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade, resolve
+from evals.cve_measurement import MeasurementSettings, render_measurement
 from evals.cve_units import JudgeCategory
 from mcp_auditor.domain.models import ProviderUsage
 
@@ -79,6 +82,9 @@ class CVEBenchmarkReport(BaseModel):
     results: list[CVEResult]
     gate: CVEGateResult | None = None
     recording_refused: list[str] = []
+    measurement: MeasurementSettings | None = None  # forced settings, never compared
+    costs: list[TargetCost] = []  # ungated runs priced from evals/holdout_conditions.json only
+    prices_as_of: date | None = None
 
 
 def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> CVEResult:
@@ -136,14 +142,6 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
     )
     separator = "|---|---|---|---|---|---|---|---|---|---|"
     rows = [_render_row(result) for result in report.results]
-    # A single detected/total ratio would pool targets whose traces have been read with
-    # targets that have not, and those two carry different claims. See ADR 015.
-    counts = Counter(result.status for result in report.results)
-    tally = ", ".join(
-        f"{counts[status]} {status.value}"
-        for status in (*CVEStatus, *UngradedStatus)
-        if counts[status]
-    )
     gate = [] if report.gate is None else ["", *_render_gate(report.gate)]
     refusal = [f"- {reason}" for reason in report.recording_refused]
     if refusal:
@@ -151,18 +149,44 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
     return "\n".join(
         [
             _render_conditions(report),
+            *_render_measurement(report),
             "",
             header,
             separator,
             *rows,
             "",
-            f"Statuses: {tally}.",
+            _render_tally(report.results),
             *_render_not_run(report.results),
             *_render_replay_credits(report.results),
+            *_render_costs(report),
             *gate,
             *refusal,
         ]
     )
+
+
+def _render_tally(results: Sequence[CVEResult]) -> str:
+    # A single detected/total ratio would pool targets whose traces have been read with
+    # targets that have not, and those two carry different claims. See ADR 015.
+    counts = Counter(result.status for result in results)
+    tally = ", ".join(
+        f"{counts[status]} {status.value}"
+        for status in (*CVEStatus, *UngradedStatus)
+        if counts[status]
+    )
+    return f"Statuses: {tally}."
+
+
+def _render_measurement(report: CVEBenchmarkReport) -> list[str]:
+    return [] if report.measurement is None else [render_measurement(report.measurement)]
+
+
+def _render_costs(report: CVEBenchmarkReport) -> list[str]:
+    # A target with no report was billed nothing, so it has no row.
+    if not report.costs:
+        return []
+    title = f"Cost per target, all attempts, dollars at the prices as of {report.prices_as_of}:"
+    return ["", title, "", *render_cost_table(report.costs)]
 
 
 def _render_replay_credits(results: Sequence[CVEResult]) -> list[str]:

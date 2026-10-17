@@ -1,6 +1,10 @@
+from datetime import date
+
 import tests.unit.support.test_cve_oracle_given as given
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass
+from evals.cve_measurement import MeasurementSettings
 from evals.cve_oracle import (
+    CVEBenchmarkReport,
     UngradedStatus,
     not_run,
     out_of_scope_results,
@@ -253,3 +257,45 @@ def test_render_ends_with_the_reasons_a_recording_was_refused():
     assert markdown.endswith(
         "Recording refused, no baseline written:\n- CVE-2025-53355: the gated target regressed"
     )
+
+
+def test_render_shows_a_cost_row_per_costed_target_and_the_prices_date():
+    report = given.a_benchmark_report([]).model_copy(
+        update={"costs": [given.a_target_cost("CVE-2025-0001")], "prices_as_of": date(2026, 10, 17)}
+    )
+
+    markdown = render_markdown(report)
+
+    assert "prices as of 2026-10-17" in markdown
+    assert "| CVE-2025-0001 | 2000 | 300 | 900 | $0.2500 | $0.5000 | $0.1250 | $0.7500 |" in (
+        markdown
+    )
+
+
+def test_render_shows_the_forced_settings_of_a_measurement_run():
+    measurement = MeasurementSettings(chains=3, chain_steps=None, tool_call_timeout=30)
+    report = given.a_benchmark_report([]).model_copy(update={"measurement": measurement})
+
+    markdown = render_markdown(report)
+
+    assert (
+        "Measurement run, forced settings: 3 chains per tool, the launch's own chain steps, "
+        "tool call timeout 30 s, the target's tools filter." in markdown
+    )
+
+
+def test_render_without_costs_nor_measurement_has_neither_section():
+    markdown = render_markdown(given.a_benchmark_report([]))
+
+    assert "Measurement run" not in markdown
+    assert "Cost" not in markdown
+
+
+def test_a_report_json_written_before_costs_and_measurement_still_loads():
+    dumped = given.a_benchmark_report([]).model_dump(mode="json")
+    for field in ("measurement", "costs", "prices_as_of"):
+        dumped.pop(field)
+
+    report = CVEBenchmarkReport.model_validate(dumped)
+
+    assert (report.measurement, report.costs, report.prices_as_of) == (None, [], None)

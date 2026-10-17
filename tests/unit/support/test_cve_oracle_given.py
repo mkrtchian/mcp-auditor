@@ -2,10 +2,13 @@ import re
 from dataclasses import dataclass, field
 
 from evals.cve_baseline import CVERunConditions
+from evals.cve_costs import TargetCost
 from evals.cve_gate import CVEGateResult, CVEGateVerdict, TargetComparison, TargetOutcome
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade
 from evals.cve_oracle import CVEBenchmarkReport, CVEResult
 from evals.cve_units import JudgeCategory
+from evals.metrics import PhaseUsage
+from mcp_auditor.domain.models import ProviderUsage
 
 SENTINEL = "s3nt1nel_ab12cd34ef56"
 FINGERPRINT = "0123456789abcdef" * 4
@@ -120,4 +123,16 @@ def a_red_gate() -> CVEGateResult:
                 candidate_runs=[CVEStatus.DETECTED] * 3,
             ),
         ],
+    )
+
+
+def a_target_cost(cve_id: str) -> TargetCost:
+    return TargetCost(
+        cve_id=cve_id,
+        usage=PhaseUsage(total=ProviderUsage(input_tokens=2000, output_tokens=300)),
+        single_step=0.25,
+        chains=0.5,
+        judge=0.125,
+        total=0.75,
+        largest_input_tokens=900,
     )

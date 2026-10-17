@@ -39,3 +39,13 @@ def positive_int(text: str) -> int:
     if count < 1:
         raise argparse.ArgumentTypeError(f"expected at least 1, got {count}")
     return count
+
+
+def non_negative_int(text: str) -> int:
+    try:
+        count = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected a whole number, got {text!r}") from None
+    if count < 0:
+        raise argparse.ArgumentTypeError(f"expected at least 0, got {count}")
+    return count

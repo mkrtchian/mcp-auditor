@@ -19,7 +19,16 @@ from evals.cve_baseline import (
     image_ids,
 )
 from evals.cve_calibration import calibrate_all, calibrate_one, check_target
+from evals.cve_costs import TIERED_REQUEST_INPUT_TOKENS, CostPricing, large_request_targets
 from evals.cve_layout_check import confirm_admission
+from evals.cve_measurement import (
+    MeasurementSettings,
+    add_measurement_flags,
+    cost_pricing,
+    measurement_from,
+    measurement_refusal,
+    run_overrides,
+)
 from evals.cve_oracle import (
     CVEBenchmarkReport,
     CVEResult,
@@ -36,6 +45,7 @@ from evals.cve_survey import survey_all, survey_one
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
 from evals.export import export_cve_judged_cases
+from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.metrics import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.config import Settings, load_settings
 
@@ -156,6 +166,7 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Run and report without comparing to evals/baselines/cve/ (exit 0).",
     )
+    add_measurement_flags(parser)
     return parser.parse_args()
 
 
@@ -166,7 +177,7 @@ def _flag_refusal(args: argparse.Namespace) -> str | None:
         return "--calibrate runs no audit: it neither records nor gates"
     if args.record_baseline and args.ungated:
         return "--record-baseline cannot run --ungated: a baseline records the conditions it gates"
-    return None
+    return measurement_refusal(args)
 
 
 async def _run_graded(
@@ -177,6 +188,8 @@ async def _run_graded(
 ) -> int:
     tree = read_tree()
     conditions = _run_conditions(load_settings(), args.runs, args.budget)
+    measurement = measurement_from(args)
+    pricing = _cost_pricing(args.ungated, measurement, conditions)
     options = CVEOptions(graded, conditions, args.ungated, args.record_baseline)
     throttles = SessionThrottles()
     session = await run_gated(options, _harness(args, throttles, places))
@@ -192,6 +205,9 @@ async def _run_graded(
         results=results,
         gate=session.gate,
         recording_refused=session.recording_refused,
+        measurement=measurement,
+        costs=[] if pricing is None else pricing.costs(throttles.by_target),
+        prices_as_of=None if pricing is None else pricing.as_of,
     )
     _write_reports(report, Path(args.report))
     export_cve_judged_cases(session.audits, Path(args.report))
@@ -202,6 +218,19 @@ async def _run_graded(
     return session.exit_code
 
 
+def _cost_pricing(
+    ungated: bool, measurement: MeasurementSettings | None, conditions: CVERunConditions
+) -> CostPricing | None:
+    if not ungated:
+        return None  # a gated run reports no cost
+    models = (conditions.model, conditions.judge_model)
+    pricing = cost_pricing(load_conditions(CONDITIONS_PATH), models, measurement)
+    if isinstance(pricing, str):
+        console.print(f"[yellow]No cost reported: {pricing}.[/yellow]")
+        return None
+    return pricing
+
+
 def _result(target: CVETarget, session: CVESessionResult, budget: int) -> CVEResult:
     grades = session.grades[target.cve_id]
     conditions = session.not_run.get(target.cve_id, [])
@@ -209,8 +238,10 @@ def _result(target: CVETarget, session: CVESessionResult, budget: int) -> CVERes
 
 
 def _harness(args: argparse.Namespace, throttles: SessionThrottles, places: Places) -> CVEHarness:
+    measurement = measurement_from(args)
+    overrides = None if measurement is None else run_overrides(measurement)
     return CVEHarness(
-        audit=bounded(audit_target(args.budget, throttles, places), args.concurrency),
+        audit=bounded(audit_target(args.budget, throttles, places, overrides), args.concurrency),
         check=bounded(lambda target: check_target(target, places), args.concurrency),
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
@@ -229,6 +260,11 @@ def _print_session(session: CVESessionResult, report: CVEBenchmarkReport) -> Non
         console.print(
             f"[yellow]Throttled by the model provider: {report.throttled_requests} requests"
             f" at concurrency {report.concurrency}[/yellow]"
+        )
+    for cve_id in large_request_targets(report.costs):
+        console.print(
+            f"[yellow]{cve_id}: a request above {TIERED_REQUEST_INPUT_TOKENS} input tokens, "
+            "its cost is under-reported for a vendor that bills such a request higher.[/yellow]"
         )
     for orphan in session.orphans:
         console.print(f"[yellow]Orphaned baseline file, not compared:[/yellow] {orphan}")
