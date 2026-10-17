@@ -8,6 +8,7 @@ from langchain_core.runnables import Runnable
 from openai.types.completion_usage import CompletionUsage
 from pydantic import BaseModel, ValidationError
 
+from mcp_auditor.adapters.anthropic_structured_output import bind_anthropic_json_schema
 from mcp_auditor.adapters.chat_model_factory import make_chat_model
 from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
 from mcp_auditor.adapters.llm_throttling import (
@@ -16,7 +17,6 @@ from mcp_auditor.adapters.llm_throttling import (
     current_breaker,
     throttle_of,
 )
-from mcp_auditor.adapters.llm_tool_binding import bind_schema_as_tool
 from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
 from mcp_auditor.adapters.throttling import counting_throttles, install_throttle_log_handler
 from mcp_auditor.config import Settings
@@ -63,17 +63,19 @@ def _create_for_provider(
 
 @dataclass(frozen=True)
 class StructuredOutput:
-    method: Literal["json_schema", "function_calling", "tool_binding"]
+    method: Literal["json_schema", "function_calling", "anthropic_json_schema"]
     schema_as_dict: bool = False
 
 
 # OpenAI, Alibaba and OpenRouter, all through ChatOpenAI, get a dict: ChatOpenAI makes a Pydantic
 # class strict, and strict mode rejects the open object AuditPayload.arguments.
-# Anthropic binds the schema as a tool itself, so an answer without the tool call (a
-# refusal, a cut during thinking) still reaches the refusal and truncation checks.
+# Anthropic uses its native structured output, forced even with thinking on. The open
+# arguments object is carried as a JSON string on that path and decoded back in the adapter
+# (anthropic_structured_output); an answer with no valid structured output (a refusal, a cut
+# during thinking, a non-JSON arguments string) still reaches the refusal and truncation checks.
 _STRUCTURED_OUTPUT = {
     "google": StructuredOutput(method="json_schema"),
-    "anthropic": StructuredOutput(method="tool_binding"),
+    "anthropic": StructuredOutput(method="anthropic_json_schema"),
     "openai": StructuredOutput(method="json_schema", schema_as_dict=True),
     "fireworks": StructuredOutput(method="json_schema"),
     "alibaba": StructuredOutput(method="json_schema", schema_as_dict=True),
@@ -130,10 +132,8 @@ class LLM:
 
     def _bind(self, output_schema: type[BaseModel]) -> Runnable[str, object]:
         method = self._structured_output.method
-        if method == "tool_binding":
-            return bind_schema_as_tool(
-                self._model, output_schema, self._structured_output.schema_as_dict
-            )
+        if method == "anthropic_json_schema":
+            return bind_anthropic_json_schema(self._model, output_schema)
         if self._structured_output.schema_as_dict:
             return self._model.with_structured_output(  # pyright: ignore[reportUnknownMemberType]
                 output_schema.model_json_schema(), method=method, strict=False, include_raw=True

@@ -76,8 +76,9 @@ def _make_anthropic_model(model: str, reasoning: str | None) -> BaseChatModel:  
     )
 
 
-# An explicit adaptive thinking keeps langchain-anthropic from forcing the tool call,
-# which would skip thinking whatever the effort.
+# An explicit adaptive thinking type pins the thinking without the summarized display:
+# langchain-anthropic defaults an unset thinking alongside an effort to
+# {"type": "adaptive", "display": "summarized"}, which asks for summarized thinking every answer.
 def _anthropic_thinking(reasoning: str | None) -> dict[str, Any]:
     if reasoning is None:
         return {}

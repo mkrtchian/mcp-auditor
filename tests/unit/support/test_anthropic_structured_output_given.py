@@ -1,23 +1,19 @@
+import json
 from typing import Any
 
 import anthropic
 import httpx2
 from langchain_anthropic import ChatAnthropic
-from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput
 
 
-class Finding(BaseModel):
-    value: str
-
-
 def an_llm_answering(body: dict[str, Any], thinking: str = "adaptive") -> LLM:
-    return an_llm_on(a_chat_model_answering(body, thinking), schema_as_dict=False)
+    return an_llm_on(a_chat_model_answering(body, thinking))
 
 
-def an_llm_on(chat_model: ChatAnthropic, schema_as_dict: bool) -> LLM:
-    structured_output = StructuredOutput(method="tool_binding", schema_as_dict=schema_as_dict)
+def an_llm_on(chat_model: ChatAnthropic) -> LLM:
+    structured_output = StructuredOutput(method="anthropic_json_schema")
     return LLM(chat_model, structured_output, max_parse_attempts=3)
 
 
@@ -39,9 +35,14 @@ def a_chat_model_answering(body: dict[str, Any], thinking: str = "adaptive") -> 
     return chat_model
 
 
-def a_tool_use_answer(input_tokens: int, output_tokens: int) -> dict[str, Any]:
-    tool_use = {"type": "tool_use", "id": "toolu_1", "name": "Finding", "input": {"value": "ok"}}
-    return _message([_thinking_block(), tool_use], "tool_use", input_tokens, output_tokens)
+def a_json_schema_answer(
+    document: dict[str, Any], input_tokens: int, output_tokens: int
+) -> dict[str, Any]:
+    # On the json_schema path langchain parses the raw message's text blocks; the thinking
+    # block is skipped. The JSON document matches the bound wire schema, so arguments arrives
+    # as a JSON-encoded string (double escaping in the wire body is intended).
+    text = {"type": "text", "text": json.dumps(document)}
+    return _message([_thinking_block(), text], "end_turn", input_tokens, output_tokens)
 
 
 def a_refusal() -> dict[str, Any]:
@@ -52,10 +53,6 @@ def a_refusal() -> dict[str, Any]:
 
 def a_cut_during_thinking() -> dict[str, Any]:
     return _message([_thinking_block()], "max_tokens", 100, 8192)
-
-
-def a_thinking_only_answer() -> dict[str, Any]:
-    return _message([_thinking_block()], "end_turn", 100, 50)
 
 
 def _thinking_block() -> dict[str, Any]:
