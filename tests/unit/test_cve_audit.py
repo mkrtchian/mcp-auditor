@@ -12,7 +12,7 @@ from evals.cve_audit import (
     IncompleteAttempt,
     RunOverrides,
     audit_target,
-    graded_despite_refusals,
+    graded_despite_missed_steps,
     graded_or_incomplete,
 )
 from evals.cve_environments import Launch
@@ -65,7 +65,7 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
     graded = GradedAudit(a_detected_grade(), grammar.a_report(target="second attempt"))
     attempt = _ScriptedAttempts([IncompleteAttempt(grammar.a_report(), _REFUSED), graded])
 
-    outcome = await graded_despite_refusals(TARGET, attempt)
+    outcome = await graded_despite_missed_steps(TARGET, attempt)
 
     assert outcome is graded
     assert attempt.calls == 2
@@ -82,7 +82,7 @@ async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
     ]
     attempt = _ScriptedAttempts[GradedAudit](outcomes)
 
-    grade = await graded_despite_refusals(TARGET, attempt)
+    grade = await graded_despite_missed_steps(TARGET, attempt)
 
     assert grade is None
     assert attempt.calls == INCOMPLETE_ATTEMPTS
@@ -99,7 +99,7 @@ async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.
     _captured_console(monkeypatch)
     attempt = _ScriptedAttempts[GradedAudit]([None])
 
-    grade = await graded_despite_refusals(TARGET, attempt)
+    grade = await graded_despite_missed_steps(TARGET, attempt)
 
     assert grade is None
     assert attempt.calls == 1

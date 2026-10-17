@@ -66,7 +66,7 @@ def audit_target(budget: int, throttles: SessionThrottles, places: Places) -> Au
     auditor = build_auditor(budget)
 
     async def audit(target: CVETarget) -> GradedAudit | None:
-        return await graded_despite_refusals(
+        return await graded_despite_missed_steps(
             target, lambda: attempt_once(target, auditor, throttles, places)
         )
 
@@ -81,17 +81,7 @@ class IncompleteAttempt:
     causes: frozenset[MissCause]
 
 
-_CAUSE_WORDING = {
-    MissCause.PROVIDER_REFUSAL: "refused by the model provider",
-    MissCause.UNREADABLE_ANSWER: "unreadable model answer",
-}
-
-
-def describe_miss_causes(causes: frozenset[MissCause]) -> str:
-    return " and ".join(wording for cause, wording in _CAUSE_WORDING.items() if cause in causes)
-
-
-async def graded_despite_refusals[T](
+async def graded_despite_missed_steps[T](
     target: CVETarget, attempt: Callable[[], Awaitable[T | IncompleteAttempt | None]]
 ) -> T | None:
     """The first complete attempt grades the run. None when every attempt missed a step."""
@@ -110,6 +100,16 @@ async def graded_despite_refusals[T](
         f" {INCOMPLETE_ATTEMPTS} attempts ({describe_miss_causes(causes)})"
     )
     return None
+
+
+_CAUSE_WORDING = {
+    MissCause.PROVIDER_REFUSAL: "refused by the model provider",
+    MissCause.UNREADABLE_ANSWER: "unreadable model answer",
+}
+
+
+def describe_miss_causes(causes: frozenset[MissCause]) -> str:
+    return " and ".join(wording for cause, wording in _CAUSE_WORDING.items() if cause in causes)
 
 
 async def attempt_once(
