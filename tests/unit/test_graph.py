@@ -226,7 +226,7 @@ async def test_a_dry_run_carries_the_coverage_gap_to_its_tool_report():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("cause", list(MissCause))
+@pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
 async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissCause):
     failure = given.MODEL_FAILURES[cause]()
     fake_llm = given.a_fake_llm_failing_the_first_of_two_judgments(failure)
@@ -263,7 +263,7 @@ async def test_the_report_splits_judge_usage_from_generator_usage():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("cause", list(MissCause))
+@pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
 async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the_next(
     cause: MissCause,
 ):
@@ -308,7 +308,7 @@ async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("cause", list(MissCause))
+@pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
 async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(cause: MissCause):
     fake_llm = given.a_fake_llm_failing_the_first_chain_observation(given.MODEL_FAILURES[cause]())
     graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))

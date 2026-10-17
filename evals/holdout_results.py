@@ -5,6 +5,7 @@ which both consume these, so they cannot live in holdout_run as the plan's prose
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
+from enum import StrEnum
 
 from evals.holdout_conditions import Cutoff
 
@@ -29,10 +30,17 @@ class HoldoutTargetResult:
     run_cost: float  # dollars over its runs, incomplete runs included
 
 
+class NotRunCause(StrEnum):
+    PRE_RUN_CHECK = "pre_run_check"
+    LAUNCH_FAILURE = "launch_failure"
+    THROTTLED = "throttled"
+
+
 @dataclass(frozen=True)
 class NotRunTarget:
     cve_id: str
     reason: str
+    cause: NotRunCause
 
 
 @dataclass(frozen=True)

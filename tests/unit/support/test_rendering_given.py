@@ -285,6 +285,22 @@ def a_report_with_missed_judgments_on_get_user(refused: int, unreadable: int) ->
     return report
 
 
+THROTTLE_MESSAGE = "429 RESOURCE_EXHAUSTED"
+
+
+def a_report_with_a_throttled_judgment_on_get_user() -> AuditReport:
+    report = a_two_tool_report()
+    report.missed_steps = [
+        MissedStep(
+            tool_name="get_user",
+            step=AuditStep.JUDGMENT,
+            cause=MissCause.PROVIDER_THROTTLED,
+            detail=THROTTLE_MESSAGE,
+        )
+    ]
+    return report
+
+
 def a_report_with_an_unjudged_case() -> AuditReport:
     unjudged = TestCase(
         payload=AuditPayload(

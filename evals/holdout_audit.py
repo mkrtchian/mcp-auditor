@@ -9,6 +9,7 @@ from rich.console import Console
 from evals.cve_audit import IncompleteAttempt, describe_miss_causes
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVETarget
+from evals.holdout_results import NotRunCause
 from mcp_auditor.domain.models import AuditReport
 
 console = Console()
@@ -24,9 +25,16 @@ class IncompleteRun:
     report: AuditReport
 
 
+@dataclass(frozen=True)
+class DroppedRun:
+    """A run that never produced a grade, which drops its target from the whole holdout run."""
+
+    cause: NotRunCause
+
+
 async def holdout_audit(
     target: CVETarget, attempt: Callable[[], Awaitable[GradedAudit | IncompleteAttempt | None]]
-) -> GradedAudit | IncompleteRun | None:
+) -> GradedAudit | IncompleteRun | DroppedRun:
     """One run of one target. A detection stands whatever step was missed. A missed step with no
     detection is a non-detection, not retried (unlike acceptance's keep-best-of-several). An
     infra failure is retried, at most `HOLDOUT_INFRA_ATTEMPTS` calls in all."""
@@ -44,4 +52,4 @@ async def holdout_audit(
             f"[yellow]{target.cve_id}: run failed to launch,"
             f" attempt {number}/{HOLDOUT_INFRA_ATTEMPTS}[/yellow]"
         )
-    return None
+    return DroppedRun(NotRunCause.LAUNCH_FAILURE)

@@ -12,6 +12,9 @@ from mcp_auditor.domain.rendering import format_severity_breakdown
 UNJUDGED_LINES = {
     MissCause.PROVIDER_REFUSAL: "  ? not judged, the model provider refused the judgment",
     MissCause.UNREADABLE_ANSWER: "  ? not judged, the model's answer was unreadable",
+    MissCause.PROVIDER_THROTTLED: (
+        "  ? not judged, the model provider throttled the judgment past every retry"
+    ),
 }
 
 

@@ -200,6 +200,7 @@ def test_a_refused_step_warning_prints_the_provider_message_verbatim():
     [
         (MissCause.PROVIDER_REFUSAL, "refused by the model provider"),
         (MissCause.UNREADABLE_ANSWER, "unreadable answer from the model"),
+        (MissCause.PROVIDER_THROTTLED, "throttled past every retry"),
     ],
 )
 def test_a_missed_step_warning_names_its_cause(cause: MissCause, label: str):

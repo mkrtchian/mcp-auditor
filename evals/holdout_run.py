@@ -24,9 +24,14 @@ from evals.cve_session_model import GradedAudit
 from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, LaunchMode
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
-from evals.holdout_audit import IncompleteRun, holdout_audit
+from evals.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
 from evals.holdout_conditions import HoldoutConditions
-from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult, NotRunTarget
+from evals.holdout_results import (
+    HoldoutRunResult,
+    HoldoutTargetResult,
+    NotRunCause,
+    NotRunTarget,
+)
 from evals.holdout_targets import HoldoutTarget
 from evals.metrics import SessionThrottles
 from evals.probe import call_cost
@@ -39,7 +44,7 @@ HOLDOUT_BUDGET = 10  # holdout-rule.md:227, a constant, not a flag
 HOLDOUT_CONCURRENCY = 6
 COMPOSE_FILE = DOCKER_DIRECTORY / "compose.yml"
 
-type Audit = Callable[[CVETarget], Awaitable[GradedAudit | IncompleteRun | None]]
+type Audit = Callable[[CVETarget], Awaitable[GradedAudit | IncompleteRun | DroppedRun]]
 
 
 @dataclass(frozen=True)
@@ -157,7 +162,7 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
     auditor = build_auditor(HOLDOUT_BUDGET)
     throttles = SessionThrottles()
 
-    async def audit(target: CVETarget) -> GradedAudit | IncompleteRun | None:
+    async def audit(target: CVETarget) -> GradedAudit | IncompleteRun | DroppedRun:
         return await holdout_audit(
             target, lambda: attempt_once(target, auditor, throttles, places, overrides)
         )
@@ -188,7 +193,9 @@ async def _vet_all(
 ) -> tuple[list[NotRunTarget], list[HoldoutTarget]]:
     reasons = await asyncio.gather(*(_vet(entry.target, deps) for entry in targets))
     paired = list(zip(targets, reasons, strict=True))
-    not_run = [NotRunTarget(e.identifier, r) for e, r in paired if r is not None]
+    not_run = [
+        NotRunTarget(e.identifier, r, NotRunCause.PRE_RUN_CHECK) for e, r in paired if r is not None
+    ]
     surviving = [e for e, r in paired if r is None]
     return not_run, surviving
 
@@ -222,8 +229,12 @@ async def _run_all(
     assembled: list[tuple[HoldoutTarget, HoldoutTargetResult]] = []
     dropped: list[NotRunTarget] = []
     for entry, outcomes in zip(surviving, runs_per, strict=True):
-        if outcomes is None:
-            dropped.append(NotRunTarget(entry.identifier, "a run failed to launch after retries"))
+        if isinstance(outcomes, DroppedRun):
+            dropped.append(
+                NotRunTarget(
+                    entry.identifier, "a run failed to launch after retries", outcomes.cause
+                )
+            )
         else:
             assembled.append((entry, _assemble_target(entry, outcomes, ctx)))
     return assembled, dropped
@@ -231,11 +242,14 @@ async def _run_all(
 
 async def _run_target(
     target: CVETarget, audit: Audit, runs: int
-) -> list[GradedAudit | IncompleteRun] | None:
+) -> list[GradedAudit | IncompleteRun] | DroppedRun:
     outcomes = await asyncio.gather(*(audit(target) for _ in range(runs)))
-    if any(outcome is None for outcome in outcomes):
-        return None
-    return [outcome for outcome in outcomes if outcome is not None]
+    graded: list[GradedAudit | IncompleteRun] = []
+    for outcome in outcomes:
+        if isinstance(outcome, DroppedRun):
+            return outcome
+        graded.append(outcome)
+    return graded
 
 
 def _assemble_target(

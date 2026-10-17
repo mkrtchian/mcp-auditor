@@ -16,9 +16,9 @@ from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS, CVETarget, LaunchMode
 from evals.eval_session import Refused, TreeState
-from evals.holdout_audit import IncompleteRun
+from evals.holdout_audit import DroppedRun, IncompleteRun
 from evals.holdout_conditions import Cutoff, HoldoutConditions
-from evals.holdout_results import HoldoutRunResult
+from evals.holdout_results import HoldoutRunResult, NotRunCause
 from evals.holdout_run import HoldoutDeps, run_holdout, target_services
 from evals.holdout_targets import HoldoutTarget
 from evals.probe import call_cost
@@ -31,7 +31,7 @@ PLACES = load_places(HOLDOUT_PLACES)
 LUNA_PRICE = Prices(input=0.10, cached_input=0.01, output=0.50)
 SETTINGS = Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none")
 
-type Outcome = GradedAudit | IncompleteRun | None
+type Outcome = GradedAudit | IncompleteRun | DroppedRun
 type Audit = Callable[[CVETarget], Awaitable[Outcome]]
 
 
@@ -217,6 +217,7 @@ async def test_a_target_dead_on_a_version_is_not_run():
     (not_run,) = result.not_run
     assert not_run.cve_id == dead_id
     assert "patched: exploit 0 still surfaces etc-shadow" in not_run.reason
+    assert not_run.cause is NotRunCause.PRE_RUN_CHECK
 
 
 async def test_a_normal_target_the_layout_breaks_is_dropped():
@@ -233,6 +234,7 @@ async def test_a_normal_target_the_layout_breaks_is_dropped():
     (not_run,) = result.not_run
     assert not_run.cve_id == broken_id
     assert not_run.reason == "the layout breaks the server under the normal launch"
+    assert not_run.cause is NotRunCause.PRE_RUN_CHECK
 
 
 async def test_a_fallback_target_the_layout_breaks_is_kept():
@@ -256,7 +258,12 @@ async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run()
     sick, healthy = _entry(2), _entry(0)
     sick_id, healthy_id = sick.target.cve_id, healthy.target.cve_id
     report = _report(ProviderUsage(), ProviderUsage())
-    sick_outcomes: list[Outcome] = [_graded(CVEStatus.DETECTED, report, aimed=True), None, None]
+    launch_failure = DroppedRun(NotRunCause.LAUNCH_FAILURE)
+    sick_outcomes: list[Outcome] = [
+        _graded(CVEStatus.DETECTED, report, aimed=True),
+        launch_failure,
+        launch_failure,
+    ]
 
     result = await _run(
         [sick, healthy],
@@ -267,6 +274,7 @@ async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run()
     (not_run,) = result.not_run
     assert not_run.cve_id == sick_id
     assert not_run.reason == "a run failed to launch after retries"
+    assert not_run.cause is NotRunCause.LAUNCH_FAILURE
 
 
 async def test_a_drawn_target_with_a_tools_filter_refuses_before_any_check():

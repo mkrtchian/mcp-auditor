@@ -11,7 +11,7 @@ from evals.declared_flips import DeclaredFlip, Suite
 from evals.eval_session import TreeState
 from evals.judge_baseline import JudgeBaseline, write_judge_baseline
 from evals.judge_fixture import JudgeCase
-from evals.judge_session import JudgeHarness, JudgeOptions
+from evals.judge_session_model import JudgeHarness, JudgeOptions
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict, Judgment, Severity
 from mcp_auditor.domain.ports import ProviderUsage

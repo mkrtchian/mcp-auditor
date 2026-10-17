@@ -3,7 +3,7 @@ from evals.gate import CellComparison, Observation
 from evals.gate_verdict import GateMode, GateVerdict
 from evals.judge_fixture import CaseLabel, JudgeFixture
 from evals.judge_gate import JudgeGateResult
-from evals.judge_session import JudgeSessionResult
+from evals.judge_session_model import JudgeSessionResult
 from mcp_auditor.domain.models import AuditCategory
 from tests.unit.support.test_judge_baseline_given import a_baseline, conditions
 from tests.unit.support.test_judge_fixture_given import a_case, a_fixture

@@ -7,7 +7,13 @@ from evals import holdout_audit as holdout_audit_module
 from evals.cve_audit import IncompleteAttempt
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS
-from evals.holdout_audit import HOLDOUT_INFRA_ATTEMPTS, IncompleteRun, holdout_audit
+from evals.holdout_audit import (
+    HOLDOUT_INFRA_ATTEMPTS,
+    DroppedRun,
+    IncompleteRun,
+    holdout_audit,
+)
+from evals.holdout_results import NotRunCause
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_cve_oracle_given import a_detected_grade
@@ -90,7 +96,7 @@ async def test_an_infra_failure_is_retried_twice_then_gives_up(monkeypatch: pyte
 
     outcome = await holdout_audit(TARGET, attempt)
 
-    assert outcome is None
+    assert outcome == DroppedRun(NotRunCause.LAUNCH_FAILURE)
     assert attempt.calls == HOLDOUT_INFRA_ATTEMPTS == 3
 
 

@@ -8,7 +8,7 @@ import tests.unit.support.test_judge_outcomes_given as outcomes_given
 from evals import judge_display
 from evals.gate import CellComparison, CellOutcome, FlipCause
 from evals.judge_outcomes import CaseOutcomes, case_outcomes
-from evals.judge_session import JudgeSessionResult
+from evals.judge_session_model import JudgeSessionResult
 
 FLIPPED_ID = outcomes_given.FLIPPED_ID
 

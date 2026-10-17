@@ -8,7 +8,8 @@ from evals.eval_session import Refused, TreeState
 from evals.gate import CellOutcome, Observation
 from evals.gate_verdict import GateMode, GateVerdict
 from evals.judge_baseline import load_judge_baseline
-from evals.judge_session import JudgeHarness, JudgeOptions, run_judge_gate
+from evals.judge_session import run_judge_gate
+from evals.judge_session_model import JudgeHarness, JudgeOptions
 from evals.run_judge_eval import judge_one_case
 from mcp_auditor.domain.ports import ProviderRefusal, ProviderUsage, UnparseableOutput
 

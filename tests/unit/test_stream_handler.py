@@ -66,6 +66,10 @@ def test_an_unjudged_case_advances_the_progress_bar():
     [
         (MissCause.PROVIDER_REFUSAL, "? not judged, the model provider refused the judgment"),
         (MissCause.UNREADABLE_ANSWER, "? not judged, the model's answer was unreadable"),
+        (
+            MissCause.PROVIDER_THROTTLED,
+            "? not judged, the model provider throttled the judgment past every retry",
+        ),
     ],
 )
 def test_an_unjudged_case_names_the_cause_of_its_missed_judgment(cause: MissCause, line: str):

@@ -314,6 +314,7 @@ def is_judge_step(step: AuditStep) -> bool:
 class MissCause(StrEnum):
     PROVIDER_REFUSAL = "provider_refusal"
     UNREADABLE_ANSWER = "unreadable_answer"
+    PROVIDER_THROTTLED = "provider_throttled"
 
 
 class MissedStep(BaseModel):

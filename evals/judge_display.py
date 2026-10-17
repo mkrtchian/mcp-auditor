@@ -12,7 +12,7 @@ from evals.gate import ProtectedCells
 from evals.gate_verdict import GateVerdict
 from evals.judge_baseline import JUDGE_BASELINE_PATH, JudgeBaseline
 from evals.judge_outcomes import CaseOutcomes, JudgeOutcomeRow
-from evals.judge_session import JudgeSessionResult
+from evals.judge_session_model import JudgeSessionResult
 
 __all__ = ["console", "print_refusal", "print_summary"]
 

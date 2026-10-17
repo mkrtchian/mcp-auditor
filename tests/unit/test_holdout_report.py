@@ -17,7 +17,12 @@ from evals.holdout_report import (
     build_report,
     render_markdown,
 )
-from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult, NotRunTarget
+from evals.holdout_results import (
+    HoldoutRunResult,
+    HoldoutTargetResult,
+    NotRunCause,
+    NotRunTarget,
+)
 
 RUN_CUTOFF = date(2026, 5, 18)
 RUNS = 3
@@ -67,7 +72,13 @@ def _run_result() -> HoldoutRunResult:
         census_commit="cafe1234",
         image_ids={"vuln": "sha256:1"},
         targets=tuple(targets),
-        not_run=(NotRunTarget(cve_id="CVE-C", reason="dead condition on the patched version"),),
+        not_run=(
+            NotRunTarget(
+                cve_id="CVE-C",
+                reason="dead condition on the patched version",
+                cause=NotRunCause.PRE_RUN_CHECK,
+            ),
+        ),
         incomplete_run_count=1,
         total_cost=0.06,
         prices_as_of=date(2026, 10, 15),

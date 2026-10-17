@@ -529,6 +529,18 @@ def test_markdown_tool_section_lists_its_unreadable_step():
     )
 
 
+def test_markdown_names_a_throttled_step_in_the_summary_and_its_tool_section():
+    report = given.a_report_with_a_throttled_judgment_on_get_user()
+
+    summary, get_user_section = render_markdown(report).split("\n## get_user")[:2]
+
+    assert "**Throttled past every retry**: 1 step\n" in summary
+    assert "**Audit complete**: no" in summary
+    assert (
+        f'**Throttled past every retry**: judgment, "{given.THROTTLE_MESSAGE}"' in get_user_section
+    )
+
+
 def test_markdown_renders_a_case_with_no_verdict_and_no_block_as_not_judged():
     report = given.a_report_with_an_unjudged_case()
 

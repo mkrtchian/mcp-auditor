@@ -35,6 +35,17 @@ class ProviderRefusal(Exception):
         self.usage = usage
 
 
+class ProviderThrottled(Exception):
+    def __init__(self, provider_message: str, waited_seconds: float, usage: ProviderUsage):
+        super().__init__(
+            "the model provider throttled the request past every retry"
+            f" ({waited_seconds:.0f} s waited by the auditor): {provider_message}"
+        )
+        self.provider_message = provider_message
+        self.waited_seconds = waited_seconds
+        self.usage = usage
+
+
 class LLMPort(Protocol):
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from evals.cell_grid import PARTIAL, observation_letters, partial_improvements
 from evals.gate import CellOutcome, Observation
 from evals.judge_fixture import CaseLabel, JudgeCase, JudgeFixture, ground_truth_of
-from evals.judge_session import JudgeSessionResult
+from evals.judge_session_model import JudgeSessionResult
 
 
 @dataclass(frozen=True)

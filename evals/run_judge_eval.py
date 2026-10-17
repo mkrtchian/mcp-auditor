@@ -27,13 +27,8 @@ from evals.judge_metrics import (
     compute_per_category_metrics,
 )
 from evals.judge_outcomes import case_outcomes
-from evals.judge_session import (
-    NOT_COMPARABLE_EXIT,
-    JudgeHarness,
-    JudgeOptions,
-    JudgeSessionResult,
-    run_judge_gate,
-)
+from evals.judge_session import NOT_COMPARABLE_EXIT, run_judge_gate
+from evals.judge_session_model import JudgeHarness, JudgeOptions, JudgeSessionResult
 from evals.metrics import SessionThrottles
 from mcp_auditor.adapters.llm import create_judge_llm
 from mcp_auditor.config import load_settings

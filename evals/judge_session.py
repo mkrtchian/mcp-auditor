@@ -2,28 +2,14 @@
 and the recording, with the judge, git, the declarations and the clock injected."""
 
 import asyncio
-from collections.abc import Callable
-from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 
 from pydantic import ValidationError
 
 from evals.baseline import BaselineStatus
 from evals.concurrency import bounded
-from evals.declared_flips import (
-    ActiveDeclarations,
-    DeclaredFlip,
-    active_declarations,
-    declaration_problems,
-)
-from evals.eval_session import (
-    RECORDING_REFUSED,
-    REFUSED_BEFORE_ANY_LLM_CALL,
-    Refused,
-    TreeState,
-    tree_drift,
-)
+from evals.declared_flips import active_declarations, declaration_problems
+from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused
 from evals.gate import Observation
 from evals.gate_verdict import GateMode, GateVerdict
 from evals.judge_baseline import (
@@ -32,7 +18,6 @@ from evals.judge_baseline import (
     judge_baseline_integrity,
     judge_condition_mismatches,
     load_judge_baseline,
-    write_judge_baseline,
 )
 from evals.judge_fixture import JudgeFixture, ground_truth_of, inputs_fingerprint
 from evals.judge_gate import (
@@ -40,20 +25,13 @@ from evals.judge_gate import (
     JudgeGateInput,
     JudgeGateResult,
     judge_case_gate,
-    judge_ci_condition_mismatches,
     observe_case,
 )
-from evals.judge_recording import (
-    JudgeRecording,
-    decide_judge_recording,
-    judge_condition_refusals,
-    judge_exploratory_commit_refusal,
-    judge_rescore_refusals,
-)
+from evals.judge_recording import judge_rescore_refusals
 from evals.judge_replay import JudgeCall, ReplayContext, replay_flips, reproductions
-from evals.recording import RecordingRefused
+from evals.judge_session_model import JudgeHarness, JudgeOptions, JudgeSession, JudgeSessionResult
+from evals.judge_session_recording import record, recording_refusals
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import EvalVerdict
 
 NOT_COMPARABLE_EXIT = 3
 
@@ -64,55 +42,6 @@ _EXIT_CODES = {
 }
 
 
-@dataclass(frozen=True)
-class JudgeOptions:
-    settings: Settings
-    runs: int
-    record_baseline: bool
-    ungated: bool
-    concurrency: int
-
-
-@dataclass(frozen=True)
-class JudgeHarness:
-    judge: JudgeCall
-    baseline_path: Path
-    read_tree: Callable[[], TreeState]
-    declarations: Callable[[], tuple[list[DeclaredFlip], bool]]
-    clock: Callable[[], datetime]
-    on_replays: Callable[[int], None]
-
-
-@dataclass(frozen=True)
-class JudgeSessionResult:
-    """`baseline` is the one the run read, None without one or under --ungated."""
-
-    conditions: JudgeConditions
-    runs: CaseRuns
-    gate: JudgeGateResult
-    baseline: JudgeBaseline | None
-    replay_observations: dict[str, list[Observation]]
-    declarations: ActiveDeclarations
-    written: JudgeBaseline | None
-    recording_refused: list[str]
-    exit_code: int
-
-
-@dataclass(frozen=True)
-class _Session:
-    """Fixed before any judge call. `baseline` is None under --ungated, and `tree` is set
-    exactly when the run records. `judge` is the harness's, bounded to the concurrency."""
-
-    harness: JudgeHarness
-    judge: JudgeCall
-    fixture: JudgeFixture
-    ground_truth: dict[str, EvalVerdict]
-    conditions: JudgeConditions
-    baseline: JudgeBaseline | None
-    tree: TreeState | None
-    declarations: ActiveDeclarations
-
-
 async def run_judge_gate(
     options: JudgeOptions, fixture: JudgeFixture, harness: JudgeHarness
 ) -> JudgeSessionResult:
@@ -120,7 +49,7 @@ async def run_judge_gate(
     session = _open(options, fixture, harness)
     runs = await _judge_runs(fixture, options.runs, session.judge)
     gate, replay_observations = await _gate(session, runs)
-    written, refused = _record(session, runs, gate)
+    written, refused = record(session, runs, gate)
     return JudgeSessionResult(
         conditions=session.conditions,
         runs=runs,
@@ -134,7 +63,7 @@ async def run_judge_gate(
     )
 
 
-def _open(options: JudgeOptions, fixture: JudgeFixture, harness: JudgeHarness) -> _Session:
+def _open(options: JudgeOptions, fixture: JudgeFixture, harness: JudgeHarness) -> JudgeSession:
     if options.record_baseline and options.ungated:
         reason = (
             "--record-baseline cannot run --ungated: a baseline records the conditions it gates"
@@ -143,7 +72,7 @@ def _open(options: JudgeOptions, fixture: JudgeFixture, harness: JudgeHarness) -
     ground_truth = ground_truth_of(fixture)
     baseline = None if options.ungated else _load_checked(harness.baseline_path, fixture)
     entries, dirty = harness.declarations()
-    session = _Session(
+    session = JudgeSession(
         harness=harness,
         judge=bounded(harness.judge, options.concurrency),
         fixture=fixture,
@@ -184,7 +113,7 @@ def _load_checked(path: Path, fixture: JudgeFixture) -> JudgeBaseline | None:
     return baseline
 
 
-def _pre_run_refusals(session: _Session) -> list[str]:
+def _pre_run_refusals(session: JudgeSession) -> list[str]:
     """What the file, the labels and the tree already decide. Another draw is not rescored:
     its baseline is not comparable, which the gate says."""
     reasons: list[str] = []
@@ -192,20 +121,7 @@ def _pre_run_refusals(session: _Session) -> list[str]:
     if baseline and baseline.conditions.inputs_fingerprint == session.conditions.inputs_fingerprint:
         reasons += judge_rescore_refusals(baseline, session.ground_truth)
     if session.tree is not None:
-        reasons += _recording_refusals(session, session.tree)
-    return reasons
-
-
-def _recording_refusals(session: _Session, tree: TreeState) -> list[str]:
-    reasons = [
-        f"a baseline records the conditions CI runs at, {mismatch}"
-        for mismatch in judge_ci_condition_mismatches(session.conditions)
-    ]
-    if tree.dirty:
-        reasons.append("the git tree has tracked modifications: record from a clean tree")
-    if session.baseline is not None:
-        reasons += judge_exploratory_commit_refusal(session.baseline, tree.commit)
-        reasons += judge_condition_refusals(session.baseline, session.conditions)
+        reasons += recording_refusals(session, session.tree)
     return reasons
 
 
@@ -221,7 +137,7 @@ async def _judge_runs(fixture: JudgeFixture, runs: int, judge: JudgeCall) -> Cas
 
 
 async def _gate(
-    session: _Session, runs: CaseRuns
+    session: JudgeSession, runs: CaseRuns
 ) -> tuple[JudgeGateResult, dict[str, list[Observation]]]:
     baseline = session.baseline
     mismatches = (
@@ -247,7 +163,7 @@ async def _gate(
     return judge_case_gate(gate_input), observations
 
 
-def _replay_context(session: _Session) -> ReplayContext:
+def _replay_context(session: JudgeSession) -> ReplayContext:
     return ReplayContext(
         judge=session.judge,
         ground_truth=session.ground_truth,
@@ -257,42 +173,7 @@ def _replay_context(session: _Session) -> ReplayContext:
     )
 
 
-def _record(
-    session: _Session, runs: CaseRuns, gate: JudgeGateResult
-) -> tuple[JudgeBaseline | None, list[str]]:
-    if session.tree is None:
-        return None, []
-    harness = session.harness
-    drift = _recording_drift(session, session.tree)
-    if drift:
-        return None, drift
-    recording = JudgeRecording(
-        conditions=session.conditions,
-        commit=session.tree.commit,
-        recorded_at=harness.clock().isoformat(),
-        runs=runs,
-        ground_truth=session.ground_truth,
-    )
-    decision = decide_judge_recording(session.baseline, recording, gate)
-    if isinstance(decision, RecordingRefused):
-        return None, decision.reasons
-    write_judge_baseline(harness.baseline_path, decision)
-    return decision, []
-
-
-def _recording_drift(session: _Session, tree: TreeState) -> list[str]:
-    harness = session.harness
-    drift = tree_drift(tree, harness.read_tree())
-    try:
-        reloaded = load_judge_baseline(harness.baseline_path)
-    except ValidationError as error:
-        return [*drift, f"{harness.baseline_path} is not a valid baseline: {error}"]
-    if reloaded != session.baseline:
-        drift.append("the baseline file changed during the runs: record again")
-    return drift
-
-
-def _exit_code(session: _Session, gate: JudgeGateResult, refused: list[str]) -> int:
+def _exit_code(session: JudgeSession, gate: JudgeGateResult, refused: list[str]) -> int:
     if refused:
         return NOT_COMPARABLE_EXIT
     if session.tree is not None:
