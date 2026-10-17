@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `evals/holdout_conditions.json` sets the holdout's chain settings and tool call timeout (3 chains per tool, 3 steps per chain, 30 seconds), logged in `docs/holdout-log.md`, so `python -m evals.run_holdout run` no longer refuses on them.
 - The judges' input_validation guidance counts an action a parameter withholds permission or consent for, done anyway (an `overwrite=false` call that still replaces an existing file), as acting against a valid parameter, beside `dry_run` and `recursive`.
 - The report's usage line reads `**Throttled by the model provider**: N requests (HTTP 429)`, its `, retried` dropped: the last 429 of a call that ran out of retries was not retried.
 - The e2e evals read a pass or a replay whose report holds a step throttled past every retry as a failed one, so the run is not comparable (exit `3`), the other passes kept. A refused or unreadable step still leaves a completed pass.

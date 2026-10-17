@@ -1,7 +1,7 @@
 {
-  "chain_budget": null,
-  "max_chain_steps": null,
-  "tool_call_timeout": null,
+  "chain_budget": 3,
+  "max_chain_steps": 3,
+  "tool_call_timeout": 30,
   "cutoffs": {
     "gpt-6-luna": {
       "date": "2026-05-18",
