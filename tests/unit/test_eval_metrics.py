@@ -5,6 +5,7 @@ import pytest
 import tests.unit.support.test_eval_metrics_given as given
 from evals.ground_truth import GroundTruth
 from evals.metrics import (
+    PhaseUsage,
     SessionThrottles,
     ThrottledAudit,
     VerdictMap,
@@ -384,6 +385,42 @@ def test_session_throttles_count_a_bare_usage():
 
     assert counted == 3
     assert (throttles.requests, throttles.usage.input_tokens) == (3, 50)
+
+
+def test_session_throttles_count_a_report_without_a_target_billing_no_target():
+    throttles = SessionThrottles()
+
+    counted = throttles.count(given.a_report_throttled(2))
+
+    assert counted == 2
+    assert throttles.requests == 2
+    assert throttles.by_target == {}
+
+
+def test_session_throttles_bill_each_phase_of_a_report_to_its_target():
+    throttles = SessionThrottles()
+
+    throttles.count(given.a_report_by_phase(total=300, chain=100, judge=50), "CVE-1")
+
+    billed = throttles.by_target["CVE-1"]
+    assert (billed.total.input_tokens, billed.chain.input_tokens, billed.judge.input_tokens) == (
+        300,
+        100,
+        50,
+    )
+
+
+def test_phase_usage_add_sums_each_channel():
+    first = PhaseUsage.from_report(given.a_report_by_phase(total=300, chain=100, judge=50))
+    second = PhaseUsage.from_report(given.a_report_by_phase(total=30, chain=10, judge=5))
+
+    summed = first.add(second)
+
+    assert (summed.total.input_tokens, summed.chain.input_tokens, summed.judge.input_tokens) == (
+        330,
+        110,
+        55,
+    )
 
 
 def test_a_report_holding_a_throttled_step_raises_naming_it():

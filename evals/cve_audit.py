@@ -48,11 +48,13 @@ class Auditor:
 
 @dataclass(frozen=True)
 class RunOverrides:
-    """Uniform run conditions the holdout applies to every target in place of the launch's own."""
+    """Uniform run conditions applied to every target, each setting left None keeping the
+    launch's own."""
 
-    chain_budget: int
-    max_chain_steps: int
-    tool_call_timeout: int
+    chain_budget: int | None
+    max_chain_steps: int | None
+    tool_call_timeout: int | None
+    audit_every_tool: bool = False
 
 
 def build_auditor(budget: int) -> Auditor:
@@ -62,13 +64,18 @@ def build_auditor(budget: int) -> Auditor:
     return Auditor(create_llm(settings), create_judge_llm(settings), budget)
 
 
-def audit_target(budget: int, throttles: SessionThrottles, places: Places) -> AuditTarget:
+def audit_target(
+    budget: int,
+    throttles: SessionThrottles,
+    places: Places,
+    overrides: RunOverrides | None = None,
+) -> AuditTarget:
     # The composition root bounds the returned audit to the chosen concurrency.
     auditor = build_auditor(budget)
 
     async def audit(target: CVETarget) -> GradedAudit | None:
         return await graded_despite_missed_steps(
-            target, lambda: attempt_once(target, auditor, throttles, places)
+            target, lambda: attempt_once(target, auditor, throttles, places, overrides)
         )
 
     return audit
@@ -136,7 +143,7 @@ async def attempt_once(
     try:
         async with target.launched(records) as planted:
             report, calls = await _audit(planted.launch, target, auditor, overrides)
-            throttles.count(report)
+            throttles.count(report, target.cve_id)
             _print_incidents(target, report)
             # Captured before __exit__ fires, so a best-effort teardown error cannot erase a
             # completed run. The nonces travel per launch, so the graded target is built here.
@@ -211,8 +218,9 @@ def _print_incidents(target: CVETarget, report: AuditReport) -> None:
 async def _audit(
     launch: Launch, target: CVETarget, auditor: Auditor, overrides: RunOverrides | None
 ) -> tuple[AuditReport, list[RecordedCall]]:
-    chain_budget = launch.chain_budget if overrides is None else overrides.chain_budget
-    max_chain_steps = launch.max_chain_steps if overrides is None else overrides.max_chain_steps
+    forced = overrides or RunOverrides(None, None, None)
+    chain_budget = _either(forced.chain_budget, launch.chain_budget)
+    max_chain_steps = _either(forced.max_chain_steps, launch.max_chain_steps)
     try:
         async with _silent_client(launch, overrides) as mcp_client:
             recorder = RecordingClient(mcp_client)
@@ -220,7 +228,7 @@ async def _audit(
                 auditor.llm,
                 AuditedServer(recorder),
                 judge_llm=auditor.judge_llm,
-                tools_filter=target.tools_filter,
+                tools_filter=None if forced.audit_every_tool else target.tools_filter,
             )
             with one_audit():
                 result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
@@ -241,7 +249,11 @@ async def _audit(
 async def _silent_client(
     launch: Launch, overrides: RunOverrides | None
 ) -> AsyncGenerator[MCPClientPort]:
-    timeout = TOOL_CALL_TIMEOUT if overrides is None else overrides.tool_call_timeout
+    timeout = _either(None if overrides is None else overrides.tool_call_timeout, TOOL_CALL_TIMEOUT)
     with open(os.devnull, "w") as devnull:
         async with connect(launch, devnull, tool_call_timeout=timeout) as client:
             yield client
+
+
+def _either(forced: int | None, own: int) -> int:
+    return own if forced is None else forced

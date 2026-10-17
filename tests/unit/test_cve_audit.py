@@ -208,6 +208,82 @@ async def test_no_overrides_leaves_the_client_default_timeout(monkeypatch: pytes
     assert seen["timeout"] == cve_environments.TOOL_CALL_TIMEOUT
 
 
+async def test_an_override_left_unset_keeps_the_launch_setting_and_the_others_take_the_override(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    recorded = given.captured_graph_input(monkeypatch)
+    launch = Launch(command="x", args=[], chain_budget=3, max_chain_steps=5)
+    overrides = RunOverrides(chain_budget=None, max_chain_steps=9, tool_call_timeout=None)
+
+    await cve_audit._audit(launch, TARGET, given.an_auditor(), overrides)  # pyright: ignore[reportPrivateUsage]
+
+    assert recorded["chain_budget"] == 3
+    assert recorded["max_chain_steps"] == 9
+
+
+async def test_an_override_left_unset_keeps_the_launch_steps_and_takes_the_chains(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    recorded = given.captured_graph_input(monkeypatch)
+    launch = Launch(command="x", args=[], chain_budget=3, max_chain_steps=5)
+    overrides = RunOverrides(chain_budget=7, max_chain_steps=None, tool_call_timeout=None)
+
+    await cve_audit._audit(launch, TARGET, given.an_auditor(), overrides)  # pyright: ignore[reportPrivateUsage]
+
+    assert recorded["chain_budget"] == 7
+    assert recorded["max_chain_steps"] == 5
+
+
+async def test_an_unset_timeout_override_leaves_the_client_default_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    seen = given.captured_connect_timeout(monkeypatch)
+    overrides = RunOverrides(chain_budget=7, max_chain_steps=None, tool_call_timeout=None)
+
+    async with cve_audit._silent_client(Launch("x", []), overrides):  # pyright: ignore[reportPrivateUsage]
+        pass
+
+    assert seen["timeout"] == cve_environments.TOOL_CALL_TIMEOUT
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [None, RunOverrides(chain_budget=None, max_chain_steps=None, tool_call_timeout=None)],
+)
+async def test_the_graph_audits_the_target_tools_filter_by_default(
+    monkeypatch: pytest.MonkeyPatch, overrides: RunOverrides | None
+):
+    filters = given.tools_filters_seen_by_the_graph(monkeypatch)
+
+    await cve_audit._audit(Launch("x", []), TARGET, given.an_auditor(), overrides)  # pyright: ignore[reportPrivateUsage]
+
+    assert filters == [TARGET.tools_filter]
+
+
+async def test_auditing_every_tool_gives_the_graph_no_tools_filter(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    filters = given.tools_filters_seen_by_the_graph(monkeypatch)
+    overrides = RunOverrides(None, None, None, audit_every_tool=True)
+
+    await cve_audit._audit(Launch("x", []), TARGET, given.an_auditor(), overrides)  # pyright: ignore[reportPrivateUsage]
+
+    assert filters == [None]
+
+
+async def test_every_attempt_of_a_target_is_billed_to_it(monkeypatch: pytest.MonkeyPatch):
+    given.captured_console(monkeypatch)
+    given.an_audit_reporting(monkeypatch, given.a_report_billed(100, 10))
+    target = given.a_target_launching_nothing()
+    throttles = SessionThrottles()
+
+    for _ in range(2):
+        await attempt_once(target, given.an_auditor(), throttles, places={})
+
+    billed = throttles.by_target[target.cve_id].total
+    assert (billed.input_tokens, billed.output_tokens) == (200, 20)
+
+
 async def test_a_throttled_attempt_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
     given.captured_console(monkeypatch)
     attempt = given.ScriptedAttempts[GradedAudit]([ThrottledAttempt()])

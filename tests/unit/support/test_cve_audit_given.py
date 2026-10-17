@@ -107,15 +107,29 @@ def breakers_seen_by_the_graph(monkeypatch: pytest.MonkeyPatch) -> list[Throttle
     return seen
 
 
+def tools_filters_seen_by_the_graph(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    seen: list[object] = []
+    _a_graph_running(monkeypatch, lambda _graph_input: None, seen.append)
+    return seen
+
+
+def a_report_billed(input_tokens: int, output_tokens: int) -> AuditReport:
+    usage = ProviderUsage(input_tokens=input_tokens, output_tokens=output_tokens)
+    return grammar.a_report().model_copy(update={"provider_usage": usage})
+
+
 def _a_graph_running(
-    monkeypatch: pytest.MonkeyPatch, observe: Callable[[dict[str, object]], object]
+    monkeypatch: pytest.MonkeyPatch,
+    observe: Callable[[dict[str, object]], object],
+    observe_tools_filter: Callable[[object], object] = lambda _tools_filter: None,
 ) -> None:
     class _FakeGraph:
         async def ainvoke(self, graph_input: dict[str, object]) -> dict[str, object]:
             observe(graph_input)
             return {"audit_report": grammar.a_report()}
 
-    def _fake_build_graph(*_args: object, **_kwargs: object) -> _FakeGraph:
+    def _fake_build_graph(*_args: object, **kwargs: object) -> _FakeGraph:
+        observe_tools_filter(kwargs["tools_filter"])
         return _FakeGraph()
 
     @asynccontextmanager

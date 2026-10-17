@@ -188,13 +188,37 @@ def quiet_throttle_waits() -> None:
     logging.getLogger("mcp_auditor.throttling").setLevel(logging.ERROR)
 
 
+class PhaseUsage(BaseModel):
+    """An audit's usage by phase. The channels overlap (the chain judgment counts in chain and
+    judge), so the total is never their sum."""
+
+    total: ProviderUsage = ProviderUsage()
+    chain: ProviderUsage = ProviderUsage()
+    judge: ProviderUsage = ProviderUsage()
+
+    @classmethod
+    def from_report(cls, report: AuditReport) -> "PhaseUsage":
+        return cls(total=report.provider_usage, chain=report.chain_usage, judge=report.judge_usage)
+
+    def add(self, other: "PhaseUsage") -> "PhaseUsage":
+        return PhaseUsage(
+            total=self.total.add(other.total),
+            chain=self.chain.add(other.chain),
+            judge=self.judge.add(other.judge),
+        )
+
+
 @dataclass
 class SessionThrottles:
     requests: int = 0
     usage: ProviderUsage = field(default_factory=ProviderUsage)
+    by_target: dict[str, PhaseUsage] = field(default_factory=dict[str, PhaseUsage])
 
-    def count(self, report: AuditReport) -> int:
+    def count(self, report: AuditReport, target_id: str | None = None) -> int:
         """Every report counted is billed, an incomplete attempt's and a replay's included."""
+        if target_id is not None:
+            billed = self.by_target.get(target_id, PhaseUsage())
+            self.by_target[target_id] = billed.add(PhaseUsage.from_report(report))
         return self.count_usage(report.provider_usage)
 
     def count_usage(self, usage: ProviderUsage) -> int:
