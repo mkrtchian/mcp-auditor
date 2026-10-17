@@ -75,6 +75,14 @@ class TestOpenRouterEffortCatalog:
         [
             pytest.param(_listing(_model("other/model", ["low"])), id="model absent"),
             pytest.param(_listing({"id": _GLM}), id="reasoning omitted"),
+            pytest.param(
+                _listing({"id": _GLM, "reasoning": {"supported_efforts": "high"}}),
+                id="efforts not a list",
+            ),
+            pytest.param(
+                _listing({"id": _GLM, "reasoning": {"supported_efforts": ["high", 3]}}),
+                id="efforts not all strings",
+            ),
             pytest.param(_Listing(httpx.Response(503)), id="http error"),
             pytest.param(_Listing(httpx.Response(200, text="<html>")), id="body not json"),
             pytest.param(_Listing(httpx.Response(200, json={})), id="body without data"),

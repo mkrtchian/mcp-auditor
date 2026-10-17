@@ -1,5 +1,5 @@
 import logging
-from typing import Any, cast
+from typing import Any, TypeGuard, cast
 
 import httpx
 
@@ -40,8 +40,13 @@ class OpenRouterEffortCatalog:
         if not isinstance(reasoning, dict):
             _logger.warning("OpenRouter lists no reasoning for %r, effort not checked", model)
             return None
-        efforts: list[str] | None = cast(dict[str, Any], reasoning).get("supported_efforts")
-        return None if efforts is None else tuple(efforts)
+        efforts: object = cast(dict[str, Any], reasoning).get("supported_efforts")
+        if efforts is None:
+            return None
+        if not _is_effort_list(efforts):
+            _logger.warning("OpenRouter lists malformed efforts for %r, effort not checked", model)
+            return None
+        return tuple(efforts)
 
     def _fetch_listing(self) -> list[dict[str, Any]]:
         with httpx.Client(transport=self._transport, timeout=_TIMEOUT_SECONDS) as client:
@@ -52,3 +57,9 @@ class OpenRouterEffortCatalog:
             raise ValueError(f"'data' is a {type(data).__name__}, not a list")
         entries = cast(list[object], data)
         return [cast(dict[str, Any], entry) for entry in entries if isinstance(entry, dict)]
+
+
+def _is_effort_list(efforts: object) -> TypeGuard[list[str]]:
+    return isinstance(efforts, list) and all(
+        isinstance(effort, str) for effort in cast(list[object], efforts)
+    )
