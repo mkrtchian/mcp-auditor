@@ -311,10 +311,16 @@ def is_judge_step(step: AuditStep) -> bool:
     return step in JUDGE_STEPS
 
 
-class RefusedStep(BaseModel):
+class MissCause(StrEnum):
+    PROVIDER_REFUSAL = "provider_refusal"
+    UNREADABLE_ANSWER = "unreadable_answer"
+
+
+class MissedStep(BaseModel):
     tool_name: str
     step: AuditStep
-    provider_message: str
+    cause: MissCause
+    detail: str
 
 
 class AuditReport(BaseModel):
@@ -323,7 +329,7 @@ class AuditReport(BaseModel):
     provider_usage: ProviderUsage
     judge_usage: ProviderUsage = ProviderUsage()
     execution: ExecutionRecord | None = None
-    refused_steps: list[RefusedStep] = []
+    missed_steps: list[MissedStep] = []
 
     @property
     def generator_usage(self) -> ProviderUsage:
@@ -331,7 +337,7 @@ class AuditReport(BaseModel):
 
     @property
     def is_complete(self) -> bool:
-        return not self.refused_steps and all(tr.coverage_gap is None for tr in self.tool_reports)
+        return not self.missed_steps and all(tr.coverage_gap is None for tr in self.tool_reports)
 
     @property
     def findings(self) -> list[EvalResult]:

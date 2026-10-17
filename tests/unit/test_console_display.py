@@ -5,7 +5,8 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditStep,
     ExecutionRegime,
-    RefusedStep,
+    MissCause,
+    MissedStep,
     Severity,
 )
 
@@ -167,11 +168,11 @@ def test_summary_warns_about_a_refused_step_then_about_the_incomplete_audit():
     assert "incomplete" in warnings[1]
 
 
-def test_refused_steps_are_warned_one_by_one_as_the_dry_run_does():
+def test_missed_steps_are_warned_one_by_one_as_the_dry_run_does():
     display, buffer = given.a_ci_display()
     refused = given.a_refused_chain_planning_on_list_items()
 
-    display.print_refused_steps([refused, refused])
+    display.print_missed_steps([refused, refused])
 
     warnings = _warnings(buffer.getvalue())
     assert len(warnings) == 2
@@ -181,9 +182,14 @@ def test_refused_steps_are_warned_one_by_one_as_the_dry_run_does():
 def test_a_refused_step_warning_prints_the_provider_message_verbatim():
     display, buffer = given.a_ci_display()
     message = "Blocked [see policy] by [/moderation]"
-    refused = RefusedStep(tool_name="get_user", step=AuditStep.JUDGMENT, provider_message=message)
+    refused = MissedStep(
+        tool_name="get_user",
+        step=AuditStep.JUDGMENT,
+        cause=MissCause.PROVIDER_REFUSAL,
+        detail=message,
+    )
 
-    display.print_refused_steps([refused])
+    display.print_missed_steps([refused])
 
     assert message in _warnings(buffer.getvalue())[0]
 

@@ -1,7 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import Judgment, TestCase, ToolDefinition
-from mcp_auditor.domain.models import AuditStep, RefusedStep
+from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
 
 
 def discovered_tools_count(result: dict[str, Any], expected: int) -> None:
@@ -58,6 +58,11 @@ def attack_context_has_db_engine(result: dict[str, Any], expected: str) -> None:
 
 
 def refused_step_recorded(result: dict[str, Any], tool_name: str, step: AuditStep) -> None:
-    assert result["refused_steps"] == [
-        RefusedStep(tool_name=tool_name, step=step, provider_message="flagged by policy")
+    assert result["missed_steps"] == [
+        MissedStep(
+            tool_name=tool_name,
+            step=step,
+            cause=MissCause.PROVIDER_REFUSAL,
+            detail="flagged by policy",
+        )
     ]

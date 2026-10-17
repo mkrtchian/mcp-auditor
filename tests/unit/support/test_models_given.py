@@ -13,7 +13,7 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolReport,
 )
-from mcp_auditor.domain.models import AuditStep, RefusedStep
+from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
 
 
 def a_tool(
@@ -57,18 +57,20 @@ def a_report_with_finding(severity: Severity) -> AuditReport:
 
 
 def a_report(
-    refused_steps: list[RefusedStep] | None = None, coverage_gap: CoverageGap | None = None
+    missed_steps: list[MissedStep] | None = None, coverage_gap: CoverageGap | None = None
 ) -> AuditReport:
     return AuditReport(
         target="test",
         tool_reports=[ToolReport(tool=a_tool(), cases=[], coverage_gap=coverage_gap)],
         provider_usage=ProviderUsage(),
-        refused_steps=refused_steps or [],
+        missed_steps=missed_steps or [],
     )
 
 
-def a_refused_step(step: AuditStep = AuditStep.JUDGMENT) -> RefusedStep:
-    return RefusedStep(tool_name="test_tool", step=step, provider_message="flagged")
+def a_refused_step(step: AuditStep = AuditStep.JUDGMENT) -> MissedStep:
+    return MissedStep(
+        tool_name="test_tool", step=step, cause=MissCause.PROVIDER_REFUSAL, detail="flagged"
+    )
 
 
 def a_coverage_gap() -> CoverageGap:

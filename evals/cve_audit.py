@@ -18,11 +18,11 @@ from evals.cve_replay import RecordedCall, RunToCheck, replay_credit
 from evals.cve_report_units import units_of
 from evals.cve_session_model import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
-from evals.metrics import SessionThrottles, blocked_reasons, refused_steps
+from evals.metrics import SessionThrottles, blocked_reasons, missed_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AttackContext, AuditReport
+from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
 
@@ -30,7 +30,7 @@ console = Console()
 
 # A policy refusal stops a step, so the run says nothing of detection. The generated prompts
 # differ from one audit to the next, so a new attempt usually passes the provider's filter.
-REFUSAL_ATTEMPTS = 3
+INCOMPLETE_ATTEMPTS = 3
 
 
 class LaunchError(Exception):
@@ -73,27 +73,28 @@ def audit_target(budget: int, throttles: SessionThrottles, places: Places) -> Au
 
 
 @dataclass(frozen=True)
-class RefusedAttempt:
-    """An audit whose report holds a step the model provider refused."""
+class IncompleteAttempt:
+    """An audit that did not detect and whose report holds a missed step, with its causes."""
 
     report: AuditReport
+    causes: frozenset[MissCause]
 
 
 async def graded_despite_refusals[T](
-    target: CVETarget, attempt: Callable[[], Awaitable[T | RefusedAttempt | None]]
+    target: CVETarget, attempt: Callable[[], Awaitable[T | IncompleteAttempt | None]]
 ) -> T | None:
     """The first attempt not refused grades the run. None when every attempt is refused."""
-    for number in range(1, REFUSAL_ATTEMPTS + 1):
+    for number in range(1, INCOMPLETE_ATTEMPTS + 1):
         outcome = await attempt()
-        if not isinstance(outcome, RefusedAttempt):
+        if not isinstance(outcome, IncompleteAttempt):
             return outcome
         console.print(
-            f"[yellow]{target.cve_id}: attempt {number}/{REFUSAL_ATTEMPTS} refused by the"
+            f"[yellow]{target.cve_id}: attempt {number}/{INCOMPLETE_ATTEMPTS} refused by the"
             " model provider, not graded[/yellow]"
         )
     console.print(
         f"[yellow]{target.cve_id} run skipped:[/yellow] refused by the model provider"
-        f" at all {REFUSAL_ATTEMPTS} attempts"
+        f" at all {INCOMPLETE_ATTEMPTS} attempts"
     )
     return None
 
@@ -104,7 +105,7 @@ async def attempt_once(
     throttles: SessionThrottles,
     places: Places,
     overrides: RunOverrides | None = None,
-) -> GradedAudit | RefusedAttempt | None:
+) -> GradedAudit | IncompleteAttempt | None:
     # An unknown kept id or a planting_spec refusal is a configuration error: it is not
     # caught here, so it crashes the run rather than reading as a skip the gate cannot compare.
     records = kept_records(target.kept_places, places)
@@ -130,7 +131,7 @@ async def attempt_once(
         return None
     # The replay launches the patched version, so it runs only once the vulnerable one has exited.
     grade = await _checked_grade(run)
-    outcome = graded_or_refused(grade, run.report)
+    outcome = graded_or_incomplete(grade, run.report)
     if isinstance(outcome, RunGrade):
         console.print(f"{target.cve_id}: {outcome.status}")
         return GradedAudit(outcome, run.report)
@@ -153,20 +154,20 @@ async def _checked_grade(
     return grade_run(run.run_target, units, check)
 
 
-def graded_or_refused(grade: RunGrade, report: AuditReport) -> RunGrade | RefusedAttempt:
+def graded_or_incomplete(grade: RunGrade, report: AuditReport) -> RunGrade | IncompleteAttempt:
     """A detection carries its own proof and stands whatever step was refused. A run that did
     not detect with a refused step says nothing of detection, the struck credit included."""
-    if report.refused_steps and grade.status not in DETECTION_RUNGS:
-        return RefusedAttempt(report)
+    if report.missed_steps and grade.status not in DETECTION_RUNGS:
+        return IncompleteAttempt(report, frozenset(missed.cause for missed in report.missed_steps))
     return grade
 
 
 def _print_incidents(target: CVETarget, report: AuditReport) -> None:
     for reason in blocked_reasons(report):
         console.print(f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]")
-    for refused in refused_steps(report):
+    for missed in missed_steps(report):
         console.print(
-            f"[yellow]{target.cve_id}: refused by the model provider, {escape(refused)}[/yellow]"
+            f"[yellow]{target.cve_id}: refused by the model provider, {escape(missed)}[/yellow]"
         )
     throttled = report.provider_usage.throttled_requests
     if throttled > 0:

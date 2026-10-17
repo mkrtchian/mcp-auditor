@@ -11,7 +11,12 @@ from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.log_redaction import redacted_sdk_logging
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.stderr_capture import RedactingStderr
-from mcp_auditor.checkpointing import checkpoint_db_path, compute_thread_id, resume_or_reset
+from mcp_auditor.checkpointing import (
+    CheckpointFromEarlierVersion,
+    checkpoint_db_path,
+    compute_thread_id,
+    resume_or_reset,
+)
 from mcp_auditor.config import Settings, load_settings
 from mcp_auditor.console import AuditDisplay, print_server_stderr, summarize_exception_group
 from mcp_auditor.domain.audited_server import AuditedServer
@@ -96,9 +101,7 @@ class Audit:
             except OSError as exc:
                 self._give_up(str(exc), server_stderr, exc)
             except BaseExceptionGroup as exc:
-                self._give_up(
-                    f"MCP server failed: {summarize_exception_group(exc)}", server_stderr, exc
-                )
+                self._give_up(_group_failure(exc), server_stderr, exc)
         if report is None:
             return None
         # The container's kill state is known only once the execution's block has exited.
@@ -190,7 +193,7 @@ class Audit:
                 report.tool.name, [c.payload for c in report.cases]
             )
             self._display.print_coverage_gap(report)
-        self._display.print_refused_steps(result.get("refused_steps", []))
+        self._display.print_missed_steps(result.get("missed_steps", []))
 
     def _give_up(
         self,
@@ -202,3 +205,11 @@ class Audit:
         self._display.print_error(server_stderr.redaction.text(message))
         print_server_stderr(server_stderr.text(), self._display)
         raise SystemExit(1) from exc
+
+
+# The resume decision runs inside the MCP session, whose task group wraps what it raises.
+def _group_failure(exc: BaseExceptionGroup[BaseException]) -> str:
+    earlier_version, _ = exc.split(CheckpointFromEarlierVersion)
+    if earlier_version is not None:
+        return summarize_exception_group(earlier_version)
+    return f"MCP server failed: {summarize_exception_group(exc)}"

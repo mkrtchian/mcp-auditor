@@ -234,7 +234,7 @@ async def test_a_refused_judgment_does_not_stop_the_audit():
 
     report = then.tool_report_at(result, 0)
     assert [case.eval_result is None for case in report.cases] == [True, False]
-    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.JUDGMENT)])
+    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.JUDGMENT)])
 
 
 @pytest.mark.asyncio
@@ -270,7 +270,7 @@ async def test_a_refused_first_generation_leaves_its_tool_untested_and_audits_th
     then.report_has_cases(first, 0)
     then.report_has_a_gap_of(first, requested=2, received=0)
     then.report_has_cases(then.tool_report_at(result, 1), 2)
-    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
+    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 
@@ -283,7 +283,7 @@ async def test_a_dry_run_with_a_refused_generation_carries_the_refused_step():
     result = await given.invoke_graph(graph, state)
 
     then.report_has_a_gap_of(result["tool_reports"][0], requested=3, received=0)
-    then.state_has_refused_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
+    then.state_has_missed_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
 
 
 @pytest.mark.asyncio
@@ -295,7 +295,7 @@ async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
     result = await given.invoke_graph(graph, state)
 
     then.report_has_no_chains(then.tool_report_at(result, 0))
-    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.CHAIN_PLANNING)])
+    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.CHAIN_PLANNING)])
 
 
 @pytest.mark.asyncio
@@ -310,7 +310,7 @@ async def test_a_refused_observation_judges_its_chain_and_the_next_chain_runs():
     then.report_has_chains(report, 2)
     then.chain_has_eval_result(report.chains[0])
     then.chain_has_eval_result(report.chains[1])
-    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.CHAIN_STEP_OBSERVATION)])
+    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.CHAIN_STEP_OBSERVATION)])
 
 
 @pytest.mark.asyncio
@@ -326,4 +326,4 @@ async def test_a_refused_step_planning_judges_the_chain_with_the_steps_it_has():
     then.report_has_chains(report, 1)
     assert len(report.chains[0].steps) == 1
     then.chain_has_eval_result(report.chains[0])
-    then.audit_report_has_refused_steps(result, [("get_user", AuditStep.CHAIN_STEP_PLANNING)])
+    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.CHAIN_STEP_PLANNING)])

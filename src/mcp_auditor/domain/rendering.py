@@ -11,7 +11,7 @@ from mcp_auditor.domain.models import (
     EvalVerdict,
     ExecutionRecord,
     ExecutionRegime,
-    RefusedStep,
+    MissedStep,
     Severity,
     TestCase,
     ToolReport,
@@ -39,8 +39,8 @@ def render_markdown(report: AuditReport) -> str:
         _render_summary_section(report),
     ]
     for tool_report in report.tool_reports:
-        refused_steps = [r for r in report.refused_steps if r.tool_name == tool_report.tool.name]
-        sections.append(_render_tool_section(tool_report, refused_steps))
+        missed_steps = [r for r in report.missed_steps if r.tool_name == tool_report.tool.name]
+        sections.append(_render_tool_section(tool_report, missed_steps))
     return "\n".join(sections)
 
 
@@ -76,10 +76,10 @@ def _render_summary_section(report: AuditReport) -> str:
 
 def _render_completeness_lines(report: AuditReport) -> list[str]:
     lines: list[str] = []
-    refused_count = len(report.refused_steps)
-    if refused_count > 0:
-        noun = "step" if refused_count == 1 else "steps"
-        lines.append(f"**Refused by the model provider**: {refused_count} {noun}")
+    missed_count = len(report.missed_steps)
+    if missed_count > 0:
+        noun = "step" if missed_count == 1 else "steps"
+        lines.append(f"**Refused by the model provider**: {missed_count} {noun}")
     if not report.is_complete:
         lines.append("**Audit complete**: no")
     return lines
@@ -132,16 +132,16 @@ def describe_coverage_gap(gap: CoverageGap) -> str:
     return description
 
 
-def describe_refused_step(refused: RefusedStep) -> str:
-    return f'{refused.step.replace("_", " ")}, "{refused.provider_message}"'
+def describe_missed_step(missed: MissedStep) -> str:
+    return f'{missed.step.replace("_", " ")}, "{missed.detail}"'
 
 
-def _render_tool_section(tool_report: ToolReport, refused_steps: list[RefusedStep]) -> str:
+def _render_tool_section(tool_report: ToolReport, missed_steps: list[MissedStep]) -> str:
     lines = [f"\n## {tool_report.tool.name}\n"]
     if tool_report.coverage_gap is not None:
         lines.append(f"**Coverage gap**: {describe_coverage_gap(tool_report.coverage_gap)}\n")
-    for refused in refused_steps:
-        lines.append(f"**Refused by the model provider**: {describe_refused_step(refused)}\n")
+    for missed in missed_steps:
+        lines.append(f"**Refused by the model provider**: {describe_missed_step(missed)}\n")
     for case in tool_report.cases:
         lines.append(_render_case_section(case))
     for chain in tool_report.chains:

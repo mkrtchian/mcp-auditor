@@ -509,16 +509,17 @@ def test_markdown_renders_a_chain_with_no_verdict_as_not_judged():
     assert "**Verdict**: not judged" in result
 
 
-def test_json_carries_the_refused_steps():
+def test_json_carries_the_missed_steps():
     report = given.a_report_with_a_refused_judgment_on_get_user()
 
-    refused_steps = json.loads(render_json(report))["refused_steps"]
+    missed_steps = json.loads(render_json(report))["missed_steps"]
 
-    assert refused_steps == [
+    assert missed_steps == [
         {
             "tool_name": "get_user",
             "step": "judgment",
-            "provider_message": given.REFUSAL_MESSAGE,
+            "cause": "provider_refusal",
+            "detail": given.REFUSAL_MESSAGE,
         }
     ]
 

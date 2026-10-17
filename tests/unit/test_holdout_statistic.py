@@ -45,7 +45,7 @@ def _result(
         unchecked_places=[[] for _ in range(runs)],
         aimed_runs=detected_runs,
         fail_without_proof_runs=0,
-        refused_runs=0,
+        incomplete_runs=0,
         run_cost=0.01,
     )
 

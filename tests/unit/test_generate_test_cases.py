@@ -161,4 +161,4 @@ async def test_a_generation_without_refusal_records_none():
 
     result = await node(given.a_generation_state(test_budget=5))
 
-    assert result["refused_steps"] == []
+    assert result["missed_steps"] == []

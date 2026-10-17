@@ -25,8 +25,8 @@ class HoldoutTargetResult:
     unchecked_places: list[list[str]]  # per run, the credits the replay could not check, ids only
     aimed_runs: int
     fail_without_proof_runs: int
-    refused_runs: int
-    run_cost: float  # dollars over its runs, refused runs included
+    incomplete_runs: int
+    run_cost: float  # dollars over its runs, incomplete runs included
 
 
 @dataclass(frozen=True)
@@ -55,6 +55,6 @@ class HoldoutRunResult:
     image_ids: dict[str, str]
     targets: Sequence[HoldoutTargetResult]
     not_run: Sequence[NotRunTarget]
-    refused_run_count: int
+    incomplete_run_count: int
     total_cost: float
     prices_as_of: date

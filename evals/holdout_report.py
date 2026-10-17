@@ -61,7 +61,7 @@ class TargetLine(BaseModel):
     unchecked_places: list[list[str]]
     aimed_runs: int
     fail_without_proof_runs: int
-    refused_runs: int
+    incomplete_runs: int
     ran_in_fallback: bool
     tools_count: int
     cost: float
@@ -92,7 +92,7 @@ class HoldoutReport(BaseModel):
     ladder: dict[int, int]  # detected-run count -> number of targets reaching it
     targets: list[TargetLine]
     not_run: list[NotRunLine]
-    refused_run_count: int
+    incomplete_run_count: int
     total_cost: float
     prices_as_of: date
     commit: str
@@ -130,7 +130,7 @@ def build_report(run: HoldoutRunResult, run_cutoff: date) -> HoldoutReport:
         ladder=dict(Counter(target.detected_runs for target in run.targets)),
         targets=[_target_line(target) for target in run.targets],
         not_run=[NotRunLine(cve_id=t.cve_id, reason=t.reason) for t in run.not_run],
-        refused_run_count=run.refused_run_count,
+        incomplete_run_count=run.incomplete_run_count,
         total_cost=run.total_cost,
         prices_as_of=run.prices_as_of,
         commit=run.commit,
@@ -208,7 +208,7 @@ def _target_line(target: HoldoutTargetResult) -> TargetLine:
         unchecked_places=target.unchecked_places,
         aimed_runs=target.aimed_runs,
         fail_without_proof_runs=target.fail_without_proof_runs,
-        refused_runs=target.refused_runs,
+        incomplete_runs=target.incomplete_runs,
         ran_in_fallback=target.ran_in_fallback,
         tools_count=target.tools_count,
         cost=target.run_cost,
@@ -226,7 +226,7 @@ def render_markdown(report: HoldoutReport) -> str:
             *_split_section(report),
             *_controls_section(report),
             *_not_run_section(report),
-            _refused_runs_line(report),
+            _incomplete_runs_line(report),
             f"Total cost: ${report.total_cost:.2f}",
         ]
     )
@@ -274,13 +274,16 @@ def _not_run_section(report: HoldoutReport) -> list[str]:
     return ["## Not run", *lines, ""]
 
 
-def _refused_runs_line(report: HoldoutReport) -> str:
+_INCOMPLETE_RUNS = "Incomplete runs (a step refused or unreadable)"
+
+
+def _incomplete_runs_line(report: HoldoutReport) -> str:
     """The count with the targets it touches (holdout-rule.md:249), derived from the per-target
-    refused-run counts."""
-    touched = [target.cve_id for target in report.targets if target.refused_runs > 0]
+    incomplete-run counts."""
+    touched = [target.cve_id for target in report.targets if target.incomplete_runs > 0]
     if not touched:
-        return f"Refused runs: {report.refused_run_count}"
-    return f"Refused runs: {report.refused_run_count} ({', '.join(touched)})"
+        return f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count}"
+    return f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count} ({', '.join(touched)})"
 
 
 def _span(interval: IntervalModel) -> str:

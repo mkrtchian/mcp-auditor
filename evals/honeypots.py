@@ -87,7 +87,7 @@ async def audit_honeypots(audit: HoneypotAudit) -> tuple[VerdictMap, AuditReport
             target=merged.target,
             tool_reports=[*merged.tool_reports, *report.tool_reports],
             provider_usage=merged.provider_usage.add(report.provider_usage),
-            refused_steps=[*merged.refused_steps, *report.refused_steps],
+            missed_steps=[*merged.missed_steps, *report.missed_steps],
         )
     return verdicts, merged
 

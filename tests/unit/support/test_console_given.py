@@ -11,8 +11,9 @@ from mcp_auditor.domain.models import (
     CoverageGap,
     EvalResult,
     EvalVerdict,
+    MissCause,
+    MissedStep,
     ProviderUsage,
-    RefusedStep,
     Severity,
     TestCase,
     ToolDefinition,
@@ -138,15 +139,18 @@ def a_report_throttled(throttled_requests: int) -> AuditReport:
 REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage policy"
 
 
-def a_refused_chain_planning_on_list_items() -> RefusedStep:
-    return RefusedStep(
-        tool_name="list_items", step=AuditStep.CHAIN_PLANNING, provider_message=REFUSAL_MESSAGE
+def a_refused_chain_planning_on_list_items() -> MissedStep:
+    return MissedStep(
+        tool_name="list_items",
+        step=AuditStep.CHAIN_PLANNING,
+        cause=MissCause.PROVIDER_REFUSAL,
+        detail=REFUSAL_MESSAGE,
     )
 
 
 def a_report_with_a_refused_step() -> AuditReport:
     report = a_report_with_two_tools()
-    report.refused_steps = [a_refused_chain_planning_on_list_items()]
+    report.missed_steps = [a_refused_chain_planning_on_list_items()]
     return report
 
 

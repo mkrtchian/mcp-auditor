@@ -14,8 +14,8 @@ from mcp_auditor.domain.models import (
     CoverageGap,
     EvalResult,
     Judgment,
+    MissedStep,
     ProviderUsage,
-    RefusedStep,
     TestCase,
     TestCaseBatch,
     ToolDefinition,
@@ -24,13 +24,13 @@ from mcp_auditor.domain.models import (
     order_tools_for_audit,
 )
 from mcp_auditor.domain.ports import LLMPort
+from mcp_auditor.graph.missed_steps import Missed, ModelCall, call_model
 from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
     build_context_extraction_prompt,
     build_judge_prompt,
     with_redaction_notice,
 )
-from mcp_auditor.graph.refusals import ModelCall, Refused, call_model
 
 
 def make_discover_tools(server: AuditedServer, tools_filter: frozenset[str] | None = None):
@@ -73,14 +73,14 @@ class GenerationRequest:
 class GenerationOutcome:
     batch: TestCaseBatch
     usages: list[ProviderUsage]
-    refused_steps: list[RefusedStep] = field(default_factory=list[RefusedStep])
+    missed_steps: list[MissedStep] = field(default_factory=list[MissedStep])
 
     @property
-    def refused(self) -> bool:
-        return bool(self.refused_steps)
+    def missed(self) -> bool:
+        return bool(self.missed_steps)
 
     def retried_as(self, retry: "GenerationOutcome") -> "GenerationOutcome":
-        batch = self.batch if retry.refused else retry.batch
+        batch = self.batch if retry.missed else retry.batch
         return self._joined(retry, batch)
 
     def completed_by(self, completion: "GenerationOutcome") -> "GenerationOutcome":
@@ -90,7 +90,7 @@ class GenerationOutcome:
 
     def _joined(self, later: "GenerationOutcome", batch: TestCaseBatch) -> "GenerationOutcome":
         usages = [*self.usages, *later.usages]
-        return GenerationOutcome(batch, usages, [*self.refused_steps, *later.refused_steps])
+        return GenerationOutcome(batch, usages, [*self.missed_steps, *later.missed_steps])
 
 
 def make_generate_test_cases(llm: LLMPort, redacting: bool = False):
@@ -108,7 +108,7 @@ def make_generate_test_cases(llm: LLMPort, redacting: bool = False):
             "judged_cases": [],
             "provider_usage": outcome.usages,
             "coverage_gap": request.gap_in(outcome.batch),
-            "refused_steps": outcome.refused_steps,
+            "missed_steps": outcome.missed_steps,
         }
 
     return generate_test_cases
@@ -117,11 +117,11 @@ def make_generate_test_cases(llm: LLMPort, redacting: bool = False):
 async def _generate_covering_batch(llm: LLMPort, request: GenerationRequest) -> GenerationOutcome:
     full_call = request.call_for(request.categories, request.budget)
     first = await _ask_for_batch(llm, full_call)
-    if first.refused or request.gap_in(first.batch) is None:
+    if first.missed or request.gap_in(first.batch) is None:
         return first
     retried = first.retried_as(await _ask_for_batch(llm, full_call))
     gap = request.gap_in(retried.batch)
-    if retried.refused or gap is None or not gap.missing_categories:
+    if retried.missed or gap is None or not gap.missing_categories:
         return retried
     completion = await _complete_categories(llm, request, gap.missing_categories)
     return retried.completed_by(completion)
@@ -133,13 +133,13 @@ async def _complete_categories(
     size = completion_size(request.budget, request.categories, missing)
     completion = await _ask_for_batch(llm, request.call_for(missing, size))
     kept = [case for case in completion.batch.cases if case.category in missing][:size]
-    return GenerationOutcome(TestCaseBatch(cases=kept), completion.usages, completion.refused_steps)
+    return GenerationOutcome(TestCaseBatch(cases=kept), completion.usages, completion.missed_steps)
 
 
 async def _ask_for_batch(llm: LLMPort, call: ModelCall[TestCaseBatch]) -> GenerationOutcome:
     answer = await call_model(llm, call)
-    if isinstance(answer, Refused):
-        return GenerationOutcome(TestCaseBatch(cases=[]), [answer.usage], [answer.refused_step])
+    if isinstance(answer, Missed):
+        return GenerationOutcome(TestCaseBatch(cases=[]), [answer.usage], [answer.missed_step])
     batch, usage = answer
     return GenerationOutcome(batch, [usage])
 
@@ -170,7 +170,7 @@ def make_judge_response(llm: LLMPort, redacting: bool = False):
         if redacting:
             prompt = with_redaction_notice(prompt)
         answer = await call_model(llm, ModelCall(tool.name, AuditStep.JUDGMENT, prompt, Judgment))
-        if isinstance(answer, Refused):
+        if isinstance(answer, Missed):
             return {"judged_cases": [case], "current_case": None, **answer.state_update()}
         judgment, usage = answer
         eval_result = EvalResult(
@@ -214,7 +214,7 @@ def make_extract_attack_context(llm: LLMPort, redacting: bool = False):
             prompt = with_redaction_notice(prompt)
         call = ModelCall(tool_report.tool.name, AuditStep.CONTEXT_EXTRACTION, prompt, AttackContext)
         answer = await call_model(llm, call)
-        if isinstance(answer, Refused):
+        if isinstance(answer, Missed):
             return {"attack_context": existing_context, **answer.state_update()}
         new_context, usage = answer
         return {"attack_context": new_context, "provider_usage": [usage]}
@@ -232,7 +232,7 @@ async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
         tool_reports=reports,
         provider_usage=usage,
         judge_usage=judge_usage,
-        refused_steps=state.get("refused_steps", []),
+        missed_steps=state.get("missed_steps", []),
     )
     return {"audit_report": report}
 

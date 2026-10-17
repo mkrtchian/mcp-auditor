@@ -4,10 +4,11 @@ import pytest
 from rich.console import Console
 
 from evals import holdout_audit as holdout_audit_module
-from evals.cve_audit import RefusedAttempt
+from evals.cve_audit import IncompleteAttempt
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS
-from evals.holdout_audit import HOLDOUT_INFRA_ATTEMPTS, RefusedRun, holdout_audit
+from evals.holdout_audit import HOLDOUT_INFRA_ATTEMPTS, IncompleteRun, holdout_audit
+from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_cve_oracle_given import a_detected_grade
 
@@ -39,11 +40,13 @@ async def test_a_detection_with_a_refused_step_passes_through(monkeypatch: pytes
 async def test_a_refused_attempt_is_not_retried(monkeypatch: pytest.MonkeyPatch):
     _captured_console(monkeypatch)
     report = grammar.a_report()
-    attempt = _ScriptedAttempts([RefusedAttempt(report)])
+    attempt = _ScriptedAttempts(
+        [IncompleteAttempt(report, frozenset({MissCause.PROVIDER_REFUSAL}))]
+    )
 
     outcome = await holdout_audit(TARGET, attempt)
 
-    assert isinstance(outcome, RefusedRun)
+    assert isinstance(outcome, IncompleteRun)
     assert outcome.report is report
     assert attempt.calls == 1
 
@@ -59,11 +62,11 @@ async def test_an_infra_failure_is_retried_twice_then_gives_up(monkeypatch: pyte
 
 
 class _ScriptedAttempts:
-    def __init__(self, outcomes: list[GradedAudit | RefusedAttempt | None]) -> None:
+    def __init__(self, outcomes: list[GradedAudit | IncompleteAttempt | None]) -> None:
         self._outcomes = outcomes
         self.calls = 0
 
-    async def __call__(self) -> GradedAudit | RefusedAttempt | None:
+    async def __call__(self) -> GradedAudit | IncompleteAttempt | None:
         self.calls += 1
         return self._outcomes.pop(0)
 

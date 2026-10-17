@@ -25,6 +25,17 @@ def checkpoint_db_path() -> str:
     return str(checkpoint_dir / "checkpoints.db")
 
 
+# Channels a checkpoint written before missed steps holds. The graph no longer declares
+# them, so a resume would silently drop their content (refused steps vanish from the
+# report) or fail mid-chain on the renamed channel.
+_EARLIER_VERSION_CHANNELS = frozenset({"refused_steps", "chain_step_refused"})
+
+
+class CheckpointFromEarlierVersion(Exception):
+    def __init__(self) -> None:
+        super().__init__("checkpoint written by an earlier version, run without --resume")
+
+
 async def resume_or_reset(graph: Any, thread_id: str, requested: bool) -> bool:
     """True to resume an interrupted audit, False after wiping the thread.
 
@@ -33,7 +44,10 @@ async def resume_or_reset(graph: Any, thread_id: str, requested: bool) -> bool:
     """
     # This read must precede the wipe: adelete_thread is the one saver method
     # that skips setup(), so on a virgin database it fails on a missing table.
-    snapshot = await graph.aget_state({"configurable": {"thread_id": thread_id}})
+    config = {"configurable": {"thread_id": thread_id}}
+    snapshot = await graph.aget_state(config)
+    if requested:
+        await _refuse_earlier_version(graph.checkpointer, config)
     # `next` holds the nodes still to run, and discriminates where the mere
     # existence of a checkpoint cannot: it is empty both for a thread never
     # audited and for one whose audit ran to the end, which are exactly the two
@@ -43,3 +57,9 @@ async def resume_or_reset(graph: Any, thread_id: str, requested: bool) -> bool:
         return True
     await graph.checkpointer.adelete_thread(thread_id)
     return False
+
+
+async def _refuse_earlier_version(checkpointer: Any, config: dict[str, Any]) -> None:
+    async for stored in checkpointer.alist(config):
+        if _EARLIER_VERSION_CHANNELS & stored.checkpoint["channel_values"].keys():
+            raise CheckpointFromEarlierVersion

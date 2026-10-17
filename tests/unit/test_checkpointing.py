@@ -2,11 +2,17 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from langgraph.checkpoint.base.id import uuid6
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
 
 import tests.unit.support.test_graph_given as given
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.checkpointing import compute_thread_id, resume_or_reset
+from mcp_auditor.checkpointing import (
+    CheckpointFromEarlierVersion,
+    compute_thread_id,
+    resume_or_reset,
+)
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.relayed_environment import RelayedEnvironment, RelayedVariable
 from tests.fakes import FakeMCPClient
@@ -116,6 +122,55 @@ async def test_a_thread_with_nothing_stored_is_not_resumable(tmp_path: Path):
         )
 
         assert not await resume_or_reset(graph, "never-audited", requested=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("earlier_channel", ["refused_steps", "chain_step_refused"])
+async def test_a_checkpoint_from_an_earlier_version_refuses_to_resume(earlier_channel: str):
+    checkpointer = InMemorySaver()
+    graph = await given_a_crashed_audit(checkpointer, "earlier")
+    await given_the_latest_checkpoint_holds(checkpointer, "earlier", earlier_channel)
+
+    with pytest.raises(
+        CheckpointFromEarlierVersion,
+        match="checkpoint written by an earlier version, run without --resume",
+    ):
+        await resume_or_reset(graph, "earlier", requested=True)
+
+
+@pytest.mark.asyncio
+async def test_an_unfinished_checkpoint_without_earlier_channels_resumes():
+    checkpointer = InMemorySaver()
+    graph = await given_a_crashed_audit(checkpointer, "current")
+
+    assert await resume_or_reset(graph, "current", requested=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("earlier_channel", ["refused_steps", "chain_step_refused"])
+async def test_a_checkpoint_from_an_earlier_version_is_wiped_when_resume_was_not_asked(
+    earlier_channel: str,
+):
+    checkpointer = InMemorySaver()
+    graph = await given_a_crashed_audit(checkpointer, "earlier")
+    await given_the_latest_checkpoint_holds(checkpointer, "earlier", earlier_channel)
+
+    assert not await resume_or_reset(graph, "earlier", requested=False)
+    assert not (await graph.aget_state({"configurable": {"thread_id": "earlier"}})).values
+
+
+async def given_the_latest_checkpoint_holds(
+    checkpointer: InMemorySaver, thread_id: str, channel: str
+) -> None:
+    latest = await checkpointer.aget_tuple(
+        {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
+    )
+    assert latest is not None
+    checkpoint = latest.checkpoint.copy()
+    checkpoint["id"] = str(uuid6())
+    checkpoint["channel_values"] = {**checkpoint["channel_values"], channel: []}
+    checkpoint["channel_versions"] = {**checkpoint["channel_versions"], channel: "1"}
+    await checkpointer.aput(latest.config, checkpoint, latest.metadata, {channel: "1"})
 
 
 async def given_a_crashed_audit(checkpointer: Any, thread_id: str):

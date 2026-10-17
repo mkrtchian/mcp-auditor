@@ -24,7 +24,7 @@ from evals.cve_session_model import GradedAudit
 from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, LaunchMode
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
-from evals.holdout_audit import RefusedRun, holdout_audit
+from evals.holdout_audit import IncompleteRun, holdout_audit
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult, NotRunTarget
 from evals.holdout_targets import HoldoutTarget
@@ -39,7 +39,7 @@ HOLDOUT_BUDGET = 10  # holdout-rule.md:227, a constant, not a flag
 HOLDOUT_CONCURRENCY = 6
 COMPOSE_FILE = DOCKER_DIRECTORY / "compose.yml"
 
-type Audit = Callable[[CVETarget], Awaitable[GradedAudit | RefusedRun | None]]
+type Audit = Callable[[CVETarget], Awaitable[GradedAudit | IncompleteRun | None]]
 
 
 @dataclass(frozen=True)
@@ -157,7 +157,7 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
     auditor = build_auditor(HOLDOUT_BUDGET)
     throttles = SessionThrottles()
 
-    async def audit(target: CVETarget) -> GradedAudit | RefusedRun | None:
+    async def audit(target: CVETarget) -> GradedAudit | IncompleteRun | None:
         return await holdout_audit(
             target, lambda: attempt_once(target, auditor, throttles, places, overrides)
         )
@@ -231,7 +231,7 @@ async def _run_all(
 
 async def _run_target(
     target: CVETarget, audit: Audit, runs: int
-) -> list[GradedAudit | RefusedRun] | None:
+) -> list[GradedAudit | IncompleteRun] | None:
     outcomes = await asyncio.gather(*(audit(target) for _ in range(runs)))
     if any(outcome is None for outcome in outcomes):
         return None
@@ -239,7 +239,7 @@ async def _run_target(
 
 
 def _assemble_target(
-    entry: HoldoutTarget, outcomes: Sequence[GradedAudit | RefusedRun], ctx: _RunContext
+    entry: HoldoutTarget, outcomes: Sequence[GradedAudit | IncompleteRun], ctx: _RunContext
 ) -> HoldoutTargetResult:
     target = entry.target
     grades = [outcome.grade if isinstance(outcome, GradedAudit) else None for outcome in outcomes]
@@ -260,7 +260,7 @@ def _assemble_target(
         unchecked_places=[sorted(g.unchecked_places) if g is not None else [] for g in grades],
         aimed_runs=sum(g.aimed for g in grades if g is not None),
         fail_without_proof_runs=sum(g.fail_without_proof for g in grades if g is not None),
-        refused_runs=sum(grade is None for grade in grades),
+        incomplete_runs=sum(grade is None for grade in grades),
         run_cost=sum(_run_cost(report, gen_price, judge_price) for report in reports),
     )
 
@@ -314,7 +314,7 @@ def _assemble_run(
         image_ids=deps.image_ids(target_services(targets)),
         targets=results,
         not_run=not_run,
-        refused_run_count=sum(result.refused_runs for result in results),
+        incomplete_run_count=sum(result.incomplete_runs for result in results),
         total_cost=sum(result.run_cost for result in results),
         prices_as_of=ctx.conditions.prices_as_of,
     )

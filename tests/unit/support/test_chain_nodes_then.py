@@ -1,7 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import AttackChain, AuditCategory, ChainGoal, EvalVerdict
-from mcp_auditor.domain.models import AuditStep, RefusedStep
+from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
 
 
 def pending_chains_count(result: dict[str, Any], expected: int) -> None:
@@ -35,6 +35,11 @@ def chain_eval_result_is(
 
 
 def refused_step_recorded(result: dict[str, Any], step: AuditStep) -> None:
-    assert result["refused_steps"] == [
-        RefusedStep(tool_name="file_manager", step=step, provider_message="flagged by policy")
+    assert result["missed_steps"] == [
+        MissedStep(
+            tool_name="file_manager",
+            step=step,
+            cause=MissCause.PROVIDER_REFUSAL,
+            detail="flagged by policy",
+        )
     ]

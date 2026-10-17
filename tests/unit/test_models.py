@@ -182,7 +182,7 @@ class TestAuditReportCompleteness:
         assert report.is_complete is True
 
     def test_a_refused_step_makes_the_report_incomplete(self):
-        report = given.a_report(refused_steps=[given.a_refused_step()])
+        report = given.a_report(missed_steps=[given.a_refused_step()])
 
         assert report.is_complete is False
 
@@ -191,12 +191,12 @@ class TestAuditReportCompleteness:
 
         assert report.is_complete is False
 
-    def test_refused_steps_survive_a_json_roundtrip(self):
-        report = given.a_report(refused_steps=[given.a_refused_step(AuditStep.CHAIN_PLANNING)])
+    def test_missed_steps_survive_a_json_roundtrip(self):
+        report = given.a_report(missed_steps=[given.a_refused_step(AuditStep.CHAIN_PLANNING)])
 
         rebuilt = AuditReport.model_validate_json(report.model_dump_json())
 
-        assert rebuilt.refused_steps == report.refused_steps
+        assert rebuilt.missed_steps == report.missed_steps
 
 
 class TestOrderToolsForAudit:

@@ -11,8 +11,8 @@ from mcp_auditor.domain.models import (
     ChainGoal,
     ChainStep,
     CoverageGap,
+    MissedStep,
     ProviderUsage,
-    RefusedStep,
     StepObservation,
     TestCase,
     ToolDefinition,
@@ -29,7 +29,7 @@ class GraphState(TypedDict):
     tool_reports: Annotated[list[ToolReport], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
     judge_usage: Annotated[list[ProviderUsage], operator.add]
-    refused_steps: Annotated[list[RefusedStep], operator.add]
+    missed_steps: Annotated[list[MissedStep], operator.add]
     audit_report: AuditReport | None
     attack_context: AttackContext
     chain_budget: int
@@ -46,7 +46,7 @@ class AuditToolState(TypedDict):
     judged_cases: Annotated[list[TestCase], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
     judge_usage: Annotated[list[ProviderUsage], operator.add]
-    refused_steps: Annotated[list[RefusedStep], operator.add]
+    missed_steps: Annotated[list[MissedStep], operator.add]
     attack_context: AttackContext
     coverage_gap: CoverageGap | None
 
@@ -69,11 +69,11 @@ class ChainAuditState(TypedDict):
     current_step_payload: AuditPayload | None
     current_observation: StepObservation | None
     blocked_step_reason: str | None
-    chain_step_refused: bool
+    chain_step_missed: bool
     completed_chains: Annotated[list[AttackChain], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
     judge_usage: Annotated[list[ProviderUsage], operator.add]
-    refused_steps: Annotated[list[RefusedStep], operator.add]
+    missed_steps: Annotated[list[MissedStep], operator.add]
 
 
 class ChainAuditInput(TypedDict):

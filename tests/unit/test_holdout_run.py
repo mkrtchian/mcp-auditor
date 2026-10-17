@@ -16,7 +16,7 @@ from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS, CVETarget, LaunchMode
 from evals.eval_session import Refused, TreeState
-from evals.holdout_audit import RefusedRun
+from evals.holdout_audit import IncompleteRun
 from evals.holdout_conditions import Cutoff, HoldoutConditions
 from evals.holdout_results import HoldoutRunResult
 from evals.holdout_run import HoldoutDeps, run_holdout, target_services
@@ -31,7 +31,7 @@ PLACES = load_places(HOLDOUT_PLACES)
 LUNA_PRICE = Prices(input=0.10, cached_input=0.01, output=0.50)
 SETTINGS = Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none")
 
-type Outcome = GradedAudit | RefusedRun | None
+type Outcome = GradedAudit | IncompleteRun | None
 type Audit = Callable[[CVETarget], Awaitable[Outcome]]
 
 
@@ -177,29 +177,29 @@ async def test_a_target_is_assembled_from_its_runs():
     assert target.unchecked_places == [[], ["etc-shadow"], []]
     assert target.aimed_runs == 3
     assert target.fail_without_proof_runs == 1
-    assert target.refused_runs == 0
+    assert target.incomplete_runs == 0
     assert target.tools_count == 1
     assert target.mechanism_label == "command_execution"
     assert target.run_cost == pytest.approx(3 * call_cost(provider, LUNA_PRICE))
 
 
-async def test_a_refused_run_counts_as_not_detected_and_is_billed():
+async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
     entry = _entry(2)
     cve_id = entry.target.cve_id
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)
     refused_report = _report(provider, ProviderUsage())
     outcomes: list[Outcome] = [
         _graded(CVEStatus.DETECTED, _report(provider, ProviderUsage()), aimed=True),
-        RefusedRun(refused_report),
-        RefusedRun(refused_report),
+        IncompleteRun(refused_report),
+        IncompleteRun(refused_report),
     ]
 
     result = await _run([entry], _scripted({cve_id: outcomes}))
 
     (target,) = result.targets
     assert target.detected_runs == 1
-    assert target.refused_runs == 2
-    assert result.refused_run_count == 2
+    assert target.incomplete_runs == 2
+    assert result.incomplete_run_count == 2
     assert target.run_cost == pytest.approx(3 * call_cost(provider, LUNA_PRICE))
 
 

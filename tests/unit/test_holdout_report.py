@@ -23,7 +23,7 @@ RUN_CUTOFF = date(2026, 5, 18)
 RUNS = 3
 
 
-def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, refused_runs: int = 0):
+def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, incomplete_runs: int = 0):
     return HoldoutTargetResult(
         cve_id=cve_id,
         disclosure_date=disclosure_date,
@@ -39,7 +39,7 @@ def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, refused_r
         unchecked_places=[[] for _ in range(RUNS)],
         aimed_runs=detected_runs,
         fail_without_proof_runs=0,
-        refused_runs=refused_runs,
+        incomplete_runs=incomplete_runs,
         run_cost=0.02,
     )
 
@@ -47,7 +47,7 @@ def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, refused_r
 def _run_result() -> HoldoutRunResult:
     targets = [
         _target("CVE-A", disclosure_date=date(2026, 1, 1), detected_runs=3),
-        _target("CVE-B", disclosure_date=date(2026, 12, 1), detected_runs=1, refused_runs=1),
+        _target("CVE-B", disclosure_date=date(2026, 12, 1), detected_runs=1, incomplete_runs=1),
     ]
     return HoldoutRunResult(
         runs=RUNS,
@@ -68,7 +68,7 @@ def _run_result() -> HoldoutRunResult:
         image_ids={"vuln": "sha256:1"},
         targets=tuple(targets),
         not_run=(NotRunTarget(cve_id="CVE-C", reason="dead condition on the patched version"),),
-        refused_run_count=1,
+        incomplete_run_count=1,
         total_cost=0.06,
         prices_as_of=date(2026, 10, 15),
     )
@@ -90,7 +90,9 @@ def test_render_markdown_shows_the_number_ladder_split_controls_and_cost():
     assert "Controls" in markdown
     assert "$0.06" in markdown
     assert "dead condition on the patched version" in markdown  # a not-run reason
-    assert "Refused runs: 1 (CVE-B)" in markdown  # the count with the target it touches
+    assert (
+        "Incomplete runs (a step refused or unreadable): 1 (CVE-B)" in markdown
+    )  # the count with the target it touches
 
 
 def test_the_report_holds_no_proof_text_fields():

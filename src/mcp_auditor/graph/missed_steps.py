@@ -3,7 +3,13 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain.models import AuditStep, ProviderUsage, RefusedStep, is_judge_step
+from mcp_auditor.domain.models import (
+    AuditStep,
+    MissCause,
+    MissedStep,
+    ProviderUsage,
+    is_judge_step,
+)
 from mcp_auditor.domain.ports import LLMPort, ProviderRefusal
 
 
@@ -16,14 +22,14 @@ class ModelCall[T: BaseModel]:
 
 
 @dataclass(frozen=True)
-class Refused:
-    refused_step: RefusedStep
+class Missed:
+    missed_step: MissedStep
     usage: ProviderUsage
     is_judge: bool
 
     def state_update(self) -> dict[str, Any]:
         update: dict[str, Any] = {
-            "refused_steps": [self.refused_step],
+            "missed_steps": [self.missed_step],
             "provider_usage": [self.usage],
         }
         if self.is_judge:
@@ -33,11 +39,14 @@ class Refused:
 
 async def call_model[T: BaseModel](
     llm: LLMPort, call: ModelCall[T]
-) -> tuple[T, ProviderUsage] | Refused:
+) -> tuple[T, ProviderUsage] | Missed:
     try:
         return await llm.generate_structured(call.prompt, call.output_schema)
     except ProviderRefusal as refusal:
-        step = RefusedStep(
-            tool_name=call.tool_name, step=call.step, provider_message=refusal.provider_message
+        step = MissedStep(
+            tool_name=call.tool_name,
+            step=call.step,
+            cause=MissCause.PROVIDER_REFUSAL,
+            detail=refusal.provider_message,
         )
-        return Refused(refused_step=step, usage=refusal.usage, is_judge=is_judge_step(call.step))
+        return Missed(missed_step=step, usage=refusal.usage, is_judge=is_judge_step(call.step))

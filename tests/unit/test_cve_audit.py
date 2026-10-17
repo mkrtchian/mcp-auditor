@@ -7,13 +7,13 @@ from rich.console import Console
 
 from evals import cve_audit, cve_environments
 from evals.cve_audit import (
-    REFUSAL_ATTEMPTS,
+    INCOMPLETE_ATTEMPTS,
     Auditor,
-    RefusedAttempt,
+    IncompleteAttempt,
     RunOverrides,
     audit_target,
     graded_despite_refusals,
-    graded_or_refused,
+    graded_or_incomplete,
 )
 from evals.cve_environments import Launch
 from evals.cve_grammar import CreditCheck, CVEStatus, MissClass, PlantedTarget, RunGrade, grade_run
@@ -23,12 +23,13 @@ from evals.cve_report_units import units_of
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS
 from evals.metrics import SessionThrottles
-from mcp_auditor.domain.models import AuditReport, AuditStep, ProviderUsage, RefusedStep
+from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep, ProviderUsage
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_cve_oracle_given import a_detected_grade
 
 TARGET = CVE_TARGETS[0]
+_REFUSED = frozenset({MissCause.PROVIDER_REFUSAL})
 
 
 def test_a_misconfigured_model_fails_before_any_target_is_launched(
@@ -62,7 +63,7 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
 ):
     _captured_console(monkeypatch)
     graded = GradedAudit(a_detected_grade(), grammar.a_report(target="second attempt"))
-    attempt = _ScriptedAttempts([RefusedAttempt(grammar.a_report()), graded])
+    attempt = _ScriptedAttempts([IncompleteAttempt(grammar.a_report(), _REFUSED), graded])
 
     outcome = await graded_despite_refusals(TARGET, attempt)
 
@@ -75,13 +76,13 @@ async def test_an_audit_refused_at_every_attempt_is_a_run_not_completed(
 ):
     output = _captured_console(monkeypatch)
     attempt = _ScriptedAttempts[GradedAudit](
-        [RefusedAttempt(grammar.a_report())] * REFUSAL_ATTEMPTS
+        [IncompleteAttempt(grammar.a_report(), _REFUSED)] * INCOMPLETE_ATTEMPTS
     )
 
     grade = await graded_despite_refusals(TARGET, attempt)
 
     assert grade is None
-    assert attempt.calls == REFUSAL_ATTEMPTS
+    assert attempt.calls == INCOMPLETE_ATTEMPTS
     assert f"{TARGET.cve_id} run skipped" in output.getvalue()
 
 
@@ -96,7 +97,7 @@ async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.
 
 
 def test_a_detection_is_kept_whatever_step_the_provider_refused():
-    outcome = graded_or_refused(a_detected_grade(), _refused(grammar.a_report()))
+    outcome = graded_or_incomplete(a_detected_grade(), _refused(grammar.a_report()))
 
     assert isinstance(outcome, RunGrade)
     assert outcome.status == CVEStatus.DETECTED
@@ -105,15 +106,15 @@ def test_a_detection_is_kept_whatever_step_the_provider_refused():
 def test_a_miss_with_a_refused_step_is_not_graded():
     missed = grammar.a_missed_run(MissClass.AIMED_NO_PROOF)
 
-    outcome = graded_or_refused(missed, _refused(grammar.a_report()))
+    outcome = graded_or_incomplete(missed, _refused(grammar.a_report()))
 
-    assert isinstance(outcome, RefusedAttempt)
+    assert isinstance(outcome, IncompleteAttempt)
 
 
 def test_a_miss_with_no_refused_step_is_graded_a_miss():
     missed = grammar.a_missed_run(MissClass.AIMED_NO_PROOF)
 
-    outcome = graded_or_refused(missed, grammar.a_report())
+    outcome = graded_or_incomplete(missed, grammar.a_report())
 
     assert isinstance(outcome, RunGrade)
     assert outcome.status == CVEStatus.MISSED
@@ -128,9 +129,9 @@ def test_a_struck_only_credit_with_a_refused_step_reads_as_refused():
         struck_places=frozenset({grammar.PLACE}),
     )
 
-    outcome = graded_or_refused(struck, _refused(grammar.a_report()))
+    outcome = graded_or_incomplete(struck, _refused(grammar.a_report()))
 
-    assert isinstance(outcome, RefusedAttempt)
+    assert isinstance(outcome, IncompleteAttempt)
 
 
 async def test_a_non_detecting_run_is_graded_without_replaying():
@@ -264,18 +265,21 @@ def _replay_returning(check: CreditCheck) -> Callable[[RunToCheck], Awaitable[Cr
 
 
 def _refused(report: AuditReport) -> AuditReport:
-    refusal = RefusedStep(
-        tool_name="git_init", step=AuditStep.CHAIN_PLANNING, provider_message="Invalid prompt"
+    refusal = MissedStep(
+        tool_name="git_init",
+        step=AuditStep.CHAIN_PLANNING,
+        cause=MissCause.PROVIDER_REFUSAL,
+        detail="Invalid prompt",
     )
-    return report.model_copy(update={"refused_steps": [refusal]})
+    return report.model_copy(update={"missed_steps": [refusal]})
 
 
 class _ScriptedAttempts[T]:
-    def __init__(self, outcomes: list[T | RefusedAttempt | None]) -> None:
+    def __init__(self, outcomes: list[T | IncompleteAttempt | None]) -> None:
         self._outcomes = outcomes
         self.calls = 0
 
-    async def __call__(self) -> T | RefusedAttempt | None:
+    async def __call__(self) -> T | IncompleteAttempt | None:
         self.calls += 1
         return self._outcomes.pop(0)
 

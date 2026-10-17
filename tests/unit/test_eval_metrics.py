@@ -333,7 +333,7 @@ def test_a_run_detail_lists_no_refused_step_in_a_clean_report():
 
     detail = build_run_detail(0, aggregate_verdicts(report), report, {})
 
-    assert detail.refused_steps == []
+    assert detail.missed_steps == []
 
 
 def test_a_run_detail_lists_each_refused_step_with_its_tool_and_provider_message():
@@ -342,7 +342,7 @@ def test_a_run_detail_lists_each_refused_step_with_its_tool_and_provider_message
 
     detail = build_run_detail(0, aggregate_verdicts(report), report, {})
 
-    assert detail.refused_steps == ["search: judgment, flagged by the usage policy"]
+    assert detail.missed_steps == ["search: judgment, flagged by the usage policy"]
 
 
 def test_session_throttles_count_each_report_and_keep_the_total():

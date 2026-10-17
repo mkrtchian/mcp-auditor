@@ -1,7 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import AttackChain, ProviderUsage, ToolReport
-from mcp_auditor.domain.models import AuditStep, RefusedStep
+from mcp_auditor.domain.models import AuditStep, MissedStep
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM
 
@@ -83,17 +83,17 @@ def report_has_no_gap(report: ToolReport) -> None:
     assert report.coverage_gap is None
 
 
-def audit_report_has_refused_steps(
+def audit_report_has_missed_steps(
     result: dict[str, Any], expected: list[tuple[str, AuditStep]]
 ) -> None:
-    _are_refused_steps(result["audit_report"].refused_steps, expected)
+    _are_missed_steps(result["audit_report"].missed_steps, expected)
 
 
-def state_has_refused_steps(result: dict[str, Any], expected: list[tuple[str, AuditStep]]) -> None:
-    _are_refused_steps(result["refused_steps"], expected)
+def state_has_missed_steps(result: dict[str, Any], expected: list[tuple[str, AuditStep]]) -> None:
+    _are_missed_steps(result["missed_steps"], expected)
 
 
-def _are_refused_steps(steps: list[RefusedStep], expected: list[tuple[str, AuditStep]]) -> None:
+def _are_missed_steps(steps: list[MissedStep], expected: list[tuple[str, AuditStep]]) -> None:
     assert [(step.tool_name, step.step) for step in steps] == expected
 
 

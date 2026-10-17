@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from rich.console import Console
 
-from evals.cve_audit import RefusedAttempt
+from evals.cve_audit import IncompleteAttempt
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.models import AuditReport
@@ -17,16 +17,16 @@ HOLDOUT_INFRA_ATTEMPTS = 3  # one try, two retries
 
 
 @dataclass(frozen=True)
-class RefusedRun:
-    """A run whose step the provider refused, counted as not detected and never retried. The
+class IncompleteRun:
+    """A run with a missed step and no detection, counted as not detected and never retried. The
     report is kept only for its usage and tools count."""
 
     report: AuditReport
 
 
 async def holdout_audit(
-    target: CVETarget, attempt: Callable[[], Awaitable[GradedAudit | RefusedAttempt | None]]
-) -> GradedAudit | RefusedRun | None:
+    target: CVETarget, attempt: Callable[[], Awaitable[GradedAudit | IncompleteAttempt | None]]
+) -> GradedAudit | IncompleteRun | None:
     """One run of one target. A detection stands whatever step was refused. A refusal with no
     detection is a non-detection, not retried (unlike acceptance's keep-best-of-several). An
     infra failure is retried, at most `HOLDOUT_INFRA_ATTEMPTS` calls in all."""
@@ -34,12 +34,12 @@ async def holdout_audit(
         outcome = await attempt()
         if isinstance(outcome, GradedAudit):
             return outcome
-        if isinstance(outcome, RefusedAttempt):
+        if isinstance(outcome, IncompleteAttempt):
             console.print(
                 f"[yellow]{target.cve_id}: refused by the model provider, counted as not"
                 " detected[/yellow]"
             )
-            return RefusedRun(outcome.report)
+            return IncompleteRun(outcome.report)
         console.print(
             f"[yellow]{target.cve_id}: run failed to launch,"
             f" attempt {number}/{HOLDOUT_INFRA_ATTEMPTS}[/yellow]"

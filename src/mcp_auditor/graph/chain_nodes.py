@@ -21,8 +21,8 @@ from mcp_auditor.graph.chain_prompts import (
     build_step_observation_prompt,
     build_step_planning_prompt,
 )
+from mcp_auditor.graph.missed_steps import Missed, ModelCall, call_model
 from mcp_auditor.graph.prompts import with_redaction_notice
-from mcp_auditor.graph.refusals import ModelCall, Refused, call_model
 
 
 def make_plan_chains(llm: LLMPort, redacting: bool = False):
@@ -41,7 +41,7 @@ def make_plan_chains(llm: LLMPort, redacting: bool = False):
             prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, AuditStep.CHAIN_PLANNING, prompt, ChainPlanBatch)
         outcome = await call_model(llm, call)
-        if isinstance(outcome, Refused):
+        if isinstance(outcome, Missed):
             return {"pending_chains": [], **outcome.state_update()}
         batch, usage = outcome
         return {"pending_chains": batch.chains, "provider_usage": [usage]}
@@ -57,7 +57,7 @@ def prepare_chain(state: dict[str, Any]) -> dict[str, Any]:
         "current_chain_steps": [],
         "current_step_payload": goal.first_step,
         "blocked_step_reason": None,
-        "chain_step_refused": False,
+        "chain_step_missed": False,
     }
 
 
@@ -92,8 +92,8 @@ def make_observe_step(llm: LLMPort, redacting: bool = False):
             prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, AuditStep.CHAIN_STEP_OBSERVATION, prompt, StepObservation)
         outcome = await call_model(llm, call)
-        if isinstance(outcome, Refused):
-            return {"chain_step_refused": True, **outcome.state_update()}
+        if isinstance(outcome, Missed):
+            return {"chain_step_missed": True, **outcome.state_update()}
         obs, usage = outcome
         updated_step = steps[-1].with_observation(obs.observation)
         steps[-1] = updated_step
@@ -123,8 +123,8 @@ def make_plan_step(llm: LLMPort, redacting: bool = False):
             prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, AuditStep.CHAIN_STEP_PLANNING, prompt, AuditPayload)
         outcome = await call_model(llm, call)
-        if isinstance(outcome, Refused):
-            return {"chain_step_refused": True, **outcome.state_update()}
+        if isinstance(outcome, Missed):
+            return {"chain_step_missed": True, **outcome.state_update()}
         payload, usage = outcome
         return {"current_step_payload": payload, "provider_usage": [usage]}
 
@@ -145,7 +145,7 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
         outcome = await call_model(
             llm, ModelCall(tool.name, AuditStep.CHAIN_JUDGMENT, prompt, Judgment)
         )
-        if isinstance(outcome, Refused):
+        if isinstance(outcome, Missed):
             return {**_completion(chain), **outcome.state_update()}
         judgment, usage = outcome
         eval_result = _chain_eval_result(tool.name, chain, judgment)
@@ -182,7 +182,7 @@ def _completion(chain: AttackChain) -> dict[str, Any]:
         "current_chain_goal": None,
         "current_chain_steps": [],
         "blocked_step_reason": None,
-        "chain_step_refused": False,
+        "chain_step_missed": False,
     }
 
 
@@ -205,7 +205,7 @@ def route_after_execute_step(state: dict[str, Any]) -> str:
 
 
 def route_after_observe(state: dict[str, Any]) -> str:
-    if state["chain_step_refused"]:
+    if state["chain_step_missed"]:
         return "judge_chain"
     obs = state["current_observation"]
     steps = state["current_chain_steps"]
@@ -216,7 +216,7 @@ def route_after_observe(state: dict[str, Any]) -> str:
 
 
 def route_after_plan_step(state: dict[str, Any]) -> str:
-    if state["chain_step_refused"]:
+    if state["chain_step_missed"]:
         return "judge_chain"
     return "execute_step"
 

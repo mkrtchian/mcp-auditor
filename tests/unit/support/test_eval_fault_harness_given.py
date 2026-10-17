@@ -19,8 +19,9 @@ from mcp_auditor.domain.models import (
     EvalResult,
     EvalVerdict,
     Judgment,
+    MissCause,
+    MissedStep,
     ProviderUsage,
-    RefusedStep,
     Severity,
     StepObservation,
     TestCase,
@@ -140,7 +141,7 @@ def a_report_per_honeypot() -> HoneypotReports:
         {
             "honeypot": _a_report(
                 "get_user", EvalVerdict.FAIL, ProviderUsage(input_tokens=100, output_tokens=10)
-            ).model_copy(update={"refused_steps": [_a_refused_step("get_user")]}),
+            ).model_copy(update={"missed_steps": [_a_refused_step("get_user")]}),
             "subtle": _a_report(
                 "list_items", EvalVerdict.PASS, ProviderUsage(input_tokens=200, output_tokens=20)
             ),
@@ -169,8 +170,10 @@ def _a_report(tool: str, verdict: EvalVerdict, usage: ProviderUsage) -> AuditRep
     return AuditReport(target=tool, tool_reports=[tool_report], provider_usage=usage)
 
 
-def _a_refused_step(tool: str) -> RefusedStep:
-    return RefusedStep(tool_name=tool, step=AuditStep.JUDGMENT, provider_message="refused")
+def _a_refused_step(tool: str) -> MissedStep:
+    return MissedStep(
+        tool_name=tool, step=AuditStep.JUDGMENT, cause=MissCause.PROVIDER_REFUSAL, detail="refused"
+    )
 
 
 async def verdicts_of(judge: LLMPort, calls: int) -> list[EvalVerdict]:

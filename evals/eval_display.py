@@ -222,8 +222,8 @@ def print_run_result(run_detail: RunDetail, progress: Progress) -> None:
     )
     for reason in run_detail.blocked_reasons:
         progress.console.print(f"  Payload blocked, {reason}")
-    for refused in run_detail.refused_steps:
-        progress.console.print(f"  Refused by the model provider, {escape(refused)}")
+    for missed in run_detail.missed_steps:
+        progress.console.print(f"  Refused by the model provider, {escape(missed)}")
 
 
 def print_refusal(title: str, reasons: list[str]) -> None:

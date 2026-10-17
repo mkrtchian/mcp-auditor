@@ -7,8 +7,9 @@ from mcp_auditor.domain.models import (
     ChainGoal,
     EvalResult,
     EvalVerdict,
+    MissCause,
+    MissedStep,
     ProviderUsage,
-    RefusedStep,
     Severity,
     TestCase,
     ToolDefinition,
@@ -100,10 +101,13 @@ def and_a_blocked_chain(report: AuditReport, tool: str, category: AuditCategory)
 
 
 def and_a_refused_judgment(report: AuditReport, tool: str, provider_message: str) -> AuditReport:
-    refused = RefusedStep(
-        tool_name=tool, step=AuditStep.JUDGMENT, provider_message=provider_message
+    refused = MissedStep(
+        tool_name=tool,
+        step=AuditStep.JUDGMENT,
+        cause=MissCause.PROVIDER_REFUSAL,
+        detail=provider_message,
     )
-    return report.model_copy(update={"refused_steps": [*report.refused_steps, refused]})
+    return report.model_copy(update={"missed_steps": [*report.missed_steps, refused]})
 
 
 def a_report_throttled(times: int) -> AuditReport:

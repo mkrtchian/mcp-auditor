@@ -11,8 +11,9 @@ from mcp_auditor.domain.models import (
     EvalVerdict,
     ExecutionRecord,
     ExecutionRegime,
+    MissCause,
+    MissedStep,
     ProviderUsage,
-    RefusedStep,
     Severity,
     TestCase,
     ToolDefinition,
@@ -241,8 +242,13 @@ REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage po
 
 def a_report_with_a_refused_judgment_on_get_user() -> AuditReport:
     report = a_two_tool_report()
-    report.refused_steps = [
-        RefusedStep(tool_name="get_user", step=AuditStep.JUDGMENT, provider_message=REFUSAL_MESSAGE)
+    report.missed_steps = [
+        MissedStep(
+            tool_name="get_user",
+            step=AuditStep.JUDGMENT,
+            cause=MissCause.PROVIDER_REFUSAL,
+            detail=REFUSAL_MESSAGE,
+        )
     ]
     return report
 
