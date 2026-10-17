@@ -284,6 +284,16 @@ def test_render_shows_the_forced_settings_of_a_measurement_run():
     )
 
 
+def test_render_of_a_measurement_run_auditing_every_tool_does_not_claim_filtered_tools():
+    measurement = MeasurementSettings(every_tool=True)
+    report = given.a_benchmark_report([]).model_copy(update={"measurement": measurement})
+
+    markdown = render_markdown(report)
+
+    assert "tools filtered" not in markdown
+    assert ", all tools," in markdown
+
+
 def test_render_without_costs_nor_measurement_has_neither_section():
     markdown = render_markdown(given.a_benchmark_report([]))
 

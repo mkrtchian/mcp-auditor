@@ -59,6 +59,19 @@ def test_a_measurement_flag_outside_an_ungated_run_or_steps_without_chains_are_r
     assert exit_.value.code == 3
 
 
+@pytest.mark.parametrize("mode", ["--calibrate", "--survey"])
+def test_a_measurement_flag_on_a_mode_that_runs_no_audit_is_refused_for_that_reason(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mode: str
+):
+    monkeypatch.setattr("sys.argv", ["run_cve_benchmark", mode, "--chains", "3"])
+
+    with pytest.raises(SystemExit) as exit_:
+        run_cve_benchmark.main()
+
+    assert exit_.value.code == 3
+    assert "run no audit" in "".join(capsys.readouterr())
+
+
 def test_a_negative_chain_count_is_refused_by_the_parser(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):

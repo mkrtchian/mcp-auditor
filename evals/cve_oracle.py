@@ -224,7 +224,8 @@ def _render_conditions(report: CVEBenchmarkReport) -> str:
     )
     model = _with_reasoning(conditions.model, conditions.reasoning)
     judge = _with_reasoning(conditions.judge_model, conditions.judge_reasoning)
-    tools = "tools filtered" if conditions.tools_filtered else "all tools"
+    every_tool = report.measurement is not None and report.measurement.every_tool
+    tools = "tools filtered" if conditions.tools_filtered and not every_tool else "all tools"
     usage = report.provider_usage
     return (
         f"Conditions: {conditions.provider}, model {model}, judge {judge}, "

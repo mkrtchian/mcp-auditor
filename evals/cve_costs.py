@@ -55,6 +55,12 @@ def _priced(usage: ProviderUsage, prices: Prices | None) -> float | None:
     return None if prices is None else call_cost(usage, prices)
 
 
+def large_request_targets(costs: Sequence[TargetCost]) -> list[str]:
+    return [
+        cost.cve_id for cost in costs if cost.largest_input_tokens > TIERED_REQUEST_INPUT_TOKENS
+    ]
+
+
 @dataclass(frozen=True)
 class CostPricing:
     generator: Prices
@@ -90,9 +96,3 @@ def _render_cost_row(cost: TargetCost) -> str:
 
 def _dollars(amount: float | None) -> str:
     return "-" if amount is None else f"${amount:.4f}"
-
-
-def large_request_targets(costs: Sequence[TargetCost]) -> list[str]:
-    return [
-        cost.cve_id for cost in costs if cost.largest_input_tokens > TIERED_REQUEST_INPUT_TOKENS
-    ]

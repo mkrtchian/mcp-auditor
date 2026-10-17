@@ -16,6 +16,9 @@ from evals.holdout_conditions import HoldoutConditions
 from evals.probe_candidates import Prices
 
 MEASUREMENT_UNGATED = "a measurement run is ungated: its conditions match no baseline"
+MEASUREMENT_WITHOUT_AUDIT = (
+    "--calibrate and --survey run no audit: a measurement flag forces nothing"
+)
 STEPS_WITHOUT_CHAINS = "--chain-steps needs --chains above 0: a step runs only inside a chain"
 
 
@@ -54,7 +57,9 @@ def measurement_refusal(args: argparse.Namespace) -> str | None:
     measurement = measurement_from(args)
     if measurement is None:
         return None
-    if not args.ungated or args.calibrate or args.survey or args.record_baseline:
+    if args.calibrate or args.survey:
+        return MEASUREMENT_WITHOUT_AUDIT
+    if not args.ungated or args.record_baseline:
         return MEASUREMENT_UNGATED
     if measurement.chain_steps is not None and not measurement.chains:
         return STEPS_WITHOUT_CHAINS
