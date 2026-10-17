@@ -164,7 +164,7 @@ class SessionThrottles:
     usage: ProviderUsage = field(default_factory=ProviderUsage)
 
     def count(self, report: AuditReport) -> int:
-        """Every report counted is billed, a refused attempt's and a replay's included."""
+        """Every report counted is billed, an incomplete attempt's and a replay's included."""
         return self.count_usage(report.provider_usage)
 
     def count_usage(self, usage: ProviderUsage) -> int:
