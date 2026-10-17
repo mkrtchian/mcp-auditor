@@ -1,5 +1,5 @@
 from mcp_auditor.domain.models import AuditPayload, BlockedPayload, ToolDefinition, ToolResponse
-from mcp_auditor.domain.payload_safety import destructive_reason
+from mcp_auditor.domain.payload_safety import destructive_reason, unsendable_reason
 from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.domain.redaction import Redaction
 
@@ -30,7 +30,7 @@ class AuditedServer:
     async def attempt(
         self, tool: ToolDefinition, payload: AuditPayload
     ) -> ToolResponse | BlockedPayload:
-        reason = destructive_reason(payload.arguments)
+        reason = destructive_reason(payload.arguments) or unsendable_reason(payload.arguments)
         if reason is not None:
             return BlockedPayload(reason=reason)
         if self._original_names is None and self.redacting:

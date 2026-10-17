@@ -26,6 +26,18 @@ async def test_attempt_refuses_a_destructive_payload_without_touching_the_server
     assert client.calls == []
 
 
+async def test_attempt_refuses_an_unencodable_payload_without_touching_the_server():
+    client = FakeMCPClient([_TOOL])
+    server = AuditedServer(client)
+
+    outcome = await server.attempt(_TOOL, _a_payload({"q": "\ud800"}))
+
+    assert outcome == BlockedPayload(
+        reason="argument q holds a character that cannot be encoded as UTF-8"
+    )
+    assert client.calls == []
+
+
 async def test_attempt_returns_the_server_response_for_a_benign_payload():
     client = FakeMCPClient([_TOOL], responses={"run": ToolResponse(content="mcp-auditor-probe")})
     server = AuditedServer(client)

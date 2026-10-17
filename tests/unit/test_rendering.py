@@ -189,6 +189,13 @@ def test_markdown_renders_a_blocked_case():
     assert given.BLOCKED_CASE_REASON in result
 
 
+def test_reports_of_an_unencodable_blocked_case_encode_as_utf8():
+    report = given.a_report_with_an_unencodable_blocked_case()
+
+    render_json(report).encode("utf-8")
+    render_markdown(report).encode("utf-8")
+
+
 def test_markdown_renders_a_blocked_chain_reason():
     report = given.a_report_with_a_blocked_chain()
 

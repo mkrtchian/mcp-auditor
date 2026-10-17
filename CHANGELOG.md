@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - An answer from the model that matches no expected format after the parse attempts no longer stops the audit: the step is reported as a missed step of cause `unreadable_answer`, the audit carries on without it, `--ci` exits `3`, and its usage is counted in `provider_usage` (and `judge_usage` for a judgment). The CVE graded run audits such a run again when it did not detect, as it does a refused one, and the holdout counts it as not detected, with no retry.
+- A generated payload holding a character that cannot be encoded as UTF-8 (a lone surrogate) is blocked before it is sent, with the argument named in the reason, instead of crashing the MCP transport and ending the audit.
 - An `alibaba` answer cut at the output cap is retried as a truncated attempt, counted with its tokens, instead of failing the step with the `openai` SDK's `LengthFinishReasonError`.
 
 ## [0.4.0] - 2026-10-05

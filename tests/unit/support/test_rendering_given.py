@@ -185,6 +185,18 @@ def a_blocked_case() -> TestCase:
     )
 
 
+def a_report_with_an_unencodable_blocked_case() -> AuditReport:
+    case = TestCase(
+        payload=AuditPayload(
+            category=AuditCategory.INPUT_VALIDATION,
+            description="lone surrogate",
+            arguments={"q": "\ud800"},
+        ),
+        blocked_reason="argument q holds a character that cannot be encoded as UTF-8",
+    )
+    return a_report(target="python server.py", tool_reports=[_a_tool_report_with_blocked([case])])
+
+
 def a_blocked_chain() -> AttackChain:
     return a_chain(blocked_reason=BLOCKED_CHAIN_REASON)
 

@@ -1,5 +1,6 @@
 # Refuses generated payloads that are destructive to state, or dangerous to the host
-# and the run, before they reach the audited server (ADR 013).
+# and the run, before they reach the audited server (ADR 013), and payloads the
+# transport cannot encode, which would otherwise end the MCP session.
 # The list below is enumerated, not complete: it guards against our own generator's
 # exuberance, it is not a bypass-resistant boundary.
 from dataclasses import dataclass
@@ -130,3 +131,40 @@ DESTRUCTIVE_CONSTRUCTS: tuple[DestructiveConstruct, ...] = (
         patterns=(":(){", ":|:&", ":(){:|:&};:"),
     ),
 )
+
+
+def unsendable_reason(arguments: dict[str, Any]) -> str | None:
+    path = _first_unencodable_path(arguments, "")
+    if path is None:
+        return None
+    return f"argument {path} holds a character that cannot be encoded as UTF-8"
+
+
+def _first_unencodable_path(value: Any, path: str) -> str | None:
+    if isinstance(value, str):
+        return None if _encodes(value) else path
+    if isinstance(value, dict):
+        for key, child in cast("dict[str, Any]", value).items():
+            child_path = f"{path}.{_printable(key)}" if path else _printable(key)
+            found = child_path if not _encodes(key) else _first_unencodable_path(child, child_path)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for index, child in enumerate(cast("list[Any]", value)):
+            found = _first_unencodable_path(child, f"{path}[{index}]")
+            if found is not None:
+                return found
+    return None
+
+
+def _encodes(text: str) -> bool:
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
+# The path lands in the blocked reason, which reports print: it must encode itself.
+def _printable(key: str) -> str:
+    return key.encode("utf-8", "backslashreplace").decode("utf-8")

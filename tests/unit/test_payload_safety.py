@@ -1,4 +1,8 @@
-from mcp_auditor.domain.payload_safety import DESTRUCTIVE_CONSTRUCTS, destructive_reason
+from mcp_auditor.domain.payload_safety import (
+    DESTRUCTIVE_CONSTRUCTS,
+    destructive_reason,
+    unsendable_reason,
+)
 
 
 def test_blocks_recursive_delete():
@@ -191,3 +195,28 @@ def test_still_blocks_a_pattern_preceded_by_a_shell_delimiter():
     assert destructive_reason({"cmd": "ls; rm /etc"}) == "destructive filesystem command: rm /"
     assert destructive_reason({"cmd": "$(rm -rf /)"}) == "destructive filesystem command: rm -rf"
     assert destructive_reason({"cmd": "ls&&rm ~/x"}) == "destructive filesystem command: rm ~"
+
+
+def test_unsendable_names_the_argument_holding_a_lone_surrogate():
+    assert (
+        unsendable_reason({"q": "\ud800"})
+        == "argument q holds a character that cannot be encoded as UTF-8"
+    )
+
+
+def test_unsendable_finds_a_surrogate_in_a_nested_list():
+    assert (
+        unsendable_reason({"outer": {"items": ["ok", "a\udc00b"]}})
+        == "argument outer.items[1] holds a character that cannot be encoded as UTF-8"
+    )
+
+
+def test_unsendable_finds_a_surrogate_in_a_dict_key():
+    assert (
+        unsendable_reason({"outer": {"k\ud83d": "v"}})
+        == "argument outer.k\\ud83d holds a character that cannot be encoded as UTF-8"
+    )
+
+
+def test_unsendable_lets_an_astral_character_and_plain_text_through():
+    assert unsendable_reason({"q": "😀", "n": 3, "items": ["plain text"]}) is None
