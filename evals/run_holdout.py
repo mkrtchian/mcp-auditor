@@ -18,7 +18,8 @@ from evals.eval_session import Refused, last_commit
 from evals.holdout_census import load_census
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.holdout_draw import draw_order
-from evals.holdout_report import HoldoutReport, build_report, render_markdown
+from evals.holdout_markdown import render_markdown
+from evals.holdout_report import HoldoutReport, build_report
 from evals.holdout_run import HOLDOUT_RUNS, run_holdout
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits

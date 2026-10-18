@@ -171,17 +171,17 @@ async def test_a_target_is_assembled_from_its_runs():
 
     result = await _run([target], _scripted({cve_id: outcomes}))
 
-    (target,) = result.targets
-    assert target.detected_runs == 2
-    assert target.detection_share == pytest.approx(2 / 3)
-    assert target.detected_runs_if_unchecked_missed == 1  # the second run misses if unchecked
-    assert target.unchecked_places == [[], ["etc-shadow"], []]
-    assert target.aimed_runs == 3
-    assert target.fail_without_proof_runs == 1
-    assert target.incomplete_runs == 0
-    assert target.tools_count == 1
-    assert target.mechanism_label == "command_execution"
-    assert target.run_cost == pytest.approx(3 * call_cost(provider, LUNA_PRICE))
+    (assembled,) = result.targets
+    assert assembled.detected_runs == 2
+    assert assembled.detection_share == pytest.approx(2 / 3)
+    assert assembled.detected_runs_if_unchecked_missed == 1  # the second run misses if unchecked
+    assert assembled.unchecked_places == [[], ["etc-shadow"], []]
+    assert assembled.aimed_runs == 3
+    assert assembled.fail_without_proof_runs == 1
+    assert assembled.incomplete_runs == 0
+    assert assembled.tools_count == 1
+    assert assembled.mechanism_label == "command_execution"
+    assert assembled.run_cost == pytest.approx(3 * call_cost(provider, LUNA_PRICE))
 
 
 async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
@@ -197,11 +197,11 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
 
     result = await _run([target], _scripted({cve_id: outcomes}))
 
-    (target,) = result.targets
-    assert target.detected_runs == 1
-    assert target.incomplete_runs == 2
+    (assembled,) = result.targets
+    assert assembled.detected_runs == 1
+    assert assembled.incomplete_runs == 2
     assert result.incomplete_run_count == 2
-    assert target.run_cost == pytest.approx(3 * call_cost(provider, LUNA_PRICE))
+    assert assembled.run_cost == pytest.approx(3 * call_cost(provider, LUNA_PRICE))
 
 
 async def test_a_target_dead_on_a_version_is_not_run():
@@ -250,8 +250,8 @@ async def test_a_fallback_target_the_layout_breaks_is_kept():
         layout={cve_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])},
     )
 
-    (target,) = result.targets
-    assert target.ran_in_fallback is True
+    (assembled,) = result.targets
+    assert assembled.ran_in_fallback is True
     assert result.not_run == []
 
 

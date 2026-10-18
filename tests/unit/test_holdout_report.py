@@ -5,6 +5,7 @@ import dataclasses
 from datetime import date
 
 from evals.holdout_conditions import Cutoff
+from evals.holdout_markdown import render_markdown
 from evals.holdout_not_run import NotRunLine
 from evals.holdout_report import (
     ConclusionLine,
@@ -16,7 +17,6 @@ from evals.holdout_report import (
     SideLine,
     TargetLine,
     build_report,
-    render_markdown,
 )
 from evals.holdout_results import (
     HoldoutRunResult,
