@@ -383,6 +383,26 @@
       "role": "reader",
       "scope": "reader_2",
       "model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2025-54994",
+      "model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2025-54994",
+      "model": "claude-fable-5-1"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-4270",
+      "model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-4270",
+      "model": "claude-fable-5-1"
     }
   ],
   "prefilter": [
@@ -138140,5 +138160,251 @@
       "count": 9,
       "denominator": 128
     }
+  },
+  "draw": {
+    "rule_commit": "e67971b9c85c9b79c4dcf80ae11a8d9fc42c8015",
+    "grammar_fingerprint": "3f5a4925ad36dd6d3a57afa740165ae828506bed10c6a192a3dca7a194ebe2de",
+    "settlements": [],
+    "walk": [
+      {
+        "identifier": "CVE-2025-54994",
+        "outcome": "given_up",
+        "reason": "Two independent calibrations gave up: port: z.number() makes the MCP SDK reject every string payload (-32602) before exec, so the command injection is unreachable by a spec-compliant MCP client."
+      },
+      {
+        "identifier": "CVE-2026-4270",
+        "outcome": "drawn",
+        "reason": "Reproduces (read_outside_scope via awscli shorthand @=file://). Card confirmed exhaustive by an independent Fable card-check; 21 kept places (20 catalogue + workspace-dotenv after the maintainer route check)."
+      }
+    ],
+    "cards": [
+      {
+        "flaw": "CVE-2026-4270",
+        "mechanism": "read_outside_scope",
+        "effect_class": "read_outside_scope",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "etc-shadow",
+            "reason": "Readable at /etc/shadow (the shadow password file), outside the declared scope /srv/app. The @=file:///etc/shadow shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "container-hostname",
+            "reason": "Readable at /etc/hostname (the container hostname docker writes to /etc/hostname), outside the declared scope /srv/app. The @=file:///etc/hostname shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "gcloud-adc",
+            "reason": "Readable at /tmp/.config/gcloud/application_default_credentials.json (the gcloud application-default credentials), outside the declared scope /srv/app. The @=file:///tmp/.config/gcloud/application_default_credentials.json shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "azure-profile",
+            "reason": "Readable at /tmp/.azure/azureProfile.json (the Azure CLI profile), outside the declared scope /srv/app. The @=file:///tmp/.azure/azureProfile.json shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "ssh-private-key",
+            "reason": "Readable at /tmp/.ssh/id_rsa (the user SSH private key), outside the declared scope /srv/app. The @=file:///tmp/.ssh/id_rsa shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "shell-history",
+            "reason": "Readable at /tmp/.bash_history (the shell history), outside the declared scope /srv/app. The @=file:///tmp/.bash_history shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "git-credentials",
+            "reason": "Readable at /tmp/.git-credentials (the git credential store), outside the declared scope /srv/app. The @=file:///tmp/.git-credentials shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "npmrc",
+            "reason": "Readable at /tmp/.npmrc (the npm auth config), outside the declared scope /srv/app. The @=file:///tmp/.npmrc shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "gh-hosts",
+            "reason": "Readable at /tmp/.config/gh/hosts.yml (the GitHub CLI hosts/token file), outside the declared scope /srv/app. The @=file:///tmp/.config/gh/hosts.yml shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "docker-config",
+            "reason": "Readable at /tmp/.docker/config.json (the docker registry auth config), outside the declared scope /srv/app. The @=file:///tmp/.docker/config.json shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "kube-config",
+            "reason": "Readable at /tmp/.kube/config (the kubeconfig with cluster credentials), outside the declared scope /srv/app. The @=file:///tmp/.kube/config shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "pgpass",
+            "reason": "Readable at /tmp/.pgpass (the PostgreSQL password file), outside the declared scope /srv/app. The @=file:///tmp/.pgpass shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "mysql-client-cnf",
+            "reason": "Readable at /tmp/.my.cnf (the MySQL client credentials file), outside the declared scope /srv/app. The @=file:///tmp/.my.cnf shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "mongorc",
+            "reason": "Readable at /tmp/.mongorc.js (the MongoDB shell rc), outside the declared scope /srv/app. The @=file:///tmp/.mongorc.js shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "mysql-system-cnf",
+            "reason": "Readable at /etc/mysql/my.cnf (the system MySQL config), outside the declared scope /srv/app. The @=file:///etc/mysql/my.cnf shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "proc-environ",
+            "reason": "Readable at /proc/self/environ (the server process environment (planted env var MCP_UPSTREAM_SECRET)), outside the declared scope /srv/app. The @=file:///proc/self/environ shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.Encrypted type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "run-secrets",
+            "reason": "Readable at /run/secrets/db_password (a Docker/Swarm orchestrator-mounted secret), outside the declared scope /srv/app. The @=file:///run/secrets/db_password shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "k8s-sa-token",
+            "reason": "Readable at /var/run/secrets/kubernetes.io/serviceaccount/token (the Kubernetes service-account token), outside the declared scope /srv/app. The @=file:///var/run/secrets/kubernetes.io/serviceaccount/token shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "Readable at /etc/hosts (the hosts file), outside the declared scope /srv/app. The @=file:///etc/hosts shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "auth-log",
+            "reason": "Readable at /var/log/auth.log (the authentication log), outside the declared scope /srv/app. The @=file:///var/log/auth.log shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "Layout place: $WORKSPACE/.env = /srv/.env, a plain dotenv one level above the in-scope checkout /srv/app. Reachable in principle via @=file:///srv/.env (absolute, outside the workdir). Whether this server's route actually reaches it is settled by the per-place route check the maintainer runs in the repository on the transplanted fixture, not in the kit. Reachable, route check pending. Maintainer route check (repo, on the transplanted fixture): route found -> kept."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "aws-credentials",
+            "reason": "Reached by the flaw in principle (readable at /tmp/.aws/credentials, outside /srv/app), but the server reads it of its own accord: aws-api-mcp-server resolves AWS credentials through boto3's default chain, which parses ~/.aws/credentials (HOME=/tmp) at session init. A nonce there is not uniquely attributable to the file-read bug, so it is excluded under the server-reaches-it-itself rule (the advisory's and the kit's canonical exclusion example).",
+            "route_checked": null
+          },
+          {
+            "place_id": "dotenv-file",
+            "reason": "kind=unplaceable. The catalogue 'server's own .env in its working directory' has no fixed coordinate to plant a nonce at: aws-api-mcp-server defines no dotenv process-secrets file, so there is nothing to host in the container. Not hostable.",
+            "route_checked": null
+          },
+          {
+            "place_id": "proc-cmdline",
+            "reason": "kind=unplaceable. /proc/self/cmdline is the server's own launch argv, fixed by the harness launch (docker run ... entrypoint). No nonce can be planted into it independently of the launch, so there is nothing to surface. Not hostable.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-source",
+            "reason": "kind=unplaceable. A hardcoded secret embedded in the server's own installed source has no generic plantable coordinate; it depends on a specific code artifact this census does not model. Not hostable.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-config",
+            "reason": "kind=unplaceable. The server's own config/state file holding its upstream credential: aws-api-mcp-server keeps its upstream credential in the standard AWS chain (~/.aws), already represented by aws-credentials, not a distinct plantable artifact at a server-documented path. Not hostable.",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "Layout place: $PROJECT_BARE/config = /srv/app.git/config, the userinfo of a remote URL. Reachable in principle via @=file:///srv/app.git/config (absolute, outside the workdir). Layout place: reach decided by the maintainer's per-place route check, pending. Reachable, route check pending. Maintainer route check: no route -> not kept.",
+            "route_checked": false
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "Layout place: a .env committed then removed at HEAD, living only in the bare repo's git history (/srv/app.git), absent from the checkout and from any working-tree path. This arbitrary-file-read flaw names a filesystem path; a git-history blob has no such path to reference via @=file://, so it is out of reach of this reach, not merely route-check pending. Maintainer route check: no route -> not kept.",
+            "route_checked": false
+          }
+        ],
+        "launch_options": [
+          {
+            "option": "builder",
+            "value": "filesystem_env",
+            "reason": "Read-outside-scope filesystem flaw with a declared scope directory. filesystem_env mounts the frozen /srv layout read-only and passes the in-scope checkout /srv/app as the final positional (the server's declared file-access scope). It also plants leak{i}/report symlinks inside /srv/app pointing at each out-of-scope planted file (an alternate-path bonus vector); the exploits use direct absolute @=file:// paths instead, which reproduce identically.",
+            "documentation": "kit_launch.filesystem_env; the /srv bind mount is read-only, scope is the final positional /srv/app."
+          },
+          {
+            "option": "entrypoint scope mapping (AWS_API_MCP_WORKING_DIR)",
+            "value": "/srv/app",
+            "reason": "aws-api-mcp-server takes its file-access scope from the AWS_API_MCP_WORKING_DIR env var, not a positional, so docker/entrypoint.sh maps the positional filesystem_env appends (/srv/app) onto that env var and execs the server, which confines workdir-mode reads to it.",
+            "documentation": "core/common/config.get_working_directory requires an absolute path to an existing dir; /srv/app exists as the shallow checkout."
+          },
+          {
+            "option": "AWS_API_MCP_ALLOW_UNRESTRICTED_LOCAL_FILE_ACCESS",
+            "value": "workdir (default, not set explicitly)",
+            "reason": "Left at its default (workdir) in both Dockerfiles. Confirmed active empirically: on 1.3.9 every exploit is refused with \"Invalid file path ...: is outside the allowed working directory '/srv/app'. Set AWS_API_MCP_ALLOW_UNRESTRICTED_LOCAL_FILE_ACCESS=unrestricted ...\", so the workdir guard is on; the 1.3.8 bypass defeats it only for shorthand references.",
+            "documentation": "core/common/config.get_file_access_mode; workdir restricts reads to AWS_API_MCP_WORKING_DIR; default when unset."
+          },
+          {
+            "option": "launch_mode",
+            "value": "normal",
+            "reason": "No scope-fallback behaviour to model. An invalid AWS_API_MCP_WORKING_DIR makes the server refuse to start; it does not silently fall back to a wider default scope.",
+            "documentation": "core/common/config.get_working_directory raises on a missing/relative dir; no documented default-scope widening."
+          },
+          {
+            "option": "planting_host.user",
+            "value": "host",
+            "reason": "filesystem_env runs as the host uid/gid: the temp layout root is created mode 0700 owned by the host user, so the server must share that uid to traverse /srv and reach /srv/app. The CVE is a scope/path bug, independent of the container uid, so this preserves the exploit while keeping teardown able to remove the files.",
+            "documentation": "cve_planting.host_user_args; HOME=/tmp, matching where $HOME-rooted places plant."
+          },
+          {
+            "option": "planting_host.has_network",
+            "value": "false",
+            "reason": "A local file read; no internal endpoint or sentinel is involved, so the launch runs with --network none. The server's optional startup fetch of the service-reference document fails with a warning and the server still starts and serves call_aws.",
+            "documentation": "No http_endpoint place is kept; needs_network is false."
+          },
+          {
+            "option": "dependency pins",
+            "value": "awslabs.aws-api-mcp-server 1.3.8/1.3.9; mcp==1.30.0; fastmcp==3.4.9; pydantic==2.11.10",
+            "reason": "Identical runtime pins in both images, so the only difference between vulnerable and patched is the server version (1.3.8 vs 1.3.9). mcp is pinned <2 (mcp 2.x renames symbols and breaks the server imports); this mcp/fastmcp/pydantic trio resolves cleanly and the server starts and serves call_aws on both images (verified by kit_driver). awscli and botocore come in as the server's own pinned deps.",
+            "documentation": "docker/Dockerfile.aws-api-mcp and docker/Dockerfile.aws-api-mcp-patched."
+          }
+        ],
+        "seeded_in_layout": [],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///etc/shadow}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the etc-shadow nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/etc/shadow': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///etc/hostname}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the container-hostname nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/etc/hostname': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.config/gcloud/application_default_credentials.json}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the gcloud-adc nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.config/gcloud/application_default_credentials.json': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.azure/azureProfile.json}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the azure-profile nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.azure/azureProfile.json': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.ssh/id_rsa}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the ssh-private-key nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.ssh/id_rsa': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.bash_history}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the shell-history nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.bash_history': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.git-credentials}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the git-credentials nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.git-credentials': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.npmrc}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the npmrc nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.npmrc': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.config/gh/hosts.yml}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the gh-hosts nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.config/gh/hosts.yml': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.docker/config.json}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the docker-config nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.docker/config.json': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.kube/config}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the kube-config nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.kube/config': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.pgpass}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the pgpass nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.pgpass': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.my.cnf}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the mysql-client-cnf nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.my.cnf': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///tmp/.mongorc.js}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the mongorc nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/tmp/.mongorc.js': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///etc/mysql/my.cnf}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the mysql-system-cnf nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/etc/mysql/my.cnf': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={Encrypted@=file:///proc/self/environ}\"}) -> 1.3.8: Ebs.Encrypted type validation echoes the proc-environ nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/proc/self/environ': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///run/secrets/db_password}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the run-secrets nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/run/secrets/db_password': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///var/run/secrets/kubernetes.io/serviceaccount/token}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the k8s-sa-token nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/var/run/secrets/kubernetes.io/serviceaccount/token': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///etc/hosts}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the etc-hosts nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/etc/hosts': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce).",
+          "call_aws({\"cli_command\": \"aws ec2 run-instances --image-id ami-00000000000000000 --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize@=file:///var/log/auth.log}\"}) -> 1.3.8: Ebs.VolumeSize type validation echoes the auth-log nonce, is_error=true (surfaced); 1.3.9: \"Invalid file path '/var/log/auth.log': is outside the allowed working directory '/srv/app'\", is_error=true (no nonce)."
+        ],
+        "benign_call": "call_aws({\"cli_command\": \"aws ec2 describe-instances help\"}) -> status_code 200 help document on both 1.3.8 and 1.3.9 (is_error=false, no nonce, not aimed, no AWS credentials or network needed). A legitimate call_aws use that references no file: the shorthand file-loading vector requires the @=file:// operator, and a help lookup uses none, so it is clean on both images.",
+        "patched_result": "On 1.3.9 all 20 exploits are rejected before any file read with \"Error while validating the command: Invalid file path '<path>': is outside the allowed working directory '/srv/app'. Set AWS_API_MCP_ALLOW_UNRESTRICTED_LOCAL_FILE_ACCESS=unrestricted to allow unrestricted file access.\" No planted nonce surfaces on the patched image; the benign help call still returns status_code 200 and does not error. kit_driver reports zero dead conditions: the fixture reproduces on 1.3.8 and is clean on 1.3.9.",
+        "attempts": 2
+      }
+    ],
+    "card_checks": [
+      {
+        "flaw": "CVE-2026-4270",
+        "reported_gaps": [],
+        "confirmed_gaps": []
+      }
+    ],
+    "give_ups": [
+      {
+        "flaw": "CVE-2025-54994",
+        "calibration": 1,
+        "reason": "exploit_cannot_reproduce",
+        "detail": "First calibration (Opus 4.8). z.number() rejects every string payload -32602 before exec, on SDK 1.10.2 and 1.32.1 and the Docker fixture; a valid number carries no shell metacharacter.",
+        "attempts": 3
+      },
+      {
+        "flaw": "CVE-2025-54994",
+        "calibration": 2,
+        "reason": "exploit_cannot_reproduce",
+        "detail": "Second, blind independent calibration (Fable, given only the CVE and the vulnerable image, not the first's conclusion). Swept metacharacter and type-confusion payloads, all -32602; same root cause, same conclusion.",
+        "attempts": 1
+      }
+    ],
+    "drawn": [
+      "CVE-2026-4270"
+    ]
   }
 }
