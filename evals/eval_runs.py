@@ -98,7 +98,12 @@ async def _traced(audit: Awaitable[AuditReport], trace_ids: list[UUID]) -> Audit
 
 
 def tracing_enabled() -> bool:
-    return bool(os.environ.get("LANGSMITH_TRACING") or os.environ.get("LANGCHAIN_TRACING_V2"))
+    return _tracing_flag("LANGSMITH_TRACING") or _tracing_flag("LANGCHAIN_TRACING_V2")
+
+
+def _tracing_flag(name: str) -> bool:
+    # A set-but-off flag ("false", "0") must read as off: bool() of a non-empty string is True.
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _post_langsmith_feedback(run_detail: RunDetail, trace_ids: list[UUID]) -> None:

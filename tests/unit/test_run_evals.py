@@ -1,6 +1,8 @@
+import pytest
+
 import tests.unit.support.test_eval_replay_given as replay_given
 import tests.unit.support.test_run_evals_given as given
-from evals.eval_runs import run_all
+from evals.eval_runs import run_all, tracing_enabled
 from evals.gate import ReplayRule
 from evals.metrics import SessionThrottles
 from evals.replay import Replayer
@@ -40,3 +42,38 @@ async def test_a_replay_holding_a_throttled_step_is_a_failed_replay():
     )
 
     assert failures == ["a replay of alpha failed"]
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("true", True),
+        ("True", True),
+        ("1", True),
+        ("yes", True),
+        ("on", True),
+        (" TRUE ", True),
+        ("false", False),
+        ("0", False),
+        ("no", False),
+        ("", False),
+    ],
+)
+def test_tracing_enabled_parses_the_flag(
+    monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
+) -> None:
+    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
+    monkeypatch.setenv("LANGSMITH_TRACING", value)
+    assert tracing_enabled() is expected
+
+
+def test_tracing_enabled_is_false_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
+    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
+    assert tracing_enabled() is False
+
+
+def test_tracing_enabled_reads_langchain_v2(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
+    monkeypatch.setenv("LANGCHAIN_TRACING_V2", "true")
+    assert tracing_enabled() is True
