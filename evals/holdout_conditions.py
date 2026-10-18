@@ -23,6 +23,7 @@ _CHAIN_NOT_SET = (
 class Cutoff:
     date: date
     type: str | None
+    source: str | None
     note: str | None
 
 
@@ -40,15 +41,23 @@ class HoldoutConditions:
         if None in (self.chain_budget, self.max_chain_steps, self.tool_call_timeout):
             reasons.append(_CHAIN_NOT_SET)
         for model in model_ids:
-            if model not in self.cutoffs:
+            if model in self.cutoffs:
+                reasons.extend(_incomplete_cutoff_reasons(model, self.cutoffs[model]))
+            else:
                 reasons.append(f"no logged cutoff for {model}")
             if model not in self.prices:
                 reasons.append(f"no price for {model}")
         if reasons:
             raise Refused("holdout run conditions not ready", reasons)
 
-    def run_cutoff(self, model_ids: Sequence[str]) -> date:
-        return max(self.cutoffs[model].date for model in model_ids)
+
+def _incomplete_cutoff_reasons(model: str, cutoff: Cutoff) -> list[str]:
+    reasons: list[str] = []
+    if not (cutoff.type or "").strip():
+        reasons.append(f"no cutoff type for {model}")
+    if not (cutoff.source or "").strip():
+        reasons.append(f"no cutoff source for {model}")
+    return reasons
 
 
 def load_conditions(path: Path) -> HoldoutConditions:
@@ -70,7 +79,12 @@ def load_conditions(path: Path) -> HoldoutConditions:
 
 
 def _cutoff(entry: Any) -> Cutoff:
-    return Cutoff(date=date.fromisoformat(entry["date"]), type=entry["type"], note=entry["note"])
+    return Cutoff(
+        date=date.fromisoformat(entry["date"]),
+        type=entry["type"],
+        source=entry["source"],
+        note=entry["note"],
+    )
 
 
 def _prices(entry: Any) -> Prices:

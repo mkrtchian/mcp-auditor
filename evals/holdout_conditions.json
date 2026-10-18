@@ -5,12 +5,14 @@
   "cutoffs": {
     "gpt-6-luna": {
       "date": "2026-05-18",
-      "type": "<vendor wording, confirmed at draw>",
+      "type": "knowledge cutoff",
+      "source": "https://developers.openai.com/api/docs/models/gpt-6-luna",
       "note": null
     },
     "claude-haiku-5-5": {
       "date": "2026-06-30",
       "type": "reliable knowledge cutoff and training data cutoff, both June 2026, month only",
+      "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
       "note": "the last day of the month is taken, the vendor gives the month"
     }
   },

@@ -3,6 +3,7 @@ the proof-free per-target lines (place ids and counts), never evidence, judge in
 verdict, so a holdout run cannot write proof text even by mistake."""
 
 from collections import Counter
+from collections.abc import Mapping
 from datetime import date
 
 from pydantic import BaseModel
@@ -71,17 +72,27 @@ class TargetLine(BaseModel):
 class CutoffModel(BaseModel):
     date: date
     type: str | None
+    source: str | None
     note: str | None
 
     @classmethod
     def of(cls, cutoff: Cutoff) -> "CutoffModel":
-        return cls(date=cutoff.date, type=cutoff.type, note=cutoff.note)
+        return cls(date=cutoff.date, type=cutoff.type, source=cutoff.source, note=cutoff.note)
+
+
+class RunCutoffModel(BaseModel):
+    model: str
+    date: date
+    type: str | None
+    source: str | None
+    note: str | None
 
 
 class HoldoutReport(BaseModel):
     primary_number: float
     cited_interval: IntervalModel
     controls: dict[str, IntervalModel]
+    run_cutoff: RunCutoffModel
     sides: list[SideLine]
     contrast: IntervalModel | None
     conclusion: ConclusionLine | None
@@ -110,8 +121,9 @@ class HoldoutReport(BaseModel):
     image_ids: dict[str, str]
 
 
-def build_report(run: HoldoutRunResult, run_cutoff: date) -> HoldoutReport:
-    split = split_by_side(run.targets, run_cutoff)
+def build_report(run: HoldoutRunResult) -> HoldoutReport:
+    model, cutoff = _run_cutoff(run.cutoffs)
+    split = split_by_side(run.targets, cutoff.date)
     pair = _two_sides(split)
     return HoldoutReport(
         primary_number=primary_number(run.targets),
@@ -120,6 +132,13 @@ def build_report(run: HoldoutRunResult, run_cutoff: date) -> HoldoutReport:
             name: IntervalModel.of(interval)
             for name, interval in primary_controls(run.targets, run.runs).items()
         },
+        run_cutoff=RunCutoffModel(
+            model=model,
+            date=cutoff.date,
+            type=cutoff.type,
+            source=cutoff.source,
+            note=cutoff.note,
+        ),
         sides=[_side_line(side) for side in split.values()],
         contrast=_contrast_line(pair),
         conclusion=_conclusion_line(pair, run.runs),
@@ -146,6 +165,11 @@ def build_report(run: HoldoutRunResult, run_cutoff: date) -> HoldoutReport:
         fixture_fingerprints=run.fixture_fingerprints,
         image_ids=run.image_ids,
     )
+
+
+def _run_cutoff(cutoffs: Mapping[str, Cutoff]) -> tuple[str, Cutoff]:
+    # max keeps the first on a tie, so the generator is named when it shares the judge's date.
+    return max(cutoffs.items(), key=lambda item: item[1].date)
 
 
 def _two_sides(split: dict[Side, SideStatistic]) -> tuple[SideStatistic, SideStatistic] | None:
@@ -237,7 +261,8 @@ def _ladder_section(report: HoldoutReport) -> list[str]:
 
 
 def _split_section(report: HoldoutReport) -> list[str]:
-    lines = [
+    lines = [_run_cutoff_line(report.run_cutoff)]
+    lines += [
         f"- {line.side.value}: {line.number:.3f} ({_span(line.interval)}), {line.targets} target(s)"
         for line in report.sides
     ]
@@ -247,6 +272,11 @@ def _split_section(report: HoldoutReport) -> list[str]:
         lines.append(f"- contrast: {_span(report.contrast)}")
         lines.append(f"- conclusion: {_conclusion_text(report.conclusion)}")
     return ["## Split by cutoff side", *lines, ""]
+
+
+def _run_cutoff_line(cutoff: RunCutoffModel) -> str:
+    line = f"- run cutoff: {cutoff.date} ({cutoff.type}), {cutoff.model}, {cutoff.source}"
+    return line if cutoff.note is None else f"{line}, note: {cutoff.note}"
 
 
 def _conclusion_text(conclusion: ConclusionLine | None) -> str:

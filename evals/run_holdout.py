@@ -104,7 +104,7 @@ def _run(args: argparse.Namespace) -> int:
             concurrency=args.concurrency,
         )
     )
-    report = build_report(run, conditions.run_cutoff(model_ids))
+    report = build_report(run)
     markdown = render_markdown(report)
     _write_report(args.report, report, markdown)
     print(markdown)

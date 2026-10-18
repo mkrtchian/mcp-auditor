@@ -1,6 +1,7 @@
 import json
 from datetime import date
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -8,7 +9,6 @@ from evals.eval_session import Refused
 from evals.holdout_conditions import (
     CONDITIONS_PATH,
     Cutoff,
-    HoldoutConditions,
     load_conditions,
 )
 from evals.probe_candidates import Prices
@@ -19,7 +19,14 @@ def _complete_payload() -> dict[str, object]:
         "chain_budget": 3,
         "max_chain_steps": 5,
         "tool_call_timeout": 60,
-        "cutoffs": {"gpt-6-luna": {"date": "2026-05-18", "type": "training data", "note": None}},
+        "cutoffs": {
+            "gpt-6-luna": {
+                "date": "2026-05-18",
+                "type": "training data",
+                "source": "https://example.test/luna",
+                "note": None,
+            }
+        },
         "prices": {"gpt-6-luna": {"input": 0.10, "cached_input": 0.01, "output": 0.50}},
         "prices_as_of": "2026-10-15",
     }
@@ -38,7 +45,9 @@ def test_a_complete_file_loads(tmp_path: Path):
     assert conditions.max_chain_steps == 5
     assert conditions.tool_call_timeout == 60
     assert conditions.prices_as_of == date(2026, 10, 15)
-    assert conditions.cutoffs["gpt-6-luna"] == Cutoff(date(2026, 5, 18), "training data", None)
+    assert conditions.cutoffs["gpt-6-luna"] == Cutoff(
+        date(2026, 5, 18), "training data", "https://example.test/luna", None
+    )
     assert conditions.prices["gpt-6-luna"] == Prices(input=0.10, cached_input=0.01, output=0.50)
 
 
@@ -78,7 +87,9 @@ def test_require_ready_refuses_a_model_with_no_cutoff(tmp_path: Path):
 
 def test_require_ready_refuses_a_model_with_no_price(tmp_path: Path):
     payload = _complete_payload()
-    payload["cutoffs"] = {"gpt-7-sol": {"date": "2026-01-01", "type": None, "note": None}}
+    payload["cutoffs"] = {
+        "gpt-7-sol": {"date": "2026-01-01", "type": None, "source": None, "note": None}
+    }
     conditions = load_conditions(_write(tmp_path, payload))
 
     with pytest.raises(Refused) as excinfo:
@@ -101,26 +112,57 @@ def test_the_committed_file_is_ready_for_the_logged_models():
     )
 
     conditions.require_ready(["gpt-6-luna", "claude-haiku-5-5"])
+    conditions.require_ready(["gpt-6-luna"])
+    conditions.require_ready(["claude-haiku-5-5"])
 
 
-def test_run_cutoff_returns_the_latest_cutoff():
-    conditions = load_conditions(CONDITIONS_PATH)
+def _payload_with_luna_cutoff(**changes: object) -> dict[str, object]:
+    payload = _complete_payload()
+    cutoffs = cast(dict[str, dict[str, object]], payload["cutoffs"])
+    cutoffs["gpt-6-luna"] |= changes
+    return payload
 
-    assert conditions.run_cutoff(["gpt-6-luna"]) == date(2026, 5, 18)
+
+def _refusal_reasons(tmp_path: Path, payload: dict[str, object], models: list[str]) -> list[str]:
+    conditions = load_conditions(_write(tmp_path, payload))
+    with pytest.raises(Refused) as excinfo:
+        conditions.require_ready(models)
+    return excinfo.value.reasons
 
 
-def test_run_cutoff_takes_the_latest_among_the_run_models():
-    cutoffs = {
-        "early": Cutoff(date(2026, 1, 1), None, None),
-        "late": Cutoff(date(2026, 9, 1), None, None),
-    }
-    conditions = HoldoutConditions(
-        chain_budget=3,
-        max_chain_steps=5,
-        tool_call_timeout=60,
-        cutoffs=cutoffs,
-        prices={},
-        prices_as_of=date(2026, 10, 15),
-    )
+def test_require_ready_refuses_a_cutoff_with_no_type(tmp_path: Path):
+    reasons = _refusal_reasons(tmp_path, _payload_with_luna_cutoff(type=None), ["gpt-6-luna"])
 
-    assert conditions.run_cutoff(["early", "late"]) == date(2026, 9, 1)
+    assert reasons == ["no cutoff type for gpt-6-luna"]
+
+
+def test_require_ready_refuses_a_cutoff_with_an_empty_source(tmp_path: Path):
+    reasons = _refusal_reasons(tmp_path, _payload_with_luna_cutoff(source=""), ["gpt-6-luna"])
+
+    assert reasons == ["no cutoff source for gpt-6-luna"]
+
+
+def test_require_ready_gathers_both_missing_cutoff_fields_in_one_refusal(tmp_path: Path):
+    payload = _payload_with_luna_cutoff(type="  ", source=None)
+
+    reasons = _refusal_reasons(tmp_path, payload, ["gpt-6-luna"])
+
+    assert reasons == ["no cutoff type for gpt-6-luna", "no cutoff source for gpt-6-luna"]
+
+
+def test_a_model_with_no_cutoff_gets_no_type_or_source_reason(tmp_path: Path):
+    payload = _complete_payload()
+    payload["prices"] = {"gpt-7-sol": {"input": 0.10, "cached_input": 0.01, "output": 0.50}}
+
+    reasons = _refusal_reasons(tmp_path, payload, ["gpt-7-sol"])
+
+    assert reasons == ["no logged cutoff for gpt-7-sol"]
+
+
+def test_a_cutoff_without_a_source_key_fails_to_load(tmp_path: Path):
+    payload = _complete_payload()
+    cutoffs = cast(dict[str, dict[str, object]], payload["cutoffs"])
+    del cutoffs["gpt-6-luna"]["source"]
+
+    with pytest.raises(KeyError):
+        load_conditions(_write(tmp_path, payload))
