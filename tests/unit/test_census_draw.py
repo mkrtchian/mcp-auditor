@@ -50,8 +50,10 @@ def test_a_well_formed_draw_loads(tmp_path: Path):
     assert loaded.draw == _a_draw()
 
 
-def test_the_committed_census_has_no_draw():
-    assert load_census(CENSUS_PATH).draw is None
+def test_the_committed_census_draw_validates_clean():
+    # load_census runs draw_problems on a present draw and raises on any problem, so a clean load
+    # with the draw present is the committed draw validating.
+    assert load_census(CENSUS_PATH).draw is not None
 
 
 def test_a_card_citing_an_unknown_place_id_fails(tmp_path: Path):
