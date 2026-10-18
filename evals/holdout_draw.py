@@ -1,16 +1,15 @@
 """The deterministic draw order the maintainer walks.
 
 The order is the rule's: ascending order of the lowercase hex SHA-256 of the UTF-8 string
-`"mcp-auditor-holdout:" + identifier`. It is the backbone of both sides' walks; the per-walk
-skips, the fill-to-10 and the backfill-to-20 depend on draw state the maintainer tracks as
-calibration proceeds and live in the draw record, not here.
+`"mcp-auditor-holdout:" + identifier`. It is the backbone of the walk; the skips and the stop
+at 20 targets depend on draw state the maintainer tracks as calibration proceeds and live in the
+draw record, not here.
 """
 
 import hashlib
 from dataclasses import dataclass
 from datetime import date
 
-from evals.census_draw import Side, side_of
 from evals.census_grouping import draw_order_flaws
 from evals.holdout_census import HoldoutCensus, draw_candidates
 
@@ -25,18 +24,16 @@ def draw_digest(identifier: str) -> str:
 class DrawEntry:
     digest: str
     identifier: str
-    side: Side
     disclosure_date: date
 
 
-def draw_order(census: HoldoutCensus, cutoff: date) -> list[DrawEntry]:
+def draw_order(census: HoldoutCensus) -> list[DrawEntry]:
     identifiers = draw_order_flaws(census.classifications, draw_candidates(census.flaws))
     disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
     entries = [
         DrawEntry(
             digest=draw_digest(identifier),
             identifier=identifier,
-            side=side_of(disclosure_dates[identifier], cutoff),
             disclosure_date=disclosure_dates[identifier],
         )
         for identifier in identifiers

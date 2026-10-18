@@ -34,7 +34,7 @@ uv run python -m evals.run_census prefilter          # CVE holdout census: write
 uv run python -m evals.run_census status             # What the census still lacks (undecided hits, gaps to widen, unconfirmed absences), exit 0 complete, 1 otherwise
 uv run python -m evals.run_census classify-dossier --out DIR  # Write the classifiers' input outside the repository, once the census is complete
 uv run python -m evals.run_census assemble           # Build, check with load_census and write evals/holdout_census.json from the exports and the work directory, then commit it by hand
-uv run python -m evals.run_holdout draw-order --cutoff YYYY-MM-DD  # CVE holdout: print the salted-SHA draw order of the draw-order candidates and a per-side tally for the cutoff (--census defaults to evals/holdout_census.json, no LLM, no network)
+uv run python -m evals.run_holdout draw-order  # CVE holdout: print the salted-SHA draw order of the draw-order candidates with each one's disclosure date (--census defaults to evals/holdout_census.json, no LLM, no network)
 uv run python -m evals.run_holdout calibration-dossier --cve ID --out DIR  # CVE holdout: write a self-contained, mcp_auditor-free calibration kit for one candidate to DIR, outside the repository (no LLM)
 uv run python -m evals.run_holdout run  # CVE holdout capability run: audit the drawn targets and report the capability number (needs the drawn targets, Docker and an LLM key, refuses with tracing on, prints that nothing is drawn and exits 0 while HOLDOUT_TARGETS is empty)
 uv run python -m evals.capture_probe_corpus           # Capture evals/fixtures/probe_corpus.json once, reference settings only (Docker, the CVE images, GOOGLE_API_KEY), then commit it by hand

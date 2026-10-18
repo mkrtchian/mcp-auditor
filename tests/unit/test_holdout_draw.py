@@ -2,7 +2,6 @@ from datetime import date
 from typing import Any
 
 import tests.unit.support.test_census_figures_given as figures
-from evals.census_draw import Side, side_of
 from evals.census_figures import compute_figures
 from evals.census_sources import SourceFile, SourceName, SourceProvenance, SourceRecord
 from evals.holdout_census import CensusFlaw, Discovery, HoldoutCensus
@@ -10,7 +9,6 @@ from evals.holdout_draw import DRAW_SALT, draw_digest, draw_order
 
 AN_EXCLUDED_SERVER = "npm:mcp-fetch-server"
 A_BENCHMARK_FLAW = "CVE-2025-65513"
-CUTOFF = date(2026, 5, 18)
 
 
 def test_draw_digest_is_the_known_sha256_of_a_fixed_identifier():
@@ -21,27 +19,20 @@ def test_draw_digest_is_the_known_sha256_of_a_fixed_identifier():
     )
 
 
-def test_side_of_counts_the_cutoff_day_itself_as_pre_cutoff():
-    assert side_of(CUTOFF, CUTOFF) == Side.PRE_CUTOFF
-    assert side_of(CUTOFF.replace(day=17), CUTOFF) == Side.PRE_CUTOFF
-    assert side_of(CUTOFF.replace(day=19), CUTOFF) == Side.POST_CUTOFF
-
-
-def test_draw_order_sorts_entries_by_digest_and_assigns_each_flaw_its_side():
+def test_draw_order_sorts_entries_by_digest_with_each_disclosure_date():
     flaws = [
         _flaw("CVE-2026-0001", disclosure=date(2025, 6, 10)),
         _flaw("CVE-2026-0002", disclosure=date(2026, 7, 1)),
     ]
     census = _census(flaws, _agreed_classifications({"CVE-2026-0001": {}, "CVE-2026-0002": {}}))
 
-    entries = draw_order(census, CUTOFF)
+    entries = draw_order(census)
 
     assert [entry.digest for entry in entries] == sorted(
         draw_digest(flaw.identifier) for flaw in flaws
     )
     by_identifier = {entry.identifier: entry for entry in entries}
-    assert by_identifier["CVE-2026-0001"].side == Side.PRE_CUTOFF
-    assert by_identifier["CVE-2026-0002"].side == Side.POST_CUTOFF
+    assert by_identifier["CVE-2026-0001"].disclosure_date == date(2025, 6, 10)
     assert by_identifier["CVE-2026-0002"].disclosure_date == date(2026, 7, 1)
 
 
@@ -68,7 +59,7 @@ def test_draw_order_keeps_only_the_draw_order_candidates():
     )
     census = _census(flaws, classifications)
 
-    drawn = {entry.identifier for entry in draw_order(census, CUTOFF)}
+    drawn = {entry.identifier for entry in draw_order(census)}
 
     assert drawn == {"CVE-2026-0001", "CVE-2026-0002"}
 

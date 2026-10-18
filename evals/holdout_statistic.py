@@ -4,14 +4,13 @@ sides and the conclusion check that reads the contrast against zero under every 
 
 The result value objects live in holdout_results so the report and the orchestrator share them
 without a cycle. The split recomputes each target's side from its disclosure date against the
-run's own cutoff, passed in rather than imported."""
+run's own cutoff, passed in."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 
-from evals.census_draw import Side, side_of
 from evals.holdout_hierarchical import GammaPrior, contrast_hierarchical, hierarchical_interval
 from evals.holdout_intervals import (
     Interval,
@@ -26,6 +25,11 @@ from evals.holdout_results import HoldoutTargetResult
 _GAMMA_1_1 = GammaPrior(shape=1.0, scale=1.0)
 _GAMMA_2_2 = GammaPrior(shape=2.0, scale=2.0)
 _MIN_SIDE = 5  # Newcombe and the conclusion need at least this many targets a side
+
+
+class Side(StrEnum):
+    PRE_CUTOFF = "pre_cutoff"
+    POST_CUTOFF = "post_cutoff"
 
 
 class Placement(StrEnum):
@@ -94,6 +98,10 @@ def split_by_side(
         side: SideStatistic(side, tuple(members), wilson(_share_sum(members), len(members)))
         for side, members in by_side.items()
     }
+
+
+def side_of(disclosure_date: date, cutoff: date) -> Side:
+    return Side.PRE_CUTOFF if disclosure_date <= cutoff else Side.POST_CUTOFF
 
 
 def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:

@@ -5,16 +5,17 @@ crafted counts; nothing is fetched."""
 import math
 from datetime import date
 
-from evals.census_draw import Side
 from evals.holdout_intervals import newcombe, wilson
 from evals.holdout_results import HoldoutTargetResult
 from evals.holdout_statistic import (
     Placement,
+    Side,
     check_conclusion,
     cited_interval,
     contrast,
     primary_controls,
     primary_number,
+    side_of,
     split_by_side,
 )
 
@@ -65,6 +66,12 @@ def test_cited_interval_is_wilson_on_the_sum_of_shares():
     results = [_result("A", detected_runs=3), _result("B", detected_runs=1)]
     share_sum = 3 / 3 + 1 / 3
     assert cited_interval(results) == wilson(share_sum, 2)
+
+
+def test_side_of_counts_the_cutoff_day_itself_as_pre_cutoff():
+    assert side_of(RUN_CUTOFF, RUN_CUTOFF) == Side.PRE_CUTOFF
+    assert side_of(RUN_CUTOFF.replace(day=17), RUN_CUTOFF) == Side.PRE_CUTOFF
+    assert side_of(RUN_CUTOFF.replace(day=19), RUN_CUTOFF) == Side.POST_CUTOFF
 
 
 def test_split_by_side_recomputes_the_side_from_the_disclosure_date():

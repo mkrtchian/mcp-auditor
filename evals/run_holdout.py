@@ -6,14 +6,11 @@ the `run` command audits the drawn targets, so it needs Docker and an LLM key.
 import argparse
 import asyncio
 import sys
-from collections import Counter
 from collections.abc import Sequence
-from datetime import date
 from pathlib import Path
 
 from evals import calibration_dossier, holdout_targets
 from evals import eval_display as display
-from evals.census_draw import Side
 from evals.concurrency import positive_int
 from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.eval_runs import tracing_enabled
@@ -52,9 +49,6 @@ def _parser() -> argparse.ArgumentParser:
     draw = commands.add_parser("draw-order", help="print the draw order for the maintainer to walk")
     draw.set_defaults(command=_draw_order)
     draw.add_argument("--census", type=Path, default=CENSUS_PATH)
-    draw.add_argument("--cutoff", type=date.fromisoformat, required=True)
-    draw.add_argument("--cutoff-type", default=None)
-    draw.add_argument("--cutoff-note", default=None)
     dossier = commands.add_parser(
         "calibration-dossier", help="write the isolated calibration kit for one candidate"
     )
@@ -73,16 +67,10 @@ def _parser() -> argparse.ArgumentParser:
 
 def _draw_order(args: argparse.Namespace) -> int:
     census = load_census(args.census)
-    entries = draw_order(census, args.cutoff)
-    print(f"Cutoff {args.cutoff} ({args.cutoff_type or 'unspecified'})")
-    if args.cutoff_note:
-        print(f"Note: {args.cutoff_note}")
+    entries = draw_order(census)
     print(f"{len(entries)} candidates in draw order:")
     for entry in entries:
-        print(f"  {entry.digest[:12]}  {entry.identifier}  {entry.side}  {entry.disclosure_date}")
-    tally = Counter(entry.side for entry in entries)
-    for side in Side:
-        print(f"{side}: {tally[side]}")
+        print(f"  {entry.digest[:12]}  {entry.identifier}  {entry.disclosure_date}")
     return 0
 
 

@@ -16,10 +16,16 @@ from evals.census_draw import (
     GiveUp,
     GiveUpReason,
     KeptPlace,
-    Side,
+    draw_problems,
 )
 from evals.census_figures import compute_figures
-from evals.census_grouping import READERS, ProofJudgment, gap_population, known_gap
+from evals.census_grouping import (
+    READERS,
+    ProofJudgment,
+    draw_order_flaws,
+    gap_population,
+    known_gap,
+)
 from evals.census_sources import SourceFile, SourceName, SourceProvenance, SourceRecord
 from evals.census_work import AgentRecord, AgentRole
 from evals.holdout_census import (
@@ -34,7 +40,6 @@ from evals.run_census import CENSUS_PATH
 
 A_DRAWN_FLAW = "CVE-2025-0001"
 A_TWICE_GIVEN_UP_FLAW = "GHSA-dddd-eeee-ffff"
-A_CUTOFF = date(2027, 1, 1)
 
 
 def test_a_well_formed_draw_loads(tmp_path: Path):
@@ -66,13 +71,20 @@ def test_a_drawn_list_over_twenty_fails(tmp_path: Path):
         load_census(given.written(tmp_path, _census_with_draw(draw)))
 
 
-def test_more_than_ten_drawn_on_one_side_fails(tmp_path: Path):
-    identifiers = [f"CVE-2026-{i:04d}" for i in range(1, 12)]
-    draw = _a_draw().model_copy(update={"drawn": identifiers})
-    census = _census_of(identifiers, draw)
+def test_twenty_drawn_flaws_disclosed_after_one_date_raise_no_problem():
+    identifiers = [f"CVE-2026-{i:04d}" for i in range(1, 21)]
+    census = _census_of(identifiers, _a_draw_of(identifiers))
+    assert census.draw is not None
 
-    with pytest.raises(ValueError, match="more than 10"):
-        load_census(given.written(tmp_path, census))
+    problems = draw_problems(
+        census.draw,
+        set(draw_order_flaws(census.classifications, draw_candidates(census.flaws))),
+        {flaw.identifier: flaw.disclosure_date for flaw in census.flaws},
+        set(),
+        census.agents,
+    )
+
+    assert problems == []
 
 
 def test_a_give_up_reason_outside_the_closed_set_fails_at_deserialization(tmp_path: Path):
@@ -128,17 +140,13 @@ def test_a_card_flaw_with_no_calibrator_record_fails(tmp_path: Path):
 
 def _a_draw() -> DrawRecord:
     return DrawRecord(
-        cutoff=A_CUTOFF,
-        cutoff_type="knowledge_cutoff",
-        cutoff_note=None,
         rule_commit="abc1234",
         grammar_fingerprint="deadbeef",
         settlements=[],
         walk=[
-            DrawWalkStep(identifier=A_DRAWN_FLAW, side=Side.PRE_CUTOFF, outcome="drawn", reason=""),
+            DrawWalkStep(identifier=A_DRAWN_FLAW, outcome="drawn", reason=""),
             DrawWalkStep(
                 identifier=A_TWICE_GIVEN_UP_FLAW,
-                side=Side.PRE_CUTOFF,
                 outcome="given_up",
                 reason="no place reached on either calibration",
             ),
@@ -169,6 +177,25 @@ def _a_draw() -> DrawRecord:
             ),
         ],
         drawn=[A_DRAWN_FLAW],
+    )
+
+
+def _a_draw_of(identifiers: list[str]) -> DrawRecord:
+    return DrawRecord(
+        rule_commit="abc1234",
+        grammar_fingerprint="deadbeef",
+        settlements=[],
+        walk=[
+            DrawWalkStep(identifier=identifier, outcome="drawn", reason="")
+            for identifier in identifiers
+        ],
+        cards=[_a_card(identifier) for identifier in identifiers],
+        card_checks=[
+            CardCheck(flaw=identifier, reported_gaps=[], confirmed_gaps=[])
+            for identifier in identifiers
+        ],
+        give_ups=[],
+        drawn=identifiers,
     )
 
 
@@ -212,9 +239,17 @@ def _census_of(identifiers: list[str], draw: DrawRecord) -> HoldoutCensus:
     dates = {identifier: date(2025, 6, 10) for identifier in identifiers}
     groupings: dict[str, list[ProofJudgment]] = {reader: [] for reader in READERS}
     population = gap_population(classifications, draw_candidates(flaws))
+    calibration = [
+        AgentRecord(role=role, scope=identifier, model="m")
+        for identifier in identifiers
+        for role in (AgentRole.CALIBRATOR, AgentRole.CARD_CHECKER)
+    ]
     return HoldoutCensus(
         sources=_provenance(),
-        agents=[AgentRecord(role=AgentRole.READER, scope=reader, model="m") for reader in READERS],
+        agents=[
+            *(AgentRecord(role=AgentRole.READER, scope=reader, model="m") for reader in READERS),
+            *calibration,
+        ],
         prefilter=[],
         hits=[],
         flaws=flaws,

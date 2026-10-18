@@ -1,12 +1,12 @@
-"""The draw-time schema of the holdout census: the side of a flaw on the cutoff, the draw
-record and the calibration cards the draw and its calibration fill.
+"""The draw-time schema of the holdout census: the draw record and the calibration cards the
+draw and its calibration fill.
 
 Everything here is optional and empty until the maintainer's draw session. `draw_problems`
 is the load validation `holdout_census.load_census` runs when a `draw` is present. This module
-imports nothing from holdout_draw or holdout_census, so both can import from it with no cycle.
+imports nothing from holdout_census, so holdout_census can import from it with no cycle.
 """
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from datetime import date
 from enum import StrEnum
@@ -17,15 +17,6 @@ from pydantic import BaseModel
 from evals.census_classification import Criterion
 from evals.census_work import AgentRecord, AgentRole
 from evals.cve_places import REACHABLE_BY
-
-
-class Side(StrEnum):
-    PRE_CUTOFF = "pre_cutoff"
-    POST_CUTOFF = "post_cutoff"
-
-
-def side_of(disclosure_date: date, cutoff: date) -> Side:
-    return Side.PRE_CUTOFF if disclosure_date <= cutoff else Side.POST_CUTOFF
 
 
 class KeptPlace(BaseModel):
@@ -110,15 +101,11 @@ class Settlement(BaseModel):
 
 class DrawWalkStep(BaseModel):
     identifier: str
-    side: Side
     outcome: Literal["drawn", "skipped", "given_up", "excluded"]
     reason: str
 
 
 class DrawRecord(BaseModel):
-    cutoff: date
-    cutoff_type: str
-    cutoff_note: str | None
     rule_commit: str
     grammar_fingerprint: str
     settlements: list[Settlement]
@@ -142,7 +129,7 @@ def draw_problems(
         *_calibration_problems(draw),
         *_place_problems(draw, place_ids),
         *_agent_problems(draw, agents),
-        *_count_problems(draw, disclosure_dates),
+        *_count_problems(draw),
     ]
 
 
@@ -242,21 +229,10 @@ def _agent_problems(draw: DrawRecord, agents: Sequence[AgentRecord]) -> list[str
     return problems
 
 
-def _count_problems(draw: DrawRecord, disclosure_dates: Mapping[str, date]) -> list[str]:
-    problems: list[str] = []
+def _count_problems(draw: DrawRecord) -> list[str]:
     if len(draw.drawn) > 20:
-        problems.append(f"the draw has {len(draw.drawn)} drawn targets, more than 20")
-    per_side = Counter(
-        side_of(disclosure_dates[identifier], draw.cutoff)
-        for identifier in draw.drawn
-        if identifier in disclosure_dates
-    )
-    problems += [
-        f"the draw has {count} drawn targets on side {side}, more than 10"
-        for side, count in per_side.items()
-        if count > 10
-    ]
-    return problems
+        return [f"the draw has {len(draw.drawn)} drawn targets, more than 20"]
+    return []
 
 
 def _walk_outcomes(draw: DrawRecord) -> dict[str, list[str]]:

@@ -4,7 +4,6 @@ no proof. The model carries no evidence, no judge input and no per-case verdict 
 import dataclasses
 from datetime import date
 
-from evals.census_draw import Side
 from evals.holdout_conditions import Cutoff
 from evals.holdout_not_run import NotRunLine
 from evals.holdout_report import (
@@ -24,6 +23,7 @@ from evals.holdout_results import (
     NotRunCause,
     NotRunTarget,
 )
+from evals.holdout_statistic import Side
 
 RUN_CUTOFF = date(2026, 5, 18)
 RUNS = 3

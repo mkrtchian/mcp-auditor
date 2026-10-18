@@ -7,13 +7,13 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from evals.census_draw import Side
 from evals.holdout_conditions import Cutoff
 from evals.holdout_intervals import Interval
 from evals.holdout_not_run import NotRunLine, not_run_section
 from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult
 from evals.holdout_statistic import (
     MethodPlacement,
+    Side,
     SideStatistic,
     check_conclusion,
     cited_interval,
