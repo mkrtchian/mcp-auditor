@@ -167,8 +167,7 @@ nothing else:
   `ToolResponse` (the exploits run unchanged: `KitResponse` mirrors `ToolResponse`).
 - `from evals.holdout_kit.kit_launch import Launch` -> `evals.cve_environments.Launch`.
 
-The authored `KitTarget` then wraps into a `CVETarget` (the shared fields) and into
-`HoldoutTarget(target, side)`.
+The authored `KitTarget` then wraps into a `CVETarget` (the shared fields).
 
 ## KitTarget fields
 
@@ -182,7 +181,6 @@ The authored `KitTarget` then wraps into a `CVETarget` (the shared fields) and i
 - `planting_host`: the `PlantingHost` the places plant into.
 - `builder`: a context manager yielding a `kit_launch.Launch`.
 - `exploits`, `benign`: `async (Places, KitClient) -> None`.
-- `side`: the draw side (`pre_cutoff` / `post_cutoff`).
 - `launch_mode`, `fallback_scope`: optional, defaulting to normal launch and no fallback.
 
 ## Classification JSON schema

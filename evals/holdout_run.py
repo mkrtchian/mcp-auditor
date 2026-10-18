@@ -33,7 +33,6 @@ from evals.holdout_results import (
     NotRunCause,
     NotRunTarget,
 )
-from evals.holdout_targets import HoldoutTarget
 from evals.metrics import SessionThrottles
 from evals.probe import call_cost
 from evals.probe_candidates import Prices
@@ -70,7 +69,7 @@ class _RunContext:
 
 
 async def run_holdout(
-    targets: Sequence[HoldoutTarget],
+    targets: Sequence[CVETarget],
     disclosure_dates: Mapping[str, date],
     conditions: HoldoutConditions,
     settings: Settings,
@@ -93,7 +92,7 @@ async def run_holdout(
     deps = deps or default_deps(places, _overrides(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
-    deps.rebuild(target_services([entry.target for entry in targets]))
+    deps.rebuild(target_services(list(targets)))
     not_run, surviving = await _vet_all(targets, deps)
     assembled, dropped = await _run_all(surviving, deps, ctx)
     all_not_run = [*not_run, *dropped]
@@ -113,8 +112,8 @@ def _refuse_tracing() -> None:
         )
 
 
-def _refuse_tools_filter(targets: Sequence[HoldoutTarget]) -> None:
-    filtered = [entry.identifier for entry in targets if entry.target.tools_filter is not None]
+def _refuse_tools_filter(targets: Sequence[CVETarget]) -> None:
+    filtered = [target.cve_id for target in targets if target.tools_filter is not None]
     if filtered:
         raise Refused(
             "holdout run refused",
@@ -123,9 +122,9 @@ def _refuse_tools_filter(targets: Sequence[HoldoutTarget]) -> None:
 
 
 def _refuse_missing_census(
-    targets: Sequence[HoldoutTarget], disclosure_dates: Mapping[str, date]
+    targets: Sequence[CVETarget], disclosure_dates: Mapping[str, date]
 ) -> None:
-    missing = [entry.identifier for entry in targets if entry.target.cve_id not in disclosure_dates]
+    missing = [target.cve_id for target in targets if target.cve_id not in disclosure_dates]
     if missing:
         raise Refused(
             "holdout run refused",
@@ -133,13 +132,13 @@ def _refuse_missing_census(
         )
 
 
-def _refuse_unknown_places(targets: Sequence[HoldoutTarget], places: Places) -> None:
+def _refuse_unknown_places(targets: Sequence[CVETarget], places: Places) -> None:
     reasons: list[str] = []
-    for entry in targets:
+    for target in targets:
         try:
-            entry.target.planting_spec(kept_records(entry.target.kept_places, places))
+            target.planting_spec(kept_records(target.kept_places, places))
         except ValueError as exc:
-            reasons.append(f"{entry.identifier}: {exc}")
+            reasons.append(f"{target.cve_id}: {exc}")
     if reasons:
         raise Refused("holdout run refused", reasons)
 
@@ -190,14 +189,14 @@ async def _observe_layout(target: CVETarget, places: Places) -> LayoutCheck:
 
 
 async def _vet_all(
-    targets: Sequence[HoldoutTarget], deps: HoldoutDeps
-) -> tuple[list[NotRunTarget], list[HoldoutTarget]]:
-    reasons = await asyncio.gather(*(_vet(entry.target, deps) for entry in targets))
+    targets: Sequence[CVETarget], deps: HoldoutDeps
+) -> tuple[list[NotRunTarget], list[CVETarget]]:
+    reasons = await asyncio.gather(*(_vet(target, deps) for target in targets))
     paired = list(zip(targets, reasons, strict=True))
     not_run = [
-        NotRunTarget(e.identifier, r, NotRunCause.PRE_RUN_CHECK) for e, r in paired if r is not None
+        NotRunTarget(t.cve_id, r, NotRunCause.PRE_RUN_CHECK) for t, r in paired if r is not None
     ]
-    surviving = [e for e, r in paired if r is None]
+    surviving = [t for t, r in paired if r is None]
     return not_run, surviving
 
 
@@ -222,19 +221,19 @@ def vet_reason(target: CVETarget, conditions: list[str], layout: LayoutCheck) ->
 
 
 async def _run_all(
-    surviving: Sequence[HoldoutTarget], deps: HoldoutDeps, ctx: _RunContext
-) -> tuple[list[tuple[HoldoutTarget, HoldoutTargetResult]], list[NotRunTarget]]:
+    surviving: Sequence[CVETarget], deps: HoldoutDeps, ctx: _RunContext
+) -> tuple[list[tuple[CVETarget, HoldoutTargetResult]], list[NotRunTarget]]:
     runs_per = await asyncio.gather(
-        *(_run_target(entry.target, deps.audit, ctx.runs) for entry in surviving)
+        *(_run_target(target, deps.audit, ctx.runs) for target in surviving)
     )
-    assembled: list[tuple[HoldoutTarget, HoldoutTargetResult]] = []
+    assembled: list[tuple[CVETarget, HoldoutTargetResult]] = []
     dropped: list[NotRunTarget] = []
-    for entry, outcomes in zip(surviving, runs_per, strict=True):
+    for target, outcomes in zip(surviving, runs_per, strict=True):
         if isinstance(outcomes, DroppedRun):
             reason = DROPPED_RUN_REASONS[outcomes.cause]
-            dropped.append(NotRunTarget(entry.identifier, reason, outcomes.cause))
+            dropped.append(NotRunTarget(target.cve_id, reason, outcomes.cause))
         else:
-            assembled.append((entry, _assemble_target(entry, outcomes, ctx)))
+            assembled.append((target, _assemble_target(target, outcomes, ctx)))
     return assembled, dropped
 
 
@@ -251,9 +250,8 @@ async def _run_target(
 
 
 def _assemble_target(
-    entry: HoldoutTarget, outcomes: Sequence[GradedAudit | IncompleteRun], ctx: _RunContext
+    target: CVETarget, outcomes: Sequence[GradedAudit | IncompleteRun], ctx: _RunContext
 ) -> HoldoutTargetResult:
-    target = entry.target
     grades = [outcome.grade if isinstance(outcome, GradedAudit) else None for outcome in outcomes]
     reports = [outcome.report for outcome in outcomes]
     gen_price, judge_price = _prices(ctx)
@@ -299,13 +297,13 @@ def _run_cost(report: AuditReport, gen_price: Prices, judge_price: Prices) -> fl
 def _assemble_run(
     ctx: _RunContext,
     deps: HoldoutDeps,
-    assembled: Sequence[tuple[HoldoutTarget, HoldoutTargetResult]],
+    assembled: Sequence[tuple[CVETarget, HoldoutTargetResult]],
     not_run: list[NotRunTarget],
     tree: TreeState,
 ) -> HoldoutRunResult:
     settings = ctx.settings
     model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
-    targets = [entry.target for entry, _ in assembled]
+    targets = [target for target, _ in assembled]
     results = [result for _, result in assembled]
     return HoldoutRunResult(
         runs=ctx.runs,

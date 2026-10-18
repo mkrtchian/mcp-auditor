@@ -9,7 +9,6 @@ from typing import Any
 
 import pytest
 
-from evals.census_draw import Side
 from evals.cve_grammar import CVEStatus, RunGrade
 from evals.cve_layout_check import LayoutCheck
 from evals.cve_places import HOLDOUT_PLACES, load_places
@@ -20,7 +19,6 @@ from evals.holdout_audit import DroppedRun, IncompleteRun
 from evals.holdout_conditions import Cutoff, HoldoutConditions
 from evals.holdout_results import HoldoutRunResult, NotRunCause
 from evals.holdout_run import HoldoutDeps, run_holdout, target_services
-from evals.holdout_targets import HoldoutTarget
 from evals.probe import call_cost
 from evals.probe_candidates import Prices
 from mcp_auditor.config import Settings
@@ -46,9 +44,8 @@ def _conditions() -> HoldoutConditions:
     )
 
 
-def _entry(cve_index: int = 0, **changes: object) -> HoldoutTarget:
-    target = dataclasses.replace(CVE_TARGETS[cve_index], tools_filter=None, **changes)
-    return HoldoutTarget(target=target, side=Side.PRE_CUTOFF)
+def _target(cve_index: int = 0, **changes: object) -> CVETarget:
+    return dataclasses.replace(CVE_TARGETS[cve_index], tools_filter=None, **changes)
 
 
 def _report(provider: ProviderUsage, judge: ProviderUsage) -> AuditReport:
@@ -119,14 +116,14 @@ def _three_detections() -> list[Outcome]:
 
 
 async def _run(
-    targets: list[HoldoutTarget],
+    targets: list[CVETarget],
     audit: Audit,
     *,
     check: dict[str, list[str]] | None = None,
     layout: dict[str, LayoutCheck] | None = None,
     runs: int = 3,
 ) -> HoldoutRunResult:
-    dates = {entry.target.cve_id: date(2026, 1, 1) for entry in targets}
+    dates = {target.cve_id: date(2026, 1, 1) for target in targets}
     return await run_holdout(
         targets,
         dates,
@@ -150,8 +147,8 @@ def test_target_services_is_empty_for_no_target():
 
 
 async def test_a_target_is_assembled_from_its_runs():
-    entry = _entry(2)  # kubernetes, command_execution, NORMAL
-    cve_id = entry.target.cve_id
+    target = _target(2)  # kubernetes, command_execution, NORMAL
+    cve_id = target.cve_id
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)
     judge = ProviderUsage(input_tokens=100, output_tokens=200)
     report = _report(provider, judge)
@@ -168,7 +165,7 @@ async def test_a_target_is_assembled_from_its_runs():
         _graded(CVEStatus.MISSED, report, aimed=True, fail_without_proof=True),
     ]
 
-    result = await _run([entry], _scripted({cve_id: outcomes}))
+    result = await _run([target], _scripted({cve_id: outcomes}))
 
     (target,) = result.targets
     assert target.detected_runs == 2
@@ -184,8 +181,8 @@ async def test_a_target_is_assembled_from_its_runs():
 
 
 async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
-    entry = _entry(2)
-    cve_id = entry.target.cve_id
+    target = _target(2)
+    cve_id = target.cve_id
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)
     refused_report = _report(provider, ProviderUsage())
     outcomes: list[Outcome] = [
@@ -194,7 +191,7 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
         IncompleteRun(refused_report),
     ]
 
-    result = await _run([entry], _scripted({cve_id: outcomes}))
+    result = await _run([target], _scripted({cve_id: outcomes}))
 
     (target,) = result.targets
     assert target.detected_runs == 1
@@ -204,8 +201,8 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
 
 
 async def test_a_target_dead_on_a_version_is_not_run():
-    dead, healthy = _entry(2), _entry(0)
-    dead_id, healthy_id = dead.target.cve_id, healthy.target.cve_id
+    dead, healthy = _target(2), _target(0)
+    dead_id, healthy_id = dead.cve_id, healthy.cve_id
 
     result = await _run(
         [dead, healthy],
@@ -221,8 +218,8 @@ async def test_a_target_dead_on_a_version_is_not_run():
 
 
 async def test_a_normal_target_the_layout_breaks_is_dropped():
-    broken, healthy = _entry(2), _entry(0)  # both NORMAL
-    broken_id, healthy_id = broken.target.cve_id, healthy.target.cve_id
+    broken, healthy = _target(2), _target(0)  # both NORMAL
+    broken_id, healthy_id = broken.cve_id, healthy.cve_id
 
     result = await _run(
         [broken, healthy],
@@ -238,13 +235,13 @@ async def test_a_normal_target_the_layout_breaks_is_dropped():
 
 
 async def test_a_fallback_target_the_layout_breaks_is_kept():
-    entry = _entry(2, launch_mode=LaunchMode.FALLBACK)
-    cve_id = entry.target.cve_id
+    target = _target(2, launch_mode=LaunchMode.FALLBACK)
+    cve_id = target.cve_id
     report = _report(ProviderUsage(input_tokens=10, output_tokens=20), ProviderUsage())
     outcomes: list[Outcome] = [_graded(CVEStatus.DETECTED, report, aimed=True) for _ in range(3)]
 
     result = await _run(
-        [entry],
+        [target],
         _scripted({cve_id: outcomes}),
         layout={cve_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])},
     )
@@ -255,8 +252,8 @@ async def test_a_fallback_target_the_layout_breaks_is_kept():
 
 
 async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run():
-    sick, healthy = _entry(2), _entry(0)
-    sick_id, healthy_id = sick.target.cve_id, healthy.target.cve_id
+    sick, healthy = _target(2), _target(0)
+    sick_id, healthy_id = sick.cve_id, healthy.cve_id
     report = _report(ProviderUsage(), ProviderUsage())
     launch_failure = DroppedRun(NotRunCause.LAUNCH_FAILURE)
     sick_outcomes: list[Outcome] = [
@@ -278,8 +275,8 @@ async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run()
 
 
 async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
-    sick, healthy = _entry(2), _entry(0)
-    sick_id, healthy_id = sick.target.cve_id, healthy.target.cve_id
+    sick, healthy = _target(2), _target(0)
+    sick_id, healthy_id = sick.cve_id, healthy.cve_id
     report = _report(ProviderUsage(), ProviderUsage())
     sick_outcomes: list[Outcome] = [
         DroppedRun(NotRunCause.LAUNCH_FAILURE),
@@ -300,13 +297,12 @@ async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
 
 async def test_a_drawn_target_with_a_tools_filter_refuses_before_any_check():
     target = dataclasses.replace(CVE_TARGETS[2], tools_filter=frozenset({"kubectl_generic"}))
-    entry = HoldoutTarget(target=target, side=Side.PRE_CUTOFF)
 
     async def audit(_target: CVETarget) -> Outcome:  # must never be reached
         raise AssertionError("the audit ran before the tools-filter refusal")
 
     with pytest.raises(Refused, match="tools filter"):
-        await _run([entry], audit)
+        await _run([target], audit)
 
 
 async def test_tracing_refuses_before_any_container(monkeypatch: pytest.MonkeyPatch):
@@ -316,15 +312,15 @@ async def test_tracing_refuses_before_any_container(monkeypatch: pytest.MonkeyPa
         raise AssertionError("the audit ran despite tracing being on")
 
     with pytest.raises(Refused, match="trace"):
-        await _run([_entry(2)], audit)
+        await _run([_target(2)], audit)
 
 
 async def test_a_target_absent_from_the_census_refuses_before_any_dep():
-    entry = _entry(2)
+    target = _target(2)
 
     with pytest.raises(Refused, match="census"):
         await run_holdout(
-            [entry],
+            [target],
             {},  # the drawn target's cve_id is absent
             _conditions(),
             SETTINGS,
@@ -335,15 +331,15 @@ async def test_a_target_absent_from_the_census_refuses_before_any_dep():
 
 
 async def test_a_dirty_tree_refuses_before_rebuild_and_audit():
-    entry = _entry(2)
+    target = _target(2)
     deps = dataclasses.replace(
         _raising_deps(), read_tree=lambda: TreeState(commit="c0ffee", dirty=True)
     )
 
     with pytest.raises(Refused, match="dirty"):
         await run_holdout(
-            [entry],
-            {entry.target.cve_id: date(2026, 1, 1)},
+            [target],
+            {target.cve_id: date(2026, 1, 1)},
             _conditions(),
             SETTINGS,
             PLACES,
@@ -353,8 +349,8 @@ async def test_a_dirty_tree_refuses_before_rebuild_and_audit():
 
 
 async def test_every_target_dropped_refuses_with_the_reasons():
-    dead, broken = _entry(2), _entry(0)
-    dead_id, broken_id = dead.target.cve_id, broken.target.cve_id
+    dead, broken = _target(2), _target(0)
+    dead_id, broken_id = dead.cve_id, broken.cve_id
 
     with pytest.raises(Refused, match="no target survived") as caught:
         await _run(
@@ -370,12 +366,12 @@ async def test_every_target_dropped_refuses_with_the_reasons():
 
 
 async def test_a_target_with_an_unknown_kept_place_refuses_before_any_dep():
-    entry = _entry(2, kept_places=("no-such-place",))
+    target = _target(2, kept_places=("no-such-place",))
 
     with pytest.raises(Refused, match="no such place"):
         await run_holdout(
-            [entry],
-            {entry.target.cve_id: date(2026, 1, 1)},
+            [target],
+            {target.cve_id: date(2026, 1, 1)},
             _conditions(),
             SETTINGS,
             PLACES,

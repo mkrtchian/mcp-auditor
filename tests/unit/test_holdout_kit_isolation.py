@@ -29,10 +29,8 @@ _COPIED_CLEAN_MODULES = [
     "cve_endpoint_address",
 ]
 
-# HoldoutTarget is a composition HoldoutTarget(target: CVETarget, side: Side), so the parity the
-# transplant needs is between KitTarget's fields and CVETarget's: the maintainer wraps a KitTarget
-# into a CVETarget (these fields) then into HoldoutTarget(target, side). `side` is the one KitTarget
-# field that maps to HoldoutTarget rather than to CVETarget.
+# A drawn target is a CVETarget, so the parity the transplant needs is between KitTarget's fields
+# and CVETarget's: the maintainer wraps a KitTarget into a CVETarget (these fields).
 _DRAWN_TARGET_FIELDS = frozenset(
     {
         "cve_id",
@@ -82,6 +80,5 @@ def test_scan_flags_a_planted_mcp_auditor_import(tmp_path: Path):
 def test_kit_target_mirrors_the_drawn_cve_target_fields():
     kit_names = {field.name for field in fields(KitTarget)}
     cve_names = {field.name for field in fields(CVETarget)}
-    assert "side" in kit_names
-    assert kit_names - {"side"} == _DRAWN_TARGET_FIELDS
+    assert kit_names == _DRAWN_TARGET_FIELDS
     assert cve_names >= _DRAWN_TARGET_FIELDS

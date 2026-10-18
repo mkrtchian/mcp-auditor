@@ -1,14 +1,13 @@
 """KitTarget: the fixture the calibration agent writes and kit_driver consumes, free of mcp_auditor.
 
-Parity note: the acceptance twin is evals/cve_targets.CVETarget (with LaunchMode / FallbackScope)
-and the draw side of evals/census_draw.Side. KitTarget is a flat field-for-field mirror of the
-fields a drawn target carries, with `exploits`/`benign` typed against KitClient and `builder`
-against kit_launch.Launch, plus `side`. The maintainer's transplant into evals/holdout_targets.py
-swaps the two import lines (kit_client -> mcp_auditor ports, kit_launch -> cve_environments) and
-wraps the authored KitTarget into a CVETarget (the shared fields) then into HoldoutTarget(target,
-side); nothing else changes. test_holdout_kit_isolation.py pins the field parity so the mirror
-cannot drift. Side / LaunchMode / FallbackScope are kit-local copies so the exported kit stays
-standalone, depending only on the clean modules the dossier copies.
+Parity note: the acceptance twin is evals/cve_targets.CVETarget (with LaunchMode / FallbackScope).
+KitTarget is a flat field-for-field mirror of the fields a drawn target carries, with
+`exploits`/`benign` typed against KitClient and `builder` against kit_launch.Launch. The
+maintainer's transplant into evals/holdout_targets.py swaps the two import lines (kit_client ->
+mcp_auditor ports, kit_launch -> cve_environments) and wraps the authored KitTarget into a
+CVETarget appended to HOLDOUT_TARGETS; nothing else changes. test_holdout_kit_isolation.py pins the
+field parity so the mirror cannot drift. LaunchMode / FallbackScope are kit-local copies so the
+exported kit stays standalone, depending only on the clean modules the dossier copies.
 """
 
 import re
@@ -28,11 +27,6 @@ from evals.cve_planting import (
 from evals.cve_planting import planting_spec as compute_planting_spec
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import Launch, LaunchShape
-
-
-class Side(StrEnum):  # mirror of evals/census_draw.Side
-    PRE_CUTOFF = "pre_cutoff"
-    POST_CUTOFF = "post_cutoff"
 
 
 class LaunchMode(StrEnum):  # mirror of evals/cve_targets.LaunchMode
@@ -72,7 +66,6 @@ class KitTarget:
     builder: KitBuilder
     exploits: tuple[KitExploit, ...]
     benign: KitExploit
-    side: Side
     launch_mode: LaunchMode = LaunchMode.NORMAL
     fallback_scope: FallbackScope = _NO_FALLBACK_SCOPE
 
