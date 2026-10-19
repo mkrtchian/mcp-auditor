@@ -138329,6 +138329,11 @@
         "identifier": "CVE-2026-46515",
         "outcome": "excluded",
         "reason": "Missing-authorization flaw (CWE-862) in the frogman PBX-control MCP server: read-tier (PERM_READ) callers can invoke eight admin tools that return the server's own PBX and config secrets. Settled out of grammar (see the grammar_class settlement): the effect is missing_permission_check, not read_outside_scope, so no tool reaches a grammar place (arbitrary_read, command_execution or internal_fetch) and no planted nonce could surface in a tool response. Judged from the advisory GHSA-q4c4-5cr4-8q47 and the frogman source (the 1.6.3 fix gates the tools behind PERM_ADMIN); excluded without calibration."
+      },
+      {
+        "identifier": "CVE-2026-55071",
+        "outcome": "excluded",
+        "reason": "Command injection (command_execution, CWE-94) in the ado_package_install tool of the stata-mcp MCP server (PyPI, MCP-for-Stata): in grammar and eligible on every classifier criterion, but the real server cannot be run for the benchmark without a commercial license. stata-mcp wraps commercial Stata, which has no free tier; its README requires users to independently purchase and install a licensed Stata and states the project does not distribute Stata. The project does publish Docker images that bundle the Stata binaries, but they ship no license and require a valid commercial stata.lic to be mounted at runtime. The benchmark cannot satisfy the non-negotiable 'real pinned software, never a mock' guardrail without baking a commercial Stata license into shareable holdout images, so the 'both versions run in Docker' eligibility fails. Both classifiers already flagged runs_in_container=false. Judged by the maintainer from the project's own documentation, excluded without calibration."
       }
     ],
     "cards": [
