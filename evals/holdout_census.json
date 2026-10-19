@@ -138422,6 +138422,16 @@
         "identifier": "CVE-2026-32111",
         "outcome": "excluded",
         "reason": "SSRF (CWE-918) in ha-mcp via a caller-supplied ha_url (the server fetches {ha_url}/api/...), fixed in 7.0.0. Excluded because it is not reached through an MCP stdio tools/call (see the stdio_tools_call settlement): in stdio mode ha_url is pinned from HOMEASSISTANT_URL and every tool call targets it, so the caller cannot steer the fetch. The caller-controlled ha_url exists only in the OAuth HTTP deployment (ha-mcp-oauth, transport=http) via the consent form (a blind error oracle) or a forgeable unsigned bearer token; on that bearer-token REST path the fetched body IS returned (so it is not blind), but it lives on the HTTP transport, not the stdio tools/call surface. The two classifiers labeled the effect blind_ssrf and ssrf_error_oracle, but the governing exclusion reason is the transport: the vulnerable caller-controlled fetch is not reachable via a stdio tools/call. Judged from the source (v6.7.2, fix v7.0.0). Excluded without calibration."
+      },
+      {
+        "identifier": "CVE-2026-73845",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server npm:@aborruso/ckan-mcp-server already gives a drawn holdout target, CVE-2026-33060. One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. Recorded here as a skipped walk step (earlier skips left no trace; the rule records them)."
+      },
+      {
+        "identifier": "CVE-2026-16584",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server PyPI:awslabs.aws-api-mcp-server already gives a drawn holdout target, CVE-2026-4270. One target per server (ADR 028), so the walk does not process it. Recorded here as a skipped walk step (earlier skips left no trace; the rule records them)."
       }
     ],
     "cards": [
