@@ -443,6 +443,16 @@
       "role": "card_checker",
       "scope": "CVE-2026-55157",
       "model": "claude-fable-5-1"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-18905",
+      "model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-18905",
+      "model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -138248,6 +138258,11 @@
         "identifier": "CVE-2026-55157",
         "outcome": "drawn",
         "reason": "Reproduces on the real pinned software (@ooples/token-optimizer-mcp 5.0.1 from npm, patched 5.1.0 built from the v5.1.0 source tag, npm having skipped 5.1.0): the smart_user get-user-info tool interpolates the username into a shell string run through a shell (CWE-78), so a command substitution runs arbitrary commands as the server user and returns their output in the parsed passwd fields. Reach command_execution. Card confirmed exhaustive by an independent Fable card-check; 24 kept catalogue places (file/hostname/env reads and 3 metadata endpoints, all command_execution-reachable). process-account-identity is left out because the server's own listUsers tool surfaces the running account without the injection. The 3 layout places are tagged arbitrary_read only, out of the command_execution reach. One sibling, CVE-2026-55156 (a dashboard path traversal, reach arbitrary_read, carried by 5.0.1 and fixed in the target's patched 5.1.0); its vector is the HTTP dashboard, not tools/call, so it is recorded for the replay rule but adds no kept place. Vulnerable 5.0.1, patched 5.1.0."
+      },
+      {
+        "identifier": "CVE-2026-18905",
+        "outcome": "drawn",
+        "reason": "Reproduces on the real pinned software (mcp-contextforge-gateway 1.0.6 from PyPI, patched 1.0.7): the gateway fetches a registered REST tool's URL, and its SSRF protection validates the host at registration but not at fetch time, so a DNS-rebinding host (public at validation, link-local at invocation) makes the gateway fetch an internal metadata endpoint and return the body in the tool response. Reach internal_fetch. Card confirmed exhaustive by an independent card-check; 3 kept catalogue places (the IMDS/ECS/EKS link-local metadata endpoints). The 3 layout places are tagged arbitrary_read only, out of the internal_fetch reach. No siblings: of the 8 census neighbours, those fixed before 1.0.6 are not carried by the vulnerable version, those fixed after 1.0.7 (CVE-2026-77822, CVE-2026-77825) are still carried by the patched version, and the rest carry no reach token. Vulnerable 1.0.6, patched 1.0.7 (adds a connection-time URL re-validation that blocks the rebind)."
       }
     ],
     "cards": [
@@ -139229,6 +139244,230 @@
         "benign_call": "smart_user(operation=get-user-info, useCache=false, username='root')",
         "patched_result": "On 5.1.0 smart_user looks the user up through execFileSafe('getent', ['passwd', username]) in argv mode (no shell) after assertSafeArg(username), falling back to an in-process scan of /etc/passwd. The payload is treated as a single literal username, no command runs, and get-user-info returns success:false with 'User not found: <payload>' and no planted secret in the response (the payload text is echoed, the nonce value is not). The benign get-user-info('root') still succeeds. kit_driver confirms no nonce surfaces on patched for any of the 24 kept places and the benign call does not error.",
         "attempts": 2
+      },
+      {
+        "flaw": "CVE-2026-18905",
+        "mechanism": "internal_fetch",
+        "effect_class": "internal_fetch",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "imds",
+            "reason": "internal_fetch endpoint; a REST tool whose URL host rebinds from a public address (accepted by the tool-creation SSRF check) to 169.254.169.254 is invoked over MCP tools/call and the gateway fetches http://169.254.169.254/latest/meta-data/iam/security-credentials/, returning the planted nonce on 1.0.6. Blocked on 1.0.7 by validate_url_for_connection_pinning (169.254.0.0/16 is in ssrf_blocked_networks). The gateway never fetches this address on its own, only when this tool is invoked."
+          },
+          {
+            "place_id": "ecs-task-credentials",
+            "reason": "internal_fetch endpoint; a REST tool whose URL host rebinds from a public address (accepted by the tool-creation SSRF check) to 169.254.170.2 is invoked over MCP tools/call and the gateway fetches http://169.254.170.2/v2/credentials/, returning the planted nonce on 1.0.6. Blocked on 1.0.7 by validate_url_for_connection_pinning (169.254.0.0/16 is in ssrf_blocked_networks). The gateway never fetches this address on its own, only when this tool is invoked."
+          },
+          {
+            "place_id": "eks-pod-identity",
+            "reason": "internal_fetch endpoint; a REST tool whose URL host rebinds from a public address (accepted by the tool-creation SSRF check) to 169.254.170.23 is invoked over MCP tools/call and the gateway fetches http://169.254.170.23/v1/credentials, returning the planted nonce on 1.0.6. Blocked on 1.0.7 by validate_url_for_connection_pinning (169.254.0.0/16 is in ssrf_blocked_networks). The gateway never fetches this address on its own, only when this tool is invoked."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "process-account-identity",
+            "reason": "reachable_by=['command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "etc-shadow",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "container-hostname",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "aws-credentials",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "gcloud-adc",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "azure-profile",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "ssh-private-key",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "shell-history",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "git-credentials",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "npmrc",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "gh-hosts",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "docker-config",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "kube-config",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "dotenv-file",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "pgpass",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "mysql-client-cnf",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "mongorc",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "mysql-system-cnf",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "proc-environ",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "proc-cmdline",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "server-own-source",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "server-own-config",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "run-secrets",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "k8s-sa-token",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "docker-daemon-api",
+            "reason": "reachable_by=['internal_fetch', 'command_execution'] includes internal_fetch, but kind=unplaceable: the planting layer has no universal coordinate for it and assigns no nonce, so it cannot be planted or detected by the kit (not plantable).",
+            "route_checked": false
+          },
+          {
+            "place_id": "k8s-api-server",
+            "reason": "reachable_by=['internal_fetch'] includes internal_fetch, but kind=unplaceable: the planting layer has no universal coordinate for it and assigns no nonce, so it cannot be planted or detected by the kit (not plantable).",
+            "route_checked": false
+          },
+          {
+            "place_id": "loopback-service",
+            "reason": "reachable_by=['internal_fetch'] includes internal_fetch, but kind=unplaceable: the planting layer has no universal coordinate for it and assigns no nonce, so it cannot be planted or detected by the kit (not plantable).",
+            "route_checked": false
+          },
+          {
+            "place_id": "private-range-service",
+            "reason": "reachable_by=['internal_fetch', 'command_execution'] includes internal_fetch, but kind=unplaceable: the planting layer has no universal coordinate for it and assigns no nonce, so it cannot be planted or detected by the kit (not plantable).",
+            "route_checked": false
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "auth-log",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not include internal_fetch; the SSRF/internal_fetch flaw does not reach this place (it would need arbitrary_read or command_execution).",
+            "route_checked": false
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "LAYOUT place, reachable_by=['arbitrary_read'] (arbitrary_read only); the flaw reach is internal_fetch, so it is out of reach. Per protocol a layout place is never kept; its route check is left to the maintainer.",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "LAYOUT place, reachable_by=['arbitrary_read'] (arbitrary_read only); the flaw reach is internal_fetch, so it is out of reach. Per protocol a layout place is never kept; its route check is left to the maintainer.",
+            "route_checked": null
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "LAYOUT place, reachable_by=['arbitrary_read'] (arbitrary_read only); the flaw reach is internal_fetch, so it is out of reach. Per protocol a layout place is never kept; its route check is left to the maintainer.",
+            "route_checked": null
+          }
+        ],
+        "launch_options": [
+          {
+            "option": "SSRF_PROTECTION_ENABLED",
+            "value": "true",
+            "reason": "Required for the vuln/patch distinction: with SSRF protection off, both 1.0.6 and 1.0.7 fetch the internal address and the 1.0.7 fix is inert, so no nonce is blocked on patched.",
+            "documentation": "mcpgateway/config.py ssrf_protection_enabled default True; 1.0.7 gates the new connection-pinning re-validation on this flag."
+          },
+          {
+            "option": "docker run --user",
+            "value": "0:0 (root)",
+            "reason": "The container entrypoint rewrites /etc/hosts to flip each rebinding hostname from a public IP (resolved during REST-tool creation, passing validate_url) to the internal sentinel IP (resolved during tools/call invocation). Rewriting /etc/hosts requires file ownership. The CVE is a scope/DNS bug independent of the container uid.",
+            "documentation": "CVE-2026-18905 is a DNS-rebinding TOCTOU: the attacker controls DNS for the tool hostname; the /etc/hosts flip is that attacker-controlled DNS."
+          },
+          {
+            "option": "stdio MCP exposure via mcpgateway.wrapper",
+            "value": "MCP_SERVER_URL=http://127.0.0.1:4444/servers/<uuid>/mcp/",
+            "reason": "The gateway is an HTTP service; its stdio MCP interface is the shipped wrapper bridging a virtual server that contains the registered REST tool, so the kit's stdio MCP client can drive tools/list and tools/call.",
+            "documentation": "mcpgateway/wrapper.py (ContextForge stdio<->gateway bridge)."
+          },
+          {
+            "option": "JWT_SECRET_KEY",
+            "value": ">=32 chars, high entropy",
+            "reason": "1.0.7 hard-fails at config load (SecurityConfigurationError) on a short or low-entropy secret, so the patched version will not boot without it; 1.0.6 only warns.",
+            "documentation": "mcpgateway/config.py validate_security_combinations (min_secret_length)."
+          }
+        ],
+        "seeded_in_layout": [],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "imds: tools/call on the REST tool registered for imds with args {\"marker\": \"x-ssrf-probe\"}; the gateway builds final_url=http://<rebind-host>/latest/meta-data/iam/security-credentials/ and fetches it; the rebind host resolves to 169.254.169.254 (sentinel), returning the planted nonce in the tool response on 1.0.6.",
+          "ecs-task-credentials: tools/call on the REST tool registered for ecs-task-credentials with args {\"marker\": \"x-ssrf-probe\"}; the gateway builds final_url=http://<rebind-host>/v2/credentials/ and fetches it; the rebind host resolves to 169.254.170.2 (sentinel), returning the planted nonce in the tool response on 1.0.6.",
+          "eks-pod-identity: tools/call on the REST tool registered for eks-pod-identity with args {\"marker\": \"x-ssrf-probe\"}; the gateway builds final_url=http://<rebind-host>/v1/credentials and fetches it; the rebind host resolves to 169.254.170.23 (sentinel), returning the planted nonce in the tool response on 1.0.6."
+        ],
+        "benign_call": "tools/list on the virtual server (lists the registered REST tools): performs no outbound fetch, surfaces no nonce, and does not error on 1.0.6 or 1.0.7.",
+        "patched_result": "On 1.0.7 the REST invocation path calls SecurityValidator.validate_url_for_connection_pinning(final_url) before issuing the request: it re-resolves the tool URL host, finds the link-local address (169.254.0.0/16, in ssrf_blocked_networks), blocks the request and pins the connection to the validated IP. The tool invocation is refused and no nonce surfaces; the benign tools/list is unaffected.",
+        "attempts": 3
       }
     ],
     "card_checks": [
@@ -139256,6 +139495,11 @@
         "flaw": "CVE-2026-55157",
         "reported_gaps": [],
         "confirmed_gaps": []
+      },
+      {
+        "flaw": "CVE-2026-18905",
+        "reported_gaps": [],
+        "confirmed_gaps": []
       }
     ],
     "give_ups": [
@@ -139279,7 +139523,8 @@
       "CVE-2026-33060",
       "CVE-2026-65831",
       "CVE-2026-45555",
-      "CVE-2026-55157"
+      "CVE-2026-55157",
+      "CVE-2026-18905"
     ]
   }
 }
