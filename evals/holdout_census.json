@@ -138314,6 +138314,12 @@
         "criterion": "grammar_class",
         "verdict": false,
         "reason": "Both classifiers labeled read_outside_scope (in grammar); the maintainer judges from the advisory (GHSA / CWE-22, fixed 0.1.8 commit b8fd0ea) and the source that the effect is out of the measurable grammar. netlicensing_get_product calls nl_get(f'/product/{product_number}') and client.py builds url = f'{BASE_URL}{path}' where BASE_URL is set at deploy time (os.getenv NETLICENSING_BASE_URL, default https://go.netlicensing.io/core/v2/rest), not caller-influenced; httpx dot-segment removal lets product_number='../token' resolve to the same host's /token endpoint, whose response skips the token redaction (_wrap_json instead of _wrap_json_token_read) and leaks the account's own APIKEY/token. It reaches no plantable grammar place: not arbitrary_read (it is an httpx call, no filesystem access), and not internal_fetch to a caller-chosen host (the fixed scheme+authority means product_number only ever lands in the path, never the authority; '//host', '@host', a scheme prefix and CRLF all stay on go.netlicensing.io or are rejected). The disclosed data is the backend account's own token on a fixed remote host (a server-own-secret), not an out-of-scope location the harness can plant a nonce into. Does not satisfy grammar_class: False."
+      },
+      {
+        "flaw": "CVE-2026-32111",
+        "criterion": "stdio_tools_call",
+        "verdict": false,
+        "reason": "Classifiers split on stdio_tools_call (one fails it, one passes). Settled False on the source (homeassistant-ai/ha-mcp at v6.7.2, fix PR #748 commit dc8eaa16, released v7.0.0): the caller-controlled ha_url that drives the SSRF is not reachable through a stdio tools/call. The stdio entrypoint (the ha-mcp console script) requires HOMEASSISTANT_URL and HOMEASSISTANT_TOKEN (it exits on the oauth-mode sentinels), builds one HomeAssistantClient pinned to that URL, and every REST and WebSocket tool call targets it; it sets no mcp.auth and never instantiates OAuthProxyClient. The caller-controlled ha_url enters only in the separate OAuth HTTP deployment (the ha-mcp-oauth console script, transport=http, never stdio): via the consent-form POST (a blind error oracle, body not returned) or an unsigned forgeable bearer token (a REST tool call then returns the fetched body). Neither is a stdio tools/call, matching the advisory's statement that the primary deployment with a pre-configured HOMEASSISTANT_TOKEN is unaffected. Reached via a stdio tools/call: False."
       }
     ],
     "walk": [
@@ -138411,6 +138417,11 @@
         "identifier": "CVE-2026-57496",
         "outcome": "excluded",
         "reason": "REST path traversal (CWE-22) in the netlicensing_get_product tool of netlicensing-mcp: the caller-controlled product_number traverses to the fixed NetLicensing API's /token endpoint and the response skips token redaction, leaking the account's own APIKEY/token in the tool response. Settled out of grammar (see the grammar_class settlement): it is a same-host REST endpoint confusion on a fixed remote base, not a local file read (arbitrary_read) and not a caller-chosen-host fetch (internal_fetch), so it reaches no plantable holdout place and no planted nonce can surface. Both classifiers labeled read_outside_scope; the maintainer judged the reach from the advisory and the source (deploy-fixed base URL concatenation, same-host dot-segment traversal, no filesystem access). Excluded without calibration."
+      },
+      {
+        "identifier": "CVE-2026-32111",
+        "outcome": "excluded",
+        "reason": "SSRF (CWE-918) in ha-mcp via a caller-supplied ha_url (the server fetches {ha_url}/api/...), fixed in 7.0.0. Excluded because it is not reached through an MCP stdio tools/call (see the stdio_tools_call settlement): in stdio mode ha_url is pinned from HOMEASSISTANT_URL and every tool call targets it, so the caller cannot steer the fetch. The caller-controlled ha_url exists only in the OAuth HTTP deployment (ha-mcp-oauth, transport=http) via the consent form (a blind error oracle) or a forgeable unsigned bearer token; on that bearer-token REST path the fetched body IS returned (so it is not blind), but it lives on the HTTP transport, not the stdio tools/call surface. The two classifiers labeled the effect blind_ssrf and ssrf_error_oracle, but the governing exclusion reason is the transport: the vulnerable caller-controlled fetch is not reachable via a stdio tools/call. Judged from the source (v6.7.2, fix v7.0.0). Excluded without calibration."
       }
     ],
     "cards": [
