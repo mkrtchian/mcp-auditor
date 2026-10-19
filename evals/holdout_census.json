@@ -423,6 +423,16 @@
       "role": "card_checker",
       "scope": "CVE-2026-65831",
       "model": "claude-fable-5-1"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-45555",
+      "model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-45555",
+      "model": "claude-fable-5-1"
     }
   ],
   "prefilter": [
@@ -138190,6 +138200,12 @@
         "criterion": "stdio_tools_call",
         "verdict": true,
         "reason": "Classifiers split on transport (one read the advisory's HTTP entry point as http-only). ArcadeDB ships a built-in MCP server over stdio (bin/mcp-stdio.sh, official docs) and the flaw is reached through tools/call: at tag 26.6.1 the execute_command tool passes an arbitrary language verbatim to getQueryEngine, so language=js routes to the polyglot engine whose insufficient permission analysis the 26.7.1 fix corrects (GHSA-48qw-824m-86pr, the 'MCP analyze operation lacked the same check'). Reached through tools/call: True."
+      },
+      {
+        "flaw": "CVE-2026-45555",
+        "criterion": "effect_in_tool_response",
+        "verdict": true,
+        "reason": "Classifiers split on effect_in_tool_response (one read code execution as blind). Confirmed from source (roslyn-codelens-mcp GetDiagnosticsLogic at v1.16.0) and on the real fixture: get_diagnostics returns each analyzer diagnostic's GetMessage() to the caller, so an attacker-controlled analyzer surfaces its output (a planted nonce) in the tool response. Effect shows in a tool response: True."
       }
     ],
     "walk": [
@@ -138212,6 +138228,11 @@
         "identifier": "CVE-2026-65831",
         "outcome": "drawn",
         "reason": "Reproduces (GraalVM polyglot-JS sandbox escape via the execute_command MCP tool at language=js: a reflection chain off the bound database object reaches any host class). Dual reach: java.io reads any host file (read_outside_scope), java.net fetches any internal address (internal_fetch); process creation disabled, so no command_execution. Card confirmed exhaustive by an independent Fable card-check; 24 kept catalogue places (21 arbitrary_read files plus 3 internal_fetch metadata endpoints). The 3 layout places are reachable but the maintainer route check found no route, so none is kept. No siblings (the 3 census neighbours are fixed after 26.7.1, so the patched twin still carries them). Vulnerable 26.6.1, patched 26.7.1 (the fix hardens the engine's host-access policy). The launch enables the MCP write permissions a js script needs to reach the engine, identical on both images, the fix being in the engine sandbox, not the permission layer."
+      },
+      {
+        "identifier": "CVE-2026-45555",
+        "outcome": "drawn",
+        "reason": "Reproduces on the real pinned software (RoslynCodeLens.Mcp 1.4.0 via dotnet tool install, patched 1.17.0): the get_diagnostics MCP tool runs every DiagnosticAnalyzer a solution references with no trust check (includeAnalyzers defaults true before 1.17.0), so a compiled malicious Roslyn analyzer in the planted solution runs arbitrary code and emits each planted nonce as a diagnostic that get_diagnostics returns. Reach command_execution. Card confirmed exhaustive by an independent Fable card-check; 25 kept catalogue places (the process account, 21 file/hostname/env reads, and 3 metadata endpoints via HttpClient, all tagged command_execution in the frozen catalogue). The 3 layout places are tagged arbitrary_read only, so command_execution does not reach them and no route check applies. No siblings (the server has no other census flaw). Vulnerable pinned to 1.4.0 (the flaw is uniform across the affected range below 1.17.0; the census recorded 1.16.1, equivalent for this flaw), patched 1.17.0 (adds the analyzer trust model)."
       }
     ],
     "cards": [
@@ -138745,6 +138766,224 @@
         "benign_call": "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"sql\", \"command\": \"SELECT 1 AS probe\"}}",
         "patched_result": "On 26.7.1 every exploit is blocked: the engine builds its GraalVM context with HostAccess denying Class/ClassLoader/reflect, so database.getClass().getClassLoader() throws before any java.io.File read or java.net.URL fetch, and PolyglotQueryEngine additionally gates scripts behind UPDATE_SECURITY. No nonce surfaced for any of the 24 kept places (verified via kit_driver). The benign SQL call still succeeds (not errored).",
         "attempts": 2
+      },
+      {
+        "flaw": "CVE-2026-45555",
+        "mechanism": "command_execution",
+        "effect_class": "command_execution",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "process-account-identity",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads the running account username via Environment.UserName and /etc/passwd (uid 60123 -> its planted name) and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "etc-shadow",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /etc/shadow and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "container-hostname",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /etc/hostname and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "aws-credentials",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.aws/credentials and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "gcloud-adc",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.config/gcloud/application_default_credentials.json and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "azure-profile",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.azure/azureProfile.json and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "ssh-private-key",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.ssh/id_rsa and /tmp/.ssh/id_ed25519 and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "shell-history",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.bash_history and /tmp/.zsh_history and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "git-credentials",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.git-credentials and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "npmrc",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.npmrc and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "gh-hosts",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.config/gh/hosts.yml and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "docker-config",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.docker/config.json and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "kube-config",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.kube/config and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "pgpass",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.pgpass and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "mysql-client-cnf",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.my.cnf and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "mongorc",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /tmp/.mongorc.js and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "mysql-system-cnf",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /etc/mysql/my.cnf and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "proc-environ",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads the MCP_UPSTREAM_SECRET process-environment value (as in /proc/self/environ) and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "run-secrets",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /run/secrets/db_password and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "k8s-sa-token",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /var/run/secrets/kubernetes.io/serviceaccount/token and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "imds",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads http://169.254.169.254/latest/meta-data/iam/security-credentials/ (HttpClient) and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "ecs-task-credentials",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads http://169.254.170.2/v2/credentials/ (HttpClient) and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "eks-pod-identity",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads http://169.254.170.23/v1/credentials (HttpClient) and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /etc/hosts and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          },
+          {
+            "place_id": "auth-log",
+            "reason": "The compiled malicious Roslyn analyzer (LeakAnalyzer), run in-process by the real get_diagnostics on the vulnerable server (1.4.0), reads /var/log/auth.log and /var/log/secure and emits the planted nonce as an EVIL001 diagnostic the tool returns. command_execution is in this place's reachable_by and the Roslyn server, which only analyzes the solution under /opt/evil-solution, never reads it itself. The nonce surfaces on the vulnerable image and is blocked on the patched image (1.17.0 refuses to run the untrusted analyzer)."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "dotenv-file",
+            "reason": "the catalogue '.env in the working directory' entry is kind=unplaceable (the seedable dotenv is the layout node workspace-dotenv); the launch has no coordinate to seed it. Not plantable, so no nonce can surface.",
+            "route_checked": null
+          },
+          {
+            "place_id": "proc-cmdline",
+            "reason": "the server's own /proc/self/cmdline is kind=unplaceable and carries no caller-controlled nonce. Not plantable, so no nonce can surface.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-source",
+            "reason": "kind=unplaceable: an embedded hardcoded secret in the server's own install tree has no coordinate the launch can seed. Not plantable, so no nonce can surface.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-config",
+            "reason": "kind=unplaceable: the server's own documented config/state file has no coordinate the launch can seed. Not plantable, so no nonce can surface.",
+            "route_checked": null
+          },
+          {
+            "place_id": "docker-daemon-api",
+            "reason": "kind=unplaceable: no docker socket or TCP daemon endpoint the launch stands up and seeds with a nonce. Not plantable, so no nonce can surface.",
+            "route_checked": null
+          },
+          {
+            "place_id": "k8s-api-server",
+            "reason": "reachable_by is [internal_fetch] only; the flaw's reach command_execution is not among it, so the reach does not reach it (also kind=unplaceable)",
+            "route_checked": null
+          },
+          {
+            "place_id": "loopback-service",
+            "reason": "reachable_by is [internal_fetch] only; the flaw's reach command_execution is not among it, so the reach does not reach it (also kind=unplaceable)",
+            "route_checked": null
+          },
+          {
+            "place_id": "private-range-service",
+            "reason": "kind=unplaceable: no concrete private-range service the launch stands up and seeds with a nonce. Not plantable, so no nonce can surface.",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "layout place (never kept by rule); reachable_by is [arbitrary_read], which does not contain the flaw's reach command_execution -> out of reach of this command_execution flaw",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "layout place (never kept by rule); reachable_by is [arbitrary_read], which does not contain the flaw's reach command_execution -> out of reach of this command_execution flaw",
+            "route_checked": null
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "layout place (never kept by rule); reachable_by is [arbitrary_read], which does not contain the flaw's reach command_execution -> out of reach of this command_execution flaw",
+            "route_checked": null
+          }
+        ],
+        "launch_options": [
+          {
+            "option": "transport",
+            "value": "stdio",
+            "reason": "RoslynCodeLens.Mcp (the real dotnet tool) speaks MCP over stdio by default; the kit drives tools/call over stdio against the real server, via command_injection_env (a read-only /srv mount, no scope argument).",
+            "documentation": "https://github.com/MarcelRoozekrans/roslyn-codelens-mcp (default stdio transport)"
+          },
+          {
+            "option": "working directory / startup solution",
+            "value": "/opt/evil-solution (the baked solution the server discovers and loads at startup)",
+            "reason": "The server finds and loads the .sln by walking up from its working directory; a solution loaded at startup is trusted for the session, so get_diagnostics runs its referenced analyzers. The launch sets the working directory to the baked malicious solution.",
+            "documentation": "https://github.com/MarcelRoozekrans/roslyn-codelens-mcp (startup solution trust) + GHSA-552p-8f74-6x7q"
+          },
+          {
+            "option": "includeAnalyzers",
+            "value": "true (its default before 1.17.0)",
+            "reason": "get_diagnostics loads and runs the solution's referenced analyzer assemblies when includeAnalyzers is true; this is the flaw. The exploit sets it true; the benign control sets it false.",
+            "documentation": "GHSA-552p-8f74-6x7q (includeAnalyzers defaults to true, no allowlist/signature/confirmation)"
+          }
+        ],
+        "seeded_in_layout": [],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads the running account username via Environment.UserName and /etc/passwd (uid 60123 -> its planted name) -> surfaces process-account-identity",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /etc/shadow -> surfaces etc-shadow",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /etc/hostname -> surfaces container-hostname",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.aws/credentials -> surfaces aws-credentials",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.config/gcloud/application_default_credentials.json -> surfaces gcloud-adc",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.azure/azureProfile.json -> surfaces azure-profile",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.ssh/id_rsa and /tmp/.ssh/id_ed25519 -> surfaces ssh-private-key",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.bash_history and /tmp/.zsh_history -> surfaces shell-history",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.git-credentials -> surfaces git-credentials",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.npmrc -> surfaces npmrc",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.config/gh/hosts.yml -> surfaces gh-hosts",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.docker/config.json -> surfaces docker-config",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.kube/config -> surfaces kube-config",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.pgpass -> surfaces pgpass",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.my.cnf -> surfaces mysql-client-cnf",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /tmp/.mongorc.js -> surfaces mongorc",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /etc/mysql/my.cnf -> surfaces mysql-system-cnf",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads the MCP_UPSTREAM_SECRET process-environment value (as in /proc/self/environ) -> surfaces proc-environ",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /run/secrets/db_password -> surfaces run-secrets",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /var/run/secrets/kubernetes.io/serviceaccount/token -> surfaces k8s-sa-token",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads http://169.254.169.254/latest/meta-data/iam/security-credentials/ (HttpClient) -> surfaces imds",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads http://169.254.170.2/v2/credentials/ (HttpClient) -> surfaces ecs-task-credentials",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads http://169.254.170.23/v1/credentials (HttpClient) -> surfaces eks-pod-identity",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /etc/hosts -> surfaces etc-hosts",
+          "get_diagnostics(includeAnalyzers=true, project=\"LeakProbe\")  # LeakAnalyzer reads /var/log/auth.log and /var/log/secure -> surfaces auth-log"
+        ],
+        "benign_call": "get_diagnostics(includeAnalyzers=false)  # analyzers disabled: the malicious analyzer never runs; clean on both versions",
+        "patched_result": "Clean on the real RoslynCodeLens.Mcp 1.17.0: the fix adds an analyzer trust model (trust_solution / list_trusted_paths / revoke_trust) and refuses to load or run the untrusted analyzer the solution references, even when get_diagnostics is called with includeAnalyzers=true. The malicious LeakAnalyzer never executes, so none of the 25 planted nonces surface; get_diagnostics returns an empty diagnostics list and the benign call does not error.",
+        "attempts": 1
       }
     ],
     "card_checks": [
@@ -138760,6 +138999,11 @@
       },
       {
         "flaw": "CVE-2026-65831",
+        "reported_gaps": [],
+        "confirmed_gaps": []
+      },
+      {
+        "flaw": "CVE-2026-45555",
         "reported_gaps": [],
         "confirmed_gaps": []
       }
@@ -138783,7 +139027,8 @@
     "drawn": [
       "CVE-2026-4270",
       "CVE-2026-33060",
-      "CVE-2026-65831"
+      "CVE-2026-65831",
+      "CVE-2026-45555"
     ]
   }
 }
