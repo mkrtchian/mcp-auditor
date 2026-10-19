@@ -138256,6 +138256,12 @@
         "criterion": "effect_in_tool_response",
         "verdict": true,
         "reason": "Classifiers split on effect_in_tool_response (one read code execution as blind). Confirmed from source (roslyn-codelens-mcp GetDiagnosticsLogic at v1.16.0) and on the real fixture: get_diagnostics returns each analyzer diagnostic's GetMessage() to the caller, so an attacker-controlled analyzer surfaces its output (a planted nonce) in the tool response. Effect shows in a tool response: True."
+      },
+      {
+        "flaw": "CVE-2026-46515",
+        "criterion": "grammar_class",
+        "verdict": false,
+        "reason": "Classifiers split on grammar_class (one read 'exposes secrets' as read_outside_scope, one as missing_permission_check). Settled out of grammar on the advisory (GHSA-q4c4-5cr4-8q47, CWE-862 Missing Authorization) and the source (mwtcmi/frogman, PHP). The fix (commits 55ea257d, b8a8bfc1, d70508f8, released 1.6.3) gates the eight read-tier tools behind permissionLevel()=PERM_ADMIN (and adds credential-line redaction to fm_diagnose_trunk): it changes who may call the tools, not which grammar place they reach. The exposed data is the server's own in-scope PBX/config (AMI manager secrets, dial PINs, Asterisk dialplan, the server's configured ssh connection string, CDRs, SIP credentials), read by the tools' normal function; no tool takes an attacker file path. fm_run_saved_query takes a saved-query name plus variables (params['name'], params['params']), not arbitrary query text (the query is loaded from the DB by name), and its only outbound call is a curl to fixed localhost GraphQL/token endpoints the caller cannot influence (an internal_fetch primitive, but not caller-steerable, so out of the internal_fetch reach); fm_get_mcp_config's only exec is a fixed 'hostname -I'; fm_diagnose_trunk queries live PJSIP over AMI with no shell-out. So the flaw reaches no grammar place (not arbitrary_read, command_execution or internal_fetch): there is no out-of-scope location to plant a nonce that only the flaw surfaces. Does not satisfy grammar_class: False."
       }
     ],
     "walk": [
@@ -138318,6 +138324,11 @@
         "identifier": "CVE-2026-104120",
         "outcome": "drawn",
         "reason": "Reproduces on the real pinned software (mcp-server-fetch 2026.6.4 from PyPI, the official modelcontextprotocol reference fetch server, patched 2026.10.10): the fetch tool fetches any caller-supplied URL with no destination check (loopback, link-local, RFC1918 and 0.0.0.0 all allowed, redirects followed without re-validation), so a tools/call fetch makes the server retrieve an internal metadata endpoint and return the body in the tool response. Reach internal_fetch. A different server from the acceptance fetch target: that one is npm:mcp-fetch-server (zcaceres/fetch-mcp, TypeScript), this is the official Python reference server (modelcontextprotocol/servers), no shared code lineage, so not a fork of an excluded server. Card confirmed exhaustive by an independent card-check; 3 kept catalogue places (the IMDS/ECS/EKS link-local metadata endpoints), the 4 other internal_fetch places are kind=unplaceable (no coordinate to plant). The 3 layout places are tagged arbitrary_read only, out of the internal_fetch reach. No siblings: the server exposes only the fetch tool and the census records no other flaw on it (neighbours empty). Vulnerable 2026.6.4, patched 2026.10.10 (PR #5033 adds an egress guard that resolves each destination and refuses non-global addresses by default). Launched with --ignore-robots-txt (documented CLI flag, symmetric across both versions, does not touch the SSRF guard). The mcp SDK is pinned to 1.x (1.27.2 / 1.30.0) because mcp 2.x breaks the server's import: environment reconstruction, the target is the real pinned PyPI package."
+      },
+      {
+        "identifier": "CVE-2026-46515",
+        "outcome": "excluded",
+        "reason": "Missing-authorization flaw (CWE-862) in the frogman PBX-control MCP server: read-tier (PERM_READ) callers can invoke eight admin tools that return the server's own PBX and config secrets. Settled out of grammar (see the grammar_class settlement): the effect is missing_permission_check, not read_outside_scope, so no tool reaches a grammar place (arbitrary_read, command_execution or internal_fetch) and no planted nonce could surface in a tool response. Judged from the advisory GHSA-q4c4-5cr4-8q47 and the frogman source (the 1.6.3 fix gates the tools behind PERM_ADMIN); excluded without calibration."
       }
     ],
     "cards": [
