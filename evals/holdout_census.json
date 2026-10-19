@@ -138278,6 +138278,11 @@
         "identifier": "CVE-2026-81562",
         "outcome": "drawn",
         "reason": "Reproduces on the real pinned software (claude-in-mobile v3.10.2 from the GitHub tag, patched v3.10.3, 3.10.2 not being on npm): the adb path builds a host shell string (execSync of /bin/sh -c \"adb shell <command>\") whose denylist misses the '&' separator, so 'probe & <payload>' runs an arbitrary host command as the server user and returns its output in the tool response. Reach command_execution. Card confirmed exhaustive by an independent Fable card-check; 25 kept catalogue places (the process account, 21 file/hostname/env reads and 3 metadata endpoints). The 3 layout places are tagged arbitrary_read only, out of the command_execution reach. No siblings (the server has no other census flaw). Vulnerable v3.10.2, patched v3.10.3 (switches the adb calls to execFileSync in argv mode, with no host shell). The server's adb dependency is a no-op stub so it starts without a device; the injection is independent of adb."
+      },
+      {
+        "identifier": "CVE-2026-58500",
+        "outcome": "excluded",
+        "reason": "XSS (CWE-79) confined to the client UI: the generate_locators tool returns an MCP-UI resource whose createLocatorGeneratorUI interpolates attacker-controlled element attributes unescaped, and the injected script runs in the MCP host frame, not on the server. No server-side reach (no arbitrary_read, command_execution or internal_fetch), both classifiers place it outside the grammar, and both judge it not containerizable (appium needs a device). The reach is judged from the published advisory GHSA-x975-rgx4-5fh4, so no fixture could surface a planted nonce; excluded without calibration."
       }
     ],
     "cards": [
