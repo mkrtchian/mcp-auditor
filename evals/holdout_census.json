@@ -138283,6 +138283,11 @@
         "identifier": "CVE-2026-58500",
         "outcome": "excluded",
         "reason": "XSS (CWE-79) confined to the client UI: the generate_locators tool returns an MCP-UI resource whose createLocatorGeneratorUI interpolates attacker-controlled element attributes unescaped, and the injected script runs in the MCP host frame, not on the server. No server-side reach (no arbitrary_read, command_execution or internal_fetch), both classifiers place it outside the grammar, and both judge it not containerizable (appium needs a device). The reach is judged from the published advisory GHSA-x975-rgx4-5fh4, so no fixture could surface a planted nonce; excluded without calibration."
+      },
+      {
+        "identifier": "CVE-2026-7237",
+        "outcome": "excluded",
+        "reason": "Path traversal (CWE-22) in the write-to-file tool of @agiflowai/scaffold-mcp (packages/scaffold-mcp/src/server/index.ts): the caller controls the file_path argument and can traverse outside the intended workspace to write to arbitrary locations. The primitive is a file write, not a read, command execution or internal fetch (CVSS 4.0 VC:L/VI:L/VA:L): it reaches no grammar place, and the write tool returns a status rather than file contents, so no planted nonce can surface in a tool response. Both classifiers place the effect outside the grammar (effect_class write_outside_scope). The reach is judged from the published advisory (CVE-2026-7237, VulDB VDB-359845, fixed in 1.1.0 by commit c4d23592ae5fb59cfeefc4641e6826f8ac89b9c6), so no fixture could surface a nonce; excluded without calibration."
       }
     ],
     "cards": [
