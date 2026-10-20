@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import pytest
 from langgraph.checkpoint.memory import MemorySaver  # type: ignore[import-untyped]
 
@@ -86,7 +88,6 @@ async def test_attack_context_populated_after_audit():
 
     result = await given.invoke_graph(graph, state)
 
-    then.attack_context_is_non_empty(result)
     assert result["attack_context"].db_engine == "sqlite"
 
 
@@ -105,20 +106,26 @@ async def test_chain_budget_zero_skips_chains():
 
 
 @pytest.mark.asyncio
-async def test_chain_budget_one_produces_chain():
+@pytest.mark.parametrize(
+    ("chain_budget", "a_fake_llm"),
+    [
+        (1, given.a_fake_llm_for_single_tool_with_chain),
+        (2, given.a_fake_llm_for_single_tool_with_two_chains),
+    ],
+)
+async def test_the_chain_budget_sets_the_number_of_judged_chains(
+    chain_budget: int, a_fake_llm: Callable[..., FakeLLM]
+):
     tool = given.a_tool(name="get_user")
-    fake_llm = given.a_fake_llm_for_single_tool_with_chain(num_cases=1)
+    fake_llm = a_fake_llm(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
     graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=1, chain_budget=1, max_chain_steps=3)
+    state = given.an_initial_state(test_budget=1, chain_budget=chain_budget, max_chain_steps=3)
 
     result = await given.invoke_graph(graph, state)
 
     then.has_tool_reports(result, 1)
-    report = then.tool_report_at(result, 0)
-    then.report_has_chains(report, 1)
-    then.chain_has_eval_result(report.chains[0])
-    then.provider_usage_is_positive(result)
+    then.report_has_judged_chains(then.tool_report_at(result, 0), chain_budget)
 
 
 @pytest.mark.asyncio
@@ -148,38 +155,18 @@ async def test_a_server_without_redaction_puts_the_notice_in_no_prompt():
 
 
 @pytest.mark.asyncio
-async def test_chain_budget_two_produces_two_chains():
-    tool = given.a_tool(name="get_user")
-    fake_llm = given.a_fake_llm_for_single_tool_with_two_chains(num_cases=1)
-    fake_mcp_client = FakeMCPClient([tool])
-    graph = given.a_graph(fake_llm, fake_mcp_client)
-    state = given.an_initial_state(test_budget=1, chain_budget=2, max_chain_steps=3)
-
-    result = await given.invoke_graph(graph, state)
-
-    then.has_tool_reports(result, 1)
-    report = then.tool_report_at(result, 0)
-    then.report_has_chains(report, 2)
-    then.chain_has_eval_result(report.chains[0])
-    then.chain_has_eval_result(report.chains[1])
-
-
-@pytest.mark.asyncio
-async def test_checkpointer_round_trips_nested_subgraph_state():
+async def test_the_checkpointer_round_trips_the_chain_state():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_with_chain(num_cases=1)
     fake_mcp_client = FakeMCPClient([tool])
-    checkpointer = MemorySaver()
-    graph = given.a_graph_with_checkpointer(fake_llm, fake_mcp_client, checkpointer)
+    graph = given.a_graph_with_checkpointer(fake_llm, fake_mcp_client, MemorySaver())
     state = given.an_initial_state(test_budget=1, chain_budget=1, max_chain_steps=3)
     config = {"configurable": {"thread_id": "round-trip"}}
 
-    result = await given.invoke_graph_with_config(graph, state, config)
+    await given.invoke_graph_with_config(graph, state, config)
+    stored = (await graph.aget_state({"configurable": {"thread_id": "round-trip"}})).values
 
-    then.has_tool_reports(result, 1)
-    report = then.tool_report_at(result, 0)
-    then.report_has_chains(report, 1)
-    then.chain_has_eval_result(report.chains[0])
+    then.report_has_judged_chains(stored["audit_report"].tool_reports[0], 1)
 
 
 @pytest.mark.asyncio
@@ -194,11 +181,7 @@ async def test_destructive_payload_is_blocked_and_never_sent():
 
     report = then.tool_report_at(result, 0)
     then.report_has_cases(report, 2)
-    blocked = [case for case in report.cases if case.blocked_reason is not None]
-    assert len(blocked) == 1
-    assert blocked[0].eval_result is None
-    assert len([case for case in report.cases if case.eval_result is not None]) == 1
-    assert len(fake_mcp_client.calls) == 1
+    then.one_case_blocked_unjudged_and_unsent(report, fake_mcp_client)
 
 
 @pytest.mark.asyncio
@@ -341,10 +324,7 @@ async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(cau
 
     result = await given.invoke_graph(graph, state)
 
-    report = then.tool_report_at(result, 0)
-    then.report_has_chains(report, 2)
-    then.chain_has_eval_result(report.chains[0])
-    then.chain_has_eval_result(report.chains[1])
+    then.report_has_judged_chains(then.tool_report_at(result, 0), 2)
     then.audit_report_misses_one_step(result, "get_user", AuditStep.CHAIN_STEP_OBSERVATION, cause)
 
 
@@ -358,7 +338,6 @@ async def test_a_refused_step_planning_judges_the_chain_with_the_steps_it_has():
     result = await given.invoke_graph(graph, state)
 
     report = then.tool_report_at(result, 0)
-    then.report_has_chains(report, 1)
+    then.report_has_judged_chains(report, 1)
     assert len(report.chains[0].steps) == 1
-    then.chain_has_eval_result(report.chains[0])
     then.audit_report_has_missed_steps(result, [("get_user", AuditStep.CHAIN_STEP_PLANNING)])

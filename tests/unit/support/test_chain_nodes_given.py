@@ -20,9 +20,11 @@ from mcp_auditor.domain import (
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 from tests.fakes import FakeMCPClient
 
+DEFAULT_TOOL_NAME = "file_manager"
+
 
 def a_tool(
-    name: str = "file_manager",
+    name: str = DEFAULT_TOOL_NAME,
     description: str = "Manages files",
     input_schema: dict[str, Any] | None = None,
 ) -> ToolDefinition:

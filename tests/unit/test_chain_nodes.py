@@ -45,7 +45,7 @@ class TestMakePlanChains:
 
         result = await node(state)
 
-        then.pending_chains_count(result, 2)
+        assert result["pending_chains"] == [goal_a, goal_b]
 
     @pytest.mark.asyncio
     async def test_a_refused_planning_plans_no_chain(self):
@@ -55,7 +55,7 @@ class TestMakePlanChains:
 
         result = await node(state)
 
-        then.pending_chains_count(result, 0)
+        assert result["pending_chains"] == []
         then.refused_step_recorded(result, AuditStep.CHAIN_PLANNING)
         assert result["chain_usage"] == [refusal.usage]
         assert route_after_planning({**state, **result}) == END
@@ -69,8 +69,8 @@ class TestPrepareChain:
 
         result = prepare_chain(state)
 
-        then.current_chain_goal_is(result, goal_a)
-        then.pending_chains_count(result, 1)
+        assert result["current_chain_goal"] == goal_a
+        assert result["pending_chains"] == [goal_b]
         assert result["current_chain_steps"] == []
         assert result["current_step_payload"] == goal_a.first_step
 
@@ -149,8 +149,7 @@ class TestMakeExecuteStep:
         blocked = await node(state)
         result = abandon_chain({**state, **blocked})
 
-        then.completed_chains_count(result, 1)
-        chain = result["completed_chains"][0]
+        [chain] = result["completed_chains"]
         assert chain.blocked_reason is not None
         assert chain.steps == []
         assert chain.eval_result is None
@@ -175,8 +174,7 @@ class TestMakeExecuteStep:
 
         chain = judged["completed_chains"][0]
         assert chain.blocked_reason is not None
-        then.chain_has_steps(chain, 1)
-        assert payload not in [step.payload for step in chain.steps]
+        assert chain.steps == [executed]
         assert judged["blocked_step_reason"] is None
         assert client.calls == []
 
@@ -275,7 +273,7 @@ class TestMakeJudgeChain:
         judgment = given.a_judgment(verdict=EvalVerdict.FAIL, severity=Severity.HIGH)
         llm = FakeLLM([judgment])
         node = make_judge_chain(llm)
-        tool = given.a_tool(name="file_manager")
+        tool = given.a_tool()
         goal = given.a_chain_goal(category=AuditCategory.INJECTION)
         last_payload = given.a_payload(arguments={"path": "/etc/shadow"})
         steps = [given.a_chain_step(), given.a_chain_step(payload=last_payload)]
@@ -287,12 +285,11 @@ class TestMakeJudgeChain:
 
         result = await node(state)
 
-        then.completed_chains_count(result, 1)
-        chain = result["completed_chains"][0]
-        then.chain_has_steps(chain, 2)
+        [chain] = result["completed_chains"]
+        assert chain.steps == steps
         then.chain_eval_result_is(
             chain,
-            tool_name="file_manager",
+            tool_name=given.DEFAULT_TOOL_NAME,
             category=AuditCategory.INJECTION,
             payload={"path": "/etc/shadow"},
             verdict=EvalVerdict.FAIL,
@@ -302,17 +299,17 @@ class TestMakeJudgeChain:
     async def test_a_refused_judgment_completes_the_chain_unjudged(self):
         refusal = given.a_provider_refusal()
         node = make_judge_chain(FakeLLM([refusal]))
+        step = given.a_chain_step()
         state = given.a_chain_audit_state(
             current_chain_goal=given.a_chain_goal(),
-            current_chain_steps=[given.a_chain_step()],
+            current_chain_steps=[step],
             chain_step_missed=True,
         )
 
         result = await node(state)
 
-        then.completed_chains_count(result, 1)
-        chain = result["completed_chains"][0]
-        then.chain_has_steps(chain, 1)
+        [chain] = result["completed_chains"]
+        assert chain.steps == [step]
         assert chain.eval_result is None
         then.refused_step_recorded(result, AuditStep.CHAIN_JUDGMENT)
         assert result["chain_step_missed"] is False

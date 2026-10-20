@@ -1,9 +1,9 @@
 from typing import Any
 
-from mcp_auditor.domain import AttackChain, ProviderUsage, ToolReport
+from mcp_auditor.domain import ProviderUsage, ToolReport
 from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
-from tests.fakes import FakeLLM
+from tests.fakes import FakeLLM, FakeMCPClient
 
 
 def has_tool_reports(result: dict[str, Any], expected_count: int) -> None:
@@ -26,18 +26,16 @@ def report_has_no_chains(report: ToolReport) -> None:
     assert report.chains == []
 
 
-def report_has_chains(report: ToolReport, expected_count: int) -> None:
+def report_has_judged_chains(report: ToolReport, expected_count: int) -> None:
     assert len(report.chains) == expected_count
+    assert all(chain.eval_result is not None for chain in report.chains)
 
 
-def chain_has_eval_result(chain: AttackChain) -> None:
-    assert chain.eval_result is not None
-
-
-def provider_usage_is_positive(result: dict[str, Any]) -> None:
-    usage = result["audit_report"].provider_usage
-    assert usage.input_tokens > 0
-    assert usage.output_tokens > 0
+def one_case_blocked_unjudged_and_unsent(report: ToolReport, client: FakeMCPClient) -> None:
+    [blocked] = [case for case in report.cases if case.blocked_reason is not None]
+    assert blocked.eval_result is None
+    assert len([case for case in report.cases if case.eval_result is not None]) == 1
+    assert len(client.calls) == 1
 
 
 def report_splits_usage(
@@ -70,19 +68,6 @@ def _sum(usages: list[ProviderUsage]) -> ProviderUsage:
     for usage in usages:
         total = total.add(usage)
     return total
-
-
-def attack_context_is_non_empty(result: dict[str, Any]) -> None:
-    context = result["attack_context"]
-    has_content = (
-        context.db_engine is not None
-        or context.framework is not None
-        or context.language is not None
-        or context.exposed_internals
-        or context.effective_payloads
-        or context.observations
-    )
-    assert has_content, f"Expected non-empty attack context, got {context}"
 
 
 def report_has_a_gap_of(report: ToolReport, requested: int, received: int) -> None:

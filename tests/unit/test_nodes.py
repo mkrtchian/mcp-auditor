@@ -28,6 +28,7 @@ from mcp_auditor.graph.nodes import (
     route_tools,
 )
 from tests.fakes import FakeLLM, FakeMCPClient
+from tests.fakes.llm import FAKE_USAGE
 
 
 class TestFilterTools:
@@ -67,7 +68,7 @@ class TestDiscoverTools:
 
         result = await node({})
 
-        then.discovered_tools_count(result, 2)
+        then.discovered_tools_are(result["discovered_tools"], ["tool_a", "tool_b"])
 
     async def test_filters_tools_by_name(self):
         tools = [given.a_tool(name="a"), given.a_tool(name="b"), given.a_tool(name="c")]
@@ -76,7 +77,6 @@ class TestDiscoverTools:
 
         result = await node({})
 
-        then.discovered_tools_count(result, 2)
         then.discovered_tools_are(result["discovered_tools"], ["a", "c"])
 
     async def test_orders_tools_for_audit(self):
@@ -95,7 +95,7 @@ class TestPrepareTools:
 
         result = await prepare_tool({"discovered_tools": tools, "tool_reports": [object()]})
 
-        then.current_tool_is(result, tools[1])
+        assert result["current_tool"] == tools[1]
 
     async def test_resets_the_coverage_gap(self):
         tools = [given.a_tool(name="t1")]
@@ -113,16 +113,16 @@ class TestExtractAttackContext:
 
         result = await node({"tool_reports": [report], "attack_context": AttackContext()})
 
-        then.attack_context_has_db_engine(result, "sqlite")
+        assert result["attack_context"] == AttackContext(db_engine="sqlite")
 
-    async def test_accumulates_provider_usage(self):
+    async def test_records_the_usage_of_the_extraction(self):
         report = given.a_tool_report()
         llm = FakeLLM([AttackContext(db_engine="sqlite")])
         node = make_extract_attack_context(llm)
 
         result = await node({"tool_reports": [report], "attack_context": AttackContext()})
 
-        assert len(result["provider_usage"]) == 1
+        assert result["provider_usage"] == [FAKE_USAGE]
 
     async def test_a_refused_extraction_keeps_the_previous_context(self):
         previous = AttackContext(db_engine="postgres")
@@ -141,7 +141,7 @@ class TestExtractAttackContext:
 
 
 class TestExecuteTool:
-    async def test_dispatches_on_current_tool(self):
+    async def test_records_the_response_of_the_current_tool(self):
         tool = given.a_tool(name="read_file")
         case = given.a_test_case()
         client = FakeMCPClient(
@@ -151,19 +151,9 @@ class TestExecuteTool:
 
         result = await node({"pending_cases": [case], "current_tool": tool})
 
-        then.current_case_has_response(result, "read_file was called")
-
-    async def test_success(self):
-        tool = given.a_tool(name="my_tool")
-        case = given.a_test_case()
-        client = FakeMCPClient([tool], responses={"my_tool": ToolResponse(content="result data")})
-        node = make_execute_tool(AuditedServer(client))
-
-        result = await node({"pending_cases": [case], "current_tool": tool})
-
-        then.current_case_has_response(result, "result data")
-        then.pending_cases_count(result, 0)
+        assert result["current_case"].response == "read_file was called"
         assert result["current_case"].blocked_reason is None
+        assert result["pending_cases"] == []
 
     async def test_error(self):
         tool = given.a_tool(name="my_tool")
@@ -186,8 +176,8 @@ class TestExecuteTool:
 
         result = await node({"pending_cases": [case], "current_tool": tool})
 
-        then.judged_cases_count(result, 1)
-        assert result["judged_cases"][0].blocked_reason is not None
+        [blocked] = result["judged_cases"]
+        assert blocked.blocked_reason is not None
         assert client.calls == []
 
     async def test_blocked_case_holds_no_verdict_and_no_server_output(self):
@@ -214,7 +204,7 @@ class TestJudgeResponse:
 
         result = await node({"current_case": case, "judged_cases": [], "current_tool": tool})
 
-        then.judged_cases_count(result, 1)
+        assert len(result["judged_cases"]) == 1
         then.judged_case_identity_from(result, tool_name="read_file", case=case)
         then.judged_case_uses_judgment(result, judgment=judgment)
 
@@ -256,7 +246,7 @@ class TestFinalizeToolAudit:
 
         result = await build_tool_report({"current_tool": tool, "judged_cases": judged})
 
-        then.tool_report_has_cases(result, 2)
+        assert result["tool_reports"][0].cases == judged
 
     async def test_copies_the_coverage_gap(self):
         gap = given.a_coverage_gap()
