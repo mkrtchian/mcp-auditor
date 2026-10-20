@@ -1,5 +1,6 @@
 from collections import deque
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from pydantic import BaseModel
 
@@ -31,3 +32,13 @@ class FakeLLM:
             raise TypeError(f"Expected {output_schema.__name__}, got {type(response).__name__}")
         self.total_usage = self.total_usage.add(FAKE_USAGE)
         return response, FAKE_USAGE  # type: ignore[return-value]
+
+
+@dataclass
+class RaisingLLM:
+    error: Exception
+
+    async def generate_structured[T: BaseModel](
+        self, prompt: str, output_schema: type[T]
+    ) -> tuple[T, ProviderUsage]:
+        raise self.error

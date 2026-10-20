@@ -50,7 +50,7 @@ async def test_a_throttled_call_is_a_missed_step_with_the_provider_message_and_i
     usage = ProviderUsage(throttled_requests=9)
 
     outcome = await call_model(
-        FakeLLM([ProviderThrottled("Error code: 429 - slow down", 312.0, usage)]), JUDGMENT_CALL
+        FakeLLM([ProviderThrottled("Error code: 429 - slow down", 312.4, usage)]), JUDGMENT_CALL
     )
 
     assert outcome == Missed(

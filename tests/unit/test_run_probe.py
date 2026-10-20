@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-from pydantic import BaseModel
 
 from evals.probe import CallOutcome, ProbeObservation
 from evals.probe_candidates import REFERENCE
@@ -9,6 +8,7 @@ from evals.probe_corpus import ProbeCall
 from evals.run_probe import CandidateModels, append_observation, observe
 from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
+from tests.fakes import RaisingLLM
 
 A_JUDGE_CALL = ProbeCall(
     call_id="honeypot/Judgment/000",
@@ -19,18 +19,8 @@ A_JUDGE_CALL = ProbeCall(
 )
 
 
-class _RaisingLLM:
-    def __init__(self, error: Exception):
-        self._error = error
-
-    async def generate_structured[T: BaseModel](
-        self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, ProviderUsage]:
-        raise self._error
-
-
 def _models_raising(error: Exception) -> CandidateModels:
-    llm = _RaisingLLM(error)
+    llm = RaisingLLM(error)
     return CandidateModels(candidate=REFERENCE, main=llm, judge=llm)
 
 
@@ -82,16 +72,14 @@ async def test_any_other_value_error_is_an_error_carrying_its_message():
 @pytest.mark.asyncio
 async def test_a_throttled_call_is_an_error_carrying_its_usage_and_the_provider_message():
     usage = ProviderUsage(throttled_requests=4)
-    models = _models_raising(ProviderThrottled("Error code: 429 - slow down", 0.0, usage))
+    throttled = ProviderThrottled("Error code: 429 - slow down", 0.0, usage)
+    models = _models_raising(throttled)
 
     observation = await observe(models, A_JUDGE_CALL, budget=10)
 
     assert observation.outcome == CallOutcome.ERROR
     assert observation.usage == usage
-    assert observation.error == (
-        "the model provider throttled the request past every retry"
-        " (0 s waited by the auditor): Error code: 429 - slow down"
-    )
+    assert observation.error == str(throttled)
 
 
 @pytest.mark.asyncio

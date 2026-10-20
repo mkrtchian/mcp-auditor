@@ -5,8 +5,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel
-
 from evals.baseline import BaselineStatus
 from evals.declared_flips import DeclaredFlip, Suite
 from evals.eval_session import TreeState
@@ -14,8 +12,7 @@ from evals.judge_baseline import JudgeBaseline, write_judge_baseline
 from evals.judge_fixture import JudgeCase
 from evals.judge_session_model import JudgeHarness, JudgeOptions
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import EvalVerdict, Judgment, Severity
-from mcp_auditor.domain.ports import ProviderUsage
+from mcp_auditor.domain.models import EvalVerdict
 from tests.unit.support.test_judge_baseline_given import (
     FAIL_ID,
     PASS_ID,
@@ -138,25 +135,3 @@ def a_declaration(case_id: str) -> DeclaredFlip:
         base=BASE,
         runs_seen=[],
     )
-
-
-@dataclass
-class RaisingLLM:
-    error: Exception
-
-    async def generate_structured[T: BaseModel](
-        self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, ProviderUsage]:
-        raise self.error
-
-
-@dataclass
-class AnsweringLLM:
-    verdict: EvalVerdict
-    usage: ProviderUsage
-
-    async def generate_structured[T: BaseModel](
-        self, prompt: str, output_schema: type[T]
-    ) -> tuple[T, ProviderUsage]:
-        judgment = Judgment(verdict=self.verdict, justification="judged", severity=Severity.LOW)
-        return output_schema.model_validate(judgment.model_dump()), self.usage

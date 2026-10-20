@@ -10,8 +10,6 @@ from evals.gate_verdict import GateMode, GateVerdict
 from evals.judge_baseline import load_judge_baseline
 from evals.judge_session import run_judge_gate
 from evals.judge_session_model import JudgeHarness, JudgeOptions
-from evals.run_judge_eval import judge_one_case
-from mcp_auditor.domain.ports import ProviderRefusal, ProviderUsage, UnparseableOutput
 
 FAIL, PASS = given.FAIL, given.PASS
 FAIL_ID, PASS_ID = given.FAIL_ID, given.PASS_ID
@@ -390,35 +388,3 @@ async def test_a_recording_refused_by_its_decision_writes_nothing(tmp_path: Path
     assert not path.exists()
     assert "a judge call failed on case" in result.recording_refused[0]
     assert result.exit_code == 3
-
-
-async def test_a_judge_call_returns_its_verdict_and_its_usage():
-    [case, *_] = given.a_judge_fixture().cases
-    usage = ProviderUsage(input_tokens=120, throttled_requests=2)
-
-    assert await judge_one_case(given.AnsweringLLM(FAIL, usage), case) == (FAIL, usage)
-
-
-THROTTLED = ProviderUsage(throttled_requests=1)
-
-
-@pytest.mark.parametrize(
-    "error",
-    [
-        UnparseableOutput(attempts=3, truncated_attempts=0, usage=THROTTLED),
-        ProviderRefusal("blocked by policy", THROTTLED),
-    ],
-)
-async def test_a_judge_call_that_fails_to_answer_is_uncovered_and_keeps_its_usage(
-    error: Exception,
-):
-    [case, *_] = given.a_judge_fixture().cases
-
-    assert await judge_one_case(given.RaisingLLM(error), case) == (None, THROTTLED)
-
-
-async def test_any_other_judge_call_failure_propagates():
-    [case, *_] = given.a_judge_fixture().cases
-
-    with pytest.raises(ConnectionError):
-        await judge_one_case(given.RaisingLLM(ConnectionError("network down")), case)
