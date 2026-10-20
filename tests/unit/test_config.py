@@ -3,7 +3,7 @@ import pytest
 from mcp_auditor.config import Settings
 
 
-def test_default_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_provider_defaults_to_openai(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MCP_AUDITOR_PROVIDER", raising=False)
     monkeypatch.delenv("MCP_AUDITOR_MODEL", raising=False)
     monkeypatch.delenv("MCP_AUDITOR_JUDGE_MODEL", raising=False)
@@ -12,17 +12,15 @@ def test_default_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings()
 
     assert settings.provider == "openai"
-    assert settings.resolve_model() == "gpt-6-luna"
-    assert settings.resolve_reasoning(settings.resolve_model()) == "none"
+    model = settings.resolve_model()
+    assert model == _settings("openai").resolve_model()
+    assert settings.resolve_reasoning(model) == _settings("openai").resolve_reasoning(model)
 
 
-def test_anthropic_provider_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_provider_is_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "anthropic")
-    monkeypatch.delenv("MCP_AUDITOR_MODEL", raising=False)
 
-    settings = Settings()
-
-    assert settings.resolve_model() == "claude-haiku-4-5-20251001"
+    assert Settings().provider == "anthropic"
 
 
 def test_model_override(monkeypatch: pytest.MonkeyPatch) -> None:

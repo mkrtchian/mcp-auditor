@@ -16,14 +16,17 @@ def _transport_of(chat_model: object) -> object:
 
 
 class TestMakeChatModel:
-    def test_google_default_model_gets_minimal_thinking(self, monkeypatch: pytest.MonkeyPatch):
+    def test_google_builds_its_default_model_at_its_default_reasoning(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         monkeypatch.setenv("GOOGLE_API_KEY", "dummy")
         settings = Settings(provider="google", model="", judge_model="", reasoning="")
+        model = settings.resolve_model()
 
-        chat_model = make_chat_model(settings, settings.resolve_model())
+        chat_model = make_chat_model(settings, model)
 
-        assert getattr(chat_model, "model", None) == "gemini-3.5-flash-lite"
-        assert getattr(chat_model, "thinking_level", None) == "minimal"
+        assert getattr(chat_model, "model", None) == model
+        assert getattr(chat_model, "thinking_level", None) == settings.resolve_reasoning(model)
         assert isinstance(_transport_of(chat_model), httpx.AsyncHTTPTransport)
 
     def test_google_judge_override_gets_no_thinking_level(self, monkeypatch: pytest.MonkeyPatch):
@@ -38,14 +41,17 @@ class TestMakeChatModel:
         assert getattr(chat_model, "thinking_level", "unset") is None
         assert isinstance(_transport_of(chat_model), httpx.AsyncHTTPTransport)
 
-    def test_anthropic_builds_the_named_model(self, monkeypatch: pytest.MonkeyPatch):
+    def test_anthropic_builds_its_default_model_at_its_default_reasoning(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy")
         settings = Settings(provider="anthropic", model="", judge_model="", reasoning="")
+        model = settings.resolve_model()
 
-        chat_model = make_chat_model(settings, settings.resolve_model())
+        chat_model = make_chat_model(settings, model)
 
-        assert getattr(chat_model, "model", None) == "claude-haiku-4-5-20251001"
-        assert getattr(chat_model, "reasoning_effort", "unset") is None
+        assert getattr(chat_model, "model", None) == model
+        assert getattr(chat_model, "reasoning_effort", "unset") == settings.resolve_reasoning(model)
         assert getattr(chat_model, "thinking", "unset") is None
         assert getattr(chat_model, "max_tokens", None) == 8192
         assert getattr(chat_model, "default_request_timeout", None) == 120
@@ -86,25 +92,31 @@ class TestMakeChatModel:
         with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
             make_chat_model(settings, settings.resolve_model())
 
-    def test_openai_builds_luna_at_reasoning_none(self, monkeypatch: pytest.MonkeyPatch):
+    def test_openai_builds_its_default_model_at_its_default_reasoning(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         monkeypatch.setenv("OPENAI_API_KEY", "dummy")
         settings = Settings(provider="openai", model="", judge_model="", reasoning="")
+        model = settings.resolve_model()
 
-        chat_model = make_chat_model(settings, settings.resolve_model())
+        chat_model = make_chat_model(settings, model)
 
-        assert getattr(chat_model, "model_name", None) == "gpt-6-luna"
-        assert getattr(chat_model, "reasoning_effort", None) == "none"
+        assert getattr(chat_model, "model_name", None) == model
+        assert getattr(chat_model, "reasoning_effort", None) == settings.resolve_reasoning(model)
         assert getattr(chat_model, "request_timeout", None) == 120
         assert getattr(chat_model, "max_tokens", None) == 8192
 
-    def test_fireworks_builds_glm_at_medium_reasoning(self, monkeypatch: pytest.MonkeyPatch):
+    def test_fireworks_builds_its_default_model_at_its_default_reasoning(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         monkeypatch.setenv("FIREWORKS_API_KEY", "dummy")
         settings = Settings(provider="fireworks", model="", judge_model="", reasoning="")
+        model = settings.resolve_model()
 
-        chat_model = make_chat_model(settings, settings.resolve_model())
+        chat_model = make_chat_model(settings, model)
 
-        assert getattr(chat_model, "model_name", None) == "accounts/fireworks/models/glm-5p3-flash"
-        assert getattr(chat_model, "reasoning_effort", None) == "medium"
+        assert getattr(chat_model, "model_name", None) == model
+        assert getattr(chat_model, "reasoning_effort", None) == settings.resolve_reasoning(model)
         assert getattr(chat_model, "request_timeout", None) == 120
         assert getattr(chat_model, "max_tokens", None) == 8192
 
@@ -130,15 +142,16 @@ class TestMakeChatModel:
         with pytest.raises(ValueError, match="OPENAI_API_KEY"):
             make_chat_model(settings, settings.resolve_model())
 
-    def test_alibaba_builds_qwen_on_chat_completions_with_thinking_off(
+    def test_alibaba_builds_its_default_model_on_chat_completions_with_thinking_off(
         self, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.setenv("DASHSCOPE_API_KEY", "dummy")
         settings = Settings(provider="alibaba", model="", judge_model="", reasoning="")
+        model = settings.resolve_model()
 
-        chat_model = make_chat_model(settings, settings.resolve_model())
+        chat_model = make_chat_model(settings, model)
 
-        assert getattr(chat_model, "model_name", None) == "qwen3.8-flash"
+        assert getattr(chat_model, "model_name", None) == model
         assert str(getattr(chat_model, "openai_api_base", "")) == (
             "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
         )

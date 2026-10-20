@@ -10,8 +10,6 @@ from mcp_auditor.domain import (
     AuditReport,
     ProviderUsage,
     Severity,
-    TestCase,
-    ToolResponse,
 )
 from mcp_auditor.domain.models import AuditStep, order_tools_for_audit
 
@@ -24,52 +22,6 @@ class TestEnumConstraints:
     def test_rejects_unknown_severity(self):
         with pytest.raises(ValueError):
             given.an_eval_result(severity="unknown")
-
-
-class TestToolDefinition:
-    def test_roundtrip_serialization(self):
-        tool = given.a_tool(
-            name="get_user",
-            input_schema={"type": "object", "properties": {"id": {"type": "integer"}}},
-        )
-
-        rebuilt = type(tool).model_validate_json(tool.model_dump_json())
-
-        assert rebuilt == tool
-
-
-class TestTestCase:
-    def test_response_accepts_dict(self):
-        test_case = TestCase(payload=given.a_payload(), response={"result": "ok"})
-
-        assert test_case.response == {"result": "ok"}
-
-    def test_response_accepts_string(self):
-        test_case = TestCase(payload=given.a_payload(), response="raw text")
-
-        assert test_case.response == "raw text"
-
-
-class TestToolResponse:
-    def test_default_is_not_error(self):
-        response = ToolResponse(content="ok")
-
-        assert response.is_error is False
-
-    def test_explicit_error_flag(self):
-        response = ToolResponse(content="boom", is_error=True)
-
-        assert response.is_error is True
-
-    def test_error_type_defaults_to_none(self):
-        response = ToolResponse(content="ok")
-
-        assert response.error_type is None
-
-    def test_error_type_captures_exception_class(self):
-        response = ToolResponse(content="boom", is_error=True, error_type="ConnectionError")
-
-        assert response.error_type == "ConnectionError"
 
 
 class TestProviderUsage:

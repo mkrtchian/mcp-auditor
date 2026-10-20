@@ -6,16 +6,6 @@ from mcp_auditor.graph.nodes import make_generate_test_cases
 from tests.fakes import FakeLLM
 
 
-async def test_produces_pending_cases():
-    batch = given.a_batch_of(3, categories=list(AuditCategory)[:3])
-    node = make_generate_test_cases(FakeLLM([batch]))
-
-    result = await node(given.a_generation_state(test_budget=3))
-
-    then.pending_payloads_are(result, batch)
-    assert result["judged_cases"] == []
-
-
 async def test_a_complete_batch_is_kept_without_retry():
     batch = given.a_batch_of(5)
     node = make_generate_test_cases(FakeLLM([batch]))
@@ -25,6 +15,7 @@ async def test_a_complete_batch_is_kept_without_retry():
     then.pending_payloads_are(result, batch)
     then.provider_usage_count(result, 1)
     assert result["coverage_gap"] is None
+    assert result["judged_cases"] == []
 
 
 async def test_an_incomplete_batch_is_retried_once():

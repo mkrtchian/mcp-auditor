@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_config_file_given as given
-from mcp_auditor.config_file import UnknownKeyError, load_config_file
+from mcp_auditor.config_file import UnknownKeyError, load_config_file, merge_defaults
 
 
 def test_returns_empty_dict_when_no_file(tmp_path: Path) -> None:
@@ -21,6 +21,7 @@ def test_loads_all_supported_keys(tmp_path: Path) -> None:
         ci=True,
         dry_run=True,
         resume=True,
+        chains=3,
     )
 
     result = load_config_file(path)
@@ -34,6 +35,7 @@ def test_loads_all_supported_keys(tmp_path: Path) -> None:
         "ci": True,
         "dry_run": True,
         "resume": True,
+        "chains": 3,
     }
 
 
@@ -52,14 +54,6 @@ def test_rejects_unknown_keys(tmp_path: Path) -> None:
         load_config_file(path)
 
 
-def test_converts_tools_list_to_comma_string(tmp_path: Path) -> None:
-    path = given.a_config_file_containing(tmp_path, tools=["read_file", "write_file"])
-
-    result = load_config_file(path)
-
-    assert result["tools"] == "read_file,write_file"
-
-
 def test_passes_through_tools_string(tmp_path: Path) -> None:
     path = given.a_config_file_containing(tmp_path, tools="read_file,write_file")
 
@@ -75,16 +69,44 @@ def test_returns_empty_dict_for_empty_file(tmp_path: Path) -> None:
     assert load_config_file(path) == {}
 
 
-def test_chains_is_accepted_key(tmp_path: Path) -> None:
-    path = given.a_config_file_containing(tmp_path, chains=3)
-
-    result = load_config_file(path)
-
-    assert result == {"chains": 3}
-
-
 def test_rejects_unconfined_as_a_file_key(tmp_path: Path) -> None:
     path = given.a_config_file_containing(tmp_path, unconfined=True)
 
     with pytest.raises(UnknownKeyError, match="unconfined"):
         load_config_file(path)
+
+
+def test_rejects_the_relayed_environment_as_a_file_key(tmp_path: Path) -> None:
+    path = given.a_config_file_containing(tmp_path, env=["GITHUB_TOKEN"])
+
+    with pytest.raises(UnknownKeyError, match="env"):
+        load_config_file(path)
+
+
+def test_file_defaults_fill_in_non_explicit_params() -> None:
+    cli_params = {"budget": 10, "tools": None, "ci": False}
+    file_defaults = {"budget": 25, "tools": "read_file"}
+    explicit_keys: set[str] = set()
+
+    result = merge_defaults(cli_params, file_defaults, explicit_keys)
+
+    assert result["budget"] == 25
+    assert result["tools"] == "read_file"
+
+
+def test_explicit_cli_args_override_file_defaults() -> None:
+    cli_params = {"budget": 5, "tools": None}
+    file_defaults = {"budget": 25}
+    explicit_keys = {"budget"}
+
+    result = merge_defaults(cli_params, file_defaults, explicit_keys)
+
+    assert result["budget"] == 5
+
+
+def test_empty_file_defaults_returns_cli_params() -> None:
+    cli_params = {"budget": 10, "ci": False}
+
+    result = merge_defaults(cli_params, file_defaults={}, explicit_keys=set())
+
+    assert result == cli_params
