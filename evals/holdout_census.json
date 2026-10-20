@@ -138736,6 +138736,11 @@
         "identifier": "CVE-2026-86544",
         "outcome": "skipped",
         "reason": "Skipped at the pre-filter (walk step 2): its server npm:knowns was spent by a give-up, CVE-2026-86439 (the .md-only path traversal, abandoned in calibration as given_up / no_place_reached). The march skips a flaw whose server is already spent, including a sibling of a flaw abandoned in calibration, so it does not process it. (As a further note, both classifiers also fail this flaw at grammar_class: a write_outside_scope path traversal, out of grammar. The deferral to the spent server governs either way.)"
+      },
+      {
+        "identifier": "CVE-2026-54689",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server npm:mcp-searxng already gives a drawn holdout target, CVE-2026-58485 (the DNS-rebinding SSRF). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2026-54689 was already seen as a neighbour during the 58485 calibration, fixed in 1.2.1 and absent from the 1.7.0 vulnerable version, so not a sibling of 58485; the deferral to the drawn 58485 governs regardless.)"
       }
     ],
     "cards": [
