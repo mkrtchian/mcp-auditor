@@ -138715,6 +138715,11 @@
         "identifier": "CVE-2025-61489",
         "outcome": "skipped",
         "reason": "Skipped at the pre-filter (walk step 2): its server Go:github.com/sonirico/mcp-shell already gives a drawn holdout target, CVE-2026-55581 (the secure-mode allowlist bypass). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2025-61489 was already seen as a neighbour during the 55581 calibration, pinned to a v0.3.1 commit with no recorded fixed version and so not a sibling of 55581; the deferral to the drawn 55581 governs here regardless.)"
+      },
+      {
+        "identifier": "CVE-2026-49856",
+        "outcome": "excluded",
+        "reason": "Blind internal network probe (CWE-918) on npm:@jshookmcp/jshook: the network_icmp_probe and network_traceroute tools resolve the caller's target and call the native sink directly, skipping the SSRF authorization policy that the raw HTTP/TCP/TLS RTT tools enforce, so a low-privilege caller turns the server into a probing oracle for private/loopback/link-local addresses. But the effect is blind with respect to content: the advisory states the issue 'does not by itself exfiltrate response bodies' and the tools return only reachability, latency, traceroute hops and ICMP error classes (CVSS AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N, confidentiality Low). It reaches none of the grammar classes: internal_fetch requires the fetched body to come back so a planted nonce surfaces, and here no body is returned (the content-returning HTTP/TCP/TLS tools are the ones guarded by the SSRF policy, not the vulnerable path); there is no arbitrary_read or command_execution. So no planted nonce can surface in a tool response. Both classifiers place it outside the grammar (effect_class internal_network_probe, first_failed_criterion grammar_class), judged from the published advisory GHSA-c5r6-m4mr-8q5j; excluded without calibration."
       }
     ],
     "cards": [
