@@ -138710,6 +138710,11 @@
         "identifier": "GHSA-rp72-5v5q-2446",
         "outcome": "excluded",
         "reason": "npm:@cardano402/mcp-server bundles three weaknesses; only the SSRF (CWE-918 via catalog.server.url) is an in-grammar angle (the primary unbounded-payment issue, CWE-770/862, and the LAN-exposed HTTP transport, CWE-862, carry no reach token). Excluded because the caller-controlled-destination SSRF is not reachable through an MCP stdio tools/call (see the stdio_tools_call settlement): server.url is fixed at startup from a catalog document fetched from an operator-supplied URL, and an MCP client controls only the tool name and the query/body arguments, none of which sets or escapes the fetch host or path. The fetched body IS returned in the tool result (so the SSRF is not blind, and internal_fetch would be creditable were the destination caller-controllable over stdio), but the destination is catalog-controlled, not a tool argument, exactly the CVE-2026-19516 / CVE-2026-32111 motif. Crediting it would require fabricating the decor (a malicious catalog pointing at the planted endpoint), i.e. measuring whether the auditor guesses the scenario rather than exercises the flaw (against ADR 029). Both classifiers passed stdio_tools_call; overridden on the real source (0.1.1 vulnerable, 0.1.2 first patch) and confirmed by an independent blind source review. Judged from the source, excluded without calibration."
+      },
+      {
+        "identifier": "CVE-2025-61489",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server Go:github.com/sonirico/mcp-shell already gives a drawn holdout target, CVE-2026-55581 (the secure-mode allowlist bypass). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2025-61489 was already seen as a neighbour during the 55581 calibration, pinned to a v0.3.1 commit with no recorded fixed version and so not a sibling of 55581; the deferral to the drawn 55581 governs here regardless.)"
       }
     ],
     "cards": [
