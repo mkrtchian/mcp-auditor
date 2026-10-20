@@ -8,9 +8,11 @@ from evals.probe_subset import UnknownCandidate, defect_counts, select_calls, se
 
 class TestSelectCandidates:
     def test_returns_the_named_candidates_once_each_in_the_order_given(self):
-        selected = select_candidates(["gpt-6-luna low", "gpt-6-luna none", "gpt-6-luna low"])
+        first, second = CANDIDATES[:2]
 
-        assert selected == [CANDIDATES[1], CANDIDATES[0]]
+        selected = select_candidates([second.name, first.name, second.name])
+
+        assert selected == [second, first]
 
     def test_finds_the_reference_and_the_candidates(self):
         selected = select_candidates([REFERENCE.name, CANDIDATES[0].name])
@@ -19,11 +21,11 @@ class TestSelectCandidates:
 
     def test_refuses_an_unknown_name_naming_the_known_candidates(self):
         with pytest.raises(UnknownCandidate) as refusal:
-            select_candidates(["gpt-6-luna low", "nope"])
+            select_candidates([CANDIDATES[0].name, "nope"])
 
         assert "nope" in str(refusal.value)
         assert REFERENCE.name in str(refusal.value)
-        assert "gpt-6-luna none" in str(refusal.value)
+        assert CANDIDATES[1].name in str(refusal.value)
 
 
 class TestSelectCalls:

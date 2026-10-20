@@ -1,9 +1,8 @@
 import tests.unit.support.test_judge_gate_given as given
 from evals.baseline import BaselineStatus
 from evals.gate import CellOutcome, Observation
-from evals.gate_verdict import GateMode, GateVerdict
+from evals.gate_verdict import GateVerdict
 from evals.judge_gate import (
-    JudgeGateInput,
     judge_case_gate,
     judge_ci_condition_mismatches,
     judge_floor_breaches,
@@ -48,13 +47,7 @@ def test_a_judge_failing_every_case_breaches_the_precision_floor_when_fail_cases
 
 
 def test_a_floor_breach_is_red_with_no_baseline():
-    result = judge_case_gate(
-        JudgeGateInput(
-            mode=GateMode.FLOORS_ONLY,
-            runs=given.runs_where(FAIL_ID, PASS, PASS, PASS),
-            ground_truth=given.a_ground_truth(),
-        )
-    )
+    result = judge_case_gate(given.a_floors_only_input(given.runs_where(FAIL_ID, PASS, PASS, PASS)))
 
     assert result.verdict == GateVerdict.RED
     assert result.floor_breaches == ["recall"]
@@ -63,13 +56,7 @@ def test_a_floor_breach_is_red_with_no_baseline():
 
 
 def test_the_precision_breach_reason_gives_the_measured_precision():
-    result = judge_case_gate(
-        JudgeGateInput(
-            mode=GateMode.FLOORS_ONLY,
-            runs=given.runs_failing_every_case(),
-            ground_truth=given.a_ground_truth(),
-        )
-    )
+    result = judge_case_gate(given.a_floors_only_input(given.runs_failing_every_case()))
 
     assert result.reasons == ["precision 0.33 under its floor 0.50"]
 
@@ -131,10 +118,8 @@ def test_a_mismatch_is_not_comparable():
 
 def test_a_flip_under_an_exploratory_baseline_is_not_red():
     result = judge_case_gate(
-        JudgeGateInput(
-            mode=GateMode.FLOORS_ONLY,
-            runs=given.runs_where(PASS_ID, PASS, FAIL, PASS),
-            ground_truth=given.a_ground_truth(),
+        given.a_floors_only_input(
+            given.runs_where(PASS_ID, PASS, FAIL, PASS),
             baseline=given.a_baseline(status=BaselineStatus.EXPLORATORY),
         )
     )

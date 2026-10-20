@@ -29,10 +29,14 @@ async def test_an_httpx2_429_is_counted_once():
     assert tally.requests == 1
 
 
-async def test_a_429_outside_any_count_is_ignored():
-    client = given.an_httpx2_client_answering([429])
-
+async def test_a_429_outside_any_count_is_left_out_of_the_next_count():
+    client = given.an_httpx2_client_answering([429, 200])
     await given.calls(client, 1)
+
+    with counting_throttles() as tally:
+        await given.calls(client, 1)
+
+    assert tally.requests == 0
 
 
 async def test_concurrent_counts_keep_their_own_throttles():

@@ -1,4 +1,5 @@
 from evals.gate_verdict import GateMode
+from evals.judge_baseline import JudgeBaseline
 from evals.judge_gate import JudgeGateInput
 from tests.unit.support.test_judge_baseline_given import (
     FAIL_ID,
@@ -41,4 +42,12 @@ def a_paired_input(
         replays=replays or {},
         declared=declared,
         mismatches=mismatches or [],
+    )
+
+
+def a_floors_only_input(
+    runs: ObservationRuns, baseline: JudgeBaseline | None = None
+) -> JudgeGateInput:
+    return JudgeGateInput(
+        mode=GateMode.FLOORS_ONLY, runs=runs, ground_truth=a_ground_truth(), baseline=baseline
     )
