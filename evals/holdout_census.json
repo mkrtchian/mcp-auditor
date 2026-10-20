@@ -138731,6 +138731,11 @@
         "identifier": "CVE-2026-34200",
         "outcome": "excluded",
         "reason": "Missing authentication and permissive CORS (CWE-306, CWE-942) on the Nhost CLI MCP server (github.com/nhost/nhost, fixed 1.41.0). Excluded because the flaw is not reachable through an MCP stdio tools/call (see the stdio_tools_call settlement): it only arises when the server is explicitly configured to listen on a network port (HTTP transport, two non-default steps), where it applies no inbound auth and no strict CORS, so a malicious same-machine website can cross-origin-invoke its tools; the advisory states the default stdio mode is not affected. The effect is unauthenticated_tool_access (a CSRF-style cross-origin invocation), which reaches none of the grammar classes (no arbitrary_read, command_execution or internal_fetch primitive that surfaces a planted nonce). Both the surface (HTTP transport, not stdio tools/call) and the grammar rule it out, matching the CVE-2026-19516 / GHSA-rp72-5v5q-2446 motif. Judged from the advisory (GHSA-6c5x-3h35-vvw2), excluded without calibration."
+      },
+      {
+        "identifier": "CVE-2026-86544",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server npm:knowns was spent by a give-up, CVE-2026-86439 (the .md-only path traversal, abandoned in calibration as given_up / no_place_reached). The march skips a flaw whose server is already spent, including a sibling of a flaw abandoned in calibration, so it does not process it. (As a further note, both classifiers also fail this flaw at grammar_class: a write_outside_scope path traversal, out of grammar. The deferral to the spent server governs either way.)"
       }
     ],
     "cards": [
