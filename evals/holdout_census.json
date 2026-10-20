@@ -643,6 +643,16 @@
       "role": "card_checker",
       "scope": "CVE-2025-58358",
       "model": "claude-fable-5-1"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-35402",
+      "model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-35402",
+      "model": "claude-fable-5-1"
     }
   ],
   "prefilter": [
@@ -138684,6 +138694,11 @@
         "identifier": "CVE-2026-15415",
         "outcome": "excluded",
         "reason": "Directory-traversal write (CWE-23) on PyPI:awslabs.aws-healthomics-mcp-server: traversal sequences in the workflow_files input of the linting tools let an actor write actor-controlled content to arbitrary locations outside the intended workflow bundle directory (before 0.0.36). The primitive is a WRITE: CVSS AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:N marks confidentiality None (integrity only). It reaches none of the grammar classes (arbitrary_read, command_execution, internal_fetch): a write surfaces no planted nonce (the tool returns a status, not read content). Both classifiers assign effect_class write_outside_scope, out of grammar; they diverge on effect_in_tool_response (c1 false, c2 true), but that disagreement is moot because the write is out of grammar either way, so no settlement is owed (same handling as CVE-2026-18954). Judged from the published advisory (AWS security bulletin 2026-060, GHSA-6x7f-488g-75wm); excluded without calibration. Same family as CVE-2026-7237 (write_outside_scope path traversal)."
+      },
+      {
+        "identifier": "CVE-2026-35402",
+        "outcome": "given_up",
+        "reason": "Two independent calibrations ended with no keepable place. The read_only bypass (CWE-284) in mcp-neo4j-cypher < 0.6.0 is real on the real pinned software (0.5.3 vulnerable / 0.6.0 first patch from PyPI, real Neo4j 5.26 + APOC Core 5.26.32, APOC jar baked at build, server launched --read-only --transport stdio): 0.5.3's _is_write_query is a regex (MERGE|CREATE|INSERT|SET|DELETE|REMOVE|ADD) that a CALL apoc.* without those words slips past, so a read-only tool call runs the procedure. The flaw's only grammar reach is internal_fetch (apoc.load.json / LOAD CSV perform an HTTP GET, SSRF). But it is not version-distinguishable: the first patch 0.6.0 (PR #281) replaces the regex with an EXPLAIN query_type check that only rejects READ_WRITE queries, so the read-only SSRF vectors stay allowed on 0.6.0 exactly as on 0.5.3 (verified with the real engine via EXPLAIN | Statement: apoc.load.json and LOAD CSV are READ_ONLY and accepted on both versions; only write procedures such as apoc.import.json are READ_WRITE and newly rejected on 0.6.0). Empirically, two reasons each suffice for kept=[]: (1) LOAD CSV FROM <sentinel> surfaces the nonce but on BOTH 0.5.3 and 0.6.0 (kit_driver: DEAD_CONDITIONS ['patched: exploit 1 still surfaces imds']), so ADR 030 replay strikes the credit; (2) the flaw's own bypass vector apoc.load.json reaches the sentinel but the planted nonce is a bare non-JSON token (MCPAUDIT-<hex>), so Jackson raises Unrecognized token and truncates at the '-' with source redaction, and the unique nonce never surfaces, while the vector 0.6.0 does block (write CALL, e.g. apoc.import.json) returns only counters/errors, never a planted nonce. So no vector is both nonce-surfacing and version-distinguishable: kept=[], exploit_cannot_reproduce (the vuln/patched contrast cannot be reproduced for a creditable nonce, same motif as CVE-2026-49988). The server and exploit run cleanly in both containers (not a container-cannot-run abandon) and SSRF reaches the endpoint (places are reachable, not no_place_reached); the patch simply does not lock the read-only SSRF. No siblings: the only neighbour CVE-2025-10193 is a DNS-rebinding/CORS bypass (CWE-346) of the HTTP transport, carries no reach token, and is fixed in 0.4.0 (absent from both 0.5.3 and 0.6.0). Both classifiers agreed on every criterion, no settlement."
       }
     ],
     "cards": [
@@ -142973,6 +142988,20 @@
         "calibration": 2,
         "reason": "container_cannot_run",
         "detail": "Second, blind independent calibration (Fable), given only the CVE and the prebuilt vulnerable image, not the first's card, releve or conclusion. Ran a positive control first: the patched entrypoint initializes and lists 41 tools including get_pods, so the MCP client and handshake are healthy and the failures are server-side. Against the vulnerable entrypoint (mcp_kubectl_server.py) the client sees Connection closed, caused by the same TypeError on call_tool; the windsurf variant times out (aiohttp on :8080, no stdin); the minimal/cursor/jsonrpc variants fail initialize (non-conformant protocol); and the one variant using tools/list|tools/call omits protocolVersion and builds an argv list with no shell=True, so even if it initialized namespace='default; id' would be a single kubectl argument with no execution. Same closed-set reason reached independently: the vulnerable version does not launch as an MCP stdio server carrying the sink.",
+        "attempts": 1
+      },
+      {
+        "flaw": "CVE-2026-35402",
+        "calibration": 1,
+        "reason": "exploit_cannot_reproduce",
+        "detail": "First calibration (Opus 4.8). Built both pinned images from PyPI (mcp-neo4j-cypher==0.5.3 vulnerable, ==0.6.0 patched) over a real Neo4j 5.26.32 + APOC Core 5.26.32 (jar baked, no download), launched --read-only --transport stdio; confined launch fixed with nss_wrapper so Neo4j resolves its hostname under --network none. Established the mechanism from the advisory and source: 0.5.3 regex _is_write_query vs 0.6.0 EXPLAIN query_type. Verified with EXPLAIN against the real engine that apoc.load.json and LOAD CSV are READ_ONLY (accepted on both versions) and apoc.import.json is READ_WRITE (accepted on 0.5.3, rejected on 0.6.0). Exhaustive kit_driver.check_target on the internal_fetch places (imds/ecs/eks sentinels): LOAD CSV surfaces the imds nonce on 0.5.3 AND 0.6.0 (DEAD_CONDITIONS ['patched: exploit 1 still surfaces imds']); apoc.load.json reaches the sentinel but the bare non-JSON nonce triggers a Jackson parse error so the nonce never surfaces. kept=[]: no vector both surfaces a nonce and is blocked by the patch. exploit_cannot_reproduce.",
+        "attempts": 4
+      },
+      {
+        "flaw": "CVE-2026-35402",
+        "calibration": 2,
+        "reason": "exploit_cannot_reproduce",
+        "detail": "Second, independent confirmation (Fable). Because the fixture reproduces, it ran as a reproduction-verification: re-ran check_target on the real containers (same DEAD_CONDITIONS ['patched: exploit 1 still surfaces imds']) and the four-query probe, confirming apoc.load.json and LOAD CSV are accepted and identical on 0.5.3 and 0.6.0 (read-only SSRF not blocked) while apoc.import.json is accepted on 0.5.3 and rejected on 0.6.0 ('Only MATCH queries are allowed for read-query') with no nonce. Independently enumerated the internal_fetch places (3 plantable http_endpoint + 4 unplaceable), identical to the first pass; no plantable place missed, none keepable. Verdict AGREE: kept=[], siblings=[] (CVE-2025-10193 fixed in 0.4.0, absent from both images, no reach token). Hygiene clean (docker ps -a empty, df unchanged).",
         "attempts": 1
       }
     ],
