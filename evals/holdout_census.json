@@ -138634,6 +138634,11 @@
         "identifier": "CVE-2026-44694",
         "outcome": "skipped",
         "reason": "Skipped at the pre-filter (walk step 2): its server npm:n8n-mcp already gives a drawn holdout target, GHSA-8g7g-hmwm-6rv2 (the n8n-mcp redirect-following SSRF). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2026-44694 was already seen as a neighbour during the 8g7g calibration, fixed in 2.50.2 and so not a sibling of that target; the deferral governs here regardless.)"
+      },
+      {
+        "identifier": "CVE-2026-39974",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server npm:n8n-mcp already gives a drawn holdout target, GHSA-8g7g-hmwm-6rv2 (the n8n-mcp redirect-following SSRF). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. The deferral governs regardless of the classifier split on stdio_tools_call (no calibration, no settlement for a skip)."
       }
     ],
     "cards": [
