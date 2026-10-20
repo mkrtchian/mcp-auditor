@@ -138493,6 +138493,11 @@
         "identifier": "CVE-2026-19516",
         "outcome": "excluded",
         "reason": "SSRF (CWE-918, CVSS 9.1) in grafana/mcp-grafana: the grafana_api_request tool fetches a caller-controlled destination and returns the body, fixed in 1.1.0. Excluded because the caller-controlled destination is not reachable through an MCP stdio tools/call (see the stdio_tools_call settlement): the destination host is set only by the X-Grafana-URL HTTP request header on the HTTP/SSE transport, and in stdio mode it is pinned from GRAFANA_URL with no tool argument able to override or escape it. The fetched body IS returned on the HTTP path (so the effect is not blind, and internal_fetch would be creditable were it reachable), but it lives on the HTTP transport, not the stdio tools/call surface, exactly as for CVE-2026-32111. Both classifiers passed stdio_tools_call; overridden on the source (v1.0.0, fix v1.1.0) and confirmed by an independent blind source review. The census reader groupings do not mention this flaw (no nonce proof to the contrary). Judged from the source, excluded without calibration."
+      },
+      {
+        "identifier": "CVE-2026-73844",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server npm:@aborruso/ckan-mcp-server already gives a drawn holdout target, CVE-2026-33060. One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (As a further note, both classifiers already fail this flaw at grammar_class: a verbose-error / error-message information disclosure, out of grammar. The deferral to 33060 governs either way.)"
       }
     ],
     "cards": [
