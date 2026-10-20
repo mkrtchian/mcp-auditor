@@ -138629,6 +138629,11 @@
         "identifier": "CVE-2026-53710",
         "outcome": "skipped",
         "reason": "Skipped at the pre-filter (walk step 2): its server, labelled https://github.com/IBM/mcp-context-forge by both classifiers, is the same server as the drawn holdout target CVE-2026-18905, which the classifiers labelled PyPI:mcp-contextforge-gateway. The PyPI package mcp-contextforge-gateway is published from github.com/IBM/mcp-context-forge (the Repository entry of its PyPI project_urls; both are the IBM ContextForge AI Gateway), so the two labels name one server. One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. The server-identity judgment is a fact (the PyPI package's source repository), not a server_package string match: the two classifier strings differ, so a mechanical string-equality skip would miss this deferral."
+      },
+      {
+        "identifier": "CVE-2026-44694",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server npm:n8n-mcp already gives a drawn holdout target, GHSA-8g7g-hmwm-6rv2 (the n8n-mcp redirect-following SSRF). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2026-44694 was already seen as a neighbour during the 8g7g calibration, fixed in 2.50.2 and so not a sibling of that target; the deferral governs here regardless.)"
       }
     ],
     "cards": [
