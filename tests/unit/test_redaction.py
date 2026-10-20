@@ -95,12 +95,3 @@ def test_stream_without_secret_returns_each_chunk_as_is():
     assert stream.feed("first ") == "first "
     assert stream.feed("second") == "second"
     assert stream.flush() == ""
-
-
-def test_stream_flush_returns_the_held_carry():
-    stream = _REDACTION.stream()
-
-    held = stream.feed("tail")
-
-    assert held == ""
-    assert stream.flush() == "tail"

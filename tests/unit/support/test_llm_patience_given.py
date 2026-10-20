@@ -2,21 +2,19 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
-import httpx2
 import openai
-from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput
 from mcp_auditor.adapters.llm_throttling import ThrottlePatience
 from mcp_auditor.adapters.throttling import install_throttle_log_handler
 from tests.fakes.chat_model import FakeChatModel, ScriptedResponse, Throttled, raw_response
+from tests.unit.support.test_llm_adapter_given import Output
+from tests.unit.support.test_llm_refusals_given import a_bad_request
 from tests.unit.support.test_llm_throttling_given import an_openai_rate_limit
 
+__all__ = ["Output"]
+
 PROVIDER_MESSAGE = "Error code: 429 - slow down"
-
-
-class Output(BaseModel):
-    value: str
 
 
 @dataclass
@@ -58,10 +56,7 @@ def an_unreadable_answer() -> dict[str, Any]:
 
 
 def a_refusal() -> openai.BadRequestError:
-    request = httpx2.Request("POST", "https://provider.test/v1/responses")
-    body = {"message": "Invalid prompt", "type": "invalid_request_error", "code": "invalid_prompt"}
-    response = httpx2.Response(400, request=request)
-    return openai.BadRequestError(f"Error code: 400 - {body}", response=response, body=body)
+    return a_bad_request("Invalid prompt", code="invalid_prompt")
 
 
 @dataclass

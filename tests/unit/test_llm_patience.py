@@ -183,6 +183,17 @@ class TestBreaker:
         assert waiting_model.calls == 1
 
     @pytest.mark.asyncio
+    async def test_outside_any_audit_an_exhausted_call_does_not_block_the_next(self):
+        patience = given.a_patience(given.RecordingSleep(), max_total_wait=0.0)
+        llm = given.an_llm(FakeChatModel([given.a_throttle(), given.an_answer()]), patience)
+        with pytest.raises(ProviderThrottled):
+            await llm.generate_structured("prompt", given.Output)
+
+        output, _ = await llm.generate_structured("prompt", given.Output)
+
+        assert output == given.Output(value="ok")
+
+    @pytest.mark.asyncio
     async def test_a_call_outside_any_audit_or_in_a_later_audit_is_sent(self):
         patience = given.a_patience(given.RecordingSleep(), max_total_wait=0.0)
         chat_model = FakeChatModel([given.a_throttle(), given.an_answer(), given.an_answer()])

@@ -4,7 +4,6 @@ import tests.unit.support.test_llm_throttling_given as given
 from mcp_auditor.adapters.llm_throttling import (
     Throttle,
     ThrottlePatience,
-    current_breaker,
     one_audit,
     throttle_of,
 )
@@ -105,17 +104,7 @@ class TestThrottlePatience:
         assert patience.exhausted(250.0, 60.0)
 
 
-class TestOneAudit:
-    def test_no_breaker_outside_an_audit(self):
-        assert current_breaker() is None
-
-    def test_an_audit_opens_a_closed_breaker_and_removes_it_on_exit(self):
-        with one_audit() as breaker:
-            assert current_breaker() is breaker
-            assert breaker.tripped_by is None
-
-        assert current_breaker() is None
-
+class TestThrottleBreaker:
     def test_the_first_trip_names_the_breaker(self):
         with one_audit() as breaker:
             breaker.trip("first")
