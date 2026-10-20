@@ -66,15 +66,15 @@ def test_a_card_citing_an_unknown_place_id_fails(tmp_path: Path):
         load_census(given.written(tmp_path, _census_with_draw(draw)))
 
 
-def test_a_drawn_list_over_twenty_fails(tmp_path: Path):
-    draw = _a_draw().model_copy(update={"drawn": [f"CVE-2027-{i:04d}" for i in range(21)]})
+def test_a_drawn_list_over_thirty_fails(tmp_path: Path):
+    draw = _a_draw().model_copy(update={"drawn": [f"CVE-2027-{i:04d}" for i in range(31)]})
 
-    with pytest.raises(ValueError, match="more than 20"):
+    with pytest.raises(ValueError, match="more than 30"):
         load_census(given.written(tmp_path, _census_with_draw(draw)))
 
 
-def test_twenty_drawn_flaws_disclosed_after_one_date_raise_no_problem():
-    identifiers = [f"CVE-2026-{i:04d}" for i in range(1, 21)]
+def test_thirty_drawn_flaws_disclosed_after_one_date_raise_no_problem():
+    identifiers = [f"CVE-2026-{i:04d}" for i in range(1, 31)]
     census = _census_of(identifiers, _a_draw_of(identifiers))
     assert census.draw is not None
 

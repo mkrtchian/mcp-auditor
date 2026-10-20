@@ -230,8 +230,8 @@ def _agent_problems(draw: DrawRecord, agents: Sequence[AgentRecord]) -> list[str
 
 
 def _count_problems(draw: DrawRecord) -> list[str]:
-    if len(draw.drawn) > 20:
-        return [f"the draw has {len(draw.drawn)} drawn targets, more than 20"]
+    if len(draw.drawn) > 30:
+        return [f"the draw has {len(draw.drawn)} drawn targets, more than 30"]
     return []
 
 
