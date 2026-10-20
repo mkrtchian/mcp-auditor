@@ -3,18 +3,24 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_eval_session_given as given
-from evals import eval_session
 from evals.baseline import BaselineStatus
-from evals.declared_flips import ActiveDeclarations
+from evals.declared_flips import DECLARED_FLIPS_PATH, ActiveDeclarations, Suite
 from evals.eval_session import (
+    BASELINE_PATH,
     REFUSED_BEFORE_ANY_LLM_CALL,
+    REPOSITORY_TREE,
     Refused,
     TreeState,
+    WorkingTree,
+    _parent_commit,  # pyright: ignore[reportPrivateUsage]
+    _tree_is_dirty,  # pyright: ignore[reportPrivateUsage]
     baseline_changed,
     candidate_conditions,
     ci_condition_mismatches,
+    declarations_of_head,
     open_session,
     pre_run_refusals,
+    read_tree,
     select_mode,
     tree_drift,
 )
@@ -222,57 +228,45 @@ def test_a_judge_override_leaves_the_judge_reasoning_unset():
 
 
 def test_an_invalid_reasoning_setting_is_refused_before_any_llm_call(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "google")
     monkeypatch.setenv("MCP_AUDITOR_REASONING", "hgih")
+    working_tree = given.a_working_tree_that_must_not_read_git(given.a_declaration_file(tmp_path))
 
     with pytest.raises(Refused) as refusal:
-        open_session(given.options())
+        open_session(given.options(), working_tree)
 
     assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
     assert "'hgih'" in refusal.value.reasons[0]
 
 
-def test_an_invalid_declaration_file_is_refused_before_any_git_read(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-):
+def test_an_invalid_declaration_file_is_refused_before_any_git_read(tmp_path: Path):
     declarations = tmp_path / "declared_flips.json"
     declarations.write_text('{"entries": [{"suite": "honeypot"}]}')
-    monkeypatch.setattr(eval_session, "DECLARED_FLIPS_PATH", declarations)
-    monkeypatch.setattr(eval_session.subprocess, "run", given.a_git_that_must_not_run)
 
     with pytest.raises(Refused) as refusal:
-        open_session(given.options())
+        declarations_of_head(
+            Suite.HONEYPOT, given.a_working_tree_that_must_not_read_git(declarations)
+        )
 
     assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
     assert f"{declarations} is not a valid declaration file" in refusal.value.reasons[0]
 
 
-def test_an_empty_declaration_file_reads_nothing_from_git(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-):
-    monkeypatch.setattr(eval_session, "BASELINE_PATH", tmp_path / "no_baseline.json")
-    monkeypatch.setattr(eval_session, "DECLARED_FLIPS_PATH", given.a_declaration_file(tmp_path))
-    monkeypatch.setattr(eval_session.subprocess, "run", given.a_git_that_must_not_run)
+def test_an_empty_declaration_file_reads_nothing_from_git(tmp_path: Path):
+    working_tree = given.a_working_tree_that_must_not_read_git(given.a_declaration_file(tmp_path))
 
-    session = open_session(given.options())
-
-    assert session.declarations == ActiveDeclarations()
+    assert declarations_of_head(Suite.HONEYPOT, working_tree) == ([], False)
 
 
 def test_an_active_declaration_of_an_unknown_cell_is_refused_before_any_llm_call(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    tmp_path: Path,
 ):
     declarations = given.a_declaration_file(tmp_path, "no_such_tool/injection")
-    monkeypatch.setattr(eval_session, "BASELINE_PATH", tmp_path / "no_baseline.json")
-    monkeypatch.setattr(eval_session, "DECLARED_FLIPS_PATH", declarations)
-    monkeypatch.setattr(
-        eval_session.subprocess, "run", given.a_git_whose_parent_is_declared(dirty=False)
-    )
 
     with pytest.raises(Refused) as refusal:
-        open_session(given.options())
+        open_session(given.options(), given.a_working_tree(declarations))
 
     assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
     assert refusal.value.reasons == [
@@ -288,13 +282,18 @@ def test_an_active_declaration_of_an_unknown_cell_is_refused_before_any_llm_call
     ],
 )
 def test_the_declarations_of_head_apply_only_on_a_clean_tree(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, dirty: bool, expected: ActiveDeclarations
+    tmp_path: Path, dirty: bool, expected: ActiveDeclarations
 ):
     declarations = given.a_declaration_file(tmp_path, given.A_GATED_CELL)
-    monkeypatch.setattr(eval_session, "BASELINE_PATH", tmp_path / "no_baseline.json")
-    monkeypatch.setattr(eval_session, "DECLARED_FLIPS_PATH", declarations)
-    monkeypatch.setattr(eval_session.subprocess, "run", given.a_git_whose_parent_is_declared(dirty))
 
-    session = open_session(given.options())
+    session = open_session(given.options(), given.a_working_tree(declarations, dirty))
 
     assert session.declarations == expected
+
+
+def test_the_repository_tree_reads_the_committed_files_and_this_repository():
+    expected = WorkingTree(
+        BASELINE_PATH, DECLARED_FLIPS_PATH, _parent_commit, _tree_is_dirty, read_tree
+    )
+
+    assert expected == REPOSITORY_TREE

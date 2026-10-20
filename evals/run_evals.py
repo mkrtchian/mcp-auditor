@@ -20,6 +20,7 @@ from evals.eval_session import (
     DEFAULT_CONCURRENCY,
     DEFAULT_RUNS,
     RECORDING_REFUSED,
+    REPOSITORY_TREE,
     EvalOptions,
     EvalSession,
     Refused,
@@ -83,7 +84,7 @@ def main() -> None:
 
 
 def _evaluate(options: EvalOptions) -> int:
-    session = open_session(options)
+    session = open_session(options, REPOSITORY_TREE)
     result = asyncio.run(run_evals(session, options.concurrency))
 
     report_path = Path(options.report)

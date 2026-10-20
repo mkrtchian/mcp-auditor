@@ -15,7 +15,7 @@ from rich.progress import Progress
 from evals import judge_display as display
 from evals.concurrency import positive_int
 from evals.declared_flips import Suite
-from evals.eval_session import Refused, declarations_of_head, read_tree
+from evals.eval_session import REPOSITORY_TREE, Refused, declarations_of_head, read_tree
 from evals.gate import Observation
 from evals.judge_baseline import JUDGE_BASELINE_PATH
 from evals.judge_fixture import JudgeCase, JudgeFixture, ground_truth_of, load_fixture
@@ -108,7 +108,7 @@ def _harness(tracking: "JudgeCallTracking") -> JudgeHarness:
         judge=tracking.judge,
         baseline_path=JUDGE_BASELINE_PATH,
         read_tree=read_tree,
-        declarations=lambda: declarations_of_head(Suite.JUDGE),
+        declarations=lambda: declarations_of_head(Suite.JUDGE, REPOSITORY_TREE),
         clock=lambda: datetime.now(UTC),
         on_replays=tracking.on_replays,
         throttled_judgments=lambda: tracking.throttled_cases,

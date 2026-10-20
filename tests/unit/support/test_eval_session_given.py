@@ -1,6 +1,4 @@
 import json
-import subprocess
-from collections.abc import Callable
 from pathlib import Path
 from typing import NoReturn
 
@@ -14,6 +12,7 @@ from evals.eval_session import (
     EvalOptions,
     EvalSession,
     TreeState,
+    WorkingTree,
     select_mode,
 )
 from evals.ground_truth import GroundTruth
@@ -110,11 +109,22 @@ def a_declaration_file(tmp_path: Path, *keys: str) -> Path:
     return path
 
 
-def a_git_whose_parent_is_declared(dirty: bool) -> Callable[..., subprocess.CompletedProcess[str]]:
-    """Answers the parent read with `PARENT` and the status read as the tree stands."""
+def a_working_tree(declared_flips_path: Path, dirty: bool = False) -> WorkingTree:
+    """A tree whose parent is `PARENT`, with no committed baseline beside the declarations."""
+    return WorkingTree(
+        baseline_path=declared_flips_path.parent / "no_baseline.json",
+        declared_flips_path=declared_flips_path,
+        parent_commit=lambda: PARENT,
+        is_dirty=lambda: dirty,
+        read_tree=a_git_that_must_not_run,
+    )
 
-    def run(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
-        output = PARENT if "rev-parse" in args else (" M evals/judging.py" if dirty else "")
-        return subprocess.CompletedProcess(args, 0, stdout=output, stderr="")
 
-    return run
+def a_working_tree_that_must_not_read_git(declared_flips_path: Path) -> WorkingTree:
+    return WorkingTree(
+        baseline_path=declared_flips_path.parent / "no_baseline.json",
+        declared_flips_path=declared_flips_path,
+        parent_commit=a_git_that_must_not_run,
+        is_dirty=a_git_that_must_not_run,
+        read_tree=a_git_that_must_not_run,
+    )

@@ -1,4 +1,5 @@
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -77,7 +78,18 @@ class EvalSession:
     declarations: ActiveDeclarations = field(default_factory=ActiveDeclarations)
 
 
-def open_session(options: EvalOptions) -> EvalSession:
+@dataclass(frozen=True)
+class WorkingTree:
+    """What the eval session reads from the repository it runs in."""
+
+    baseline_path: Path
+    declared_flips_path: Path
+    parent_commit: Callable[[], str | None]
+    is_dirty: Callable[[], bool]
+    read_tree: Callable[[], TreeState]
+
+
+def open_session(options: EvalOptions, working_tree: WorkingTree) -> EvalSession:
     """Raises Refused on anything that makes the run not comparable or its recording refused."""
     if options.record_baseline and options.ungated:
         raise Refused(
@@ -85,14 +97,14 @@ def open_session(options: EvalOptions) -> EvalSession:
             ["--record-baseline cannot run --ungated: a baseline records the conditions it gates"],
         )
     settings = load_settings()
-    baseline = None if options.ungated else _load_committed_baseline()
-    entries, dirty = declarations_of_head(Suite.HONEYPOT)
+    baseline = None if options.ungated else _load_committed_baseline(working_tree.baseline_path)
+    entries, dirty = declarations_of_head(Suite.HONEYPOT, working_tree)
     session = EvalSession(
         settings=settings,
         conditions=_conditions_or_refused(settings, options),
         baseline=baseline,
         mode=select_mode(baseline, options.ungated),
-        tree=read_tree() if options.record_baseline else None,
+        tree=working_tree.read_tree() if options.record_baseline else None,
         declarations=active_declarations(entries, dirty),
     )
     reasons = pre_run_refusals(session, MERGED_GROUND_TRUTH)
@@ -102,17 +114,19 @@ def open_session(options: EvalOptions) -> EvalSession:
     return session
 
 
-def declarations_of_head(suite: Suite) -> tuple[list[DeclaredFlip], bool]:
+def declarations_of_head(
+    suite: Suite, working_tree: WorkingTree
+) -> tuple[list[DeclaredFlip], bool]:
     """The entries declared by the commit at HEAD, and whether the tree has tracked changes."""
     try:
-        entries = load_declared_flips(DECLARED_FLIPS_PATH)
+        entries = load_declared_flips(working_tree.declared_flips_path)
     except ValidationError as error:
-        reason = f"{DECLARED_FLIPS_PATH} is not a valid declaration file: {error}"
+        reason = f"{working_tree.declared_flips_path} is not a valid declaration file: {error}"
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [reason]) from error
     if not entries:
         return [], False
-    of_head = entries_of_commit(entries, suite, _parent_commit())
-    return of_head, bool(of_head) and _tree_is_dirty()
+    of_head = entries_of_commit(entries, suite, working_tree.parent_commit())
+    return of_head, bool(of_head) and working_tree.is_dirty()
 
 
 def _parent_commit() -> str | None:
@@ -137,11 +151,11 @@ def _conditions_or_refused(settings: Settings, options: EvalOptions) -> Baseline
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [str(error)]) from error
 
 
-def _load_committed_baseline() -> Baseline | None:
+def _load_committed_baseline(path: Path) -> Baseline | None:
     try:
-        baseline = load_baseline(BASELINE_PATH)
+        baseline = load_baseline(path)
     except ValidationError as error:
-        reason = f"{BASELINE_PATH} is not a valid baseline: {error}"
+        reason = f"{path} is not a valid baseline: {error}"
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [reason]) from error
     if baseline is None:
         return None
@@ -268,3 +282,8 @@ def _git(*args: str) -> str:
         reason = f"git {' '.join(args)} failed: run from a git checkout"
         raise Refused("Git unavailable.", [reason]) from error
     return completed.stdout.strip()
+
+
+REPOSITORY_TREE = WorkingTree(
+    BASELINE_PATH, DECLARED_FLIPS_PATH, _parent_commit, _tree_is_dirty, read_tree
+)
