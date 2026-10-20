@@ -5,6 +5,8 @@ import pytest
 import tests.unit.support.test_fixture_contamination_given as given
 import tests.unit.support.test_fixture_contamination_then as then
 
+SERVER_CORPUS = {"Adds file contents to the staging area"}
+
 
 class TestShippedConstantsNameNoHoneypotLiteral:
     def test_the_honeypots_plant_discriminating_literals(self):
@@ -40,19 +42,15 @@ class TestShippedConstantsNameNoExcludedServerText:
         then.no_constant_contains_any_server_text(constants, corpus)
 
     def test_a_five_word_run_of_server_text_in_a_constant_leaks(self):
-        corpus = given.excluded_server_corpus()
-        run = given.a_run_of(corpus, 5)
-        constant = [(Path("src/leak.py"), f"qqq {run} qqq")]
+        constant = [(Path("src/leak.py"), "qqq contents to the staging area qqq")]
 
         with pytest.raises(AssertionError):
-            then.no_constant_contains_any_server_text(constant, corpus)
+            then.no_constant_contains_any_server_text(constant, SERVER_CORPUS)
 
-    def test_a_short_generic_run_does_not_leak(self):
-        corpus = given.excluded_server_corpus()
-        run = given.a_run_of(corpus, 4)
-        constant = [(Path("src/benign.py"), f"qqq {run} qqq")]
+    def test_a_four_word_run_of_server_text_does_not_leak(self):
+        constant = [(Path("src/benign.py"), "qqq to the staging area qqq")]
 
-        then.no_constant_contains_any_server_text(constant, corpus)
+        then.no_constant_contains_any_server_text(constant, SERVER_CORPUS)
 
     def test_an_echoed_auditor_marker_is_dropped_from_the_corpus(self):
         payload = "/work/sandbox/;echo mcp-auditor-probe"

@@ -104,14 +104,6 @@ def a_cve_case(
     )
 
 
-def a_run_of(corpus: set[str], length: int) -> str:
-    for text in sorted(corpus):
-        words = re.findall(r"[A-Za-z0-9_]+", text)
-        if len(words) >= length:
-            return " ".join(words[-length:])
-    raise AssertionError(f"no corpus text has {length} words")
-
-
 def _cve_id_of(case: JudgeCase) -> str:
     return case.origin.split()[1]
 

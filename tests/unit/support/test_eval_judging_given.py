@@ -14,6 +14,7 @@ FLIPPED_HONEYPOT = HONEYPOTS[0]
 FLIPPED_CELL: Cell = next(
     cell for cell, verdict in FLIPPED_HONEYPOT.ground_truth.items() if verdict == EvalVerdict.FAIL
 )
+PLANTED_FLAWS = sum(verdict == EvalVerdict.FAIL for verdict in MERGED_GROUND_TRUTH.values())
 
 
 def correct_runs(completed: int = 3) -> RunsOutcome:

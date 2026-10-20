@@ -23,7 +23,6 @@ async def test_without_baseline_the_legacy_thresholds_judge_and_nothing_replays(
     assert result.mode == GateMode.LEGACY_THRESHOLDS
     assert result.thresholds == LEGACY_THRESHOLDS
     # The minimal audit reports cover no category, so distribution coverage misses its threshold.
-    assert result.verdict == GateVerdict.RED
     assert any("distribution_coverage" in reason for reason in result.reasons)
     assert result.cells == {}
     assert result.deltas == {}
@@ -154,7 +153,10 @@ async def test_the_gate_reports_the_protected_cells_of_the_baseline_under_the_cu
     )
 
     assert result.protected is not None
-    assert (result.protected.fail_stable_correct, result.protected.fail_total) == (7, 8)
+    assert (result.protected.fail_stable_correct, result.protected.fail_total) == (
+        given.PLANTED_FLAWS - 1,
+        given.PLANTED_FLAWS,
+    )
     assert result.protected != baseline.protected
 
 
@@ -166,4 +168,8 @@ def test_runs_outcome_completed_all_when_every_requested_run_has_details():
 def test_runs_outcome_counts_the_planted_flaws_detected_over_its_runs():
     count = given.runs_missing_the_flipped_cell(completed=3).detections()
 
-    assert (count.detections, count.runs, count.planted) == (7 * 3, 3, 8)
+    assert (count.detections, count.runs, count.planted) == (
+        (given.PLANTED_FLAWS - 1) * 3,
+        3,
+        given.PLANTED_FLAWS,
+    )

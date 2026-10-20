@@ -1,156 +1,99 @@
-import json
 from pathlib import Path
 
+import pytest
+
 import tests.unit.support.test_export_given as given
+import tests.unit.support.test_export_then as then
 from evals.cve_session_model import CVEAudit
 from evals.export import export_cve_judged_cases, export_judged_cases
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 
-def _read_jsonl(path: Path) -> list[dict[str, object]]:
-    lines = path.read_text().strip().splitlines()
-    return [json.loads(line) for line in lines]
+def test_a_judged_case_is_written_with_the_single_step_fields_and_its_label(
+    tmp_path: Path,
+) -> None:
+    ground_truth: GroundTruth = {("get_user", AuditCategory.INPUT_VALIDATION): EvalVerdict.FAIL}
+    runs = [(0, given.a_report([given.a_judged_case(EvalVerdict.FAIL)]))]
+
+    export_judged_cases(runs, ground_truth, tmp_path / "eval_report.json")
+
+    records = then.exported_records(tmp_path / "judged_cases.jsonl")
+    then.every_record_is_a_single_step_with(
+        records, then.SINGLE_STEP_FIELDS | {"expected_verdict", "correct"}
+    )
+    assert records[0]["expected_verdict"] == "fail"
 
 
-class TestExportWritesCorrectJsonl:
-    def test_writes_correct_fields_and_correct_values(self, tmp_path: Path) -> None:
-        ground_truth: GroundTruth = {("get_user", AuditCategory.INPUT_VALIDATION): EvalVerdict.FAIL}
-        case_matching = given.a_judged_case(EvalVerdict.FAIL, AuditCategory.INPUT_VALIDATION)
-        case_mismatching = given.a_judged_case(EvalVerdict.PASS, AuditCategory.INPUT_VALIDATION)
-        case_no_gt = given.a_judged_case(EvalVerdict.PASS, AuditCategory.ERROR_HANDLING)
-        runs = [
-            (0, given.a_report([case_matching, case_mismatching, case_no_gt])),
-            (1, given.a_report([case_matching, case_mismatching, case_no_gt])),
-        ]
-        report_path = tmp_path / "eval_report.json"
+@pytest.mark.parametrize(
+    ("verdict", "label", "correct"),
+    [("fail", "fail", True), ("pass", "fail", False), ("pass", None, None)],
+)
+def test_each_record_compares_its_verdict_to_the_label_of_its_cell(
+    tmp_path: Path, verdict: str, label: str | None, correct: bool | None
+) -> None:
+    cell = ("get_user", AuditCategory.INPUT_VALIDATION)
+    ground_truth: GroundTruth = {} if label is None else {cell: EvalVerdict(label)}
+    runs = [(0, given.a_report([given.a_judged_case(EvalVerdict(verdict))]))]
 
-        export_judged_cases(runs, ground_truth, report_path)
+    export_judged_cases(runs, ground_truth, tmp_path / "eval_report.json")
 
-        records = _read_jsonl(tmp_path / "judged_cases.jsonl")
-        assert len(records) == 6
-
-        expected_keys = {
-            "run_index",
-            "type",
-            "tool_name",
-            "tool_description",
-            "category",
-            "description",
-            "arguments",
-            "response",
-            "error",
-            "verdict",
-            "justification",
-            "expected_verdict",
-            "correct",
-        }
-        for record in records:
-            assert set(record.keys()) == expected_keys
-            assert record["type"] == "single_step"
-
-        run_0_matching, run_0_mismatching, run_0_no_gt = records[0], records[1], records[2]
-        run_1_matching, run_1_mismatching, run_1_no_gt = records[3], records[4], records[5]
-
-        assert run_0_matching["run_index"] == 0
-        assert run_0_matching["verdict"] == "fail"
-        assert run_0_matching["expected_verdict"] == "fail"
-        assert run_0_matching["correct"] is True
-
-        assert run_0_mismatching["verdict"] == "pass"
-        assert run_0_mismatching["expected_verdict"] == "fail"
-        assert run_0_mismatching["correct"] is False
-
-        assert run_0_no_gt["expected_verdict"] is None
-        assert run_0_no_gt["correct"] is None
-
-        assert run_1_matching["run_index"] == 1
-        assert run_1_matching["correct"] is True
-        assert run_1_mismatching["correct"] is False
-        assert run_1_no_gt["correct"] is None
+    [record] = then.exported_records(tmp_path / "judged_cases.jsonl")
+    assert (record["verdict"], record["expected_verdict"], record["correct"]) == (
+        verdict,
+        label,
+        correct,
+    )
 
 
-class TestExportSkipsUnjudgedCases:
-    def test_cases_without_eval_result_are_excluded(self, tmp_path: Path) -> None:
-        unjudged = given.an_unjudged_case()
-        judged = given.a_judged_case(EvalVerdict.PASS)
-        runs = [(0, given.a_report([unjudged, judged]))]
-        report_path = tmp_path / "eval_report.json"
+def test_each_record_carries_the_index_of_its_run(tmp_path: Path) -> None:
+    case = given.a_judged_case(EvalVerdict.FAIL)
+    runs = [(0, given.a_report([case])), (1, given.a_report([case]))]
 
-        export_judged_cases(runs, {}, report_path)
+    export_judged_cases(runs, {}, tmp_path / "eval_report.json")
 
-        records = _read_jsonl(tmp_path / "judged_cases.jsonl")
-        assert len(records) == 1
-        assert records[0]["verdict"] == "pass"
+    records = then.exported_records(tmp_path / "judged_cases.jsonl")
+    assert [record["run_index"] for record in records] == [0, 1]
 
 
-class TestExportIncludesChains:
-    def test_chain_verdicts_are_exported_with_steps(self, tmp_path: Path) -> None:
-        ground_truth: GroundTruth = {("get_user", AuditCategory.INFO_LEAKAGE): EvalVerdict.FAIL}
-        chain = given.a_chain_with_leakage_verdict()
-        report = given.a_report(cases=[], chains=[chain])
-        runs = [(0, report)]
-        report_path = tmp_path / "eval_report.json"
+def test_cases_without_eval_result_are_excluded(tmp_path: Path) -> None:
+    runs = [(0, given.a_report([given.an_unjudged_case(), given.a_judged_case(EvalVerdict.PASS)]))]
 
-        export_judged_cases(runs, ground_truth, report_path)
+    export_judged_cases(runs, {}, tmp_path / "eval_report.json")
 
-        records = _read_jsonl(tmp_path / "judged_cases.jsonl")
-        assert len(records) == 1
-        record = records[0]
-        assert record["type"] == "chain"
-        assert record["goal"] == "probe then exploit"
-        steps: list[dict[str, object]] = record["steps"]  # type: ignore[assignment]
-        assert len(steps) == 1
-        assert steps[0]["arguments"] == {"action": "list"}
-        assert steps[0]["observation"] == "found ids"
-        assert record["verdict"] == "fail"
-        assert record["expected_verdict"] == "fail"
-        assert record["correct"] is True
+    records = then.exported_records(tmp_path / "judged_cases.jsonl")
+    assert len(records) == 1
+    assert records[0]["verdict"] == "pass"
 
 
-class TestExportHandlesMissingGroundTruth:
-    def test_missing_ground_truth_yields_null_expected_and_correct(self, tmp_path: Path) -> None:
-        case = given.a_judged_case(EvalVerdict.FAIL)
-        runs = [(0, given.a_report([case]))]
-        report_path = tmp_path / "eval_report.json"
+def test_chain_verdicts_are_exported_with_steps(tmp_path: Path) -> None:
+    ground_truth: GroundTruth = {("get_user", AuditCategory.INFO_LEAKAGE): EvalVerdict.FAIL}
+    report = given.a_report(cases=[], chains=[given.a_chain_with_leakage_verdict()])
 
-        export_judged_cases(runs, {}, report_path)
+    export_judged_cases([(0, report)], ground_truth, tmp_path / "eval_report.json")
 
-        records = _read_jsonl(tmp_path / "judged_cases.jsonl")
-        assert len(records) == 1
-        assert records[0]["expected_verdict"] is None
-        assert records[0]["correct"] is None
+    [record] = then.exported_records(tmp_path / "judged_cases.jsonl")
+    assert record["type"] == "chain"
+    assert record["goal"] == "probe then exploit"
+    steps: list[dict[str, object]] = record["steps"]  # type: ignore[assignment]
+    assert len(steps) == 1
+    assert steps[0]["arguments"] == {"action": "list"}
+    assert steps[0]["observation"] == "found ids"
+    assert record["verdict"] == "fail"
+    assert record["expected_verdict"] == "fail"
+    assert record["correct"] is True
 
 
-class TestCVEExportWritesTheJudgedSingleStepCases:
-    def test_each_line_carries_its_cve_and_run_but_no_expected_verdict(
-        self, tmp_path: Path
-    ) -> None:
-        report = given.a_report_with_a_judged_case_an_unjudged_case_and_a_chain()
-        audits = [CVEAudit("CVE-2025-0001", 0, report), CVEAudit("CVE-2025-0002", 1, report)]
+def test_each_cve_line_carries_its_cve_and_run_but_no_expected_verdict(tmp_path: Path) -> None:
+    report = given.a_report_with_a_judged_case_an_unjudged_case_and_a_chain()
+    audits = [CVEAudit("CVE-2025-0001", 0, report), CVEAudit("CVE-2025-0002", 1, report)]
 
-        export_cve_judged_cases(audits, tmp_path / "cve_report.json")
+    export_cve_judged_cases(audits, tmp_path / "cve_report.json")
 
-        records = _read_jsonl(tmp_path / "cve_judged_cases.jsonl")
-        assert [(record["cve_id"], record["run_index"]) for record in records] == [
-            ("CVE-2025-0001", 0),
-            ("CVE-2025-0002", 1),
-        ]
-        expected_keys = {
-            "cve_id",
-            "run_index",
-            "type",
-            "tool_name",
-            "tool_description",
-            "category",
-            "description",
-            "arguments",
-            "response",
-            "error",
-            "verdict",
-            "justification",
-        }
-        for record in records:
-            assert set(record.keys()) == expected_keys
-            assert record["type"] == "single_step"
-            assert record["verdict"] == "fail"
+    records = then.exported_records(tmp_path / "cve_judged_cases.jsonl")
+    assert [(record["cve_id"], record["run_index"]) for record in records] == [
+        ("CVE-2025-0001", 0),
+        ("CVE-2025-0002", 1),
+    ]
+    then.every_record_is_a_single_step_with(records, then.SINGLE_STEP_FIELDS | {"cve_id"})
+    assert all(record["verdict"] == "fail" for record in records)
