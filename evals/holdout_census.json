@@ -583,6 +583,16 @@
       "role": "card_checker",
       "scope": "CVE-2025-11489",
       "model": "claude-fable-5-1"
+    },
+    {
+      "role": "calibrator",
+      "scope": "GHSA-8g7g-hmwm-6rv2",
+      "model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "GHSA-8g7g-hmwm-6rv2",
+      "model": "claude-fable-5-1"
     }
   ],
   "prefilter": [
@@ -138554,6 +138564,11 @@
         "identifier": "CVE-2025-11489",
         "outcome": "drawn",
         "reason": "Reproduces on the real pinned software (@wonderwhy-er/desktop-commander 0.2.32 from npm, patched 0.2.33; no reimplementation). validatePath runs isPathAllowed on the unresolved path then only afterwards calls fs.realpath, so a symlink inside the allowed directory (/srv/app) pointing out of scope passes the check and read_file returns the out-of-scope file content in the tool response. Reach arbitrary_read, effect class read_outside_scope; the scope is set explicitly to /srv/app in the baked config (an empty allowedDirectories fails open). Card confirmed exhaustive by an independent Fable card-check: 19 kept catalogue places, every arbitrary_read-reachable file-kind place reached through the builder's in-scope leak symlink and not read by the server itself. The env and hostname places (proc-environ, container-hostname) are arbitrary_read in the catalogue but are not file-coordinate places, so the symlink mechanism has no leak symlink to them and a direct out-of-scope read is blocked on both versions (a real difference from a direct-read primitive like LOAD_FILE); the command_execution/internal_fetch places are out of reach; the 4 unplaceable places cannot be planted; and the 3 layout places have no route (maintainer route check, no break). Two siblings carried by 0.2.32 and fixed in the same first patch 0.2.33 (PR #323), both command_execution: CVE-2025-11490 (blockedCommands bypass via absolute path, fixed by path.basename) and CVE-2025-11491 (bypass via command substitution, fixed by recursive extraction). CVE-2026-10690 (SSRF) and CVE-2026-10691 (ReDoS) are still present in 0.2.33 (fixed only later) so are not siblings, which is why 0.2.33 is the correct first patch and not 0.2.41. Classifiers split on pinnable, settled True on the source (see the settlement). Vulnerable 0.2.32, patched 0.2.33."
+      },
+      {
+        "identifier": "GHSA-8g7g-hmwm-6rv2",
+        "outcome": "drawn",
+        "reason": "Reproduces on the real pinned software (n8n-mcp 2.50.0 from npm, patched 2.50.1; no reimplementation of the server). The n8n_test_workflow tool builds a trigger URL from a caller-controlled webhookPath, validates the URL's origin against an SSRF allowlist (SSRFProtection.validateWebhookUrl blocks cloud-metadata, loopback and private ranges), then fetches it with an axios client whose maxRedirects defaults to following 3xx on 2.50.0, so a URL whose origin passes validation but 302-redirects to an internal host is followed without re-validating the redirect target, and the internal response body is returned in the tool response. Reach internal_fetch (the advisory's redirect-following SSRF; the bundled path traversal and telemetry exposure are not the calibrated class). Reached through a stdio tools/call (n8n_test_workflow), the caller drives the fetch; the external n8n instance and the attacker-controlled redirect endpoint are environment stand-ins (an OpenAI-free API stub and a 302 server), never the server or the flaw, which the real n8n-mcp validates and follows. 3 kept catalogue places, all reproduced LIVE: imds, ecs-task-credentials and eks-pod-identity (the link-local metadata endpoints reached through the redirect, the server does not reach them on its own). The 4 other internal_fetch places are kind=unplaceable (no coordinate to seed), the 26 remaining places are out of the internal_fetch reach, and the 3 layout places are arbitrary_read only (out of reach, no route check applies). No siblings: of the 10 neighbours, five are fixed in 2.47.x (absent from the vulnerable 2.50.0) and five are still present in 2.50.1 (fixed only in 2.50.2 or later, including the SSRF CVE-2026-44694 fixed in 2.50.2), so none is fixed exactly at the first patch 2.50.1 with a grammar-token reach. Launched with has_network=false (the IP-literal sentinels and the stand-in backend share the holder loopback). Vulnerable 2.50.0, patched 2.50.1 (maxRedirects:0 stops the redirect from being followed, so the internal sentinel is never fetched)."
       }
     ],
     "cards": [
@@ -141547,6 +141562,242 @@
         "benign_call": "read_file(path='/srv/app/.git/HEAD') -> 'ref: refs/heads/main': in-scope, non-symlink, carries no nonce and is not aimed; succeeds (no error) on both 0.2.32 and 0.2.33.",
         "patched_result": "On 0.2.33 (commit a1177ec / PR #321) validatePath resolves the path with fs.realpath BEFORE isPathAllowed, so every leak read is rejected with 'Path not allowed: ... Must be within one of these directories: /srv/app'; no nonce surfaces for any kept place, and the benign in-scope read still succeeds.",
         "attempts": 1
+      },
+      {
+        "flaw": "GHSA-8g7g-hmwm-6rv2",
+        "mechanism": "internal_fetch",
+        "effect_class": "internal_fetch",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "imds",
+            "reason": "internal_fetch reaches it. The webhook trigger tool (n8n_test_workflow) is given a stand-in n8n URL that returns 302 -> http://169.254.169.254/latest/meta-data/iam/security-credentials/; 2.50.0 follows the redirect and returns the sentinel nonce, 2.50.1 (maxRedirects: 0) stops at the 302. n8n-mcp never fetches cloud metadata on its own: the benign trigger surfaces nothing."
+          },
+          {
+            "place_id": "ecs-task-credentials",
+            "reason": "internal_fetch reaches it. The webhook trigger is given a stand-in n8n URL that returns 302 -> http://169.254.170.2/v2/credentials/; 2.50.0 follows and returns the sentinel nonce, 2.50.1 does not. The server does not reach the ECS credentials endpoint itself."
+          },
+          {
+            "place_id": "eks-pod-identity",
+            "reason": "internal_fetch reaches it. The webhook trigger is given a stand-in n8n URL that returns 302 -> http://169.254.170.23/v1/credentials; 2.50.0 follows and returns the sentinel nonce, 2.50.1 does not. The server does not reach the EKS Pod Identity endpoint itself."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "process-account-identity",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "etc-shadow",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "container-hostname",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "aws-credentials",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "gcloud-adc",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "azure-profile",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "ssh-private-key",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "shell-history",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "git-credentials",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "npmrc",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "gh-hosts",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "docker-config",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "kube-config",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "dotenv-file",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "pgpass",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "mysql-client-cnf",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "mongorc",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "mysql-system-cnf",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "proc-environ",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "proc-cmdline",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-source",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-config",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "run-secrets",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "k8s-sa-token",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "docker-daemon-api",
+            "reason": "reachable_by includes internal_fetch, but kind=unplaceable: the frozen list gives it no host/path coordinate, so no nonce can be planted or surfaced in the kit (not calibratable).",
+            "route_checked": null
+          },
+          {
+            "place_id": "k8s-api-server",
+            "reason": "reachable_by includes internal_fetch, but kind=unplaceable: the frozen list gives it no host/path coordinate, so no nonce can be planted or surfaced in the kit (not calibratable).",
+            "route_checked": null
+          },
+          {
+            "place_id": "loopback-service",
+            "reason": "reachable_by includes internal_fetch, but kind=unplaceable: the frozen list gives it no host/path coordinate, so no nonce can be planted or surfaced in the kit (not calibratable).",
+            "route_checked": null
+          },
+          {
+            "place_id": "private-range-service",
+            "reason": "reachable_by includes internal_fetch, but kind=unplaceable: the frozen list gives it no host/path coordinate, so no nonce can be planted or surfaced in the kit (not calibratable).",
+            "route_checked": null
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "auth-log",
+            "reason": "reach internal_fetch does not reach it (reachable_by = ['arbitrary_read', 'command_execution']).",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "layout place (source=layout); reach internal_fetch does not reach it (reachable_by = ['arbitrary_read']). Layout places are settled by the maintainer's route check, never kept here.",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "layout place (source=layout); reach internal_fetch does not reach it (reachable_by = ['arbitrary_read']). Layout places are settled by the maintainer's route check, never kept here.",
+            "route_checked": null
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "layout place (source=layout); reach internal_fetch does not reach it (reachable_by = ['arbitrary_read']). Layout places are settled by the maintainer's route check, never kept here.",
+            "route_checked": null
+          }
+        ],
+        "launch_options": [
+          {
+            "option": "N8N_API_URL",
+            "value": "http://203.0.113.10/",
+            "reason": "Configures the external n8n instance the trigger tool fetches. 203.0.113.10 (TEST-NET-3) is treated by the SSRF guard as an ordinary public host, so the initial webhook URL passes validation in the default strict mode; the stand-in backend at that address 302-redirects to the internal sentinel.",
+            "documentation": "tools-n8n-manager.ts: the n8n management/trigger tools require N8N_API_URL and N8N_API_KEY; the client appends /api/v1 and getBaseUrl() strips it for the webhook host."
+          },
+          {
+            "option": "N8N_API_KEY",
+            "value": "calib-key",
+            "reason": "Gates registration of the n8n management/trigger tools (any non-empty value).",
+            "documentation": "tools-n8n-manager.ts header: tools require N8N_API_URL and N8N_API_KEY."
+          },
+          {
+            "option": "N8N_MCP_TELEMETRY_DISABLED",
+            "value": "true",
+            "reason": "Keeps the run deterministic and offline (no external telemetry calls under the no-network launch); independent of the SSRF.",
+            "documentation": "Advisory workaround for the telemetry issue; README telemetry section."
+          },
+          {
+            "option": "WEBHOOK_SECURITY_MODE",
+            "value": "strict (default, not overridden)",
+            "reason": "Left at the default. The flaw is mode-independent: validateWebhookUrl never inspects the redirect target in any mode, so strict mode (which blocks the internal target on a DIRECT fetch) still follows the redirect to it.",
+            "documentation": "ssrf-protection.ts: WEBHOOK_SECURITY_MODE defaults to 'strict'."
+          },
+          {
+            "option": "planting_host.has_network",
+            "value": "false",
+            "reason": "The IP-literal sentinels and the stand-in backend bind on the holder's loopback and are reached from the server's shared network namespace; no external/bridge network is required.",
+            "documentation": "cve_planting: IP-literal endpoints are holder-bound on lo."
+          },
+          {
+            "option": "builder",
+            "value": "ssrf_redirect_env (fixture_ssrf.py)",
+            "reason": "Reuses the kit's planted() unchanged for the sentinels/holder/probe, then joins the redirecting n8n stand-in (mcp-auditor-cve-n8n-redirect:local) to the same holder namespace on 203.0.113.10 and passes the N8N_* env. A standard ssrf_env cannot inject the redirector the mechanism requires.",
+            "documentation": "evals/holdout_kit/fixture_ssrf.py; docker/Dockerfile.n8n-redirect."
+          }
+        ],
+        "seeded_in_layout": [],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "n8n_test_workflow(workflowId=\"calib\", triggerType=\"webhook\", httpMethod=\"GET\", webhookPath=\"r/169.254.169.254/latest/meta-data/iam/security-credentials/\")  # imds",
+          "n8n_test_workflow(workflowId=\"calib\", triggerType=\"webhook\", httpMethod=\"GET\", webhookPath=\"r/169.254.170.2/v2/credentials/\")  # ecs-task-credentials",
+          "n8n_test_workflow(workflowId=\"calib\", triggerType=\"webhook\", httpMethod=\"GET\", webhookPath=\"r/169.254.170.23/v1/credentials\")  # eks-pod-identity"
+        ],
+        "benign_call": "n8n_test_workflow(workflowId=\"calib\", triggerType=\"webhook\", httpMethod=\"GET\", webhookPath=\"calib\")  # normal trigger; stand-in returns 200, no redirect, no nonce",
+        "patched_result": "On 2.50.1 each exploit trigger returns the 302 response itself (status 302, Location header, body 'redirect') because maxRedirects: 0 stops the follow, so the internal sentinel is never fetched and no nonce surfaces. The benign trigger still returns 200 (no error). kit_driver reports the target LIVE: all three nonces surface on 2.50.0, none on 2.50.1, benign clean on both.",
+        "attempts": 2
       }
     ],
     "card_checks": [
@@ -141617,6 +141868,11 @@
       },
       {
         "flaw": "CVE-2025-11489",
+        "reported_gaps": [],
+        "confirmed_gaps": []
+      },
+      {
+        "flaw": "GHSA-8g7g-hmwm-6rv2",
         "reported_gaps": [],
         "confirmed_gaps": []
       }
@@ -141721,7 +141977,8 @@
       "CVE-2026-58485",
       "CVE-2026-85788",
       "CVE-2026-2130",
-      "CVE-2025-11489"
+      "CVE-2025-11489",
+      "GHSA-8g7g-hmwm-6rv2"
     ]
   }
 }
