@@ -138792,6 +138792,11 @@
         "identifier": "CVE-2025-5273",
         "outcome": "skipped",
         "reason": "Skipped at the pre-filter (walk step 2): its server npm:mcp-markdownify-server already gives a drawn holdout target, CVE-2025-58358 (the OS command injection in the _markitdown tool). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2025-5273 was already recorded as a sibling of 58358 during its calibration: arbitrary_read, fix commit 3a6b202, an ancestor of the 58358 patch a31204d, so absent from the first patched version; the deferral to the drawn 58358 governs regardless.)"
+      },
+      {
+        "identifier": "CVE-2025-11491",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server npm:@wonderwhy-er/desktop-commander already gives a drawn holdout target, CVE-2025-11489 (the symlink-following arbitrary file read in validatePath). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2025-11491 was already recorded as a sibling of 11489 during its calibration: one of 11490+11491, OS command injection fixed in the same 0.2.33 via PR #323, so absent from the first patched version; the deferral to the drawn 11489 governs regardless.)"
       }
     ],
     "cards": [
