@@ -563,6 +563,16 @@
       "role": "card_checker",
       "scope": "CVE-2026-2130",
       "model": "claude-fable-5-1"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-82112",
+      "model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-82112",
+      "model": "claude-fable-5-1"
     }
   ],
   "prefilter": [
@@ -138513,6 +138523,11 @@
         "identifier": "CVE-2026-2130",
         "outcome": "drawn",
         "reason": "Reproduces on the real pinned software (mcp-maigret 1.0.12 from npm wrapping the real maigret 0.6.6, patched 1.0.13; no stub of the server or of maigret). The search_username and parse_url tools build a single shell command string and run it through child_process.exec with the caller-supplied username/url interpolated unsanitised, so a shell metacharacter (e.g. '; <command> #') runs an arbitrary command in the server container and the command's stdout is returned verbatim in the tool response. Reach command_execution, effect class command_execution. The server shells out to `docker run soxoj/maigret:latest ...`; nested Docker is unavailable under the kit confinement, so a thin docker CLI shim forwards the benign maigret invocation to the real natively-installed maigret. The shim is an environment adapter outside the vulnerability: the injected command is parsed and run by the server's own exec shell, exactly as in production, not by the shim. Card confirmed exhaustive by an independent Fable card-check: 25 kept catalogue places (every command_execution-reachable plantable place the server does not read itself, read via an injected cat/whoami/uname/curl; the 3 http_endpoint places imds/ecs/eks are hit via curl against the loopback planting sentinels). The 6 other command_execution places are kind=unplaceable, k8s-api-server and loopback-service are internal_fetch-only (out of the command_execution reach), and the 3 layout places are arbitrary_read-only (out of reach, no route check applies). No siblings: mcp-maigret has no other census flaw, and the parse_url url vector is the same CVE fixed by the same 1.0.13 validation, not a distinct neighbour. Vulnerable 1.0.12, patched 1.0.13 (isValidUsername ^[a-zA-Z0-9_.-]+$ and isValidUrl reject every injection payload, and execCommand switches to execFile with an argument array so no shell parses the input)."
+      },
+      {
+        "identifier": "CVE-2026-82112",
+        "outcome": "given_up",
+        "reason": "Two independent calibrations gave up: the path traversal (CWE-22) in the code_task_files MCP tool is real and version-distinguishable on the real pinned software (@houtini/lm 2.13.2 reads any absolute path through its sole readFile; 3.1.0 routes reads through readGuardedFile, confinable to HOUTINI_LM_FILE_ROOTS), and both images run in a container, but the out-of-scope content never surfaces in the tool response. code_task_files feeds the read content to the backend LLM (POST /v1/chat/completions) and returns ONLY the model completion; no path returns the raw bytes (success returns the analysis, a read failure returns a READ FAILED message with no content). A planted nonce appears in the response only if a cooperating model echoes it verbatim, which a real code-review model will not reliably do: empirically, with a non-cooperating LLM the nonce is present in the request sent to the LLM (the traversal read succeeded) but absent from the tool response; it appears only with a deliberately echoing stub. So effect_in_tool_response is false for an automated run (both classifiers had it true). The server and exploit run in the container (not a container-cannot-run abandon); the flaw simply has no observable-in-response effect, as for CVE-2026-49857. No siblings: @houtini/lm has no other census flaw (the neighbouring houtini-ai SSRF advisories are on other packages, voice-analyser-mcp and seo-crawler-mcp)."
       }
     ],
     "cards": [
@@ -141382,6 +141397,20 @@
         "calibration": 2,
         "reason": "no_place_reached",
         "detail": "Second, independent confirmation (Fable). Because the fixture reproduces, it ran as a reproduction-verification: it re-established the .md-only mechanism from the v0.29.1 / v0.30.0 source (DocStore.Get and MemoryStore both mandatory-.md), reproduced the positive .md control (surfaces on 0.29.1, blocked on 0.30.0) and the non-.md miss (/etc/shadow -> /etc/shadow.md, not found), and independently enumerated every catalogue and layout coordinate, confirming none is a .md artefact, so no plantable place was missed. Verdict AGREE: kept=[], siblings=[]. Confirmed each sibling exclusion against tags v0.29.1/v0.30.0/v0.33.0, including that CVE-2026-88938 (general read via code.find) is still present in 0.30.0 (findCodeFiles has no containment at v0.30.0), so it is not a sibling. Corrected one prose slip from the first pass (88938's fix lands later than 0.30.0, not at 0.33.0), immaterial to the conclusion.",
+        "attempts": 1
+      },
+      {
+        "flaw": "CVE-2026-82112",
+        "calibration": 1,
+        "reason": "exploit_cannot_reproduce",
+        "detail": "First calibration (Opus 4.8). Built both pinned images from the real npm package (@houtini/lm@2.13.2 vulnerable, @3.1.0 patched; the patch commit 35d97bca first ships in 3.1.0), no reimplementation of the server; the backend LLM is stood in for by an OpenAI-compatible stub endpoint (an environment adapter, never a stand-in for the server or the flaw). Established from source that code_task_files has the only readFile and in 2.13.2 reads any absolute path with no containment (reach arbitrary_read). Empirically in the container: with a non-cooperating LLM stub, code_task_files(paths=['/loot/secret.env']) reads the planted nonce (it appears in the request forwarded to the LLM, '1 file read') but the tool response carries only the model completion and the nonce is absent; with a deliberately echoing stub the nonce appears in the response solely because the model reproduced the prompt. The read-class kit launch also runs the server with --network none, so the LLM call fails and the response carries no file content at all. effect_in_tool_response false for an automated run: no place is keepable (kept=[]). attempts: 4.",
+        "attempts": 4
+      },
+      {
+        "flaw": "CVE-2026-82112",
+        "calibration": 2,
+        "reason": "exploit_cannot_reproduce",
+        "detail": "Second, blind independent calibration (Fable), given only the CVE and the base kit material, not the first's card, relevé or conclusion. Reproduced the mechanism from source (the single unconfined readFile in code_task_files, vuln 2.13.2 / patched 3.1.0 with the opt-in HOUTINI_LM_FILE_ROOTS confinement) and empirically with its own planted nonce in /srv/secret.env: with a non-cooperating LLM the traversal reads the file (nonce in the request to the LLM) but the nonce is absent from the tool response; it appears only with an echoing stub. Also confirmed no other tool surfaces arbitrary file content (chat/custom_prompt/code_task take content as an argument; embed/discover/stats return vectors/config). Same closed-set reason reached independently: effect not observable in the tool response, kept=[].",
         "attempts": 1
       }
     ],
