@@ -5,7 +5,13 @@ import pytest
 
 import tests.unit.support.test_rendering_given as given
 import tests.unit.support.test_rendering_then as then
-from mcp_auditor.domain.models import AuditCategory, CoverageGap, ExecutionRecord, ExecutionRegime
+from mcp_auditor.domain.models import (
+    AuditCategory,
+    AuditReport,
+    CoverageGap,
+    ExecutionRecord,
+    ExecutionRegime,
+)
 from mcp_auditor.domain.rendering import (
     describe_coverage_gap,
     render_json,
@@ -15,20 +21,12 @@ from mcp_auditor.domain.rendering import (
 )
 
 
-def test_json_round_trip():
+def test_json_carries_the_whole_report():
     report = given.a_two_tool_report()
 
     result = render_json(report)
 
-    then.json_has_expected_structure(result, 2)
-
-
-def test_json_enum_values():
-    report = given.a_two_tool_report()
-
-    result = render_json(report)
-
-    then.json_has_enum_strings(result)
+    assert AuditReport.model_validate_json(result) == report
 
 
 def test_json_includes_owasp_for_mapped_category():
@@ -94,7 +92,7 @@ def test_markdown_empty_report():
 
     result = render_markdown(report)
 
-    assert "0" in result
+    then.markdown_summary_has_counts(result, tools=0, findings=0, per_severity_dict={})
 
 
 def test_markdown_fail_heading_includes_owasp_label_for_mapped_category():

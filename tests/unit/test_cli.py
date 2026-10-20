@@ -25,11 +25,10 @@ def test_strips_whitespace():
     assert parse_tools_filter(" a , b ") == frozenset({"a", "b"})
 
 
-def test_chains_option_is_parsed():
-    runner = CliRunner()
-    result = runner.invoke(cli, ["run", "--chains", "3", "--help"])
+def test_a_negative_chain_count_is_refused():
+    result = CliRunner().invoke(cli, ["run", "--chains", "-1", "--", "python", "x.py"])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 2
     assert "--chains" in result.output
 
 
@@ -52,13 +51,6 @@ def test_a_launcher_without_a_confinement_profile_stops_the_run():
     # The refusal precedes the LLM initialization, so the run stops the same way on a
     # machine that holds an API key and on one that does not.
     assert "could not initialize LLM" not in result.output
-
-
-def test_relay_options_are_documented():
-    result = CliRunner().invoke(cli, ["run", "--help"])
-
-    assert "--env TEXT" in result.output
-    assert "--env-plain TEXT" in result.output
 
 
 def test_a_name_repeated_across_relay_options_is_refused():

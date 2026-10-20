@@ -20,24 +20,32 @@ def test_header_contains_target():
     assert "python server.py" in buffer.getvalue()
 
 
-def test_header_states_the_execution_regime():
+@pytest.mark.parametrize(
+    ("regime", "shown"),
+    [
+        (ExecutionRegime.CONFINED, "confined"),
+        (ExecutionRegime.UNCONFINED, "unconfined"),
+        (ExecutionRegime.DECLARED_CONTAINER, "declared container"),
+    ],
+)
+def test_header_states_the_execution_regime(regime: ExecutionRegime, shown: str):
     display, buffer = given.a_display()
 
-    display.print_header("npx some-server", ExecutionRegime.CONFINED)
+    display.print_header("npx some-server", regime)
 
-    assert "confined" in buffer.getvalue()
+    assert f"execution: {shown}" in Text.from_ansi(buffer.getvalue()).plain
 
 
 def test_discovery_shows_count_and_names():
+    names = ["read_file", "write_file", "list_dir"]
     display, buffer = given.a_display()
 
-    display.print_discovery(3, ["a", "b", "c"])
+    display.print_discovery(3, names)
 
-    output = buffer.getvalue()
-    assert "3" in output
-    assert "a" in output
-    assert "b" in output
-    assert "c" in output
+    output = Text.from_ansi(buffer.getvalue()).plain
+    assert "3 tools" in output
+    for name in names:
+        assert name in output
 
 
 def test_summary_contains_score_and_tools():
@@ -107,9 +115,10 @@ def test_ci_mode_shows_discovery():
 
     display.print_discovery(2, ["read_file", "write_file"])
 
-    output = buffer.getvalue()
-    assert "2" in output
+    output = Text.from_ansi(buffer.getvalue()).plain
+    assert "2 tools" in output
     assert "read_file" in output
+    assert "write_file" in output
 
 
 def test_ci_mode_progress_prints_tool_summary():

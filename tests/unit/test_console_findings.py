@@ -1,3 +1,4 @@
+import tests.unit.support.test_console_findings_then as then
 import tests.unit.support.test_console_given as given
 from mcp_auditor.domain.models import (
     AuditCategory,
@@ -10,31 +11,27 @@ from mcp_auditor.domain.models import (
 def test_findings_recap_groups_by_severity():
     report = given.a_report_with_one_pass_plus_failures(
         {
-            "get_user": [
-                (Severity.MEDIUM, AuditCategory.INJECTION, "SQL injection possible"),
-            ],
             "list_items": [
                 (Severity.LOW, AuditCategory.INPUT_VALIDATION, "No length check"),
             ],
+            "get_user": [
+                (Severity.MEDIUM, AuditCategory.INJECTION, "SQL injection possible"),
+            ],
         }
     )
-    display, buffer = given.a_display()
+    display, buffer = given.a_plain_display()
 
     display.print_findings_recap(report)
 
-    output = buffer.getvalue()
-    assert "medium" in output.lower()
-    assert "low" in output.lower()
-    assert "get_user" in output
-    assert "list_items" in output
-    assert "injection" in output.lower()
-    assert "input_validation" in output.lower()
-    assert "SQL injection possible" in output
-    assert "No length check" in output
-    # MEDIUM should appear before LOW (higher severity first)
-    medium_pos = output.lower().index("medium")
-    low_pos = output.lower().index("low")
-    assert medium_pos < low_pos
+    then.findings_recap_reads(
+        buffer.getvalue(),
+        [
+            "MEDIUM",
+            "get_user > injection / MCP-05 — SQL injection possible",
+            "LOW",
+            "list_items > input_validation — No length check",
+        ],
+    )
 
 
 def test_findings_recap_empty_when_no_failures():
@@ -86,12 +83,12 @@ def test_summary_fail_column_shows_severity_breakdown():
 
 def test_summary_fail_column_zero_shows_no_breakdown():
     report = given.a_report_with_one_pass_plus_failures({"get_user": []})
-    display, buffer = given.a_display()
+    display, buffer = given.a_plain_display()
 
     display.print_summary(report)
 
     output = buffer.getvalue()
-    assert "0" in output
+    then.summary_row_reads(output, "get_user", ["get_user", "1", "1", "0"])
     assert "medium" not in output.lower()
     assert "high" not in output.lower()
     assert "critical" not in output.lower()
@@ -136,21 +133,19 @@ def test_summary_score_line_zero_cases():
 
 def test_discovery_columnar_for_many_tools():
     names = [f"tool_{i}" for i in range(8)]
-    display, buffer = given.a_display()
+    display, buffer = given.a_plain_display()
 
     display.print_discovery(8, names)
 
-    output = buffer.getvalue()
-    for name in names:
-        assert name in output
+    heading, *columns = buffer.getvalue().splitlines()
+    assert heading == "Discovered 8 tools:"
+    assert " ".join(columns).split() == names
 
 
 def test_discovery_inline_for_few_tools():
     names = ["alpha", "beta", "gamma", "delta"]
-    display, buffer = given.a_display()
+    display, buffer = given.a_plain_display()
 
     display.print_discovery(4, names)
 
-    output = buffer.getvalue()
-    for name in names:
-        assert name in output
+    assert buffer.getvalue().splitlines() == ["Discovered 4 tools: alpha, beta, gamma, delta"]

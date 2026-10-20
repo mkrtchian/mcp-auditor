@@ -27,6 +27,12 @@ def a_display() -> tuple[AuditDisplay, StringIO]:
     return AuditDisplay(console=console), buffer
 
 
+def a_plain_display() -> tuple[AuditDisplay, StringIO]:
+    buffer = StringIO()
+    console = Console(file=buffer, force_terminal=False, no_color=True, width=100)
+    return AuditDisplay(console=console), buffer
+
+
 def a_ci_display() -> tuple[AuditDisplay, StringIO]:
     buffer = StringIO()
     console = Console(file=buffer, force_terminal=False, no_color=True)

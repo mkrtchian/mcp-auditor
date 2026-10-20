@@ -10,6 +10,7 @@ from mcp_auditor.graph.prompts import (
     JUDGING_RULES,
     NON_DESTRUCTIVE_CONSTRAINT,
     build_judge_prompt,
+    format_attack_context,
 )
 from tests.unit.support.test_chain_nodes_given import (
     a_blocked_single_step_case,
@@ -61,7 +62,10 @@ class TestChainPlanningPrompt:
             chain_budget=3,
         )
 
-        assert "Previous tool audits" not in prompt
+        attack_context_header = format_attack_context(
+            AttackContext(db_engine="sqlite")
+        ).splitlines()[0]
+        assert attack_context_header not in prompt
 
     def test_carries_the_non_destructive_constraint(self):
         prompt = build_chain_planning_prompt(
@@ -91,10 +95,10 @@ class TestChainPlanningPrompt:
             tool=a_tool(),
             single_step_cases=[],
             attack_context=AttackContext(),
-            chain_budget=5,
+            chain_budget=17,
         )
 
-        assert "5" in prompt
+        assert "17" in prompt
 
 
 class TestStepPlanningPrompt:
@@ -213,27 +217,6 @@ class TestChainJudgePrompt:
 
         assert "path /var/data revealed" in prompt
         assert "traversal succeeded: root:x:0:0" in prompt
-
-    def test_asks_for_verdict(self):
-        chain = AttackChain(
-            goal=a_chain_goal(),
-            steps=[a_chain_step()],
-        )
-
-        prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
-
-        assert "FAIL" in prompt
-        assert "PASS" in prompt
-
-    def test_omits_most_significant_step_instruction(self):
-        chain = AttackChain(
-            goal=a_chain_goal(),
-            steps=[a_chain_step()],
-        )
-
-        prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
-
-        assert "most significant step" not in prompt
 
     def test_includes_the_guidance_of_the_target_category(self):
         chain = AttackChain(

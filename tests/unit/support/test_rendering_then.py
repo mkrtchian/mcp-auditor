@@ -1,25 +1,6 @@
 import json
 
 
-def json_has_expected_structure(json_str: str, expected_tool_count: int) -> None:
-    data = json.loads(json_str)
-    assert len(data["tool_reports"]) == expected_tool_count
-    assert "provider_usage" in data
-
-
-def json_has_enum_strings(json_str: str) -> None:
-    data = json.loads(json_str)
-    for tool_report in data["tool_reports"]:
-        for case in tool_report["cases"]:
-            result = case["eval_result"]
-            if result is None:
-                continue
-            assert isinstance(result["verdict"], str)
-            assert isinstance(result["severity"], str)
-            assert result["verdict"] == result["verdict"].lower()
-            assert result["severity"] == result["severity"].lower()
-
-
 def json_has_owasp_for_category(
     json_str: str,
     category: str,
@@ -55,11 +36,12 @@ def markdown_contains_finding(
     markdown: str,
     category: str,
     severity: str,
-    justification_fragment: str,
+    justification: str,
 ) -> None:
-    assert category in markdown
-    assert severity in markdown
-    assert justification_fragment in markdown
+    heading = f"### FAIL -- {category} ({severity})"
+    assert heading in markdown
+    block = markdown.split(heading, 1)[1].split("###", 1)[0]
+    assert f"**Justification**: {justification}" in block
 
 
 def markdown_summary_has_counts(
@@ -68,10 +50,15 @@ def markdown_summary_has_counts(
     findings: int,
     per_severity_dict: dict[str, int],
 ) -> None:
-    assert str(tools) in markdown
-    assert str(findings) in markdown
+    summary = summary_of(markdown)
+    assert f"**Tools audited**: {tools}\n" in summary
+    assert f"**Findings**: {findings}\n" in summary
     for severity, count in per_severity_dict.items():
-        assert f"{count} {severity}" in markdown
+        assert f"{count} {severity}" in summary
+
+
+def summary_of(markdown: str) -> str:
+    return markdown.split("## Summary\n", 1)[1].split("\n## ", 1)[0]
 
 
 def markdown_includes_pass_without_severity(markdown: str) -> None:

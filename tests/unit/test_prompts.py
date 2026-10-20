@@ -11,6 +11,8 @@ from mcp_auditor.graph.prompts import (
     with_redaction_notice,
 )
 
+ATTACK_CONTEXT_HEADER = format_attack_context(AttackContext(db_engine="sqlite")).splitlines()[0]
+
 
 class TestAttackGenerationPrompt:
     def test_includes_tool_name(self):
@@ -23,7 +25,7 @@ class TestAttackGenerationPrompt:
         assert "get_user" in prompt
 
     def test_includes_schema(self):
-        schema = {"type": "object", "properties": {"id": {"type": "integer"}}}
+        schema = {"type": "object", "properties": {"account_number": {"type": "integer"}}}
 
         prompt = build_attack_generation_prompt(
             tool=given.a_tool(input_schema=schema),
@@ -31,28 +33,28 @@ class TestAttackGenerationPrompt:
             categories=[AuditCategory.INJECTION],
         )
 
-        assert "integer" in prompt
+        assert "account_number" in prompt
 
-    def test_includes_all_categories(self):
-        all_categories = list(AuditCategory)
+    def test_lists_only_the_requested_categories(self):
+        requested = [AuditCategory.INJECTION, AuditCategory.RESOURCE_ABUSE]
 
         prompt = build_attack_generation_prompt(
             tool=given.a_tool(),
             budget=10,
-            categories=all_categories,
+            categories=requested,
         )
 
-        for category in all_categories:
-            assert category.value in prompt
+        for category in AuditCategory:
+            assert (f"- {category.value}\n" in prompt) == (category in requested)
 
     def test_includes_budget(self):
         prompt = build_attack_generation_prompt(
             tool=given.a_tool(),
-            budget=10,
+            budget=37,
             categories=[AuditCategory.INJECTION],
         )
 
-        assert "10" in prompt
+        assert "37" in prompt
 
     def test_omits_tool_name_field(self):
         prompt = build_attack_generation_prompt(
@@ -80,7 +82,7 @@ class TestAttackGenerationPrompt:
             categories=[AuditCategory.INJECTION],
         )
 
-        assert "Previous tool audits" not in prompt
+        assert ATTACK_CONTEXT_HEADER not in prompt
 
     def test_omits_attack_context_when_empty(self):
         prompt = build_attack_generation_prompt(
@@ -90,7 +92,7 @@ class TestAttackGenerationPrompt:
             attack_context=AttackContext(),
         )
 
-        assert "Previous tool audits" not in prompt
+        assert ATTACK_CONTEXT_HEADER not in prompt
 
     def test_bounds_the_size_of_literals(self):
         prompt = build_attack_generation_prompt(
