@@ -138639,6 +138639,11 @@
         "identifier": "CVE-2026-39974",
         "outcome": "skipped",
         "reason": "Skipped at the pre-filter (walk step 2): its server npm:n8n-mcp already gives a drawn holdout target, GHSA-8g7g-hmwm-6rv2 (the n8n-mcp redirect-following SSRF). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. The deferral governs regardless of the classifier split on stdio_tools_call (no calibration, no settlement for a skip)."
+      },
+      {
+        "identifier": "CVE-2026-33980",
+        "outcome": "excluded",
+        "reason": "KQL/Kusto query injection (CWE-943) on PyPI:adx-mcp-server: the table_name argument of the get_table_schema, sample_table_data and get_table_details tools is interpolated into KQL strings with f-strings and no sanitization, so a crafted table_name runs arbitrary KQL against the backend Azure Data Explorer cluster (reading other tables, running management commands), bypassing the confirmation that execute_query requires. The effect is confined to the remote ADX cluster the server connects to: no arbitrary local-file read, no OS command execution and no server-side fetch to an attacker-controlled host, so it reaches none of the grammar classes (arbitrary_read, command_execution, internal_fetch) and no planted nonce can surface in a tool response. Both classifiers place it outside the grammar (first_failed_criterion grammar_class), judged from the published advisory GHSA-vphc-468g-8rfp; excluded without calibration. One further ground, not the decisive one: both classifiers mark runs_in_container false (the server needs a live Azure Data Explorer cluster, not a shareable holdout image)."
       }
     ],
     "cards": [
