@@ -2,48 +2,36 @@ import pathlib
 import re
 import subprocess
 import sys
-from collections.abc import Awaitable, Callable, Generator
-from contextlib import AbstractContextManager, contextmanager
+from collections.abc import Generator
+from contextlib import contextmanager
 
 from evals.cve_environments import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import HOLDOUT_PLACES, Coordinates, Place, Places, PlantKind, load_places
-from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser
+from evals.cve_places import HOLDOUT_PLACES, Places, load_places
+from evals.cve_planting import PlantingSpec
 from evals.cve_targets import CVE_TARGETS, CVETarget, image_tag
 from mcp_auditor.adapters.docker import DockerRuntime
-from mcp_auditor.domain.ports import MCPClientPort
+from tests.integration.support.cve_stub_target import Builder, a_file_place, a_stub_target, reading
 
 STUB_PATH = pathlib.Path(__file__).resolve().parent / "cve_stub_server.py"
 KEPT_FLAG_ID = "fict-flag"
+KEPT = (KEPT_FLAG_ID,)
 OUTSIDE_ID = "fict-outside"
 INSIDE_ID = "fict-inside"
-OUTSIDE_AIM = re.compile(r"^/outside/")
 GIT_CVE_ID = "CVE-2025-68143"
-
-Builder = Callable[[str, PlantingSpec, LaunchShape], AbstractContextManager[Launch]]
-
-
-def a_docker_that_runs_its_command_on_the_host(directory: pathlib.Path) -> pathlib.Path:
-    """`docker run <command...>` execs the command itself, so a declared container runs
-    without Docker."""
-    docker = directory / "docker"
-    docker.write_text('#!/bin/sh\nshift\nexec "$@"\n')
-    docker.chmod(0o755)
-    return directory
 
 
 def a_places_mapping() -> Places:
     """Resolves the single kept place of the calibration targets. Its coordinate is only read by
     planting_spec (the stub builder does not enter planted), so it stays a plain file place."""
-    return {KEPT_FLAG_ID: _a_file_place(KEPT_FLAG_ID, "/outside/flag")}
+    return {KEPT_FLAG_ID: a_file_place(KEPT_FLAG_ID, "/outside/flag")}
 
 
 def a_survey_places_mapping() -> Places:
     """Two candidate file places the survey plants together: one the exploit reaches, one the
     benign call reaches. Both are reachable by arbitrary_read, the survey target's reach."""
     return {
-        OUTSIDE_ID: _a_file_place(OUTSIDE_ID, "/outside/flag"),
-        INSIDE_ID: _a_file_place(INSIDE_ID, "/inside/file"),
+        OUTSIDE_ID: a_file_place(OUTSIDE_ID, "/outside/flag"),
+        INSIDE_ID: a_file_place(INSIDE_ID, "/inside/file"),
     }
 
 
@@ -54,11 +42,11 @@ def a_target_whose_server_exits_at_startup(cve_id: str, last_words: str) -> CVET
             "docker", ["run", sys.executable, "-c", f"import sys; sys.exit({last_words!r})"]
         )
 
-    return _a_target(cve_id, builder, benign=_reading("/inside/file"))
+    return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
 
 
 def a_live_target(cve_id: str) -> CVETarget:
-    return _a_target(cve_id, _serving_builder(), benign=_reading("/inside/file"))
+    return a_stub_target(cve_id, _serving_builder(), reading("/inside/file"), kept_places=KEPT)
 
 
 def a_target_whose_layout_breaks_the_patched_version(cve_id: str) -> CVETarget:
@@ -72,42 +60,50 @@ def a_target_whose_layout_breaks_the_patched_version(cve_id: str) -> CVETarget:
         else:
             yield Launch("docker", ["run", sys.executable, str(STUB_PATH), *_serve_args(spec)])
 
-    return _a_target(cve_id, builder, benign=_reading("/inside/file"))
+    return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
 
 
 def a_target_whose_benign_call_leaks(cve_id: str) -> CVETarget:
-    return _a_target(cve_id, _serving_builder(), benign=_reading("/outside/flag"))
+    return a_stub_target(cve_id, _serving_builder(), reading("/outside/flag"), kept_places=KEPT)
 
 
 def a_target_whose_aim_matches_nothing(cve_id: str) -> CVETarget:
-    return _a_target(
-        cve_id, _serving_builder(), benign=_reading("/inside/file"), aim=re.compile(r"^/nowhere/")
+    return a_stub_target(
+        cve_id,
+        _serving_builder(),
+        reading("/inside/file"),
+        aim=re.compile(r"^/nowhere/"),
+        kept_places=KEPT,
     )
 
 
 def a_target_with_no_kept_place(cve_id: str) -> CVETarget:
-    return _a_target(cve_id, _serving_builder(), benign=_reading("/inside/file"), kept_places=())
+    return a_stub_target(cve_id, _serving_builder(), reading("/inside/file"), kept_places=())
 
 
 def a_target_whose_exploit_misses(cve_id: str) -> CVETarget:
     # The vulnerable server surfaces nothing, so the aimed exploit reaches no nonce.
-    return _a_target(cve_id, _serving_builder(vulnerable=False), benign=_reading("/inside/file"))
+    return a_stub_target(
+        cve_id, _serving_builder(vulnerable=False), reading("/inside/file"), kept_places=KEPT
+    )
 
 
 def a_target_whose_patched_version_still_surfaces(cve_id: str) -> CVETarget:
-    return _a_target(cve_id, _serving_builder(patched=True), benign=_reading("/inside/file"))
+    return a_stub_target(
+        cve_id, _serving_builder(patched=True), reading("/inside/file"), kept_places=KEPT
+    )
 
 
 def a_target_whose_patched_benign_errors(cve_id: str) -> CVETarget:
     builder = _serving_builder(patched_error_paths=("/inside/file",))
-    return _a_target(cve_id, builder, benign=_reading("/inside/file"))
+    return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
 
 
 def a_survey_target(cve_id: str) -> CVETarget:
     # Serves every planted place on both versions, so the exploit reads the outside place and the
     # benign call the inside place, and the patched launch still surfaces the outside place.
-    return _a_target(
-        cve_id, _serving_builder(patched=True), benign=_reading("/inside/file"), kept_places=()
+    return a_stub_target(
+        cve_id, _serving_builder(patched=True), reading("/inside/file"), kept_places=()
     )
 
 
@@ -157,47 +153,3 @@ def missing_git_images() -> str | None:
 def _image_present(tag: str) -> bool:
     result = subprocess.run(["docker", "image", "inspect", tag], capture_output=True, text=True)
     return result.returncode == 0
-
-
-def _a_file_place(place_id: str, path: str) -> Place:
-    return Place(
-        id=place_id,
-        family="fictional",
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path=path),
-    )
-
-
-def _reading(path: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def read(_places: Places, client: MCPClientPort) -> None:
-        await client.call_tool("read", {"path": path})
-
-    return read
-
-
-def _a_target(
-    cve_id: str,
-    builder: Builder,
-    benign: Callable[[Places, MCPClientPort], Awaitable[None]],
-    aim: re.Pattern[str] = OUTSIDE_AIM,
-    kept_places: tuple[str, ...] = (KEPT_FLAG_ID,),
-) -> CVETarget:
-    return CVETarget(
-        cve_id=cve_id,
-        severity="CVSS 0.0",
-        mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
-        aim=aim,
-        reaches=frozenset({"arbitrary_read"}),
-        kept_places=kept_places,
-        images=(),
-        server_image="stub",
-        patched_image="stub-patched",
-        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
-        builder=builder,
-        exploits=(_reading("/outside/flag"),),
-        benign=benign,
-        awaited_capability=None,
-        note="",
-        tools_filter=None,
-    )

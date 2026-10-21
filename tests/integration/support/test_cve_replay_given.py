@@ -7,39 +7,42 @@ and an old nonce never fools the strike.
 """
 
 import pathlib
-import re
 import sys
-from collections.abc import Awaitable, Callable, Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 
 import tests.unit.support.test_cve_grammar_given as grammar
 from evals.cve_environments import Launch, LaunchShape
 from evals.cve_grammar import MechanismClass, PlantedTarget
-from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
-from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser
+from evals.cve_places import Places, kept_records
+from evals.cve_planting import PlantingSpec
 from evals.cve_replay import RecordedCall, RunToCheck
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.models import AuditReport, ToolResponse
-from mcp_auditor.domain.ports import MCPClientPort
+from tests.integration.support.cve_stub_target import (
+    OUTSIDE_AIM,
+    a_file_place,
+    a_stub_target,
+    reading,
+)
 
 STUB_PATH = pathlib.Path(__file__).resolve().parent / "cve_replay_stub_server.py"
 
 FLAW_ID = "fict-flaw"
 OTHER_ID = "fict-other"
-FLAW_PATH = "/outside/flag"
+FLAW_PATH = "/outside/flag"  # the path the shared stub target's exploit reads
 PREP_PATH = "/outside/prep"
 OTHER_PATH = "/outside/other"
 OLD_FLAW = "MCPAUDIT-" + "a" * 32
 OLD_OTHER = "MCPAUDIT-" + "b" * 32
-AIM = re.compile(r"^/outside/")
 
 Serve = Callable[[PlantingSpec], list[str]]
 
 
 def a_places_mapping() -> Places:
     return {
-        FLAW_ID: _a_file_place(FLAW_ID, FLAW_PATH),
-        OTHER_ID: _a_file_place(OTHER_ID, OTHER_PATH),
+        FLAW_ID: a_file_place(FLAW_ID, FLAW_PATH),
+        OTHER_ID: a_file_place(OTHER_ID, OTHER_PATH),
     }
 
 
@@ -203,7 +206,7 @@ def _run(
     places = a_places_mapping()
     return RunToCheck(
         target=_a_target(serve, kept),
-        run_target=PlantedTarget(MechanismClass.READ_OUTSIDE_SCOPE, AIM, nonces),
+        run_target=PlantedTarget(MechanismClass.READ_OUTSIDE_SCOPE, OUTSIDE_AIM, nonces),
         report=report,
         recorded_calls=calls,
         records=kept_records(kept, places),
@@ -267,38 +270,4 @@ def _a_target(serve: Serve | None, kept: tuple[str, ...]) -> CVETarget:
         else:
             yield Launch("docker", ["run", sys.executable, str(STUB_PATH), *serve(spec)])
 
-    return CVETarget(
-        cve_id="CVE-REPLAY",
-        severity="CVSS 0.0",
-        mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
-        aim=AIM,
-        reaches=frozenset({"arbitrary_read"}),
-        kept_places=kept,
-        images=(),
-        server_image="stub",
-        patched_image="stub-patched",
-        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
-        builder=builder,
-        exploits=(_reading(FLAW_PATH),),
-        benign=_reading(PREP_PATH),
-        awaited_capability=None,
-        note="",
-        tools_filter=None,
-    )
-
-
-def _reading(path: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def read(_places: Places, client: MCPClientPort) -> None:
-        await client.call_tool("read", {"path": path})
-
-    return read
-
-
-def _a_file_place(place_id: str, path: str) -> Place:
-    return Place(
-        id=place_id,
-        family="fictional",
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path=path),
-    )
+    return a_stub_target("CVE-REPLAY", builder, reading(PREP_PATH), kept_places=kept)

@@ -1,5 +1,3 @@
-import os
-import pathlib
 from collections.abc import Awaitable, Callable
 
 import pytest
@@ -11,12 +9,6 @@ from evals.cve_layout_check import confirm_admission
 from evals.cve_places import Places
 from evals.cve_survey import TargetSurvey, survey_all, survey_one
 from evals.cve_targets import CVETarget
-
-
-@pytest.fixture
-def docker_on_the_host(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> None:
-    docker_dir = given.a_docker_that_runs_its_command_on_the_host(tmp_path)
-    monkeypatch.setenv("PATH", f"{docker_dir}{os.pathsep}{os.environ['PATH']}")
 
 
 def _calibrate(places: Places, limit: int) -> Callable[[CVETarget], Awaitable[bool]]:
