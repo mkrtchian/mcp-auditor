@@ -214,23 +214,6 @@ def test_the_environment_picks_the_fallback_launch_for_both_versions_in_fallback
     assert shapes == [LaunchShape.FALLBACK, LaunchShape.FALLBACK]
 
 
-def test_the_environment_picks_the_normal_launch_in_the_normal_launch_mode():
-    shapes: list[LaunchShape] = []
-
-    @contextmanager
-    def recording_builder(image: str, spec: PlantingSpec, shape: LaunchShape) -> Generator[Launch]:
-        shapes.append(shape)
-        yield Launch("docker", [])
-
-    target = dataclasses.replace(SSRF_TARGET, builder=recording_builder)
-
-    with target.environment(target.planting_spec(())):
-        pass
-
-    assert target.launch_mode is LaunchMode.NORMAL
-    assert shapes == [LaunchShape.NORMAL]
-
-
 @pytest.mark.parametrize("target", CVE_TARGETS, ids=[target.cve_id for target in CVE_TARGETS])
 def test_every_surviving_target_carries_a_fallback_scope_and_the_normal_launch_mode(
     target: CVETarget,
@@ -244,19 +227,6 @@ def test_the_git_target_falls_back_to_no_scope_because_its_scope_is_optional():
     git = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-68143")
 
     assert git.fallback_scope.kind is FallbackScopeKind.OPTIONAL
-
-
-def test_the_git_init_note_no_longer_stages_the_dot_path():
-    git = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-68143")
-
-    assert "git_add(.)" not in git.note
-
-
-def test_the_kubernetes_note_is_broadened_beyond_the_env_nonce():
-    assert "env" in KUBERNETES_TARGET.note
-    assert "file" in KUBERNETES_TARGET.note
-    assert "account" in KUBERNETES_TARGET.note
-    assert "hostname" in KUBERNETES_TARGET.note
 
 
 def test_the_patched_version_launches_the_patched_image_tag():

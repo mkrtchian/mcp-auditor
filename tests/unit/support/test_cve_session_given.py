@@ -82,15 +82,13 @@ class OverlappingAudit:
 
 @dataclass
 class ScriptedCheck:
-    """The pre-run check: each target's dead conditions, empty (live) by default. Records the
-    targets checked, and raises `error` to stand for a configuration error."""
+    """The pre-run check: each target's dead conditions, empty (live) by default. Raises
+    `error` to stand for a configuration error."""
 
     conditions: dict[str, list[str]] = field(default_factory=lambda: {})
     error: Exception | None = None
-    checked: list[str] = field(default_factory=lambda: [])
 
     async def __call__(self, target: CVETarget) -> list[str]:
-        self.checked.append(target.cve_id)
         if self.error is not None:
             raise self.error
         return self.conditions.get(target.cve_id, [])

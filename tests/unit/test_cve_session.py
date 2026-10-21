@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_cve_session_given as given
+import tests.unit.support.test_cve_session_then as then
 from evals.baseline import BaselineStatus
 from evals.cve_baseline import load_baselines
 from evals.cve_gate import CVEGateVerdict, TargetOutcome
@@ -20,11 +21,8 @@ async def test_a_gated_target_missed_once_is_replayed_until_the_miss_is_decided(
 
     result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
 
-    assert result.gate is not None
-    [comparison] = result.gate.targets
-    assert comparison.outcome == TargetOutcome.REGRESSION
+    comparison = then.the_one_target_ends(result, TargetOutcome.REGRESSION, CVEGateVerdict.RED)
     assert comparison.replays == [True, True, True, True]
-    assert result.gate.verdict == CVEGateVerdict.RED
     assert result.exit_code == 1
 
 
@@ -34,9 +32,7 @@ async def test_a_miss_cleared_twice_stops_the_replays_and_keeps_the_gate_green(t
 
     result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
 
-    assert result.gate is not None
-    [comparison] = result.gate.targets
-    assert comparison.outcome == TargetOutcome.MISS_NOT_REPRODUCED
+    comparison = then.the_one_target_ends(result, TargetOutcome.MISS_NOT_REPRODUCED)
     assert comparison.replays == [False, False]
     assert result.exit_code == 0
 
@@ -60,9 +56,7 @@ async def test_a_replay_that_does_not_complete_makes_the_run_not_comparable(tmp_
 
     result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
 
-    assert result.gate is not None
-    assert result.gate.targets[0].outcome == TargetOutcome.INCOMPLETE
-    assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
+    then.the_one_target_ends(result, TargetOutcome.INCOMPLETE, CVEGateVerdict.NOT_COMPARABLE)
 
 
 async def test_a_target_failing_the_pre_run_check_is_not_run_and_the_gate_is_not_comparable(
@@ -76,10 +70,7 @@ async def test_a_target_failing_the_pre_run_check_is_not_run_and_the_gate_is_not
     assert audit.calls == []
     assert result.not_run == {given.KUBERNETES.cve_id: ["keeps no place"]}
     assert result.grades[given.KUBERNETES.cve_id] == []
-    assert result.gate is not None
-    [comparison] = result.gate.targets
-    assert comparison.outcome == TargetOutcome.NOT_RUN
-    assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
+    then.the_one_target_ends(result, TargetOutcome.NOT_RUN, CVEGateVerdict.NOT_COMPARABLE)
 
 
 async def test_a_passing_target_is_audited_while_a_failing_one_is_not_run_in_target_order(
@@ -110,10 +101,7 @@ async def test_a_run_depending_on_unchecked_credits_is_not_comparable(tmp_path: 
 
     result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
 
-    assert result.gate is not None
-    [comparison] = result.gate.targets
-    assert comparison.outcome == TargetOutcome.UNCHECKED_DECIDES
-    assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
+    then.the_one_target_ends(result, TargetOutcome.UNCHECKED_DECIDES, CVEGateVerdict.NOT_COMPARABLE)
 
 
 async def test_a_run_with_no_unchecked_credits_stays_comparable(tmp_path: Path):
@@ -125,9 +113,7 @@ async def test_a_run_with_no_unchecked_credits_stays_comparable(tmp_path: Path):
 
     result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
 
-    assert result.gate is not None
-    [comparison] = result.gate.targets
-    assert comparison.outcome == TargetOutcome.NO_BASELINE
+    then.the_one_target_ends(result, TargetOutcome.NO_BASELINE)
 
 
 async def test_a_settlement_meeting_an_unchecked_replay_ends_unchecked(tmp_path: Path):
@@ -139,10 +125,7 @@ async def test_a_settlement_meeting_an_unchecked_replay_ends_unchecked(tmp_path:
 
     result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
 
-    assert result.gate is not None
-    [comparison] = result.gate.targets
-    assert comparison.outcome == TargetOutcome.UNCHECKED_DECIDES
-    assert result.gate.verdict == CVEGateVerdict.NOT_COMPARABLE
+    then.the_one_target_ends(result, TargetOutcome.UNCHECKED_DECIDES, CVEGateVerdict.NOT_COMPARABLE)
 
 
 async def test_a_recording_with_an_unchecked_dependent_run_is_refused(tmp_path: Path):

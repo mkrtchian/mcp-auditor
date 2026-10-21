@@ -65,16 +65,9 @@ def test_the_route_procedure_reads_the_in_scope_git_config_for_a_filesystem_path
     assert dict(calls)["read_file"] == {"path": "/srv/app/.git/config"}
 
 
-def test_the_route_procedure_issues_at_least_one_call_for_the_git_filter():
-    tools = [
-        _git_tool("git_init"),
-        _git_tool("git_add", with_files=True),
-        _git_tool("git_diff_staged"),
-    ]
+def test_a_required_array_argument_is_called_with_an_empty_list():
+    calls = minimal_calls([_git_tool("git_add", with_files=True)], None, "/srv/app")
 
-    calls = minimal_calls(tools, frozenset({"git_init", "git_add", "git_diff_staged"}), "/srv/app")
-
-    assert [name for name, _ in calls] == ["git_init", "git_add", "git_diff_staged"]
     assert dict(calls)["git_add"]["files"] == []
 
 

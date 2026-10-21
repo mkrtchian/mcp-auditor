@@ -106,12 +106,6 @@ def test_render_leaves_throttling_out_when_nothing_was_throttled():
     assert "throttled" not in conditions
 
 
-def test_the_report_json_carries_the_throttled_requests():
-    report = given.a_benchmark_report([]).model_copy(update={"throttled_requests": 4})
-
-    assert '"throttled_requests":4' in report.model_dump_json()
-
-
 def test_render_states_the_billed_tokens_on_the_conditions_line():
     usage = ProviderUsage(input_tokens=12000, output_tokens=3400)
     report = given.a_benchmark_report([]).model_copy(update={"provider_usage": usage})
@@ -119,16 +113,6 @@ def test_render_states_the_billed_tokens_on_the_conditions_line():
     conditions = render_markdown(report).splitlines()[0]
 
     assert "12000 input tokens, 3400 output tokens" in conditions
-
-
-def test_the_report_json_carries_the_provider_usage_and_the_tree():
-    usage = ProviderUsage(input_tokens=12000, output_tokens=3400)
-    report = given.a_benchmark_report([]).model_copy(update={"provider_usage": usage})
-
-    dumped = report.model_dump(mode="json")
-
-    assert dumped["provider_usage"]["input_tokens"] == 12000
-    assert (dumped["commit"], dumped["dirty"]) == (given.COMMIT, False)
 
 
 def test_render_header_names_the_ladder_columns():

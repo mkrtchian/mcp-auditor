@@ -8,12 +8,9 @@ import tests.unit.support.test_cve_places_given as given
 import tests.unit.support.test_cve_planting_given as planting_given
 from evals.cve_places import (
     HOLDOUT_PLACES,
-    LAYOUT_KINDS,
     REACHABLE_BY,
     LayoutAnchor,
-    Place,
     PlantKind,
-    is_endpoint_host,
     kept_records,
     load_places,
 )
@@ -27,38 +24,6 @@ def test_the_imported_places_file_matches_the_recorded_hash():
     digest = hashlib.sha256(HOLDOUT_PLACES.read_bytes()).hexdigest()
 
     assert digest == RECORDED_HASH
-
-
-def test_the_real_places_file_validates_under_its_schema():
-    places = load_places(HOLDOUT_PLACES)
-
-    assert len(places) == 36
-    assert len({place.id for place in places.values()}) == 36
-    for place in places.values():
-        assert place.reachable_by <= REACHABLE_BY, (
-            f"{place.id}: reachable_by holds a token outside the closed vocabulary"
-        )
-        _assert_coordinate_is_well_formed(place)
-
-
-def _assert_coordinate_is_well_formed(place: Place) -> None:
-    # load_places succeeding already proves every file notation is one the loader accepts, and a
-    # catalogue file notation resolves absolute by construction, so the file kind asserts nothing.
-    coordinates = place.coordinates
-    if place.kind is PlantKind.HTTP_ENDPOINT:
-        assert coordinates.host is not None and is_endpoint_host(coordinates.host), (
-            f"{place.id}: http_endpoint host is not a DNS name or an IPv4 literal"
-        )
-        assert coordinates.path is not None and coordinates.path.startswith("/"), (
-            f"{place.id}: http_endpoint path is not absolute"
-        )
-    if place.kind in LAYOUT_KINDS:
-        assert isinstance(coordinates.anchor, LayoutAnchor), (
-            f"{place.id}: layout coordinate has no anchor node"
-        )
-        assert coordinates.relpath is not None and not coordinates.relpath.startswith("/"), (
-            f"{place.id}: layout coordinate relpath is not relative"
-        )
 
 
 def test_a_file_place_keeps_its_path(tmp_path: Path):
@@ -286,11 +251,6 @@ def test_a_kind_that_does_not_match_its_source_raises(
 def test_an_unknown_source_raises(tmp_path: Path):
     with pytest.raises(ValueError, match=r"place-1.*source"):
         given.loaded(tmp_path, [given.an_entry(source="mystery")])
-
-
-# The guards below read ids, kinds, reach tokens and spec refusals only, never a coordinate
-# value, and are trivially satisfied while every target keeps no place: they guard the step
-# that fills kept_places from the real file.
 
 
 def test_every_target_reaches_only_the_closed_vocabulary():

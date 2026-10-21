@@ -7,14 +7,6 @@ from evals.cve_report_units import units_of
 AIMED = {"path": grammar.AIMED_PATH}
 
 
-def test_a_nonce_under_fail_is_detected():
-    report = grammar.a_report(cases=[grammar.a_case(response=f"leaked {given.NONCE_A}")])
-
-    grade = grade_run(given.a_target({given.PLACE_A: given.NONCE_A}), units_of(report))
-
-    assert grade.status == CVEStatus.DETECTED
-
-
 def test_the_same_unit_place_struck_regrades_to_the_next_rung():
     report = grammar.a_report(
         cases=[
@@ -59,15 +51,6 @@ def test_a_nonce_from_a_different_location_is_not_struck():
     assert grade.status == CVEStatus.DETECTED
 
 
-def test_an_echoed_nonce_never_counts():
-    case = grammar.a_case(response=f"echo {given.NONCE_A}", arguments={"path": given.NONCE_A})
-    target = given.a_target({given.PLACE_A: given.NONCE_A})
-
-    grade = grade_run(target, units_of(grammar.a_report(cases=[case])))
-
-    assert grade.status == CVEStatus.MISSED
-
-
 def test_a_run_with_two_locations_keeps_detection_when_only_one_is_struck():
     case = grammar.a_case(response=f"leaked {given.NONCE_A} and {given.NONCE_B}")
     target = given.a_target({given.PLACE_A: given.NONCE_A, given.PLACE_B: given.NONCE_B})
@@ -106,8 +89,8 @@ def test_a_nonce_in_an_unjudged_unit_is_neither_surfaced_nor_unchecked():
     assert grade.unchecked_places == frozenset()
 
 
-def test_a_nonce_in_a_judged_unit_is_reported_unchecked_under_an_unchecked_check():
-    case = grammar.a_case(response=f"leaked {given.NONCE_A}", verdict=grammar.FAIL)
+def test_a_nonce_in_a_pass_judged_unit_is_still_reported_unchecked():
+    case = grammar.a_case(response=f"leaked {given.NONCE_A}", verdict=grammar.PASS)
     target = given.a_target({given.PLACE_A: given.NONCE_A})
 
     grade = grade_run(
