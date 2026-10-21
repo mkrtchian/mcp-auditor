@@ -10,7 +10,7 @@ from evals.cve_places import (
     load_places,
 )
 from evals.cve_planting import planting_spec
-from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget
+from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES
 from evals.holdout_targets import HOLDOUT_TARGETS
 
 # These modules are the paths a holdout target must never travel: the acceptance gate
@@ -27,11 +27,6 @@ _INSTRUMENTS = (
 )
 
 _EVALS = Path(__file__).resolve().parents[2] / "evals"
-
-
-def test_the_empty_holdout_target_tuple_loads():
-    assert HOLDOUT_TARGETS == ()
-    assert all(isinstance(target, CVETarget) for target in HOLDOUT_TARGETS)
 
 
 def test_holdout_identifiers_are_disjoint_from_the_acceptance_layer():

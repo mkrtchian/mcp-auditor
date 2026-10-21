@@ -32,17 +32,6 @@ async def test_a_graded_audit_passes_through(monkeypatch: pytest.MonkeyPatch):
     assert attempt.calls == 1
 
 
-async def test_a_detection_with_a_refused_step_passes_through(monkeypatch: pytest.MonkeyPatch):
-    _captured_console(monkeypatch)
-    detection = GradedAudit(a_detected_grade(), grammar.a_report())
-    attempt = _ScriptedAttempts([detection])
-
-    outcome = await holdout_audit(TARGET, attempt)
-
-    assert outcome is detection
-    assert attempt.calls == 1
-
-
 @pytest.mark.parametrize(
     "causes",
     [

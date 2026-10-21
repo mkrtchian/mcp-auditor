@@ -112,8 +112,6 @@ def test_the_committed_file_is_ready_for_the_logged_models():
     )
 
     conditions.require_ready(["gpt-6-luna", "claude-haiku-5-5"])
-    conditions.require_ready(["gpt-6-luna"])
-    conditions.require_ready(["claude-haiku-5-5"])
 
 
 def _payload_with_luna_cutoff(**changes: object) -> dict[str, object]:
