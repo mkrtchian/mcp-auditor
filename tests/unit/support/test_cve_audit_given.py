@@ -20,7 +20,7 @@ from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedS
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
 
-TARGET = CVE_TARGETS[0]
+(TARGET,) = [target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53109"]
 A_LAUNCH = Launch("x", [])
 
 

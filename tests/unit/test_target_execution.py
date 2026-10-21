@@ -6,7 +6,6 @@ import tests.unit.support.test_target_execution_given as given
 from mcp_auditor.domain.models import ExecutionRegime
 from mcp_auditor.domain.relayed_environment import RelayRequest
 from mcp_auditor.target_execution import (
-    IMAGE_BY_LAUNCHER,
     LaunchRefused,
     TargetExecution,
     decide_launch,
@@ -161,7 +160,7 @@ def test_a_confined_launch_records_its_image_digest_and_writable_path(tmp_path: 
 
     record = launch.record(False)
     assert record.regime == ExecutionRegime.CONFINED
-    assert record.image == IMAGE_BY_LAUNCHER["npx"]
+    assert record.image == "node:24-bookworm-slim"
     assert record.image_digest == "sha256:deadbeef"
     assert record.writable_paths == [str(tmp_path.resolve())]
     assert launch.client_env == given.DOCKER_ENV
