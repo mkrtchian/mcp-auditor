@@ -139065,6 +139065,11 @@
         "identifier": "CVE-2026-67428",
         "outcome": "skipped",
         "reason": "Skipped at the pre-filter (walk step 2): its server PyPI:flyto-core already gives a drawn holdout target, CVE-2026-55787 (the SSRF guard bypass via IPv6-transition forms in execute_module's http.get, internal_fetch, drawn 8th). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2026-67428 is another flyto-core internal_fetch flaw, pinned 2.26.5/2.26.7; its fix at 2.26.7 lands after the 2.26.3 first patch of 55787, so it is one of the 55787 neighbours fixed after 2.26.3 and is not a sibling of 55787; the deferral to the drawn 55787 governs regardless.)"
+      },
+      {
+        "identifier": "CVE-2026-53509",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server npm:@aborruso/ckan-mcp-server already gives a drawn holdout target, CVE-2026-33060 (the caller-supplied server_url SSRF, internal_fetch, drawn 2nd). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2026-53509 is another ckan-mcp-server internal_fetch flaw, pinned 0.4.105/0.4.106, long after the 0.4.85 first patch of 33060, so not a sibling of 33060; the deferral to the drawn 33060 governs regardless. The same server was also skipped earlier for CVE-2026-73845 and CVE-2026-73844.)"
       }
     ],
     "cards": [
