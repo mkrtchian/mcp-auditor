@@ -3,9 +3,15 @@ import re
 import pytest
 
 import tests.unit.support.test_cve_replay_given as given
-from evals import cve_replay
 from evals.cve_grammar import CreditCheck, MechanismClass, PlantedTarget
-from evals.cve_replay import RecordedCall, RunToCheck, replay_credit
+from evals.cve_replay import (
+    RecordedCall,
+    RunToCheck,
+    arguments_agree,
+    lost_connection,
+    replay_credit,
+    replayed_units,
+)
 from evals.cve_report_units import units_of
 from evals.cve_targets import CVE_TARGETS
 from mcp_auditor.domain.models import AuditReport
@@ -14,7 +20,7 @@ AIM = re.compile(r"^/outside/")
 
 
 def _agree(report: AuditReport, calls: list[RecordedCall]) -> bool:
-    return cve_replay._arguments_agree(units_of(report), calls)  # pyright: ignore[reportPrivateUsage]
+    return arguments_agree(units_of(report), calls)
 
 
 def test_a_case_attaches_its_one_call():
@@ -35,7 +41,7 @@ def test_a_chains_steps_attach_in_order():
 def test_fewer_outputs_than_sending_steps_fill_the_first_sending_steps_in_order():
     report = given.a_blocked_case_and_chain_report(given.FLAW_PATH, given.OTHER_PATH)
 
-    replayed = cve_replay._replayed_units(units_of(report), ["patched-1"])  # pyright: ignore[reportPrivateUsage]
+    replayed = replayed_units(units_of(report), ["patched-1"])
 
     assert [[step.outputs for step in unit.steps] for unit in replayed] == [
         [()],
@@ -79,4 +85,4 @@ def test_a_lost_connection_is_read_from_the_pinned_responses(
 ):
     response = given.a_response(error_type, content)
 
-    assert cve_replay._lost_connection(response) is lost  # pyright: ignore[reportPrivateUsage]
+    assert lost_connection(response) is lost

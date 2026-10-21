@@ -74,7 +74,7 @@ async def replay_credit(
     """The strike the replay earns against the patched server, or an unchecked verdict when the
     recorded calls disagree with the report or the patched launches did not settle the run."""
     units = units_of(run.report)
-    if not _arguments_agree(units, run.recorded_calls):
+    if not arguments_agree(units, run.recorded_calls):
         return CreditCheck(frozenset(), unchecked=True)
     replayed = [
         attempt async for attempt in _attempts(run, tool_call_timeout) if attempt is not None
@@ -105,7 +105,7 @@ def _struck(
     replay_target = PlantedTarget(run_target.mechanism, run_target.aim, replayed.nonces)
     return struck_by_replay(
         GradedRun(run_target, units),
-        GradedRun(replay_target, _replayed_units(units, replayed.outputs)),
+        GradedRun(replay_target, replayed_units(units, replayed.outputs)),
     )
 
 
@@ -124,9 +124,9 @@ async def _run_patched(
                     outputs: list[str] = []
                     vulnerable_lost = False
                     for name, args, vulnerable in calls:
-                        vulnerable_lost = vulnerable_lost or _lost_connection(vulnerable)
+                        vulnerable_lost = vulnerable_lost or lost_connection(vulnerable)
                         response = await client.call_tool(name, args)
-                        if _lost_connection(response):
+                        if lost_connection(response):
                             if not vulnerable_lost:
                                 return None
                             return ReplayedRun(planted.nonces, outputs, complete=False)
@@ -141,7 +141,7 @@ async def _run_patched(
         return None
 
 
-def _replayed_units(units: Sequence[Unit], outputs: Sequence[str]) -> list[Unit]:
+def replayed_units(units: Sequence[Unit], outputs: Sequence[str]) -> list[Unit]:
     remaining = iter(outputs)
     return [
         Unit(
@@ -164,7 +164,7 @@ def _next_output(remaining: Iterator[str]) -> tuple[str, ...]:
     return () if output is None else (output,)
 
 
-def _arguments_agree(units: Sequence[Unit], calls: Sequence[RecordedCall]) -> bool:
+def arguments_agree(units: Sequence[Unit], calls: Sequence[RecordedCall]) -> bool:
     """Each recorded call attaches to the next step that sent one, and its arguments must equal
     the step's. A count or argument mismatch means the sequence and the report disagree."""
     sending = [step for unit in units for step in unit.steps if _sent_a_call(unit, step)]
@@ -179,7 +179,7 @@ def _sent_a_call(unit: Unit, step: Step) -> bool:
     return not unit.blocked or bool(step.outputs)
 
 
-def _lost_connection(response: ToolResponse) -> bool:
+def lost_connection(response: ToolResponse) -> bool:
     return response.is_error and any(
         response.error_type == error_type and (content is None or response.content == content)
         for error_type, content in LOST_CONNECTION_RESPONSES
