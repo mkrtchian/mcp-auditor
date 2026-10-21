@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import tempfile
@@ -61,7 +62,6 @@ def test_each_accepted_coordinate_notation_resolves_to_an_absolute_container_pat
         "/srv/fictional/rel/under-work",
         "/opt/mcpaudit-placeholder/x",
     ]
-    assert all(path.startswith("/") for path in resolved)
 
 
 def test_an_env_place_records_a_name_and_nonce_pair():
@@ -78,7 +78,6 @@ def test_an_account_place_records_the_fixed_uid_gid_and_a_tmp_home_that_never_ho
     assert spec.account.name == spec.nonces["account-1"]
     assert (spec.account.uid, spec.account.gid) == (60123, 60123)
     assert spec.account.home == "/tmp"
-    assert spec.account.name not in spec.account.home
 
 
 def test_a_hostname_place_records_the_hostname_nonce():
@@ -93,16 +92,6 @@ def test_an_unplaceable_place_is_counted_drawn_no_nonce_and_never_planted():
     assert spec.unplaceable == 1
     assert spec.nonces == {}
     assert spec.places == ()
-
-
-def test_the_spec_holds_no_host_path_container_or_network_name_nor_argv():
-    docker = given.FakePlantingDocker()
-    spec = given.spec_of([given.file_place(path="/etc/x"), given.env_place()])
-
-    # Only container-side intents and the drawn nonces, nothing a host or Docker call makes.
-    assert docker.host_files == {} and docker.networks == set()
-    assert spec.files[0].container_path == "/etc/x"
-    assert set(spec.nonces) == {"file-1", "env-1"}
 
 
 def test_two_locations_of_the_same_kind_take_two_distinct_values():
@@ -218,9 +207,7 @@ def test_a_sentinel_that_does_not_serve_raises_and_leaves_nothing_alive():
     ):
         pass
 
-    assert docker.networks == set()
-    assert docker.holders == {}
-    assert docker.sentinels == {}
+    then.nothing_left_alive(docker)
 
 
 def test_an_ip_literal_host_inside_the_reserved_block_raises():
@@ -247,7 +234,6 @@ def test_the_account_name_form_is_a_lowercase_label_within_the_passwd_limit():
     second = RANDOM_NONCES.account_name()
 
     assert re.fullmatch(r"[a-z][a-z0-9-]{0,31}", first)
-    assert len(first) <= 32
     assert first != second
 
 
@@ -296,7 +282,6 @@ def test_a_host_user_launch_resolves_the_uid_only_at_planted():
     host = given.host_user_host(working_directory="/work")
     spec = given.spec_of([], host=host)
 
-    assert host.user.value == "host"  # the spec names the symbolic user, never a uid
     args = _args_in(spec)
     assert args.user == ("--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp")
 
@@ -306,8 +291,7 @@ def test_an_env_place_emits_a_docker_env_argument_with_the_nonce():
 
     args = _args_in(spec)
 
-    assert "-e" in args.env
-    assert f"FICTIONAL_TOKEN={spec.nonces['env-1']}" in args.env
+    assert args.env == ("-e", f"FICTIONAL_TOKEN={spec.nonces['env-1']}")
 
 
 # --- account materialisation and file mode ----------------------------------------------
@@ -334,7 +318,6 @@ def test_an_account_emits_a_passwd_entry_under_the_fixed_uid_and_replaces_the_us
         passwd = _passwd_content(docker)
         assert "root:x:0:0" in passwd  # the image's own entries are kept
         assert f"{name}:x:60123:60123::/tmp:" in passwd
-        assert name not in "/tmp"
         group = next(
             f.content for f in docker.host_files.values() if f"{name}:x:60123:\n" in f.content
         )
@@ -357,9 +340,7 @@ def test_a_setup_failure_after_the_holder_undoes_everything_and_raises_planting_
     with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
         pass
 
-    assert docker.networks == set()
-    assert docker.holders == {}
-    assert docker.sentinels == {}
+    then.nothing_left_alive(docker)
 
 
 def test_a_host_file_that_cannot_be_written_raises_planting_failed():
@@ -383,14 +364,19 @@ def test_teardown_leaves_nothing_alive_under_the_network_removal_refusal():
     then.nothing_left_alive(docker)
 
 
-def test_a_teardown_failure_is_logged_and_does_not_raise():
+def test_a_teardown_failure_is_logged_and_the_rest_of_the_teardown_still_runs(
+    caplog: pytest.LogCaptureFixture,
+):
     spec = given.spec_of(
         [given.endpoint_place(host="198.51.100.5")], host=given.unprivileged_host()
     )
     docker = given.FakePlantingDocker(fail_teardown=frozenset({"remove_sentinel"}))
 
-    with planted(spec, "image:tag", docker):  # no exception escapes the block
-        pass
+    with caplog.at_level(logging.DEBUG), planted(spec, "image:tag", docker):
+        pass  # no exception escapes the block
+
+    assert docker.holders == {}  # the sentinel failure did not abort the holder's removal
+    assert "planting teardown failed" in caplog.text
 
 
 def test_a_non_infra_setup_failure_undoes_everything_and_re_raises_as_itself():

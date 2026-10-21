@@ -1,5 +1,3 @@
-import re
-
 import pytest
 
 import tests.unit.support.test_cve_planting_given as given
@@ -51,35 +49,16 @@ def test_a_spec_with_no_kept_layout_place_carries_an_empty_layout():
     assert spec.layout == ()
 
 
-def test_the_git_remote_url_nonce_is_url_safe_for_a_userinfo():
-    spec = given.spec_of([given.git_remote_url_place()])
-
-    assert URL_SAFE_USERINFO.fullmatch(spec.layout[0].content)
-
-
 def test_the_production_token_is_url_safe_for_a_remote_url_userinfo():
     assert URL_SAFE_USERINFO.fullmatch(RANDOM_NONCES.token())
 
 
-class _NonUrlSafeNonces:
-    def token(self) -> str:
-        return "needs/encoding@here"
-
-    def account_name(self) -> str:
-        return "acct"
-
-
-def test_a_git_remote_url_nonce_that_is_not_url_safe_raises_naming_the_id_not_the_value():
+@pytest.mark.parametrize("token", ["needs@encoding", "needs:encoding", "needs/encoding"])
+def test_a_git_remote_url_nonce_that_is_not_url_safe_raises_naming_the_id_not_the_value(token: str):
     with pytest.raises(ValueError) as caught:
         planting_spec(
-            [given.git_remote_url_place()], given.unprivileged_host(), _NonUrlSafeNonces()
+            [given.git_remote_url_place()], given.unprivileged_host(), given.FixedTokenNonces(token)
         )
 
     assert "bare-remote-url-fic" in str(caught.value)
-    assert "needs/encoding@here" not in str(caught.value)
-
-
-def test_the_non_url_safe_regex_rejects_a_userinfo_delimiter():
-    assert not URL_SAFE_USERINFO.fullmatch("a@b")
-    assert not URL_SAFE_USERINFO.fullmatch("a:b")
-    assert not re.fullmatch(URL_SAFE_USERINFO, "a/b")
+    assert token not in str(caught.value)

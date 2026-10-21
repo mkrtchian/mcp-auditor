@@ -126,6 +126,19 @@ class FakeNonces:
         return f"acct-{self._accounts}"
 
 
+class FixedTokenNonces:
+    """Yields one caller-chosen token, for the url-safety refusal of a git-remote-url place."""
+
+    def __init__(self, token: str) -> None:
+        self._token = token
+
+    def token(self) -> str:
+        return self._token
+
+    def account_name(self) -> str:
+        return "acct"
+
+
 def only(registry: dict[str, list[str]]) -> str:
     assert len(registry) == 1
     return next(iter(registry))
