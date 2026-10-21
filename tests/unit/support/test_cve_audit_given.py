@@ -35,7 +35,7 @@ def an_auditor() -> Auditor:
 
 
 def a_target_launching(launch: Launch = A_LAUNCH) -> CVETarget:
-    """The first target, planting nothing and launching no container, handing its graph launch."""
+    """A target planting nothing and launching no container, handing its graph launch."""
 
     @contextmanager
     def no_container(_tag: str, _spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
