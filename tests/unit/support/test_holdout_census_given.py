@@ -59,7 +59,7 @@ def a_census() -> HoldoutCensus:
     }
     groupings = {reader: [grouping.no_proof(GHSA_ONLY_FLAW)] for reader in READERS}
     return HoldoutCensus(
-        sources=_provenance(),
+        sources=a_provenance(),
         agents=[
             AgentRecord(role=AgentRole.COLLECTOR, scope="ghsa", model="claude-opus-5-5"),
             *(
@@ -78,6 +78,15 @@ def a_census() -> HoldoutCensus:
         figures=compute_figures(classifications, dates, withdrawn=set()),
         groupings=groupings,
         known_gap=known_gap(groupings, gap_population(classifications, draw_candidates(flaws))),
+    )
+
+
+def a_provenance() -> SourceProvenance:
+    a_file = SourceFile(name="all.zip", downloaded=date(2026, 10, 8), sha256="0" * 64)
+    return SourceProvenance(
+        ghsa_commit="1" * 40,
+        nvd_feeds=[a_file.model_copy(update={"name": "nvdcve-2.0-2025.json.gz"})],
+        osv_export=a_file,
     )
 
 
@@ -278,13 +287,4 @@ def _a_hit(source_id: str) -> HitDecision:
         software_kind=figures.a_classification().software_kind,
         reason="A filesystem MCP server.",
         agent="ghsa collector",
-    )
-
-
-def _provenance() -> SourceProvenance:
-    a_file = SourceFile(name="all.zip", downloaded=date(2026, 10, 8), sha256="0" * 64)
-    return SourceProvenance(
-        ghsa_commit="1" * 40,
-        nvd_feeds=[a_file.model_copy(update={"name": "nvdcve-2.0-2025.json.gz"})],
-        osv_export=a_file,
     )
