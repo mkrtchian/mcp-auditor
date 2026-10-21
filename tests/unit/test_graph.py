@@ -12,7 +12,6 @@ from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
 
 
-@pytest.mark.asyncio
 async def test_single_tool_single_test_case():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=1)
@@ -28,7 +27,6 @@ async def test_single_tool_single_test_case():
     then.report_is_for_tool(report, "get_user")
 
 
-@pytest.mark.asyncio
 async def test_two_tools_two_cases_each():
     tool_a = given.a_tool(name="get_user")
     tool_b = given.a_tool(name="delete_user")
@@ -48,7 +46,6 @@ async def test_two_tools_two_cases_each():
     then.report_is_for_tool(second, "delete_user")
 
 
-@pytest.mark.asyncio
 async def test_empty_tool_list():
     fake_llm = FakeLLM([])
     fake_mcp_client = FakeMCPClient([])
@@ -60,7 +57,6 @@ async def test_empty_tool_list():
     then.has_tool_reports(result, 0)
 
 
-@pytest.mark.asyncio
 async def test_provider_usage_accumulated():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=2)
@@ -75,7 +71,6 @@ async def test_provider_usage_accumulated():
     assert usage == fake_llm.total_usage
 
 
-@pytest.mark.asyncio
 async def test_attack_context_populated_after_audit():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(
@@ -91,7 +86,6 @@ async def test_attack_context_populated_after_audit():
     assert result["attack_context"].db_engine == "sqlite"
 
 
-@pytest.mark.asyncio
 async def test_chain_budget_zero_skips_chains():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=1)
@@ -105,7 +99,6 @@ async def test_chain_budget_zero_skips_chains():
     then.report_has_no_chains(then.tool_report_at(result, 0))
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("chain_budget", "a_fake_llm"),
     [
@@ -128,7 +121,6 @@ async def test_the_chain_budget_sets_the_number_of_judged_chains(
     then.report_has_judged_chains(then.tool_report_at(result, 0), chain_budget)
 
 
-@pytest.mark.asyncio
 async def test_a_redacting_server_puts_the_notice_in_every_prompt_and_its_value_in_none():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_with_a_two_step_chain()
@@ -142,7 +134,6 @@ async def test_a_redacting_server_puts_the_notice_in_every_prompt_and_its_value_
     then.no_prompt_holds(fake_llm, "s3cr3t-value")
 
 
-@pytest.mark.asyncio
 async def test_a_server_without_redaction_puts_the_notice_in_no_prompt():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_with_a_two_step_chain()
@@ -154,7 +145,6 @@ async def test_a_server_without_redaction_puts_the_notice_in_no_prompt():
     then.no_prompt_holds(fake_llm, REDACTION_NOTICE)
 
 
-@pytest.mark.asyncio
 async def test_the_checkpointer_round_trips_the_chain_state():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_with_chain(num_cases=1)
@@ -169,7 +159,6 @@ async def test_the_checkpointer_round_trips_the_chain_state():
     then.report_has_judged_chains(stored["audit_report"].tool_reports[0], 1)
 
 
-@pytest.mark.asyncio
 async def test_destructive_payload_is_blocked_and_never_sent():
     tool = given.a_tool(name="run_command")
     fake_llm = given.a_fake_llm_for_destructive_and_safe_case()
@@ -184,7 +173,6 @@ async def test_destructive_payload_is_blocked_and_never_sent():
     then.one_case_blocked_unjudged_and_unsent(report, fake_mcp_client)
 
 
-@pytest.mark.asyncio
 async def test_a_batch_still_short_after_retry_is_flagged_on_its_tool_only():
     tools = [given.a_tool(name="get_user"), given.a_tool(name="list_users")]
     fake_llm = given.a_fake_llm_whose_first_tool_batch_stays_short(cases_per_tool=2)
@@ -197,7 +185,6 @@ async def test_a_batch_still_short_after_retry_is_flagged_on_its_tool_only():
     then.report_has_no_gap(then.tool_report_at(result, 1))
 
 
-@pytest.mark.asyncio
 async def test_a_dry_run_carries_the_coverage_gap_to_its_tool_report():
     fake_llm = given.a_fake_dry_run_llm_whose_batch_stays_short(budget=3)
     graph = given.a_dry_run_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
@@ -208,7 +195,6 @@ async def test_a_dry_run_carries_the_coverage_gap_to_its_tool_report():
     then.report_has_a_gap_of(result["tool_reports"][0], requested=3, received=2)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
 async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissCause):
     failure = given.MODEL_FAILURES[cause]()
@@ -225,7 +211,6 @@ async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissCause):
     assert result["audit_report"].judge_usage == failure.usage.add(FAKE_USAGE)
 
 
-@pytest.mark.asyncio
 async def test_the_report_splits_judge_usage_from_generator_usage():
     judge_usage = given.ProviderUsage(input_tokens=3, output_tokens=2)
     generator_usage = given.ProviderUsage(input_tokens=11, output_tokens=7)
@@ -245,7 +230,6 @@ async def test_the_report_splits_judge_usage_from_generator_usage():
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 
-@pytest.mark.asyncio
 async def test_the_report_splits_chain_usage_from_single_step_usage():
     fake_llm = given.a_fake_llm_billing_each_call_apart_with_a_two_step_chain()
     graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
@@ -257,7 +241,6 @@ async def test_the_report_splits_chain_usage_from_single_step_usage():
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 
-@pytest.mark.asyncio
 async def test_an_audit_without_chains_reports_no_chain_usage():
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=2)
     graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
@@ -270,7 +253,6 @@ async def test_an_audit_without_chains_reports_no_chain_usage():
     assert report.single_step_usage == report.provider_usage
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
 async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the_next(
     cause: MissCause,
@@ -291,7 +273,6 @@ async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 
-@pytest.mark.asyncio
 async def test_a_dry_run_with_a_refused_generation_carries_the_refused_step():
     fake_llm = FakeLLM([given.a_provider_refusal()])
     graph = given.a_dry_run_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
@@ -303,7 +284,6 @@ async def test_a_dry_run_with_a_refused_generation_carries_the_refused_step():
     then.state_has_missed_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
 
 
-@pytest.mark.asyncio
 async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
     fake_llm = given.a_fake_llm_refusing_the_chain_planning()
     graph = given.a_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
@@ -315,7 +295,6 @@ async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
     then.audit_report_has_missed_steps(result, [("get_user", AuditStep.CHAIN_PLANNING)])
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
 async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(cause: MissCause):
     fake_llm = given.a_fake_llm_failing_the_first_chain_observation(given.MODEL_FAILURES[cause]())
@@ -328,7 +307,6 @@ async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(cau
     then.audit_report_misses_one_step(result, "get_user", AuditStep.CHAIN_STEP_OBSERVATION, cause)
 
 
-@pytest.mark.asyncio
 async def test_a_refused_step_planning_judges_the_chain_with_the_steps_it_has():
     fake_llm = given.a_fake_llm_refusing_the_chain_step_planning()
     fake_mcp_client = FakeMCPClient([given.a_tool(name="get_user")])

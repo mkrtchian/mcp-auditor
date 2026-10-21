@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from evals.probe import CallOutcome, ProbeObservation
 from evals.probe_candidates import REFERENCE
 from evals.probe_corpus import ProbeCall
@@ -24,7 +22,6 @@ def _models_raising(error: Exception) -> CandidateModels:
     return CandidateModels(candidate=REFERENCE, main=llm, judge=llm)
 
 
-@pytest.mark.asyncio
 async def test_unparseable_output_is_a_parse_failure():
     models = _models_raising(
         UnparseableOutput(attempts=3, truncated_attempts=0, usage=ProviderUsage())
@@ -35,7 +32,6 @@ async def test_unparseable_output_is_a_parse_failure():
     assert observation.outcome == CallOutcome.PARSE_FAILURE
 
 
-@pytest.mark.asyncio
 async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempts():
     usage = ProviderUsage(input_tokens=100, output_tokens=8192)
     models = _models_raising(UnparseableOutput(attempts=3, truncated_attempts=1, usage=usage))
@@ -47,7 +43,6 @@ async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempt
     assert observation.truncated_attempts == 1
 
 
-@pytest.mark.asyncio
 async def test_a_provider_refusal_is_a_parse_failure_carrying_its_usage_and_message():
     usage = ProviderUsage(input_tokens=120, output_tokens=5)
     models = _models_raising(ProviderRefusal("flagged by the usage policy", usage))
@@ -59,7 +54,6 @@ async def test_a_provider_refusal_is_a_parse_failure_carrying_its_usage_and_mess
     assert observation.error == "flagged by the usage policy"
 
 
-@pytest.mark.asyncio
 async def test_any_other_value_error_is_an_error_carrying_its_message():
     models = _models_raising(ValueError("400 invalid request"))
 
@@ -69,7 +63,6 @@ async def test_any_other_value_error_is_an_error_carrying_its_message():
     assert observation.error == "ValueError: 400 invalid request"
 
 
-@pytest.mark.asyncio
 async def test_a_throttled_call_is_an_error_carrying_its_usage_and_the_provider_message():
     usage = ProviderUsage(throttled_requests=4)
     throttled = ProviderThrottled("Error code: 429 - slow down", 0.0, usage)
@@ -82,7 +75,6 @@ async def test_a_throttled_call_is_an_error_carrying_its_usage_and_the_provider_
     assert observation.error == str(throttled)
 
 
-@pytest.mark.asyncio
 async def test_each_observation_is_appended_as_one_json_line(tmp_path: Path):
     sink = tmp_path / "probe_report.jsonl"
     first = await observe(_models_raising(ValueError("first")), A_JUDGE_CALL, budget=10)

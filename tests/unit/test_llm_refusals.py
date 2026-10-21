@@ -10,7 +10,6 @@ from tests.fakes.chat_model import raw_response, truncated
 
 
 class TestRefusalAsAnError:
-    @pytest.mark.asyncio
     async def test_openai_invalid_prompt_raises_a_refusal_carrying_the_message(self):
         error = given.a_bad_request(given.OPENAI_POLICY_MESSAGE, code="invalid_prompt")
         llm = given.an_llm([error])
@@ -21,7 +20,6 @@ class TestRefusalAsAnError:
         assert raised.value.provider_message == given.OPENAI_POLICY_MESSAGE
         assert raised.value.usage == ProviderUsage()
 
-    @pytest.mark.asyncio
     async def test_a_refusal_wrapped_as_the_cause_of_another_error_is_recognized(self):
         error = given.wrapped(
             given.a_bad_request(given.OPENAI_POLICY_MESSAGE, code="invalid_prompt")
@@ -31,7 +29,6 @@ class TestRefusalAsAnError:
         with pytest.raises(ProviderRefusal, match="usage policy"):
             await llm.generate_structured("prompt", given.Output)
 
-    @pytest.mark.asyncio
     async def test_alibaba_data_inspection_failure_raises_a_refusal(self):
         error = given.a_bad_request(
             "Input data may contain inappropriate content.", "data_inspection_failed"
@@ -49,7 +46,6 @@ class TestRefusalAsAnError:
             given.OPENAI_POLICY_MESSAGE,
         ],
     )
-    @pytest.mark.asyncio
     async def test_a_refusal_without_a_code_is_recognized_by_its_wording(self, message: str):
         llm = given.an_llm([given.a_bad_request(message, code=None)])
 
@@ -58,7 +54,6 @@ class TestRefusalAsAnError:
 
         assert raised.value.provider_message == message
 
-    @pytest.mark.asyncio
     async def test_another_bad_request_propagates_unchanged(self):
         error = given.a_bad_request("Too many tokens.", code="context_length_exceeded")
         llm = given.an_llm([error])
@@ -68,7 +63,6 @@ class TestRefusalAsAnError:
 
         assert raised.value is error
 
-    @pytest.mark.asyncio
     async def test_a_refusal_after_a_truncated_attempt_carries_its_usage(self):
         responses: list[dict[str, Any] | Exception] = [
             truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
@@ -86,7 +80,6 @@ class TestRefusalAsAnError:
 
 class TestHostLevelBlock:
     @pytest.mark.parametrize("error_type", ["content_policy_violation", "refusal"])
-    @pytest.mark.asyncio
     async def test_an_openrouter_403_block_raises_a_refusal_naming_the_host(self, error_type: str):
         metadata = {
             "error_type": error_type,
@@ -104,7 +97,6 @@ class TestHostLevelBlock:
         assert "Sail Research" in message
         assert "1301" in message
 
-    @pytest.mark.asyncio
     async def test_a_403_without_metadata_propagates_unchanged(self):
         error = given.a_permission_denied({"message": "Guardrail blocked the request."})
         llm = given.an_llm([error])
@@ -114,7 +106,6 @@ class TestHostLevelBlock:
 
         assert raised.value is error
 
-    @pytest.mark.asyncio
     async def test_a_content_filter_finish_with_a_refusal_raises_it_without_a_retry(self):
         llm = given.an_llm([given.a_content_filtered("I cannot help")])
 
@@ -123,7 +114,6 @@ class TestHostLevelBlock:
 
         assert raised.value.provider_message == "I cannot help"
 
-    @pytest.mark.asyncio
     async def test_a_content_filter_finish_without_a_refusal_names_the_finish(self):
         llm = given.an_llm([given.a_content_filtered(None)])
 
@@ -132,7 +122,6 @@ class TestHostLevelBlock:
 
         assert raised.value.provider_message == "finish_reason content_filter"
 
-    @pytest.mark.asyncio
     async def test_a_content_filter_finish_carries_the_usage_of_its_completion(self):
         llm = given.an_llm([given.a_content_filtered(None, given.A_FULL_USAGE)])
 
@@ -147,7 +136,6 @@ class TestHostLevelBlock:
             largest_input_tokens=100,
         )
 
-    @pytest.mark.asyncio
     async def test_a_content_filter_finish_after_a_cut_carries_the_usage_of_both(self):
         responses: list[dict[str, Any] | Exception] = [
             truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
@@ -191,7 +179,6 @@ class TestRefusalInTheResponse:
             ),
         ],
     )
-    @pytest.mark.asyncio
     async def test_a_refused_answer_raises_without_a_retry(self, raw_fields: dict[str, Any]):
         responses: list[dict[str, Any] | Exception] = [
             given.with_raw(raw_response(None, 100, 5), **raw_fields),
@@ -207,7 +194,6 @@ class TestRefusalInTheResponse:
             input_tokens=100, output_tokens=5, largest_input_tokens=100
         )
 
-    @pytest.mark.asyncio
     async def test_an_anthropic_refusal_names_its_category(self):
         stop_details = {"type": "refusal", "category": "cyber", "explanation": None}
         refused = given.with_raw(
@@ -223,7 +209,6 @@ class TestRefusalInTheResponse:
         "stop_details",
         [None, {"type": "refusal", "category": None}, {"type": "refusal", "category": 3}],
     )
-    @pytest.mark.asyncio
     async def test_an_anthropic_refusal_without_a_category_keeps_the_plain_message(
         self, stop_details: object
     ):
@@ -238,7 +223,6 @@ class TestRefusalInTheResponse:
 
         assert raised.value.provider_message == "Anthropic stopped the answer: stop_reason refusal"
 
-    @pytest.mark.asyncio
     async def test_the_model_refusal_text_becomes_the_provider_message(self):
         refused = given.with_raw(
             raw_response(None, 100, 5),
@@ -249,7 +233,6 @@ class TestRefusalInTheResponse:
         with pytest.raises(ProviderRefusal, match="can't help with that"):
             await llm.generate_structured("prompt", given.Output)
 
-    @pytest.mark.asyncio
     async def test_a_refusal_on_the_second_attempt_carries_the_usage_of_both(self):
         responses: list[dict[str, Any] | Exception] = [
             truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
@@ -266,7 +249,6 @@ class TestRefusalInTheResponse:
             input_tokens=200, output_tokens=8197, largest_input_tokens=100
         )
 
-    @pytest.mark.asyncio
     async def test_a_normal_google_stop_is_not_a_refusal(self):
         answered = given.with_raw(
             raw_response({"value": "ok"}, 100, 50),

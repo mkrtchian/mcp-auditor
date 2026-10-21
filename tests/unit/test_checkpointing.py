@@ -17,7 +17,6 @@ from mcp_auditor.domain.relayed_environment import RelayedEnvironment, RelayedVa
 from tests.fakes import FakeMCPClient
 
 
-@pytest.mark.asyncio
 async def test_resuming_a_crashed_audit_finishes_without_reauditing(tmp_path: Path):
     client = given.ServerDyingOnCall(
         [graph_given.a_tool("first"), graph_given.a_tool("second")], dies_on_call=2
@@ -41,7 +40,6 @@ async def test_resuming_a_crashed_audit_finishes_without_reauditing(tmp_path: Pa
     assert len(client.calls) == len(calls_before_crash) + 1
 
 
-@pytest.mark.asyncio
 async def test_resuming_a_completed_audit_runs_a_fresh_one(tmp_path: Path):
     client = FakeMCPClient([graph_given.a_tool("first")])
     fake_llm = graph_given.a_fake_llm_for_multi_tool_audit([1, 1])
@@ -60,7 +58,6 @@ async def test_resuming_a_completed_audit_runs_a_fresh_one(tmp_path: Path):
     then.each_tool_audited_once(result, ["first"])
 
 
-@pytest.mark.asyncio
 async def test_reauditing_the_same_target_does_not_accumulate_the_previous_report(tmp_path: Path):
     client = FakeMCPClient([graph_given.a_tool("first")])
     fake_llm = graph_given.a_fake_llm_for_multi_tool_audit([1, 1])
@@ -79,7 +76,6 @@ async def test_reauditing_the_same_target_does_not_accumulate_the_previous_repor
     then.each_tool_audited_once(result, ["first"])
 
 
-@pytest.mark.asyncio
 async def test_wiping_a_thread_on_a_database_that_was_never_written(tmp_path: Path):
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "virgin.db")) as checkpointer:
         graph = graph_given.a_graph_with_checkpointer(
@@ -89,7 +85,6 @@ async def test_wiping_a_thread_on_a_database_that_was_never_written(tmp_path: Pa
         assert not await resume_or_reset(graph, "never-audited", requested=False)
 
 
-@pytest.mark.asyncio
 async def test_an_unfinished_thread_is_resumable_and_survives_the_decision(tmp_path: Path):
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
         graph = await given.a_crashed_audit(checkpointer, "unfinished")
@@ -98,7 +93,6 @@ async def test_an_unfinished_thread_is_resumable_and_survives_the_decision(tmp_p
         assert (await graph.aget_state({"configurable": {"thread_id": "unfinished"}})).next
 
 
-@pytest.mark.asyncio
 async def test_an_unfinished_thread_is_wiped_when_resume_was_not_asked(tmp_path: Path):
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
         graph = await given.a_crashed_audit(checkpointer, "unfinished")
@@ -107,7 +101,6 @@ async def test_an_unfinished_thread_is_wiped_when_resume_was_not_asked(tmp_path:
         assert not (await graph.aget_state({"configurable": {"thread_id": "unfinished"}})).values
 
 
-@pytest.mark.asyncio
 async def test_a_thread_with_nothing_stored_is_not_resumable(tmp_path: Path):
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
         graph = graph_given.a_graph_with_checkpointer(
@@ -117,7 +110,6 @@ async def test_a_thread_with_nothing_stored_is_not_resumable(tmp_path: Path):
         assert not await resume_or_reset(graph, "never-audited", requested=True)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("earlier_channel", ["refused_steps", "chain_step_refused"])
 async def test_a_checkpoint_from_an_earlier_version_refuses_to_resume(earlier_channel: str):
     checkpointer = InMemorySaver()
@@ -131,7 +123,6 @@ async def test_a_checkpoint_from_an_earlier_version_refuses_to_resume(earlier_ch
         await resume_or_reset(graph, "earlier", requested=True)
 
 
-@pytest.mark.asyncio
 async def test_an_unfinished_checkpoint_without_earlier_channels_resumes():
     checkpointer = InMemorySaver()
     graph = await given.a_crashed_audit(checkpointer, "current")
@@ -139,7 +130,6 @@ async def test_an_unfinished_checkpoint_without_earlier_channels_resumes():
     assert await resume_or_reset(graph, "current", requested=True)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("earlier_channel", ["refused_steps", "chain_step_refused"])
 async def test_a_checkpoint_from_an_earlier_version_is_wiped_when_resume_was_not_asked(
     earlier_channel: str,

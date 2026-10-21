@@ -1,6 +1,5 @@
 from typing import Any
 
-import pytest
 from langgraph.graph import END  # type: ignore[import-untyped]
 
 import tests.unit.support.test_chain_nodes_given as given
@@ -34,7 +33,6 @@ from tests.fakes import FakeLLM
 
 
 class TestMakePlanChains:
-    @pytest.mark.asyncio
     async def test_produces_pending_chains(self):
         goal_a = given.a_chain_goal(description="chain A")
         goal_b = given.a_chain_goal(description="chain B")
@@ -47,7 +45,6 @@ class TestMakePlanChains:
 
         assert result["pending_chains"] == [goal_a, goal_b]
 
-    @pytest.mark.asyncio
     async def test_a_refused_planning_plans_no_chain(self):
         refusal = given.a_provider_refusal()
         node = make_plan_chains(FakeLLM([refusal]))
@@ -95,7 +92,6 @@ class TestPrepareChain:
 
 
 class TestMakeExecuteStep:
-    @pytest.mark.asyncio
     async def test_records_successful_response(self):
         tool = given.a_tool()
         payload = given.a_payload()
@@ -115,7 +111,6 @@ class TestMakeExecuteStep:
         assert step.response == "found /data/projects"
         assert step.error is None
 
-    @pytest.mark.asyncio
     async def test_records_error_response(self):
         tool = given.a_tool()
         payload = given.a_payload()
@@ -134,7 +129,6 @@ class TestMakeExecuteStep:
         assert step.error == "denied"
         assert step.response is None
 
-    @pytest.mark.asyncio
     async def test_first_step_blocked_abandons_an_empty_chain(self):
         tool = given.a_tool()
         payload = given.a_payload(arguments={"path": "/tmp; rm -rf /"})
@@ -155,7 +149,6 @@ class TestMakeExecuteStep:
         assert chain.eval_result is None
         assert client.calls == []
 
-    @pytest.mark.asyncio
     async def test_mid_chain_block_judges_the_executed_prefix(self):
         tool = given.a_tool()
         executed = given.a_chain_step()
@@ -180,7 +173,6 @@ class TestMakeExecuteStep:
 
 
 class TestMakeObserveStep:
-    @pytest.mark.asyncio
     async def test_updates_observation_and_returns_it(self):
         observation = StepObservation(
             observation="found path", should_continue=True, next_step_hint="try traversal"
@@ -200,7 +192,6 @@ class TestMakeObserveStep:
         assert latest.observation == "found path"
         assert result["current_observation"].should_continue is True
 
-    @pytest.mark.asyncio
     async def test_a_refused_observation_sends_the_chain_to_its_judgment(self):
         node = make_observe_step(FakeLLM([given.a_provider_refusal()]))
         state = given.a_chain_audit_state(
@@ -213,7 +204,6 @@ class TestMakeObserveStep:
         then.refused_step_recorded(result, AuditStep.CHAIN_STEP_OBSERVATION)
         assert route_after_observe({**state, **result}) == "judge_chain"
 
-    @pytest.mark.asyncio
     async def test_an_unreadable_observation_sends_the_chain_to_its_judgment(self):
         unreadable = given.an_unreadable_answer()
         node = make_observe_step(FakeLLM([unreadable]))
@@ -231,7 +221,6 @@ class TestMakeObserveStep:
 
 
 class TestMakePlanStep:
-    @pytest.mark.asyncio
     async def test_returns_next_payload(self):
         next_payload = given.a_payload(
             description="next step", arguments={"path": "../../../etc/shadow"}
@@ -252,7 +241,6 @@ class TestMakePlanStep:
         assert result["current_step_payload"] == next_payload
         assert route_after_plan_step({**state, **result}) == "execute_step"
 
-    @pytest.mark.asyncio
     async def test_a_refused_step_planning_sends_the_chain_to_its_judgment(self):
         node = make_plan_step(FakeLLM([given.a_provider_refusal()]))
         state = given.a_chain_audit_state(
@@ -268,7 +256,6 @@ class TestMakePlanStep:
 
 
 class TestMakeJudgeChain:
-    @pytest.mark.asyncio
     async def test_stamps_identity_and_deterministic_payload(self):
         judgment = given.a_judgment(verdict=EvalVerdict.FAIL, severity=Severity.HIGH)
         llm = FakeLLM([judgment])
@@ -295,7 +282,6 @@ class TestMakeJudgeChain:
             verdict=EvalVerdict.FAIL,
         )
 
-    @pytest.mark.asyncio
     async def test_a_refused_judgment_completes_the_chain_unjudged(self):
         refusal = given.a_provider_refusal()
         node = make_judge_chain(FakeLLM([refusal]))

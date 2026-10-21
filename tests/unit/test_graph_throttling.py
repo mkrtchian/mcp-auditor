@@ -1,11 +1,8 @@
-import pytest
-
 import tests.unit.support.test_graph_throttling_given as given
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.domain.models import AuditStep, MissCause
 
 
-@pytest.mark.asyncio
 async def test_a_call_throttled_past_every_retry_stops_every_later_call_of_the_audit():
     chat_model = given.a_provider_throttling_the_first_generation_past_every_retry()
 
