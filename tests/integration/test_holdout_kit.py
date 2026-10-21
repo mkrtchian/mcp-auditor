@@ -52,8 +52,8 @@ async def test_list_tools_and_a_benign_call_over_a_real_launch():
             launch.command, launch.args, env=docker_client_env(os.environ)
         ) as client:
             tools = await client.list_tools()
-            assert tools
             response = await client.call_tool("list_directory", {"path": "/srv/app"})
 
-    assert response.content is not None
+    assert "list_directory" in {tool.name for tool in tools}
+    assert ".git" in response.content
     assert response.is_error is False
