@@ -1,7 +1,7 @@
 """Isolation checks for the holdout calibration kit, static and at runtime.
 
-Reused by test_holdout_kit_isolation.py and (Step 5) by test_run_holdout.py on the written
-`--out` tree: the one place that knows what "free of mcp_auditor" means for the kit.
+Reused by test_holdout_kit_isolation.py and test_run_holdout.py on the written `--out` tree:
+the one place that knows what "free of mcp_auditor" means for the kit.
 """
 
 import ast
@@ -38,9 +38,20 @@ def scan_tree(root: Path) -> dict[str, list[str]]:
     return found
 
 
-def import_closure_offenders(modules: list[str]) -> list[str]:
-    """The mcp_auditor modules importing `modules` pulls into sys.modules, measured in a fresh
-    interpreter so the test suite's own mcp_auditor imports cannot pollute the result."""
+def kit_modules(out: Path) -> list[str]:
+    """Every module of the written kit's `evals` package, by dotted name."""
+    return [_dotted_name(path.relative_to(out)) for path in sorted((out / "evals").rglob("*.py"))]
+
+
+def _dotted_name(relative: Path) -> str:
+    parts = relative.with_suffix("").parts
+    return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
+
+
+def import_closure_offenders(modules: list[str], root: Path) -> list[str]:
+    """The mcp_auditor modules importing `modules` from `root` pulls into sys.modules, measured
+    in a fresh interpreter so the test suite's own mcp_auditor imports cannot pollute the
+    result."""
     script = (
         "import importlib, sys, json\n"
         f"for name in {modules!r}:\n"
@@ -49,7 +60,7 @@ def import_closure_offenders(modules: list[str]) -> list[str]:
         "print(json.dumps(sorted(bad)))\n"
     )
     result = subprocess.run(
-        [sys.executable, "-c", script], cwd=REPO_ROOT, capture_output=True, text=True
+        [sys.executable, "-c", script], cwd=root, capture_output=True, text=True
     )
     if result.returncode != 0:
         raise AssertionError(f"could not import the kit in isolation:\n{result.stderr}")

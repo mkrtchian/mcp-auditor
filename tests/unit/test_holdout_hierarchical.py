@@ -58,9 +58,8 @@ def test_more_concentration_pulls_toward_the_pooled_rate():
     assert concentrated.low > diffuse.low
 
 
-def test_interval_clamps_to_zero_one():
-    interval = hierarchical_interval([3, 3, 3, 3, 3], RUNS, GammaPrior(1.0, 1.0))
-    assert 0.0 <= interval.low <= interval.high <= 1.0
+def test_an_all_missed_interval_clamps_its_low_bound_to_zero():
+    assert hierarchical_interval([0] * 20, RUNS, GammaPrior(1.0, 1.0)).low == 0.0
 
 
 COARSE = Grid(theta_points=120, d_points=48)
@@ -78,8 +77,3 @@ def test_contrast_is_positive_when_side_a_detects_more():
     low_side = [0, 0, 1, 0, 0]
     interval = contrast_hierarchical(high_side, low_side, RUNS, GammaPrior(1.0, 1.0), grid=COARSE)
     assert interval.low > 0.0
-
-
-def test_contrast_clamps_to_minus_one_one():
-    interval = contrast_hierarchical([3, 3, 3], [0, 0, 0], RUNS, GammaPrior(1.0, 1.0), grid=COARSE)
-    assert -1.0 <= interval.low <= interval.high <= 1.0

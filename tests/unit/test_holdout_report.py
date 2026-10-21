@@ -97,17 +97,18 @@ def test_build_report_carries_the_primary_number_and_the_split():
     assert report.total_cost == 0.06
 
 
-def test_render_markdown_shows_the_number_ladder_split_controls_and_cost():
+def test_render_markdown_shows_the_number_ladder_controls_and_cost():
     markdown = render_markdown(build_report(_run_result()))
-    assert "0.667" in markdown  # the primary number, three decimals
-    assert "Ladder" in markdown
-    assert "Split" in markdown
-    assert "Controls" in markdown
-    assert "$0.06" in markdown
-    assert "dead condition on the patched version" in markdown  # a not-run reason
-    assert (
-        "Incomplete runs (a step refused or unreadable): 1 (CVE-B)" in markdown
-    )  # the count with the target it touches
+
+    assert "Capability: 0.667 (95% Wilson " in markdown
+    assert "## Ladder\n- 3 detecting run(s): 1 target(s)\n- 1 detecting run(s): 1 target(s)\n" in (
+        markdown
+    )
+    assert "## Controls\n- clopper_pearson: " in markdown
+    assert "- unchecked_as_misses_wilson: " in markdown
+    assert "- CVE-C: dead condition on the patched version" in markdown
+    assert "Incomplete runs (a step refused or unreadable): 1 (CVE-B)" in markdown
+    assert markdown.endswith("Total cost: $0.06")
 
 
 def test_the_not_run_section_counts_the_in_run_drops_per_cause_against_the_targets_launched():

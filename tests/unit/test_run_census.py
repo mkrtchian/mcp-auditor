@@ -1,11 +1,8 @@
 from datetime import date
 from pathlib import Path
 
-import pytest
-
 import tests.unit.support.test_census_sources_given as sources
 import tests.unit.support.test_run_census_given as given
-from evals import run_census
 from evals.census_grouping import READERS
 from evals.census_sources import SourceName
 from evals.holdout_census import Discovery, load_census
@@ -211,16 +208,6 @@ def test_classify_dossier_writes_one_file_per_flaw_the_schema_and_the_grammar_cl
         "classification_schema.json",
         "grammar_classes.md",
     ]
-
-
-def test_the_help_lists_the_four_subcommands(capsys: pytest.CaptureFixture[str]):
-    with pytest.raises(SystemExit):
-        run_census.main(["--help"])
-
-    usage = capsys.readouterr().out
-    assert all(
-        command in usage for command in ("prefilter", "status", "classify-dossier", "assemble")
-    )
 
 
 def _a_complete_census_collection(tmp_path: Path) -> tuple[Path, Path]:

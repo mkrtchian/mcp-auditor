@@ -1,33 +1,17 @@
 """The pin that keeps the holdout kit free of mcp_auditor, the way the acceptance conformance
-phase had to be re-pinned: the kit's import closure, a static scan of the kit and the clean
-modules the dossier copies, a negative control, and the KitTarget/CVETarget field parity."""
+phase had to be re-pinned: the written kit's import closure, a static scan of the kit, a
+negative control, and the KitTarget/CVETarget field parity."""
 
 from dataclasses import fields
 from pathlib import Path
 
 import tests.unit.support.holdout_kit_isolation as iso
+import tests.unit.support.test_holdout_census_given as census_given
+from evals.calibration_dossier import write_kit
 from evals.cve_targets import CVETarget
 from evals.holdout_kit.kit_target import KitTarget
 
 _KIT_DIR = iso.REPO_ROOT / "evals" / "holdout_kit"
-_KIT_MODULES = [
-    "evals.holdout_kit.kit_client",
-    "evals.holdout_kit.kit_launch",
-    "evals.holdout_kit.kit_target",
-    "evals.holdout_kit.kit_driver",
-]
-_COPIED_CLEAN_MODULES = [
-    "cve_grammar",
-    "cve_proofs",
-    "cve_units",
-    "cve_places",
-    "cve_layout",
-    "cve_planting",
-    "cve_planting_base",
-    "cve_planting_spec",
-    "cve_planting_docker",
-    "cve_endpoint_address",
-]
 
 # A drawn target is a CVETarget, so the parity the transplant needs is between KitTarget's fields
 # and CVETarget's: the maintainer wraps a KitTarget into a CVETarget (these fields).
@@ -51,22 +35,15 @@ _DRAWN_TARGET_FIELDS = frozenset(
 )
 
 
-def test_kit_import_closure_holds_no_mcp_auditor_module():
-    assert iso.import_closure_offenders(_KIT_MODULES) == []
+def test_the_written_kit_imports_from_its_own_tree_with_no_mcp_auditor_module(tmp_path: Path):
+    out = tmp_path / "kit"
+    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, out)
+
+    assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
 
 
 def test_no_kit_file_imports_mcp_auditor():
     assert iso.scan_tree(_KIT_DIR) == {}
-
-
-def test_no_copied_clean_module_imports_mcp_auditor():
-    offenders: dict[str, list[str]] = {}
-    for name in _COPIED_CLEAN_MODULES:
-        path = iso.REPO_ROOT / "evals" / f"{name}.py"
-        found = iso.mcp_auditor_imports(path.read_text(), str(path))
-        if found:
-            offenders[str(path)] = found
-    assert offenders == {}
 
 
 def test_scan_flags_a_planted_mcp_auditor_import(tmp_path: Path):
