@@ -139060,6 +139060,11 @@
         "identifier": "CVE-2026-55580",
         "outcome": "skipped",
         "reason": "Skipped at the pre-filter (walk step 2): its server Go:github.com/sonirico/mcp-shell already gives a drawn holdout target, CVE-2026-55581 (the secure-mode allowlist bypass, command_execution, drawn 18th). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2026-55580 was already recorded as a sibling of 55581 during its calibration: secure mode off by default plus allowlisted interpreters, command_execution, present in 0.5.0 and absent from 0.6.0; the deferral to the drawn 55581 governs regardless. The same server was also skipped at position 49 (CVE-2025-61489) and position 66 (CVE-2026-55582).)"
+      },
+      {
+        "identifier": "CVE-2026-67428",
+        "outcome": "skipped",
+        "reason": "Skipped at the pre-filter (walk step 2): its server PyPI:flyto-core already gives a drawn holdout target, CVE-2026-55787 (the SSRF guard bypass via IPv6-transition forms in execute_module's http.get, internal_fetch, drawn 8th). One server belongs to at most one layer and gives at most one holdout target (ADR 028), so the walk does not process it. (CVE-2026-67428 is another flyto-core internal_fetch flaw, pinned 2.26.5/2.26.7; its fix at 2.26.7 lands after the 2.26.3 first patch of 55787, so it is one of the 55787 neighbours fixed after 2.26.3 and is not a sibling of 55787; the deferral to the drawn 55787 governs regardless.)"
       }
     ],
     "cards": [
