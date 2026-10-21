@@ -14,13 +14,6 @@ from mcp_auditor.target_execution import (
 from tests.fakes import FakeContainerRuntime
 
 
-def test_the_launcher_table_is_closed():
-    assert IMAGE_BY_LAUNCHER["uvx"] == "ghcr.io/astral-sh/uv:python3.14-trixie-slim"
-    assert IMAGE_BY_LAUNCHER["npx"] == "node:24-bookworm-slim"
-    for launcher in ("python", "node", "uv", "bun"):
-        assert IMAGE_BY_LAUNCHER.get(launcher) is None
-
-
 def test_unconfined_keeps_the_command_and_reaches_no_runtime():
     context = given.a_context(FakeContainerRuntime(untouchable=True), unconfined=True)
 
@@ -62,14 +55,28 @@ def test_a_declared_container_passes_through_with_the_docker_environment():
     assert decision.warnings == ()
 
 
-def test_an_unknown_launcher_stops_before_any_runtime_call():
+@pytest.mark.parametrize("launcher", ["python", "node", "uv", "bun"])
+def test_an_unknown_launcher_stops_before_any_runtime_call(launcher: str):
     context = given.a_context(FakeContainerRuntime(untouchable=True))
 
     with pytest.raises(LaunchRefused) as refusal:
-        decide_launch("python", ["server.py"], context)
+        decide_launch(launcher, ["server.py"], context)
 
     assert "no confinement profile" in str(refusal.value)
     assert "--unconfined" in str(refusal.value)
+
+
+@pytest.mark.parametrize(
+    ("launcher", "expected_image"),
+    [("npx", "node:24-bookworm-slim"), ("uvx", "ghcr.io/astral-sh/uv:python3.14-trixie-slim")],
+)
+def test_a_known_launcher_runs_confined_in_its_own_image(launcher: str, expected_image: str):
+    runtime = FakeContainerRuntime()
+
+    decision = decide_launch(launcher, ["a-server"], given.a_context(runtime))
+
+    assert decision.launch.regime == ExecutionRegime.CONFINED
+    assert runtime.pulled == [expected_image]
 
 
 def test_an_image_given_for_an_unknown_launcher_is_used(tmp_path: Path):
