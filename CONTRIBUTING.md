@@ -11,7 +11,7 @@ uv sync                                # install runtime + dev dependencies
 uv run pytest -n auto                  # should be green before you touch anything
 ```
 
-You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management. Don't add a `requirements.txt`. Docker is needed to audit a server under the default regime, which launches it in a container, and by the CVE benchmark (below). One integration test exercises that confined path and skips when Docker does not answer; a second (`tests/integration/test_cve_planting.py`) exercises the real CVE planting path and skips both without Docker and without the sentinel image, which `docker compose -f evals/docker/compose.yml build` makes. The unit tests and the regular evals need none.
+You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for dependency management. Don't add a `requirements.txt`. Docker is needed to audit a server under the default regime, which launches it in a container, and by the CVE benchmark (below). One integration test exercises that confined path and skips when Docker does not answer; a second (`tests/integration/test_cve_planting.py`) exercises the real CVE planting path and skips both without Docker and without the sentinel image, which `docker compose -f evals/docker/compose.yml build` makes. The unit tests and the regular evals need none. Editing a Dockerfile under `evals/docker/` needs its fingerprint label updated in `evals/docker/compose.yml`: `tests/unit/test_cve_compose_labels.py` prints the value.
 
 ```bash
 uv run pytest tests/unit               # unit tests

@@ -23,6 +23,7 @@ from evals import (
 )
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
 from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
+from evals.cve_images import dockerfile_instructions
 from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
 from evals.cve_planting import PlantingHost
 from evals.cve_targets import (
@@ -120,10 +121,10 @@ def fixture_fingerprint(
     parts: list[object] = [
         fingerprint_sources([path.read_text() for path in _ENVIRONMENT_PATHS]),
         [
-            _dockerfile_instructions(image_dockerfile(name, docker_directory))
+            dockerfile_instructions(image_dockerfile(name, docker_directory))
             for name in target.images
         ],
-        _dockerfile_instructions(image_dockerfile(target.patched_image, docker_directory)),
+        dockerfile_instructions(image_dockerfile(target.patched_image, docker_directory)),
         target.builder.__name__,
         target.server_image,
         None if target.mechanism is None else target.mechanism.value,
@@ -139,7 +140,7 @@ def fixture_fingerprint(
     if target.launch_mode is LaunchMode.FALLBACK:
         parts.append([target.fallback_scope.kind.value, target.fallback_scope.path])
     if any(record.kind is PlantKind.HTTP_ENDPOINT for record in records):
-        parts.append(_dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
+        parts.append(dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
 
 
@@ -166,11 +167,6 @@ def _coordinate_parts(coordinates: Coordinates) -> dict[str, object]:
         "relpath": coordinates.relpath,
     }
     return {key: fields[key] for key in sorted(fields) if fields[key] is not None}
-
-
-def _dockerfile_instructions(path: Path) -> list[str]:
-    lines = (line.strip() for line in path.read_text().splitlines())
-    return [line for line in lines if line and not line.startswith("#")]
 
 
 def grammar_fingerprint() -> str:

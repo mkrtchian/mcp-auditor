@@ -5,57 +5,79 @@
 # CVE-2025-53109 + 53110 (one merged target) and git serves CVE-2025-68143 (one target),
 # each with its patched twin, plus kubernetes, fetch and the sentinel sidecar. The sentinel
 # has no patched twin: it is not a server image.
+# Each service carries the label org.mcp-auditor.dockerfile-fingerprint, the SHA-256 of its
+# Dockerfile's instructions (comments and blank lines left out), so a tag holding another build
+# is told apart and rebuilt. After a Dockerfile edit, tests/unit/test_cve_compose_labels.py
+# prints the value to paste.
 services:
   filesystem:
     build:
       context: .
       dockerfile: Dockerfile.filesystem
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "89bdd635f9137dc69ea37463d3e2c869fbf2961c6b8d56a2b07bafc7bc041226"
     image: mcp-auditor-cve-filesystem:local
 
   filesystem-patched:
     build:
       context: .
       dockerfile: Dockerfile.filesystem-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "b6986ec03db75c6430ef97ee4fbf78fa27be2b9e5c8bd710a228460f595fd1fa"
     image: mcp-auditor-cve-filesystem-patched:local
 
   git:
     build:
       context: .
       dockerfile: Dockerfile.git
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "5232c6f72c89f6d73ab4b21c64bc7705736600c5833daeff81485e63f4c909a9"
     image: mcp-auditor-cve-git:local
 
   git-patched-68143:
     build:
       context: .
       dockerfile: Dockerfile.git-patched-68143
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "3b9aa4ddbd466741ae0e692d12a7a8b73548fd39a718758eaaec6edb2a45918a"
     image: mcp-auditor-cve-git-patched-68143:local
 
   kubernetes:
     build:
       context: .
       dockerfile: Dockerfile.kubernetes
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "97f1f2d4159ea00beb8e8c265bf5253135b4bfa773554d8ddd6cd303e8536b42"
     image: mcp-auditor-cve-kubernetes:local
 
   kubernetes-patched:
     build:
       context: .
       dockerfile: Dockerfile.kubernetes-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "995cf96bef57a5d2d03dbf0bf1713516d5041ec30791b83b1e79c064b593f84a"
     image: mcp-auditor-cve-kubernetes-patched:local
 
   fetch:
     build:
       context: .
       dockerfile: Dockerfile.fetch
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "f22e5d28e3cde84c81c775af61e8bcd8201e3705a3b7b8c870717b396da69297"
     image: mcp-auditor-cve-fetch:local
 
   fetch-patched:
     build:
       context: .
       dockerfile: Dockerfile.fetch-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "d74f9421af578a72bdf87e1897d852ec0b400e2a5417e58170c1acddf1fcf3a6"
     image: mcp-auditor-cve-fetch-patched:local
 
   sentinel:
     build:
       context: .
       dockerfile: Dockerfile.sentinel
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "8e7b9f2e87bd82f06de8a106bddbe4a916720bb72b0889466aaab29e4998dd5e"
     image: mcp-auditor-cve-sentinel:local

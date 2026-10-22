@@ -18,10 +18,11 @@ from evals.cve_audit import RunOverrides, attempt_once, build_auditor
 from evals.cve_baseline import fixture_fingerprint, grammar_fingerprint, image_ids
 from evals.cve_calibration import check_target
 from evals.cve_grammar import DETECTION_RUNGS, RunGrade
+from evals.cve_images import COMPOSE_FILE
 from evals.cve_layout_check import LayoutCheck, layout_check, observe_versions
 from evals.cve_places import Places, kept_records
 from evals.cve_session_model import GradedAudit
-from evals.cve_targets import DOCKER_DIRECTORY, CVETarget, LaunchMode
+from evals.cve_targets import CVETarget, LaunchMode
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
@@ -42,7 +43,6 @@ from mcp_auditor.domain.models import AuditReport
 HOLDOUT_RUNS = 3  # holdout-rule.md:235, lowerable to 1 and logged
 HOLDOUT_BUDGET = 10  # holdout-rule.md:227, a constant, not a flag
 HOLDOUT_CONCURRENCY = 6
-COMPOSE_FILE = DOCKER_DIRECTORY / "compose.yml"
 
 type Audit = Callable[[CVETarget], Awaitable[GradedAudit | IncompleteRun | DroppedRun]]
 
