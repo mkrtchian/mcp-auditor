@@ -35,6 +35,12 @@ def tool_verdicts(report: AuditReport) -> list[ToolVerdict]:
     return verdicts
 
 
+def _verdict(tool: str, result: EvalResult | None) -> ToolVerdict:
+    if result is None:
+        return ToolVerdict(tool, None, None)
+    return ToolVerdict(tool, JudgeCategory(result.category.value), Verdict(result.verdict.value))
+
+
 def flagged_tools(
     report: AuditReport, counted: Mapping[str, frozenset[JudgeCategory]]
 ) -> frozenset[str]:
@@ -53,9 +59,3 @@ def raw_fail_count(report: AuditReport) -> int:
 
 def counter_fingerprint() -> str:
     return fingerprint_sources([path.read_text() for path in _COUNTER_PATHS])
-
-
-def _verdict(tool: str, result: EvalResult | None) -> ToolVerdict:
-    if result is None:
-        return ToolVerdict(tool, None, None)
-    return ToolVerdict(tool, JudgeCategory(result.category.value), Verdict(result.verdict.value))

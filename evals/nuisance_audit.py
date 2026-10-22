@@ -173,9 +173,9 @@ async def nuisance_audit(
     return DroppedRun(NotRunCause.THROTTLED if throttled else NotRunCause.LAUNCH_FAILURE)
 
 
-def is_incomplete(report: AuditReport) -> bool:
-    return any(missed.cause in _INCOMPLETE_CAUSES for missed in report.missed_steps)
-
-
 def _is_throttled(report: AuditReport) -> bool:
     return any(missed.cause is MissCause.PROVIDER_THROTTLED for missed in report.missed_steps)
+
+
+def is_incomplete(report: AuditReport) -> bool:
+    return any(missed.cause in _INCOMPLETE_CAUSES for missed in report.missed_steps)
