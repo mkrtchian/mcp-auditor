@@ -150,28 +150,28 @@ def _conclusion_methods(
     missed_b = [r.detected_runs_if_unchecked_missed for r in side_b.results]
     n_a, n_b = side_a.targets, side_b.targets
     return [
-        _placed("newcombe", newcombe(checked_a, n_a, checked_b, n_b)),
-        _placed("agresti_caffo", agresti_caffo(checked_a, n_a, checked_b, n_b)),
-        _placed("hierarchical_gamma_1_1", _hier_contrast(detected_a, detected_b, runs, _GAMMA_1_1)),
-        _placed("hierarchical_gamma_2_2", _hier_contrast(detected_a, detected_b, runs, _GAMMA_2_2)),
-        _placed("newcombe_unchecked", newcombe(unchecked_a, n_a, unchecked_b, n_b)),
-        _placed("agresti_caffo_unchecked", agresti_caffo(unchecked_a, n_a, unchecked_b, n_b)),
-        _placed(
+        placed("newcombe", newcombe(checked_a, n_a, checked_b, n_b)),
+        placed("agresti_caffo", agresti_caffo(checked_a, n_a, checked_b, n_b)),
+        placed("hierarchical_gamma_1_1", _hier_contrast(detected_a, detected_b, runs, _GAMMA_1_1)),
+        placed("hierarchical_gamma_2_2", _hier_contrast(detected_a, detected_b, runs, _GAMMA_2_2)),
+        placed("newcombe_unchecked", newcombe(unchecked_a, n_a, unchecked_b, n_b)),
+        placed("agresti_caffo_unchecked", agresti_caffo(unchecked_a, n_a, unchecked_b, n_b)),
+        placed(
             "hierarchical_gamma_1_1_unchecked",
             _hier_contrast(missed_a, missed_b, runs, _GAMMA_1_1),
         ),
-        _placed(
+        placed(
             "hierarchical_gamma_2_2_unchecked",
             _hier_contrast(missed_a, missed_b, runs, _GAMMA_2_2),
         ),
     ]
 
 
-def _placed(method: str, interval: Interval) -> MethodPlacement:
-    return MethodPlacement(method, interval, _placement(interval))
+def placed(method: str, interval: Interval) -> MethodPlacement:
+    return MethodPlacement(method, interval, placement_of(interval))
 
 
-def _placement(interval: Interval) -> Placement:
+def placement_of(interval: Interval) -> Placement:
     if interval.low > 0:
         return Placement.ABOVE
     if interval.high < 0:
