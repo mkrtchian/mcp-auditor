@@ -1,0 +1,210 @@
+import os
+from io import StringIO
+from typing import Any
+
+import pytest
+from rich.console import Console
+
+from evals import nuisance_audit as nuisance_audit_module
+from evals.cve_grammar import MechanismClass
+from evals.cve_planting_base import PlantingHost, SymbolicUser
+from evals.nuisance_audit import (
+    NUISANCE_INFRA_ATTEMPTS,
+    DroppedRun,
+    LaunchFailed,
+    benign_call_failure,
+    is_incomplete,
+    nuisance_audit,
+    nuisance_launch,
+)
+from evals.nuisance_results import NotRunCause
+from mcp_auditor.domain import ToolResponse
+from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep
+from tests.fakes.mcp_client import FakeMCPClient
+from tests.unit.support import test_cve_grammar_given as grammar
+from tests.unit.support.test_nuisance_admission_given import (
+    FIRST_FLAW,
+    SECOND_FLAW,
+    a_flaw_record,
+    a_server,
+    with_host,
+)
+
+SERVER = a_server(
+    [
+        a_flaw_record(FIRST_FLAW, MechanismClass.READ_OUTSIDE_SCOPE, "1.2.0"),
+        a_flaw_record(SECOND_FLAW, MechanismClass.COMMAND_EXECUTION, "1.2.0"),
+    ]
+)
+FIRST_TOOL = f"{FIRST_FLAW}_read"
+SECOND_TOOL = f"{SECOND_FLAW}_read"
+
+
+def test_the_crafted_server_launches_unprivileged_at_the_root_with_no_network():
+    args = nuisance_launch(SERVER).args
+
+    assert _follows(args, "--network", "none")
+    assert "bridge" not in args
+    assert _follows(args, "--user", "65534:65534")
+    assert _follows(args, "-w", "/")
+
+
+def test_a_networked_host_launches_on_the_default_bridge():
+    server = with_host(SERVER, PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True))
+
+    assert _follows(nuisance_launch(server).args, "--network", "bridge")
+
+
+def test_a_host_user_launches_as_the_invoking_user_in_its_working_directory():
+    server = with_host(SERVER, PlantingHost(SymbolicUser.HOST, "/srv", has_network=False))
+
+    args = nuisance_launch(server).args
+
+    assert _follows(args, "--user", f"{os.getuid()}:{os.getgid()}")
+    assert _follows(args, "-w", "/srv")
+
+
+def test_the_launch_runs_the_patched_image_confined_with_no_mount():
+    launch = nuisance_launch(SERVER)
+
+    assert launch.command == "docker"
+    assert launch.args[-3:] == [f"mcp-auditor-nuisance-{SERVER.service}:local", *SERVER.launch]
+    assert _follows(launch.args, "--cap-drop", "ALL")
+    assert "-v" not in launch.args
+    assert "--mount" not in launch.args
+
+
+async def test_clean_benign_calls_give_no_failure():
+    client = FakeMCPClient([])
+
+    reason = await benign_call_failure(SERVER, client)
+
+    assert reason is None
+    assert sorted(name for name, _ in client.calls) == sorted([FIRST_TOOL, SECOND_TOOL])
+
+
+async def test_a_benign_call_answering_an_error_names_the_tool():
+    client = FakeMCPClient([], {SECOND_TOOL: ToolResponse(content="boom", is_error=True)})
+
+    reason = await benign_call_failure(SERVER, client)
+
+    assert reason is not None
+    assert SECOND_TOOL in reason
+    assert "boom" in reason
+
+
+async def test_a_benign_call_raising_names_the_tool():
+    reason = await benign_call_failure(SERVER, _RaisingClient(FIRST_TOOL))
+
+    assert reason is not None
+    assert FIRST_TOOL in reason
+
+
+async def test_a_clean_report_stands_at_the_first_call(monkeypatch: pytest.MonkeyPatch):
+    _captured_console(monkeypatch)
+    report = grammar.a_report()
+    attempt = _ScriptedAttempts([report])
+
+    outcome = await nuisance_audit(SERVER, attempt)
+
+    assert outcome is report
+    assert attempt.calls == 1
+
+
+async def test_a_refused_step_with_a_fail_is_kept(monkeypatch: pytest.MonkeyPatch):
+    _captured_console(monkeypatch)
+    report = _missing_a_step(grammar.a_report([grammar.a_case()]), MissCause.PROVIDER_REFUSAL)
+    attempt = _ScriptedAttempts([report])
+
+    outcome = await nuisance_audit(SERVER, attempt)
+
+    assert outcome is report
+    assert attempt.calls == 1
+
+
+async def test_an_unreadable_step_with_no_fail_is_kept_as_incomplete(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _captured_console(monkeypatch)
+    report = _missing_a_step(grammar.a_report(), MissCause.UNREADABLE_ANSWER)
+
+    outcome = await nuisance_audit(SERVER, _ScriptedAttempts([report]))
+
+    assert outcome is report
+    assert is_incomplete(report)
+
+
+def test_a_report_with_no_missed_step_is_complete():
+    assert not is_incomplete(grammar.a_report())
+
+
+async def test_a_launch_failing_at_every_attempt_drops_the_run(monkeypatch: pytest.MonkeyPatch):
+    _captured_console(monkeypatch)
+    attempt = _ScriptedAttempts([LaunchFailed("no image")] * 3)
+
+    outcome = await nuisance_audit(SERVER, attempt)
+
+    assert outcome == DroppedRun(NotRunCause.LAUNCH_FAILURE)
+    assert attempt.calls == NUISANCE_INFRA_ATTEMPTS == 3
+
+
+async def test_a_run_throttled_at_any_attempt_drops_as_throttled(monkeypatch: pytest.MonkeyPatch):
+    output = _captured_console(monkeypatch)
+    throttled = _missing_a_step(grammar.a_report(), MissCause.PROVIDER_THROTTLED)
+
+    attempt = _ScriptedAttempts([throttled, LaunchFailed("no image"), throttled])
+
+    outcome = await nuisance_audit(SERVER, attempt)
+
+    assert outcome == DroppedRun(NotRunCause.THROTTLED)
+    assert attempt.calls == NUISANCE_INFRA_ATTEMPTS
+    assert f"attempt 1/{NUISANCE_INFRA_ATTEMPTS}" in output.getvalue()
+
+
+async def test_a_launch_failure_is_retried_and_a_later_report_stands(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _captured_console(monkeypatch)
+    report = grammar.a_report()
+    attempt = _ScriptedAttempts([LaunchFailed("no image"), report])
+
+    outcome = await nuisance_audit(SERVER, attempt)
+
+    assert outcome is report
+    assert attempt.calls == 2
+
+
+def _follows(args: list[str], flag: str, value: str) -> bool:
+    return any(args[i : i + 2] == [flag, value] for i in range(len(args) - 1))
+
+
+def _missing_a_step(report: AuditReport, cause: MissCause) -> AuditReport:
+    missed = MissedStep(tool_name="read_file", step=AuditStep.JUDGMENT, cause=cause, detail="")
+    return report.model_copy(update={"missed_steps": [missed]})
+
+
+class _RaisingClient(FakeMCPClient):
+    def __init__(self, failing_tool: str) -> None:
+        super().__init__([])
+        self._failing_tool = failing_tool
+
+    async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
+        if name == self._failing_tool:
+            raise RuntimeError("connection closed")
+        return await super().call_tool(name, args)
+
+
+class _ScriptedAttempts:
+    def __init__(self, outcomes: list[AuditReport | LaunchFailed]) -> None:
+        self._outcomes = outcomes
+        self.calls = 0
+
+    async def __call__(self) -> AuditReport | LaunchFailed:
+        self.calls += 1
+        return self._outcomes.pop(0)
+
+
+def _captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
+    output = StringIO()
+    monkeypatch.setattr(nuisance_audit_module, "console", Console(file=output, width=200))
+    return output
