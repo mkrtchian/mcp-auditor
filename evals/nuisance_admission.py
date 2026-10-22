@@ -112,7 +112,9 @@ def admission_problems(
     for server in admission.servers:
         problems += _unsettled_disagreements(server)
         problems += _foreign_flaws(server, census)
+        problems += _tool_record_problems(server)
         problems += _counted_tool_problems(server)
+        problems += _benign_call_problems(server)
         problems += _patched_version_problems(server)
     return problems
 
@@ -146,10 +148,57 @@ def _is_settled(server: AdmittedServer, agreement: FieldAgreement) -> bool:
 
 def _foreign_flaws(server: AdmittedServer, census: HoldoutCensus) -> list[str]:
     census_flaws = set(nuisance_walk.census_flaws_of(server.server_package, census))
+    all_flaws = {flaw.identifier for flaw in census.flaws}
     return [
         f"{server.server_package}: flaw {flaw.flaw} is not a census flaw of the server"
         for flaw in server.flaws
-        if flaw.flaw not in census_flaws
+        if flaw.flaw not in census_flaws and not _settled_to_server(server, flaw.flaw, all_flaws)
+    ]
+
+
+def _settled_to_server(server: AdmittedServer, flaw: str, census_flaws: set[str]) -> bool:
+    # A classifier may record a flaw under another spelling of the server (the ContextForge case),
+    # so the maintainer unifies it with a server_package settlement naming this package.
+    return flaw in census_flaws and any(
+        settlement.flaw == flaw
+        and settlement.field == "server_package"
+        and settlement.value == server.server_package
+        for settlement in server.settlements
+    )
+
+
+def _tool_record_problems(server: AdmittedServer) -> list[str]:
+    problems: list[str] = []
+    for flaw in server.flaws:
+        for tool in flaw.tools:
+            detail = _tool_record_defect(tool)
+            if detail is not None:
+                problems.append(f"{server.server_package}: flaw {flaw.flaw} {detail}")
+    return problems
+
+
+def _tool_record_defect(tool: ToolRecord) -> str | None:
+    if tool.status == "removed":
+        if tool.patched_name is not None:
+            return f"removed tool {tool.vulnerable_name!r} keeps a patched name"
+        return None
+    if tool.vulnerable_name is None or tool.patched_name is None:
+        return f"{tool.status} tool leaves a name unset"
+    renamed = tool.vulnerable_name != tool.patched_name
+    if tool.status == "renamed" and not renamed:
+        return f"renamed tool {tool.patched_name!r} keeps the same name"
+    if tool.status == "unchanged" and renamed:
+        return f"unchanged tool renames {tool.vulnerable_name!r} to {tool.patched_name!r}"
+    return None
+
+
+def _benign_call_problems(server: AdmittedServer) -> list[str]:
+    counted = counted_tools(server)
+    called = {call.tool for flaw in counted_flaws(server) for call in flaw.benign_calls}
+    return [
+        f"{server.server_package}: counted tool {name!r} has no benign call"
+        for name in counted
+        if name not in called
     ]
 
 
@@ -161,6 +210,10 @@ def _counted_tool_problems(server: AdmittedServer) -> list[str]:
 
 def _patched_version_problems(server: AdmittedServer) -> list[str]:
     counted = counted_flaws(server)
+    if not counted:
+        # The missing version has no counted flaw to pin it to: _counted_tool_problems already
+        # names that, so a second problem here would only be noise.
+        return []
     versions = {flaw.patched_version for flaw in counted}
     problems: list[str] = []
     if server.patched_version not in versions:

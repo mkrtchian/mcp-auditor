@@ -56,10 +56,14 @@ def _parser() -> argparse.ArgumentParser:
 def _walk(args: argparse.Namespace) -> int:
     census = load_census(args.census)
     population = nuisance_population(census)
+    outcomes: dict[str, str] = {}
+    for step in census.draw.walk if census.draw else []:
+        outcomes.setdefault(step.identifier, step.outcome)
     print(f"{len(population)} servers reached by the walk:")
     for server in population:
+        outcome = outcomes.get(server.reaching_flaw, "?")
         line = (
-            f"  {server.server_package}  reached by {server.reaching_flaw}"
+            f"  {server.server_package}  reached by {server.reaching_flaw} ({outcome})"
             f"  sets version: {', '.join(server.version_setting)}"
         )
         if server.mark is not None:

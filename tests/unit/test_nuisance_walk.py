@@ -110,6 +110,17 @@ def test_settlements_override_the_classifiers_per_criterion():
     assert version_setting_flaws("npm:srv", left_in) == ["t"]
 
 
+def test_a_flaw_only_the_second_classifier_places_in_grammar_still_sets_version():
+    census = given.a_census_walking([("g", "drawn", "npm:srv")], g=given.OUTSIDE_THE_GRAMMAR)
+    assert version_setting_flaws("npm:srv", census) == []
+
+    brought_in = given.with_the_second_classifier_overriding(
+        census, "g", {"effect_class": "read_outside_scope"}
+    )
+
+    assert version_setting_flaws("npm:srv", brought_in) == ["g"]
+
+
 def test_a_server_whose_every_flaw_fails_leaves_the_population():
     census = given.a_census_walking(
         [("bad", "drawn", "npm:bad"), ("ok", "drawn", "npm:ok")],

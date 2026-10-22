@@ -19,8 +19,7 @@ def test_walk_prints_the_population_and_exits_zero(
     assert exit_code == 0
     assert "servers reached by the walk" in out
     assert "npm:@acme/files" in out
-    assert "reached by CVE-2025-0001" in out
-    assert "CVE-2025-0001" in out
+    assert "reached by CVE-2025-0001 (drawn)" in out
 
 
 def test_a_malformed_census_exits_three(tmp_path: Path):

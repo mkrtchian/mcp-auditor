@@ -67,6 +67,20 @@ def a_census_walking(
     return _bare_census(order).model_copy(update={"classifications": classifications, "draw": draw})
 
 
+def with_the_second_classifier_overriding(
+    census: HoldoutCensus, flaw: str, override: dict[str, Any]
+) -> HoldoutCensus:
+    """Override the second classifier's classification of one flaw, so a disagreement between the
+    two classifiers can be exercised (server_of reads the first, the criteria read either)."""
+    second = CLASSIFIERS[1]
+    updated = [
+        each.model_copy(update=override) if each.flaw == flaw else each
+        for each in census.classifications[second]
+    ]
+    classifications = census.classifications | {second: updated}
+    return census.model_copy(update={"classifications": classifications})
+
+
 def with_a_settlement(
     census: HoldoutCensus, flaw: str, criterion: Criterion, verdict: bool
 ) -> HoldoutCensus:

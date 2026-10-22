@@ -75,7 +75,8 @@ repository, so the vulnerable Dockerfile and the exploits are committed beside t
 
 - `flaw`: the census identifier the fixture reproduces.
 - `mechanism`: the grammar `MechanismClass`, or `None`.
-- `aim`: a compiled `re.Pattern` the exploit output must match.
+- `aim`: a compiled `re.Pattern` the exploit's call arguments must match, so a witness that
+  surfaces by accident (an exploit not aimed at it) does not count.
 - `witness`: the `Place` the exploit surfaces (an id of its own, a `PlantKind` and
   `Coordinates`). The fix check plants it at the flaw's own coordinate, with no catalogue list.
 - `planting_host`: the `PlantingHost` the witness plants into.

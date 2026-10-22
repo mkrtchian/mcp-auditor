@@ -4,10 +4,12 @@ from typing import Literal
 
 import tests.unit.support.test_holdout_census_given as census_given
 from evals import cve_baseline
+from evals.census_classification import Classification
 from evals.census_work import AgentRecord, AgentRole
 from evals.cve_grammar import MechanismClass
-from evals.holdout_census import HoldoutCensus
+from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.nuisance_admission import (
+    AdmissionSettlement,
     AdmittedServer,
     BenignCall,
     FieldAgreement,
@@ -16,6 +18,8 @@ from evals.nuisance_admission import (
     NuisanceAdmission,
     ToolRecord,
 )
+
+OTHER_PACKAGE = "PyPI:context-forge"
 
 SERVER_PACKAGE = "npm:@acme/files"
 FIRST_FLAW = census_given.FLAW_WITH_A_CVE
@@ -180,6 +184,61 @@ def with_a_server_patched_surfaces_set_on_the_servers_own_version(
 def with_an_acceptance_service(admission: NuisanceAdmission) -> NuisanceAdmission:
     return _with_server(
         admission, lambda server: server.model_copy(update={"service": "filesystem-patched"})
+    )
+
+
+def with_an_inconsistent_tool_record(admission: NuisanceAdmission) -> NuisanceAdmission:
+    def changed(server: AdmittedServer) -> AdmittedServer:
+        first, *rest = server.flaws
+        bad = first.model_copy(
+            update={
+                "tools": [a_tool("read_file", "write_file", "unchanged")],
+                "benign_calls": [BenignCall(tool="write_file", arguments={})],
+            }
+        )
+        return server.model_copy(update={"flaws": [bad, *rest]})
+
+    return _with_server(admission, changed)
+
+
+def with_a_counted_tool_missing_its_benign_call(admission: NuisanceAdmission) -> NuisanceAdmission:
+    def changed(server: AdmittedServer) -> AdmittedServer:
+        first, *rest = server.flaws
+        return server.model_copy(
+            update={"flaws": [first.model_copy(update={"benign_calls": []}), *rest]}
+        )
+
+    return _with_server(admission, changed)
+
+
+def a_census_with_the_second_flaw_under_another_package() -> HoldoutCensus:
+    census = a_census()
+
+    def relabel(own: list[Classification]) -> list[Classification]:
+        return [
+            each.model_copy(update={"server_package": OTHER_PACKAGE})
+            if each.flaw == SECOND_FLAW
+            else each
+            for each in own
+        ]
+
+    classifications = {
+        classifier: relabel(census.classifications[classifier]) for classifier in CLASSIFIERS
+    }
+    return census.model_copy(update={"classifications": classifications})
+
+
+def with_the_second_flaw_settled_here(admission: NuisanceAdmission) -> NuisanceAdmission:
+    settlement = AdmissionSettlement(
+        server_package=SERVER_PACKAGE,
+        flaw=SECOND_FLAW,
+        field="server_package",
+        value=SERVER_PACKAGE,
+        reason="the advisory names the same package under another spelling",
+    )
+    return _with_server(
+        admission,
+        lambda server: server.model_copy(update={"settlements": [*server.settlements, settlement]}),
     )
 
 

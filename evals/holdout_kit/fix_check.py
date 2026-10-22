@@ -112,6 +112,7 @@ def fix_check_result(
 async def _exercise(target: FixCheckTarget, service: str) -> Exercised:
     spec = target.planting_spec()
     places: Places = {target.witness.id: target.witness}
+    connected = False
     with tempfile.TemporaryFile("w+") as server_stderr:
         try:
             with target.builder(image_tag(service), spec, LaunchShape.NORMAL) as launch:
@@ -121,6 +122,7 @@ async def _exercise(target: FixCheckTarget, service: str) -> Exercised:
                     env=docker_client_env(os.environ),
                     errlog=server_stderr,
                 ) as client:
+                    connected = True
                     benign = KitRecorder(client)
                     for benign_call in target.benign_calls:
                         await benign_call(places, benign)
@@ -130,6 +132,10 @@ async def _exercise(target: FixCheckTarget, service: str) -> Exercised:
                         await exploit(places, recorder)
                         exploits.append(recorder)
         except Exception as exc:
+            # Only a launch or connection failure reads as "did not launch"; an exploit that
+            # raises once the client is up is the agent's bug and propagates as itself.
+            if connected:
+                raise
             raise RuntimeError(f"the {service} version did not launch") from exc
     return Exercised(spec.nonces, [r.exchanges for r in exploits], benign.exchanges)
 

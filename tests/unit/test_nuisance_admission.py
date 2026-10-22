@@ -21,6 +21,8 @@ _MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
     given.with_a_server_patched_version_of_no_flaw,
     given.with_a_server_patched_surfaces_set_on_the_servers_own_version,
     given.with_an_acceptance_service,
+    given.with_an_inconsistent_tool_record,
+    given.with_a_counted_tool_missing_its_benign_call,
 ]
 
 
@@ -54,6 +56,23 @@ def test_each_mutation_yields_exactly_one_problem(
     problems = admission_problems(admission, given.a_census(), cve_baseline.grammar_fingerprint())
 
     assert len(problems) == 1, problems
+    # The problem names the thing it is about: the server, or the grammar for the fingerprint.
+    assert given.SERVER_PACKAGE in problems[0] or "grammar fingerprint" in problems[0]
+
+
+def test_a_flaw_recorded_under_another_package_is_foreign_without_a_settlement():
+    census = given.a_census_with_the_second_flaw_under_another_package()
+
+    problems = admission_problems(given.an_admission(), census, cve_baseline.grammar_fingerprint())
+
+    assert any(given.SECOND_FLAW in problem and "census flaw" in problem for problem in problems)
+
+
+def test_a_server_package_settlement_unifies_the_foreign_flaw():
+    census = given.a_census_with_the_second_flaw_under_another_package()
+    admission = given.with_the_second_flaw_settled_here(given.an_admission())
+
+    assert admission_problems(admission, census, cve_baseline.grammar_fingerprint()) == []
 
 
 def test_load_admission_returns_the_written_clean_admission(tmp_path: Path):

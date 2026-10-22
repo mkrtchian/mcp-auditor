@@ -42,18 +42,20 @@ def nuisance_fixture_fingerprint(
     moves (the rule's Run conditions section).
 
     In: the patched Dockerfile's instructions (comments and blank lines out), the launch, the
-    counted tools with the valid judge categories of their classes, and the benign calls of every
-    counted flaw in record order. Out: the vulnerable Dockerfile, the exploits, the agents, the
+    counted tools with the valid judge categories of their classes, and the benign calls of those
+    counted tools in record order. Out: the vulnerable Dockerfile, the exploits, the agents, the
     agreement, the settlements and the fix-check records.
     """
+    counted = counted_tools(server)
     parts: list[object] = [
         dockerfile_instructions(image_dockerfile(server.service, docker_directory)),
         server.launch,
-        sorted((name, sorted(categories)) for name, categories in counted_tools(server).items()),
+        sorted((name, sorted(categories)) for name, categories in counted.items()),
         [
             (call.tool, call.arguments)
             for flaw in counted_flaws(server)
             for call in flaw.benign_calls
+            if call.tool in counted
         ],
     ]
-    return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
