@@ -148,19 +148,21 @@ def _is_settled(server: AdmittedServer, agreement: FieldAgreement) -> bool:
 
 def _foreign_flaws(server: AdmittedServer, census: HoldoutCensus) -> list[str]:
     census_flaws = set(nuisance_walk.census_flaws_of(server.server_package, census))
-    all_flaws = {flaw.identifier for flaw in census.flaws}
+    all_census_flaws = {flaw.identifier for flaw in census.flaws}
     return [
         f"{server.server_package}: flaw {flaw.flaw} is not a census flaw of the server"
         for flaw in server.flaws
-        if flaw.flaw not in census_flaws and not _settled_to_server(server, flaw.flaw, all_flaws)
+        if flaw.flaw not in census_flaws
+        and not _settled_to_server(server, flaw.flaw, all_census_flaws)
     ]
 
 
-def _settled_to_server(server: AdmittedServer, flaw: str, census_flaws: set[str]) -> bool:
+def _settled_to_server(server: AdmittedServer, flaw: str, all_census_flaws: set[str]) -> bool:
     # A classifier may record a flaw under another spelling of the server (the ContextForge case),
     # so the maintainer unifies it with a server_package settlement naming this package.
-    return flaw in census_flaws and any(
-        settlement.flaw == flaw
+    return flaw in all_census_flaws and any(
+        settlement.server_package == server.server_package
+        and settlement.flaw == flaw
         and settlement.field == "server_package"
         and settlement.value == server.server_package
         for settlement in server.settlements
