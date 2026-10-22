@@ -27,14 +27,21 @@ def counted_flaws(server: AdmittedServer) -> list[FlawRecord]:
 def counted_tools(server: AdmittedServer) -> dict[str, frozenset[JudgeCategory]]:
     categories: dict[str, set[JudgeCategory]] = defaultdict(set)
     for flaw in counted_flaws(server):
-        effect_class = flaw.effect_class
-        if effect_class is None or flaw.needs_backend or flaw.declared_function_is_effect:
+        if flaw.effect_class is None:
             continue
-        for tool in flaw.tools:
-            if tool.status == "removed" or tool.patched_name is None:
-                continue
-            categories[tool.patched_name] |= VALID_CATEGORIES[effect_class]
+        for name in flaw_counted_tools(flaw):
+            categories[name] |= VALID_CATEGORIES[flaw.effect_class]
     return {name: frozenset(cats) for name, cats in categories.items()}
+
+
+def flaw_counted_tools(flaw: FlawRecord) -> frozenset[str]:
+    if flaw.effect_class is None or flaw.needs_backend or flaw.declared_function_is_effect:
+        return frozenset()
+    return frozenset(
+        tool.patched_name
+        for tool in flaw.tools
+        if tool.status != "removed" and tool.patched_name is not None
+    )
 
 
 def _counts(flaw: FlawRecord) -> bool:
