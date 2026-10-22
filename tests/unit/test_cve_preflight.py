@@ -2,22 +2,18 @@ from pathlib import Path
 
 import pytest
 
-from evals.cve_planting import SENTINEL_IMAGE
-from evals.cve_preflight import (
-    VULNERABLE_IMAGES,
-    expected_images,
-    preflight_ok,
-    vulnerable_images,
-)
-from evals.cve_targets import CVE_TARGETS
+from evals.cve_images import dockerfile_fingerprint
+from evals.cve_planting import SENTINEL_SERVICE
+from evals.cve_preflight import expected_services, preflight_ok, vulnerable_services
+from evals.cve_targets import CVE_TARGETS, image_tag
+from tests.fakes.image_store import FakeImageStore
 
 FETCH_ID = "CVE-2025-65513"
 
 
-def _a_docker_answering_only(directory: Path, tags: tuple[str, ...]) -> Path:
-    """A `docker` shim first on PATH: `info` succeeds, `image inspect` succeeds for the given
-    tags only. No probe is monkeypatched, so the preflight runs its real subprocess calls."""
-    known = " ".join(tags)
+def _a_docker_answering_only_info(directory: Path) -> Path:
+    """A `docker` shim first on PATH, answering `info` and `info --format`, so the daemon and
+    pids-limit probes run their real subprocess calls without reaching the host's Docker."""
     docker = directory / "docker"
     docker.write_text(
         "#!/bin/sh\n"
@@ -25,33 +21,50 @@ def _a_docker_answering_only(directory: Path, tags: tuple[str, ...]) -> Path:
         '  [ "$2" = "--format" ] && echo 256\n'
         "  exit 0\n"
         "fi\n"
-        'if [ "$1" = "image" ] && [ "$2" = "inspect" ]; then\n'
-        f"  for tag in {known}; do\n"
-        '    [ "$3" = "$tag" ] && exit 0\n'
-        "  done\n"
-        "  exit 1\n"
-        "fi\n"
-        "exit 0\n"
+        "exit 1\n"
     )
     docker.chmod(0o755)
     return directory
 
 
-def test_the_preflight_names_a_missing_patched_image(
+def _a_store_with_one_stale(stale: str, *, build_error: str | None = None) -> FakeImageStore:
+    labels: dict[str, str | None] = {
+        image_tag(service): dockerfile_fingerprint(service)
+        for service in expected_services(CVE_TARGETS)
+    }
+    labels[image_tag(stale)] = "a-foreign-fingerprint"
+    return FakeImageStore(labels, build_error=build_error)
+
+
+def test_the_preflight_rebuilds_a_stale_image_and_names_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
-    _a_docker_answering_only(tmp_path, VULNERABLE_IMAGES)
-    monkeypatch.setenv("PATH", str(tmp_path))
+    monkeypatch.setenv("PATH", str(_a_docker_answering_only_info(tmp_path)))
+    stale = CVE_TARGETS[0].patched_image
+    store = _a_store_with_one_stale(stale)
 
-    ok = preflight_ok()
+    ok = preflight_ok(store)
+
+    assert ok
+    assert store.label_of(image_tag(stale)) == dockerfile_fingerprint(stale)
+    assert stale in capsys.readouterr().out
+
+
+def test_the_preflight_fails_and_names_the_service_whose_rebuild_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    monkeypatch.setenv("PATH", str(_a_docker_answering_only_info(tmp_path)))
+    stale = CVE_TARGETS[0].patched_image
+    store = _a_store_with_one_stale(stale, build_error="no space left on device")
+
+    ok = preflight_ok(store)
 
     assert not ok
-    output = capsys.readouterr().out
-    assert "patched" in output
+    assert stale in capsys.readouterr().out
 
 
-def test_expected_images_keeps_the_sentinel_with_the_fetch_target_filtered_out():
+def test_expected_services_keeps_the_sentinel_with_the_fetch_target_filtered_out():
     without_fetch = [target for target in CVE_TARGETS if target.cve_id != FETCH_ID]
 
-    assert SENTINEL_IMAGE in expected_images(without_fetch)
-    assert SENTINEL_IMAGE not in vulnerable_images(without_fetch)
+    assert SENTINEL_SERVICE in expected_services(without_fetch)
+    assert SENTINEL_SERVICE not in vulnerable_services(without_fetch)

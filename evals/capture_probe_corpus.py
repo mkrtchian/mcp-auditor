@@ -17,7 +17,8 @@ from datetime import UTC, datetime
 from rich.console import Console
 
 from evals.cve_environments import Launch
-from evals.cve_preflight import VULNERABLE_IMAGES, image_exists
+from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve_preflight import VULNERABLE_SERVICES
 from evals.cve_targets import CVE_TARGETS
 from evals.honeypots import HONEYPOTS, REPO_ROOT, AuditModels, audit_honeypot, models_for
 from evals.probe_candidates import REFERENCE
@@ -93,7 +94,11 @@ def _refuse(reason: str, details: list[str]) -> None:
 
 
 def _cve_image_problems() -> list[str]:
-    return [f"missing image {image}" for image in VULNERABLE_IMAGES if not image_exists(image)]
+    try:
+        ensure_images(VULNERABLE_SERVICES, ComposeImageStore())
+    except ImageBuildFailed as error:
+        return [f"building {', '.join(error.services)} failed:\n{error.stderr_tail}"]
+    return []
 
 
 async def _capture(settings: Settings) -> ProbeCorpus:
