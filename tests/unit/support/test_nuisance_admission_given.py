@@ -177,6 +177,12 @@ def with_a_server_patched_surfaces_set_on_the_servers_own_version(
     return _with_server(admission, changed)
 
 
+def with_an_acceptance_service(admission: NuisanceAdmission) -> NuisanceAdmission:
+    return _with_server(
+        admission, lambda server: server.model_copy(update={"service": "filesystem-patched"})
+    )
+
+
 def _with_server(
     admission: NuisanceAdmission, change: Callable[[AdmittedServer], AdmittedServer]
 ) -> NuisanceAdmission:

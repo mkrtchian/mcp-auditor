@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from evals.cve_images import ImageBuildFailed, dockerfile_fingerprint, ensure_images
+from evals import nuisance_images
+from evals.cve_images import (
+    ImageBuildFailed,
+    dockerfile_fingerprint,
+    ensure_images,
+    stale_services,
+)
 from evals.cve_targets import image_tag
 from tests.fakes.image_store import FakeImageStore
 
@@ -60,6 +66,15 @@ def test_a_build_failure_propagates():
 
     with pytest.raises(ImageBuildFailed):
         ensure_images(["filesystem"], store)
+
+
+def test_the_injected_tag_selects_which_namespace_is_read():
+    store = FakeImageStore(
+        {nuisance_images.image_tag("filesystem"): dockerfile_fingerprint("filesystem")}
+    )
+
+    assert stale_services(["filesystem"], store, tag=nuisance_images.image_tag) == []
+    assert stale_services(["filesystem"], store) == ["filesystem"]
 
 
 def test_a_comment_or_a_blank_line_leaves_the_fingerprint_unchanged(tmp_path: Path):

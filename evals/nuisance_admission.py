@@ -13,7 +13,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from evals import cve_baseline, nuisance_walk
+from evals import cve_baseline, nuisance_images, nuisance_walk
 from evals.census_draw import LaunchOption
 from evals.census_work import AgentRecord
 from evals.cve_grammar import MechanismClass
@@ -108,6 +108,7 @@ def admission_problems(
     admission: NuisanceAdmission, census: HoldoutCensus, grammar_fingerprint: str
 ) -> list[str]:
     problems = _fingerprint_problems(admission, grammar_fingerprint)
+    problems += nuisance_images.namespace_problems(admission)
     for server in admission.servers:
         problems += _unsettled_disagreements(server)
         problems += _foreign_flaws(server, census)

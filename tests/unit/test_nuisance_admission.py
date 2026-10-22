@@ -20,6 +20,7 @@ _MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
     given.with_no_counted_tool,
     given.with_a_server_patched_version_of_no_flaw,
     given.with_a_server_patched_surfaces_set_on_the_servers_own_version,
+    given.with_an_acceptance_service,
 ]
 
 

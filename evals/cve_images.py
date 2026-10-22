@@ -4,7 +4,7 @@ image from a stale or foreign one, which is then rebuilt through compose."""
 
 import hashlib
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Protocol
 
@@ -28,18 +28,22 @@ class ImageStore(Protocol):
     def build(self, services: Sequence[str]) -> None: ...  # raises ImageBuildFailed
 
 
-def ensure_images(services: Sequence[str], store: ImageStore) -> list[str]:
-    stale = stale_services(services, store)
+def ensure_images(
+    services: Sequence[str], store: ImageStore, tag: Callable[[str], str] = image_tag
+) -> list[str]:
+    stale = stale_services(services, store, tag)
     if stale:
         store.build(stale)
     return stale
 
 
-def stale_services(services: Sequence[str], store: ImageStore) -> list[str]:
+def stale_services(
+    services: Sequence[str], store: ImageStore, tag: Callable[[str], str] = image_tag
+) -> list[str]:
     return [
         service
         for service in dict.fromkeys(services)
-        if store.label(image_tag(service), FINGERPRINT_LABEL) != dockerfile_fingerprint(service)
+        if store.label(tag(service), FINGERPRINT_LABEL) != dockerfile_fingerprint(service)
     ]
 
 
