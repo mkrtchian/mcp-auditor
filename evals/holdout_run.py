@@ -30,6 +30,7 @@ from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_results import (
     DROPPED_RUN_REASONS,
     HoldoutRunResult,
+    HoldoutRunStatus,
     HoldoutTargetResult,
     NotRunCause,
     NotRunTarget,
@@ -261,17 +262,32 @@ def _assemble_target(
         mechanism_label=None if target.mechanism is None else target.mechanism.value,
         tools_count=len(reports[0].tool_reports),
         ran_in_fallback=target.launch_mode is LaunchMode.FALLBACK,
-        runs=ctx.runs,
-        detected_runs=sum(_detected(grade) for grade in grades),
-        detection_share=sum(_detected(grade) for grade in grades) / ctx.runs,
-        detected_runs_if_unchecked_missed=sum(_detected_if_unchecked_missed(g) for g in grades),
-        surfaced_places=[sorted(g.surfaced_places) if g is not None else [] for g in grades],
-        struck_places=[sorted(g.struck_places) if g is not None else [] for g in grades],
-        unchecked_places=[sorted(g.unchecked_places) if g is not None else [] for g in grades],
-        aimed_runs=sum(g.aimed for g in grades if g is not None),
-        fail_without_proof_runs=sum(g.fail_without_proof for g in grades if g is not None),
-        incomplete_runs=sum(grade is None for grade in grades),
+        statuses=tuple(_run_status(grade) for grade in grades),
         run_cost=sum(_run_cost(report, gen_price, judge_price) for report in reports),
+    )
+
+
+def _run_status(grade: RunGrade | None) -> HoldoutRunStatus:
+    if grade is None:
+        return HoldoutRunStatus(
+            detected=False,
+            detected_if_unchecked_missed=False,
+            surfaced_places=[],
+            struck_places=[],
+            unchecked_places=[],
+            aimed=False,
+            fail_without_proof=False,
+            incomplete=True,
+        )
+    return HoldoutRunStatus(
+        detected=_detected(grade),
+        detected_if_unchecked_missed=_detected_if_unchecked_missed(grade),
+        surfaced_places=sorted(grade.surfaced_places),
+        struck_places=sorted(grade.struck_places),
+        unchecked_places=sorted(grade.unchecked_places),
+        aimed=grade.aimed,
+        fail_without_proof=grade.fail_without_proof,
+        incomplete=False,
     )
 
 

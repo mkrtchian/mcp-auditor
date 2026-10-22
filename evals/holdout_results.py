@@ -1,6 +1,8 @@
 """The result value objects of a holdout run, defined here so the statistic, the report and the
 orchestrator all import them without a cycle (holdout_run imports the statistic and the report,
-which both consume these, so they cannot live in holdout_run as the plan's prose placed them)."""
+which both consume these, so they cannot live in holdout_run as the plan's prose placed them).
+The per-run facts of a target live in its run statuses and the aggregates are computed from them,
+so no two fields can disagree."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -11,23 +13,66 @@ from evals.holdout_conditions import Cutoff
 
 
 @dataclass(frozen=True)
+class HoldoutRunStatus:
+    detected: bool
+    detected_if_unchecked_missed: bool
+    surfaced_places: list[str]  # place ids only, empty on an incomplete run
+    struck_places: list[str]  # the credits the replay refused, ids only
+    unchecked_places: list[str]  # the credits the replay could not check, ids only
+    aimed: bool
+    fail_without_proof: bool
+    incomplete: bool
+
+
+@dataclass(frozen=True)
 class HoldoutTargetResult:
     cve_id: str
     disclosure_date: date
     mechanism_label: str | None
     tools_count: int
     ran_in_fallback: bool
-    runs: int
-    detected_runs: int
-    detection_share: float
-    detected_runs_if_unchecked_missed: int
-    surfaced_places: list[list[str]]  # per run, place ids only
-    struck_places: list[list[str]]  # per run, the credits the replay refused, ids only
-    unchecked_places: list[list[str]]  # per run, the credits the replay could not check, ids only
-    aimed_runs: int
-    fail_without_proof_runs: int
-    incomplete_runs: int
+    statuses: tuple[HoldoutRunStatus, ...]
     run_cost: float  # dollars over its runs, incomplete runs included
+
+    @property
+    def runs(self) -> int:
+        return len(self.statuses)
+
+    @property
+    def detected_runs(self) -> int:
+        return sum(status.detected for status in self.statuses)
+
+    @property
+    def detection_share(self) -> float:
+        return self.detected_runs / self.runs
+
+    @property
+    def detected_runs_if_unchecked_missed(self) -> int:
+        return sum(status.detected_if_unchecked_missed for status in self.statuses)
+
+    @property
+    def surfaced_places(self) -> list[list[str]]:
+        return [status.surfaced_places for status in self.statuses]
+
+    @property
+    def struck_places(self) -> list[list[str]]:
+        return [status.struck_places for status in self.statuses]
+
+    @property
+    def unchecked_places(self) -> list[list[str]]:
+        return [status.unchecked_places for status in self.statuses]
+
+    @property
+    def aimed_runs(self) -> int:
+        return sum(status.aimed for status in self.statuses)
+
+    @property
+    def fail_without_proof_runs(self) -> int:
+        return sum(status.fail_without_proof for status in self.statuses)
+
+    @property
+    def incomplete_runs(self) -> int:
+        return sum(status.incomplete for status in self.statuses)
 
 
 class NotRunCause(StrEnum):

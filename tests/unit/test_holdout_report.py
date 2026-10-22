@@ -20,6 +20,7 @@ from evals.holdout_report import (
 )
 from evals.holdout_results import (
     HoldoutRunResult,
+    HoldoutRunStatus,
     HoldoutTargetResult,
     NotRunCause,
     NotRunTarget,
@@ -39,16 +40,19 @@ def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, incomplet
         mechanism_label="command_execution",
         tools_count=5,
         ran_in_fallback=False,
-        runs=RUNS,
-        detected_runs=detected_runs,
-        detection_share=detected_runs / RUNS,
-        detected_runs_if_unchecked_missed=detected_runs,
-        surfaced_places=[["srv_config"]] * detected_runs + [[]] * (RUNS - detected_runs),
-        struck_places=[[] for _ in range(RUNS)],
-        unchecked_places=[[] for _ in range(RUNS)],
-        aimed_runs=detected_runs,
-        fail_without_proof_runs=0,
-        incomplete_runs=incomplete_runs,
+        statuses=tuple(
+            HoldoutRunStatus(
+                detected=index < detected_runs,
+                detected_if_unchecked_missed=index < detected_runs,
+                surfaced_places=["srv_config"] if index < detected_runs else [],
+                struck_places=[],
+                unchecked_places=[],
+                aimed=index < detected_runs,
+                fail_without_proof=False,
+                incomplete=index >= RUNS - incomplete_runs,
+            )
+            for index in range(RUNS)
+        ),
         run_cost=0.02,
     )
 

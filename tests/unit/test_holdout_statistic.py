@@ -6,7 +6,7 @@ import math
 from datetime import date
 
 from evals.holdout_intervals import newcombe, wilson
-from evals.holdout_results import HoldoutTargetResult
+from evals.holdout_results import HoldoutRunStatus, HoldoutTargetResult
 from evals.holdout_statistic import (
     Placement,
     Side,
@@ -37,16 +37,19 @@ def _result(
         mechanism_label="read_outside_scope",
         tools_count=4,
         ran_in_fallback=False,
-        runs=runs,
-        detected_runs=detected_runs,
-        detection_share=detected_runs / runs,
-        detected_runs_if_unchecked_missed=detected_runs_if_unchecked_missed,
-        surfaced_places=[[] for _ in range(runs)],
-        struck_places=[[] for _ in range(runs)],
-        unchecked_places=[[] for _ in range(runs)],
-        aimed_runs=detected_runs,
-        fail_without_proof_runs=0,
-        incomplete_runs=0,
+        statuses=tuple(
+            HoldoutRunStatus(
+                detected=index < detected_runs,
+                detected_if_unchecked_missed=index < detected_runs_if_unchecked_missed,
+                surfaced_places=[],
+                struck_places=[],
+                unchecked_places=[],
+                aimed=index < detected_runs,
+                fail_without_proof=False,
+                incomplete=False,
+            )
+            for index in range(runs)
+        ),
         run_cost=0.01,
     )
 
