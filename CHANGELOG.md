@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The calibration kit of `python -m evals.run_holdout calibration-dossier` tags its images `mcp-auditor-kit-<service>:local`, so a kit build never overwrites an acceptance image, and its README lists the acceptance services a kit service name must not reuse.
 - The CVE benchmark preflight, and the probe corpus capture for the vulnerable images, rebuild through `docker compose` an image whose Dockerfile fingerprint label does not match its Dockerfile, absent images included, instead of auditing whatever the tag holds. A failed build stops the run as a preflight crash (exit `4`) naming the services and compose's error.
 - `evals/holdout_conditions.json` sets the holdout's chain settings and tool call timeout (3 chains per tool, 3 steps per chain, 30 seconds), logged in `docs/holdout-log.md`, so `python -m evals.run_holdout run` no longer refuses on them.
 - The judges' input_validation guidance counts an action a parameter withholds permission or consent for, done anyway (an `overwrite=false` call that still replaces an existing file), as acting against a valid parameter, beside `dry_run` and `recursive`.

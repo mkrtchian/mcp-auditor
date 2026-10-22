@@ -6,8 +6,10 @@ import pytest
 import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_holdout_census_given as given
 from evals import run_holdout
+from evals.cve_planting_base import SENTINEL_SERVICE
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_draw import draw_order
+from evals.holdout_kit import kit_launch
 
 
 def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -119,6 +121,19 @@ def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
     ):
         assert (out / relative).exists(), relative
     assert iso.scan_tree(out) == {}
+    readme = (out / "README.md").read_text()
+    assert "mcp-auditor-kit-<service>:local" in readme
+    for service in _acceptance_services():
+        assert f"`{service}`" in readme, service
+
+
+def _acceptance_services() -> set[str]:
+    services = {name for target in CVE_TARGETS for name in (*target.images, target.patched_image)}
+    return services | {SENTINEL_SERVICE}
+
+
+def test_the_kit_tags_its_images_outside_the_acceptance_namespace():
+    assert kit_launch.image_tag("x") == "mcp-auditor-kit-x:local"
 
 
 def test_calibration_dossier_places_file_loads_through_the_copied_loader(tmp_path: Path):

@@ -3,7 +3,8 @@
 Parity note: the acceptance twin is evals/cve_environments.py. This module copies the four
 per-target environment builders and their helpers, dropping only the `connect` coroutine that
 wraps the auditor's StdioMCPClient; the kit connects through kit_client.py instead. It adds
-`image_tag` (the acceptance convention, evals/cve_targets.image_tag) and `build_images`. The clean
+`image_tag` and `build_images`. `image_tag` uses the `mcp-auditor-kit-` prefix, not the acceptance
+`mcp-auditor-cve-` one, so a kit build never overwrites an acceptance image. The clean
 planting and layout layers are reused by in-repo import (cve_planting, cve_layout, cve_places),
 never copied, because moving them would move every acceptance fixture fingerprint
 (evals/cve_baseline._ENVIRONMENT_PATHS) and redden the gate.
@@ -41,13 +42,13 @@ from evals.cve_planting import (
 
 
 def image_tag(name: str) -> str:
-    return f"mcp-auditor-cve-{name}:local"
+    return f"mcp-auditor-kit-{name}:local"
 
 
 def build_images(docker_dir: Path, services: Sequence[str]) -> None:
-    """Build each `docker/Dockerfile.<service>` as image_tag(service). The agent writes the
-    vulnerable and patched Dockerfiles in the kit, so the fixture's image names transplant unchanged
-    when the maintainer moves them into evals/docker/ and compose.yml."""
+    """Build each `docker/Dockerfile.<service>` as image_tag(service). The service name transplants
+    unchanged into evals/docker/ and compose.yml, where compose rebuilds the image under the
+    acceptance prefix, so the service name must not reuse an acceptance service name."""
     for service in services:
         dockerfile = docker_dir / f"Dockerfile.{service}"
         subprocess.run(

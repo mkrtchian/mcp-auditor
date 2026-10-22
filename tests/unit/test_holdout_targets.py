@@ -1,4 +1,6 @@
 import ast
+from collections.abc import Iterable
+from dataclasses import replace
 from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
@@ -10,7 +12,8 @@ from evals.cve_places import (
     load_places,
 )
 from evals.cve_planting import planting_spec
-from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES
+from evals.cve_planting_base import SENTINEL_SERVICE
+from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget
 from evals.holdout_targets import HOLDOUT_TARGETS
 
 # These modules are the paths a holdout target must never travel: the acceptance gate
@@ -37,6 +40,23 @@ def test_holdout_identifiers_are_disjoint_from_the_acceptance_layer():
     assert holdout_ids.isdisjoint(acceptance_ids), (
         "a flaw cannot be both an acceptance and a holdout target"
     )
+
+
+def test_holdout_services_are_disjoint_from_the_acceptance_services():
+    assert _services(HOLDOUT_TARGETS).isdisjoint(_services(CVE_TARGETS))
+
+
+def test_a_holdout_service_reusing_an_acceptance_name_breaks_the_disjointness():
+    filesystem = next(target for target in CVE_TARGETS if target.server_image == "filesystem")
+    reusing = replace(filesystem, cve_id="CVE-0000-00000")
+
+    assert not _services([reusing]).isdisjoint(_services(CVE_TARGETS))
+
+
+# The sentinel is the one image every target shares, so a holdout target may list it.
+def _services(targets: Iterable[CVETarget]) -> set[str]:
+    services = {name for target in targets for name in (*target.images, target.patched_image)}
+    return services - {SENTINEL_SERVICE}
 
 
 def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():
