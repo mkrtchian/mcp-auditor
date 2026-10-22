@@ -2,7 +2,7 @@ import hashlib
 import json
 import os
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -173,10 +173,10 @@ def grammar_fingerprint() -> str:
     return fingerprint_sources([path.read_text() for path in GRAMMAR_PATHS])
 
 
-def image_ids(names: Sequence[str]) -> dict[str, str]:
+def image_ids(names: Sequence[str], tag: Callable[[str], str] = image_tag) -> dict[str, str]:
     return {
         name: subprocess.run(
-            ["docker", "image", "inspect", "--format", "{{.Id}}", image_tag(name)],
+            ["docker", "image", "inspect", "--format", "{{.Id}}", tag(name)],
             check=True,
             capture_output=True,
             text=True,
