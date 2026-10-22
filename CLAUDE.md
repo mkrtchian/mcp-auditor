@@ -5,7 +5,7 @@
 ```bash
 uv run pytest -n auto            # Unit + integration tests, the full check that closes a step
 uv run pytest tests/unit -n auto --maxprocesses 4  # Unit tests only, the short loop
-uv run pytest tests/integration -n auto  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker; the CVE planting test also needs the sentinel image, it skips without it: docker compose -f evals/docker/compose.yml build)
+uv run pytest tests/integration -n auto  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker; the three Docker image tests (holdout kit, CVE planting, git reference arm) build the images they need on first run, Docker and network, and skip without Docker; CVE_PLANTING_REQUIRED=1 turns that skip into a failure)
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)

@@ -1,6 +1,5 @@
 import pathlib
 import re
-import subprocess
 import sys
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -8,7 +7,7 @@ from contextlib import contextmanager
 from evals.cve_environments import Launch, LaunchShape
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_planting import PlantingSpec
-from evals.cve_targets import CVE_TARGETS, CVETarget, image_tag
+from evals.cve_targets import CVE_TARGETS, CVETarget
 from mcp_auditor.adapters.docker import DockerRuntime
 from tests.integration.support.cve_stub_target import Builder, a_file_place, a_stub_target, reading
 
@@ -137,19 +136,7 @@ def the_holdout_places() -> Places:
     return load_places(HOLDOUT_PLACES)
 
 
-def missing_git_images() -> str | None:
-    """Why the git reference-arm check cannot run, or None. It needs Docker and the pinned
-    vulnerable and patched git images, as the planting acceptance test needs the sentinel image."""
+def missing_docker() -> str | None:
     if not DockerRuntime().available():
         return "the git reference-arm check needs Docker"
-    target = the_git_target()
-    for service in (target.server_image, target.patched_image):
-        tag = image_tag(service)
-        if not _image_present(tag):
-            return f"{tag} absent: docker compose -f evals/docker/compose.yml build"
     return None
-
-
-def _image_present(tag: str) -> bool:
-    result = subprocess.run(["docker", "image", "inspect", tag], capture_output=True, text=True)
-    return result.returncode == 0

@@ -24,16 +24,7 @@ _READ_TIMEOUT = 10.0
 def missing_prerequisite() -> str | None:
     if not DockerRuntime().available():
         return "CVE planting needs Docker"
-    if not _sentinel_image_present():
-        return f"{SENTINEL_IMAGE} absent: docker compose -f evals/docker/compose.yml build"
     return None
-
-
-def _sentinel_image_present() -> bool:
-    result = subprocess.run(
-        ["docker", "image", "inspect", SENTINEL_IMAGE], capture_output=True, text=True
-    )
-    return result.returncode == 0
 
 
 def spec_of(

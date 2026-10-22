@@ -3,14 +3,10 @@
 # the only instrument of the production `DockerPlanting` and the readiness probe (the fake
 # stands in everywhere else), so it must go red on a planting regression.
 #
-# Skipped without Docker, as `test_confined_launch.py` is, and skipped when the sentinel
-# image is absent: the CI integration job has Docker but builds no image, so a missing image
-# must skip rather than trigger a registry pull. The CVE calibration job builds the image and
-# sets `CVE_PLANTING_REQUIRED=1`, which turns a missing prerequisite into a failure: a green
-# step there must mean the planting path ran. A stale image (built before the entrypoint
-# wrote `$FLAG` at `SERVE_FILE`, the file the harness computes with `served_file`) serves
-# nothing at the planted path, so every case fails: rebuild with
-# `docker compose -f evals/docker/compose.yml build`.
+# Skipped without Docker, as `test_confined_launch.py` is. `CVE_PLANTING_REQUIRED=1`, set by
+# the CI integration job and the CVE calibration job, turns that skip into a failure: a green
+# step there must mean the planting path ran. A missing or foreign sentinel image is rebuilt
+# through compose before the first case.
 import os
 import time
 
@@ -18,18 +14,22 @@ import pytest
 
 import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
+from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_planting import DockerPlanting, PlantingFailed, planted
-from evals.cve_planting_base import SENTINEL_IMAGE
+from evals.cve_planting_base import SENTINEL_IMAGE, SENTINEL_SERVICE
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _planting_prerequisites() -> None:
     missing = given.missing_prerequisite()
-    if missing is None:
-        return
-    if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
-        pytest.fail(missing)
-    pytest.skip(missing)
+    if missing is not None:
+        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
+            pytest.fail(missing)
+        pytest.skip(missing)
+    try:
+        ensure_images([SENTINEL_SERVICE], ComposeImageStore())
+    except ImageBuildFailed as error:
+        pytest.fail(str(error))
 
 
 def test_a_planted_ip_literal_endpoint_serves_its_nonce():

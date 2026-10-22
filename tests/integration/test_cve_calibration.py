@@ -1,3 +1,4 @@
+import os
 from collections.abc import Awaitable, Callable
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 import tests.integration.support.test_cve_calibration_given as given
 from evals.concurrency import bounded
 from evals.cve_calibration import calibrate_all, calibrate_one
+from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_layout_check import confirm_admission
 from evals.cve_places import Places
 from evals.cve_survey import TargetSurvey, survey_all, survey_one
@@ -149,11 +151,18 @@ async def test_confirm_admission_reports_a_break_when_the_layout_breaks_either_v
 
 
 async def test_the_git_target_starts_on_the_valid_reference_arm(capsys: pytest.CaptureFixture[str]):
-    missing = given.missing_git_images()
+    missing = given.missing_docker()
     if missing is not None:
+        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
+            pytest.fail(missing)
         pytest.skip(missing)
+    target = given.the_git_target()
+    try:
+        ensure_images([target.server_image, target.patched_image], ComposeImageStore())
+    except ImageBuildFailed as error:
+        pytest.fail(str(error))
 
-    failures = await confirm_admission([given.the_git_target()], given.the_holdout_places())
+    failures = await confirm_admission([target], given.the_holdout_places())
 
     output = capsys.readouterr().out
     assert "admission launch error" not in output

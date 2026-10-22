@@ -38,3 +38,5 @@ jobs:
 
       - name: Integration tests
         run: uv run pytest tests/integration -n auto -v
+        env:
+          CVE_PLANTING_REQUIRED: "1"
