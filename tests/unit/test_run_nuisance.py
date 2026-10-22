@@ -4,7 +4,13 @@ import pytest
 
 import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_holdout_census_given as given
+import tests.unit.support.test_nuisance_admission_given as admission
 from evals import run_nuisance
+
+
+def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
+    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
 
 
 def test_walk_prints_the_population_and_exits_zero(
@@ -60,3 +66,60 @@ def test_nuisance_dossier_on_an_unknown_server_exits_three(tmp_path: Path):
 
     assert exit_code == 3
     assert not out.exists()
+
+
+def test_run_without_an_admission_exits_zero_and_says_so(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _no_tracing(monkeypatch)
+    census = given.written(tmp_path, given.a_census())
+    missing = tmp_path / "absent.json"
+
+    exit_code = run_nuisance.main(["run", "--census", str(census), "--admission", str(missing)])
+
+    assert exit_code == 0
+    assert "no server is admitted" in capsys.readouterr().out
+
+
+def test_run_on_an_admission_with_no_server_exits_zero_and_says_so(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _no_tracing(monkeypatch)
+    census = given.written(tmp_path, given.a_census())
+    empty = admission.an_admission().model_copy(update={"servers": []})
+    path = admission.written(tmp_path, empty)
+
+    exit_code = run_nuisance.main(["run", "--census", str(census), "--admission", str(path)])
+
+    assert exit_code == 0
+    assert "no server is admitted" in capsys.readouterr().out
+
+
+def test_run_refuses_tracing_before_reading_the_admission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    monkeypatch.setenv("LANGSMITH_TRACING", "true")
+    census = given.written(tmp_path, given.a_census())
+    malformed = tmp_path / "nuisance_admission.json"
+    malformed.write_text("{ not json")
+
+    exit_code = run_nuisance.main(["run", "--census", str(census), "--admission", str(malformed)])
+
+    out = capsys.readouterr().out
+    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert "nuisance run refused" in out
+    assert "malformed" not in out
+
+
+def test_run_on_a_stale_admission_exits_three_naming_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _no_tracing(monkeypatch)
+    census = given.written(tmp_path, given.a_census())
+    stale = admission.with_a_stale_grammar_fingerprint(admission.an_admission())
+    path = admission.written(tmp_path, stale)
+
+    exit_code = run_nuisance.main(["run", "--census", str(census), "--admission", str(path)])
+
+    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert "the census or the admission is malformed" in capsys.readouterr().out

@@ -24,7 +24,7 @@ from evals.eval_session import Refused, TreeState, read_tree
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_draw import DrawEntry
 from evals.holdout_run import HOLDOUT_BUDGET, rebuild_images
-from evals.nuisance_admission import AdmittedServer
+from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 from evals.nuisance_assembly import assemble_server
 from evals.nuisance_audit import (
     DroppedRun,
@@ -43,6 +43,7 @@ from evals.nuisance_results import (
     NuisanceRunResult,
     NuisanceServerResult,
 )
+from evals.nuisance_walk import NuisanceServer, ServerMark
 from evals.probe_candidates import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport
@@ -72,6 +73,38 @@ class RunPopulation:
 
     audited: Sequence[AdmittedServer]
     outside_figure: Sequence[FigureExit]
+
+
+_MARK_REASONS = {
+    ServerMark.EXCLUDED: "an excluded server",
+    ServerMark.ACCEPTANCE: "an acceptance server",
+}
+
+
+def run_population(walked: Sequence[NuisanceServer], admission: NuisanceAdmission) -> RunPopulation:
+    """The rule's other exits (no flaw sets the version, never fixed, no counted tool, spent by a
+    reading) never reach the admission file or are refused by `load_admission`, so the log
+    carries them, not this partition."""
+    marked = {server.server_package: server.mark for server in walked if server.mark is not None}
+    outside = [FigureExit(package, _MARK_REASONS[mark]) for package, mark in marked.items()]
+    audited: list[AdmittedServer] = []
+    for server in admission.servers:
+        if server.server_package in marked:
+            continue
+        reason = _standing_exit(server)
+        if reason is None:
+            audited.append(server)
+        else:
+            outside.append(FigureExit(server.server_package, reason))
+    return RunPopulation(audited, outside)
+
+
+def _standing_exit(server: AdmittedServer) -> str | None:
+    if not server.runs_over_stdio:
+        return "does not run over stdio"
+    if not server.runs_in_container:
+        return "its patched version does not run in a container"
+    return None
 
 
 @dataclass(frozen=True)
