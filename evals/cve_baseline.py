@@ -131,7 +131,7 @@ def fixture_fingerprint(
         target.aim.pattern,
         None if target.tools_filter is None else sorted(target.tools_filter),
         sorted(target.reaches),
-        _planting_host_parts(target.planting_host),
+        planting_host_parts(target.planting_host),
         [_record_parts(record) for record in records],
         target.launch_mode.value,
     ]
@@ -144,7 +144,7 @@ def fixture_fingerprint(
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
 
 
-def _planting_host_parts(host: PlantingHost) -> list[object]:
+def planting_host_parts(host: PlantingHost) -> list[object]:
     return [host.user.value, host.working_directory, host.has_network]
 
 

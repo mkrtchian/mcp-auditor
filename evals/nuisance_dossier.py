@@ -99,6 +99,17 @@ repository, so the vulnerable Dockerfile and the exploits are committed beside t
 surfaces on the vulnerable version and on neither patched one, and no benign call errors on a
 patched version.
 
+## AdmittedServer fields the run reads
+
+- `launch`: the container command appended after the image tag (the image's `ENTRYPOINT`, when
+  it has one, applies to it).
+- `host`: the `PlantingHost` the agents fill.
+  - `user`: `host` or `unprivileged`, `unprivileged` unless the patched image breaks under uid
+    65534 and `HOME=/tmp`, the fix-check driver establishing it.
+  - `working_directory`: `/` unless the image needs another.
+  - `has_network`: true only when a benign call reaches a host outside the container, which
+    gives the plain bridge, false otherwise, which runs the server with no network.
+
 ## FlawRecord JSON schema
 
 ```json

@@ -5,6 +5,7 @@ import pytest
 import tests.unit.support.test_nuisance_admission_given as given
 from evals import cve_baseline, cve_targets, nuisance_images
 from evals.cve_grammar import MechanismClass
+from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.holdout_kit import kit_launch
 from evals.nuisance_admission import (
     AdmissionSettlement,
@@ -86,6 +87,21 @@ def test_the_fingerprint_moves_when_the_launch_changes(tmp_path: Path):
     other = server.model_copy(update={"launch": ["node", "other.js"]})
 
     assert _fingerprint(server, tmp_path) != _fingerprint(other, tmp_path)
+
+
+@pytest.mark.parametrize(
+    "host",
+    [
+        PlantingHost(SymbolicUser.HOST, "/", has_network=False),
+        PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False),
+        PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True),
+    ],
+)
+def test_the_fingerprint_moves_when_a_host_field_changes(tmp_path: Path, host: PlantingHost):
+    _write_dockerfile(tmp_path)
+    server = given.an_admission().servers[0]
+
+    assert _fingerprint(server, tmp_path) != _fingerprint(given.with_host(server, host), tmp_path)
 
 
 def test_the_fingerprint_is_unchanged_by_a_dockerfile_comment(tmp_path: Path):

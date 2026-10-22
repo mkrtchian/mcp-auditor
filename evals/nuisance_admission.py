@@ -17,6 +17,7 @@ from evals import cve_baseline, nuisance_images, nuisance_walk
 from evals.census_draw import LaunchOption
 from evals.census_work import AgentRecord
 from evals.cve_grammar import MechanismClass
+from evals.cve_planting_base import PlantingHost
 from evals.holdout_census import HoldoutCensus
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_counting import counted_flaws, counted_tools
@@ -78,6 +79,7 @@ class AdmittedServer(BaseModel):
     flaws: list[FlawRecord]
     runs_over_stdio: bool
     runs_in_container: bool
+    host: PlantingHost
     launch: list[str]
     service: str
     agents: list[AgentRecord]

@@ -7,6 +7,7 @@ from evals import cve_baseline
 from evals.census_classification import Classification
 from evals.census_work import AgentRecord, AgentRole
 from evals.cve_grammar import MechanismClass
+from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.nuisance_admission import (
     AdmissionSettlement,
@@ -49,6 +50,7 @@ def _a_server() -> AdmittedServer:
         ],
         runs_over_stdio=True,
         runs_in_container=True,
+        host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
         launch=["node", "server.js"],
         service="filesystem-nuisance",
         agents=[
@@ -111,6 +113,10 @@ def a_tool(
 def a_server(flaws: list[FlawRecord], patched_version: str = PATCHED_VERSION) -> AdmittedServer:
     server = _a_server()
     return server.model_copy(update={"flaws": flaws, "patched_version": patched_version})
+
+
+def with_host(server: AdmittedServer, host: PlantingHost) -> AdmittedServer:
+    return server.model_copy(update={"host": host})
 
 
 def written(tmp_path: Path, admission: NuisanceAdmission) -> Path:

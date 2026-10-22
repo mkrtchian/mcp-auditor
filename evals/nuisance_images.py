@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from evals import calibration_dossier
+from evals.cve_baseline import planting_host_parts
 from evals.cve_images import dockerfile_instructions
 from evals.cve_targets import DOCKER_DIRECTORY, image_dockerfile
 from evals.nuisance_counting import counted_flaws, counted_tools
@@ -42,14 +43,16 @@ def nuisance_fixture_fingerprint(
     moves (the rule's Run conditions section).
 
     In: the patched Dockerfile's instructions (comments and blank lines out), the launch, the
-    counted tools with the valid judge categories of their classes, and the benign calls of those
-    counted tools in record order. Out: the vulnerable Dockerfile, the exploits, the agents, the
-    agreement, the settlements and the fix-check records.
+    host's user, working directory and network stance, the counted tools with the valid judge
+    categories of their classes, and the benign calls of those counted tools in record order.
+    Out: the vulnerable Dockerfile, the exploits, the agents, the agreement, the settlements and
+    the fix-check records.
     """
     counted = counted_tools(server)
     parts: list[object] = [
         dockerfile_instructions(image_dockerfile(server.service, docker_directory)),
         server.launch,
+        planting_host_parts(server.host),
         sorted((name, sorted(categories)) for name, categories in counted.items()),
         [
             (call.tool, call.arguments)

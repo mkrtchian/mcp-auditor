@@ -1,3 +1,4 @@
+import json
 from collections.abc import Callable
 from pathlib import Path
 
@@ -6,6 +7,7 @@ from pydantic import ValidationError
 
 import tests.unit.support.test_nuisance_admission_given as given
 from evals import cve_baseline
+from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.nuisance_admission import (
     FlawRecord,
     NuisanceAdmission,
@@ -80,6 +82,24 @@ def test_load_admission_returns_the_written_clean_admission(tmp_path: Path):
     path = given.written(tmp_path, admission)
 
     assert load_admission(path, given.a_census()) == admission
+
+
+def test_load_admission_reads_the_host_as_a_planting_host(tmp_path: Path):
+    path = given.written(tmp_path, given.an_admission())
+
+    [server] = load_admission(path, given.a_census()).servers
+
+    assert server.host == PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
+
+
+def test_load_admission_refuses_a_server_without_a_host(tmp_path: Path):
+    path = given.written(tmp_path, given.an_admission())
+    document = json.loads(path.read_text())
+    del document["servers"][0]["host"]
+    path.write_text(json.dumps(document))
+
+    with pytest.raises(ValueError):
+        load_admission(path, given.a_census())
 
 
 def test_load_admission_on_a_missing_file_raises(tmp_path: Path):
