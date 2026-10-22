@@ -26,11 +26,13 @@ def a_chat_model_answering(body: dict[str, Any], thinking: str = "adaptive") -> 
         max_retries=0,
     )
     # ChatAnthropic takes no HTTP client: its async client is a cached_property, so the
-    # instance's cached value is seeded with one whose transport replays the body.
+    # instance's cached value is seeded with one whose transport replays the body. It carries
+    # an explicit timeout, as the production client does: on the default one the SDK refuses a
+    # non-streaming call whose max_tokens could outlast 10 minutes.
     replay = httpx2.MockTransport(lambda _request: httpx2.Response(200, json=body))
     http_client = httpx2.AsyncClient(transport=replay)
     vars(chat_model)["_async_client"] = anthropic.AsyncClient(
-        api_key="dummy", http_client=http_client
+        api_key="dummy", http_client=http_client, timeout=120
     )
     return chat_model
 
