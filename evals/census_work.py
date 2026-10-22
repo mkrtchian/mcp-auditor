@@ -65,6 +65,7 @@ class AgentRole(StrEnum):
     READER = "reader"
     CALIBRATOR = "calibrator"
     CARD_CHECKER = "card_checker"
+    ADMITTER = "admitter"
 
 
 class AgentRecord(BaseModel):
