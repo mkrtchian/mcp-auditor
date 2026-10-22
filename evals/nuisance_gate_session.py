@@ -31,7 +31,6 @@ from evals.nuisance_gate import (
 from evals.nuisance_gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     NuisanceGateConditions,
-    NuisanceServerBaseline,
     condition_mismatches,
 )
 from evals.nuisance_gate_session_model import (
@@ -177,7 +176,7 @@ async def _gate(
         audited = list(
             await asyncio.gather(
                 *(
-                    _settled(comparison, sr.server, baselines, opened.harness)
+                    _settled(comparison, sr.server, opened)
                     for comparison, sr in zip(audited, runs, strict=True)
                 )
             )
@@ -202,20 +201,17 @@ def _candidate(server_runs: ServerRuns) -> ServerCandidate:
 
 
 async def _settled(
-    comparison: ServerComparison,
-    server: AdmittedServer,
-    baselines: dict[str, NuisanceServerBaseline],
-    harness: NuisanceGateHarness,
+    comparison: ServerComparison, server: AdmittedServer, opened: OpenedGate
 ) -> ServerComparison:
     """One replay at a time, until the baseline's replay rule decides or a replay does not
     complete."""
     if comparison.outcome != ServerOutcome.PENDING_REPLAY:
         return comparison
-    rule = baselines[server.server_package].replay_rule
+    rule = opened.baselines()[server.server_package].replay_rule
     replays: list[bool | None] = []
     settled = comparison
     while settled.outcome == ServerOutcome.PENDING_REPLAY:
-        run = await harness.audit(server)
+        run = await opened.harness.audit(server)
         replays.append(None if run is None else run.flagged)
         settled = settle(comparison, replays, rule)
     return settled
