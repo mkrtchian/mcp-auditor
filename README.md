@@ -165,7 +165,7 @@ The CVE benchmark runs against real, pinned-vulnerable MCP servers (filesystem, 
 
 ```bash
 # 1. Prerequisites: Docker running, an LLM API key exported (e.g. OPENAI_API_KEY).
-# 2. Build the pinned server images, vulnerable and patched, one-time.
+# 2. Build the pinned server images, vulnerable and patched (the benchmark preflight also rebuilds a stale or foreign image).
 docker compose -f evals/docker/compose.yml build
 
 # 3. Calibrate: no LLM, runs each target's exploits and a benign call, and confirms the fixture is live on the vulnerable version and fixed on the patched one.
