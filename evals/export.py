@@ -4,6 +4,7 @@ from typing import Any
 
 from evals.cve_session_model import CVEAudit
 from evals.ground_truth import GroundTruth
+from evals.nuisance_gate_session_model import GateAudit
 from mcp_auditor.domain.models import AttackChain, AuditReport, TestCase
 
 
@@ -55,6 +56,29 @@ def export_cve_judged_cases(audits: list[CVEAudit], report_path: Path) -> None:
                     f.write(json.dumps(line) + "\n")
 
 
+def export_nuisance_gate_judged_cases(audits: list[GateAudit], report_path: Path) -> None:
+    """Chains included, unlike the CVE export: a chain verdict can raise an alarm, and the gate's
+    alarms may be analyzed."""
+    export_path = report_path.with_name("nuisance_gate_judged_cases.jsonl")
+    with export_path.open("w") as f:
+        for audit in audits:
+            origin = {"server_package": audit.server_package, "run_index": audit.run_index}
+            for tool_report in audit.report.tool_reports:
+                description = tool_report.tool.description
+                lines = [
+                    _judge_input(case, description)
+                    for case in tool_report.cases
+                    if case.eval_result is not None
+                ]
+                lines += [
+                    line
+                    for chain in tool_report.chains
+                    if (line := _chain_judge_input(chain, description)) is not None
+                ]
+                for line in lines:
+                    f.write(json.dumps({**origin, **line}) + "\n")
+
+
 def _single_step_line(
     run_index: int,
     case: TestCase,
@@ -96,11 +120,24 @@ def _chain_line(
     tool_description: str | None,
     ground_truth: GroundTruth,
 ) -> dict[str, Any] | None:
+    judge_input = _chain_judge_input(chain, tool_description)
+    if judge_input is None:
+        return None
+    result = chain.eval_result
+    assert result is not None
+    expected = ground_truth.get((result.tool_name, result.category))
+    return {
+        "run_index": run_index,
+        **judge_input,
+        "expected_verdict": expected.value if expected else None,
+        "correct": result.verdict == expected if expected else None,
+    }
+
+
+def _chain_judge_input(chain: AttackChain, tool_description: str | None) -> dict[str, Any] | None:
     result = chain.eval_result
     if result is None:
         return None
-    gt_key = (result.tool_name, result.category)
-    expected = ground_truth.get(gt_key)
     steps = [
         {
             "arguments": step.payload.arguments,
@@ -111,7 +148,6 @@ def _chain_line(
         for step in chain.steps
     ]
     return {
-        "run_index": run_index,
         "type": "chain",
         "tool_name": result.tool_name,
         "tool_description": tool_description,
@@ -120,6 +156,4 @@ def _chain_line(
         "steps": steps,
         "verdict": result.verdict.value,
         "justification": result.justification,
-        "expected_verdict": expected.value if expected else None,
-        "correct": result.verdict == expected if expected else None,
     }

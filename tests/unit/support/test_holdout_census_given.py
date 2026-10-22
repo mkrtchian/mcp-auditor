@@ -101,6 +101,23 @@ def a_flaw_with_records(*records: AdvisoryRecord) -> CensusFlaw:
     return census_flaw(flaw, [Discovery.PREFILTER])
 
 
+def with_a_cve_of(census: HoldoutCensus, cve_id: str, server_package: str) -> HoldoutCensus:
+    """A valid census that also classifies `cve_id` under `server_package`."""
+    flaw = a_flaw_with_records(identity.an_nvd(cve_id))
+    classification = figures.a_classification(
+        flaw=cve_id, disclosure_date=flaw.disclosure_date, server_package=server_package
+    )
+    classifications = {
+        classifier: [*census.classifications[classifier], classification]
+        for classifier in CLASSIFIERS
+    }
+    return _recomputed(
+        census.model_copy(
+            update={"flaws": [*census.flaws, flaw], "classifications": classifications}
+        )
+    )
+
+
 # Each defect below breaks one rule of `load_census` and keeps every derived part
 # (figures, date mismatches) recomputed, so the census carries that defect alone.
 

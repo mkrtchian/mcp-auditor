@@ -252,3 +252,20 @@ def _with_server(
     admission: NuisanceAdmission, change: Callable[[AdmittedServer], AdmittedServer]
 ) -> NuisanceAdmission:
     return admission.model_copy(update={"servers": [change(admission.servers[0])]})
+
+
+def admitting_the_server_of(flaw: str, server_package: str, service: str) -> NuisanceAdmission:
+    server = a_server([a_flaw_record(flaw, MechanismClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION)])
+    return an_admission().model_copy(
+        update={
+            "servers": [
+                server.model_copy(
+                    update={
+                        "server_package": server_package,
+                        "reaching_flaw": flaw,
+                        "service": service,
+                    }
+                )
+            ]
+        }
+    )

@@ -15,6 +15,18 @@ SINGLE_STEP_FIELDS = {
     "justification",
 }
 
+CHAIN_FIELDS = {
+    "run_index",
+    "type",
+    "tool_name",
+    "tool_description",
+    "category",
+    "goal",
+    "steps",
+    "verdict",
+    "justification",
+}
+
 
 def exported_records(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text().strip().splitlines()]

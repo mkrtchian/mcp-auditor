@@ -123,3 +123,61 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
 
     assert exit_code == run_nuisance.REFUSED_EXIT
     assert "the census or the admission is malformed" in capsys.readouterr().out
+
+
+_KUBERNETES = "npm:mcp-server-kubernetes"
+
+
+def _no_llm_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+
+
+def _a_census_with_a_kubernetes_target(tmp_path: Path) -> Path:
+    return given.written(
+        tmp_path, given.with_a_cve_of(given.a_census(), "CVE-2025-53355", _KUBERNETES)
+    )
+
+
+def test_gate_without_an_admission_exits_zero_and_says_so(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _no_llm_key(monkeypatch)
+    census = given.written(tmp_path, given.a_census())
+    missing = tmp_path / "absent.json"
+
+    exit_code = run_nuisance.main(["gate", "--census", str(census), "--admission", str(missing)])
+
+    assert exit_code == 0
+    assert "no acceptance server is admitted" in capsys.readouterr().out
+
+
+def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _no_llm_key(monkeypatch)
+    census = _a_census_with_a_kubernetes_target(tmp_path)
+    path = admission.written(tmp_path, admission.an_admission())
+
+    exit_code = run_nuisance.main(["gate", "--census", str(census), "--admission", str(path)])
+
+    assert exit_code == 0
+    assert "no acceptance server is admitted" in capsys.readouterr().out
+
+
+def test_gate_on_a_server_outside_the_gate_set_exits_two(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _no_llm_key(monkeypatch)
+    census = _a_census_with_a_kubernetes_target(tmp_path)
+    admitted = admission.admitting_the_server_of(
+        "CVE-2025-53355", _KUBERNETES, "kubernetes-nuisance"
+    )
+    path = admission.written(tmp_path, admitted)
+
+    exit_code = run_nuisance.main(
+        ["gate", "--census", str(census), "--admission", str(path), "--server", "npm:other"]
+    )
+
+    assert exit_code == 2
+    assert "unknown gate server: npm:other" in capsys.readouterr().err
