@@ -139,24 +139,26 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
     async def audit(server: AdmittedServer) -> AuditReport | DroppedRun:
         return await nuisance_audit(server, lambda: audit_once(server, auditor, overrides))
 
-    async def benign_call(server: AdmittedServer) -> str | None:
-        try:
-            with open(os.devnull, "w") as devnull:
-                async with connect(
-                    nuisance_launch(server), devnull, tool_call_timeout=timeout
-                ) as client:
-                    return await benign_call_failure(server, client)
-        except Exception as exc:
-            return f"failed to connect for the benign call: {exc}"
-
     return NuisanceDeps(
         bounded(audit, concurrency),
-        bounded(benign_call, concurrency),
+        bounded(functools.partial(benign_call, timeout=timeout), concurrency),
         rebuild_images,
         functools.partial(image_ids, tag=nuisance_images.image_tag),
         read_tree,
         lambda: datetime.now(UTC).isoformat(),
     )
+
+
+async def benign_call(server: AdmittedServer, timeout: int) -> str | None:
+    """The benign call's failure reason, or None when it answers."""
+    try:
+        with open(os.devnull, "w") as devnull:
+            async with connect(
+                nuisance_launch(server), devnull, tool_call_timeout=timeout
+            ) as client:
+                return await benign_call_failure(server, client)
+    except Exception as exc:
+        return f"failed to connect for the benign call: {exc}"
 
 
 async def _vet_all(
