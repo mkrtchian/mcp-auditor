@@ -9,9 +9,29 @@ import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_holdout_census_given as census_given
 from evals.calibration_dossier import write_kit
 from evals.cve_targets import CVETarget
+from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget
 from evals.holdout_kit.kit_target import KitTarget
+from evals.nuisance_admission import FixCheckRecord
 
 _KIT_DIR = iso.REPO_ROOT / "evals" / "holdout_kit"
+
+# The fields the fix-check driver reads off the fixture the admission agent writes. As the drawn
+# target parity above, this pins the kit-local mirror against drift.
+_FIX_CHECK_TARGET_FIELDS = frozenset(
+    {
+        "flaw",
+        "mechanism",
+        "aim",
+        "witness",
+        "planting_host",
+        "builder",
+        "exploits",
+        "benign_calls",
+        "vulnerable_service",
+        "patched_service",
+        "server_patched_service",
+    }
+)
 
 # A drawn target is a CVETarget, so the parity the transplant needs is between KitTarget's fields
 # and CVETarget's: the maintainer wraps a KitTarget into a CVETarget (these fields).
@@ -59,3 +79,11 @@ def test_kit_target_mirrors_the_drawn_cve_target_fields():
     cve_names = {field.name for field in fields(CVETarget)}
     assert kit_names == _DRAWN_TARGET_FIELDS
     assert cve_names >= _DRAWN_TARGET_FIELDS
+
+
+def test_fix_check_result_mirrors_the_admission_record_fields():
+    assert {field.name for field in fields(FixCheckResult)} == set(FixCheckRecord.model_fields)
+
+
+def test_fix_check_target_mirrors_the_admission_fields_the_driver_reads():
+    assert {field.name for field in fields(FixCheckTarget)} == _FIX_CHECK_TARGET_FIELDS

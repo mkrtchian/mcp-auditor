@@ -64,7 +64,7 @@ async def check_target(target: KitTarget, places: Places) -> list[str]:
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
     conditions = dead_conditions(
-        _graded(target, vulnerable), _units(vulnerable.exploits), _unit(vulnerable.benign)
+        _graded(target, vulnerable), _units(vulnerable.exploits), unit_of(vulnerable.benign)
     )
     patched = await _exercise(target, records, TargetVersion.PATCHED, places)
     if patched is None:
@@ -150,10 +150,10 @@ def _graded(target: KitTarget, exercised: _Exercised) -> PlantedTarget:
 
 
 def _units(exploits: list[list[Exchange]]) -> list[Unit]:
-    return [_unit(exchanges) for exchanges in exploits]
+    return [unit_of(exchanges) for exchanges in exploits]
 
 
-def _unit(exchanges: list[Exchange]) -> Unit:
+def unit_of(exchanges: list[Exchange]) -> Unit:
     return unit_of_exchanges([(args, response.content) for _, args, response in exchanges])
 
 
