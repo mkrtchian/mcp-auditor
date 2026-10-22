@@ -13,6 +13,7 @@ from evals.nuisance_audit import (
     DroppedRun,
     LaunchFailed,
     benign_call_failure,
+    gate_run,
     is_incomplete,
     nuisance_audit,
     nuisance_launch,
@@ -22,6 +23,7 @@ from mcp_auditor.domain import ToolResponse
 from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
+from tests.unit.support import test_nuisance_run_given as run_given
 from tests.unit.support.test_nuisance_admission_given import (
     FIRST_FLAW,
     SECOND_FLAW,
@@ -174,6 +176,61 @@ async def test_a_launch_failure_is_retried_and_a_later_report_stands(
     assert attempt.calls == 2
 
 
+async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refused_step(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _captured_console(monkeypatch)
+    report = run_given.a_report(True, missed=MissCause.PROVIDER_REFUSAL)
+    audit = _ScriptedAudits([report])
+
+    run = await gate_run(run_given.a_server(), audit)
+
+    assert run is not None
+    assert run.flagged
+    assert run.report is report
+    assert audit.calls == 1
+
+
+async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = _captured_console(monkeypatch)
+    clean = run_given.a_report(False)
+    audit = _ScriptedAudits([run_given.a_report(False, missed=MissCause.UNREADABLE_ANSWER), clean])
+
+    run = await gate_run(run_given.a_server(), audit)
+
+    assert run is not None
+    assert not run.flagged
+    assert run.report is clean
+    assert audit.calls == 2
+    assert "attempt 1/3" in output.getvalue()
+
+
+async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = _captured_console(monkeypatch)
+    incomplete = run_given.a_report(False, missed=MissCause.PROVIDER_REFUSAL)
+    audit = _ScriptedAudits([incomplete] * 3)
+
+    run = await gate_run(run_given.a_server(), audit)
+
+    assert run is None
+    assert audit.calls == 3
+    assert "all 3 attempts" in output.getvalue()
+
+
+async def test_a_dropped_gate_run_does_not_complete_at_once(monkeypatch: pytest.MonkeyPatch):
+    _captured_console(monkeypatch)
+    audit = _ScriptedAudits([DroppedRun(NotRunCause.THROTTLED)])
+
+    run = await gate_run(run_given.a_server(), audit)
+
+    assert run is None
+    assert audit.calls == 1
+
+
 def _follows(args: list[str], flag: str, value: str) -> bool:
     return any(args[i : i + 2] == [flag, value] for i in range(len(args) - 1))
 
@@ -200,6 +257,16 @@ class _ScriptedAttempts:
         self.calls = 0
 
     async def __call__(self) -> AuditReport | LaunchFailed:
+        self.calls += 1
+        return self._outcomes.pop(0)
+
+
+class _ScriptedAudits:
+    def __init__(self, outcomes: list[AuditReport | DroppedRun]) -> None:
+        self._outcomes = outcomes
+        self.calls = 0
+
+    async def __call__(self) -> AuditReport | DroppedRun:
         self.calls += 1
         return self._outcomes.pop(0)
 

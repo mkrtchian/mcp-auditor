@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from rich.console import Console
 from rich.markup import escape
 
-from evals.cve_audit import Auditor, RunOverrides
+from evals.cve_audit import INCOMPLETE_ATTEMPTS, Auditor, RunOverrides, describe_miss_causes
 from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve_planting_base import (
     SymbolicUser,
@@ -20,6 +20,7 @@ from evals.cve_planting_base import (
 )
 from evals.metrics import missed_steps
 from evals.nuisance_admission import AdmittedServer, BenignCall
+from evals.nuisance_counter import flagged_tools
 from evals.nuisance_counting import counted_flaws, counted_tools
 from evals.nuisance_images import image_tag
 from evals.nuisance_results import NotRunCause
@@ -175,6 +176,46 @@ async def nuisance_audit(
 
 def _is_throttled(report: AuditReport) -> bool:
     return any(missed.cause is MissCause.PROVIDER_THROTTLED for missed in report.missed_steps)
+
+
+@dataclass(frozen=True)
+class GateRun:
+    flagged: bool
+    report: AuditReport
+
+
+async def gate_run(
+    server: AdmittedServer, audit: Callable[[], Awaitable[AuditReport | DroppedRun]]
+) -> GateRun | None:
+    """One run of the nuisance gate, at most `INCOMPLETE_ATTEMPTS` audits: the acceptance gate's
+    policy on an incomplete attempt, with an alarm in place of a detection, unlike the nuisance
+    run's. A counted alarm stands whatever step was refused, an incomplete audit without one is
+    attempted again, and the run does not complete when every attempt stays incomplete."""
+    causes: frozenset[MissCause] = frozenset()
+    for number in range(1, INCOMPLETE_ATTEMPTS + 1):
+        outcome = await audit()
+        if isinstance(outcome, DroppedRun):
+            return None
+        flagged = bool(flagged_tools(outcome, counted_tools(server)))
+        if flagged or not is_incomplete(outcome):
+            return GateRun(flagged=flagged, report=outcome)
+        attempt_causes = _incomplete_causes(outcome)
+        causes |= attempt_causes
+        console.print(
+            f"[yellow]{server.server_package}: attempt {number}/{INCOMPLETE_ATTEMPTS}:"
+            f" {describe_miss_causes(attempt_causes)}, no counted alarm, attempted again[/yellow]"
+        )
+    console.print(
+        f"[yellow]{server.server_package} run did not complete:[/yellow] a step missed at all"
+        f" {INCOMPLETE_ATTEMPTS} attempts ({describe_miss_causes(causes)})"
+    )
+    return None
+
+
+def _incomplete_causes(report: AuditReport) -> frozenset[MissCause]:
+    return frozenset(
+        missed.cause for missed in report.missed_steps if missed.cause in _INCOMPLETE_CAUSES
+    )
 
 
 def is_incomplete(report: AuditReport) -> bool:
