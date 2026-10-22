@@ -39,6 +39,14 @@ class MethodLine(BaseModel):
     interval: IntervalModel
     placement: str
 
+    @classmethod
+    def of(cls, method: MethodPlacement) -> "MethodLine":
+        return cls(
+            method=method.method,
+            interval=IntervalModel.of(method.interval),
+            placement=method.placement.value,
+        )
+
 
 class ConclusionLine(BaseModel):
     placement: str | None
@@ -122,7 +130,7 @@ class HoldoutReport(BaseModel):
 
 
 def build_report(run: HoldoutRunResult) -> HoldoutReport:
-    model, cutoff = _run_cutoff(run.cutoffs)
+    model, cutoff = run_cutoff(run.cutoffs)
     split = split_by_side(run.targets, cutoff.date)
     pair = _two_sides(split)
     return HoldoutReport(
@@ -167,7 +175,7 @@ def build_report(run: HoldoutRunResult) -> HoldoutReport:
     )
 
 
-def _run_cutoff(cutoffs: Mapping[str, Cutoff]) -> tuple[str, Cutoff]:
+def run_cutoff(cutoffs: Mapping[str, Cutoff]) -> tuple[str, Cutoff]:
     # max keeps the first on a tie, so the generator is named when it shares the judge's date.
     return max(cutoffs.items(), key=lambda item: item[1].date)
 
@@ -196,16 +204,8 @@ def _conclusion_line(
     return ConclusionLine(
         placement=None if verdict.placement is None else verdict.placement.value,
         inconclusive=verdict.inconclusive,
-        cited=_method_line(verdict.cited),
-        disagreeing=[_method_line(method) for method in verdict.disagreeing],
-    )
-
-
-def _method_line(method: MethodPlacement) -> MethodLine:
-    return MethodLine(
-        method=method.method,
-        interval=IntervalModel.of(method.interval),
-        placement=method.placement.value,
+        cited=MethodLine.of(verdict.cited),
+        disagreeing=[MethodLine.of(method) for method in verdict.disagreeing],
     )
 
 
