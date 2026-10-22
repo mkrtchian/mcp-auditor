@@ -165,6 +165,29 @@ def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
     assert "no acceptance server is admitted" in capsys.readouterr().out
 
 
+def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _no_llm_key(monkeypatch)
+    census = _a_census_with_a_kubernetes_target(tmp_path)
+    admitted = admission.admitting_the_server_of(
+        "CVE-2025-53355", _KUBERNETES, "kubernetes-nuisance"
+    )
+    [server] = admitted.servers
+    no_stdio = admitted.model_copy(
+        update={"servers": [server.model_copy(update={"runs_over_stdio": False})]}
+    )
+    path = admission.written(tmp_path, no_stdio)
+
+    exit_code = run_nuisance.main(["gate", "--census", str(census), "--admission", str(path)])
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "no acceptance server is admitted" not in out
+    assert "no admitted acceptance server can run in the gate" in out
+    assert f"{_KUBERNETES}: does not run over stdio" in out
+
+
 def test_gate_on_a_server_outside_the_gate_set_exits_two(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):

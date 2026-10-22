@@ -60,6 +60,19 @@ async def test_an_alarm_that_does_not_reproduce_keeps_the_gate_green(tmp_path: P
     assert session.exit_code == 0
 
 
+async def test_an_alarm_on_a_server_flagged_in_its_baseline_is_inconclusive(tmp_path: Path):
+    given.a_flagged_file(tmp_path, FILESYSTEM)
+    script = [given.a_gate_run(True), *given.clean_runs(2)]
+    audit = given.scripted({FILESYSTEM.server_package: script})
+
+    session = await run_gate(given.options([FILESYSTEM]), given.a_harness(tmp_path, audit))
+
+    comparison = _the_one_server_ends(session, ServerOutcome.INCONCLUSIVE, GateVerdict.GREEN)
+    assert comparison.replays == []
+    assert any(FILESYSTEM.server_package in reason for reason in session.gate.reasons)
+    assert session.exit_code == 0
+
+
 async def test_a_server_whose_benign_call_fails_is_not_run_and_not_comparable(tmp_path: Path):
     given.a_gated_file(tmp_path, FILESYSTEM)
     harness = given.a_harness(
