@@ -185,8 +185,9 @@ The authored `KitTarget` then wraps into a `CVETarget` (the shared fields).
 - `reaches`: the `reachable_by` tokens the target claims (`arbitrary_read`,
   `command_execution`, `internal_fetch`).
 - `kept_places`: the ids of the places only this target reaches.
-- `images`, `server_image`, `patched_image`: `mcp-auditor-kit-<service>:local` image tags. The
-  service name must differ from every acceptance service (the README lists them).
+- `images`, `server_image`, `patched_image`: service names, built and launched as
+  `mcp-auditor-kit-<service>:local`. The service name must differ from every acceptance service
+  (the README lists them).
 - `planting_host`: the `PlantingHost` the places plant into.
 - `builder`: a context manager yielding a `kit_launch.Launch`.
 - `exploits`, `benign`: `async (Places, KitClient) -> None`.
