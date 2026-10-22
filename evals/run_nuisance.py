@@ -1,0 +1,62 @@
+"""Nuisance-specific commands, kept out of run_census, run_cve_benchmark and run_holdout.
+
+`walk` prints the servers the holdout walk reached, each with its reaching flaw and the flaws
+that set its version, for the maintainer to admit. No server is admitted yet. No LLM, no network.
+"""
+
+import argparse
+import sys
+from collections.abc import Sequence
+from pathlib import Path
+
+from evals import eval_display as display
+from evals.eval_session import Refused
+from evals.holdout_census import load_census
+from evals.honeypots import REPO_ROOT
+from evals.metrics import quiet_throttle_waits
+from evals.nuisance_walk import nuisance_population
+
+CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
+REFUSED_EXIT = 3
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    quiet_throttle_waits()
+    args = _parser().parse_args(argv)
+    try:
+        return args.command(args)
+    except Refused as refusal:
+        display.print_refusal(refusal.title, refusal.reasons)
+        return REFUSED_EXIT
+    except ValueError as error:
+        # A malformed census must not read as success.
+        display.print_refusal("Refused: the census is malformed.", [str(error)])
+        return REFUSED_EXIT
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Nuisance admission commands.")
+    commands = parser.add_subparsers(required=True)
+    walk = commands.add_parser("walk", help="print the servers the holdout walk reached to admit")
+    walk.set_defaults(command=_walk)
+    walk.add_argument("--census", type=Path, default=CENSUS_PATH)
+    return parser
+
+
+def _walk(args: argparse.Namespace) -> int:
+    census = load_census(args.census)
+    population = nuisance_population(census)
+    print(f"{len(population)} servers reached by the walk:")
+    for server in population:
+        line = (
+            f"  {server.server_package}  reached by {server.reaching_flaw}"
+            f"  sets version: {', '.join(server.version_setting)}"
+        )
+        if server.mark is not None:
+            line += f"  [{server.mark.value}]"
+        print(line)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

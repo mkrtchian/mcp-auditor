@@ -53,6 +53,8 @@ The holdout layer draws its targets from a census of public advisories, built by
 
 Two no-LLM commands scaffold the draw, which has not been run. `uv run python -m evals.run_holdout draw-order` prints the salted-hash draw order of the draw-order candidates with each one's disclosure date, the order the draw walks once until it holds 20 targets, and that an addition resumes, up to 30 targets (`--census` defaults to `evals/holdout_census.json`, no network). `uv run python -m evals.run_holdout calibration-dossier --cve ID --out DIR` writes a self-contained, `mcp_auditor`-free calibration kit for one candidate to `DIR`, outside the repository, so the candidate is calibrated without access to the auditor's code. Once the draw fills the target tuple, `uv run python -m evals.run_holdout run` audits the drawn targets and reports the capability number: it needs the drawn targets, the chain and timeout run conditions set in `evals/holdout_conditions.json`, a cutoff with its type and source page for each of its models in `evals/holdout_conditions.json`, Docker and an LLM key, and refuses when tracing is on.
 
+The nuisance admission is scaffolded, and no server is admitted. `uv run python -m evals.run_nuisance walk` prints, per server the holdout walk reached, its package, its reaching flaw and the flaws that set its version, for the maintainer to admit (no LLM, no network). The admission session itself, the patched images and the fix check are the maintainer's deferred work.
+
 See the README for the reproducibility rationale and the safety note (deliberately-vulnerable images, run on a non-sensitive host).
 
 ### Model probe
