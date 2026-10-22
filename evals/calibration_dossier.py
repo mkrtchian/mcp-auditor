@@ -10,7 +10,7 @@ alone), never from the raw hand-downloaded exports `run_census._dossier` needs.
 
 import json
 import shutil
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -30,7 +30,7 @@ EVALS = REPO_ROOT / "evals"
 KIT_DIR = EVALS / "holdout_kit"
 DOCKER = EVALS / "docker"
 
-_CLEAN_MODULES = (
+CLEAN_MODULES = (
     "cve_grammar",
     "cve_proofs",
     "cve_units",
@@ -42,7 +42,7 @@ _CLEAN_MODULES = (
     "cve_planting_docker",
     "cve_endpoint_address",
 )
-_KIT_MODULES = ("__init__", "kit_client", "kit_launch", "kit_target", "kit_driver")
+KIT_MODULES = ("__init__", "kit_client", "kit_launch", "kit_target", "kit_driver")
 
 _ADVISORY_PAGES = {
     SourceName.GHSA: "https://github.com/advisories/{}",
@@ -82,26 +82,26 @@ def _member(census: HoldoutCensus, cve: str) -> CensusFlaw:
 
 
 def _write_advisories(census: HoldoutCensus, flaw: CensusFlaw, out: Path) -> None:
-    packages = _server_packages(census.classifications)
+    packages = server_packages(census.classifications)
     package = packages.get(flaw.identifier, "")
     neighbours = [
-        _dossier(other)
+        advisory_dossier(other)
         for other in census.flaws
         if other.identifier != flaw.identifier and packages.get(other.identifier) == package
     ]
     candidate = CandidateDossier(
-        **_dossier(flaw).model_dump(), server_package=package, neighbours=neighbours
+        **advisory_dossier(flaw).model_dump(), server_package=package, neighbours=neighbours
     )
     advisories = out / "advisories"
     advisories.mkdir(parents=True, exist_ok=True)
     (advisories / f"{flaw.identifier}.json").write_text(candidate.model_dump_json(indent=2))
 
 
-def _server_packages(classifications: Mapping[str, list[Classification]]) -> dict[str, str]:
+def server_packages(classifications: Mapping[str, list[Classification]]) -> dict[str, str]:
     return {each.flaw: each.server_package for each in classifications[CLASSIFIERS[0]]}
 
 
-def _dossier(flaw: CensusFlaw) -> Dossier:
+def advisory_dossier(flaw: CensusFlaw) -> Dossier:
     return Dossier(
         identifier=flaw.identifier,
         ids=flaw.ids,
@@ -110,18 +110,24 @@ def _dossier(flaw: CensusFlaw) -> Dossier:
     )
 
 
-def _copy_sources(out: Path) -> None:
+def copy_clean_sources(out: Path, kit_modules: Sequence[str]) -> None:
+    """Copy evals/__init__.py, the clean modules, the given kit modules and the sentinel
+    Dockerfile into the exported tree. The holdout kit adds its own holdout_places.json."""
     evals_out = out / "evals"
     (evals_out / "holdout_kit").mkdir(parents=True, exist_ok=True)
     (evals_out / "__init__.py").write_text((EVALS / "__init__.py").read_text())
-    for module in _CLEAN_MODULES:
+    for module in CLEAN_MODULES:
         shutil.copyfile(EVALS / f"{module}.py", evals_out / f"{module}.py")
-    for module in _KIT_MODULES:
+    for module in kit_modules:
         shutil.copyfile(KIT_DIR / f"{module}.py", evals_out / "holdout_kit" / f"{module}.py")
-    shutil.copyfile(cve_places.HOLDOUT_PLACES, evals_out / "holdout_places.json")
     docker_out = out / "docker"
     docker_out.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(DOCKER / "Dockerfile.sentinel", docker_out / "Dockerfile.sentinel")
+
+
+def _copy_sources(out: Path) -> None:
+    copy_clean_sources(out, KIT_MODULES)
+    shutil.copyfile(cve_places.HOLDOUT_PLACES, out / "evals" / "holdout_places.json")
 
 
 def _write_docs(out: Path) -> None:
@@ -131,9 +137,13 @@ def _write_docs(out: Path) -> None:
     (out / "README.md").write_text(_readme())
 
 
-def _readme() -> str:
+def acceptance_services() -> set[str]:
     services = {name for target in CVE_TARGETS for name in (*target.images, target.patched_image)}
-    names = ", ".join(f"`{name}`" for name in sorted(services | {SENTINEL_SERVICE}))
+    return services | {SENTINEL_SERVICE}
+
+
+def _readme() -> str:
+    names = ", ".join(f"`{name}`" for name in sorted(acceptance_services()))
     return _README.format(acceptance_services=names)
 
 

@@ -28,3 +28,36 @@ def test_a_malformed_census_exits_three(tmp_path: Path):
     path.write_text("{ not valid json")
 
     assert run_nuisance.main(["walk", "--census", str(path)]) == 3
+
+
+def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    census = given.written(tmp_path, given.a_census())
+    out = tmp_path / "dossier"
+
+    exit_code = run_nuisance.main(
+        [
+            "nuisance-dossier",
+            "--census",
+            str(census),
+            "--server",
+            "npm:@acme/files",
+            "--out",
+            str(out),
+        ]
+    )
+
+    assert exit_code == 0
+    assert out.exists()
+    assert "Admission dossier for npm:@acme/files written to" in capsys.readouterr().out
+
+
+def test_nuisance_dossier_on_an_unknown_server_exits_three(tmp_path: Path):
+    census = given.written(tmp_path, given.a_census())
+    out = tmp_path / "dossier"
+
+    exit_code = run_nuisance.main(
+        ["nuisance-dossier", "--census", str(census), "--server", "npm:ghost", "--out", str(out)]
+    )
+
+    assert exit_code == 3
+    assert not out.exists()

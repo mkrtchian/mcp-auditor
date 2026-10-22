@@ -1,7 +1,9 @@
 """Nuisance-specific commands, kept out of run_census, run_cve_benchmark and run_holdout.
 
 `walk` prints the servers the holdout walk reached, each with its reaching flaw and the flaws
-that set its version, for the maintainer to admit. No server is admitted yet. No LLM, no network.
+that set its version, for the maintainer to admit (no LLM, no network). `nuisance-dossier` writes
+the isolated admission dossier for one server (no LLM; the fix-check driver it ships needs
+Docker). No server is admitted yet.
 """
 
 import argparse
@@ -14,6 +16,7 @@ from evals.eval_session import Refused
 from evals.holdout_census import load_census
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
+from evals.nuisance_dossier import write_dossier
 from evals.nuisance_walk import nuisance_population
 
 CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
@@ -40,6 +43,13 @@ def _parser() -> argparse.ArgumentParser:
     walk = commands.add_parser("walk", help="print the servers the holdout walk reached to admit")
     walk.set_defaults(command=_walk)
     walk.add_argument("--census", type=Path, default=CENSUS_PATH)
+    dossier = commands.add_parser(
+        "nuisance-dossier", help="write the isolated admission dossier for one server"
+    )
+    dossier.set_defaults(command=_nuisance_dossier)
+    dossier.add_argument("--census", type=Path, default=CENSUS_PATH)
+    dossier.add_argument("--server", required=True)
+    dossier.add_argument("--out", type=Path, required=True)
     return parser
 
 
@@ -55,6 +65,13 @@ def _walk(args: argparse.Namespace) -> int:
         if server.mark is not None:
             line += f"  [{server.mark.value}]"
         print(line)
+    return 0
+
+
+def _nuisance_dossier(args: argparse.Namespace) -> int:
+    census = load_census(args.census)
+    write_dossier(census, args.server, args.out)
+    print(f"Admission dossier for {args.server} written to {args.out}")
     return 0
 
 
