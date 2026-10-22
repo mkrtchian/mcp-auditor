@@ -55,7 +55,6 @@ from evals.nuisance_gate_session_model import NuisanceGateOptions, NuisanceGateS
 from evals.nuisance_markdown import render_markdown
 from evals.nuisance_population import run_population
 from evals.nuisance_report import build_report
-from evals.nuisance_results import FigureExit
 from evals.nuisance_run import NUISANCE_CONCURRENCY, NUISANCE_RUNS, run_nuisance
 from evals.nuisance_walk import (
     acceptance_servers,
@@ -192,10 +191,9 @@ def _gate(args: argparse.Namespace) -> int:
     census = load_census(args.census)
     admission = _admission(args.admission, census)
     current = current_acceptance_servers(census)
-    outside = [] if admission is None else outside_gate(admission, current)
     servers = [] if admission is None else gate_servers(admission, current)
     if admission is None or not servers:
-        _print_empty_gate(outside)
+        _print_empty_gate(admission, current)
         return 0
     gate_set = [server.server_package for server in servers]
     unknown = [package for package in args.server if package not in gate_set]
@@ -214,7 +212,8 @@ def _gate(args: argparse.Namespace) -> int:
         return CRASHED_EXIT
 
 
-def _print_empty_gate(outside: list[FigureExit]) -> None:
+def _print_empty_gate(admission: NuisanceAdmission | None, current: set[str]) -> None:
+    outside = [] if admission is None else outside_gate(admission, current)
     if not outside:
         print("no acceptance server is admitted")
         return
