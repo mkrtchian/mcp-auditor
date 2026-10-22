@@ -192,6 +192,12 @@ def _tool_record_defect(tool: ToolRecord) -> str | None:
     return None
 
 
+def _counted_tool_problems(server: AdmittedServer) -> list[str]:
+    if counted_tools(server):
+        return []
+    return [f"{server.server_package}: no counted tool"]
+
+
 def _benign_call_problems(server: AdmittedServer) -> list[str]:
     counted = counted_tools(server)
     called = {call.tool for flaw in counted_flaws(server) for call in flaw.benign_calls}
@@ -200,12 +206,6 @@ def _benign_call_problems(server: AdmittedServer) -> list[str]:
         for name in counted
         if name not in called
     ]
-
-
-def _counted_tool_problems(server: AdmittedServer) -> list[str]:
-    if counted_tools(server):
-        return []
-    return [f"{server.server_package}: no counted tool"]
 
 
 def _patched_version_problems(server: AdmittedServer) -> list[str]:
