@@ -25,9 +25,10 @@ from evals.metrics import quiet_throttle_waits
 from evals.nuisance_admission import ADMISSION_PATH, load_admission
 from evals.nuisance_dossier import write_dossier
 from evals.nuisance_markdown import render_markdown
+from evals.nuisance_population import run_population
 from evals.nuisance_report import NuisanceReport, build_report
-from evals.nuisance_run import NUISANCE_CONCURRENCY, NUISANCE_RUNS, run_nuisance, run_population
-from evals.nuisance_walk import nuisance_population
+from evals.nuisance_run import NUISANCE_CONCURRENCY, NUISANCE_RUNS, run_nuisance
+from evals.nuisance_walk import acceptance_servers, nuisance_population
 from mcp_auditor.config import load_settings
 
 CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
@@ -114,7 +115,7 @@ def _run(args: argparse.Namespace) -> int:
     conditions.require_ready(model_ids)
     run = asyncio.run(
         run_nuisance(
-            run_population(nuisance_population(census), admission),
+            run_population(nuisance_population(census), admission, acceptance_servers(census)),
             draw_order(census),
             conditions,
             settings,

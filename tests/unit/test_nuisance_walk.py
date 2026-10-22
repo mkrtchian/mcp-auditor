@@ -4,6 +4,8 @@ import tests.unit.support.test_nuisance_walk_given as given
 from evals.census_classification import Criterion
 from evals.nuisance_walk import (
     ServerMark,
+    acceptance_servers,
+    current_acceptance_servers,
     normalized_package,
     nuisance_population,
     reached_identifiers,
@@ -156,3 +158,15 @@ def test_acceptance_wins_over_excluded():
     [server] = nuisance_population(census)
 
     assert server.mark == ServerMark.ACCEPTANCE
+
+
+def test_only_a_current_target_makes_its_server_a_current_acceptance_server():
+    census = given.a_census_walking(
+        [
+            ("CVE-2025-53355", "excluded", "npm:mcp-server-kubernetes"),
+            ("CVE-2026-0755", "excluded", "npm:gemini-mcp-tool"),
+        ]
+    )
+
+    assert current_acceptance_servers(census) == {"npm:mcp-server-kubernetes"}
+    assert acceptance_servers(census) == {"npm:mcp-server-kubernetes", "npm:gemini-mcp-tool"}

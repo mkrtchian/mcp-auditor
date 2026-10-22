@@ -12,6 +12,7 @@ from enum import StrEnum
 
 from evals.census_classification import Classification, Criterion, Primitive, in_grammar
 from evals.census_draw import Settlement
+from evals.cve_targets import CVE_TARGETS
 from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
 
@@ -63,8 +64,22 @@ def version_setting_flaws(server_package: str, census: HoldoutCensus) -> list[st
     return [flaw for flaw in census_flaws_of(server_package, census) if _sets_version(flaw, census)]
 
 
+def acceptance_servers(census: HoldoutCensus) -> set[str]:
+    """Every benchmark flaw's server, the dropped targets' included."""
+    return {server_of(flaw, census) for flaw in BENCHMARK_FLAWS if flaw in _classified(census)}
+
+
+def current_acceptance_servers(census: HoldoutCensus) -> set[str]:
+    classified = _classified(census)
+    return {server_of(t.cve_id, census) for t in CVE_TARGETS if t.cve_id in classified}
+
+
+def _classified(census: HoldoutCensus) -> set[str]:
+    return {classification.flaw for classification in census.classifications[CLASSIFIERS[0]]}
+
+
 def nuisance_population(census: HoldoutCensus) -> list[NuisanceServer]:
-    acceptance = _acceptance_servers(census)
+    acceptance = acceptance_servers(census)
     excluded = {normalized_package(package) for package in EXCLUDED_SERVERS}
     population: list[NuisanceServer] = []
     seen: set[str] = set()
@@ -94,11 +109,6 @@ def _mark(server: str, acceptance: set[str], excluded: set[str]) -> ServerMark |
     if server in excluded:
         return ServerMark.EXCLUDED
     return None
-
-
-def _acceptance_servers(census: HoldoutCensus) -> set[str]:
-    classified = {classification.flaw for classification in census.classifications[CLASSIFIERS[0]]}
-    return {server_of(flaw, census) for flaw in BENCHMARK_FLAWS if flaw in classified}
 
 
 def _sets_version(flaw: str, census: HoldoutCensus) -> bool:

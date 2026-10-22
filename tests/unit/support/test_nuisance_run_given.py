@@ -10,8 +10,9 @@ from evals.holdout_conditions import Cutoff, HoldoutConditions
 from evals.holdout_draw import DrawEntry
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_audit import DroppedRun
+from evals.nuisance_population import RunPopulation
 from evals.nuisance_results import FigureExit, NuisanceRunResult
-from evals.nuisance_run import NuisanceDeps, RunPopulation, run_nuisance
+from evals.nuisance_run import NuisanceDeps, run_nuisance
 from evals.probe_candidates import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep, ProviderUsage

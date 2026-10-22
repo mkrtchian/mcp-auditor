@@ -164,3 +164,36 @@ def test_a_cutoff_without_a_source_key_fails_to_load(tmp_path: Path):
 
     with pytest.raises(KeyError):
         load_conditions(_write(tmp_path, payload))
+
+
+@pytest.mark.parametrize("missing", ["chain_budget", "max_chain_steps", "tool_call_timeout"])
+def test_require_chain_settings_refuses_a_null_chain_setting_alone(tmp_path: Path, missing: str):
+    payload = _complete_payload()
+    payload[missing] = None
+    conditions = load_conditions(_write(tmp_path, payload))
+
+    with pytest.raises(Refused) as excinfo:
+        conditions.require_chain_settings()
+
+    assert len(excinfo.value.reasons) == 1
+    assert "chain settings and tool call timeout not set" in excinfo.value.reasons[0]
+
+
+def test_require_chain_settings_needs_no_cutoff_and_no_price(tmp_path: Path):
+    payload = _complete_payload()
+    payload["cutoffs"] = {}
+    payload["prices"] = {}
+    conditions = load_conditions(_write(tmp_path, payload))
+
+    assert conditions.require_chain_settings() is None
+
+
+def test_require_ready_reports_the_chain_reason_first_beside_a_missing_cutoff(tmp_path: Path):
+    payload = _complete_payload()
+    payload["max_chain_steps"] = None
+
+    reasons = _refusal_reasons(tmp_path, payload, ["gpt-7-sol"])
+
+    assert len(reasons) == 3
+    assert "chain settings and tool call timeout not set" in reasons[0]
+    assert "no logged cutoff for gpt-7-sol" in reasons

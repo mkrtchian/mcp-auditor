@@ -37,9 +37,7 @@ class HoldoutConditions:
     prices_as_of: date
 
     def require_ready(self, model_ids: Sequence[str]) -> None:
-        reasons: list[str] = []
-        if None in (self.chain_budget, self.max_chain_steps, self.tool_call_timeout):
-            reasons.append(_CHAIN_NOT_SET)
+        reasons = self._chain_reasons()
         for model in model_ids:
             if model in self.cutoffs:
                 reasons.extend(_incomplete_cutoff_reasons(model, self.cutoffs[model]))
@@ -49,6 +47,16 @@ class HoldoutConditions:
                 reasons.append(f"no price for {model}")
         if reasons:
             raise Refused("holdout run conditions not ready", reasons)
+
+    def require_chain_settings(self) -> None:
+        reasons = self._chain_reasons()
+        if reasons:
+            raise Refused("holdout run conditions not ready", reasons)
+
+    def _chain_reasons(self) -> list[str]:
+        if None in (self.chain_budget, self.max_chain_steps, self.tool_call_timeout):
+            return [_CHAIN_NOT_SET]
+        return []
 
 
 def _incomplete_cutoff_reasons(model: str, cutoff: Cutoff) -> list[str]:
