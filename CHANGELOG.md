@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The judge writes its justification before its verdict: the `Judgment` schema it answers in asks for the justification first, so the verdict can follow from it.
 - The holdout run's per-target result carries its runs as a tuple of per-run statuses, its aggregates (detected runs, detection share, places, aimed, incomplete runs) computed from them, so no two can disagree. The report is unchanged.
 - The calibration kit of `python -m evals.run_holdout calibration-dossier` tags its images `mcp-auditor-kit-<service>:local`, so a kit build never overwrites an acceptance image, and its README lists the acceptance services a kit service name must not reuse.
 - The CVE benchmark preflight, and the probe corpus capture for the vulnerable images, rebuild through `docker compose` an image whose Dockerfile fingerprint label does not match its Dockerfile, absent images included, instead of auditing whatever the tag holds. A failed build stops the run as a preflight crash (exit `4`) naming the services and compose's error.

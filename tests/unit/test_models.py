@@ -11,7 +11,7 @@ from mcp_auditor.domain import (
     ProviderUsage,
     Severity,
 )
-from mcp_auditor.domain.models import AuditStep, order_tools_for_audit
+from mcp_auditor.domain.models import AuditStep, Judgment, order_tools_for_audit
 
 
 class TestEnumConstraints:
@@ -22,6 +22,13 @@ class TestEnumConstraints:
     def test_rejects_unknown_severity(self):
         with pytest.raises(ValueError):
             given.an_eval_result(severity="unknown")
+
+
+class TestJudgmentSchema:
+    def test_asks_for_the_justification_before_the_verdict(self):
+        fields = list(Judgment.model_json_schema()["properties"])
+
+        assert fields.index("justification") < fields.index("verdict")
 
 
 class TestProviderUsage:
