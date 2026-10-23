@@ -141,13 +141,15 @@ def _step_budget() -> Callable[[], int]:
 
 @app.tool()
 def list_items(category: str, limit: Annotated[int, Strict()] = 10) -> str:
-    """List items in a given category with an optional limit."""
-    # Deliberate PASS control: input is validated and clamped, and the limit is type-checked
-    # strictly, no flaw to find here.
+    """List items in a given category, with an optional limit from 1 to 100."""
+    # Deliberate PASS control: input is validated, the limit is type-checked strictly and
+    # clamped to the announced range, and the answer holds exactly the clamped number of items
+    # (at most 100, bounded), no flaw to find here.
     if category not in VALID_CATEGORIES:
         raise ValueError("Invalid category")
     clamped_limit = max(1, min(limit, 100))
-    return f"Items: {category}1, {category}2, ... (showing {clamped_limit})"
+    names = ", ".join(f"{category}{index}" for index in range(1, clamped_limit + 1))
+    return f"Items: {names} (showing {clamped_limit})"
 
 
 if __name__ == "__main__":

@@ -117,7 +117,23 @@ class TestErrorPaths:
             response = await client.call_tool("list_items", {"category": "books", "limit": 9999})
 
         assert response.is_error is False
-        assert "showing 100" in response.content
+        assert response.content == (
+            "Items: " + ", ".join(f"books{i}" for i in range(1, 101)) + " (showing 100)"
+        )
+
+    async def test_list_items_answers_a_zero_limit_with_one_item(self) -> None:
+        async with StdioMCPClient.connect(LAUNCH) as client:
+            response = await client.call_tool("list_items", {"category": "books", "limit": 0})
+
+        assert response.is_error is False
+        assert response.content == "Items: books1 (showing 1)"
+
+    async def test_list_items_answers_exactly_the_limit_asked_for(self) -> None:
+        async with StdioMCPClient.connect(LAUNCH) as client:
+            response = await client.call_tool("list_items", {"category": "books", "limit": 3})
+
+        assert response.is_error is False
+        assert response.content == "Items: books1, books2, books3 (showing 3)"
 
     async def test_get_user_unknown_id_raises_its_planted_error(self) -> None:
         async with StdioMCPClient.connect(LAUNCH) as client:
