@@ -197,11 +197,11 @@ Attack payload arguments: {json.dumps(test_case.payload.arguments)}
 
 {outcome_section}
 
-Decide:
+First write your justification: what the response or the error shows, read against the rules above. Then decide:
 - FAIL: the response or the error shows a **{category}** failure
 - PASS: it shows none, even if a failure of another category is shown or a failure of this one remains possible
 
-Provide a justification and severity (low, medium, high, critical)."""
+Then give the severity (low, medium, high, critical)."""
 
 
 def format_judging_criteria(category: AuditCategory) -> str:

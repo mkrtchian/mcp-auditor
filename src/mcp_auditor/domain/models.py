@@ -127,8 +127,8 @@ class EvalResult(BaseModel):
 class Judgment(BaseModel):
     """The judge's verdict, decoupled from the identity fields the code stamps itself."""
 
-    verdict: EvalVerdict
     justification: str
+    verdict: EvalVerdict
     severity: Severity
 
 
