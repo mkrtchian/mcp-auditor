@@ -1,8 +1,18 @@
 import pytest
+from pydantic import BaseModel
 
 import tests.unit.support.test_llm_adapter_given as given
+import tests.unit.support.test_llm_adapter_then as then
 from mcp_auditor.adapters.throttling import install_throttle_log_handler
-from mcp_auditor.domain.models import ProviderUsage
+from mcp_auditor.domain.models import (
+    AttackContext,
+    AuditPayload,
+    ChainPlanBatch,
+    Judgment,
+    ProviderUsage,
+    StepObservation,
+    TestCaseBatch,
+)
 from mcp_auditor.domain.ports import UnparseableOutput
 from tests.fakes.chat_model import Throttled, raw_response, truncated
 
@@ -239,3 +249,29 @@ class TestThrottledRequests:
         _, usage = await llm.generate_structured("prompt", given.Output)
 
         assert usage.throttled_requests == 2
+
+
+class TestStrictSchemas:
+    @pytest.fixture(autouse=True)
+    def _placeholder_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-placeholder")
+
+    async def test_the_judgment_is_bound_strictly_on_openai(self):
+        body = await given.the_openai_request_body(Judgment)
+
+        then.bound_strictly(body)
+
+    @pytest.mark.parametrize("schema", [TestCaseBatch, AuditPayload])
+    async def test_a_payload_schema_is_bound_loosely_with_its_arguments_open(
+        self, schema: type[BaseModel]
+    ):
+        body = await given.the_openai_request_body(schema)
+
+        then.bound_loosely(body)
+        then.payload_arguments_stay_open(body)
+
+    @pytest.mark.parametrize("schema", [ChainPlanBatch, StepObservation, AttackContext])
+    async def test_a_generator_schema_is_bound_loosely_on_openai(self, schema: type[BaseModel]):
+        body = await given.the_openai_request_body(schema)
+
+        then.bound_loosely(body)

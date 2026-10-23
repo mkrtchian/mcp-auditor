@@ -20,7 +20,7 @@ from mcp_auditor.adapters.llm_throttling import (
 from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
 from mcp_auditor.adapters.throttling import counting_throttles, install_throttle_log_handler
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import ProviderUsage
+from mcp_auditor.domain.models import Judgment, ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
 
 # Shared so the generator and the judge on one model fetch OpenRouter's listing once.
@@ -65,10 +65,15 @@ def _create_for_provider(
 class StructuredOutput:
     method: Literal["json_schema", "function_calling", "anthropic_json_schema"]
     schema_as_dict: bool = False
+    strict_schemas: frozenset[type[BaseModel]] = frozenset()
 
 
-# OpenAI, Alibaba and OpenRouter, all through ChatOpenAI, get a dict: ChatOpenAI makes a Pydantic
-# class strict, and strict mode rejects the open object AuditPayload.arguments.
+# OpenAI, Alibaba and OpenRouter, all through ChatOpenAI, get a dict, and strict is an explicit
+# opt-in per schema and per provider. A Pydantic class goes strict through the OpenAI SDK with
+# the open object AuditPayload.arguments left open, which the API refuses. A dict bound strictly
+# has that object closed by langchain, so every payload would come back empty with no error
+# (langchain also makes every property required). Strict is granted only to a schema with no
+# open object and no optional field.
 # Anthropic uses its native structured output, forced even with thinking on. The open
 # arguments object is carried as a JSON string on that path and decoded back in the adapter
 # (anthropic_structured_output); an answer with no valid structured output (a refusal, a cut
@@ -76,7 +81,9 @@ class StructuredOutput:
 _STRUCTURED_OUTPUT = {
     "google": StructuredOutput(method="json_schema"),
     "anthropic": StructuredOutput(method="anthropic_json_schema"),
-    "openai": StructuredOutput(method="json_schema", schema_as_dict=True),
+    "openai": StructuredOutput(
+        method="json_schema", schema_as_dict=True, strict_schemas=frozenset({Judgment})
+    ),
     "fireworks": StructuredOutput(method="json_schema"),
     "alibaba": StructuredOutput(method="json_schema", schema_as_dict=True),
     "openrouter": StructuredOutput(method="json_schema", schema_as_dict=True),
@@ -136,7 +143,10 @@ class LLM:
             return bind_anthropic_json_schema(self._model, output_schema)
         if self._structured_output.schema_as_dict:
             return self._model.with_structured_output(  # pyright: ignore[reportUnknownMemberType]
-                output_schema.model_json_schema(), method=method, strict=False, include_raw=True
+                output_schema.model_json_schema(),
+                method=method,
+                strict=output_schema in self._structured_output.strict_schemas,
+                include_raw=True,
             )
         return self._model.with_structured_output(  # pyright: ignore[reportUnknownMemberType]
             output_schema, method=method, include_raw=True
