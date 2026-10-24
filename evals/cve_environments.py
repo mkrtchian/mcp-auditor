@@ -219,6 +219,32 @@ def ssrf_env(
         )
 
 
+@contextmanager
+def arcadedb_mcp_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    # The ArcadeDB MCP stdio server reads files and fetches endpoints through the same polyglot-JS
+    # sandbox escape, so its kept places span planted files, the hostname, the process environment
+    # and the holder-bound metadata sentinels. It takes no scope argument (it is driven over stdio,
+    # not pointed at a directory), so the launch is the read-only /srv mount and the planting
+    # layer's args, with no path appended after the image.
+    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
+        _materialise(root, spec, shape)
+        yield Launch(
+            command="docker",
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                *args.run_args(),
+                "-v",
+                f"{root}:{_WORKSPACE}:ro",
+                image,
+            ],
+        )
+
+
 _N8N_REDIRECT_IMAGE = "mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:local"
 _N8N_STUB_IP = "203.0.113.10"  # TEST-NET-3: the SSRF guard treats it as an ordinary public host
 

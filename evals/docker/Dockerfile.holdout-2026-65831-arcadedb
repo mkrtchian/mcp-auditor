@@ -1,0 +1,26 @@
+# Vulnerable target for CVE-2026-65831: ArcadeDB 26.6.1, polyglot JS over the MCP stdio
+# server. PolyglotQueryEngine runs scripts under HostAccess.ALL, so a bound-object reflection
+# chain (database.getClass().getClassLoader().loadClass(...)) reaches java.io.* and reads any
+# host file. The MCP stdio session authenticates as root, but the flaw does not depend on the
+# principal: 26.6.1 has no reflection deny-list on the GraalVM host access.
+FROM arcadedata/arcadedb:26.6.1
+
+# The launch runs as a non-root uid (the kit's planting host). Make the install tree writable by
+# any uid so the server can open its database directory and write its log, independent of uid.
+USER root
+
+# An MCP deployment that permits write-class tool calls. ArcadeDB classifies any polyglot script
+# as a CREATE operation, so execute_command needs allowInsert to reach the engine at all; this is
+# a deployment choice, not the flaw. Identical on both versions: the only difference that matters
+# is the GraalVM host-access policy inside the engine.
+RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["root"]}' > /home/arcadedb/config/mcp-config.json
+
+# The launch runs as a non-root uid (the kit's planting host). Make the install tree writable by
+# any uid so the server can open its database directory and write its log, independent of uid.
+RUN chmod -R a+rwX /home/arcadedb
+
+# rootPassword is mandatory for mcp-stdio.sh; defaultDatabases seeds the mydb the tools target.
+ENV ARCADEDB_SETTINGS="-Darcadedb.server.rootPassword=playpassword -Darcadedb.server.defaultDatabases=mydb[seed:seedpass:admin]"
+
+ENTRYPOINT ["/__cacert_entrypoint.sh"]
+CMD ["./bin/mcp-stdio.sh"]

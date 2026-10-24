@@ -227,3 +227,22 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "a3f29b6a000aa579f1f26ec6c0e08fa767e001481df38443b9bde0b352078ebd"
     image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:local
+
+  # Read-plus-fetch target: the polyglot-JS sandbox escape reads host files and fetches the
+  # holder-bound metadata sentinels through the same reflection chain, reusing the shared sentinel
+  # service. ArcadeDB is a heavy JVM server image, started per launch by the builder.
+  holdout-2026-65831-arcadedb:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-65831-arcadedb
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0f74668e9881ebd2b8319dc50a5c1421f69fc8179f0c713c4aabd99208e1e248"
+    image: mcp-auditor-cve-holdout-2026-65831-arcadedb:local
+
+  holdout-2026-65831-arcadedb-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-65831-arcadedb-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ef40347a7dba4bade6c55b3339f1deb3ba54966a6dd23fb4bac4220d46ef449e"
+    image: mcp-auditor-cve-holdout-2026-65831-arcadedb-patched:local

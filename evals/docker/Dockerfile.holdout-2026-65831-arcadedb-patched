@@ -1,0 +1,19 @@
+# Patched target for CVE-2026-65831: ArcadeDB 26.7.1 (first patched version). GraalPolyglotEngine
+# now builds its context with HostAccess.newBuilder(HostAccess.ALL).denyAccess(Class, ClassLoader,
+# AccessibleObject, Member), so database.getClass().getClassLoader() throws before any file read,
+# and PolyglotQueryEngine.command/analyze additionally require UPDATE_SECURITY. Either gate blocks
+# the reflection chain; the deny-list blocks it even for the root stdio principal.
+FROM arcadedata/arcadedb:26.7.1
+
+USER root
+
+# Identical MCP deployment config to the vulnerable image: write-class tool calls permitted, so
+# the only behavioural difference between the two images is the engine's host-access policy.
+RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["root"]}' > /home/arcadedb/config/mcp-config.json
+
+RUN chmod -R a+rwX /home/arcadedb
+
+ENV ARCADEDB_SETTINGS="-Darcadedb.server.rootPassword=playpassword -Darcadedb.server.defaultDatabases=mydb[seed:seedpass:admin]"
+
+ENTRYPOINT ["/__cacert_entrypoint.sh"]
+CMD ["./bin/mcp-stdio.sh"]
