@@ -1,0 +1,22 @@
+# CVE-2025-11489 vulnerable image: @wonderwhy-er/desktop-commander@0.2.32 (last vulnerable
+# version; the symlink scope-bypass fix a1177ec / PR #321 lands in 0.2.33). The real npm package,
+# no reimplementation. validatePath runs isPathAllowed on the unresolved path, then fs.realpath,
+# so an in-scope symlink to an out-of-scope target is followed and read.
+FROM node:22-bookworm-slim
+
+# --ignore-scripts: skip the setup-claude-server postinstall (it edits the host Claude config and
+# is irrelevant to the server). The published package already ships the built dist/.
+RUN npm install -g --ignore-scripts @wonderwhy-er/desktop-commander@0.2.32 \
+ && test -f /usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js
+
+# The scope the server enforces. getAllowedDirs reads config.allowedDirectories from
+# $HOME/.claude-server-commander/config.json; HOME is forced to /tmp by the launch (host_user_args),
+# so the config lives at /tmp/.claude-server-commander/config.json. telemetryEnabled:false keeps the
+# --network none launch from blocking on analytics. An empty/absent list would fail open (scope '/'),
+# so it must be set explicitly for the scope check to mean anything.
+RUN mkdir -p /tmp/.claude-server-commander \
+ && printf '%s' '{"allowedDirectories":["/srv/app"],"blockedCommands":[],"telemetryEnabled":false,"pendingWelcomeOnboarding":false,"fileReadLineLimit":100000,"fileWriteLineLimit":50}' \
+      > /tmp/.claude-server-commander/config.json \
+ && chmod -R 0777 /tmp/.claude-server-commander
+
+ENTRYPOINT ["node", "/usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js", "--no-onboarding"]

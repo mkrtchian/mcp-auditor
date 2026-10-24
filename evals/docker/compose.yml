@@ -166,3 +166,19 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "c710f00df2b7364522cb659bae001617deb3f49e6eeb33f55b08da819fea943f"
     image: mcp-auditor-cve-holdout-2026-25546-godot-mcp-patched:local
+
+  holdout-2025-11489-desktop-commander:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-11489-desktop-commander
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a7c3369fb566df07f7c0f6eb0eff1aed9ccae7c4df40431a636e09ece65ebe99"
+    image: mcp-auditor-cve-holdout-2025-11489-desktop-commander:local
+
+  holdout-2025-11489-desktop-commander-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-11489-desktop-commander-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "6d722e4c4eee32027bcb29439c83b9ed6857ab099dcbd1a259a4cd49b67f6c37"
+    image: mcp-auditor-cve-holdout-2025-11489-desktop-commander-patched:local
