@@ -9,6 +9,9 @@
 # Dockerfile's instructions (comments and blank lines left out), so a tag holding another build
 # is told apart and rebuilt. After a Dockerfile edit, tests/unit/test_cve_compose_labels.py
 # prints the value to paste.
+# The holdout server images are appended after the sentinel, two per transplanted target
+# (vulnerable and patched), named holdout-<year>-<num>-<service>; the same build command builds
+# them. SSRF holdout targets reuse the shared sentinel above, adding no sentinel of their own.
 services:
   filesystem:
     build:
@@ -81,3 +84,20 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "8e7b9f2e87bd82f06de8a106bddbe4a916720bb72b0889466aaab29e4998dd5e"
     image: mcp-auditor-cve-sentinel:local
+
+  # Holdout targets (transplanted; see evals/holdout_targets.py).
+  holdout-2026-4270-aws-api-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-4270-aws-api-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "709201c9e04a7f783a10be201514bcc139cbd553eb1e00854b40e1608224a66d"
+    image: mcp-auditor-cve-holdout-2026-4270-aws-api-mcp:local
+
+  holdout-2026-4270-aws-api-mcp-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-4270-aws-api-mcp-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "21ae49695c4330f7b827c0851e170541d7abcf510e91050e6c426639419f207f"
+    image: mcp-auditor-cve-holdout-2026-4270-aws-api-mcp-patched:local
