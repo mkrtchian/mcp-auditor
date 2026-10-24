@@ -6,13 +6,17 @@ the `run` command audits the drawn targets, so it needs Docker and an LLM key.
 import argparse
 import asyncio
 import sys
+from argparse import _SubParsersAction  # pyright: ignore[reportPrivateUsage]
 from collections.abc import Sequence
 from pathlib import Path
 
 from evals import calibration_dossier, holdout_targets
 from evals import eval_display as display
-from evals.concurrency import positive_int
-from evals.cve_places import HOLDOUT_PLACES, load_places
+from evals.concurrency import bounded, positive_int
+from evals.cve_calibration import calibrate_all, calibrate_one
+from evals.cve_layout_check import confirm_admission
+from evals.cve_places import HOLDOUT_PLACES, Places, load_places
+from evals.cve_targets import CVETarget
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
 from evals.holdout_census import load_census
@@ -28,6 +32,7 @@ from mcp_auditor.config import load_settings
 CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
 DEFAULT_REPORT_PATH = "output/holdout_report.json"
 REFUSED_EXIT = 3
+CRASHED_EXIT = 4
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -63,7 +68,17 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--runs", type=positive_int, default=None, help="default 3, lowerable to 1")
     run.add_argument("--concurrency", type=positive_int, default=6)
     run.add_argument("--census", type=Path, default=CENSUS_PATH)
+    _add_calibrate(commands)
     return parser
+
+
+def _add_calibrate(commands: "_SubParsersAction[argparse.ArgumentParser]") -> None:
+    calibrate = commands.add_parser(
+        "calibrate", help="replay each drawn target's exploits and benign call, no LLM"
+    )
+    calibrate.set_defaults(command=_calibrate)
+    calibrate.add_argument("--cve", help="calibrate only this CVE id; default: every drawn target")
+    calibrate.add_argument("--concurrency", type=positive_int, default=6)
 
 
 def _draw_order(args: argparse.Namespace) -> int:
@@ -110,6 +125,33 @@ def _run(args: argparse.Namespace) -> int:
     _write_report(args.report, report, markdown)
     print(markdown)
     return 0
+
+
+def _calibrate(args: argparse.Namespace) -> int:
+    places = load_places(HOLDOUT_PLACES)
+    targets = [
+        target
+        for target in holdout_targets.HOLDOUT_TARGETS
+        if args.cve is None or target.cve_id == args.cve
+    ]
+    if not targets:
+        print("no holdout target is drawn")
+        return 0
+    try:
+        return asyncio.run(_calibrate_targets(targets, places, args.concurrency))
+    except ValueError as error:
+        # A fixture-config error out of check_target (an unknown kept id, a planting_spec refusal)
+        # is a crash, not a dead fixture (exit 1) nor the malformed census main reports (exit 3).
+        display.print_refusal("Refused: a holdout fixture is misconfigured.", [str(error)])
+        return CRASHED_EXIT
+
+
+async def _calibrate_targets(targets: list[CVETarget], places: Places, concurrency: int) -> int:
+    admission_failures = await confirm_admission(targets, places)
+    all_live = await calibrate_all(
+        targets, bounded(lambda target: calibrate_one(target, places), concurrency)
+    )
+    return 0 if all_live and not admission_failures else 1
 
 
 def _refuse_tracing() -> None:

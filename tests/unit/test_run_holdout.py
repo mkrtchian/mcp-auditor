@@ -35,6 +35,73 @@ def test_run_refuses_when_tracing_is_on(monkeypatch: pytest.MonkeyPatch):
     assert run_holdout.main(["run"]) == run_holdout.REFUSED_EXIT
 
 
+def test_calibrate_without_a_drawn_target_exits_zero_and_says_so(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", ())
+
+    exit_code = run_holdout.main(["calibrate"])
+
+    assert exit_code == 0
+    assert "no holdout target is drawn" in capsys.readouterr().out
+
+
+def test_calibrate_exits_zero_when_every_target_is_live_and_routed(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _a_drawn_target(monkeypatch)
+    _fake_admission(monkeypatch, failures=[])
+    _fake_calibration(monkeypatch, all_live=True)
+
+    assert run_holdout.main(["calibrate"]) == 0
+
+
+def test_calibrate_exits_one_when_a_fixture_calibrates_dead(monkeypatch: pytest.MonkeyPatch):
+    _a_drawn_target(monkeypatch)
+    _fake_admission(monkeypatch, failures=[])
+    _fake_calibration(monkeypatch, all_live=False)
+
+    assert run_holdout.main(["calibrate"]) == 1
+
+
+def test_calibrate_exits_one_when_a_kept_place_has_no_route(monkeypatch: pytest.MonkeyPatch):
+    _a_drawn_target(monkeypatch)
+    _fake_admission(monkeypatch, failures=["CVE-0000-00000: kept layout place p has no route"])
+    _fake_calibration(monkeypatch, all_live=True)
+
+    assert run_holdout.main(["calibrate"]) == 1
+
+
+def test_calibrate_crashes_to_four_on_a_fixture_config_error(monkeypatch: pytest.MonkeyPatch):
+    _a_drawn_target(monkeypatch)
+    _fake_admission(monkeypatch, failures=[])
+
+    async def _raises(*_: object) -> bool:
+        raise ValueError("unknown kept place id")
+
+    monkeypatch.setattr(run_holdout, "calibrate_all", _raises)
+
+    assert run_holdout.main(["calibrate"]) == run_holdout.CRASHED_EXIT
+
+
+def _a_drawn_target(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (object(),))
+
+
+def _fake_admission(monkeypatch: pytest.MonkeyPatch, failures: list[str]) -> None:
+    async def _confirm(*_: object, **__: object) -> list[str]:
+        return failures
+
+    monkeypatch.setattr(run_holdout, "confirm_admission", _confirm)
+
+
+def _fake_calibration(monkeypatch: pytest.MonkeyPatch, all_live: bool) -> None:
+    async def _calibrate_all(*_: object, **__: object) -> bool:
+        return all_live
+
+    monkeypatch.setattr(run_holdout, "calibrate_all", _calibrate_all)
+
+
 def test_run_refuses_an_acceptance_target_for_its_tools_filter(
     monkeypatch: pytest.MonkeyPatch,
 ):
