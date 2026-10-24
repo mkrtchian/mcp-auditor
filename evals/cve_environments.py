@@ -216,6 +216,32 @@ def ssrf_env(
 
 
 @contextmanager
+def mysql_db_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    # The self-contained MySQL-MCP image carries its own engine and an AWS credential stub, both
+    # started by the entrypoint, so the launch adds nothing but the frozen /srv layout, mounted
+    # read-only (ADR 031). The server takes no scope argument, so none is appended after the image;
+    # the network isolation, the planted file mounts, the planted env and the hostname all come
+    # from the planting layer's PlantedArgs.
+    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
+        _materialise(root, spec, shape)
+        yield Launch(
+            command="docker",
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                *args.run_args(),
+                "-v",
+                f"{root}:{_WORKSPACE}:ro",
+                image,
+            ],
+        )
+
+
+@contextmanager
 def _temp_root() -> Generator[Path]:
     # The filesystem and git launches run as the host user, so bind-mount files are host-owned
     # and rmtree normally succeeds. ignore_cleanup_errors stays as a fallback so a stray
