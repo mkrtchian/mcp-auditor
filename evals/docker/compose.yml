@@ -200,3 +200,30 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "727d3c995769ac239ec4ff849b441937b7226f82376ec87b174089cae967d3e2"
     image: mcp-auditor-cve-holdout-2025-66335-doris-patched:local
+
+  # Redirect-following SSRF target: the shared sentinel serves the nonce, a stand-in service serves
+  # the 302 the server follows inward. The stand-in and the sentinels are holder-bound by the
+  # builder, not by compose.
+  holdout-ghsa-8g7g-hmwm-6rv2-n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "4a19c8784686d9a57e2c2e4f05aac420690e41e9b6e8ea7c299799487d596fb6"
+    image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n:local
+
+  holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "c940928888fbacf12ec825805187a8ce150505a78f3619f59ee0d14b1d79b569"
+    image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched:local
+
+  holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a3f29b6a000aa579f1f26ec6c0e08fa767e001481df38443b9bde0b352078ebd"
+    image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:local
