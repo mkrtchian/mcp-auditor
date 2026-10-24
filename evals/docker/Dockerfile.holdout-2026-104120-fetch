@@ -1,0 +1,13 @@
+# Vulnerable mcp-server-fetch, pinned to the version the CVE-2026-104120 reporter reproduced on
+# (PyPI mcp-server-fetch 2026.6.4, released 2026-06-04). No SSRF egress guard: fetch_url and the
+# robots.txt pre-check request any caller-supplied URL, including link-local / cloud-metadata
+# addresses. Real software from PyPI, never a reimplementation.
+FROM python:3.12-slim
+
+# The server declares mcp>=1.1.3 with no upper bound; mcp 2.x renamed McpError and breaks its
+# import, so pin the SDK to the last 1.x current at this server's release (2026-06-04).
+RUN pip install --no-cache-dir "mcp-server-fetch==2026.6.4" "mcp==1.27.2"
+
+# --ignore-robots-txt makes the exploit path deterministic (no robots.txt round-trip to the
+# sentinel). The launch appends no arguments for an SSRF target, so the full command lives here.
+ENTRYPOINT ["python", "-m", "mcp_server_fetch", "--ignore-robots-txt"]

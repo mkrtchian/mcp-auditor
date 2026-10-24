@@ -1,0 +1,13 @@
+# Patched mcp-server-fetch, the first PyPI release carrying the SSRF egress guard of PR #5033
+# (merged 2026-10-05 into v2/main as a8370070a19e5dc11a8a50ba3d69543e5d9de2e2), namely
+# mcp-server-fetch 2026.10.10 (released 2026-10-11). An httpx request hook resolves each
+# destination (page fetch, robots.txt, every redirect hop) and refuses any non-globally-routable
+# address by default; link-local 169.254.0.0/16 (cloud metadata) is in the blocked set. The guard
+# is on unless --allow-private-ips is passed, which it is not here. Real software from PyPI.
+FROM python:3.12-slim
+
+# Pin the SDK to the last 1.x (2026-09-07), current at this server's release (2026-10-11); mcp 2.x
+# renamed McpError and breaks the server's import.
+RUN pip install --no-cache-dir "mcp-server-fetch==2026.10.10" "mcp==1.30.0"
+
+ENTRYPOINT ["python", "-m", "mcp_server_fetch", "--ignore-robots-txt"]
