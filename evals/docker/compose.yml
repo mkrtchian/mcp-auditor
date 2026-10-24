@@ -246,3 +246,22 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "ef40347a7dba4bade6c55b3339f1deb3ba54966a6dd23fb4bac4220d46ef449e"
     image: mcp-auditor-cve-holdout-2026-65831-arcadedb-patched:local
+
+  # Command-execution target: get_diagnostics runs the analyzers a baked malicious solution
+  # references (CVE-2026-45555), so a Roslyn DiagnosticAnalyzer executes in the .NET server process.
+  # Heavy .NET SDK base image.
+  holdout-2026-45555-roslyncodelens:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-45555-roslyncodelens
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "9f23525bb3606a7b5cca8deb2e5849b57bcb93d1cd482466b8168f3be383f781"
+    image: mcp-auditor-cve-holdout-2026-45555-roslyncodelens:local
+
+  holdout-2026-45555-roslyncodelens-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-45555-roslyncodelens-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "8fcae983be321749886744abb630c3c0d6f66884b7890b8a72f2094d5dc37d81"
+    image: mcp-auditor-cve-holdout-2026-45555-roslyncodelens-patched:local
