@@ -150,3 +150,19 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "1487e666d46ad432b80ccb020e5dac6ffb01f9b97ffaf7d99ea85d57467ddb1b"
     image: mcp-auditor-cve-holdout-2026-85788-mysql-patched:local
+
+  holdout-2026-25546-godot-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-25546-godot-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "44927ed8de21ca802ccfd5d071c807945c75ea245167853c62105f5a8e817c17"
+    image: mcp-auditor-cve-holdout-2026-25546-godot-mcp:local
+
+  holdout-2026-25546-godot-mcp-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-25546-godot-mcp-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "c710f00df2b7364522cb659bae001617deb3f49e6eeb33f55b08da819fea943f"
+    image: mcp-auditor-cve-holdout-2026-25546-godot-mcp-patched:local

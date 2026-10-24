@@ -15,6 +15,7 @@ from evals.cve_targets import CVETarget
 from evals.holdout_fixtures import (
     cve_2026_2130_maigret,
     cve_2026_4270_aws_api_mcp,
+    cve_2026_25546_godot_mcp,
     cve_2026_85788_mysql,
     cve_2026_104120_fetch,
 )
@@ -24,4 +25,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_2130_maigret.TARGET,
     cve_2026_104120_fetch.TARGET,
     cve_2026_85788_mysql.TARGET,
+    cve_2026_25546_godot_mcp.TARGET,
 )

