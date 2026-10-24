@@ -101,3 +101,19 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "21ae49695c4330f7b827c0851e170541d7abcf510e91050e6c426639419f207f"
     image: mcp-auditor-cve-holdout-2026-4270-aws-api-mcp-patched:local
+
+  holdout-2026-2130-maigret:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-2130-maigret
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "5dffd38cb64a2ddbb2ee0acc18ef6779e1645e0781565f27f0ee9e3a78146971"
+    image: mcp-auditor-cve-holdout-2026-2130-maigret:local
+
+  holdout-2026-2130-maigret-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-2130-maigret-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "e411f3d4c12ecbbb653454f65eaede7b0c61399ca17df8c4ec84e5ca9a857316"
+    image: mcp-auditor-cve-holdout-2026-2130-maigret-patched:local

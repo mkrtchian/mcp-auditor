@@ -1,0 +1,58 @@
+# mcp-maigret 1.0.13: the first patched version. search_username / parse_url now validate
+# input (isValidUsername / isValidUrl / isValidTag) and run docker through execFile with an
+# argument array, so no shell parses the username/url (CVE-2026-2130 fixed).
+FROM python:3.12-slim-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      nodejs npm curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir 'maigret==0.6.6'
+
+# The pinned patched server, installed from npm.
+RUN npm install -g mcp-maigret@1.0.13
+
+# The docker CLI the server invokes, forwarded to the native maigret (see the script header).
+# Baked inline rather than COPYed so the Dockerfile fingerprint covers the shim's content.
+RUN cat > /usr/local/bin/docker <<'DOCKER_SHIM_EOF'
+#!/bin/sh
+# mcp-maigret shells out to `docker run ... soxoj/maigret:latest <maigret args>` through a
+# shell (the CVE-2026-2130 injection point). Nested Docker is unavailable under the kit's
+# confinement (--cap-drop ALL, no socket), so this shim stands in for the `docker` CLI the
+# server calls and forwards the maigret invocation to the real maigret installed natively in
+# the image. The server's own command-string building (the flaw) is untouched: the shell that
+# parses the injected username/url is the server's, exactly as in production.
+case "$1" in
+  --version)
+    echo "Docker version 28.0.0-maigret-shim, build shim00000"
+    exit 0
+    ;;
+  image)
+    # `image inspect soxoj/maigret:latest`: report the image as present so the server
+    # skips `docker pull`.
+    exit 0
+    ;;
+  pull)
+    exit 0
+    ;;
+  run)
+    shift
+    # Drop `docker run` options up to and including the image name; the rest are maigret's
+    # own arguments.
+    while [ "$#" -gt 0 ]; do
+      arg="$1"
+      shift
+      if [ "$arg" = "soxoj/maigret:latest" ]; then
+        break
+      fi
+    done
+    exec maigret "$@"
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+DOCKER_SHIM_EOF
+RUN chmod +x /usr/local/bin/docker
+
+ENV MAIGRET_REPORTS_DIR=/tmp/reports
+ENTRYPOINT ["mcp-maigret"]
