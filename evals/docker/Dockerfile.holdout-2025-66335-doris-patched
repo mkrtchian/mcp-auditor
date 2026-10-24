@@ -1,0 +1,7 @@
+# Patched doris-mcp-server (CVE-2025-66335 fixed in 0.6.1), installed from PyPI at the pinned version.
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir doris-mcp-server==0.6.1
+
+# stdio MCP transport; connection parameters are passed as run args / env by the launch.
+ENTRYPOINT ["python", "-m", "doris_mcp_server", "--transport", "stdio"]

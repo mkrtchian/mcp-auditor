@@ -14,6 +14,7 @@ reach the acceptance gate, the judge fixture draw or the probe corpus.
 from evals.cve_targets import CVETarget
 from evals.holdout_fixtures import (
     cve_2025_11489_desktop_commander,
+    cve_2025_66335_doris,
     cve_2026_2130_maigret,
     cve_2026_4270_aws_api_mcp,
     cve_2026_25546_godot_mcp,
@@ -28,4 +29,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_85788_mysql.TARGET,
     cve_2026_25546_godot_mcp.TARGET,
     cve_2025_11489_desktop_commander.TARGET,
+    cve_2025_66335_doris.TARGET,
 )

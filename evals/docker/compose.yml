@@ -182,3 +182,21 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "6d722e4c4eee32027bcb29439c83b9ed6857ab099dcbd1a259a4cd49b67f6c37"
     image: mcp-auditor-cve-holdout-2025-11489-desktop-commander-patched:local
+
+  # Internal-fetch target: a real Apache Doris backend does the fetch (http() TVF), reusing the
+  # shared sentinel service. The cluster is stood up by the builder, not compose.
+  holdout-2025-66335-doris:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-66335-doris
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "1ce275366a8a5dfaca77c19e27df4aa5564e805a7a8e8e261ff5c4db3eada17d"
+    image: mcp-auditor-cve-holdout-2025-66335-doris:local
+
+  holdout-2025-66335-doris-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-66335-doris-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "727d3c995769ac239ec4ff849b441937b7226f82376ec87b174089cae967d3e2"
+    image: mcp-auditor-cve-holdout-2025-66335-doris-patched:local
