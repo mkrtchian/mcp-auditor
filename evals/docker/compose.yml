@@ -422,3 +422,22 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "5c0755e483501405a16a688671cd8b027807461239178ddbec622e20ad578065"
     image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh-patched:local
+
+  # Command-execution target: android-mcp-server's executeAdbCommand interpolates the deviceId into
+  # an `adb -s <deviceId> <command>` line run through child_process.exec (CVE-2026-19978), so a
+  # deviceId carrying shell metacharacters executes an arbitrary command in the server's container.
+  holdout-2026-19978-android:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-19978-android
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "59bfab211a2b0cd46cafab480aeaa8b057dfbc4137a6b983b440a5006ef8b0f9"
+    image: mcp-auditor-cve-holdout-2026-19978-android:local
+
+  holdout-2026-19978-android-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-19978-android-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "5c5016cbb054ad2a8209e9314ca371e4129da5b330cd745de99294bcf15a41e1"
+    image: mcp-auditor-cve-holdout-2026-19978-android-patched:local

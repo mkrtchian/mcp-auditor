@@ -1,0 +1,21 @@
+# CVE-2026-19978 vulnerable build: jiantao88/android-mcp-server at the last affected commit
+# cfb872b (OS command injection in executeAdbCommand: child_process.exec with the deviceId /
+# packageName / permission / text / path arguments interpolated into a shell string).
+# Real software, pinned by commit, cloned from the public repo and built with its own toolchain.
+FROM node:20-bookworm-slim
+
+# adb is the binary the server shells out to (passed as argv[2]); git to fetch the pinned commit;
+# curl present so the command-execution primitive can reach internal http endpoints (a realistic
+# deployment image). No server code is written here.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates adb curl \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+RUN git clone https://github.com/jiantao88/android-mcp-server.git . \
+ && git checkout cfb872b2446794193b58edd63f4dbf6af48a6292 \
+ && npm install --no-audit --no-fund \
+ && npm run build
+
+# The MCP stdio server; argv[2] is the adb path the README documents.
+CMD ["node", "/app/build/index.js", "/usr/bin/adb"]
