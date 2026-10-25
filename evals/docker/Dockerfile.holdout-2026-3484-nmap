@@ -1,0 +1,21 @@
+# Vulnerable mcp-nmap-server (CVE-2026-3484 / GHSA-xc68-rrqc-qgq3): command injection in
+# runNmapScan, which interpolates caller-controlled target/ports/additionalFlags into a shell
+# string passed to child_process.exec. Pinned at the last affected upstream commit.
+FROM node@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+
+# nmap is the real external dependency the server shells out to; curl is the fetch tool the
+# injected command uses to reach internal HTTP endpoints; git clones the pinned source.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git nmap curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+# Real install of the pinned vulnerable source (never a reimplementation or stub).
+RUN git clone https://github.com/PhialsBasement/nmap-mcp-server.git . \
+    && git checkout bee6d23547d57ae02460022f7c78ac0893092e38
+# Pin zod-to-json-schema to the disclosure-era version (the package.json floor): later 3.25.x
+# pulls zod v4, which conflicts with the SDK's zod v3 and breaks the original build. The code
+# itself is untouched.
+RUN npm install zod-to-json-schema@3.23.5 && npm install && npm run build
+
+ENTRYPOINT ["node", "dist/index.js"]
