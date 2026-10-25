@@ -48,6 +48,7 @@ networks, since a network with a container attached cannot be removed:
     docker network rm $(docker network ls -q --filter label=mcp-auditor-cve)
 """
 
+import json
 import os
 import subprocess
 import tempfile
@@ -287,6 +288,65 @@ def ssrf_redirect_env(
         finally:
             if stub is not None:
                 subprocess.run(["docker", "rm", "-f", stub], capture_output=True)
+
+
+# The rebinding hosts resolve here at REST-tool creation (passing the gateway's creation-time SSRF
+# check), then the entrypoint flips /etc/hosts to the internal sentinels at invocation.
+_GW_PUBLIC_IP = "8.8.8.8"
+
+
+@contextmanager
+def contextforge_ssrf_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    # The real ContextForge gateway runs as root inside the sentinels' namespace holder (joined via
+    # args.network) so its entrypoint can rewrite /etc/hosts for the DNS rebinding: a rebinding host
+    # resolves public at REST-tool creation and internal at invocation (the TOCTOU the flaw turns
+    # on). No /srv layout is mounted (the flaw is a network fetch, not a filesystem read), so the
+    # shape is inert; the reference arm plants no sentinel, so GW_TOOLS is empty and the gateway
+    # registers no tool.
+    with planted(spec, image, DockerPlanting()) as args:
+        yield Launch(
+            command="docker",
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                "--user",
+                "0:0",  # root: the entrypoint rewrites /etc/hosts to perform the DNS rebinding
+                "-e",
+                f"GW_PUBLIC_IP={_GW_PUBLIC_IP}",
+                "-e",
+                "GW_TOOLS=" + json.dumps(_gw_tools(spec)),
+                *args.env,
+                *args.network,
+                image,
+            ],
+        )
+
+
+def _gw_tools(spec: PlantingSpec) -> list[dict[str, str | None]]:
+    # One REST tool per planted http_endpoint place: the rebinding hostname the gateway validates
+    # at creation, the internal bind address it flips to, and the sentinel's request path.
+    by_host: dict[tuple[str | None, str | None], SentinelIntent] = {
+        (s.host, s.path): s for s in spec.sentinels
+    }
+    tools: list[dict[str, str | None]] = []
+    for index, place in enumerate(spec.places):
+        coordinates = place.coordinates
+        sentinel = by_host.get((coordinates.host, coordinates.path))
+        if sentinel is None:
+            continue
+        tools.append(
+            {
+                "place": place.id,
+                "rebind": f"rb{index}.cve",
+                "ip": sentinel.bind_address,
+                "path": sentinel.request_target,
+            }
+        )
+    return tools
 
 
 @contextmanager

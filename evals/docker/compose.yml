@@ -363,3 +363,24 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "2b7c9c05960d851235d5fc55bc90754f290e3cd64b8e89d6c7a2fd774819c651"
     image: mcp-auditor-cve-holdout-2026-42260-open-websearch-patched:local
+
+  # SSRF target: ContextForge's gateway validates a REST tool's URL against its SSRF guard only at
+  # tool creation, not at invocation (CVE-2026-18905), so a DNS-rebinding host that resolves public
+  # at creation and link-local at invocation makes the gateway fetch the internal address and return
+  # its body. The entrypoint runs the real gateway as root in the sentinels' namespace holder and
+  # performs the rebinding; reuses the shared sentinel.
+  holdout-2026-18905-contextforge:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-18905-contextforge
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "9d7c91b81069c7323fac810816e93daea4d4eb0590b7204be34c3cbec3587446"
+    image: mcp-auditor-cve-holdout-2026-18905-contextforge:local
+
+  holdout-2026-18905-contextforge-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-18905-contextforge-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "638e73e11d796d41a48f1b65c88e6064534c988067b796abbfeb2dfaf1bd7900"
+    image: mcp-auditor-cve-holdout-2026-18905-contextforge-patched:local
