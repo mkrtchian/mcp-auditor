@@ -1,0 +1,25 @@
+# Patched biome-mcp-server (first fixed version of CVE-2026-3680): the fix swaps exec() for
+# execFile("biome", args) with a `--` option terminator, so `paths`/`configPath` are passed as
+# literal argv to biome and never reach a shell. Pinned to commit 335e1727 ("fix: prevent
+# command injection vulnerability in biome-lint and biome-format tools"), the direct child of
+# the vulnerable initial commit. It lives on PR #1, so it is fetched via refs/pull/1/head.
+FROM node:22-bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+RUN git clone https://github.com/RyuzakiShinji/biome-mcp-server.git server
+WORKDIR /opt/server
+RUN git fetch origin pull/1/head && git checkout 335e1727147efeef011f1ff8b05dd751d8a660be
+
+RUN npm install
+
+# Same benign biome stub: on the patched server execFile invokes `biome` with the paths as
+# literal arguments, so the stub exits cleanly and the benign call stays clean.
+RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/biome && chmod +x /usr/local/bin/biome
+
+# Absolute paths: the kit launch passes `-w <workdir>`, overriding WORKDIR, so the entrypoint
+# must not rely on the current directory to find tsx or the server source.
+ENTRYPOINT ["/opt/server/node_modules/.bin/tsx", "/opt/server/biome-mcp-server.ts"]
