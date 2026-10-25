@@ -1,0 +1,10 @@
+# flyto-core MCP server, first patched version (2.26.3). Real pinned software from PyPI.
+# Base pinned by digest for cross-machine reproducibility (python:3.12-slim).
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+
+# 2.26.3 adds _extract_embedded_ipv4(): is_private_ip() now range-checks the IPv4 embedded in
+# IPv4-mapped / IPv4-compatible / 6to4 / NAT64 forms, so ::ffff:169.254.169.254 is treated as
+# private and the fetch is refused.
+RUN pip install --no-cache-dir "flyto-core==2.26.3"
+
+ENTRYPOINT ["python", "-m", "core.mcp_server"]

@@ -304,3 +304,22 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "fcbc4e0ba85c9df1f4ab425977a99b384ffbbbe9eca5c66a883894d7a0b5b1cd"
     image: mcp-auditor-cve-holdout-2026-33060-ckan-patched:local
+
+  # SSRF target: flyto-core's is_private_ip never unwraps the IPv4 embedded in an IPv6 transition
+  # form (CVE-2026-55787), so an IPv4-mapped host [::ffff:<ip>] bypasses the guard and http.get
+  # fetches the link-local metadata endpoint. Reuses the shared sentinel.
+  holdout-2026-55787-flyto:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-55787-flyto
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a18787dcf0d2e451074ca36f7063a1a5aff333d4acda960196a2bd21ba99b4b9"
+    image: mcp-auditor-cve-holdout-2026-55787-flyto:local
+
+  holdout-2026-55787-flyto-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-55787-flyto-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "9ccbd482a8ac584970381e349db67dfa6b1d1595b628b4ac6f62e0ee02b3d538"
+    image: mcp-auditor-cve-holdout-2026-55787-flyto-patched:local

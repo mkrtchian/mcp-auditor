@@ -21,6 +21,7 @@ from evals.holdout_fixtures import (
     cve_2026_25546_godot_mcp,
     cve_2026_33060_ckan,
     cve_2026_45555_roslyncodelens,
+    cve_2026_55787_flyto,
     cve_2026_65831_arcadedb,
     cve_2026_85788_mysql,
     cve_2026_104120_fetch,
@@ -40,4 +41,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_45555_roslyncodelens.TARGET,
     cve_2026_5323_a11y.TARGET,
     cve_2026_33060_ckan.TARGET,
+    cve_2026_55787_flyto.TARGET,
 )
