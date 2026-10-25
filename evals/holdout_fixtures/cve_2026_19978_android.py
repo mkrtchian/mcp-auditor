@@ -115,5 +115,4 @@ TARGET = CVETarget(
         "container."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )

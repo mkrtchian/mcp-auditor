@@ -127,5 +127,4 @@ TARGET = CVETarget(
         "command (`--help; <cmd>; :`) executes it in the server's container."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )

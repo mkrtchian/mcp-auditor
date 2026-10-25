@@ -113,5 +113,4 @@ TARGET = CVETarget(
         "element with a shell metacharacter (`; <cmd>`) executes it in the server's container."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )

@@ -97,5 +97,4 @@ TARGET = CVETarget(
         "(`1; <cmd> #`) executes it in the server's container."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )

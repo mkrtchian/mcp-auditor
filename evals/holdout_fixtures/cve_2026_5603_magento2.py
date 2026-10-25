@@ -103,5 +103,4 @@ TARGET = CVETarget(
         "command executes it in the server's container."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )

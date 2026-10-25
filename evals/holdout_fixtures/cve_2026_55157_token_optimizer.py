@@ -132,5 +132,4 @@ TARGET = CVETarget(
         "`$(...)` substitution executes an arbitrary command as the server user."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )

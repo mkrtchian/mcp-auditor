@@ -16,7 +16,7 @@ from collections.abc import Awaitable, Callable
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
-from evals.cve_planting_base import PlantingHost, SymbolicUser
+from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_spec import resolve_container_path
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
@@ -152,5 +152,4 @@ TARGET = CVETarget(
         "`probe & <payload>` runs an arbitrary host command as the server user."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )

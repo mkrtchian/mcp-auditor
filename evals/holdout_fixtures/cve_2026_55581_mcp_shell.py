@@ -120,5 +120,4 @@ TARGET = CVETarget(
         "runs an arbitrary command in the server's container."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )

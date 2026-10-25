@@ -121,5 +121,4 @@ TARGET = CVETarget(
         "chains a command (`zz ; <cmd> 1>&2 ; false #`) executes it in the server's container."
     ),
     tools_filter=None,
-    ci_skip_reason=None,
 )
