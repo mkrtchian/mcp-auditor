@@ -39,6 +39,7 @@ from evals.holdout_fixtures import (
     cve_2026_55787_flyto,
     cve_2026_58485_searxng,
     cve_2026_65831_arcadedb,
+    cve_2026_81562_claude_in_mobile,
     cve_2026_85788_mysql,
     cve_2026_104120_fetch,
     ghsa_8g7g_hmwm_6rv2_n8n,
@@ -74,4 +75,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_3680_biome.TARGET,
     cve_2026_5602_heim.TARGET,
     cve_2026_55157_token_optimizer.TARGET,
+    cve_2026_81562_claude_in_mobile.TARGET,
 )

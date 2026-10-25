@@ -601,3 +601,19 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "41e0e9b7a0f44864b61fd0455b14b799ece149defeccc1acef61e4a9156b73d3"
     image: mcp-auditor-cve-holdout-2026-55157-token-optimizer-patched:local
+
+  holdout-2026-81562-claude-in-mobile:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "915d0c98cd94b19ea98b822fdfc194492debd23b64e2d3a4abc723ad4cc0e5f4"
+    image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile:local
+
+  holdout-2026-81562-claude-in-mobile-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "8e29b6b16a562fb1ef336ab54427eeff4eada8d9f14f734135b103ee95c89532"
+    image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile-patched:local
