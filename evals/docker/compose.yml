@@ -473,3 +473,19 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "b2e2f21757bed3e7c568a75566f28b3858b1e80b499b2a13eaa6e5c3e3630e4a"
     image: mcp-auditor-cve-holdout-2025-58358-markdownify-patched:local
+
+  holdout-2026-5603-magento2:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-5603-magento2
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "9d0a33b962bd97a8839b7ad26294a5df50934254924c0778451a4f4cabfcc546"
+    image: mcp-auditor-cve-holdout-2026-5603-magento2:local
+
+  holdout-2026-5603-magento2-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-5603-magento2-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "39547c094fedd472beb135f058c100bec28ea742be5ff9a7b37a7a2e98d794a7"
+    image: mcp-auditor-cve-holdout-2026-5603-magento2-patched:local
