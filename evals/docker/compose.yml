@@ -285,3 +285,22 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "175f73284dd01960bee7676853e57de0a9b82b38c3dc08ff5a33a78b9d0c8be8"
     image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
+
+  # SSRF target: every CKAN tool fetches its caller-supplied server_url with no validation
+  # (CVE-2026-33060), so a link-local metadata address is fetched and its body echoed. Reuses
+  # the shared sentinel for the link-local metadata endpoints.
+  holdout-2026-33060-ckan:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-33060-ckan
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "f7221ac6ceb3700c27a06b74c163102c117046d3602fbfda77e1ac5ae5001f1e"
+    image: mcp-auditor-cve-holdout-2026-33060-ckan:local
+
+  holdout-2026-33060-ckan-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-33060-ckan-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "fcbc4e0ba85c9df1f4ab425977a99b384ffbbbe9eca5c66a883894d7a0b5b1cd"
+    image: mcp-auditor-cve-holdout-2026-33060-ckan-patched:local

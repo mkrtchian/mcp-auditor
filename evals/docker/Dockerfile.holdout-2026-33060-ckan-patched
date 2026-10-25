@@ -1,0 +1,12 @@
+# Patched @aborruso/ckan-mcp-server (CVE-2026-33060 fixed in 0.4.85). 0.4.85 is the first
+# version the advisory lists as patched: validateServerUrl now guards both makeCkanRequest
+# (added 0.4.84) and the SPARQL path (added 0.4.85), so a server_url resolving to a private
+# or link-local / cloud-metadata address is rejected before any fetch.
+FROM node:20-alpine
+
+RUN npm install -g @aborruso/ckan-mcp-server@0.4.85 && npm cache clean --force
+
+ENV TRANSPORT=stdio \
+    NODE_ENV=production
+
+ENTRYPOINT ["ckan-mcp-server"]

@@ -1,0 +1,17 @@
+# Vulnerable @aborruso/ckan-mcp-server (CVE-2026-33060, GHSA-3xm7-qw7j-qc8v).
+# 0.4.83 is in the affected range (< 0.4.85): makeCkanRequest (the shared CKAN HTTP
+# path behind ckan_status_show, ckan_package_search, ckan_datastore_search_sql, ...) has
+# no SSRF guard, so a caller-chosen server_url is fetched verbatim. validateServerUrl is
+# wired into makeCkanRequest only in 0.4.84, and into the SPARQL path in 0.4.85 (the first
+# version the advisory lists as patched).
+FROM node:20-alpine
+
+# Install the exact published version globally; the bin is `ckan-mcp-server` -> dist/index.js.
+RUN npm install -g @aborruso/ckan-mcp-server@0.4.83 && npm cache clean --force
+
+# stdio transport (index.ts: TRANSPORT || 'stdio'); no network egress is needed for the
+# server to start and serve tools/list.
+ENV TRANSPORT=stdio \
+    NODE_ENV=production
+
+ENTRYPOINT ["ckan-mcp-server"]
