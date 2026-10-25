@@ -265,3 +265,23 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "8fcae983be321749886744abb630c3c0d6f66884b7890b8a72f2094d5dc37d81"
     image: mcp-auditor-cve-holdout-2026-45555-roslyncodelens-patched:local
+
+  # SSRF target: audit_webpage / get_summary drive Puppeteer page.goto to a caller-chosen URL with
+  # no validation (CVE-2026-5323), so the headless Chrome fetches an internal address and axe-core
+  # returns the body. Reuses the shared sentinel for the link-local metadata endpoints. Heavy base:
+  # Debian Chromium for the Puppeteer engine.
+  holdout-2026-5323-a11y:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-5323-a11y
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "73b5155d143472fb81048f47fd1667e3412f6f0a8e67fd9a011b4cd9f54dc77f"
+    image: mcp-auditor-cve-holdout-2026-5323-a11y:local
+
+  holdout-2026-5323-a11y-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-5323-a11y-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "175f73284dd01960bee7676853e57de0a9b82b38c3dc08ff5a33a78b9d0c8be8"
+    image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
