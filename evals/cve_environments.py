@@ -52,10 +52,9 @@ import json
 import os
 import subprocess
 import tempfile
-import threading
 import time
 from collections.abc import AsyncGenerator, Generator, Mapping
-from contextlib import asynccontextmanager, contextmanager, suppress
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -72,6 +71,15 @@ from evals.cve_planting import (
     planted,
 )
 from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, SentinelIntent
+from evals.doris_backend import (
+    DORIS_BRIDGE,
+    DORIS_CONTAINER,
+    DORIS_DB,
+    DORIS_LAUNCH_LOCK,
+    doris_rm,
+    ensure_doris,
+    start_doris_sentinel,
+)
 from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
@@ -376,27 +384,6 @@ def mysql_db_env(
         )
 
 
-_DORIS_IMAGE = "apache/doris:all-in-one-4.1.3"
-# a throwaway MySQL-protocol client for the FE on port 9030, patch-pinned like _DORIS_IMAGE: the
-# bare 8.0 tag floats (Docker Hub's 8/8.x now track the 8.4 series).
-_MYSQL_CLIENT_IMAGE = "mysql:8.0.46"
-_DORIS_CONTAINER = "mcp-auditor-cve-doris"
-_DORIS_BRIDGE = "mcp-auditor-cve-doris-bridge"  # server <-> Doris FE, name resolution
-_DORIS_LLNET = "mcp-auditor-cve-doris-llnet"  # Doris <-> sentinels, static link-local IPs
-_DORIS_LLSUBNET = "169.254.0.0/16"
-DORIS_DB = "test_db"  # the database the server validates at connect, read by the exploit/benign
-_DORIS_HEALTH_DEADLINE = 240.0
-_DORIS_BACKEND_DEADLINE = 180.0
-
-# The sentinel is a singleton: it sits at the fixed metadata IP the exploit payload fetches, so it
-# cannot be made per-launch-unique. This serializes the target's concurrent scored runs instead,
-# held across the yield so a run's teardown cannot reap the next run's live sentinel. A plain Lock,
-# not an RLock: `entered_in_thread` runs __enter__ and __exit__ as separate `asyncio.to_thread`
-# submissions, so the acquiring and releasing worker threads may differ, which a plain Lock allows
-# and an owner-bound RLock would reject with RuntimeError out of __exit__.
-_DORIS_LAUNCH_LOCK = threading.Lock()
-
-
 @contextmanager
 def doris_db_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
@@ -407,8 +394,8 @@ def doris_db_env(
     # provisioned once and reused across exercises, only the per-launch sentinels are stood and
     # torn down here. No /srv layout is mounted: every kept place is an http_endpoint, so the
     # reference-arm shape has nothing to materialise and the server takes none.
-    with _DORIS_LAUNCH_LOCK:
-        _ensure_doris()
+    with DORIS_LAUNCH_LOCK:
+        ensure_doris()
         # doris-mcp-server does not exit on stdin EOF, so --rm cannot fire when the stdio adapter
         # reaps it and the container orphans; a unique name force-removed on teardown reaps it for
         # certain, so launches do not accumulate across calibration re-runs.
@@ -416,7 +403,7 @@ def doris_db_env(
         sentinels: list[str] = []
         try:
             for sentinel in spec.sentinels:
-                sentinels.append(_start_doris_sentinel(sentinel))
+                sentinels.append(start_doris_sentinel(sentinel))
             time.sleep(2)  # let each sentinel's httpd bind before the server can drive a fetch
             yield Launch(
                 command="docker",
@@ -430,10 +417,10 @@ def doris_db_env(
                     "--label",
                     LABEL,
                     "--network",
-                    _DORIS_BRIDGE,
+                    DORIS_BRIDGE,
                     image,
                     "--db-host",
-                    _DORIS_CONTAINER,
+                    DORIS_CONTAINER,
                     "--db-port",
                     "9030",
                     "--db-user",
@@ -443,9 +430,9 @@ def doris_db_env(
                 ],
             )
         finally:
-            _doris_rm(server)
+            doris_rm(server)
             for name in sentinels:
-                _doris_rm(name)
+                doris_rm(name)
 
 
 @contextmanager
@@ -523,115 +510,3 @@ def _start_n8n_stub(holder_ref: str) -> str:
         check=True, capture_output=True, text=True,
     )  # fmt: skip
     return stub
-
-
-def _ensure_doris() -> None:
-    _doris_network(_DORIS_BRIDGE)
-    _doris_network(_DORIS_LLNET, _DORIS_LLSUBNET)
-    if not _doris_running():
-        if _doris_exists():
-            _doris_rm(_DORIS_CONTAINER)
-        _doris_run(
-            "docker", "run", "-d",
-            "--name", _DORIS_CONTAINER,
-            "--hostname", _DORIS_CONTAINER,
-            "--label", LABEL,
-            "--network", _DORIS_BRIDGE,
-            _DORIS_IMAGE,
-        )  # fmt: skip
-    _doris_run("docker", "network", "connect", _DORIS_LLNET, _DORIS_CONTAINER, check=False)
-    _wait_doris_healthy()
-    _provision_doris_schema()
-
-
-def _wait_doris_healthy() -> None:
-    deadline = time.monotonic() + _DORIS_HEALTH_DEADLINE
-    while time.monotonic() < deadline:
-        status = _doris_run(
-            "docker", "inspect", "-f", "{{.State.Health.Status}}", _DORIS_CONTAINER, check=False
-        )
-        if status.stdout.strip() == "healthy":
-            return
-        time.sleep(5)
-    raise RuntimeError("Doris front-end did not become healthy")
-
-
-def _provision_doris_schema() -> None:
-    # A bucketed table and a read of it both need a live backend, so retrying until both succeed
-    # gates the yield on backend readiness: the exploit's fetch runs on the backend, and a backend
-    # not yet up would otherwise read as a dead condition rather than a slow start.
-    deadline = time.monotonic() + _DORIS_BACKEND_DEADLINE
-    while time.monotonic() < deadline:
-        _doris_sql(f"CREATE DATABASE IF NOT EXISTS {DORIS_DB};")
-        created = _doris_sql(
-            f"CREATE TABLE IF NOT EXISTS {DORIS_DB}.t1 (id INT) "
-            "DISTRIBUTED BY HASH(id) BUCKETS 1 PROPERTIES('replication_num'='1');"
-        )
-        readable = _doris_sql(f"SELECT COUNT(*) FROM {DORIS_DB}.t1;")
-        if created.returncode == 0 and readable.returncode == 0:
-            return
-        time.sleep(3)
-    raise RuntimeError("Doris backend did not become query-ready")
-
-
-def _start_doris_sentinel(sentinel: SentinelIntent) -> str:
-    # A uuid name under the launch lock: nothing from a sibling run can collide with or be
-    # force-removed by this one. The static --ip stays, it is the metadata IP the exploit targets.
-    name = f"{LABEL}-doris-sentinel-{uuid4().hex}"
-    _doris_run(
-        "docker", "run", "-d",
-        "--name", name,
-        "--label", LABEL,
-        *confinement_args(),
-        "--network", _DORIS_LLNET,
-        "--ip", sentinel.host,
-        "--cap-add", "NET_BIND_SERVICE",
-        "-e", f"FLAG={sentinel.content}",
-        "-e", f"SERVE_FILE={sentinel.served_file}",
-        SENTINEL_IMAGE,
-    )  # fmt: skip
-    return name
-
-
-def _doris_running() -> bool:
-    return _DORIS_CONTAINER in _doris_names("docker", "ps")
-
-
-def _doris_exists() -> bool:
-    return _DORIS_CONTAINER in _doris_names("docker", "ps", "-a")
-
-
-def _doris_names(*ps_command: str) -> list[str]:
-    result = _doris_run(
-        *ps_command, "--filter", f"name=^{_DORIS_CONTAINER}$", "--format", "{{.Names}}", check=False
-    )
-    return result.stdout.split()
-
-
-def _doris_network(name: str, subnet: str | None = None) -> None:
-    listed = _doris_run("docker", "network", "ls", "--format", "{{.Name}}", check=False)
-    if name in listed.stdout.split():
-        return
-    args = ["docker", "network", "create", "--label", LABEL, name]
-    if subnet is not None:
-        args += ["--subnet", subnet]
-    _doris_run(*args)
-
-
-def _doris_sql(sql: str) -> subprocess.CompletedProcess[str]:
-    return _doris_run(
-        "docker", "run", "--rm", "--label", LABEL, "--network", _DORIS_BRIDGE, _MYSQL_CLIENT_IMAGE,
-        "mysql", f"-h{_DORIS_CONTAINER}", "-P9030", "-uroot", "--batch", "-e", sql,
-        check=False, timeout=60,
-    )  # fmt: skip
-
-
-def _doris_run(
-    *args: str, check: bool = True, timeout: float = 120.0
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(list(args), check=check, capture_output=True, text=True, timeout=timeout)
-
-
-def _doris_rm(name: str) -> None:
-    with suppress(subprocess.SubprocessError, OSError):
-        _doris_run("docker", "rm", "-f", name, check=False)

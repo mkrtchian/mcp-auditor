@@ -53,9 +53,9 @@ def doris_helpers_faked(monkeypatch: pytest.MonkeyPatch, recorder: OverlapRecord
     def no_sleep(_seconds: float) -> None:
         return None
 
-    monkeypatch.setattr(cve_environments, "_ensure_doris", recorder.enter)
-    monkeypatch.setattr(cve_environments, "_doris_rm", reap)
-    monkeypatch.setattr(cve_environments, "_start_doris_sentinel", start_sentinel)
+    monkeypatch.setattr(cve_environments, "ensure_doris", recorder.enter)
+    monkeypatch.setattr(cve_environments, "doris_rm", reap)
+    monkeypatch.setattr(cve_environments, "start_doris_sentinel", start_sentinel)
     monkeypatch.setattr(cve_environments.time, "sleep", no_sleep)
 
 
