@@ -384,3 +384,22 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "638e73e11d796d41a48f1b65c88e6064534c988067b796abbfeb2dfaf1bd7900"
     image: mcp-auditor-cve-holdout-2026-18905-contextforge-patched:local
+
+  # Command-execution target: wireshark-mcp's quick_capture interpolates the interface argument
+  # into a tshark command run with shell=True (CVE-2026-7785), so a shell metacharacter executes
+  # an arbitrary command in the server's container.
+  holdout-2026-7785-wireshark:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-7785-wireshark
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "efc017660548235e82856a34af9a27a217c88dcd7c0556c503c375901f417be1"
+    image: mcp-auditor-cve-holdout-2026-7785-wireshark:local
+
+  holdout-2026-7785-wireshark-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-7785-wireshark-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "154ae69bacfe2c0bedb46fa8911897277ae6e64b7fe4a5d532a58c4492a27ecf"
+    image: mcp-auditor-cve-holdout-2026-7785-wireshark-patched:local

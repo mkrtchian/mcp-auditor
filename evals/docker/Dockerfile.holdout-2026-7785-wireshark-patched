@@ -1,0 +1,22 @@
+# Patched wireshark-mcp (first fixed commit 6e56043): quick_capture runs tshark via argv
+# (shell=False) and validate_capture_interface rejects shell metacharacters and requires an
+# exact match against enumerated interfaces. Real software, pinned at the fixing commit.
+FROM python:3.11-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+# tshark is required: the server's preflight (ensure_ready_or_exit) exits non-zero without it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates tshark \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+RUN git clone https://github.com/A-G-U-P-T-A/wireshark-mcp.git \
+    && cd wireshark-mcp \
+    && git checkout 6e56043c74f1fa0bbd89539c6655695c43d42a5f
+
+# Pin mcp 1.x (FastMCP API); install the package without re-resolving deps so mcp stays <2.
+RUN pip install --no-cache-dir pyshark "mcp[cli]<2" \
+    && pip install --no-cache-dir --no-deps /opt/wireshark-mcp
+
+WORKDIR /opt/wireshark-mcp
+ENTRYPOINT ["python", "-m", "wireshark_mcp"]
