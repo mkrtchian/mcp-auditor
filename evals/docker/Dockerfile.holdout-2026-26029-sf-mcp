@@ -1,0 +1,25 @@
+# sf-mcp-server, vulnerable build (CVE-2026-26029).
+# Real pinned software: cloned from the public repo and checked out at the commit that is the
+# parent of the fix (99fba01), i.e. the last commit still carrying the `exec` command injection
+# in query_records' executeSoqlQuery.
+FROM node:22-bookworm-slim
+
+# curl: used only by the command-injection exploit payload (an attacker who already has RCE
+# would fetch an internal endpoint with it); git/ca-certificates: to fetch the pinned source.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Benign `sf` CLI stand-in (an environment adapter, like an adb/gh stub): the real Salesforce
+# CLI needs an authenticated org, so it is replaced by a stub that answers every invocation with
+# an empty, valid result. The command injection lives in the server's own exec() chain, NOT here.
+RUN printf '#!/bin/sh\nprintf '\''{"result":{"records":[]}}'\''\n' > /usr/local/bin/sf \
+    && chmod 755 /usr/local/bin/sf
+
+WORKDIR /app
+RUN git clone https://github.com/akutishevsky/sf-mcp-server.git . \
+    && git checkout 485adcf781b6700677c5193d6c4a8bf90a332290 \
+    && npm ci \
+    && npm run build
+
+ENTRYPOINT ["node", "/app/build/index.js"]
