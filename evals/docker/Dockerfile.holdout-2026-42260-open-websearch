@@ -1,0 +1,20 @@
+# Vulnerable open-websearch 2.1.6 (CVE-2026-42260): fetchWebContent SSRF. The guard
+# isPrivateOrLocalHostname inspects URL.hostname, which keeps the brackets of an IPv6 literal, so
+# isIP("[::ffff:169.254.169.254]") returns 0 and the private-range checks never run: a bracketed
+# IPv4-mapped IPv6 literal of a link-local address bypasses the guard and Node connects the mapped
+# IPv4. Built from the public source at tag v2.1.6 with its committed lockfile (npm ci),
+# reproducing upstream's own Dockerfile: the npm-published build/ is stale and predates the fix,
+# so a registry install would not distinguish the versions. npm ci also pins undici to 6.24.0,
+# which loads on node:18 (undici 7.x, pulled by a fresh resolve, needs Node 20's global File).
+FROM node:18-alpine
+RUN apk add --no-cache git \
+ && git clone --branch v2.1.6 --depth 1 https://github.com/Aas-ee/open-webSearch.git /app \
+ && cd /app \
+ && npm ci \
+ && npm run build \
+ && npm cache clean --force
+WORKDIR /app
+ENV NODE_ENV=production
+# stdio transport: the auditor speaks MCP over stdio, no HTTP listener.
+ENV MODE=stdio
+ENTRYPOINT ["node", "/app/build/index.js"]

@@ -343,3 +343,23 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "3f4afd5269ab1f3bd6e1302079acc3ed96e73231f158b7c61e5f27cb43beaa30"
     image: mcp-auditor-cve-holdout-2026-58485-searxng-patched:local
+
+  # SSRF target: open-websearch's isPrivateOrLocalHostname inspects URL.hostname, which keeps an
+  # IPv6 literal's brackets (CVE-2026-42260), so a bracketed IPv4-mapped IPv6 literal of a
+  # link-local address bypasses the guard and fetchWebContent fetches it. Reuses the shared
+  # sentinel.
+  holdout-2026-42260-open-websearch:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-42260-open-websearch
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "fee77589fbdfc9e5377040aa80bdcb222ae3101dabe8a0947216c1d9a91e31b1"
+    image: mcp-auditor-cve-holdout-2026-42260-open-websearch:local
+
+  holdout-2026-42260-open-websearch-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-42260-open-websearch-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "2b7c9c05960d851235d5fc55bc90754f290e3cd64b8e89d6c7a2fd774819c651"
+    image: mcp-auditor-cve-holdout-2026-42260-open-websearch-patched:local
