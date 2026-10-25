@@ -1,0 +1,61 @@
+# Vulnerable github-kanban-mcp-server (CVE-2025-53818, OS command injection in add_comment).
+# Built from the real pinned upstream source at the commit immediately before the fix
+# (0a4f9f92a13a201fe31cda310da1c95d63876579, the last vulnerable state; package tree ~ v0.4.0).
+FROM node:20-bookworm
+
+# Tools the exploit command-execution reach uses once injected (curl for the SSRF endpoints);
+# coreutils / getent / hostname ship with the base image.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Real pinned server source, built with its own toolchain (npm install runs prepare -> tsc).
+ARG COMMIT=0a4f9f92a13a201fe31cda310da1c95d63876579
+WORKDIR /opt/server
+RUN git init -q \
+    && git remote add origin https://github.com/sunwood-ai-labs/github-kanban-mcp-server.git \
+    && git fetch -q --depth 1 origin "$COMMIT" \
+    && git checkout -q FETCH_HEAD \
+    && npm install --no-audit --no-fund \
+    && test -f build/index.js
+
+# gh test shim: the external GitHub CLI, not the server. The sandbox has no network and no GitHub
+# auth, so the real gh would always exit non-zero and the benign path would error; this shim exits
+# 0 with plausible output. It does NOT touch the server's command construction: the injection lives
+# in the real server code (execAsync with string interpolation) and `sh -c` interprets the payload
+# before any gh process is reached. Baked inline rather than COPYed so the fingerprint covers it.
+RUN cat > /usr/local/bin/gh <<'GH_SHIM_EOF' \
+    && chmod 0755 /usr/local/bin/gh
+#!/bin/sh
+# Test shim for the GitHub CLI. The sandbox has no network and no GitHub auth, so the real
+# `gh` would always exit non-zero and the server's benign path would error. This shim exits 0
+# with plausible output so a normal tool call succeeds. It does NOT touch the server's command
+# construction: the CVE-2025-53818 shell injection lives entirely in the real server code
+# (execAsync with string interpolation), and `sh -c` interprets the injected payload before any
+# `gh` process is reached. On the patched build the server calls execFile('gh', [...]) with the
+# argument vector, so this shim just returns success.
+case "$1 $2" in
+  "issue view")
+    echo '{"number":1,"title":"Test issue","state":"open","url":"https://github.com/acme/kanban/issues/1"}'
+    ;;
+  "issue create")
+    echo 'https://github.com/acme/kanban/issues/1'
+    ;;
+  "issue list")
+    echo '[]'
+    ;;
+  "label list")
+    : # empty label list
+    ;;
+  *)
+    : # comment / edit / close / reopen / label create: nothing to print
+    ;;
+esac
+exit 0
+GH_SHIM_EOF
+
+# A git checkout the server can resolve owner/repo from (reads .git/config remote origin url).
+RUN mkdir -p /repo/.git \
+    && printf '[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = https://github.com/acme/kanban.git\n' > /repo/.git/config \
+    && chmod -R a+rX /repo
+
+ENTRYPOINT ["node", "/opt/server/build/index.js"]

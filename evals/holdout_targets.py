@@ -15,6 +15,7 @@ from evals.cve_targets import CVETarget
 from evals.holdout_fixtures import (
     cve_2025_9654_mcp_ssh,
     cve_2025_11489_desktop_commander,
+    cve_2025_53818_github_kanban,
     cve_2025_58358_markdownify,
     cve_2025_66335_doris,
     cve_2026_2130_maigret,
@@ -60,4 +61,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_55581_mcp_shell.TARGET,
     cve_2025_58358_markdownify.TARGET,
     cve_2026_5603_magento2.TARGET,
+    cve_2025_53818_github_kanban.TARGET,
 )

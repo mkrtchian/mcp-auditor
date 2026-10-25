@@ -489,3 +489,19 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "39547c094fedd472beb135f058c100bec28ea742be5ff9a7b37a7a2e98d794a7"
     image: mcp-auditor-cve-holdout-2026-5603-magento2-patched:local
+
+  holdout-2025-53818-github-kanban:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-53818-github-kanban
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "80f9affe498e4e5172d2aa1f040d72b8ea913c2552ca9986b444f9f55e2fd38c"
+    image: mcp-auditor-cve-holdout-2025-53818-github-kanban:local
+
+  holdout-2025-53818-github-kanban-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-53818-github-kanban-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "eefd842c6e1c0ca287de83d72a3f779ac544bc320aff366fa7a9ad111bb6e19c"
+    image: mcp-auditor-cve-holdout-2025-53818-github-kanban-patched:local

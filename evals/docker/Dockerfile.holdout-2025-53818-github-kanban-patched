@@ -1,0 +1,58 @@
+# Patched github-kanban-mcp-server. Built from the real pinned upstream source at the first
+# commit that fixes the add_comment OS command injection
+# (253d93bbdf7ee9fe42bd8fdf15feea93ae59cbae, "fix: prevent gh command injection"; released as
+# the v0.4.1 tree). It replaces execAsync(shell string) with execFile('gh', [...argv]) and adds
+# issue_number / repo validation. This is the same server build as the vulnerable image except
+# for the fix, so the pair isolates exactly CVE-2025-53818 (and its create_issue sibling).
+FROM node:20-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG COMMIT=253d93bbdf7ee9fe42bd8fdf15feea93ae59cbae
+WORKDIR /opt/server
+RUN git init -q \
+    && git remote add origin https://github.com/sunwood-ai-labs/github-kanban-mcp-server.git \
+    && git fetch -q --depth 1 origin "$COMMIT" \
+    && git checkout -q FETCH_HEAD \
+    && npm install --no-audit --no-fund \
+    && test -f build/index.js
+
+# gh test shim: the external GitHub CLI, not the server. On the patched build the server calls
+# execFile('gh', [...]) with the argument vector, so the shim just returns success for the benign
+# call. Baked inline rather than COPYed so the fingerprint covers it.
+RUN cat > /usr/local/bin/gh <<'GH_SHIM_EOF' \
+    && chmod 0755 /usr/local/bin/gh
+#!/bin/sh
+# Test shim for the GitHub CLI. The sandbox has no network and no GitHub auth, so the real
+# `gh` would always exit non-zero and the server's benign path would error. This shim exits 0
+# with plausible output so a normal tool call succeeds. It does NOT touch the server's command
+# construction: the CVE-2025-53818 shell injection lives entirely in the real server code
+# (execAsync with string interpolation), and `sh -c` interprets the injected payload before any
+# `gh` process is reached. On the patched build the server calls execFile('gh', [...]) with the
+# argument vector, so this shim just returns success.
+case "$1 $2" in
+  "issue view")
+    echo '{"number":1,"title":"Test issue","state":"open","url":"https://github.com/acme/kanban/issues/1"}'
+    ;;
+  "issue create")
+    echo 'https://github.com/acme/kanban/issues/1'
+    ;;
+  "issue list")
+    echo '[]'
+    ;;
+  "label list")
+    : # empty label list
+    ;;
+  *)
+    : # comment / edit / close / reopen / label create: nothing to print
+    ;;
+esac
+exit 0
+GH_SHIM_EOF
+
+RUN mkdir -p /repo/.git \
+    && printf '[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = https://github.com/acme/kanban.git\n' > /repo/.git/config \
+    && chmod -R a+rX /repo
+
+ENTRYPOINT ["node", "/opt/server/build/index.js"]
