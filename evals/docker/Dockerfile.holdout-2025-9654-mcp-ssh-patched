@@ -1,0 +1,15 @@
+# CVE-2025-9654 patched build: @aiondadotcom/mcp-ssh 1.0.4, the TRUE first fix of this flaw.
+# The GHSA range reads `< 1.1.0`, but the source shows the shell concatenation replaced by
+# child_process.execFile ('ssh', [hostAlias, command]) in 1.0.4 (commit cd2566a); 1.1.0 only adds
+# Include-directive handling on top. So 1.0.4 is the first version where the command injection is
+# gone (see calibration_releve.md). Same base and tools as the vulnerable build.
+FROM node:20-bookworm-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssh-client wget ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g @aiondadotcom/mcp-ssh@1.0.4
+
+ENV MCP_SILENT=true
+ENTRYPOINT ["mcp-ssh"]

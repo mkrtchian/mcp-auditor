@@ -1,0 +1,17 @@
+# CVE-2025-9654 vulnerable build: @aiondadotcom/mcp-ssh 1.0.3.
+# runRemoteCommand/uploadFile/downloadFile concatenate hostAlias/command into a shell string
+# passed to child_process.exec (`ssh "${hostAlias}" "${command}"`), so an unescaped hostAlias
+# yields local OS command injection (CWE-74 command injection). The real npm package is
+# installed unchanged; nothing of the flaw is reimplemented.
+FROM node:20-bookworm-slim
+
+# ssh/scp so the benign path behaves like a real deployment; wget so a command-execution
+# payload can reach an internal HTTP endpoint (IMDS-style places).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssh-client wget ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g @aiondadotcom/mcp-ssh@1.0.3
+
+ENV MCP_SILENT=true
+ENTRYPOINT ["mcp-ssh"]

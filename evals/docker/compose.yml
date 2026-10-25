@@ -403,3 +403,22 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "154ae69bacfe2c0bedb46fa8911897277ae6e64b7fe4a5d532a58c4492a27ecf"
     image: mcp-auditor-cve-holdout-2026-7785-wireshark-patched:local
+
+  # Command-execution target: mcp-ssh's runRemoteCommand concatenates the hostAlias into an
+  # `ssh "<hostAlias>" "<command>"` line run through child_process.exec (CVE-2025-9654), so a
+  # quote-breakout hostAlias executes an arbitrary command in the server's container.
+  holdout-2025-9654-mcp-ssh:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-9654-mcp-ssh
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "bfbbce9412929e4673792045f9d0ae1d484285f0e27c16d3c9c1e052cd74391c"
+    image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh:local
+
+  holdout-2025-9654-mcp-ssh-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-9654-mcp-ssh-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "5c0755e483501405a16a688671cd8b027807461239178ddbec622e20ad578065"
+    image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh-patched:local
