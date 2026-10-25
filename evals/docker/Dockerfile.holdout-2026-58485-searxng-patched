@@ -1,0 +1,7 @@
+# Patched mcp-searxng (first fixed: 1.7.1). assertUrlAllowed now resolves non-IP hostnames via a
+# custom undici lookup (createUrlReaderLookup, all:true) and rejects any resolved private address,
+# so the DNS-name-to-internal-address bypass is blocked. Real pinned npm software.
+FROM node:24-bookworm-slim
+RUN npm install -g mcp-searxng@1.7.1 \
+ && test -f /usr/local/lib/node_modules/mcp-searxng/dist/cli.js
+ENTRYPOINT ["node", "/usr/local/lib/node_modules/mcp-searxng/dist/cli.js"]

@@ -323,3 +323,23 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "9ccbd482a8ac584970381e349db67dfa6b1d1595b628b4ac6f62e0ee02b3d538"
     image: mcp-auditor-cve-holdout-2026-55787-flyto-patched:local
+
+  # SSRF target: mcp-searxng's assertUrlAllowed checks the hostname lexically with no DNS
+  # resolution (CVE-2026-58485), so a public-looking rebinding name (sslip.io) that resolves to a
+  # link-local metadata address bypasses the guard and undici fetches it. Reuses the shared
+  # sentinel.
+  holdout-2026-58485-searxng:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-58485-searxng
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a29adf17e582caa51c4270a1a3115477abdb9a4c31cdaebb953d73a74138423b"
+    image: mcp-auditor-cve-holdout-2026-58485-searxng:local
+
+  holdout-2026-58485-searxng-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-58485-searxng-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "3f4afd5269ab1f3bd6e1302079acc3ed96e73231f158b7c61e5f27cb43beaa30"
+    image: mcp-auditor-cve-holdout-2026-58485-searxng-patched:local

@@ -1,0 +1,10 @@
+# Vulnerable mcp-searxng (CVE-2026-58485): web_url_read SSRF. assertUrlAllowed does a purely
+# lexical hostname check with no DNS resolution, so a public-looking name resolving to an
+# internal address bypasses it. Real pinned npm software, no reimplementation.
+FROM node:24-bookworm-slim
+RUN npm install -g mcp-searxng@1.7.0 \
+ && test -f /usr/local/lib/node_modules/mcp-searxng/dist/cli.js
+# STDIO transport is the default (MCP_HTTP_PORT unset). SEARXNG_URL is only needed by the search
+# tools, not by web_url_read, so it stays unset. MCP_HTTP_ALLOW_PRIVATE_URLS unset keeps the
+# vulnerable lexical check active (not disabled).
+ENTRYPOINT ["node", "/usr/local/lib/node_modules/mcp-searxng/dist/cli.js"]
