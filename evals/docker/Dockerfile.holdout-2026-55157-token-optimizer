@@ -1,0 +1,19 @@
+# Vulnerable server: @ooples/token-optimizer-mcp 5.0.1 (CVE-2026-55157, smart_user
+# get-user-info OS command injection). Installed from npm, the real pinned package.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+
+# getent (libc-bin), grep, printf, cat, id, whoami, sh: all present in node:20-slim.
+# Install scripts stay ON so the better-sqlite3 native binding is fetched/built (the server
+# aborts without it). The package's own postinstall self-skips in a non-TTY build (and CI=true
+# forces it), so no Claude Code hooks are installed.
+ENV CI=true
+# better-sqlite3 has no prebuilt binary for this node ABI, so node-gyp compiles it: needs
+# python3 + a C++ toolchain. Removed again after the install to keep the image lean.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && npm install -g @ooples/token-optimizer-mcp@5.0.1 \
+    && npm cache clean --force \
+    && apt-get purge -y python3 make g++ && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT ["token-optimizer-mcp"]

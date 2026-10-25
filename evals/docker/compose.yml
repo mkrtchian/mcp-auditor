@@ -585,3 +585,19 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "021def7c3a5ff7a1222705aee4d5e7f7a9167a0a456459edf1aea7e0ccc90dc6"
     image: mcp-auditor-cve-holdout-2026-5602-heim-patched:local
+
+  holdout-2026-55157-token-optimizer:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-55157-token-optimizer
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "9cd420a86741d97d826d9124ed83580bb577117f3a3f1c761386b66632079003"
+    image: mcp-auditor-cve-holdout-2026-55157-token-optimizer:local
+
+  holdout-2026-55157-token-optimizer-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-55157-token-optimizer-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "41e0e9b7a0f44864b61fd0455b14b799ece149defeccc1acef61e4a9156b73d3"
+    image: mcp-auditor-cve-holdout-2026-55157-token-optimizer-patched:local
