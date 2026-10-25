@@ -52,6 +52,7 @@ import json
 import os
 import subprocess
 import tempfile
+import threading
 import time
 from collections.abc import AsyncGenerator, Generator, Mapping
 from contextlib import asynccontextmanager, contextmanager, suppress
@@ -385,6 +386,14 @@ DORIS_DB = "test_db"  # the database the server validates at connect, read by th
 _DORIS_HEALTH_DEADLINE = 240.0
 _DORIS_BACKEND_DEADLINE = 180.0
 
+# The sentinel is a singleton: it sits at the fixed metadata IP the exploit payload fetches, so it
+# cannot be made per-launch-unique. This serializes the target's concurrent scored runs instead,
+# held across the yield so a run's teardown cannot reap the next run's live sentinel. A plain Lock,
+# not an RLock: `entered_in_thread` runs __enter__ and __exit__ as separate `asyncio.to_thread`
+# submissions, so the acquiring and releasing worker threads may differ, which a plain Lock allows
+# and an owner-bound RLock would reject with RuntimeError out of __exit__.
+_DORIS_LAUNCH_LOCK = threading.Lock()
+
 
 @contextmanager
 def doris_db_env(
@@ -396,44 +405,45 @@ def doris_db_env(
     # provisioned once and reused across exercises, only the per-launch sentinels are stood and
     # torn down here. No /srv layout is mounted: every kept place is an http_endpoint, so the
     # reference-arm shape has nothing to materialise and the server takes none.
-    _ensure_doris()
-    # doris-mcp-server does not exit on stdin EOF, so --rm cannot fire when the stdio adapter
-    # reaps it and the container orphans; a unique name force-removed on teardown reaps it for
-    # certain, so launches do not accumulate across calibration re-runs.
-    server = f"{LABEL}-doris-server-{uuid4().hex}"
-    sentinels: list[str] = []
-    try:
-        for sentinel in spec.sentinels:
-            sentinels.append(_start_doris_sentinel(sentinel))
-        time.sleep(2)  # let each sentinel's httpd bind before the server can drive a fetch
-        yield Launch(
-            command="docker",
-            args=[
-                "run",
-                "-i",
-                "--rm",
-                *confinement_args(),
-                "--name",
-                server,
-                "--label",
-                LABEL,
-                "--network",
-                _DORIS_BRIDGE,
-                image,
-                "--db-host",
-                _DORIS_CONTAINER,
-                "--db-port",
-                "9030",
-                "--db-user",
-                "root",
-                "--db-database",
-                DORIS_DB,
-            ],
-        )
-    finally:
-        _doris_rm(server)
-        for name in sentinels:
-            _doris_rm(name)
+    with _DORIS_LAUNCH_LOCK:
+        _ensure_doris()
+        # doris-mcp-server does not exit on stdin EOF, so --rm cannot fire when the stdio adapter
+        # reaps it and the container orphans; a unique name force-removed on teardown reaps it for
+        # certain, so launches do not accumulate across calibration re-runs.
+        server = f"{LABEL}-doris-server-{uuid4().hex}"
+        sentinels: list[str] = []
+        try:
+            for sentinel in spec.sentinels:
+                sentinels.append(_start_doris_sentinel(sentinel))
+            time.sleep(2)  # let each sentinel's httpd bind before the server can drive a fetch
+            yield Launch(
+                command="docker",
+                args=[
+                    "run",
+                    "-i",
+                    "--rm",
+                    *confinement_args(),
+                    "--name",
+                    server,
+                    "--label",
+                    LABEL,
+                    "--network",
+                    _DORIS_BRIDGE,
+                    image,
+                    "--db-host",
+                    _DORIS_CONTAINER,
+                    "--db-port",
+                    "9030",
+                    "--db-user",
+                    "root",
+                    "--db-database",
+                    DORIS_DB,
+                ],
+            )
+        finally:
+            _doris_rm(server)
+            for name in sentinels:
+                _doris_rm(name)
 
 
 @contextmanager
@@ -563,8 +573,9 @@ def _provision_doris_schema() -> None:
 
 
 def _start_doris_sentinel(sentinel: SentinelIntent) -> str:
-    name = f"{LABEL}-doris-sentinel-{sentinel.host.replace('.', '-')}"
-    _doris_rm(name)
+    # A uuid name under the launch lock: nothing from a sibling run can collide with or be
+    # force-removed by this one. The static --ip stays, it is the metadata IP the exploit targets.
+    name = f"{LABEL}-doris-sentinel-{uuid4().hex}"
     _doris_run(
         "docker", "run", "-d",
         "--name", name,
