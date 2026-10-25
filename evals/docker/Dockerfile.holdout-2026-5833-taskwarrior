@@ -1,0 +1,28 @@
+# Vulnerable mcp-server-taskwarrior, pinned to the 1.0.1 release commit d502ad2.
+# The CallToolRequestSchema handler builds a shell string and runs it through
+# execSync (`task ${identifier} done`), so a shell metacharacter in a tool argument
+# is command injection. Fixed in commit 1ee3d282 (execFileSync), see Dockerfile.taskwarrior-patched.
+FROM node:22-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      taskwarrior git curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+# Real pinned software, built from the public source at the vulnerable commit.
+ARG COMMIT=d502ad2799d00ac2d879c6f279b0795fc3fdf02c
+RUN git clone https://github.com/awwaiid/mcp-server-taskwarrior /opt/mcp \
+ && cd /opt/mcp \
+ && git checkout ${COMMIT} \
+ && npm install \
+ && npm run build
+
+# Non-interactive taskwarrior: an existing rc file means `task` never prompts to
+# create one (which would otherwise read the MCP stdio stream), and a writable data
+# dir lets the benign add_task succeed. World-writable so any launch uid can use it.
+RUN mkdir -p /opt/task/data \
+ && printf 'data.location=/opt/task/data\nconfirmation=off\nverbose=nothing\ngc=off\n' > /opt/task/.taskrc \
+ && chmod -R 0777 /opt/task
+ENV TASKRC=/opt/task/.taskrc
+ENV TASKDATA=/opt/task/data
+
+ENTRYPOINT ["node", "/opt/mcp/dist/index.js"]

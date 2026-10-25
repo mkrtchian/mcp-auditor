@@ -1,0 +1,24 @@
+# Patched mcp-server-taskwarrior, pinned to the first fix commit 1ee3d282 (PR #9 head).
+# The handler now calls execFileSync('task', [identifier, 'done'], ...): no shell, each
+# argument is passed literally, so shell metacharacters are inert. Same base and taskwarrior
+# as the vulnerable image; only the server source commit differs.
+FROM node:22-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      taskwarrior git curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+ARG COMMIT=1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2
+RUN git clone https://github.com/awwaiid/mcp-server-taskwarrior /opt/mcp \
+ && cd /opt/mcp \
+ && git checkout ${COMMIT} \
+ && npm install \
+ && npm run build
+
+RUN mkdir -p /opt/task/data \
+ && printf 'data.location=/opt/task/data\nconfirmation=off\nverbose=nothing\ngc=off\n' > /opt/task/.taskrc \
+ && chmod -R 0777 /opt/task
+ENV TASKRC=/opt/task/.taskrc
+ENV TASKDATA=/opt/task/data
+
+ENTRYPOINT ["node", "/opt/mcp/dist/index.js"]
