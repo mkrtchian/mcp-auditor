@@ -28,7 +28,7 @@ from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, SentinelIntent
 
 _DORIS_IMAGE = "apache/doris:all-in-one-4.1.3"
 # a throwaway MySQL-protocol client for the FE on port 9030, patch-pinned like _DORIS_IMAGE: the
-# bare 8.0 tag floats (Docker Hub's 8/8.x now track the 8.4 series).
+# bare 8.0 tag floats across its patch releases.
 _MYSQL_CLIENT_IMAGE = "mysql:8.0.46"
 DORIS_CONTAINER = "mcp-auditor-cve-doris"
 DORIS_BRIDGE = "mcp-auditor-cve-doris-bridge"  # server <-> Doris FE, name resolution
