@@ -377,7 +377,9 @@ def mysql_db_env(
 
 
 _DORIS_IMAGE = "apache/doris:all-in-one-4.1.3"
-_MYSQL_CLIENT_IMAGE = "mysql:8.0"  # a throwaway MySQL-protocol client for the FE on port 9030
+# a throwaway MySQL-protocol client for the FE on port 9030, patch-pinned like _DORIS_IMAGE: the
+# bare 8.0 tag floats (Docker Hub's 8/8.x now track the 8.4 series).
+_MYSQL_CLIENT_IMAGE = "mysql:8.0.46"
 _DORIS_CONTAINER = "mcp-auditor-cve-doris"
 _DORIS_BRIDGE = "mcp-auditor-cve-doris-bridge"  # server <-> Doris FE, name resolution
 _DORIS_LLNET = "mcp-auditor-cve-doris-llnet"  # Doris <-> sentinels, static link-local IPs
@@ -618,7 +620,7 @@ def _doris_network(name: str, subnet: str | None = None) -> None:
 
 def _doris_sql(sql: str) -> subprocess.CompletedProcess[str]:
     return _doris_run(
-        "docker", "run", "--rm", "--network", _DORIS_BRIDGE, _MYSQL_CLIENT_IMAGE,
+        "docker", "run", "--rm", "--label", LABEL, "--network", _DORIS_BRIDGE, _MYSQL_CLIENT_IMAGE,
         "mysql", f"-h{_DORIS_CONTAINER}", "-P9030", "-uroot", "--batch", "-e", sql,
         check=False, timeout=60,
     )  # fmt: skip
