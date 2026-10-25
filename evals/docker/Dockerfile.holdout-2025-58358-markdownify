@@ -1,0 +1,31 @@
+# mcp-markdownify-server, vulnerable to CVE-2025-58358 (OS command injection via the
+# pptx-to-markdown filepath, interpolated into a shell string run with child_process.exec).
+# Pinned to commit 949f12e (npm 0.0.1, the affected release), which also carries the two
+# sibling flaws (CVE-2025-5273 arbitrary file read, CVE-2025-5276 SSRF).
+FROM node:22-bookworm
+
+# uv provides Python 3.11 and installs markitdown into the project .venv, exactly as the
+# upstream setup.sh does. The vulnerable _markitdown requires .venv/bin/markitdown to exist
+# before it runs the injectable shell command.
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+
+WORKDIR /app
+RUN git clone https://github.com/zcaceres/markdownify-mcp.git . \
+ && git checkout 949f12e633320548c565c6ec892d33695b158d64
+
+# The dev-dependency metadata in this commit is broken for npm (a 'sdk: "link:..."' entry npm
+# rejects, plus a heavy bun binary), and is irrelevant to the server at runtime: it imports only
+# @modelcontextprotocol/sdk and zod. Drop devDependencies, install the real runtime deps from
+# package.json, then add the TypeScript toolchain (unsaved) to compile src -> dist.
+RUN npm pkg delete devDependencies \
+ && npm install --ignore-scripts --no-audit --no-fund \
+ && npm install --ignore-scripts --no-audit --no-fund --no-save typescript@5 shx@0.3 @types/node@22
+RUN npx tsc && npx shx chmod +x dist/*.js
+
+RUN uv sync
+ENV UV_PATH=/usr/local/bin/uv
+
+# A real, convertible markdown file for the benign control (get-markdown-file).
+RUN printf '# Release notes\n\nNothing secret here.\n' > /opt/benign.md
+
+ENTRYPOINT ["node", "/app/dist/index.js"]

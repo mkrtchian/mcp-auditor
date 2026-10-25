@@ -1,0 +1,28 @@
+# mcp-markdownify-server, patched for CVE-2025-58358. Pinned to commit a31204d ("Advisory
+# fix 1"), the first version that fixes the command injection: _markitdown now uses
+# child_process.execFile with an argument array (no shell). This is the advisory's
+# "0.0.2" (the fix was merged but never published under that number; npm jumps 0.0.1 -> 1.0.0).
+# By this commit the two sibling flaws are already fixed as well (URL validation / is_ip_private
+# for SSRF, and a Markdown-extension check for get-markdown-file), both merged 2025-05-07.
+FROM node:22-bookworm
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+
+WORKDIR /app
+RUN git clone https://github.com/zcaceres/markdownify-mcp.git . \
+ && git checkout a31204de058b
+
+# Drop the broken devDependencies metadata, install the real runtime deps from package.json
+# (this commit adds private-ip, used by the SSRF fix in server.ts), then add the TypeScript
+# toolchain (unsaved) to compile src -> dist.
+RUN npm pkg delete devDependencies \
+ && npm install --ignore-scripts --no-audit --no-fund \
+ && npm install --ignore-scripts --no-audit --no-fund --no-save typescript@5 shx@0.3 @types/node@22
+RUN npx tsc && npx shx chmod +x dist/*.js
+
+RUN uv sync
+ENV UV_PATH=/usr/local/bin/uv
+
+RUN printf '# Release notes\n\nNothing secret here.\n' > /opt/benign.md
+
+ENTRYPOINT ["node", "/app/dist/index.js"]
