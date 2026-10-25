@@ -1,0 +1,18 @@
+# Patched @nor2/heim-mcp, pinned to commit c321d8a, the execFile() fix for CVE-2026-5602
+# (PR #2, "prevent command injection by replacing child_process.exec"). Still version 0.1.3:
+# the fix did not bump the version, which is why the advisory lists no published patched
+# release. Built from the real upstream source, identical build to the vulnerable image.
+FROM node:22-bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+ARG HEIM_COMMIT=c321d8a
+RUN curl -sfL "https://codeload.github.com/Nor2-io/heim-mcp/tar.gz/${HEIM_COMMIT}" \
+    | tar xz --strip-components=1
+RUN npm install && npm run build
+
+RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/heim && chmod +x /usr/local/bin/heim
+
+ENTRYPOINT ["node", "/app/dist/index.js"]

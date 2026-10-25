@@ -23,6 +23,7 @@ from evals.holdout_fixtures import (
     cve_2026_3680_biome,
     cve_2026_4270_aws_api_mcp,
     cve_2026_5323_a11y,
+    cve_2026_5602_heim,
     cve_2026_5603_magento2,
     cve_2026_5833_taskwarrior,
     cve_2026_7785_wireshark,
@@ -70,4 +71,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_26029_sf_mcp.TARGET,
     cve_2026_3484_nmap.TARGET,
     cve_2026_3680_biome.TARGET,
+    cve_2026_5602_heim.TARGET,
 )
