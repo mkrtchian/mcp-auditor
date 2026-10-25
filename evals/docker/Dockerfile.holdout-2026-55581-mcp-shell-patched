@@ -1,0 +1,24 @@
+# Patched mcp-shell (v0.6.0, first patched): the default security.yaml no longer allowlists any
+# interpreter (bash/git/python3 removed), the validator rejects '!' and '=!' (against the git-alias
+# escape) and secure mode is on by default, so `/bin/bash ...` is "not in allowed list" and the
+# CVE-2026-55581 bypass is blocked. Real pinned software, cloned from the public source at the
+# v0.6.0 tag and built from it. Single stage for the same fingerprint reason as the vulnerable
+# image; the runtime packages mirror the upstream alpine runtime of the tag.
+FROM golang:1.25-alpine
+
+RUN apk add --no-cache \
+    bash curl wget git make findutils grep sed gawk tar gzip unzip ca-certificates \
+ && rm -rf /var/cache/apk/*
+
+WORKDIR /src
+RUN git clone --depth 1 --branch v0.6.0 https://github.com/sonirico/mcp-shell . \
+ && CGO_ENABLED=0 GOOS=linux go build \
+      -ldflags "-X main.version=v0.6.0 -s -w -extldflags '-static'" \
+      -a -installsuffix cgo -o /usr/local/bin/mcp-shell . \
+ && mkdir -p /etc/mcp-shell \
+ && cp /src/security.yaml /etc/mcp-shell/security.yaml \
+ && chmod +x /usr/local/bin/mcp-shell
+
+ENV MCP_SHELL_SEC_CONFIG_FILE=/etc/mcp-shell/security.yaml
+ENV PATH="/usr/local/bin:${PATH}"
+ENTRYPOINT ["mcp-shell"]
