@@ -23,6 +23,7 @@ from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_targets import CVETarget
+from evals.doris_backend import DORIS_IMAGE, MYSQL_CLIENT_IMAGE
 from mcp_auditor.domain.ports import MCPClientPort
 
 # An exploit is aimed when its SQL carries Doris' http() TVF; the benign metadata read does not.
@@ -69,4 +70,5 @@ TARGET = CVETarget(
         "an attacker-chosen internal URL and returns its body in the tool response."
     ),
     tools_filter=None,
+    backend_images=(DORIS_IMAGE, MYSQL_CLIENT_IMAGE),
 )

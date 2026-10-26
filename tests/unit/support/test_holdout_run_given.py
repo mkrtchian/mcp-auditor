@@ -77,6 +77,7 @@ def deps_auditing(
         layout=_layout,
         rebuild=lambda services: None,
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
+        backend_image_ids=lambda tags: {tag: f"sha256:{tag}" for tag in tags},
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
     )
 
@@ -97,10 +98,13 @@ def deps_reaching_nothing() -> HoldoutDeps:
     def image_ids(_names: object) -> dict[str, str]:
         raise AssertionError("the image ids were read")
 
+    def backend_image_ids(_tags: object) -> dict[str, str]:
+        raise AssertionError("the backend image ids were read")
+
     def read_tree() -> TreeState:
         raise AssertionError("read_tree was reached")
 
-    return HoldoutDeps(audit, check, layout, rebuild, image_ids, read_tree)
+    return HoldoutDeps(audit, check, layout, rebuild, image_ids, backend_image_ids, read_tree)
 
 
 async def run(

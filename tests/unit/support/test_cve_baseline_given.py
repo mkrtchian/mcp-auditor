@@ -177,6 +177,7 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "a kept record moved in the mapping": _moving_the_kept_endpoint_record(),
     "the sentinel Dockerfile (a kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
     "launch mode": _replacing(launch_mode=LaunchMode.FALLBACK),
+    "backend images": _replacing(backend_images=("apache/doris:all-in-one-4.1.3",)),
 }
 
 # Applied to a_target_keeping_a_file (so no kept endpoint, the sentinel Dockerfile is out).

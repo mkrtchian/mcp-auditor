@@ -102,6 +102,9 @@ class CVETarget:
     ci_skip_reason: str | None = None
     launch_mode: LaunchMode = LaunchMode.NORMAL  # maintainer-set from calibration, like kept_places
     fallback_scope: FallbackScope = _NO_FALLBACK_SCOPE  # the launch the rule gates on a break
+    # The raw external image tags the builder pulls outside the compose build, empty when the server
+    # needs no separate backend (one baked into the server image is covered by its Dockerfile).
+    backend_images: tuple[str, ...] = ()
 
     def planting_spec(
         self, to_plant: Sequence[Place], nonces: NonceSource = RANDOM_NONCES

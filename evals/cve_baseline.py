@@ -104,7 +104,8 @@ def fixture_fingerprint(
     moves the fingerprint), the builder's name, the server image, the mechanism, the aim, the
     tools filter, the flaw's reach, the planting host, the loaded record of each kept place
     (its id, kind, coordinates and reach, in kept_places order), the launch-mode field (and the
-    fallback scope under the fallback launch-mode, holdout-rule.md:231) and the sentinel Dockerfile
+    fallback scope under the fallback launch-mode, holdout-rule.md:231), the backend images the
+    builder pulls outside the compose build (when any), and the sentinel Dockerfile
     whenever a kept record is an http_endpoint, since the sentinel image serves it on any
     target. Out:
     the exploits and benign call (calibration only), the severity, the note, the awaited
@@ -139,6 +140,8 @@ def fixture_fingerprint(
     # (holdout-rule.md:231): under the fallback launch-mode the fallback scope is part of it.
     if target.launch_mode is LaunchMode.FALLBACK:
         parts.append([target.fallback_scope.kind.value, target.fallback_scope.path])
+    if target.backend_images:
+        parts.append(sorted(target.backend_images))
     if any(record.kind is PlantKind.HTTP_ENDPOINT for record in records):
         parts.append(dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
@@ -183,6 +186,22 @@ def image_ids(names: Sequence[str], tag: Callable[[str], str] = image_tag) -> di
         ).stdout.strip()
         for name in names
     }
+
+
+def backend_image_ids(tags: Sequence[str]) -> dict[str, str]:
+    # check=False, keeping the tags that resolve: a provenance lookup never raises. A target
+    # dropped before launch never reaches assembly, so its backend image is never looked up.
+    ids: dict[str, str] = {}
+    for tag in tags:
+        inspected = subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", tag],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if inspected.returncode == 0:
+            ids[tag] = inspected.stdout.strip()
+    return ids
 
 
 def load_baselines(directory: Path) -> dict[str, CVETargetBaseline]:

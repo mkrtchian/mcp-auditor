@@ -15,7 +15,12 @@ from datetime import date
 
 from evals.concurrency import bounded
 from evals.cve_audit import RunOverrides, attempt_once, build_auditor
-from evals.cve_baseline import fixture_fingerprint, grammar_fingerprint, image_ids
+from evals.cve_baseline import (
+    backend_image_ids,
+    fixture_fingerprint,
+    grammar_fingerprint,
+    image_ids,
+)
 from evals.cve_calibration import check_target
 from evals.cve_grammar import DETECTION_RUNGS, RunGrade
 from evals.cve_images import COMPOSE_FILE
@@ -55,6 +60,7 @@ class HoldoutDeps:
     layout: Callable[[CVETarget], Awaitable[LayoutCheck]]
     rebuild: Callable[[Sequence[str]], None]
     image_ids: Callable[[Sequence[str]], dict[str, str]]
+    backend_image_ids: Callable[[Sequence[str]], dict[str, str]]
     read_tree: Callable[[], TreeState]
 
 
@@ -180,6 +186,7 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
         bounded(layout, concurrency),
         rebuild_images,
         image_ids,
+        backend_image_ids,
         read_tree,
     )
 
@@ -337,7 +344,10 @@ def _assemble_run(
         fixture_fingerprints={t.cve_id: fixture_fingerprint(t, ctx.places) for t in targets},
         commit=tree.commit,
         census_commit=ctx.census_commit,
-        image_ids=deps.image_ids(target_services(targets)),
+        image_ids={
+            **deps.image_ids(target_services(targets)),
+            **deps.backend_image_ids(_backend_images(targets)),
+        },
         targets=results,
         not_run=not_run,
         incomplete_run_count=sum(result.incomplete_runs for result in results),
@@ -360,3 +370,7 @@ def target_services(targets: Sequence[CVETarget]) -> list[str]:
             if service not in services:
                 services.append(service)
     return services
+
+
+def _backend_images(targets: Sequence[CVETarget]) -> list[str]:
+    return list(dict.fromkeys(tag for target in targets for tag in target.backend_images))

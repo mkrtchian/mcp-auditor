@@ -73,6 +73,19 @@ async def test_a_target_is_assembled_from_its_runs():
     assert assembled.run_cost == pytest.approx(3 * call_cost(provider, given.LUNA_PRICE))
 
 
+async def test_a_target_records_its_backend_images_beside_its_services():
+    target = given.a_target(backend_images=("apache/doris:all-in-one-4.1.3",))
+    audit = given.scripted({target.cve_id: given.three_detections()})
+
+    result = await given.run([target], given.deps_auditing(audit))
+
+    assert result.image_ids == {
+        "filesystem": "sha256:filesystem",
+        "filesystem-patched": "sha256:filesystem-patched",
+        "apache/doris:all-in-one-4.1.3": "sha256:apache/doris:all-in-one-4.1.3",
+    }
+
+
 async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
     target = given.a_target(given.KUBERNETES)
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)
