@@ -3,7 +3,8 @@
 `walk` prints the servers the holdout walk reached, each with its reaching flaw and the flaws
 that set its version, for the maintainer to admit (no LLM, no network). `nuisance-dossier` writes
 the isolated admission dossier for one server (no LLM; the fix-check driver it ships needs
-Docker). `run` audits the admitted servers on their patched images and reports the figure, so it
+Docker), copying a backend's kit builder and lifecycle under `--backend <key>`. `run` audits the
+admitted servers on their patched images and reports the figure, so it
 needs Docker and an LLM key. `gate` audits the admitted acceptance servers with a current target
 and compares each to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM
 key. No server is admitted yet.
@@ -98,6 +99,9 @@ def _parser() -> argparse.ArgumentParser:
     dossier.add_argument("--census", type=Path, default=CENSUS_PATH)
     dossier.add_argument("--server", required=True)
     dossier.add_argument("--out", type=Path, required=True)
+    dossier.add_argument(
+        "--backend", default=None, help="copy the kit builder and lifecycle of this backend (doris)"
+    )
     run = commands.add_parser("run", help="audit the admitted servers and report the figure")
     run.set_defaults(command=_run)
     run.add_argument("--report", type=Path, default=Path(DEFAULT_REPORT_PATH))
@@ -146,7 +150,7 @@ def _walk(args: argparse.Namespace) -> int:
 
 def _nuisance_dossier(args: argparse.Namespace) -> int:
     census = load_census(args.census)
-    write_dossier(census, args.server, args.out)
+    write_dossier(census, args.server, args.out, args.backend)
     print(f"Admission dossier for {args.server} written to {args.out}")
     return 0
 

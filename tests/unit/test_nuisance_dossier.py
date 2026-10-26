@@ -33,6 +33,29 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
         assert (out / relative).exists(), relative
     assert not (out / "evals" / "holdout_places.json").exists()
     assert not (out / "layout.md").exists()
+    assert not (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
+    assert not (out / "evals" / "doris_backend.py").exists()
+    assert "doris" not in (out / "fixture_format.md").read_text()
+
+
+def test_a_backend_dossier_imports_closed(tmp_path: Path):
+    out = tmp_path / "dossier"
+    write_dossier(given.a_census(), _SERVER, out, backend="doris")
+
+    assert (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
+    assert (out / "evals" / "doris_backend.py").exists()
+    fixture_format = (out / "fixture_format.md").read_text()
+    assert "kit_backends.doris_backend_env" in fixture_format
+    assert "169.254.0.0/16" in fixture_format
+    assert "DORIS_SERVER_LAUNCH" in fixture_format
+    assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
+
+
+def test_an_unknown_backend_is_refused(tmp_path: Path):
+    out = tmp_path / "dossier"
+    with pytest.raises(Refused):
+        write_dossier(given.a_census(), _SERVER, out, backend="ghost")
+    assert not out.exists()
 
 
 def test_the_written_dossier_imports_nothing_from_mcp_auditor(tmp_path: Path):

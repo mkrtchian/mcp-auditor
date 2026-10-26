@@ -56,6 +56,52 @@ def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.C
     assert "Admission dossier for npm:@acme/files written to" in capsys.readouterr().out
 
 
+def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    census = given.written(tmp_path, given.a_census())
+    out = tmp_path / "dossier"
+
+    exit_code = run_nuisance.main(
+        [
+            "nuisance-dossier",
+            "--census",
+            str(census),
+            "--server",
+            "npm:@acme/files",
+            "--out",
+            str(out),
+            "--backend",
+            "doris",
+        ]
+    )
+
+    assert exit_code == 0
+    assert out.exists()
+
+
+def test_nuisance_dossier_with_an_unknown_backend_exits_three(tmp_path: Path):
+    census = given.written(tmp_path, given.a_census())
+    out = tmp_path / "dossier"
+
+    exit_code = run_nuisance.main(
+        [
+            "nuisance-dossier",
+            "--census",
+            str(census),
+            "--server",
+            "npm:@acme/files",
+            "--out",
+            str(out),
+            "--backend",
+            "ghost",
+        ]
+    )
+
+    assert exit_code == 3
+    assert not out.exists()
+
+
 def test_nuisance_dossier_on_an_unknown_server_exits_three(tmp_path: Path):
     census = given.written(tmp_path, given.a_census())
     out = tmp_path / "dossier"
