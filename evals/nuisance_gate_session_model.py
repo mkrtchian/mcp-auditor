@@ -28,6 +28,7 @@ class NuisanceGateHarness:
     benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure, or None
     rebuild: Callable[[Sequence[str]], None]
     image_ids: Callable[[Sequence[str]], dict[str, str]]
+    backend_image_ids: Callable[[Sequence[str]], dict[str, str]]
     read_tree: Callable[[], TreeState]
     clock: Callable[[], str]  # ISO timestamp for recorded_at
     baselines: Path

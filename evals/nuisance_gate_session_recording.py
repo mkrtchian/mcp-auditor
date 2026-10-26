@@ -97,7 +97,12 @@ def _recordings(
             recorded_at=recorded_at,
             runs=[run.flagged for run in server_runs.runs],
             completed=server_runs.completed,
-            image_ids=opened.harness.image_ids([server_runs.server.service]),
+            image_ids={
+                **opened.harness.image_ids([server_runs.server.service]),
+                **opened.harness.backend_image_ids(
+                    [server_runs.server.backend.image] if server_runs.server.backend else []
+                ),
+            },
         )
         for server_runs in runs
     }

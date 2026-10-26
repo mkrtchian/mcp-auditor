@@ -8,13 +8,14 @@ import tests.unit.support.test_nuisance_gate_session_given as given
 from evals.baseline import BaselineStatus
 from evals.eval_session import RECORDING_REFUSED, Refused, TreeState
 from evals.gate_verdict import GateVerdict
-from evals.nuisance_admission import AdmittedServer
+from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_audit import GateRun
 from evals.nuisance_gate import ServerComparison, ServerOutcome
 from evals.nuisance_gate_baseline import load_baselines, write_baseline
 from evals.nuisance_gate_session import gate_servers, not_admitted, outside_gate, run_gate
 from evals.nuisance_gate_session_model import NuisanceGateSession
 from evals.nuisance_results import FigureExit
+from tests.unit.support.test_nuisance_admission_given import with_a_backend
 from tests.unit.support.test_nuisance_gate_baseline_given import a_gated_baseline
 
 FILESYSTEM = given.FILESYSTEM
@@ -130,6 +131,27 @@ async def test_two_recordings_at_one_commit_write_an_exploratory_then_a_confirme
     assert confirmed.runs == [False] * 6
     assert confirmed.image_ids == {"filesystem-patched": "sha256:filesystem-patched"}
     assert second.exit_code == 0
+
+
+async def test_a_backend_server_records_its_backend_image_beside_its_service(tmp_path: Path):
+    backend = BackendFixture(
+        provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"
+    )
+    server = with_a_backend(FILESYSTEM, backend)
+    scripts = {server.server_package: given.clean_runs()}
+
+    await run_gate(
+        given.options([server], record=True), given.a_harness(tmp_path, given.scripted(scripts))
+    )
+    await run_gate(
+        given.options([server], record=True), given.a_harness(tmp_path, given.scripted(scripts))
+    )
+
+    confirmed = load_baselines(tmp_path)[server.server_package]
+    assert confirmed.image_ids == {
+        "filesystem-patched": "sha256:filesystem-patched",
+        "apache/doris:all-in-one-4.1.3": "sha256:apache/doris:all-in-one-4.1.3",
+    }
 
 
 async def test_head_moving_during_the_runs_refuses_the_recording(tmp_path: Path):

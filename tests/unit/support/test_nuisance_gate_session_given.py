@@ -79,6 +79,7 @@ def a_harness(
         benign_call=call,
         rebuild=lambda services: None,
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
+        backend_image_ids=lambda tags: {tag: f"sha256:{tag}" for tag in tags},
         read_tree=read_tree,
         clock=lambda: RECORDED_AT,
         baselines=directory,

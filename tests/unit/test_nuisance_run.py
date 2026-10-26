@@ -11,6 +11,7 @@ import tests.unit.support.test_nuisance_run_given as given
 from evals.cve_grammar import MechanismClass
 from evals.eval_session import Refused, TreeState
 from evals.holdout_run import HOLDOUT_BUDGET
+from evals.nuisance_admission import BackendFixture
 from evals.nuisance_assembly import assemble_server, split_flaw_of
 from evals.nuisance_audit import DroppedRun
 from evals.nuisance_counter import counter_fingerprint
@@ -124,10 +125,26 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
         "npm:second": nuisance_fixture_fingerprint(second),
     }
     assert result.outside_figure == exits
+    assert result.image_ids == {"filesystem-patched": "sha256:filesystem-patched"}
     assert result.not_run == []
     assert result.incomplete_run_count == 1
     assert result.total_cost == pytest.approx(sum(s.run_cost for s in result.servers))
     assert result.total_cost == pytest.approx(4 * call_cost(usage, given.LUNA_PRICE))
+
+
+async def test_a_backend_server_records_its_backend_image_beside_its_service():
+    server = admission.with_a_backend(
+        given.a_server(),
+        BackendFixture(provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"),
+    )
+    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+
+    result = await given.run([server], given.deps_auditing(audit))
+
+    assert result.image_ids == {
+        "filesystem-patched": "sha256:filesystem-patched",
+        "apache/doris:all-in-one-4.1.3": "sha256:apache/doris:all-in-one-4.1.3",
+    }
 
 
 async def test_a_server_failing_its_benign_call_is_never_audited():

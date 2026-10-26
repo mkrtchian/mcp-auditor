@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -25,6 +27,22 @@ if TYPE_CHECKING:
 
 def image_tag(service: str) -> str:
     return f"mcp-auditor-nuisance-{service}:local"
+
+
+def backend_image_ids(tags: Sequence[str]) -> dict[str, str]:
+    # check=False, keeping the tags that resolve: a provenance lookup never raises. A server
+    # dropped before launch never reaches this code, so its backend image is never looked up.
+    ids: dict[str, str] = {}
+    for tag in tags:
+        inspected = subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", tag],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if inspected.returncode == 0:
+            ids[tag] = inspected.stdout.strip()
+    return ids
 
 
 def namespace_problems(admission: NuisanceAdmission) -> list[str]:

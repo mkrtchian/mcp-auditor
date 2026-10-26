@@ -42,7 +42,7 @@ from evals.nuisance_gate_session_model import (
     ServerRuns,
 )
 from evals.nuisance_gate_session_recording import load_checked, record, recording_tree
-from evals.nuisance_images import image_tag, nuisance_fixture_fingerprint
+from evals.nuisance_images import backend_image_ids, image_tag, nuisance_fixture_fingerprint
 from evals.nuisance_population import standing_exit
 from evals.nuisance_results import FigureExit
 from evals.recording import RecordingRefused
@@ -87,6 +87,7 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
         benign_call=bounded(benign_call, concurrency),
         rebuild=rebuild_images,
         image_ids=functools.partial(image_ids, tag=image_tag),
+        backend_image_ids=backend_image_ids,
         read_tree=read_tree,
         clock=lambda: datetime.now(UTC).isoformat(),
         baselines=NUISANCE_GATE_BASELINE_DIRECTORY,

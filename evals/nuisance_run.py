@@ -61,6 +61,7 @@ class NuisanceDeps:
     benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure reason, or None
     rebuild: Callable[[Sequence[str]], None]
     image_ids: Callable[[Sequence[str]], dict[str, str]]
+    backend_image_ids: Callable[[Sequence[str]], dict[str, str]]
     read_tree: Callable[[], TreeState]
     clock: Callable[[], str]  # ISO timestamp for recorded_at
 
@@ -144,6 +145,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         bounded(functools.partial(benign_call, timeout=timeout), concurrency),
         rebuild_images,
         functools.partial(image_ids, tag=nuisance_images.image_tag),
+        nuisance_images.backend_image_ids,
         read_tree,
         lambda: datetime.now(UTC).isoformat(),
     )
@@ -239,7 +241,10 @@ def _assemble_run(
         fixture_fingerprints={s.server_package: nuisance_fixture_fingerprint(s) for s in servers},
         commit=tree.commit,
         census_commit=ctx.census_commit,
-        image_ids=deps.image_ids(_services(servers)),
+        image_ids={
+            **deps.image_ids(_services(servers)),
+            **deps.backend_image_ids(_backend_images(servers)),
+        },
         recorded_at=deps.clock(),
         servers=results,
         not_run=not_run,
@@ -252,3 +257,9 @@ def _assemble_run(
 
 def _services(servers: Sequence[AdmittedServer]) -> list[str]:
     return list(dict.fromkeys(server.service for server in servers))
+
+
+def _backend_images(servers: Sequence[AdmittedServer]) -> list[str]:
+    return list(
+        dict.fromkeys(server.backend.image for server in servers if server.backend is not None)
+    )
