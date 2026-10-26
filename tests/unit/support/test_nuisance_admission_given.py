@@ -1,4 +1,5 @@
-from collections.abc import Callable
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal
 
@@ -6,12 +7,14 @@ import tests.unit.support.test_holdout_census_given as census_given
 from evals import cve_baseline
 from evals.census_classification import Classification
 from evals.census_work import AgentRecord, AgentRole
+from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.nuisance_admission import (
     AdmissionSettlement,
     AdmittedServer,
+    BackendFixture,
     BenignCall,
     FieldAgreement,
     FixCheckRecord,
@@ -19,6 +22,7 @@ from evals.nuisance_admission import (
     NuisanceAdmission,
     ToolRecord,
 )
+from evals.nuisance_backends import RegisteredBackend
 
 OTHER_PACKAGE = "PyPI:context-forge"
 
@@ -117,6 +121,48 @@ def a_server(flaws: list[FlawRecord], patched_version: str = PATCHED_VERSION) ->
 
 def with_host(server: AdmittedServer, host: PlantingHost) -> AdmittedServer:
     return server.model_copy(update={"host": host})
+
+
+@contextmanager
+def _a_fake_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    yield Launch("docker", ["run", "fake"])
+
+
+def a_backend_registry() -> dict[str, RegisteredBackend]:
+    return {
+        "fake": RegisteredBackend(
+            provisioner=_a_fake_provisioner, network="fake-net", image="fake/backend:1.0"
+        )
+    }
+
+
+def with_a_backend(server: AdmittedServer, backend: BackendFixture) -> AdmittedServer:
+    return server.model_copy(update={"backend": backend})
+
+
+def with_a_registered_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
+    backend = BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
+    return _with_server(admission, lambda server: with_a_backend(server, backend))
+
+
+def with_an_unknown_backend_provisioner(admission: NuisanceAdmission) -> NuisanceAdmission:
+    backend = BackendFixture(provisioner="ghost", image="fake/backend:1.0", network="fake-net")
+    return _with_server(admission, lambda server: with_a_backend(server, backend))
+
+
+def with_a_backend_fixture_differing_from_its_provisioner(
+    admission: NuisanceAdmission,
+) -> NuisanceAdmission:
+    backend = BackendFixture(provisioner="fake", image="fake/backend:2.0", network="fake-net")
+    return _with_server(admission, lambda server: with_a_backend(server, backend))
+
+
+def with_every_flaw_needing_the_fixture(admission: NuisanceAdmission) -> NuisanceAdmission:
+    def changed(server: AdmittedServer) -> AdmittedServer:
+        flaws = [flaw.model_copy(update={"backend_need": "fixture"}) for flaw in server.flaws]
+        return server.model_copy(update={"flaws": flaws})
+
+    return _with_server(admission, changed)
 
 
 def written(tmp_path: Path, admission: NuisanceAdmission) -> Path:

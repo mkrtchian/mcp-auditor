@@ -40,7 +40,9 @@ def test_a_clean_admission_has_no_namespace_problem():
 def test_admission_problems_carries_the_namespace_problem():
     admission = _with_service("sentinel")
 
-    problems = admission_problems(admission, given.a_census(), cve_baseline.grammar_fingerprint())
+    problems = admission_problems(
+        admission, given.a_census(), cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+    )
 
     assert any("sentinel" in problem for problem in problems)
 
@@ -79,6 +81,29 @@ def test_the_fingerprint_moves_when_the_dockerfile_instructions_change(tmp_path:
     _write_dockerfile(tmp_path, "FROM node:22\nRUN npm install demo@1.0.1\n")
 
     assert _fingerprint(server, tmp_path) != before
+
+
+def test_the_fingerprint_moves_when_a_backend_fixture_is_set(tmp_path: Path):
+    _write_dockerfile(tmp_path)
+    server = given.an_admission().servers[0]
+    backend = given.BackendFixture(provisioner="doris", image="fake/backend:1.0", network="net")
+
+    assert _fingerprint(server, tmp_path) != _fingerprint(
+        given.with_a_backend(server, backend), tmp_path
+    )
+
+
+def test_the_fingerprint_moves_when_a_backend_image_changes(tmp_path: Path):
+    _write_dockerfile(tmp_path)
+    server = given.an_admission().servers[0]
+    one = given.with_a_backend(
+        server, given.BackendFixture(provisioner="doris", image="fake/backend:1.0", network="net")
+    )
+    two = given.with_a_backend(
+        server, given.BackendFixture(provisioner="doris", image="fake/backend:2.0", network="net")
+    )
+
+    assert _fingerprint(one, tmp_path) != _fingerprint(two, tmp_path)
 
 
 def test_the_fingerprint_moves_when_the_launch_changes(tmp_path: Path):

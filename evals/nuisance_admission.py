@@ -8,12 +8,13 @@ until the admission session. `admission_problems` holds the load validation, rai
 until the session, and `load_admission` says so.
 """
 
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from evals import cve_baseline, nuisance_images, nuisance_walk
+from evals import cve_baseline, nuisance_backends, nuisance_images, nuisance_walk
 from evals.census_draw import LaunchOption
 from evals.census_work import AgentRecord
 from evals.cve_grammar import MechanismClass
@@ -77,6 +78,12 @@ class AdmissionSettlement(BaseModel):
     reason: str
 
 
+class BackendFixture(BaseModel):
+    provisioner: str
+    image: str
+    network: str
+
+
 class AdmittedServer(BaseModel):
     server_package: str
     reaching_flaw: str
@@ -86,6 +93,7 @@ class AdmittedServer(BaseModel):
     host: PlantingHost
     launch: list[str]
     service: str
+    backend: BackendFixture | None = None
     agents: list[AgentRecord]
     agreement: list[FieldAgreement]
     settlements: list[AdmissionSettlement]
@@ -104,14 +112,19 @@ def load_admission(path: Path, census: HoldoutCensus) -> NuisanceAdmission:
             f"no admission at {path}: the admission session has not been committed"
         )
     admission = NuisanceAdmission.model_validate_json(path.read_text())
-    problems = admission_problems(admission, census, cve_baseline.grammar_fingerprint())
+    problems = admission_problems(
+        admission, census, cve_baseline.grammar_fingerprint(), nuisance_backends.BACKENDS
+    )
     if problems:
         raise ValueError(f"invalid nuisance admission {path}: {'; '.join(problems)}")
     return admission
 
 
 def admission_problems(
-    admission: NuisanceAdmission, census: HoldoutCensus, grammar_fingerprint: str
+    admission: NuisanceAdmission,
+    census: HoldoutCensus,
+    grammar_fingerprint: str,
+    backends: Mapping[str, nuisance_backends.RegisteredBackend],
 ) -> list[str]:
     problems = _fingerprint_problems(admission, grammar_fingerprint)
     problems += nuisance_images.namespace_problems(admission)
@@ -122,6 +135,7 @@ def admission_problems(
         problems += _counted_tool_problems(server)
         problems += _benign_call_problems(server)
         problems += _patched_version_problems(server)
+        problems += nuisance_backends.backend_problems(server, backends)
     return problems
 
 

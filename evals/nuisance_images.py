@@ -43,8 +43,9 @@ def nuisance_fixture_fingerprint(
     moves (the rule's Run conditions section).
 
     In: the patched Dockerfile's instructions (comments and blank lines out), the launch, the
-    host's user, working directory and network stance, the counted tools with the valid judge
-    categories of their classes, and the benign calls of those counted tools in record order.
+    host's user, working directory and network stance, the backend fixture (provisioner, pinned
+    image, network), the counted tools with the valid judge categories of their classes, and the
+    benign calls of those counted tools in record order.
     Out: the vulnerable Dockerfile, the exploits, the agents, the agreement, the settlements and
     the fix-check records.
     """
@@ -53,6 +54,7 @@ def nuisance_fixture_fingerprint(
         dockerfile_instructions(image_dockerfile(server.service, docker_directory)),
         server.launch,
         planting_host_parts(server.host),
+        None if server.backend is None else server.backend.model_dump(),
         sorted((name, sorted(categories)) for name, categories in counted.items()),
         [
             (call.tool, call.arguments)

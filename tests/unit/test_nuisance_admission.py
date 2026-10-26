@@ -25,6 +25,8 @@ _MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
     given.with_an_acceptance_service,
     given.with_an_inconsistent_tool_record,
     given.with_a_counted_tool_missing_its_benign_call,
+    given.with_an_unknown_backend_provisioner,
+    given.with_a_backend_fixture_differing_from_its_provisioner,
 ]
 
 
@@ -46,7 +48,15 @@ def test_a_non_grammar_effect_class_is_refused_by_the_schema():
 
 def test_the_clean_admission_has_no_problems():
     admission = given.an_admission()
-    assert admission_problems(admission, given.a_census(), cve_baseline.grammar_fingerprint()) == []
+    assert (
+        admission_problems(
+            admission,
+            given.a_census(),
+            cve_baseline.grammar_fingerprint(),
+            given.a_backend_registry(),
+        )
+        == []
+    )
 
 
 @pytest.mark.parametrize("mutate", _MUTATORS)
@@ -55,17 +65,59 @@ def test_each_mutation_yields_exactly_one_problem(
 ):
     admission = mutate(given.an_admission())
 
-    problems = admission_problems(admission, given.a_census(), cve_baseline.grammar_fingerprint())
+    problems = admission_problems(
+        admission, given.a_census(), cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+    )
 
     assert len(problems) == 1, problems
     # The problem names the thing it is about: the server, or the grammar for the fingerprint.
     assert given.SERVER_PACKAGE in problems[0] or "grammar fingerprint" in problems[0]
 
 
+def test_a_registered_backend_fixture_has_no_problem():
+    admission = given.with_a_registered_backend(given.an_admission())
+
+    assert (
+        admission_problems(
+            admission,
+            given.a_census(),
+            cve_baseline.grammar_fingerprint(),
+            given.a_backend_registry(),
+        )
+        == []
+    )
+
+
+def test_a_differing_backend_fixture_names_the_expected_one():
+    admission = given.with_a_backend_fixture_differing_from_its_provisioner(given.an_admission())
+
+    [problem] = admission_problems(
+        admission, given.a_census(), cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+    )
+
+    assert "fake/backend:1.0" in problem
+
+
+def test_a_fixture_backend_need_with_no_backend_is_allowed():
+    admission = given.with_every_flaw_needing_the_fixture(given.an_admission())
+
+    assert (
+        admission_problems(
+            admission,
+            given.a_census(),
+            cve_baseline.grammar_fingerprint(),
+            given.a_backend_registry(),
+        )
+        == []
+    )
+
+
 def test_a_flaw_recorded_under_another_package_is_foreign_without_a_settlement():
     census = given.a_census_with_the_second_flaw_under_another_package()
 
-    problems = admission_problems(given.an_admission(), census, cve_baseline.grammar_fingerprint())
+    problems = admission_problems(
+        given.an_admission(), census, cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+    )
 
     assert any(given.SECOND_FLAW in problem and "census flaw" in problem for problem in problems)
 
@@ -74,7 +126,12 @@ def test_a_server_package_settlement_unifies_the_foreign_flaw():
     census = given.a_census_with_the_second_flaw_under_another_package()
     admission = given.with_the_second_flaw_settled_here(given.an_admission())
 
-    assert admission_problems(admission, census, cve_baseline.grammar_fingerprint()) == []
+    assert (
+        admission_problems(
+            admission, census, cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+        )
+        == []
+    )
 
 
 def test_load_admission_returns_the_written_clean_admission(tmp_path: Path):
@@ -117,6 +174,8 @@ def test_load_admission_on_a_mutated_admission_raises_with_the_problem(tmp_path:
 def test_a_stale_fingerprint_is_the_named_problem():
     admission = given.with_a_stale_grammar_fingerprint(given.an_admission())
 
-    [problem] = admission_problems(admission, given.a_census(), cve_baseline.grammar_fingerprint())
+    [problem] = admission_problems(
+        admission, given.a_census(), cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+    )
 
     assert "grammar fingerprint" in problem
