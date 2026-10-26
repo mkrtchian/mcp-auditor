@@ -1,16 +1,16 @@
-"""The Doris target's persistent cluster backend (CVE-2025-66335).
+"""The Doris cluster backend's lifecycle.
 
-The flaw's internal fetch runs on the Doris backend (its `http()` TVF), not on the server
-container, so the exploit needs a live Doris FE+BE cluster and a sentinel the backend can reach
-at the fixed metadata IP the payload fetches. The cluster is heavy (a JVM front-end and
-back-end) and slow to stand up, so it is provisioned once and reused across every exercise; only
-the per-launch sentinels are stood and torn down per run, inside `doris_db_env`.
+A persistent Doris FE+BE cluster: a JVM front-end and back-end, heavy and slow to stand up, so it
+is provisioned once and reused across every exercise rather than per launch; only the per-launch
+sentinels are stood and torn down per run. This module owns that lifecycle, kept apart from the
+launch-construction concern of `cve_environments`: ensuring the cluster is up and query-ready (the
+front-end health wait, then the schema provisioning that gates on a live back-end), standing a
+sentinel on the static-IP link-local network the back-end reaches, and the thin `docker` wrappers
+underneath.
 
-This module owns that backend's lifecycle, kept apart from the launch-construction concern of
-`cve_environments`: ensuring the cluster is up and query-ready, standing a sentinel, and the
-thin `docker` wrappers underneath. `doris_db_env` (the builder, alongside the others in
-`cve_environments`) drives this through `ensure_doris`, `start_doris_sentinel`, `doris_rm` and
-`DORIS_LAUNCH_LOCK`, and wires `DORIS_CONTAINER`/`DORIS_BRIDGE`/`DORIS_DB` into the launch.
+A caller drives this through `ensure_doris`, `start_doris_sentinel`, `doris_rm` and
+`DORIS_LAUNCH_LOCK`, wiring `DORIS_CONTAINER`/`DORIS_BRIDGE`/`DORIS_DB` into the server launch;
+`doris_server_args` assembles that launch's `docker run` arguments.
 
 The persistent cluster and its two networks are left running on purpose (reused across
 exercises); the generic orphan sweep documented in `cve_environments` reaps anything labelled
@@ -20,31 +20,71 @@ exercises); the generic orphan sweep documented in `cve_environments` reaps anyt
 import subprocess
 import threading
 import time
+from collections.abc import Sequence
 from contextlib import suppress
 from uuid import uuid4
 
 from evals.cve_planting import confinement_args
-from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, SentinelIntent
+from evals.cve_planting_base import (
+    LABEL,
+    SENTINEL_IMAGE,
+    PlantingHost,
+    SentinelIntent,
+    SymbolicUser,
+    host_user_args,
+    unprivileged_user_args,
+)
 
-_DORIS_IMAGE = "apache/doris:all-in-one-4.1.3"
-# a throwaway MySQL-protocol client for the FE on port 9030, patch-pinned like _DORIS_IMAGE: the
+DORIS_IMAGE = "apache/doris:all-in-one-4.1.3"
+# a throwaway MySQL-protocol client for the FE on port 9030, patch-pinned like DORIS_IMAGE: the
 # bare 8.0 tag floats across its patch releases.
 _MYSQL_CLIENT_IMAGE = "mysql:8.0.46"
 DORIS_CONTAINER = "mcp-auditor-cve-doris"
 DORIS_BRIDGE = "mcp-auditor-cve-doris-bridge"  # server <-> Doris FE, name resolution
 _DORIS_LLNET = "mcp-auditor-cve-doris-llnet"  # Doris <-> sentinels, static link-local IPs
 _DORIS_LLSUBNET = "169.254.0.0/16"
-DORIS_DB = "test_db"  # the database the server validates at connect, read by the exploit/benign
+DORIS_DB = "test_db"  # the database the server validates at connect
 _DORIS_HEALTH_DEADLINE = 240.0
 _DORIS_BACKEND_DEADLINE = 180.0
 
-# The sentinel is a singleton: it sits at the fixed metadata IP the exploit payload fetches, so it
-# cannot be made per-launch-unique. This serializes the target's concurrent scored runs instead,
-# held across the yield so a run's teardown cannot reap the next run's live sentinel. A plain Lock,
+DORIS_SERVER_LAUNCH: list[str] = [
+    "--db-host", DORIS_CONTAINER,
+    "--db-port", "9030",
+    "--db-user", "root",
+    "--db-database", DORIS_DB,
+]  # fmt: skip
+
+# The sentinel is a singleton on a fixed link-local IP, so it cannot be made per-launch-unique. A
+# caller that stands one holds this across its yield to serialise the concurrent runs that share
+# that one sentinel, so a run's teardown cannot reap the next run's live sentinel. A plain Lock,
 # not an RLock: `entered_in_thread` runs __enter__ and __exit__ as separate `asyncio.to_thread`
 # submissions, so the acquiring and releasing worker threads may differ, which a plain Lock allows
 # and an owner-bound RLock would reject with RuntimeError out of __exit__.
 DORIS_LAUNCH_LOCK = threading.Lock()
+
+
+def user_args(user: SymbolicUser) -> list[str]:
+    match user:
+        case SymbolicUser.HOST:
+            return host_user_args()
+        case SymbolicUser.UNPRIVILEGED:
+            return unprivileged_user_args()
+
+
+def doris_server_args(
+    name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
+) -> list[str]:
+    return [
+        "run", "-i", "--rm",
+        *confinement_args(),
+        "--name", name,
+        "--label", LABEL,
+        "--network", DORIS_BRIDGE,
+        *user_args(host.user),
+        "-w", host.working_directory,
+        image,
+        *server_launch,
+    ]  # fmt: skip
 
 
 def ensure_doris() -> None:
@@ -59,7 +99,7 @@ def ensure_doris() -> None:
             "--hostname", DORIS_CONTAINER,
             "--label", LABEL,
             "--network", DORIS_BRIDGE,
-            _DORIS_IMAGE,
+            DORIS_IMAGE,
         )  # fmt: skip
     _doris_run("docker", "network", "connect", _DORIS_LLNET, DORIS_CONTAINER, check=False)
     _wait_doris_healthy()
@@ -79,9 +119,9 @@ def _wait_doris_healthy() -> None:
 
 
 def _provision_doris_schema() -> None:
-    # A bucketed table and a read of it both need a live backend, so retrying until both succeed
-    # gates the yield on backend readiness: the exploit's fetch runs on the backend, and a backend
-    # not yet up would otherwise read as a dead condition rather than a slow start.
+    # A bucketed table and a read of it both need a live back-end, so retrying until both succeed
+    # gates the yield on back-end readiness: a back-end not yet up would otherwise look like a
+    # permanent failure rather than a slow start.
     deadline = time.monotonic() + _DORIS_BACKEND_DEADLINE
     while time.monotonic() < deadline:
         _doris_sql(f"CREATE DATABASE IF NOT EXISTS {DORIS_DB};")
@@ -98,7 +138,8 @@ def _provision_doris_schema() -> None:
 
 def start_doris_sentinel(sentinel: SentinelIntent) -> str:
     # A uuid name under the launch lock: nothing from a sibling run can collide with or be
-    # force-removed by this one. The static --ip stays, it is the metadata IP the exploit targets.
+    # force-removed by this one. The static --ip binds the fixed link-local address configured on
+    # the sentinel.
     name = f"{LABEL}-doris-sentinel-{uuid4().hex}"
     _doris_run(
         "docker", "run", "-d",
