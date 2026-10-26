@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from evals import nuisance_images
-from evals.concurrency import bounded
+from evals.concurrency import bounded, entered_in_thread
 from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import grammar_fingerprint, image_ids
 from evals.cve_environments import TOOL_CALL_TIMEOUT, connect
@@ -31,7 +31,7 @@ from evals.nuisance_audit import (
     audit_once,
     benign_call_failure,
     nuisance_audit,
-    nuisance_launch,
+    nuisance_environment,
 )
 from evals.nuisance_counter import counter_fingerprint
 from evals.nuisance_images import nuisance_fixture_fingerprint
@@ -153,9 +153,10 @@ async def benign_call(server: AdmittedServer, timeout: int) -> str | None:
     """The benign call's failure reason, or None when it answers."""
     try:
         with open(os.devnull, "w") as devnull:
-            async with connect(
-                nuisance_launch(server), devnull, tool_call_timeout=timeout
-            ) as client:
+            async with (
+                entered_in_thread(nuisance_environment(server)) as launch,
+                connect(launch, devnull, tool_call_timeout=timeout) as client,
+            ):
                 return await benign_call_failure(server, client)
     except Exception as exc:
         return f"failed to connect for the benign call: {exc}"

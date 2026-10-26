@@ -1,4 +1,8 @@
+import asyncio
 import os
+import threading
+from collections.abc import Generator
+from contextlib import contextmanager
 from io import StringIO
 from typing import Any
 
@@ -6,29 +10,39 @@ import pytest
 from rich.console import Console
 
 from evals import nuisance_audit as nuisance_audit_module
+from evals.concurrency import entered_in_thread
+from evals.cve_audit import Auditor, RunOverrides
+from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
+from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_audit import (
+    BACKENDS,
     NUISANCE_INFRA_ATTEMPTS,
     DroppedRun,
     LaunchFailed,
+    audit_once,
     benign_call_failure,
     gate_run,
     is_incomplete,
     nuisance_audit,
-    nuisance_launch,
+    nuisance_environment,
 )
+from evals.nuisance_backends import RegisteredBackend
 from evals.nuisance_results import NotRunCause
 from mcp_auditor.domain import ToolResponse
 from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep
+from tests.fakes.llm import FakeLLM
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support import test_nuisance_run_given as run_given
 from tests.unit.support.test_nuisance_admission_given import (
     FIRST_FLAW,
     SECOND_FLAW,
+    a_backend_registry,
     a_flaw_record,
     a_server,
+    with_a_backend,
     with_host,
 )
 
@@ -43,7 +57,7 @@ SECOND_TOOL = f"{SECOND_FLAW}_read"
 
 
 def test_the_crafted_server_launches_unprivileged_at_the_root_with_no_network():
-    args = nuisance_launch(SERVER).args
+    args = _launch_args(SERVER)
 
     assert _follows(args, "--network", "none")
     assert "bridge" not in args
@@ -54,26 +68,76 @@ def test_the_crafted_server_launches_unprivileged_at_the_root_with_no_network():
 def test_a_networked_host_launches_on_the_default_bridge():
     server = with_host(SERVER, PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True))
 
-    assert _follows(nuisance_launch(server).args, "--network", "bridge")
+    assert _follows(_launch_args(server), "--network", "bridge")
 
 
 def test_a_host_user_launches_as_the_invoking_user_in_its_working_directory():
     server = with_host(SERVER, PlantingHost(SymbolicUser.HOST, "/srv", has_network=False))
 
-    args = nuisance_launch(server).args
+    args = _launch_args(server)
 
     assert _follows(args, "--user", f"{os.getuid()}:{os.getgid()}")
     assert _follows(args, "-w", "/srv")
 
 
 def test_the_launch_runs_the_patched_image_confined_with_no_mount():
-    launch = nuisance_launch(SERVER)
+    with nuisance_environment(SERVER) as launch:
+        assert launch.command == "docker"
+        assert launch.args[-3:] == [f"mcp-auditor-nuisance-{SERVER.service}:local", *SERVER.launch]
+        assert _follows(launch.args, "--cap-drop", "ALL")
+        assert "-v" not in launch.args
+        assert "--mount" not in launch.args
 
-    assert launch.command == "docker"
-    assert launch.args[-3:] == [f"mcp-auditor-nuisance-{SERVER.service}:local", *SERVER.launch]
-    assert _follows(launch.args, "--cap-drop", "ALL")
-    assert "-v" not in launch.args
-    assert "--mount" not in launch.args
+
+def test_a_backend_server_launches_through_its_registered_provisioner():
+    server = with_a_backend(
+        SERVER, BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
+    )
+
+    with nuisance_environment(server, backends=a_backend_registry()) as launch:
+        assert launch == Launch("docker", ["run", "fake"])
+
+
+async def test_a_provisioner_failing_on_enter_is_a_launch_failure():
+    @contextmanager
+    def failing_provisioner(server: AdmittedServer) -> Generator[Launch]:
+        raise RuntimeError("cluster never healthy")
+        yield Launch("docker", [])
+
+    registry = {"fail": RegisteredBackend(failing_provisioner, "fake-net", "fake/backend:1.0")}
+    server = with_a_backend(
+        SERVER, BackendFixture(provisioner="fail", image="fake/backend:1.0", network="fake-net")
+    )
+
+    outcome = await audit_once(
+        server,
+        Auditor(FakeLLM([]), FakeLLM([]), 1),
+        RunOverrides(None, None, None),
+        backends=registry,
+    )
+
+    assert isinstance(outcome, LaunchFailed)
+    assert "cluster never healthy" in outcome.reason
+
+
+async def test_two_concurrent_environments_of_one_backend_server_both_complete():
+    lock = threading.Lock()
+
+    @contextmanager
+    def blocking_provisioner(server: AdmittedServer) -> Generator[Launch]:
+        with lock:
+            yield Launch("docker", ["run", "blocked"])
+
+    registry = {"block": RegisteredBackend(blocking_provisioner, "fake-net", "fake/backend:1.0")}
+    server = with_a_backend(
+        SERVER, BackendFixture(provisioner="block", image="fake/backend:1.0", network="fake-net")
+    )
+
+    async def enter_once() -> None:
+        async with entered_in_thread(nuisance_environment(server, backends=registry)):
+            await asyncio.sleep(0.01)
+
+    await asyncio.wait_for(asyncio.gather(enter_once(), enter_once()), timeout=5)
 
 
 async def test_clean_benign_calls_give_no_failure():
@@ -229,6 +293,11 @@ async def test_a_dropped_gate_run_does_not_complete_at_once(monkeypatch: pytest.
 
     assert run is None
     assert audit.calls == 1
+
+
+def _launch_args(server: AdmittedServer, backends: Any = BACKENDS) -> list[str]:
+    with nuisance_environment(server, backends=backends) as launch:
+        return launch.args
 
 
 def _follows(args: list[str], flag: str, value: str) -> bool:

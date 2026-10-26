@@ -3,23 +3,21 @@ refused or unreadable step is kept and counted downstream, a launch failure or a
 attempt is retried."""
 
 import os
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Generator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 from rich.console import Console
 from rich.markup import escape
 
+from evals.concurrency import entered_in_thread
 from evals.cve_audit import INCOMPLETE_ATTEMPTS, Auditor, RunOverrides, describe_miss_causes
 from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
-from evals.cve_planting_base import (
-    SymbolicUser,
-    confinement_args,
-    host_user_args,
-    no_network_args,
-    unprivileged_user_args,
-)
+from evals.cve_planting_base import confinement_args, no_network_args
+from evals.doris_backend import user_args
 from evals.metrics import missed_steps
 from evals.nuisance_admission import AdmittedServer, BenignCall
+from evals.nuisance_backends import BACKENDS, RegisteredBackend
 from evals.nuisance_counter import flagged_tools
 from evals.nuisance_counting import counted_flaws, counted_tools
 from evals.nuisance_images import image_tag
@@ -37,7 +35,22 @@ NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries
 _INCOMPLETE_CAUSES = frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER})
 
 
-def nuisance_launch(server: AdmittedServer) -> Launch:
+@contextmanager
+def nuisance_environment(
+    server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
+) -> Generator[Launch]:
+    """The launch of one server on its patched image. With no backend fixture it is the current
+    single-container launch; with one it delegates to the registered provisioner, which brings
+    the backend up and yields the server launch wired to it. The provisioner owns the network, so
+    a backend server's launch never goes through `_network_args`."""
+    if server.backend is None:
+        yield _single_container_launch(server)
+    else:
+        with backends[server.backend.provisioner].provisioner(server) as launch:
+            yield launch
+
+
+def _single_container_launch(server: AdmittedServer) -> Launch:
     """The patched image under the acceptance confinement, with no mount, no layout and no
     planting. The user, working directory and network come from `server.host`. A networked host
     gets the plain default bridge with egress: no sidecar, holder or planted endpoint, since
@@ -50,7 +63,7 @@ def nuisance_launch(server: AdmittedServer) -> Launch:
             "-i",
             "--rm",
             *confinement_args(),
-            *_user_args(host.user),
+            *user_args(host.user),
             "-w",
             host.working_directory,
             *_network_args(host.has_network),
@@ -58,14 +71,6 @@ def nuisance_launch(server: AdmittedServer) -> Launch:
             *server.launch,
         ],
     )
-
-
-def _user_args(user: SymbolicUser) -> list[str]:
-    match user:
-        case SymbolicUser.HOST:
-            return host_user_args()
-        case SymbolicUser.UNPRIVILEGED:
-            return unprivileged_user_args()
 
 
 def _network_args(has_network: bool) -> list[str]:
@@ -102,11 +107,17 @@ class DroppedRun:
 
 
 async def audit_once(
-    server: AdmittedServer, auditor: Auditor, overrides: RunOverrides
+    server: AdmittedServer,
+    auditor: Auditor,
+    overrides: RunOverrides,
+    *,
+    backends: Mapping[str, RegisteredBackend] = BACKENDS,
 ) -> AuditReport | LaunchFailed:
-    launch = nuisance_launch(server)
+    # The provisioner blocks for minutes and `DORIS_LAUNCH_LOCK` is a thread lock, so a plain
+    # `with` inside the coroutine would freeze the loop and deadlock the server's gathered runs.
     try:
-        report = await _audit(launch, auditor, overrides)
+        async with entered_in_thread(nuisance_environment(server, backends)) as launch:
+            report = await _audit(launch, auditor, overrides)
     except Exception as exc:
         return LaunchFailed(str(exc))
     _print_incidents(server, report)
