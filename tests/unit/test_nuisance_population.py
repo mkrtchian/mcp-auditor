@@ -15,7 +15,7 @@ def test_each_standing_exit_keeps_its_server_outside_the_figure():
     ]
     admitted = _admitting(
         _admitted("npm:no-stdio", runs_over_stdio=False),
-        _admitted("npm:no-container", runs_in_container=False),
+        _admitted("npm:no-docker", runs_under_docker=False),
     )
 
     population = run_population(walked, admitted, set())
@@ -24,12 +24,12 @@ def test_each_standing_exit_keeps_its_server_outside_the_figure():
     assert sorted(population.outside_figure, key=lambda row: row.server_package) == [
         FigureExit("npm:accepted", "an acceptance server"),
         FigureExit("npm:excluded", "an excluded server"),
-        FigureExit("npm:no-container", "its patched version does not run in a container"),
+        FigureExit("npm:no-docker", "its patched version does not run under Docker"),
         FigureExit("npm:no-stdio", "does not run over stdio"),
     ]
 
 
-def test_an_unmarked_stdio_containerised_server_is_audited():
+def test_an_unmarked_stdio_server_under_docker_is_audited():
     kept = _admitted("npm:kept")
 
     population = run_population([_walked("npm:kept", None)], _admitting(kept), set())

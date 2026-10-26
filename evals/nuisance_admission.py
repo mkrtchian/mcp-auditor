@@ -54,7 +54,11 @@ class FlawRecord(BaseModel):
     patched_source: Literal["advisory", "fix_commit", "none"]
     launch_option: LaunchOption | None
     benign_calls: list[BenignCall]
-    needs_backend: bool
+    # "none": no tool of the flaw needs a backend.
+    # "fixture": a tool needs a backend the fixture provides (the server's own backend fixture
+    # or one baked into its image).
+    # "external": a tool needs a backend the fixture cannot provide, which drops the tool.
+    backend_need: Literal["none", "fixture", "external"]
     declared_function_is_effect: bool
     fix_check: FixCheckRecord
 
@@ -78,7 +82,7 @@ class AdmittedServer(BaseModel):
     reaching_flaw: str
     flaws: list[FlawRecord]
     runs_over_stdio: bool
-    runs_in_container: bool
+    runs_under_docker: bool
     host: PlantingHost
     launch: list[str]
     service: str

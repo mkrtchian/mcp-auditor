@@ -126,7 +126,7 @@ def test_the_fingerprint_is_unchanged_by_an_exploit_or_a_settlement_change(tmp_p
     settled = AdmissionSettlement(
         server_package=server.server_package,
         flaw=None,
-        field="runs_in_container",
+        field="runs_under_docker",
         value="true",
         reason="a different reason",
     )

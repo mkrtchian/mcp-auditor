@@ -54,6 +54,6 @@ def run_population(
 def standing_exit(server: AdmittedServer) -> str | None:
     if not server.runs_over_stdio:
         return "does not run over stdio"
-    if not server.runs_in_container:
-        return "its patched version does not run in a container"
+    if not server.runs_under_docker:
+        return "its patched version does not run under Docker"
     return None

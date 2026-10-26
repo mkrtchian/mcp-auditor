@@ -49,7 +49,7 @@ def test_a_counted_flaw_absent_from_the_draw_order_is_never_the_split_flaw():
 def test_a_flaw_with_no_counted_tool_is_skipped_for_the_next():
     needing_a_backend = admission.a_flaw_record(
         given.SECOND_FLAW, MechanismClass.COMMAND_EXECUTION, admission.PATCHED_VERSION
-    ).model_copy(update={"needs_backend": True})
+    ).model_copy(update={"backend_need": "external"})
     server = given.a_server(flaws=[given.a_two_flaw_server().flaws[0], needing_a_backend])
     draw = given.draw_entries((given.SECOND_FLAW, _LATE), (given.FIRST_FLAW, _EARLY))
 

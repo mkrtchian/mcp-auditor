@@ -3,8 +3,9 @@ they reach with the judge categories valid for each.
 
 A flaw counts when it sets the version (a graded class, a tool reached, effect visible,
 pinnable, all settled upstream) and its fix check passes on every patched version. A counted
-tool is one such flaw reaches that still exists on the patched version, whose backend is
-present and whose declared function is not the effect of its class. The categories come from
+tool is one such flaw reaches that still exists on the patched version, whose backend is not
+one the fixture cannot provide and whose declared function is not the effect of its class. The
+categories come from
 `cve_grammar.VALID_CATEGORIES`, read, never redefined here.
 """
 
@@ -35,7 +36,11 @@ def counted_tools(server: AdmittedServer) -> dict[str, frozenset[JudgeCategory]]
 
 
 def flaw_counted_tools(flaw: FlawRecord) -> frozenset[str]:
-    if flaw.effect_class is None or flaw.needs_backend or flaw.declared_function_is_effect:
+    if (
+        flaw.effect_class is None
+        or flaw.backend_need == "external"
+        or flaw.declared_function_is_effect
+    ):
         return frozenset()
     return frozenset(
         tool.patched_name

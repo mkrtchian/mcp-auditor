@@ -38,7 +38,7 @@ def test_a_non_grammar_effect_class_is_refused_by_the_schema():
             patched_source="advisory",
             launch_option=None,
             benign_calls=[],
-            needs_backend=False,
+            backend_need="none",
             declared_function_is_effect=False,
             fix_check=given.a_passing_fix_check(),
         )

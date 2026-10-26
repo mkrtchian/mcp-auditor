@@ -49,7 +49,7 @@ def _a_server() -> AdmittedServer:
             a_flaw_record(SECOND_FLAW, MechanismClass.COMMAND_EXECUTION, PATCHED_VERSION),
         ],
         runs_over_stdio=True,
-        runs_in_container=True,
+        runs_under_docker=True,
         host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
         launch=["node", "server.js"],
         service="filesystem-nuisance",
@@ -84,7 +84,7 @@ def a_flaw_record(
             BenignCall(tool=tool.patched_name or tool.vulnerable_name or "", arguments={})
             for tool in the_tools
         ],
-        needs_backend=False,
+        backend_need="none",
         declared_function_is_effect=False,
         fix_check=fix_check if fix_check is not None else a_passing_fix_check(),
     )
@@ -130,7 +130,7 @@ def with_a_stale_grammar_fingerprint(admission: NuisanceAdmission) -> NuisanceAd
 
 
 def with_an_unsettled_disagreement(admission: NuisanceAdmission) -> NuisanceAdmission:
-    disagreement = FieldAgreement(flaw=None, field="runs_in_container", agreed=False)
+    disagreement = FieldAgreement(flaw=None, field="runs_under_docker", agreed=False)
     return _with_server(
         admission,
         lambda server: server.model_copy(update={"agreement": [*server.agreement, disagreement]}),
@@ -149,7 +149,9 @@ def with_no_counted_tool(admission: NuisanceAdmission) -> NuisanceAdmission:
         admission,
         lambda server: server.model_copy(
             update={
-                "flaws": [flaw.model_copy(update={"needs_backend": True}) for flaw in server.flaws]
+                "flaws": [
+                    flaw.model_copy(update={"backend_need": "external"}) for flaw in server.flaws
+                ]
             }
         ),
     )

@@ -58,7 +58,7 @@ def test_a_removed_tool_is_absent():
 
 def test_a_backend_needing_flaw_contributes_no_tool():
     flaw = given.a_flaw_record("CVE-2025-0001", _READ, "1.2.0")
-    flaw = flaw.model_copy(update={"needs_backend": True})
+    flaw = flaw.model_copy(update={"backend_need": "external"})
     server = given.a_server([flaw])
 
     assert counted_tools(server) == {}
@@ -106,7 +106,15 @@ def test_the_counted_tools_of_a_flaw_are_the_patched_names_still_present():
 def test_a_backend_needing_flaw_has_no_counted_tool():
     flaw = given.a_flaw_record("CVE-2025-0001", _READ, "1.2.0")
 
-    assert flaw_counted_tools(flaw.model_copy(update={"needs_backend": True})) == frozenset()
+    assert flaw_counted_tools(flaw.model_copy(update={"backend_need": "external"})) == frozenset()
+
+
+def test_a_flaw_whose_backend_the_fixture_provides_keeps_its_tool():
+    flaw = given.a_flaw_record(
+        "CVE-2025-0001", _READ, "1.2.0", tools=[given.a_tool("probe", "probe", "unchanged")]
+    )
+
+    assert flaw_counted_tools(flaw.model_copy(update={"backend_need": "fixture"})) == {"probe"}
 
 
 def test_an_effect_is_function_flaw_has_no_counted_tool():
