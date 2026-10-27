@@ -61,6 +61,7 @@ def deps_auditing(
     *,
     check: dict[str, list[str]] | None = None,
     layout: dict[str, LayoutCheck] | None = None,
+    throttled: int = 0,
 ) -> HoldoutDeps:
     checks = check or {}
     layouts = layout or {}
@@ -79,6 +80,8 @@ def deps_auditing(
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
         backend_image_ids=lambda tags: {tag: f"sha256:{tag}" for tag in tags},
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
+        announce_audits=lambda audits: None,
+        throttled_requests=lambda: throttled,
     )
 
 
@@ -104,7 +107,23 @@ def deps_reaching_nothing() -> HoldoutDeps:
     def read_tree() -> TreeState:
         raise AssertionError("read_tree was reached")
 
-    return HoldoutDeps(audit, check, layout, rebuild, image_ids, backend_image_ids, read_tree)
+    def announce_audits(_audits: int) -> None:
+        raise AssertionError("the audits were announced")
+
+    def throttled_requests() -> int:
+        raise AssertionError("the throttled requests were read")
+
+    return HoldoutDeps(
+        audit,
+        check,
+        layout,
+        rebuild,
+        image_ids,
+        backend_image_ids,
+        read_tree,
+        announce_audits,
+        throttled_requests,
+    )
 
 
 async def run(
@@ -113,6 +132,7 @@ async def run(
     *,
     dates: dict[str, date] | None = None,
     runs: int = 3,
+    concurrency: int = 6,
 ) -> HoldoutRunResult:
     """`dates=None` discloses every target on 2026-01-01."""
     if dates is None:
@@ -125,6 +145,7 @@ async def run(
         load_places(HOLDOUT_PLACES),
         census_commit="cafe",
         runs=runs,
+        concurrency=concurrency,
         deps=deps,
     )
 

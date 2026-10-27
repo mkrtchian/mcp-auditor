@@ -127,6 +127,8 @@ class HoldoutReport(BaseModel):
     grammar_fingerprint: str
     fixture_fingerprints: dict[str, str]
     image_ids: dict[str, str]
+    concurrency: int
+    throttled_requests: int
 
 
 def build_report(run: HoldoutRunResult) -> HoldoutReport:
@@ -172,6 +174,8 @@ def build_report(run: HoldoutRunResult) -> HoldoutReport:
         grammar_fingerprint=run.grammar_fingerprint,
         fixture_fingerprints=run.fixture_fingerprints,
         image_ids=run.image_ids,
+        concurrency=run.concurrency,
+        throttled_requests=run.throttled_requests,
     )
 
 

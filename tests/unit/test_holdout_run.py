@@ -234,6 +234,30 @@ async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
     assert not_run.cause is NotRunCause.THROTTLED
 
 
+async def test_the_run_announces_the_audits_of_the_surviving_targets_only():
+    dead, healthy = given.a_target(given.KUBERNETES), given.a_target(given.FILESYSTEM)
+    audit = given.scripted({dead.cve_id: [], healthy.cve_id: given.three_detections()})
+    announced: list[int] = []
+    deps = dataclasses.replace(
+        given.deps_auditing(audit, check={dead.cve_id: ["vulnerable: no exploit surfaces"]}),
+        announce_audits=announced.append,
+    )
+
+    await given.run([dead, healthy], deps, runs=3)
+
+    assert announced == [3]
+
+
+async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
+    target = given.a_target(given.FILESYSTEM)
+    audit = given.scripted({target.cve_id: given.three_detections()})
+
+    result = await given.run([target], given.deps_auditing(audit, throttled=7), concurrency=4)
+
+    assert result.concurrency == 4
+    assert result.throttled_requests == 7
+
+
 async def test_a_drawn_target_with_a_tools_filter_refuses_before_any_check():
     target = given.a_target(given.KUBERNETES, tools_filter=frozenset({"kubectl_generic"}))
 

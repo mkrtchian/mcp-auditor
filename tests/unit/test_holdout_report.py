@@ -90,6 +90,8 @@ def _run_result() -> HoldoutRunResult:
         incomplete_run_count=1,
         total_cost=0.06,
         prices_as_of=date(2026, 10, 15),
+        concurrency=6,
+        throttled_requests=0,
     )
 
 
@@ -113,6 +115,25 @@ def test_render_markdown_shows_the_number_ladder_controls_and_cost():
     assert "- CVE-C: dead condition on the patched version" in markdown
     assert "Incomplete runs (a step refused or unreadable): 1 (CVE-B)" in markdown
     assert markdown.endswith("Total cost: $0.06")
+
+
+def test_render_markdown_states_the_throttled_requests_after_the_incomplete_runs():
+    run = dataclasses.replace(_run_result(), throttled_requests=12, concurrency=4)
+
+    report = build_report(run)
+    markdown = render_markdown(report)
+
+    assert (report.throttled_requests, report.concurrency) == (12, 4)
+    assert (
+        "Incomplete runs (a step refused or unreadable): 1 (CVE-B)\n"
+        "Throttled by the model provider: 12 requests at concurrency 4\n"
+    ) in markdown
+
+
+def test_render_markdown_leaves_throttling_out_when_nothing_was_throttled():
+    markdown = render_markdown(build_report(_run_result()))
+
+    assert "Throttled" not in markdown
 
 
 def test_the_not_run_section_counts_the_in_run_drops_per_cause_against_the_targets_launched():

@@ -4,15 +4,12 @@ stands as a non-detection and is never retried, only an infra failure is retried
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from rich.console import Console
-
 from evals.cve_audit import IncompleteAttempt, ThrottledAttempt, describe_miss_causes
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVETarget
+from evals.eval_display import console
 from evals.holdout_results import NotRunCause
 from mcp_auditor.domain.models import AuditReport
-
-console = Console()
 
 HOLDOUT_INFRA_ATTEMPTS = 3  # one try, two retries
 

@@ -5,13 +5,17 @@ the `run` command audits the drawn targets, so it needs Docker and an LLM key.
 
 import argparse
 import asyncio
+import dataclasses
 import sys
 from argparse import _SubParsersAction  # pyright: ignore[reportPrivateUsage]
 from collections.abc import Sequence
 from pathlib import Path
 
+from rich.progress import Progress
+
 from evals import calibration_dossier, holdout_targets
 from evals import eval_display as display
+from evals.audit_progress import AuditProgress
 from evals.concurrency import bounded, positive_int
 from evals.cve_calibration import calibrate_all, calibrate_one
 from evals.cve_layout_check import confirm_admission
@@ -20,14 +24,21 @@ from evals.cve_targets import CVETarget
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
 from evals.holdout_census import load_census
-from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
+from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
 from evals.holdout_markdown import render_markdown
 from evals.holdout_report import HoldoutReport, build_report
-from evals.holdout_run import HOLDOUT_RUNS, run_holdout
+from evals.holdout_results import HoldoutRunResult
+from evals.holdout_run import (
+    HOLDOUT_RUNS,
+    HoldoutDeps,
+    default_deps,
+    holdout_overrides,
+    run_holdout,
+)
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
-from mcp_auditor.config import load_settings
+from mcp_auditor.config import Settings, load_settings
 
 CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
 DEFAULT_REPORT_PATH = "output/holdout_report.json"
@@ -106,25 +117,42 @@ def _run(args: argparse.Namespace) -> int:
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    census = load_census(args.census)
-    disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
-    run = asyncio.run(
-        run_holdout(
-            holdout_targets.HOLDOUT_TARGETS,
-            disclosure_dates,
-            conditions,
-            settings,
-            load_places(HOLDOUT_PLACES),
-            last_commit(args.census),
-            runs=args.runs if args.runs is not None else HOLDOUT_RUNS,
-            concurrency=args.concurrency,
-        )
-    )
+    run = _audit_drawn_targets(args, conditions, settings)
     report = build_report(run)
     markdown = render_markdown(report)
     _write_report(args.report, report, markdown)
     print(markdown)
+    display.print_report_paths(args.report)
     return 0
+
+
+def _audit_drawn_targets(
+    args: argparse.Namespace, conditions: HoldoutConditions, settings: Settings
+) -> HoldoutRunResult:
+    census = load_census(args.census)
+    disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
+    places = load_places(HOLDOUT_PLACES)
+    deps = default_deps(places, holdout_overrides(conditions), args.concurrency)
+    with Progress(console=display.console) as bar:
+        return asyncio.run(
+            run_holdout(
+                holdout_targets.HOLDOUT_TARGETS,
+                disclosure_dates,
+                conditions,
+                settings,
+                places,
+                last_commit(args.census),
+                runs=args.runs if args.runs is not None else HOLDOUT_RUNS,
+                concurrency=args.concurrency,
+                deps=_tracked(deps, AuditProgress(bar)),
+            )
+        )
+
+
+def _tracked(deps: HoldoutDeps, progress: AuditProgress) -> HoldoutDeps:
+    return dataclasses.replace(
+        deps, audit=progress.tracked(deps.audit), announce_audits=progress.announce
+    )
 
 
 def _calibrate(args: argparse.Namespace) -> int:
