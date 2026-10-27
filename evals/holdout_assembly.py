@@ -15,6 +15,11 @@ from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport
 
 
+def holdout_prices(conditions: HoldoutConditions, settings: Settings) -> tuple[Prices, Prices]:
+    prices = conditions.prices
+    return prices[settings.resolve_model()], prices[settings.resolve_judge_model()]
+
+
 def assemble_target(
     target: CVETarget,
     outcomes: Sequence[GradedAudit | IncompleteRun],
@@ -71,8 +76,3 @@ def _detected_if_unchecked_missed(grade: RunGrade | None) -> bool:
 
 def _run_cost(report: AuditReport, gen_price: Prices, judge_price: Prices) -> float:
     return call_cost(report.generator_usage, gen_price) + call_cost(report.judge_usage, judge_price)
-
-
-def holdout_prices(conditions: HoldoutConditions, settings: Settings) -> tuple[Prices, Prices]:
-    prices = conditions.prices
-    return prices[settings.resolve_model()], prices[settings.resolve_judge_model()]

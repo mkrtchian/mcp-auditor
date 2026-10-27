@@ -23,6 +23,7 @@ from evals.cve_calibration import calibrate_all, calibrate_one, check_target
 from evals.cve_console import print_cve_summary
 from evals.cve_costs import CostPricing
 from evals.cve_layout_check import confirm_admission
+from evals.cve_markdown import render_markdown
 from evals.cve_measurement import (
     MeasurementSettings,
     add_measurement_flags,
@@ -36,7 +37,6 @@ from evals.cve_oracle import (
     CVEResult,
     not_run,
     out_of_scope_results,
-    render_markdown,
     result_for,
 )
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places

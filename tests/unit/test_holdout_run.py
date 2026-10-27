@@ -3,14 +3,10 @@ per-target assembly, the pre-run drops, the refused-run accounting and the up-fr
 No Docker, no LLM."""
 
 import dataclasses
-import subprocess
-import sys
-from collections.abc import Sequence
 
 import pytest
 
 import tests.unit.support.test_holdout_run_given as given
-from evals import holdout_run
 from evals.cve_grammar import CVEStatus
 from evals.cve_layout_check import LayoutCheck
 from evals.cve_targets import LaunchMode
@@ -41,24 +37,11 @@ def test_target_services_is_empty_for_no_target():
     assert target_services([]) == []
 
 
-def _a_build_exiting(
-    monkeypatch: pytest.MonkeyPatch, returncode: int, stdout: str, stderr: str = ""
-) -> None:
-    def run(command: Sequence[str], **options: object) -> subprocess.CompletedProcess[str]:
-        if not options.get("capture_output"):
-            print(stdout)
-            print(stderr, file=sys.stderr)
-            return subprocess.CompletedProcess(command, returncode)
-        return subprocess.CompletedProcess(command, returncode, stdout, stderr)
-
-    monkeypatch.setattr(holdout_run.subprocess, "run", run)
-
-
 def test_a_failed_image_build_raises_with_the_tail_of_its_output(
     monkeypatch: pytest.MonkeyPatch,
 ):
     stdout = "\n".join(f"step {index}" for index in range(50))
-    _a_build_exiting(monkeypatch, 1, stdout, "failed to solve: no such file")
+    given.a_build_exiting(monkeypatch, 1, stdout, "failed to solve: no such file")
 
     with pytest.raises(RuntimeError) as raised:
         rebuild_images(["app", "app-patched"])
@@ -74,7 +57,7 @@ def test_a_failed_image_build_raises_with_the_tail_of_its_output(
 def test_a_successful_image_build_prints_nothing(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
-    _a_build_exiting(monkeypatch, 0, "built app")
+    given.a_build_exiting(monkeypatch, 0, "built app")
 
     rebuild_images(["app"])
 

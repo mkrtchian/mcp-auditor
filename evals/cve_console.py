@@ -13,10 +13,8 @@ from evals.cve_costs import (
     large_request_targets,
 )
 from evals.cve_gate import CVEGateResult
-from evals.cve_oracle import (
+from evals.cve_markdown import (
     GATE_LEGEND,
-    CVEBenchmarkReport,
-    CVEResult,
     render_conditions,
     render_cost_title,
     render_measurement_lines,
@@ -26,6 +24,7 @@ from evals.cve_oracle import (
     run_fraction,
     status_letters,
 )
+from evals.cve_oracle import CVEBenchmarkReport, CVEResult
 from evals.eval_display import GateRow, console, gate_table, print_report_paths, print_verdict
 from evals.export import cve_export_path
 from evals.gate_verdict import GateVerdict

@@ -3,13 +3,13 @@ from datetime import date
 import tests.unit.support.test_cve_oracle_given as given
 from evals.cve_gate import TargetComparison, TargetOutcome
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass
+from evals.cve_markdown import render_markdown
 from evals.cve_measurement import MeasurementSettings
 from evals.cve_oracle import (
     CVEBenchmarkReport,
     UngradedStatus,
     not_run,
     out_of_scope_results,
-    render_markdown,
     result_for,
 )
 from mcp_auditor.domain.models import AuditCategory, ProviderUsage

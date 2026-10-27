@@ -1,8 +1,13 @@
 import dataclasses
-from collections.abc import Awaitable, Callable, Mapping
+import subprocess
+import sys
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from datetime import date
 from typing import Any
 
+import pytest
+
+from evals import holdout_run
 from evals.cve_grammar import CVEStatus, RunGrade
 from evals.cve_layout_check import LayoutCheck
 from evals.cve_places import HOLDOUT_PLACES, load_places
@@ -31,6 +36,19 @@ def a_target(cve_id: str = FILESYSTEM, **changes: Any) -> CVETarget:
     """A real target, since run_holdout plants its kept places and fingerprints its fixture."""
     (target,) = [target for target in CVE_TARGETS if target.cve_id == cve_id]
     return dataclasses.replace(target, **{"tools_filter": None, **changes})
+
+
+def a_build_exiting(
+    monkeypatch: pytest.MonkeyPatch, returncode: int, stdout: str, stderr: str = ""
+) -> None:
+    def run(command: Sequence[str], **options: object) -> subprocess.CompletedProcess[str]:
+        if not options.get("capture_output"):
+            print(stdout)
+            print(stderr, file=sys.stderr)
+            return subprocess.CompletedProcess(command, returncode)
+        return subprocess.CompletedProcess(command, returncode, stdout, stderr)
+
+    monkeypatch.setattr(holdout_run.subprocess, "run", run)
 
 
 def a_report(provider: ProviderUsage, judge: ProviderUsage) -> AuditReport:
