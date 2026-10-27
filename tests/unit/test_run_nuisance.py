@@ -5,7 +5,9 @@ import pytest
 import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_holdout_census_given as given
 import tests.unit.support.test_nuisance_admission_given as admission
+import tests.unit.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
+from evals.baseline import BaselineStatus
 
 
 def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -250,3 +252,64 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
 
     assert exit_code == 2
     assert "unknown gate server: npm:other" in capsys.readouterr().err
+
+
+def test_an_exploratory_gate_recording_names_the_command_that_confirms_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    output = run_given.a_captured_console(monkeypatch)
+    run_given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    gate_set = run_given.a_gate_set_of_one_server(tmp_path)
+
+    exit_code = run_nuisance.main(["gate", "--record-baseline", *gate_set])
+
+    assert exit_code == 0
+    assert (
+        "Run uv run python -m evals.run_nuisance gate --record-baseline again now, at this commit"
+        " and on these images, to confirm it. Commit evals/baselines/nuisance/ by hand once"
+        " confirmed."
+    ) in output.getvalue()
+
+
+def test_the_confirming_gate_command_repeats_the_server_and_a_non_default_run_count(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    output = run_given.a_captured_console(monkeypatch)
+    run_given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    gate_set = run_given.a_gate_set_of_one_server(tmp_path)
+    server = run_given.GATE_SERVER
+
+    run_nuisance.main(["gate", "--record-baseline", "--server", server, "--runs", "5", *gate_set])
+
+    assert (
+        "Run uv run python -m evals.run_nuisance gate --record-baseline"
+        f" --server {server} --runs 5 again now"
+    ) in output.getvalue()
+
+
+def test_the_confirming_gate_command_leaves_the_default_run_count_out(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    output = run_given.a_captured_console(monkeypatch)
+    run_given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    gate_set = run_given.a_gate_set_of_one_server(tmp_path)
+
+    run_nuisance.main(["gate", "--record-baseline", "--runs", "3", *gate_set])
+
+    assert "--runs" not in output.getvalue()
+
+
+def test_a_recorded_gate_baseline_prints_once_after_the_verdict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    output = run_given.a_captured_console(monkeypatch)
+    run_given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.CONFIRMED)
+    gate_set = run_given.a_gate_set_of_one_server(tmp_path)
+
+    run_nuisance.main(["gate", "--record-baseline", *gate_set])
+
+    printed = output.getvalue()
+    assert printed.count("recorded (confirmed)") == 1
+    assert printed.index("Gate green.") < printed.index("Baseline recorded (confirmed)")
+    assert "Commit evals/baselines/nuisance/ by hand." in printed
+    assert "again now" not in printed

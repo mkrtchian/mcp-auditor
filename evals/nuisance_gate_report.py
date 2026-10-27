@@ -62,16 +62,12 @@ def server_lines(
 
 
 def render_markdown(report: NuisanceGateReport) -> str:
-    dirty = " (dirty tree)" if report.dirty else ""
-    conditions = report.conditions
     return "\n".join(
         [
             "# Nuisance gate",
             "",
-            f"Commit: {report.commit}{dirty}",
-            f"Model: {conditions.provider} {conditions.model}, judge {conditions.judge_model}, "
-            f"{conditions.runs} run(s), concurrency {report.concurrency}",
-            *_throttled(report),
+            *render_conditions(report),
+            *render_throttled(report),
             "",
             f"Verdict: **{report.gate.verdict.value}**",
             *[f"- {reason}" for reason in report.gate.reasons],
@@ -92,7 +88,17 @@ def render_markdown(report: NuisanceGateReport) -> str:
     )
 
 
-def _throttled(report: NuisanceGateReport) -> list[str]:
+def render_conditions(report: NuisanceGateReport) -> list[str]:
+    dirty = " (dirty tree)" if report.dirty else ""
+    conditions = report.conditions
+    return [
+        f"Commit: {report.commit}{dirty}",
+        f"Model: {conditions.provider} {conditions.model}, judge {conditions.judge_model}, "
+        f"{conditions.runs} run(s), concurrency {report.concurrency}",
+    ]
+
+
+def render_throttled(report: NuisanceGateReport) -> list[str]:
     if report.throttled_requests == 0:
         return []
     return [
@@ -132,7 +138,7 @@ def _row(comparison: ServerComparison, line: GateServerLine | None) -> str:
         server_letters(comparison.baseline_runs) or "-",
         server_letters(comparison.candidate_runs) or "-",
         replay_fraction(comparison.replays),
-        _detail(comparison, line).replace("|", "\\|"),
+        server_detail(comparison, line).replace("|", "\\|"),
     ]
     return f"| {' | '.join(cells)} |"
 
@@ -141,7 +147,7 @@ def server_letters(flagged: Sequence[bool]) -> str:
     return "".join("A" if alarm else "." for alarm in flagged)
 
 
-def _detail(comparison: ServerComparison, line: GateServerLine | None) -> str:
+def server_detail(comparison: ServerComparison, line: GateServerLine | None) -> str:
     runs = [] if line is None else _flagged_tools(line)
     parts = [*([comparison.detail] if comparison.detail else []), *runs]
     return "; ".join(parts) or "-"

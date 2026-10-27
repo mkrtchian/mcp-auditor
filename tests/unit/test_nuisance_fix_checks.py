@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from evals import nuisance_fixtures, run_nuisance
+from evals import nuisance_calibrate_command, nuisance_fixtures, run_nuisance
 from evals.holdout_census import load_census
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget
 from evals.holdout_kit.kit_client import KitResponse, KitTool
@@ -117,11 +117,13 @@ def _a_record(**overrides: Any) -> FixCheckRecord:
 
 
 def test_a_matching_result_and_record_have_no_mismatch():
-    assert run_nuisance.fix_check_mismatches(_a_result(), _a_record()) == []
+    assert nuisance_calibrate_command.fix_check_mismatches(_a_result(), _a_record()) == []
 
 
 def test_a_differing_field_is_reported():
-    mismatches = run_nuisance.fix_check_mismatches(_a_result(), _a_record(patched_surfaces=True))
+    mismatches = nuisance_calibrate_command.fix_check_mismatches(
+        _a_result(), _a_record(patched_surfaces=True)
+    )
 
     assert len(mismatches) == 1
     assert "patched_surfaces" in mismatches[0]
@@ -131,14 +133,14 @@ def test_a_holdout_calibration_record_excludes_the_source_field():
     result = _a_result(source="fix_check")
     record = _a_record(source="holdout_calibration")
 
-    assert run_nuisance.fix_check_mismatches(result, record) == []
+    assert nuisance_calibrate_command.fix_check_mismatches(result, record) == []
 
 
 def test_a_source_difference_on_a_fix_check_record_is_a_mismatch():
     result = _a_result(source="holdout_calibration")
     record = _a_record(source="fix_check")
 
-    mismatches = run_nuisance.fix_check_mismatches(result, record)
+    mismatches = nuisance_calibrate_command.fix_check_mismatches(result, record)
 
     assert len(mismatches) == 1
     assert "source" in mismatches[0]
@@ -150,7 +152,7 @@ def test_a_differing_witness_nonce_is_not_a_mismatch():
     result = _a_result(witness="MCPAUDIT-freshnonce")
     record = _a_record(witness="MCPAUDIT-recordednonce")
 
-    assert run_nuisance.fix_check_mismatches(result, record) == []
+    assert nuisance_calibrate_command.fix_check_mismatches(result, record) == []
 
 
 def test_calibrate_with_no_admission_prints_nothing_is_drawn(capsys: pytest.CaptureFixture[str]):

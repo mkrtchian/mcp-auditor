@@ -59,11 +59,14 @@ def export_cve_judged_cases(audits: list[CVEAudit], report_path: Path) -> None:
                     f.write(json.dumps(line) + "\n")
 
 
+def nuisance_gate_export_path(report_path: Path) -> Path:
+    return report_path.with_name("nuisance_gate_judged_cases.jsonl")
+
+
 def export_nuisance_gate_judged_cases(audits: list[GateAudit], report_path: Path) -> None:
     """Chains included, unlike the CVE export: a chain verdict can raise an alarm, and the gate's
     alarms may be analyzed."""
-    export_path = report_path.with_name("nuisance_gate_judged_cases.jsonl")
-    with export_path.open("w") as f:
+    with nuisance_gate_export_path(report_path).open("w") as f:
         for audit in audits:
             origin = {"server_package": audit.server_package, "run_index": audit.run_index}
             for tool_report in audit.report.tool_reports:

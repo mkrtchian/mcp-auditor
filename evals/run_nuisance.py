@@ -14,54 +14,31 @@ import argparse
 import asyncio
 import dataclasses
 import sys
-import traceback
-from argparse import _SubParsersAction  # pyright: ignore[reportPrivateUsage]
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
-from pydantic import BaseModel
 from rich.progress import Progress
 
 from evals import eval_display as display
-from evals import nuisance_fixtures
 from evals.audit_progress import AuditProgress
-from evals.baseline import BaselineStatus
-from evals.concurrency import bounded, positive_int
-from evals.cve_targets import DOCKER_DIRECTORY
+from evals.concurrency import positive_int
 from evals.eval_runs import tracing_enabled
-from evals.eval_session import Refused, last_commit, read_tree
-from evals.export import export_nuisance_gate_judged_cases
+from evals.eval_session import Refused, last_commit
 from evals.holdout_census import HoldoutCensus, load_census
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
-from evals.holdout_kit import kit_launch
-from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
-from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
-from evals.nuisance_admission import (
-    ADMISSION_PATH,
-    AdmittedServer,
-    FixCheckRecord,
-    NuisanceAdmission,
-    load_admission,
+from evals.nuisance_admission import ADMISSION_PATH, NuisanceAdmission
+from evals.nuisance_calibrate_command import add_calibrate_arguments
+from evals.nuisance_commands import (
+    CENSUS_PATH,
+    REFUSED_EXIT,
+    committed_admission,
+    write_report,
 )
 from evals.nuisance_dossier import write_dossier
-from evals.nuisance_gate_baseline import (
-    NUISANCE_GATE_BASELINE_DIRECTORY,
-    NUISANCE_GATE_RUNS,
-    baseline_file_name,
-    gate_conditions,
-)
-from evals.nuisance_gate_report import NuisanceGateReport, server_lines
-from evals.nuisance_gate_report import render_markdown as render_gate_markdown
-from evals.nuisance_gate_session import (
-    default_harness,
-    gate_servers,
-    not_admitted,
-    outside_gate,
-    run_gate,
-)
-from evals.nuisance_gate_session_model import NuisanceGateOptions, NuisanceGateSession
+from evals.nuisance_gate_command import add_gate_arguments
 from evals.nuisance_markdown import render_markdown
 from evals.nuisance_population import run_population
 from evals.nuisance_report import build_report
@@ -74,19 +51,10 @@ from evals.nuisance_run import (
     nuisance_overrides,
     run_nuisance,
 )
-from evals.nuisance_walk import (
-    acceptance_servers,
-    current_acceptance_servers,
-    nuisance_population,
-)
+from evals.nuisance_walk import acceptance_servers, nuisance_population
 from mcp_auditor.config import Settings, load_settings
 
-CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
 DEFAULT_REPORT_PATH = "output/nuisance_report.json"
-DEFAULT_GATE_REPORT_PATH = "output/nuisance_gate_report.json"
-UNKNOWN_SERVER_EXIT = 2
-REFUSED_EXIT = 3
-CRASHED_EXIT = 4
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -126,36 +94,16 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     run.add_argument("--census", type=Path, default=CENSUS_PATH)
     run.add_argument("--admission", type=Path, default=ADMISSION_PATH)
-    _add_calibrate(commands)
+    add_calibrate_arguments(
+        commands.add_parser(
+            "calibrate", help="rebuild and reproduce each fix-check fixture against the admission"
+        )
+    )
     gate = commands.add_parser(
         "gate", help="audit the admitted acceptance servers and compare them to their baselines"
     )
-    _add_gate_arguments(gate)
+    add_gate_arguments(gate)
     return parser
-
-
-def _add_calibrate(commands: "_SubParsersAction[argparse.ArgumentParser]") -> None:
-    calibrate = commands.add_parser(
-        "calibrate", help="rebuild and reproduce each fix-check fixture against the admission"
-    )
-    calibrate.set_defaults(command=_calibrate)
-    calibrate.add_argument("--cve", help="calibrate only this flaw; default: every drawn fixture")
-    calibrate.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
-    calibrate.add_argument("--census", type=Path, default=CENSUS_PATH)
-    calibrate.add_argument("--admission", type=Path, default=ADMISSION_PATH)
-
-
-def _add_gate_arguments(gate: argparse.ArgumentParser) -> None:
-    gate.set_defaults(command=_gate)
-    gate.add_argument("--record-baseline", action="store_true")
-    gate.add_argument("--runs", type=positive_int, default=NUISANCE_GATE_RUNS)
-    gate.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
-    gate.add_argument(
-        "--server", action="append", default=[], help="restrict the gate set, repeatable"
-    )
-    gate.add_argument("--report", type=Path, default=Path(DEFAULT_GATE_REPORT_PATH))
-    gate.add_argument("--census", type=Path, default=CENSUS_PATH)
-    gate.add_argument("--admission", type=Path, default=ADMISSION_PATH)
 
 
 def _walk(args: argparse.Namespace) -> int:
@@ -188,37 +136,45 @@ def _run(args: argparse.Namespace) -> int:
     _refuse_tracing()
     conditions = load_conditions(CONDITIONS_PATH)
     census = load_census(args.census)
-    admission = _admission(args.admission, census)
+    admission = committed_admission(args.admission, census)
     if admission is None or not admission.servers:
         print("no server is admitted")
         return 0
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    run = _audit_admitted_servers(args, census, admission, conditions, settings)
+    run = _audit_admitted_servers(args, _ReadyRun(census, admission, conditions, settings))
     report = build_report(run)
     markdown = render_markdown(report)
-    _write_report(args.report, report, markdown)
+    write_report(args.report, report, markdown)
     print(markdown)
     display.print_report_paths(args.report)
     return 0
 
 
-def _audit_admitted_servers(
-    args: argparse.Namespace,
-    census: HoldoutCensus,
-    admission: NuisanceAdmission,
-    conditions: HoldoutConditions,
-    settings: Settings,
-) -> NuisanceRunResult:
-    deps = default_deps(nuisance_overrides(conditions), args.concurrency)
+@dataclass(frozen=True)
+class _ReadyRun:
+    """What a nuisance run reads, once its conditions are checked ready for its models."""
+
+    census: HoldoutCensus
+    admission: NuisanceAdmission
+    conditions: HoldoutConditions
+    settings: Settings
+
+
+def _audit_admitted_servers(args: argparse.Namespace, ready: _ReadyRun) -> NuisanceRunResult:
+    census = ready.census
+    population = run_population(
+        nuisance_population(census), ready.admission, acceptance_servers(census)
+    )
+    deps = default_deps(nuisance_overrides(ready.conditions), args.concurrency)
     with Progress(console=display.console) as bar:
         return asyncio.run(
             run_nuisance(
-                run_population(nuisance_population(census), admission, acceptance_servers(census)),
+                population,
                 draw_order(census),
-                conditions,
-                settings,
+                ready.conditions,
+                ready.settings,
                 last_commit(args.census),
                 runs=args.runs if args.runs is not None else NUISANCE_RUNS,
                 concurrency=args.concurrency,
@@ -233,215 +189,12 @@ def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
     )
 
 
-def _admission(path: Path, census: HoldoutCensus) -> NuisanceAdmission | None:
-    try:
-        return load_admission(path, census)
-    except FileNotFoundError:
-        return None
-
-
-def _calibrate(args: argparse.Namespace) -> int:
-    census = load_census(args.census)
-    admission = _admission(args.admission, census)
-    if admission is None or not admission.servers or not nuisance_fixtures.FIX_CHECK_TARGETS:
-        print("nothing is drawn")
-        return 0
-    targets = [
-        target
-        for target in nuisance_fixtures.FIX_CHECK_TARGETS
-        if args.cve is None or target.flaw == args.cve
-    ]
-    if not targets:
-        print(f"unknown flaw: {args.cve} matches no fix-check target", file=sys.stderr)
-        return UNKNOWN_SERVER_EXIT
-    records = {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
-    kit_launch.build_images(DOCKER_DIRECTORY, _services(targets))
-    return asyncio.run(_calibrate_targets(targets, records, args.concurrency))
-
-
-async def _calibrate_targets(
-    targets: list[FixCheckTarget],
-    records: dict[str, FixCheckRecord],
-    concurrency: int,
-) -> int:
-    calibrate = bounded(check_fix, concurrency)
-    results = await asyncio.gather(
-        *(calibrate(target) for target in targets), return_exceptions=True
-    )
-    clean = True
-    crashed = False
-    for target, result in zip(targets, results, strict=True):
-        if isinstance(result, BaseException):
-            print(f"{target.flaw}: crashed: {result}", file=sys.stderr)
-            crashed = True
-            continue
-        print(f"{target.flaw}: {result.to_json()}")
-        problems = _calibration_problems(result, records.get(target.flaw))
-        for problem in problems:
-            print(f"  {problem}")
-        clean = clean and not problems
-    if crashed:
-        return CRASHED_EXIT
-    return 0 if clean else 1
-
-
-def _calibration_problems(result: FixCheckResult, record: FixCheckRecord | None) -> list[str]:
-    reported: dict[str, str] = {}
-    if not result.vulnerable_surfaces:
-        reported["vulnerable_surfaces"] = "the witness does not surface on the vulnerable version"
-    if result.patched_surfaces:
-        reported["patched_surfaces"] = "the witness surfaces on the patched version"
-    if result.server_patched_surfaces:
-        reported["server_patched_surfaces"] = "the witness surfaces on the server's patched version"
-    problems = list(reported.values())
-    if record is None:
-        return [*problems, "no admission fix_check records this flaw"]
-    mismatches = _field_mismatches(result, record)
-    return problems + [text for name, text in mismatches.items() if name not in reported]
-
-
-def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list[str]:
-    """Where a re-run fix-check result departs from the admission's recorded fix_check, field by
-    field. The witness is a fresh random nonce each run (check_fix plants RANDOM_NONCES), so it
-    never equals the recorded nonce and is not compared. A record copied from the holdout
-    calibration (source holdout_calibration) carries the calibration's provenance, not a fresh
-    fix-check run, so its source field is not compared either."""
-    return list(_field_mismatches(result, record).values())
-
-
-def _field_mismatches(result: FixCheckResult, record: FixCheckRecord) -> dict[str, str]:
-    skip = {"witness"}
-    if record.source == "holdout_calibration":
-        skip.add("source")
-    mismatches: dict[str, str] = {}
-    for name in FixCheckRecord.model_fields:
-        if name in skip:
-            continue
-        got = getattr(result, name)
-        want = getattr(record, name)
-        if got != want:
-            mismatches[name] = f"{name}: fix check {got!r} does not match admission {want!r}"
-    return mismatches
-
-
-def _services(targets: list[FixCheckTarget]) -> list[str]:
-    services: list[str] = []
-    for target in targets:
-        for service in (
-            target.vulnerable_service,
-            target.patched_service,
-            target.server_patched_service,
-        ):
-            if service is not None and service not in services:
-                services.append(service)
-    return services
-
-
-def _gate(args: argparse.Namespace) -> int:
-    census = load_census(args.census)
-    admission = _admission(args.admission, census)
-    current = current_acceptance_servers(census)
-    servers = [] if admission is None else gate_servers(admission, current)
-    if admission is None or not servers:
-        _print_empty_gate(admission, current)
-        return 0
-    gate_set = [server.server_package for server in servers]
-    unknown = [package for package in args.server if package not in gate_set]
-    if unknown:
-        print(
-            f"unknown gate server: {', '.join(unknown)} (gate set: {', '.join(gate_set)})",
-            file=sys.stderr,
-        )
-        return UNKNOWN_SERVER_EXIT
-    try:
-        return _run_gate(args, admission, current)
-    except Refused:
-        raise
-    except Exception:
-        traceback.print_exc()
-        return CRASHED_EXIT
-
-
-def _print_empty_gate(admission: NuisanceAdmission | None, current: set[str]) -> None:
-    outside = [] if admission is None else outside_gate(admission, current)
-    if not outside:
-        print("no acceptance server is admitted")
-        return
-    print("no admitted acceptance server can run in the gate")
-    for server in outside:
-        print(f"- {server.server_package}: {server.reason}")
-
-
-def _run_gate(args: argparse.Namespace, admission: NuisanceAdmission, current: set[str]) -> int:
-    tree = read_tree()
-    options = _gate_options(args, gate_servers(admission, current))
-    session = asyncio.run(run_gate(options, default_harness(options.conditions, args.concurrency)))
-    report = NuisanceGateReport(
-        conditions=options.conditions,
-        commit=tree.commit,
-        dirty=tree.dirty,
-        concurrency=args.concurrency,
-        throttled_requests=session.throttled_requests,
-        servers=server_lines(session, options.servers),
-        not_run=session.not_run,
-        not_admitted=not_admitted(admission, current),
-        outside_gate=outside_gate(admission, current),
-        orphans=session.orphans,
-        gate=session.gate,
-        written=[f"{w.server_package}: recorded ({w.status.value})" for w in session.written],
-        recording_refused=session.recording_refused,
-    )
-    markdown = render_gate_markdown(report)
-    _write_report(args.report, report, markdown)
-    export_nuisance_gate_judged_cases(session.audits, args.report)
-    print(markdown)
-    _print_baselines(session)
-    return session.exit_code
-
-
-def _gate_options(args: argparse.Namespace, servers: list[AdmittedServer]) -> NuisanceGateOptions:
-    return NuisanceGateOptions(
-        servers=[s for s in servers if not args.server or s.server_package in args.server],
-        gate_packages=frozenset(server.server_package for server in servers),
-        conditions=gate_conditions(load_settings(), load_conditions(CONDITIONS_PATH), args.runs),
-        record_baseline=args.record_baseline,
-    )
-
-
-_NEXT_STEP = {
-    BaselineStatus.EXPLORATORY: (
-        "Run gate --record-baseline again now, at this commit and on these images, to confirm."
-    ),
-    BaselineStatus.CONFIRMED: "Commit evals/baselines/nuisance/ by hand.",
-}
-
-
-def _print_baselines(session: NuisanceGateSession) -> None:
-    for orphan in session.orphans:
-        print(f"Orphaned baseline file, not compared: {orphan}")
-    for written in session.written:
-        path = NUISANCE_GATE_BASELINE_DIRECTORY / baseline_file_name(written.server_package)
-        print(f"Baseline recorded ({written.status.value}) to {path}.")
-        if written.leaves_gated_set:
-            print(f"  {written.server_package} leaves the gated set.")
-    for status in dict.fromkeys(written.status for written in session.written):
-        print(_NEXT_STEP[status])
-    for reason in session.recording_refused:
-        print(f"Recording refused: {reason}")
-
-
 def _refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
             "nuisance run refused",
             ["LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; a nuisance run keeps no trace"],
         )
-
-
-def _write_report(path: Path, report: BaseModel, markdown: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(report.model_dump_json(indent=2))
-    path.with_suffix(".md").write_text(markdown)
 
 
 if __name__ == "__main__":
