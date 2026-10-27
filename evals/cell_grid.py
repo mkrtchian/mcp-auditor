@@ -100,7 +100,7 @@ def outcome_rows(
             planted=ground_truth.get(parse_cell_key(key)) == EvalVerdict.FAIL,
             baseline=_letters(parse_cell_key(key), baseline_runs),
             run=_letters(parse_cell_key(key), run.runs),
-            replays=_replays(comparison.replays),
+            replays=replay_fraction(comparison.replays),
         )
         for key, comparison in sorted(run.comparisons.items())
         if comparison.outcome != CellOutcome.UNCHANGED or key in partial
@@ -197,5 +197,5 @@ def observation_letters(observations: Iterable[Observation]) -> str:
 _LETTERS = {Observation.PASS: "P", Observation.FAIL: "F", Observation.UNCOVERED: "-"}
 
 
-def _replays(replays: list[bool]) -> str:
+def replay_fraction(replays: Sequence[bool]) -> str:
     return f"{sum(replays)}/{len(replays)}" if replays else "-"

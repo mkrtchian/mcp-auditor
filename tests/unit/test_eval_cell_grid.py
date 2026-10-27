@@ -9,6 +9,7 @@ from evals.cell_grid import (
     cell_grid,
     outcome_rows,
     partial_improvements,
+    replay_fraction,
 )
 from evals.gate import CellOutcome, Observation
 from mcp_auditor.domain.models import AuditCategory
@@ -204,3 +205,10 @@ def test_only_a_stable_incorrect_baseline_cell_can_be_a_partial_improvement(
     candidate_runs = given.baseline_runs({PLANTED_CELL: [FAIL, PASS, PASS]})
 
     assert partial_improvements(baseline_runs, candidate_runs, given.MERGED_GROUND_TRUTH) == set()
+
+
+@pytest.mark.parametrize(
+    ("replays", "fraction"), [([], "-"), ([True, False], "1/2"), ([True, True, True], "3/3")]
+)
+def test_a_replay_fraction_counts_the_reproduced_replays(replays: list[bool], fraction: str):
+    assert replay_fraction(replays) == fraction

@@ -359,7 +359,23 @@ def _assemble_run(
 def rebuild_images(services: Sequence[str]) -> None:
     if not services:
         return
-    subprocess.run(["docker", "compose", "-f", str(COMPOSE_FILE), "build", *services], check=True)
+    build = subprocess.run(
+        ["docker", "compose", "-f", str(COMPOSE_FILE), "build", *services],
+        capture_output=True,
+        text=True,
+    )
+    if build.returncode != 0:
+        raise RuntimeError(
+            f"docker compose build failed for {', '.join(services)}:\n"
+            f"{_tail(build.stdout)}\n{_tail(build.stderr)}"
+        )
+
+
+def _tail(output: str) -> str:
+    return "\n".join(output.splitlines()[-_BUILD_TAIL_LINES:])
+
+
+_BUILD_TAIL_LINES = 40
 
 
 def target_services(targets: Sequence[CVETarget]) -> list[str]:

@@ -1,7 +1,18 @@
+from io import StringIO
+from pathlib import Path
+
 import pytest
+from rich.console import Console
 
 import tests.unit.support.test_eval_display_given as given
-from evals.eval_display import print_summary
+from evals.eval_display import (
+    GateRow,
+    gate_table,
+    print_report_paths,
+    print_summary,
+    print_verdict,
+)
+from evals.gate_verdict import GateVerdict
 
 
 def test_the_summary_states_the_throttled_requests_and_the_concurrency(
@@ -84,3 +95,65 @@ def test_the_summary_says_nothing_of_partial_rows_when_there_are_none(
     print_summary(given.an_eval_report(), "report.json", grid)
 
     assert "partial:" not in output.getvalue()
+
+
+def test_the_summary_ends_with_the_verdict_panel(monkeypatch: pytest.MonkeyPatch):
+    output = given.a_captured_console(monkeypatch)
+    print_summary(given.an_eval_report(), "report.json")
+    summary = output.getvalue()
+    output.truncate(0)
+    output.seek(0)
+
+    print_verdict(GateVerdict.GREEN, [])
+
+    assert summary.endswith(output.getvalue())
+
+
+def test_the_verdict_panel_states_the_verdict_and_its_reasons_literally(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.a_captured_console(monkeypatch)
+
+    print_verdict(GateVerdict.RED, ["regression on [bold]query[/bold]"])
+
+    assert "Gate red." in output.getvalue()
+    assert "- regression on [bold]query[/bold]" in output.getvalue()
+
+
+def test_the_gate_table_keeps_a_long_target_id_whole():
+    target = "very-long-server-package-name-that-would-wrap"
+    row = GateRow(target, "not_gated", "MMM", "MDM", "1/2", "a long detail " * 8)
+    buffer = StringIO()
+
+    Console(file=buffer, width=80).print(gate_table([row], "Server"))
+
+    assert target in buffer.getvalue()
+
+
+def test_the_gate_table_prints_a_markup_cell_literally():
+    row = GateRow("CVE-X", "held", "DDD", "DDD", "-", "[bold]x[/bold]")
+    buffer = StringIO()
+
+    Console(file=buffer, width=200).print(gate_table([row], "CVE"))
+
+    assert "[bold]x[/bold]" in buffer.getvalue()
+
+
+def test_the_report_paths_name_the_json_and_the_markdown(monkeypatch: pytest.MonkeyPatch):
+    output = given.a_captured_console(monkeypatch)
+
+    print_report_paths(Path("output/cve.json"))
+
+    assert "Report written to output/cve.json and output/cve.md" in output.getvalue()
+    assert "exported" not in output.getvalue()
+
+
+def test_the_report_paths_name_the_export_when_given(monkeypatch: pytest.MonkeyPatch):
+    output = given.a_captured_console(monkeypatch)
+
+    print_report_paths(Path("output/cve.json"), Path("output/cve_judged_cases.jsonl"))
+
+    assert (
+        "Report written to output/cve.json and output/cve.md,"
+        " judged cases exported to output/cve_judged_cases.jsonl"
+    ) in output.getvalue()

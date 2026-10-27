@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from rich import box
@@ -12,7 +14,7 @@ from evals.baseline import Baseline, BaselineStatus
 from evals.cell_grid import PARTIAL, CellTag, GateGrid, GridBox, GridSection, OutcomeRow
 from evals.eval_report import EvalReport
 from evals.gate import ProtectedCells
-from evals.gate_verdict import GateMode, GateResult, GateVerdict
+from evals.gate_verdict import GateMode, GateVerdict
 from evals.metrics import RunDetail
 from evals.recording import GatedSetChange
 from mcp_auditor.domain.models import AuditCategory
@@ -62,7 +64,40 @@ def print_summary(
             f" at concurrency {report.config['concurrency']}[/yellow]"
         )
     console.print(f"Report written to {report_path}")
-    console.print(Panel(_verdict_text(gate)))
+    print_verdict(gate.verdict, gate.reasons)
+
+
+def print_verdict(verdict: GateVerdict, reasons: list[str]) -> None:
+    console.print(Panel("\n".join([_VERDICT_STYLES[verdict], *_bullets(reasons)])))
+
+
+@dataclass(frozen=True)
+class GateRow:
+    target: str
+    outcome: str
+    baseline: str
+    run: str
+    replays: str
+    detail: str
+
+
+def gate_table(rows: Sequence[GateRow], target_header: str) -> Table:
+    table = Table(box=None, header_style="bold")
+    table.add_column(target_header, no_wrap=True)
+    for column in ("Outcome", "Baseline", "Run", "Replays"):
+        table.add_column(column)
+    table.add_column("Detail", overflow="fold")
+    for row in rows:
+        cells = (row.target, row.outcome, row.baseline, row.run, row.replays, row.detail)
+        table.add_row(*(Text(cell) for cell in cells))
+    return table
+
+
+def print_report_paths(report_path: Path, export: Path | None = None) -> None:
+    line = f"Report written to {report_path} and {report_path.with_suffix('.md')}"
+    if export is not None:
+        line += f", judged cases exported to {export}"
+    console.print(Text(line))
 
 
 def _print_declarations(held: list[str], ignored: frozenset[str]) -> None:
@@ -200,11 +235,6 @@ def _outcome_table(rows: list[OutcomeRow]) -> Table:
         cell = f"{row.cell}*" if row.planted else row.cell
         table.add_row(row.outcome, cell, row.baseline, row.run, row.replays)
     return table
-
-
-def _verdict_text(gate: GateResult) -> str:
-    lines = [_VERDICT_STYLES[gate.verdict], *_bullets(gate.reasons)]
-    return "\n".join(lines)
 
 
 def _bullets(reasons: list[str]) -> list[str]:
