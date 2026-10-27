@@ -1,13 +1,13 @@
-"""The fix-check fixtures: each a FixCheckTarget the admission agent writes and the kit driver
-runs, with the vulnerable Dockerfile and the exploits committed beside the admission.
+"""The fix-check fixtures of the admitted nuisance servers, assembled from the per-flaw modules
+under evals/nuisance_fix_checks/.
 
-Unlike a holdout KitTarget, a FixCheckTarget is never transplanted into an in-repo twin: the fix
-check runs outside any audit and the auditor never sees these fixtures. The module imports from
-evals.holdout_kit only, which keeps it inside the kit's import closure.
-
-FIX_CHECK_TARGETS is empty until the maintainer's admission session fills it.
+Each FixCheckTarget is what the fix check plants and reproduces on the vulnerable and patched
+images, with its exploits and benign calls committed beside the admission. This module is the
+thin aggregator, as evals/holdout_targets.py aggregates evals/holdout_fixtures/; the per-flaw
+modules hold the callables and keep the kit's import closure.
 """
 
 from evals.holdout_kit.fix_check import FixCheckTarget
+from evals.nuisance_fix_checks import cve_2025_53818_github_kanban
 
-FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = ()
+FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (*cve_2025_53818_github_kanban.TARGETS,)

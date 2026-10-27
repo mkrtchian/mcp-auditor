@@ -14,25 +14,31 @@ import argparse
 import asyncio
 import sys
 import traceback
+from argparse import _SubParsersAction  # pyright: ignore[reportPrivateUsage]
 from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from evals import eval_display as display
+from evals import nuisance_fixtures
 from evals.baseline import BaselineStatus
-from evals.concurrency import positive_int
+from evals.concurrency import bounded, positive_int
+from evals.cve_targets import DOCKER_DIRECTORY
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit, read_tree
 from evals.export import export_nuisance_gate_judged_cases
 from evals.holdout_census import HoldoutCensus, load_census
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.holdout_draw import draw_order
+from evals.holdout_kit import kit_launch
+from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
 from evals.nuisance_admission import (
     ADMISSION_PATH,
     AdmittedServer,
+    FixCheckRecord,
     NuisanceAdmission,
     load_admission,
 )
@@ -109,11 +115,23 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     run.add_argument("--census", type=Path, default=CENSUS_PATH)
     run.add_argument("--admission", type=Path, default=ADMISSION_PATH)
+    _add_calibrate(commands)
     gate = commands.add_parser(
         "gate", help="audit the admitted acceptance servers and compare them to their baselines"
     )
     _add_gate_arguments(gate)
     return parser
+
+
+def _add_calibrate(commands: "_SubParsersAction[argparse.ArgumentParser]") -> None:
+    calibrate = commands.add_parser(
+        "calibrate", help="rebuild and reproduce each fix-check fixture against the admission"
+    )
+    calibrate.set_defaults(command=_calibrate)
+    calibrate.add_argument("--cve", help="calibrate only this flaw; default: every drawn fixture")
+    calibrate.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
+    calibrate.add_argument("--census", type=Path, default=CENSUS_PATH)
+    calibrate.add_argument("--admission", type=Path, default=ADMISSION_PATH)
 
 
 def _add_gate_arguments(gate: argparse.ArgumentParser) -> None:
@@ -189,6 +207,83 @@ def _admission(path: Path, census: HoldoutCensus) -> NuisanceAdmission | None:
         return load_admission(path, census)
     except FileNotFoundError:
         return None
+
+
+def _calibrate(args: argparse.Namespace) -> int:
+    census = load_census(args.census)
+    admission = _admission(args.admission, census)
+    targets = [
+        target
+        for target in nuisance_fixtures.FIX_CHECK_TARGETS
+        if args.cve is None or target.flaw == args.cve
+    ]
+    if admission is None or not admission.servers or not targets:
+        print("nothing is drawn")
+        return 0
+    records = {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
+    kit_launch.build_images(DOCKER_DIRECTORY, _services(targets))
+    return asyncio.run(_calibrate_targets(targets, records, args.concurrency))
+
+
+async def _calibrate_targets(
+    targets: list[FixCheckTarget],
+    records: dict[str, FixCheckRecord],
+    concurrency: int,
+) -> int:
+    calibrate = bounded(check_fix, concurrency)
+    results = await asyncio.gather(*(calibrate(target) for target in targets))
+    clean = True
+    for target, result in zip(targets, results, strict=True):
+        print(f"{target.flaw}: {result.to_json()}")
+        problems = _calibration_problems(result, records.get(target.flaw))
+        for problem in problems:
+            print(f"  {problem}")
+        clean = clean and not problems
+    return 0 if clean else 1
+
+
+def _calibration_problems(result: FixCheckResult, record: FixCheckRecord | None) -> list[str]:
+    problems: list[str] = []
+    if not result.vulnerable_surfaces:
+        problems.append("the witness does not surface on the vulnerable version")
+    if result.patched_surfaces:
+        problems.append("the witness surfaces on the patched version")
+    if result.server_patched_surfaces:
+        problems.append("the witness surfaces on the server's patched version")
+    if record is None:
+        problems.append("no admission fix_check records this flaw")
+    else:
+        problems += fix_check_mismatches(result, record)
+    return problems
+
+
+def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list[str]:
+    """Where a re-run fix-check result departs from the admission's recorded fix_check, field by
+    field. A record copied from the holdout calibration (source holdout_calibration) carries the
+    calibration's provenance, not a fresh fix-check run, so its source field is not compared."""
+    skip_source = record.source == "holdout_calibration"
+    mismatches: list[str] = []
+    for name in FixCheckRecord.model_fields:
+        if skip_source and name == "source":
+            continue
+        got = getattr(result, name)
+        want = getattr(record, name)
+        if got != want:
+            mismatches.append(f"{name}: fix check {got!r} does not match admission {want!r}")
+    return mismatches
+
+
+def _services(targets: list[FixCheckTarget]) -> list[str]:
+    services: list[str] = []
+    for target in targets:
+        for service in (
+            target.vulnerable_service,
+            target.patched_service,
+            target.server_patched_service,
+        ):
+            if service is not None and service not in services:
+                services.append(service)
+    return services
 
 
 def _gate(args: argparse.Namespace) -> int:
