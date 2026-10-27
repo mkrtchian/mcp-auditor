@@ -44,6 +44,7 @@ class CVEOptions:
 class CVEHarness:
     audit: AuditTarget
     check: CheckTarget  # the pre-run check, gathered over every target before any audit
+    announce_audits: Callable[[int], None]  # the main audits about to run, once checked
     baselines: Path
     read_tree: Callable[[], TreeState]
     image_ids: Callable[[Sequence[str]], dict[str, str]]

@@ -63,6 +63,7 @@ class TargetComparison(BaseModel):
     cve_id: str
     outcome: TargetOutcome
     candidate_runs: list[CVEStatus]
+    baseline_runs: list[CVEStatus] = []  # empty without a baseline
     replays: list[bool] = []  # True: the miss reproduced
     detail: str | None = None
 
@@ -90,7 +91,11 @@ def compare_target(
 ) -> TargetComparison:
     def outcome(value: TargetOutcome, detail: str | None = None) -> TargetComparison:
         return TargetComparison(
-            cve_id=candidate.cve_id, outcome=value, candidate_runs=candidate.runs, detail=detail
+            cve_id=candidate.cve_id,
+            outcome=value,
+            candidate_runs=candidate.runs,
+            baseline_runs=[] if baseline is None else baseline.runs,
+            detail=detail,
         )
 
     if candidate.depends_on_unchecked:

@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -94,15 +95,28 @@ class ScriptedCheck:
         return self.conditions.get(target.cve_id, [])
 
 
+@dataclass
+class RecordingAnnounce:
+    """Records each announced audit count, with the audits already started at that moment."""
+
+    audit: ScriptedAudit
+    announced: list[tuple[int, int]] = field(default_factory=lambda: [])
+
+    def __call__(self, audits: int) -> None:
+        self.announced.append((audits, len(self.audit.calls)))
+
+
 def a_harness(
     audit: AuditTarget,
     baselines: Path,
     tree: TreeState | None = None,
     check: CheckTarget | None = None,
+    announce: Callable[[int], None] = lambda _: None,
 ) -> CVEHarness:
     return CVEHarness(
         audit=audit,
         check=check or ScriptedCheck(),
+        announce_audits=announce,
         baselines=baselines,
         read_tree=lambda: tree or TreeState(commit=COMMIT, dirty=False),
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},

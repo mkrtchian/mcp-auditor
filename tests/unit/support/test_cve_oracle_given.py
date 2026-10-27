@@ -126,6 +126,11 @@ def a_red_gate() -> CVEGateResult:
     )
 
 
+def a_report_gated_on(*targets: TargetComparison) -> CVEBenchmarkReport:
+    gate = CVEGateResult(verdict=CVEGateVerdict.GREEN, reasons=[], targets=list(targets))
+    return a_benchmark_report([]).model_copy(update={"gate": gate})
+
+
 def a_target_cost(cve_id: str) -> TargetCost:
     return TargetCost(
         cve_id=cve_id,

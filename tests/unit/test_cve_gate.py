@@ -82,6 +82,43 @@ def test_a_gated_target(runs: list[CVEStatus], outcome: TargetOutcome):
 
 
 @pytest.mark.parametrize(
+    ("baseline", "runs", "outcome"),
+    [
+        (given.a_gated_baseline(), [DETECTED] * 3, TargetOutcome.HELD),
+        (given.a_gated_baseline(), [DETECTED, MISSED, DETECTED], TargetOutcome.PENDING_REPLAY),
+        (
+            given.a_confirmed_baseline([DETECTED] * 5 + [MISSED]),
+            [MISSED] * 3,
+            TargetOutcome.NOT_GATED,
+        ),
+    ],
+    ids=["held", "pending", "not gated"],
+)
+def test_a_comparison_carries_the_baseline_runs(
+    baseline: CVETargetBaseline, runs: list[CVEStatus], outcome: TargetOutcome
+):
+    comparison = compare_target(baseline, given.a_candidate(runs))
+
+    assert comparison.outcome == outcome
+    assert comparison.baseline_runs == baseline.runs
+
+
+def test_a_comparison_without_a_baseline_carries_no_baseline_runs():
+    comparison = compare_target(None, given.a_candidate())
+
+    assert comparison.baseline_runs == []
+
+
+def test_settle_keeps_the_baseline_runs():
+    pending = compare_target(given.a_gated_baseline(), given.a_candidate([MISSED] * 3))
+
+    settled = settle(pending, [True] * 4, ReplayRule())
+
+    assert settled.outcome == TargetOutcome.REGRESSION
+    assert settled.baseline_runs == [DETECTED] * 6
+
+
+@pytest.mark.parametrize(
     ("replays", "outcome"),
     [
         ([True] * 4, TargetOutcome.REGRESSION),

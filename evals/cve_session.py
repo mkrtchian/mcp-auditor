@@ -108,6 +108,7 @@ def _open(options: CVEOptions, harness: CVEHarness) -> GatedSession:
 async def _run_targets(session: GatedSession, not_run: dict[str, list[str]]) -> list[TargetRuns]:
     count = session.options.conditions.runs
     targets = [t for t in session.options.targets if t.cve_id not in not_run]
+    session.harness.announce_audits(len(targets) * count)
     # gather keeps submission order, so each target's runs keep the order of a sequence.
     outcomes = await asyncio.gather(
         *(session.harness.audit(target) for target in targets for _ in range(count))
@@ -147,7 +148,7 @@ async def _gate(
         )
     by_id = {tr.target.cve_id: comparison for tr, comparison in zip(runs, audited, strict=True)}
     comparisons = [
-        _not_run_comparison(target.cve_id, not_run[target.cve_id])
+        _not_run_comparison(target.cve_id, not_run[target.cve_id], baselines.get(target.cve_id))
         if target.cve_id in not_run
         else by_id[target.cve_id]
         for target in session.options.targets
@@ -155,11 +156,14 @@ async def _gate(
     return judge(comparisons, mismatches)
 
 
-def _not_run_comparison(cve_id: str, conditions: list[str]) -> TargetComparison:
+def _not_run_comparison(
+    cve_id: str, conditions: list[str], baseline: CVETargetBaseline | None
+) -> TargetComparison:
     return TargetComparison(
         cve_id=cve_id,
         outcome=TargetOutcome.NOT_RUN,
         candidate_runs=[],
+        baseline_runs=[] if baseline is None else baseline.runs,
         detail=", ".join(conditions),
     )
 

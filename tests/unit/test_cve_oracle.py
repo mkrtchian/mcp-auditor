@@ -1,6 +1,7 @@
 from datetime import date
 
 import tests.unit.support.test_cve_oracle_given as given
+from evals.cve_gate import TargetComparison, TargetOutcome
 from evals.cve_grammar import CVEStatus, MechanismClass, MissClass
 from evals.cve_measurement import MeasurementSettings
 from evals.cve_oracle import (
@@ -92,18 +93,21 @@ def test_render_states_the_concurrency_on_the_conditions_line():
     assert f"{given.CONCURRENCY} audits at once" in markdown.splitlines()[0]
 
 
-def test_render_states_the_throttled_requests_on_the_conditions_line():
+def test_render_states_the_throttled_requests_on_a_line_after_the_tally():
     report = given.a_benchmark_report([]).model_copy(update={"throttled_requests": 4})
 
-    conditions = render_markdown(report).splitlines()[0]
+    markdown = render_markdown(report)
 
-    assert "4 requests throttled by the model provider" in conditions
+    throttled = f"Throttled by the model provider: 4 requests at concurrency {given.CONCURRENCY}"
+    assert throttled in markdown.splitlines()
+    assert markdown.index(throttled) > markdown.index("Statuses:")
+    assert "throttled" not in markdown.splitlines()[0].lower()
 
 
 def test_render_leaves_throttling_out_when_nothing_was_throttled():
-    conditions = render_markdown(given.a_benchmark_report([])).splitlines()[0]
+    markdown = render_markdown(given.a_benchmark_report([]))
 
-    assert "throttled" not in conditions
+    assert "throttled" not in markdown.lower()
 
 
 def test_render_states_the_billed_tokens_on_the_conditions_line():
@@ -211,18 +215,61 @@ def test_render_without_replay_credits_has_no_replay_section():
     assert "Replay credits" not in markdown
 
 
-def test_render_appends_the_gate_verdict_and_a_line_per_target():
+def test_render_appends_the_gate_verdict_and_a_row_per_target():
     report = given.a_benchmark_report([]).model_copy(update={"gate": given.a_red_gate()})
 
     markdown = render_markdown(report)
 
     assert "Gate: red." in markdown
     assert "- CVE-2025-53355: regression, the miss reproduced in 4 of 4 replays" in markdown
+    assert "| Target | Outcome | Baseline | Run | Replays | Detail |" in markdown
+    assert "| CVE-2025-53355 | regression | - | DMJ | 4/4 | - |" in markdown
+    assert "| CVE-2025-53109 | held | - | DDD | - | - |" in markdown
+    assert "Targets:" not in markdown
+
+
+def test_render_shows_the_baseline_runs_beside_the_run_and_the_legend():
+    comparison = TargetComparison(
+        cve_id="CVE-X",
+        outcome=TargetOutcome.NOT_GATED,
+        candidate_runs=[CVEStatus.MISSED, CVEStatus.DETECTED, CVEStatus.MISSED],
+        baseline_runs=[CVEStatus.MISSED] * 3,
+    )
+
+    markdown = render_markdown(given.a_report_gated_on(comparison))
+
+    assert "| CVE-X | not_gated | MMM | MDM | - | - |" in markdown
     assert (
-        "- CVE-2025-53355: regression. Runs: detected, missed, reached_but_judged_pass. "
-        "Replays: reproduced, reproduced, reproduced, reproduced."
-    ) in markdown
-    assert "- CVE-2025-53109: held. Runs: detected, detected, detected." in markdown
+        "Runs: D detected, J reached but judged PASS, M missed. "
+        "Baseline: every run its file holds, both recordings once confirmed. "
+        "Replays: the miss reproduced in k of n replays."
+    ) in markdown.splitlines()
+
+
+def test_render_counts_the_replays_as_a_fraction():
+    comparison = TargetComparison(
+        cve_id="CVE-X",
+        outcome=TargetOutcome.PENDING_REPLAY,
+        candidate_runs=[CVEStatus.MISSED],
+        replays=[True, False],
+    )
+
+    markdown = render_markdown(given.a_report_gated_on(comparison))
+
+    assert "| CVE-X | pending_replay | - | M | 1/2 | - |" in markdown
+
+
+def test_render_escapes_a_pipe_in_a_not_run_detail():
+    comparison = TargetComparison(
+        cve_id="CVE-X",
+        outcome=TargetOutcome.NOT_RUN,
+        candidate_runs=[],
+        detail="exploit 0 not aimed | read a|b",
+    )
+
+    markdown = render_markdown(given.a_report_gated_on(comparison))
+
+    assert r"| CVE-X | not_run | - | - | - | exploit 0 not aimed \| read a\|b |" in markdown
 
 
 def test_render_without_a_gate_has_no_gate_section():

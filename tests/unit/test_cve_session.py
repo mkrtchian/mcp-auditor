@@ -8,6 +8,7 @@ import tests.unit.support.test_cve_session_then as then
 from evals.baseline import BaselineStatus
 from evals.cve_baseline import load_baselines
 from evals.cve_gate import CVEGateVerdict, TargetOutcome
+from evals.cve_grammar import CVEStatus
 from evals.cve_session import run_gated
 from evals.eval_session import Refused, TreeState
 
@@ -92,6 +93,33 @@ async def test_a_passing_target_is_audited_while_a_failing_one_is_not_run_in_tar
     outcomes = {c.cve_id: c.outcome for c in result.gate.targets}
     assert outcomes[given.SYMLINK.cve_id] == TargetOutcome.NOT_RUN
     assert outcomes[given.KUBERNETES.cve_id] == TargetOutcome.NO_BASELINE
+
+
+async def test_the_session_announces_the_audits_of_the_targets_the_check_let_through(
+    tmp_path: Path,
+):
+    check = given.ScriptedCheck({given.SYMLINK.cve_id: ["keeps no place"]})
+    audit = given.ScriptedAudit()
+    announce = given.RecordingAnnounce(audit)
+    harness = given.a_harness(audit, tmp_path, check=check, announce=announce)
+
+    await run_gated(given.options(targets=[given.KUBERNETES, given.SYMLINK]), harness)
+
+    assert announce.announced == [(3, 0)]
+
+
+async def test_a_not_run_target_with_a_baseline_carries_its_baseline_runs(tmp_path: Path):
+    given.a_gated_file(tmp_path)
+    check = given.ScriptedCheck({given.KUBERNETES.cve_id: ["keeps no place"]})
+
+    result = await run_gated(
+        given.options(), given.a_harness(given.ScriptedAudit(), tmp_path, check=check)
+    )
+
+    comparison = then.the_one_target_ends(
+        result, TargetOutcome.NOT_RUN, CVEGateVerdict.NOT_COMPARABLE
+    )
+    assert comparison.baseline_runs == [CVEStatus.DETECTED] * 6
 
 
 async def test_a_run_depending_on_unchecked_credits_is_not_comparable(tmp_path: Path):

@@ -243,6 +243,7 @@ def _harness(args: argparse.Namespace, throttles: SessionThrottles, places: Plac
     return CVEHarness(
         audit=bounded(audit_target(args.budget, throttles, places, overrides), args.concurrency),
         check=bounded(lambda target: check_target(target, places), args.concurrency),
+        announce_audits=lambda _: None,
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
         image_ids=image_ids,
