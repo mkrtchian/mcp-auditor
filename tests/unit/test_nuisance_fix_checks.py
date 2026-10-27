@@ -144,6 +144,15 @@ def test_a_source_difference_on_a_fix_check_record_is_a_mismatch():
     assert "source" in mismatches[0]
 
 
+def test_a_differing_witness_nonce_is_not_a_mismatch():
+    # check_fix plants a fresh random nonce each run, so the result's witness never equals the one
+    # the admission recorded; only the reproducible fields are compared.
+    result = _a_result(witness="MCPAUDIT-freshnonce")
+    record = _a_record(witness="MCPAUDIT-recordednonce")
+
+    assert run_nuisance.fix_check_mismatches(result, record) == []
+
+
 def test_calibrate_with_no_admission_prints_nothing_is_drawn(capsys: pytest.CaptureFixture[str]):
     if ADMISSION_PATH.exists():
         pytest.skip("an admission is committed")
