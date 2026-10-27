@@ -1,3 +1,4 @@
+from collections.abc import Collection
 from typing import Any
 
 import pytest
@@ -28,19 +29,28 @@ def _flaw_records(admission: NuisanceAdmission) -> dict[str, FlawRecord]:
 
 
 class _RecordingClient:
-    def __init__(self) -> None:
+    def __init__(self, tools: list[KitTool] | None = None) -> None:
         self.calls: list[str] = []
+        self._tools = tools or []
 
     async def list_tools(self) -> list[KitTool]:
-        return []
+        return self._tools
 
     async def call_tool(self, name: str, args: dict[str, Any]) -> KitResponse:
         self.calls.append(name)
         return KitResponse("", is_error=False)
 
 
-async def _exploit_tools(target: FixCheckTarget) -> set[str]:
-    client = _RecordingClient()
+async def _exploit_tools(target: FixCheckTarget, counted_tools: Collection[str]) -> set[str]:
+    # Model a server exposing exactly the admission's counted tools, each discoverable by the
+    # witness-id description an exploit matches on. A static exploit calls its hard-coded name and
+    # ignores the list; a dynamic one (contextforge slugifies the registered name, so it resolves
+    # the name at run time via list_tools) then resolves a counted tool instead of raising.
+    tools = [
+        KitTool(name=tool, description=f"seeded {target.witness.id}", input_schema={})
+        for tool in counted_tools
+    ]
+    client = _RecordingClient(tools)
     places = {target.witness.id: target.witness}
     for exploit in target.exploits:
         await exploit(places, client)
@@ -64,8 +74,18 @@ async def test_each_target_mechanism_and_tools_match_the_admission_flaw():
     records = _flaw_records(admission)
     for target in nuisance_fixtures.FIX_CHECK_TARGETS:
         record = records[target.flaw]
+        counted = flaw_counted_tools(record)
         assert target.mechanism == record.effect_class
-        assert await _exploit_tools(target) == flaw_counted_tools(record)
+        assert await _exploit_tools(target, counted) == counted
+
+
+async def test_a_dynamic_tool_exploit_resolves_against_the_seeded_server():
+    # contextforge resolves its tool name at run time from the server's tool list; the seeded fake
+    # must let it find a counted tool rather than raise. Guards the parity test above, which stays
+    # skipped until the admission lands.
+    from evals.nuisance_fix_checks import cve_2026_18905_contextforge as contextforge
+
+    assert await _exploit_tools(contextforge.TARGET, {"rest-ssrf"}) == {"rest-ssrf"}
 
 
 def _a_result(**overrides: Any) -> FixCheckResult:
