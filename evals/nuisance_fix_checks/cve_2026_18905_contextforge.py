@@ -10,7 +10,7 @@ re-resolves and pins the host at invocation and blocks the link-local metadata a
 surfaces.
 
 The benign REST tool reaching the live responder is a run-time concern recorded in the admission,
-not a fix-check one, so this fixture stands only the kit contextforge_env sentinel and carries no
+not a fix-check one, so this fixture stands only the contextforge_env sentinel and carries no
 benign call.
 """
 

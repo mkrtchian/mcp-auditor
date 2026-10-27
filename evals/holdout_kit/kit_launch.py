@@ -1,8 +1,9 @@
 """A trimmed copy of evals/cve_environments.py's launch logic, free of mcp_auditor.
 
 Parity note: the acceptance twin is evals/cve_environments.py. This module copies the four
-per-target environment builders and their helpers, dropping only the `connect` coroutine that
-wraps the auditor's StdioMCPClient; the kit connects through kit_client.py instead. It adds
+acceptance per-target environment builders and their helpers, plus the `arcadedb_env` nuisance
+twin, dropping only the `connect` coroutine that wraps the auditor's StdioMCPClient; the kit
+connects through kit_client.py instead. It adds
 `image_tag` and `build_images`. `image_tag` uses the `mcp-auditor-kit-` prefix, not the acceptance
 `mcp-auditor-cve-` one, so a kit build never overwrites an acceptance image. The clean
 planting and layout layers are reused by in-repo import (cve_planting, cve_layout, cve_places),
