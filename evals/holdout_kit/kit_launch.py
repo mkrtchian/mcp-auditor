@@ -21,7 +21,6 @@ Landmine flags (CLAUDE.md), each named against the failure it guards:
   these two are deliberately absent here, matching the acceptance twin cve_environments.
 """
 
-import json
 import os
 import subprocess
 import tempfile
@@ -37,7 +36,6 @@ from evals.cve_planting import (
     DockerPlanting,
     PlantedArgs,
     PlantingSpec,
-    SentinelIntent,
     confinement_args,
     planted,
 )
@@ -140,64 +138,6 @@ def arcadedb_env(
     with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
         _materialise(root, spec, shape)
         yield _read_only_launch(root, image, args)
-
-
-# The public address the gateway's GW_TOOLS hostnames resolve to at startup; the fixture beside
-# the admission carries why it matters.
-_GW_PUBLIC_IP = "8.8.8.8"
-
-
-@contextmanager
-def contextforge_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    # The trimmed twin of cve_environments.contextforge_ssrf_env. The gateway runs as root inside
-    # the sentinels' namespace holder (joined via args.network) so its entrypoint can rewrite
-    # /etc/hosts at startup. No /srv layout is mounted (this is a network launch, not a filesystem
-    # read), so the shape is inert; the reference arm plants no sentinel, so GW_TOOLS is empty and
-    # the gateway registers no tool. The fixture beside the admission carries the mechanism.
-    with planted(spec, image, DockerPlanting()) as args:
-        yield Launch(
-            command="docker",
-            args=[
-                "run",
-                "-i",
-                "--rm",
-                *confinement_args(),
-                "--user",
-                "0:0",  # root: the entrypoint rewrites /etc/hosts to perform the DNS rebinding
-                "-e",
-                f"GW_PUBLIC_IP={_GW_PUBLIC_IP}",
-                "-e",
-                "GW_TOOLS=" + json.dumps(_gw_tools(spec)),
-                *args.env,
-                *args.network,
-                image,
-            ],
-        )
-
-
-def _gw_tools(spec: PlantingSpec) -> list[dict[str, str | None]]:
-    # One REST tool per planted http_endpoint place: the rebinding hostname the gateway validates
-    # at creation, the internal bind address it flips to, and the sentinel's request path.
-    by_host: dict[tuple[str | None, str | None], SentinelIntent] = {
-        (s.host, s.path): s for s in spec.sentinels
-    }
-    tools: list[dict[str, str | None]] = []
-    for index, place in enumerate(spec.places):
-        coordinates = place.coordinates
-        sentinel = by_host.get((coordinates.host, coordinates.path))
-        if sentinel is None:
-            continue
-        tools.append(
-            {
-                "place": place.id,
-                "rebind": f"rb{index}.cve",
-                "ip": sentinel.bind_address,
-                "path": sentinel.request_target,
-            }
-        )
-    return tools
 
 
 def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:

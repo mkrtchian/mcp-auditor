@@ -67,8 +67,8 @@ def test_the_shared_kit_carries_no_worked_exploit(tmp_path: Path):
 
     kit = (out / "evals" / "holdout_kit" / "kit_launch.py").read_text()
     assert "CVE-" not in kit
-    assert "redirect_ssrf_env" not in kit
-    assert "ipv6_loopback_env" not in kit
+    for builder in ("redirect_ssrf_env", "ipv6_loopback_env", "contextforge_env", "_gw_tools"):
+        assert builder not in kit, builder
 
 
 def test_the_written_dossier_imports_nothing_from_mcp_auditor(tmp_path: Path):
