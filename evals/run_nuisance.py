@@ -3,11 +3,11 @@
 `walk` prints the servers the holdout walk reached, each with its reaching flaw and the flaws
 that set its version, for the maintainer to admit (no LLM, no network). `nuisance-dossier` writes
 the isolated admission dossier for one server (no LLM; the fix-check driver it ships needs
-Docker), copying a backend's kit builder and lifecycle under `--backend <key>`. `run` audits the
-admitted servers on their patched images and reports the figure, so it
-needs Docker and an LLM key. `gate` audits the admitted acceptance servers with a current target
-and compares each to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM
-key. No server is admitted yet.
+Docker), copying a backend's kit builder and lifecycle under `--backend <key>`. `calibrate`
+rebuilds and reproduces each fix-check fixture against the admission (Docker, no LLM). `run`
+audits the admitted servers on their patched images and reports the figure, so it needs Docker and
+an LLM key. `gate` audits the admitted acceptance servers with a current target and compares each
+to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM key.
 """
 
 import argparse
@@ -212,14 +212,17 @@ def _admission(path: Path, census: HoldoutCensus) -> NuisanceAdmission | None:
 def _calibrate(args: argparse.Namespace) -> int:
     census = load_census(args.census)
     admission = _admission(args.admission, census)
+    if admission is None or not admission.servers or not nuisance_fixtures.FIX_CHECK_TARGETS:
+        print("nothing is drawn")
+        return 0
     targets = [
         target
         for target in nuisance_fixtures.FIX_CHECK_TARGETS
         if args.cve is None or target.flaw == args.cve
     ]
-    if admission is None or not admission.servers or not targets:
-        print("nothing is drawn")
-        return 0
+    if not targets:
+        print(f"unknown flaw: {args.cve} matches no fix-check target", file=sys.stderr)
+        return UNKNOWN_SERVER_EXIT
     records = {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
     kit_launch.build_images(DOCKER_DIRECTORY, _services(targets))
     return asyncio.run(_calibrate_targets(targets, records, args.concurrency))
@@ -231,30 +234,39 @@ async def _calibrate_targets(
     concurrency: int,
 ) -> int:
     calibrate = bounded(check_fix, concurrency)
-    results = await asyncio.gather(*(calibrate(target) for target in targets))
+    results = await asyncio.gather(
+        *(calibrate(target) for target in targets), return_exceptions=True
+    )
     clean = True
+    crashed = False
     for target, result in zip(targets, results, strict=True):
+        if isinstance(result, BaseException):
+            print(f"{target.flaw}: crashed: {result}", file=sys.stderr)
+            crashed = True
+            continue
         print(f"{target.flaw}: {result.to_json()}")
         problems = _calibration_problems(result, records.get(target.flaw))
         for problem in problems:
             print(f"  {problem}")
         clean = clean and not problems
+    if crashed:
+        return CRASHED_EXIT
     return 0 if clean else 1
 
 
 def _calibration_problems(result: FixCheckResult, record: FixCheckRecord | None) -> list[str]:
-    problems: list[str] = []
+    reported: dict[str, str] = {}
     if not result.vulnerable_surfaces:
-        problems.append("the witness does not surface on the vulnerable version")
+        reported["vulnerable_surfaces"] = "the witness does not surface on the vulnerable version"
     if result.patched_surfaces:
-        problems.append("the witness surfaces on the patched version")
+        reported["patched_surfaces"] = "the witness surfaces on the patched version"
     if result.server_patched_surfaces:
-        problems.append("the witness surfaces on the server's patched version")
+        reported["server_patched_surfaces"] = "the witness surfaces on the server's patched version"
+    problems = list(reported.values())
     if record is None:
-        problems.append("no admission fix_check records this flaw")
-    else:
-        problems += fix_check_mismatches(result, record)
-    return problems
+        return [*problems, "no admission fix_check records this flaw"]
+    mismatches = _field_mismatches(result, record)
+    return problems + [text for name, text in mismatches.items() if name not in reported]
 
 
 def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list[str]:
@@ -263,17 +275,21 @@ def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list
     never equals the recorded nonce and is not compared. A record copied from the holdout
     calibration (source holdout_calibration) carries the calibration's provenance, not a fresh
     fix-check run, so its source field is not compared either."""
+    return list(_field_mismatches(result, record).values())
+
+
+def _field_mismatches(result: FixCheckResult, record: FixCheckRecord) -> dict[str, str]:
     skip = {"witness"}
     if record.source == "holdout_calibration":
         skip.add("source")
-    mismatches: list[str] = []
+    mismatches: dict[str, str] = {}
     for name in FixCheckRecord.model_fields:
         if name in skip:
             continue
         got = getattr(result, name)
         want = getattr(record, name)
         if got != want:
-            mismatches.append(f"{name}: fix check {got!r} does not match admission {want!r}")
+            mismatches[name] = f"{name}: fix check {got!r} does not match admission {want!r}"
     return mismatches
 
 

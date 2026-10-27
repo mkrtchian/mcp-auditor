@@ -14,19 +14,15 @@ server runs with `NODE_TLS_REJECT_UNAUTHORIZED=0`, because the CKAN portal rewri
 dati.gov.it base URL to https and the MQA URLs are hardcoded https.
 
 A caller drives this through `ensure_ckan_responder`, `ckan_server_args`, `ckan_rm` and
-`CKAN_LAUNCH_LOCK`, built on the user resolution and container profile of `doris_backend` and
-`cve_planting`.
+`CKAN_LAUNCH_LOCK`, built on the shared lifecycle of `responder_backend`.
 """
 
-import subprocess
 import threading
 from collections.abc import Sequence
-from contextlib import suppress
 
-from evals.cve_planting import confinement_args
-from evals.cve_planting_base import LABEL, PlantingHost
+from evals.cve_planting_base import PlantingHost
 from evals.cve_targets import DOCKER_DIRECTORY
-from evals.doris_backend import user_args
+from evals.responder_backend import Responder, remove
 
 CKAN_RESPONDER_IMAGE = "mcp-auditor-cve-ckan-responder:local"
 CKAN_RESPONDER_CONTAINER = "mcp-auditor-cve-ckan-responder"
@@ -42,25 +38,21 @@ CKAN_ALIASES: tuple[str, ...] = ("www.dati.gov.it", "dati.gov.it", "data.europa.
 # only the stand-up, since __enter__ and __exit__ may run on different worker threads.
 CKAN_LAUNCH_LOCK = threading.Lock()
 
-_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.ckan-responder"
+_RESPONDER = Responder(
+    image=CKAN_RESPONDER_IMAGE,
+    container=CKAN_RESPONDER_CONTAINER,
+    bridge=CKAN_BRIDGE,
+    subnet=_CKAN_SUBNET,
+    ip=CKAN_RESPONDER_IP,
+    dockerfile=DOCKER_DIRECTORY / "Dockerfile.ckan-responder",
+)
 
 
 def ckan_server_args(
     name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
 ) -> list[str]:
-    return [
-        "run", "-i", "--rm",
-        *confinement_args(),
-        "--name", name,
-        "--label", LABEL,
-        "--network", CKAN_BRIDGE,
-        *_alias_args(),
-        "-e", "NODE_TLS_REJECT_UNAUTHORIZED=0",
-        *user_args(host.user),
-        "-w", host.working_directory,
-        image,
-        *server_launch,
-    ]  # fmt: skip
+    extra = [*_alias_args(), "-e", "NODE_TLS_REJECT_UNAUTHORIZED=0"]
+    return _RESPONDER.server_args(name, image, host, server_launch, extra)
 
 
 def _alias_args() -> list[str]:
@@ -71,63 +63,8 @@ def _alias_args() -> list[str]:
 
 
 def ensure_ckan_responder() -> None:
-    _ensure_image()
-    _ensure_network()
-    if not _responder_running():
-        if _responder_exists():
-            ckan_rm(CKAN_RESPONDER_CONTAINER)
-        _ckan_run(
-            "docker", "run", "-d",
-            "--name", CKAN_RESPONDER_CONTAINER,
-            "--label", LABEL,
-            "--network", CKAN_BRIDGE,
-            "--ip", CKAN_RESPONDER_IP,
-            *confinement_args(),
-            "--cap-add", "NET_BIND_SERVICE",  # root behind cap-drop ALL still binds 80/443
-            CKAN_RESPONDER_IMAGE,
-        )  # fmt: skip
-
-
-def _ensure_image() -> None:
-    present = _ckan_run("docker", "image", "inspect", CKAN_RESPONDER_IMAGE, check=False)
-    if present.returncode != 0:
-        _ckan_run(
-            "docker", "build", "-t", CKAN_RESPONDER_IMAGE, "-f", str(_DOCKERFILE),
-            str(DOCKER_DIRECTORY), timeout=600.0,
-        )  # fmt: skip
-
-
-def _ensure_network() -> None:
-    listed = _ckan_run("docker", "network", "ls", "--format", "{{.Name}}", check=False)
-    if CKAN_BRIDGE in listed.stdout.split():
-        return
-    _ckan_run(
-        "docker", "network", "create", "--label", LABEL, "--subnet", _CKAN_SUBNET, CKAN_BRIDGE
-    )
-
-
-def _responder_running() -> bool:
-    return CKAN_RESPONDER_CONTAINER in _responder_names("docker", "ps")
-
-
-def _responder_exists() -> bool:
-    return CKAN_RESPONDER_CONTAINER in _responder_names("docker", "ps", "-a")
-
-
-def _responder_names(*ps_command: str) -> list[str]:
-    result = _ckan_run(
-        *ps_command,
-        "--filter", f"name=^{CKAN_RESPONDER_CONTAINER}$", "--format", "{{.Names}}", check=False,
-    )  # fmt: skip
-    return result.stdout.split()
-
-
-def _ckan_run(
-    *args: str, check: bool = True, timeout: float = 120.0
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(list(args), check=check, capture_output=True, text=True, timeout=timeout)
+    _RESPONDER.ensure()
 
 
 def ckan_rm(name: str) -> None:
-    with suppress(subprocess.SubprocessError, OSError):
-        _ckan_run("docker", "rm", "-f", name, check=False)
+    remove(name)
