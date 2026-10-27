@@ -8,6 +8,16 @@ modules hold the callables and keep the kit's import closure.
 """
 
 from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.nuisance_fix_checks import cve_2025_53818_github_kanban
+from evals.nuisance_fix_checks import (
+    cve_2025_53818_github_kanban,
+    cve_2026_55157_token_optimizer,
+    cve_2026_65831_arcadedb,
+    cve_2026_81562_claude_in_mobile,
+)
 
-FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (*cve_2025_53818_github_kanban.TARGETS,)
+FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
+    *cve_2025_53818_github_kanban.TARGETS,
+    *cve_2026_55157_token_optimizer.TARGETS,
+    *cve_2026_81562_claude_in_mobile.TARGETS,
+    *cve_2026_65831_arcadedb.TARGETS,
+)

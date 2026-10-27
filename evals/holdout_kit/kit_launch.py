@@ -127,6 +127,19 @@ def ssrf_env(
         yield _read_only_launch(root, image, args)
 
 
+@contextmanager
+def arcadedb_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    # The trimmed twin of cve_environments.arcadedb_mcp_env. The ArcadeDB MCP stdio server takes no
+    # scope argument (it is driven over stdio, not pointed at a directory), so its launch is the
+    # read-only /srv mount and the planting args with no path appended after the image, identical to
+    # the read-only launch the command-injection and SSRF builders use.
+    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
+        _materialise(root, spec, shape)
+        yield _read_only_launch(root, image, args)
+
+
 def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
     if shape is LaunchShape.EMPTY_LAYOUT:
         build_empty_layout(root)
