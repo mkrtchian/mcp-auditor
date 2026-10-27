@@ -15,6 +15,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from evals.ckan_backend import (
+    CKAN_BRIDGE,
+    CKAN_LAUNCH_LOCK,
+    CKAN_RESPONDER_IMAGE,
+    ckan_rm,
+    ckan_server_args,
+    ensure_ckan_responder,
+)
 from evals.cve_environments import Launch
 from evals.cve_planting_base import LABEL
 from evals.doris_backend import (
@@ -56,8 +64,25 @@ def doris_provisioner(server: AdmittedServer) -> Generator[Launch]:
         doris_rm(name)
 
 
+@contextmanager
+def ckan_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no sentinel, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with CKAN_LAUNCH_LOCK:
+        ensure_ckan_responder()
+    name = f"{LABEL}-ckan-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=ckan_server_args(name, image_tag(server.service), server.host, server.launch),
+        )
+    finally:
+        ckan_rm(name)
+
+
 BACKENDS: dict[str, RegisteredBackend] = {
-    "doris": RegisteredBackend(doris_provisioner, DORIS_BRIDGE, DORIS_IMAGE)
+    "doris": RegisteredBackend(doris_provisioner, DORIS_BRIDGE, DORIS_IMAGE),
+    "ckan": RegisteredBackend(ckan_provisioner, CKAN_BRIDGE, CKAN_RESPONDER_IMAGE),
 }
 
 

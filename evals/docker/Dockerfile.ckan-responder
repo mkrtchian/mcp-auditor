@@ -1,0 +1,19 @@
+# CKAN API responder for the nuisance suite's ckan backend. Answers success:true CKAN
+# envelopes (and the data.europa.eu MQA cache/metrics shapes) over HTTP and self-signed HTTPS,
+# so a patched @aborruso/ckan-mcp-server's benign tool calls answer without error once
+# dati.gov.it / www.dati.gov.it / data.europa.eu are DNS-aliased to it. Never spoken to over
+# MCP stdio: the audited server reaches it as an outbound CKAN API.
+# No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
+FROM node:20-alpine
+
+# A throwaway self-signed cert. The audited server runs with NODE_TLS_REJECT_UNAUTHORIZED=0, so
+# the subject is irrelevant; HTTPS exists only because the CKAN portal rewrite forces the
+# dati.gov.it base URL to https and the MQA cache/metrics URLs are hardcoded https.
+RUN apk add --no-cache openssl \
+ && openssl req -x509 -newkey rsa:2048 -nodes -days 36500 \
+      -keyout /key.pem -out /cert.pem -subj "/CN=ckan-responder"
+
+# package_show feeds the MQA chain (needs identifier/name); the data.europa.eu cache must answer
+# 200 (not 404, which the server retries then abandons) and the metrics endpoint any JSON;
+# every other CKAN action (package_search included) gets an empty, well-formed result envelope.
+ENTRYPOINT ["node", "-e", "const http=require('http'),https=require('https'),fs=require('fs');const J=o=>JSON.stringify(o);const search=J({success:true,result:{count:0,results:[],facets:{}}});const show=J({success:true,result:{name:'demo-dataset',identifier:'demo-dataset',title:'Demo dataset'}});const cache=J({result:{results:[{info:{'dataset-id':'demo-dataset',score:405}}]}});const metrics=J({});function pick(u){if(u.includes('package_show'))return show;if(u.includes('/metrics'))return metrics;if(u.includes('/api/mqa/cache'))return cache;return search;}function h(req,res){res.writeHead(200,{'content-type':'application/json'});res.end(pick(req.url||''));}http.createServer(h).listen(80);https.createServer({key:fs.readFileSync('/key.pem'),cert:fs.readFileSync('/cert.pem')},h).listen(443);"]
