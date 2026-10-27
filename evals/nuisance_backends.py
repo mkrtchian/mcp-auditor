@@ -23,6 +23,14 @@ from evals.ckan_backend import (
     ckan_server_args,
     ensure_ckan_responder,
 )
+from evals.contextforge_backend import (
+    CONTEXTFORGE_BRIDGE,
+    CONTEXTFORGE_LAUNCH_LOCK,
+    CONTEXTFORGE_RESPONDER_IMAGE,
+    contextforge_rm,
+    contextforge_server_args,
+    ensure_contextforge_responder,
+)
 from evals.cve_environments import Launch
 from evals.cve_planting_base import LABEL
 from evals.doris_backend import (
@@ -80,9 +88,30 @@ def ckan_provisioner(server: AdmittedServer) -> Generator[Launch]:
         ckan_rm(name)
 
 
+@contextmanager
+def contextforge_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no sentinel, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with CONTEXTFORGE_LAUNCH_LOCK:
+        ensure_contextforge_responder()
+    name = f"{LABEL}-contextforge-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=contextforge_server_args(
+                name, image_tag(server.service), server.host, server.launch
+            ),
+        )
+    finally:
+        contextforge_rm(name)
+
+
 BACKENDS: dict[str, RegisteredBackend] = {
     "doris": RegisteredBackend(doris_provisioner, DORIS_BRIDGE, DORIS_IMAGE),
     "ckan": RegisteredBackend(ckan_provisioner, CKAN_BRIDGE, CKAN_RESPONDER_IMAGE),
+    "contextforge": RegisteredBackend(
+        contextforge_provisioner, CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
+    ),
 }
 
 
