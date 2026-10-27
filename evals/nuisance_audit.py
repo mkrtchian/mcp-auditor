@@ -7,7 +7,6 @@ from collections.abc import Awaitable, Callable, Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-from rich.console import Console
 from rich.markup import escape
 
 from evals.concurrency import entered_in_thread
@@ -15,7 +14,8 @@ from evals.cve_audit import INCOMPLETE_ATTEMPTS, Auditor, RunOverrides, describe
 from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve_planting_base import confinement_args, no_network_args
 from evals.doris_backend import user_args
-from evals.metrics import missed_steps
+from evals.eval_display import console
+from evals.metrics import SessionThrottles, missed_steps
 from evals.nuisance_admission import AdmittedServer, BenignCall
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
 from evals.nuisance_counter import flagged_tools
@@ -27,8 +27,6 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
 from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.graph.builder import build_graph
-
-console = Console()
 
 NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries
 
@@ -106,10 +104,16 @@ class DroppedRun:
     cause: NotRunCause
 
 
+@dataclass(frozen=True)
+class NuisanceAuditor:
+    auditor: Auditor
+    overrides: RunOverrides
+    throttles: SessionThrottles
+
+
 async def audit_once(
     server: AdmittedServer,
-    auditor: Auditor,
-    overrides: RunOverrides,
+    auditor: NuisanceAuditor,
     *,
     backends: Mapping[str, RegisteredBackend] = BACKENDS,
 ) -> AuditReport | LaunchFailed:
@@ -117,9 +121,10 @@ async def audit_once(
     # `with` inside the coroutine would freeze the loop and deadlock the server's gathered runs.
     try:
         async with entered_in_thread(nuisance_environment(server, backends)) as launch:
-            report = await _audit(launch, auditor, overrides)
+            report = await _audit(launch, auditor.auditor, auditor.overrides)
     except Exception as exc:
         return LaunchFailed(str(exc))
+    auditor.throttles.count(report)
     _print_incidents(server, report)
     return report
 

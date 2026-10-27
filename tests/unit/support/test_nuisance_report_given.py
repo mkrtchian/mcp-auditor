@@ -22,6 +22,8 @@ def a_run(
     not_run: Sequence[NotRunServer] = (),
     outside_figure: Sequence[FigureExit] = (),
     cutoffs: dict[str, Cutoff] | None = None,
+    throttled_requests: int = 0,
+    concurrency: int = 6,
 ) -> NuisanceRunResult:
     return NuisanceRunResult(
         runs=RUNS,
@@ -48,4 +50,6 @@ def a_run(
         incomplete_run_count=sum(server.incomplete_runs for server in servers),
         total_cost=0.06,
         prices_as_of=date(2026, 10, 15),
+        concurrency=concurrency,
+        throttled_requests=throttled_requests,
     )

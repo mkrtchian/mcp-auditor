@@ -115,3 +115,5 @@ class NuisanceRunResult:
     incomplete_run_count: int
     total_cost: float
     prices_as_of: date
+    concurrency: int
+    throttled_requests: int

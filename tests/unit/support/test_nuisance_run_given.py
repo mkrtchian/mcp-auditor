@@ -111,7 +111,7 @@ def scripted(outcomes_by_package: Mapping[str, list[Outcome]]) -> Audit:
 
 
 def deps_auditing(
-    audit: Audit, *, benign_call: dict[str, str | None] | None = None
+    audit: Audit, *, benign_call: dict[str, str | None] | None = None, throttled: int = 0
 ) -> NuisanceDeps:
     reasons = benign_call or {}
 
@@ -126,6 +126,8 @@ def deps_auditing(
         backend_image_ids=lambda tags: {tag: f"sha256:{tag}" for tag in tags},
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
         clock=lambda: RECORDED_AT,
+        announce_audits=lambda audits: None,
+        throttled_requests=lambda: throttled,
     )
 
 
@@ -151,7 +153,23 @@ def deps_reaching_nothing() -> NuisanceDeps:
     def clock() -> str:
         raise AssertionError("the clock was read")
 
-    return NuisanceDeps(audit, benign_call, rebuild, image_ids, backend_image_ids, read_tree, clock)
+    def announce_audits(_audits: int) -> None:
+        raise AssertionError("the audits were announced")
+
+    def throttled_requests() -> int:
+        raise AssertionError("the throttled requests were read")
+
+    return NuisanceDeps(
+        audit,
+        benign_call,
+        rebuild,
+        image_ids,
+        backend_image_ids,
+        read_tree,
+        clock,
+        announce_audits,
+        throttled_requests,
+    )
 
 
 def draw_entries(*entries: tuple[str, date]) -> list[DrawEntry]:
@@ -168,6 +186,7 @@ async def run(
     draw: Sequence[DrawEntry] | None = None,
     outside_figure: Sequence[FigureExit] = (),
     runs: int = 3,
+    concurrency: int = 6,
 ) -> NuisanceRunResult:
     """`draw=None` puts the first flaw in the draw order, disclosed on 2026-01-01."""
     order = draw if draw is not None else draw_entries((FIRST_FLAW, date(2026, 1, 1)))
@@ -178,5 +197,6 @@ async def run(
         SETTINGS,
         census_commit="cafe",
         runs=runs,
+        concurrency=concurrency,
         deps=deps,
     )

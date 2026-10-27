@@ -132,6 +132,30 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
     assert result.total_cost == pytest.approx(4 * call_cost(usage, given.LUNA_PRICE))
 
 
+async def test_the_run_announces_the_audits_of_the_surviving_servers_only():
+    failing, healthy = given.a_server("npm:failing"), given.a_server("npm:healthy")
+    audit = given.scripted({"npm:healthy": [given.a_report(False) for _ in range(3)]})
+    announced: list[int] = []
+    deps = dataclasses.replace(
+        given.deps_auditing(audit, benign_call={"npm:failing": "boom"}),
+        announce_audits=announced.append,
+    )
+
+    await given.run([failing, healthy], deps, runs=3)
+
+    assert announced == [3]
+
+
+async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
+    server = given.a_server()
+    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+
+    result = await given.run([server], given.deps_auditing(audit, throttled=7), concurrency=4)
+
+    assert result.concurrency == 4
+    assert result.throttled_requests == 7
+
+
 async def test_a_backend_server_records_its_backend_image_beside_its_service():
     server = admission.with_a_backend(
         given.a_server(),

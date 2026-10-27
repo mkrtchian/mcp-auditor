@@ -141,6 +141,27 @@ def test_the_incomplete_runs_line_names_the_servers_touched():
     assert markdown.endswith("Total cost: $0.06")
 
 
+def test_the_throttled_requests_follow_the_incomplete_runs_line_with_the_concurrency():
+    run = given.a_run(
+        [a_server_result("A", incomplete_unflagged_runs=1)], throttled_requests=12, concurrency=4
+    )
+
+    report = build_report(run)
+    markdown = render_markdown(report)
+
+    assert (report.throttled_requests, report.concurrency) == (12, 4)
+    assert (
+        "Incomplete runs (a step refused or unreadable): 1 (A)\n"
+        "Throttled by the model provider: 12 requests at concurrency 4\n"
+    ) in markdown
+
+
+def test_no_throttled_line_when_nothing_was_throttled():
+    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
+
+    assert "Throttled" not in markdown
+
+
 def test_build_report_carries_the_run_conditions_and_provenance():
     report = build_report(given.a_run([a_server_result("A")]))
 

@@ -24,10 +24,12 @@ from evals.eval_session import Refused, TreeState, read_tree
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_draw import DrawEntry
 from evals.holdout_run import HOLDOUT_BUDGET, rebuild_images
+from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_assembly import assemble_server
 from evals.nuisance_audit import (
     DroppedRun,
+    NuisanceAuditor,
     audit_once,
     benign_call_failure,
     nuisance_audit,
@@ -64,6 +66,8 @@ class NuisanceDeps:
     backend_image_ids: Callable[[Sequence[str]], dict[str, str]]
     read_tree: Callable[[], TreeState]
     clock: Callable[[], str]  # ISO timestamp for recorded_at
+    announce_audits: Callable[[int], None]
+    throttled_requests: Callable[[], int]
 
 
 @dataclass(frozen=True)
@@ -73,6 +77,7 @@ class _RunContext:
     draw_order: Sequence[DrawEntry]
     model_ids: list[str]
     runs: int
+    concurrency: int
     census_commit: str
 
 
@@ -90,9 +95,8 @@ async def run_nuisance(
     _refuse_tracing()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    ctx = _RunContext(conditions, settings, draw_order, model_ids, runs, census_commit)
-    overrides = _overrides(conditions)
-    deps = deps or default_deps(overrides, concurrency)
+    ctx = _RunContext(conditions, settings, draw_order, model_ids, runs, concurrency, census_commit)
+    deps = deps or default_deps(nuisance_overrides(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
     deps.rebuild(_services(population.audited))
@@ -126,7 +130,7 @@ def _refuse_dirty_tree(tree: TreeState) -> None:
         )
 
 
-def _overrides(conditions: HoldoutConditions) -> RunOverrides:
+def nuisance_overrides(conditions: HoldoutConditions) -> RunOverrides:
     chain, steps = conditions.chain_budget, conditions.max_chain_steps
     timeout = conditions.tool_call_timeout
     assert chain is not None and steps is not None and timeout is not None  # require_ready passed
@@ -134,11 +138,12 @@ def _overrides(conditions: HoldoutConditions) -> RunOverrides:
 
 
 def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
-    auditor = build_auditor(HOLDOUT_BUDGET)
+    throttles = SessionThrottles()
+    auditor = NuisanceAuditor(build_auditor(HOLDOUT_BUDGET), overrides, throttles)
     timeout = overrides.tool_call_timeout or TOOL_CALL_TIMEOUT
 
     async def audit(server: AdmittedServer) -> AuditReport | DroppedRun:
-        return await nuisance_audit(server, lambda: audit_once(server, auditor, overrides))
+        return await nuisance_audit(server, lambda: audit_once(server, auditor))
 
     return NuisanceDeps(
         bounded(audit, concurrency),
@@ -148,6 +153,8 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         nuisance_images.backend_image_ids,
         read_tree,
         lambda: datetime.now(UTC).isoformat(),
+        lambda audits: None,
+        lambda: throttles.requests,
     )
 
 
@@ -180,6 +187,7 @@ async def _vet_all(
 async def _run_all(
     surviving: Sequence[AdmittedServer], deps: NuisanceDeps, ctx: _RunContext
 ) -> tuple[list[tuple[AdmittedServer, NuisanceServerResult]], list[NotRunServer]]:
+    deps.announce_audits(len(surviving) * ctx.runs)
     runs_per = await asyncio.gather(
         *(_run_server(server, deps.audit, ctx.runs) for server in surviving)
     )
@@ -252,6 +260,8 @@ def _assemble_run(
         incomplete_run_count=sum(result.incomplete_runs for result in results),
         total_cost=sum(result.run_cost for result in results),
         prices_as_of=ctx.conditions.prices_as_of,
+        concurrency=ctx.concurrency,
+        throttled_requests=deps.throttled_requests(),
     )
 
 

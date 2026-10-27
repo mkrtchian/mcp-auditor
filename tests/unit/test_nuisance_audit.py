@@ -1,8 +1,8 @@
 import asyncio
 import os
 import threading
-from collections.abc import Generator
-from contextlib import contextmanager
+from collections.abc import AsyncGenerator, Generator
+from contextlib import asynccontextmanager, contextmanager
 from io import StringIO
 from typing import Any
 
@@ -15,12 +15,14 @@ from evals.cve_audit import Auditor, RunOverrides
 from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
+from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_audit import (
     BACKENDS,
     NUISANCE_INFRA_ATTEMPTS,
     DroppedRun,
     LaunchFailed,
+    NuisanceAuditor,
     audit_once,
     benign_call_failure,
     gate_run,
@@ -31,7 +33,13 @@ from evals.nuisance_audit import (
 from evals.nuisance_backends import RegisteredBackend
 from evals.nuisance_results import NotRunCause
 from mcp_auditor.domain import ToolResponse
-from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep
+from mcp_auditor.domain.models import (
+    AuditReport,
+    AuditStep,
+    MissCause,
+    MissedStep,
+    ProviderUsage,
+)
 from tests.fakes.llm import FakeLLM
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
@@ -109,15 +117,25 @@ async def test_a_provisioner_failing_on_enter_is_a_launch_failure():
         SERVER, BackendFixture(provisioner="fail", image="fake/backend:1.0", network="fake-net")
     )
 
-    outcome = await audit_once(
-        server,
-        Auditor(FakeLLM([]), FakeLLM([]), 1),
-        RunOverrides(None, None, None),
-        backends=registry,
-    )
+    outcome = await audit_once(server, _an_auditor(), backends=registry)
 
     assert isinstance(outcome, LaunchFailed)
     assert "cluster never healthy" in outcome.reason
+
+
+async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttled_requests(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _captured_console(monkeypatch)
+    throttled = _missing_a_step(_a_report_throttled(3), MissCause.PROVIDER_THROTTLED)
+    clean = _a_report_throttled(2)
+    _audits_reporting(monkeypatch, [throttled, clean])
+    auditor = _an_auditor()
+
+    outcome = await nuisance_audit(SERVER, lambda: audit_once(SERVER, auditor))
+
+    assert outcome is clean
+    assert auditor.throttles.requests == 5
 
 
 async def test_two_concurrent_environments_of_one_backend_server_both_complete():
@@ -293,6 +311,37 @@ async def test_a_dropped_gate_run_does_not_complete_at_once(monkeypatch: pytest.
 
     assert run is None
     assert audit.calls == 1
+
+
+def _an_auditor() -> NuisanceAuditor:
+    return NuisanceAuditor(
+        Auditor(FakeLLM([]), FakeLLM([]), 1), RunOverrides(None, None, None), SessionThrottles()
+    )
+
+
+def _a_report_throttled(requests: int) -> AuditReport:
+    usage = ProviderUsage(throttled_requests=requests)
+    return grammar.a_report().model_copy(update={"provider_usage": usage})
+
+
+def _audits_reporting(monkeypatch: pytest.MonkeyPatch, reports: list[AuditReport]) -> None:
+    """Fakes `connect` and `build_graph` so each audit returns the next report."""
+
+    class FakeGraph:
+        async def ainvoke(self, _graph_input: dict[str, object]) -> dict[str, object]:
+            return {"audit_report": reports.pop(0)}
+
+    def fake_build_graph(*_args: object, **_kwargs: object) -> FakeGraph:
+        return FakeGraph()
+
+    @asynccontextmanager
+    async def fake_connect(
+        _launch: Launch, _stderr: object, *, tool_call_timeout: int
+    ) -> AsyncGenerator[FakeMCPClient]:
+        yield FakeMCPClient([])
+
+    monkeypatch.setattr(nuisance_audit_module, "build_graph", fake_build_graph)
+    monkeypatch.setattr(nuisance_audit_module, "connect", fake_connect)
 
 
 def _launch_args(server: AdmittedServer, backends: Any = BACKENDS) -> list[str]:

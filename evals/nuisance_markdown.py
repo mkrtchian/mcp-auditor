@@ -23,6 +23,7 @@ def render_markdown(report: NuisanceReport) -> str:
             *_outside_figure_section(report),
             *_not_run_section(report.not_run, len(report.servers)),
             _incomplete_runs_line(report),
+            *_throttled_lines(report),
             f"Total cost: ${report.total_cost:.2f}",
         ]
     )
@@ -128,6 +129,15 @@ def _incomplete_runs_line(report: NuisanceReport) -> str:
     if not touched:
         return f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count}"
     return f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count} ({', '.join(touched)})"
+
+
+def _throttled_lines(report: NuisanceReport) -> list[str]:
+    if report.throttled_requests == 0:
+        return []
+    return [
+        f"Throttled by the model provider: {report.throttled_requests} requests"
+        f" at concurrency {report.concurrency}"
+    ]
 
 
 def _span(interval: IntervalModel) -> str:

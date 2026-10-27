@@ -12,6 +12,7 @@ to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM key
 
 import argparse
 import asyncio
+import dataclasses
 import sys
 import traceback
 from argparse import _SubParsersAction  # pyright: ignore[reportPrivateUsage]
@@ -19,9 +20,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
+from rich.progress import Progress
 
 from evals import eval_display as display
 from evals import nuisance_fixtures
+from evals.audit_progress import AuditProgress
 from evals.baseline import BaselineStatus
 from evals.concurrency import bounded, positive_int
 from evals.cve_targets import DOCKER_DIRECTORY
@@ -29,7 +32,7 @@ from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit, read_tree
 from evals.export import export_nuisance_gate_judged_cases
 from evals.holdout_census import HoldoutCensus, load_census
-from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
+from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
 from evals.holdout_kit import kit_launch
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
@@ -62,13 +65,21 @@ from evals.nuisance_gate_session_model import NuisanceGateOptions, NuisanceGateS
 from evals.nuisance_markdown import render_markdown
 from evals.nuisance_population import run_population
 from evals.nuisance_report import build_report
-from evals.nuisance_run import NUISANCE_CONCURRENCY, NUISANCE_RUNS, run_nuisance
+from evals.nuisance_results import NuisanceRunResult
+from evals.nuisance_run import (
+    NUISANCE_CONCURRENCY,
+    NUISANCE_RUNS,
+    NuisanceDeps,
+    default_deps,
+    nuisance_overrides,
+    run_nuisance,
+)
 from evals.nuisance_walk import (
     acceptance_servers,
     current_acceptance_servers,
     nuisance_population,
 )
-from mcp_auditor.config import load_settings
+from mcp_auditor.config import Settings, load_settings
 
 CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
 DEFAULT_REPORT_PATH = "output/nuisance_report.json"
@@ -184,22 +195,42 @@ def _run(args: argparse.Namespace) -> int:
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    run = asyncio.run(
-        run_nuisance(
-            run_population(nuisance_population(census), admission, acceptance_servers(census)),
-            draw_order(census),
-            conditions,
-            settings,
-            last_commit(args.census),
-            runs=args.runs if args.runs is not None else NUISANCE_RUNS,
-            concurrency=args.concurrency,
-        )
-    )
+    run = _audit_admitted_servers(args, census, admission, conditions, settings)
     report = build_report(run)
     markdown = render_markdown(report)
     _write_report(args.report, report, markdown)
     print(markdown)
+    display.print_report_paths(args.report)
     return 0
+
+
+def _audit_admitted_servers(
+    args: argparse.Namespace,
+    census: HoldoutCensus,
+    admission: NuisanceAdmission,
+    conditions: HoldoutConditions,
+    settings: Settings,
+) -> NuisanceRunResult:
+    deps = default_deps(nuisance_overrides(conditions), args.concurrency)
+    with Progress(console=display.console) as bar:
+        return asyncio.run(
+            run_nuisance(
+                run_population(nuisance_population(census), admission, acceptance_servers(census)),
+                draw_order(census),
+                conditions,
+                settings,
+                last_commit(args.census),
+                runs=args.runs if args.runs is not None else NUISANCE_RUNS,
+                concurrency=args.concurrency,
+                deps=_tracked(deps, AuditProgress(bar)),
+            )
+        )
+
+
+def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
+    return dataclasses.replace(
+        deps, audit=progress.tracked(deps.audit), announce_audits=progress.announce
+    )
 
 
 def _admission(path: Path, census: HoldoutCensus) -> NuisanceAdmission | None:

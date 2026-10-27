@@ -16,8 +16,15 @@ from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import image_ids
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree
 from evals.holdout_run import rebuild_images
+from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
-from evals.nuisance_audit import GateRun, audit_once, gate_run, nuisance_audit
+from evals.nuisance_audit import (
+    GateRun,
+    NuisanceAuditor,
+    audit_once,
+    gate_run,
+    nuisance_audit,
+)
 from evals.nuisance_gate import (
     NuisanceGateResult,
     ServerCandidate,
@@ -71,14 +78,14 @@ def not_admitted(admission: NuisanceAdmission, current: set[str]) -> list[str]:
 
 
 def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> NuisanceGateHarness:
-    auditor = build_auditor(conditions.budget)
     overrides = RunOverrides(
         conditions.chain_budget, conditions.max_chain_steps, conditions.tool_call_timeout
     )
+    auditor = NuisanceAuditor(build_auditor(conditions.budget), overrides, SessionThrottles())
 
     async def audit(server: AdmittedServer) -> GateRun | None:
         return await gate_run(
-            server, lambda: nuisance_audit(server, lambda: audit_once(server, auditor, overrides))
+            server, lambda: nuisance_audit(server, lambda: audit_once(server, auditor))
         )
 
     benign_call = functools.partial(nuisance_run.benign_call, timeout=conditions.tool_call_timeout)

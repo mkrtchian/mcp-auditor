@@ -103,6 +103,8 @@ class NuisanceReport(BaseModel):
     fixture_fingerprints: dict[str, str]
     image_ids: dict[str, str]
     recorded_at: str
+    concurrency: int
+    throttled_requests: int
 
 
 def build_report(run: NuisanceRunResult) -> NuisanceReport:
@@ -150,6 +152,8 @@ def build_report(run: NuisanceRunResult) -> NuisanceReport:
         fixture_fingerprints=run.fixture_fingerprints,
         image_ids=run.image_ids,
         recorded_at=run.recorded_at,
+        concurrency=run.concurrency,
+        throttled_requests=run.throttled_requests,
     )
 
 
