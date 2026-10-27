@@ -1,0 +1,8 @@
+# REST responder for the nuisance suite's contextforge backend. Answers a benign JSON body to any
+# request on port 80, so a patched ContextForge gateway's benign REST tool call (aimed at this
+# container's TEST-NET-2 static IP) answers without error. Never spoken to over MCP stdio: the
+# audited gateway reaches it as an outbound REST fetch.
+# No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
+FROM node:20-alpine
+
+ENTRYPOINT ["node", "-e", "const http=require('http');const body=JSON.stringify({status:'ok',report:'All systems nominal'});http.createServer((req,res)=>{req.resume();res.writeHead(200,{'content-type':'application/json'});res.end(body);}).listen(80);"]

@@ -1,0 +1,34 @@
+# @sunwood-ai-labs/github-kanban-mcp-server v0.4.1 - the fix for CVE-2025-53818 and CVE-2026-0756:
+# src/utils/exec.ts drops the shell `exec` for execFile('gh', args) and the handlers pass each
+# value as a separate argv element, plus repo/issue-number validation. Not on npm (npm stops at
+# 0.3.0); built from the v0.4.1 git tag.
+# No COPY/ADD: the fingerprint hashes instructions only, so the gh stub is inlined by RUN.
+FROM node:20
+RUN git clone --depth 1 --branch v0.4.1 \
+      https://github.com/sunwood-ai-labs/github-kanban-mcp-server.git /app
+WORKDIR /app
+RUN npm install && npm run build
+
+# A stubbed `gh` on PATH so benign tool calls return without a GitHub backend or network:
+# `create` prints an issue URL (the handler reads the trailing number), every other subcommand
+# prints a canned issue JSON, and it always exits 0.
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'for a in "$@"; do' \
+  '  if [ "$a" = "create" ]; then' \
+  '    echo "https://github.com/octocat/hello-world/issues/1"' \
+  '    exit 0' \
+  '  fi' \
+  'done' \
+  'echo "{\"number\":1,\"title\":\"stub issue\",\"state\":\"open\",\"url\":\"https://github.com/octocat/hello-world/issues/1\"}"' \
+  'exit 0' \
+  > /usr/local/bin/gh \
+ && chmod +x /usr/local/bin/gh
+
+# The post-0.4.0 API requires a path to a git repo and reads owner/repo from its origin URL.
+RUN mkdir -p /work/repo/.git \
+  && printf '[remote "origin"]\n\turl = https://github.com/octocat/hello-world.git\n' \
+     > /work/repo/.git/config \
+  && chmod -R a+rX /work
+
+ENTRYPOINT ["node", "/app/build/index.js"]

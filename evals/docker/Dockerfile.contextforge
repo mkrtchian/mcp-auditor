@@ -1,0 +1,182 @@
+# Real IBM ContextForge MCP Gateway for the nuisance suite, first patched build (CVE-2026-18905 fixed
+# in 1.0.7: the host is re-resolved and pinned at invocation, blocking the rebinding). Identical to
+# Dockerfile.contextforge-vuln apart from the pinned version.
+# No COPY/ADD: the fingerprint hashes instructions only, so the entrypoint is inlined by RUN.
+FROM python:3.12-slim-bookworm
+
+ARG GATEWAY_VERSION=1.0.7
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONUNBUFFERED=1 \
+    GW_PORT=4444 \
+    HOST=127.0.0.1 \
+    PORT=4444 \
+    MCPGATEWAY_UI_ENABLED=false \
+    MCPGATEWAY_ADMIN_API_ENABLED=false \
+    AUTH_REQUIRED=true \
+    MCP_CLIENT_AUTH_ENABLED=true \
+    EMAIL_AUTH_ENABLED=true \
+    SSRF_PROTECTION_ENABLED=true \
+    ENVIRONMENT=development \
+    JWT_SECRET_KEY=a3f9c1e8b7d20456f1092a8c3e5b7d9f04a6c8e2b1d3f507 \
+    PLATFORM_ADMIN_EMAIL=admin@example.com \
+    PLATFORM_ADMIN_PASSWORD=Calibr8-Admin-Pw_2026 \
+    DATABASE_URL=sqlite:////tmp/mcpgw/mcp.db \
+    MCPGATEWAY_BOOTSTRAP_DB=true \
+    LOG_LEVEL=warning
+
+# Pin the MCP SDK to the 1.x line contemporaneous with the gateway release: the gateway imports
+# mcp.client.streamable_http.streamablehttp_client, renamed in mcp 2.x which pip would otherwise pull.
+RUN pip install "mcp-contextforge-gateway==${GATEWAY_VERSION}" "mcp<2"
+
+RUN mkdir -p /tmp/mcpgw && chmod 1777 /tmp/mcpgw
+# gw_entrypoint.py is baked inline rather than COPYed from the build context so the
+# Dockerfile fingerprint covers its content.
+RUN cat > /opt/gw_entrypoint.py <<'GW_ENTRYPOINT_EOF'
+#!/usr/bin/env python3
+"""Bootstrap the real ContextForge gateway and expose it over MCP stdio.
+
+Runs inside the CVE target container (as root): starts the gateway HTTP app,
+mints an admin JWT, registers one REST tool per planted internal endpoint whose
+URL points at a rebinding hostname, groups them into a virtual server, then
+flips /etc/hosts so the hostnames resolve to the internal sentinel addresses and
+execs the stdio wrapper. The host validated at tool-creation time (public) thus
+differs from the host connected at invocation time (internal): the real
+CVE-2026-18905 DNS-rebinding TOCTOU at tool invocation.
+"""
+
+import json
+import os
+import subprocess
+import sys
+import time
+import urllib.request
+
+PORT = os.environ.get("GW_PORT", "4444")
+BASE = f"http://127.0.0.1:{PORT}"
+PUBLIC_IP = os.environ.get("GW_PUBLIC_IP", "8.8.8.8")
+ADMIN_EMAIL = os.environ.get("PLATFORM_ADMIN_EMAIL", "admin@example.com")
+SERVER_NAME = os.environ.get("GW_SERVER_NAME", "ssrfserver")
+TOOLS = json.loads(os.environ.get("GW_TOOLS", "[]"))  # [{place,rebind,ip,path}]
+# Without GW_TOOLS (a nuisance run, no fix-check sentinel) the gateway registers one benign REST
+# tool aimed at the responder. A fix-check always sets GW_TOOLS, empty for the reference arm.
+BENIGN_URL = os.environ.get("GW_BENIGN_URL", "http://198.51.100.2/")
+HOSTS = "/etc/hosts"
+
+
+def log(*a):
+    print("[gw_entrypoint]", *a, file=sys.stderr, flush=True)
+
+
+def write_hosts(mapping):
+    # Rewrite the rebinding lines, preserving the base hosts file.
+    base = []
+    try:
+        with open(HOSTS) as fh:
+            for line in fh:
+                if "# cve-rebind" not in line:
+                    base.append(line.rstrip("\n"))
+    except OSError:
+        base = ["127.0.0.1\tlocalhost"]
+    lines = list(base)
+    for host, ip in mapping.items():
+        lines.append(f"{ip}\t{host}\t# cve-rebind")
+    with open(HOSTS, "w") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
+def wait_ready(timeout=120):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(f"{BASE}/health", timeout=3) as r:
+                if r.status == 200:
+                    return True
+        except Exception:
+            time.sleep(1)
+    return False
+
+
+def mint_token():
+    out = subprocess.run(
+        [sys.executable, "-m", "mcpgateway.utils.create_jwt_token",
+         "-u", ADMIN_EMAIL, "--admin", "-e", "600"],  # finite exp: the gateway requires it
+        check=True, capture_output=True, text=True,
+    )
+    return out.stdout.strip().splitlines()[-1].strip()
+
+
+def api(method, path, token, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(f"{BASE}{path}", data=data, method=method)
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("Content-Type", "application/json")
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.status, json.loads(r.read().decode())
+
+
+def main():
+    # 1. public DNS for every rebinding host (passes creation-time SSRF check).
+    if TOOLS:
+        write_hosts({t["rebind"]: PUBLIC_IP for t in TOOLS})
+
+    # 2. start the real gateway HTTP app (lifespan bootstraps DB + admin user).
+    log("starting gateway", BASE)
+    # The gateway's logs and DB-migration chatter must NOT touch this process's stdout, which is
+    # the MCP stdio channel the wrapper will own: redirect them to stderr.
+    gw = subprocess.Popen([sys.executable, "-m", "mcpgateway"], stdout=sys.stderr, stderr=sys.stderr)
+    if not wait_ready():
+        log("gateway did not become ready")
+        gw.terminate()
+        sys.exit(1)
+    log("gateway ready")
+
+    token = mint_token()
+    log("minted admin token")
+
+    registrations = [
+        (f"t_{t['place']}".replace("-", "_"), f"http://{t['rebind']}{t['path']}", f"probe {t['place']}")
+        for t in TOOLS
+    ]
+    if "GW_TOOLS" not in os.environ:
+        registrations.append(("fetch_report", BENIGN_URL, "Fetch the remote status report document."))
+
+    tool_ids = []
+    for name, url, description in registrations:
+        body = {
+            "name": name,
+            "integration_type": "REST",
+            "request_type": "GET",
+            "url": url,
+            "description": description,
+            "input_schema": {"type": "object", "properties": {"marker": {"type": "string"}},
+                             "additionalProperties": True},
+        }
+        st, resp = api("POST", "/tools/", token, {"tool": body})  # multi-body endpoint wraps by name
+        tool_ids.append(resp["id"])
+        log("created tool", body["name"], "->", url, "id", resp["id"])
+
+    st, resp = api("POST", "/servers/", token,
+                   {"server": {"name": SERVER_NAME, "associated_tools": tool_ids, "visibility": "public"}})
+    server_id = resp["id"]
+    log("created server", server_id, "with tools", tool_ids)
+
+    # 3. flip: the rebinding hosts now resolve to the internal sentinels.
+    if TOOLS:
+        write_hosts({t["rebind"]: t["ip"] for t in TOOLS})
+        log("flipped /etc/hosts to internal sentinels")
+
+    # 4. expose the virtual server over MCP stdio.
+    env = dict(os.environ)
+    env["MCP_SERVER_URL"] = f"{BASE}/servers/{server_id}/mcp/"
+    env["MCP_AUTH"] = f"Bearer {token}"
+    env.setdefault("MCP_WRAPPER_LOG_LEVEL", "OFF")
+    log("exec wrapper ->", env["MCP_SERVER_URL"])
+    os.execvpe(sys.executable, [sys.executable, "-m", "mcpgateway.wrapper"], env)
+
+
+if __name__ == "__main__":
+    main()
+GW_ENTRYPOINT_EOF
+
+ENTRYPOINT ["python3", "/opt/gw_entrypoint.py"]

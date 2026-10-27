@@ -1,0 +1,35 @@
+# @sunwood-ai-labs/github-kanban-mcp-server v0.3.0 - vulnerable to CVE-2025-53818
+# (add_comment / issue_number) and CVE-2026-0756 (create_issue / title), both OS command
+# injection through string interpolation into the shell `exec` of `gh` in src/handlers.
+# No COPY/ADD: the fingerprint hashes instructions only, so the gh stub is inlined by RUN.
+FROM node:20
+RUN git clone --depth 1 --branch v0.3.0 \
+      https://github.com/sunwood-ai-labs/github-kanban-mcp-server.git /app
+WORKDIR /app
+RUN npm install && npm run build
+
+# A stubbed `gh` on PATH so benign tool calls return without a GitHub backend or network:
+# `create` prints an issue URL (the handler reads the trailing number), every other subcommand
+# prints a canned issue JSON, and it always exits 0.
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'for a in "$@"; do' \
+  '  if [ "$a" = "create" ]; then' \
+  '    echo "https://github.com/octocat/hello-world/issues/1"' \
+  '    exit 0' \
+  '  fi' \
+  'done' \
+  'echo "{\"number\":1,\"title\":\"stub issue\",\"state\":\"open\",\"url\":\"https://github.com/octocat/hello-world/issues/1\"}"' \
+  'exit 0' \
+  > /usr/local/bin/gh \
+ && chmod +x /usr/local/bin/gh
+
+# A local git checkout the post-0.4.0 API resolves owner/repo from (via path/.git/config). v0.3.0
+# ignores it (it takes repo directly); it exists so the one benign-call set works on both the
+# vulnerable repo-arg API and the patched path-arg API.
+RUN mkdir -p /work/repo/.git \
+  && printf '[remote "origin"]\n\turl = https://github.com/octocat/hello-world.git\n' \
+     > /work/repo/.git/config \
+  && chmod -R a+rX /work
+
+ENTRYPOINT ["node", "/app/build/index.js"]

@@ -1,0 +1,1687 @@
+{
+  "rule_commit": "93de2d8",
+  "grammar_fingerprint": "3f5a4925ad36dd6d3a57afa740165ae828506bed10c6a192a3dca7a194ebe2de",
+  "servers": [
+    {
+      "server_package": "npm:@sunwood-ai-labs/github-kanban-mcp-server",
+      "reaching_flaw": "CVE-2025-53818",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-53818",
+          "tools": [
+            {
+              "vulnerable_name": "add_comment",
+              "patched_name": "add_comment",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "0.4.1",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "list_issues",
+              "arguments": {
+                "repo": "octocat/hello-world",
+                "path": "/work/repo",
+                "state": "open"
+              }
+            },
+            {
+              "tool": "create_issue",
+              "arguments": {
+                "repo": "octocat/hello-world",
+                "path": "/work/repo",
+                "title": "Release checklist"
+              }
+            },
+            {
+              "tool": "update_issue",
+              "arguments": {
+                "repo": "octocat/hello-world",
+                "path": "/work/repo",
+                "issue_number": 1,
+                "title": "Updated title"
+              }
+            },
+            {
+              "tool": "add_comment",
+              "arguments": {
+                "repo": "octocat/hello-world",
+                "path": "/work/repo",
+                "issue_number": "1",
+                "body": "Looks good"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-a80d1ddace15f46ea3bf4477b341a15e",
+            "exploit_calls": [
+              "add_comment"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-0756",
+          "tools": [
+            {
+              "vulnerable_name": "create_issue",
+              "patched_name": "create_issue",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "0.4.1",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "list_issues",
+              "arguments": {
+                "repo": "octocat/hello-world",
+                "path": "/work/repo",
+                "state": "open"
+              }
+            },
+            {
+              "tool": "create_issue",
+              "arguments": {
+                "repo": "octocat/hello-world",
+                "path": "/work/repo",
+                "title": "Release checklist"
+              }
+            },
+            {
+              "tool": "update_issue",
+              "arguments": {
+                "repo": "octocat/hello-world",
+                "path": "/work/repo",
+                "issue_number": 1,
+                "title": "Updated title"
+              }
+            },
+            {
+              "tool": "add_comment",
+              "arguments": {
+                "repo": "octocat/hello-world",
+                "path": "/work/repo",
+                "issue_number": "1",
+                "body": "Looks good"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-ad2d78b1ae793957b4aa797bc26e136f",
+            "exploit_calls": [
+              "create_issue"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "kanban",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:@sunwood-ai-labs/github-kanban-mcp-server",
+          "flaw": null,
+          "field": "backend_need",
+          "value": "none",
+          "reason": "both records marked the gh dependency as needing a backend, but the gh stub is baked into the image, so the single container provides it and no backend is provisioned"
+        }
+      ],
+      "patched_version": "0.4.1"
+    },
+    {
+      "server_package": "Maven:com.arcadedb:arcadedb-server",
+      "reaching_flaw": "CVE-2026-65831",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-65831",
+          "tools": [
+            {
+              "vulnerable_name": "execute_command",
+              "patched_name": "execute_command",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "26.7.1",
+          "patched_source": "advisory",
+          "launch_option": {
+            "option": "config/mcp-config.json",
+            "value": "{\"enabled\":true,\"allowReads\":true,\"allowInsert\":true,\"allowUpdate\":true,\"allowDelete\":true,\"allowSchemaChange\":true,\"allowAdmin\":true,\"allowedUsers\":[\"*\"]}",
+            "reason": "The MCP server must be enabled and the execute_command tool allowed so the polyglot js language path (PolyglotQueryEngine) is reachable; the GraalVM class-loader reflection pivot off the bound database object then reads a file outside the database scope.",
+            "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp"
+          },
+          "benign_calls": [
+            {
+              "tool": "query",
+              "arguments": {
+                "database": "mcp",
+                "language": "sql",
+                "query": "SELECT 1 AS ok"
+              }
+            },
+            {
+              "tool": "execute_command",
+              "arguments": {
+                "database": "mcp",
+                "language": "sql",
+                "command": "SELECT 1 AS ok"
+              }
+            },
+            {
+              "tool": "list_databases",
+              "arguments": {}
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-895c84e7eddc598a1b30d9e560a58dc6",
+            "exploit_calls": [
+              "execute_command"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-67357",
+          "tools": [
+            {
+              "vulnerable_name": "get_server_settings",
+              "patched_name": "get_server_settings",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "26.7.3",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "query",
+              "arguments": {
+                "database": "mcp",
+                "language": "sql",
+                "query": "SELECT 1 AS ok"
+              }
+            },
+            {
+              "tool": "list_databases",
+              "arguments": {}
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-e80c37ddb8f64a7810d40d6683b0be1e",
+            "exploit_calls": [
+              "query",
+              "get_server_settings",
+              "execute_command"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-68578",
+          "tools": [
+            {
+              "vulnerable_name": "execute_command",
+              "patched_name": "execute_command",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "query",
+              "patched_name": "query",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "26.7.3",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "list_databases",
+              "arguments": {}
+            },
+            {
+              "tool": "server_status",
+              "arguments": {}
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-954373ba30c40a991d86b92faee63b3e",
+            "exploit_calls": [
+              "execute_command"
+            ],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-75845",
+          "tools": [
+            {
+              "vulnerable_name": "set_server_setting",
+              "patched_name": "set_server_setting",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "26.8.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "list_databases",
+              "arguments": {}
+            },
+            {
+              "tool": "server_status",
+              "arguments": {}
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-fbdb13b1a612f10ec8263bbfa93ce193",
+            "exploit_calls": [
+              "set_server_setting"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/home/arcadedb",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "arcadedb",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": "CVE-2026-65831",
+          "field": "tools",
+          "value": "execute_command",
+          "reason": "query dropped from the counted tools: the validated fix-check reproduces the polyglot read-outside-scope only through execute_command (the documented MCP polyglot path), and query is not demonstrated to route the GraalVM pivot on 26.7.1"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": null,
+          "field": "patched_version",
+          "value": "26.7.1",
+          "reason": "26.8.1 is the maximum across the out-of-grammar flaws; the counted flaw CVE-2026-65831 is first fixed at 26.7.1, which is taken as the server's patched version"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": "CVE-2026-68578",
+          "field": "declared_function_is_effect",
+          "value": "true",
+          "reason": "record B: the effect is an unauthorized write or DDL whose response echoes only data the caller sent, with read authorization still enforced, so it is declared-function-is-effect and out of the nonce grammar"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": "CVE-2026-75845",
+          "field": "declared_function_is_effect",
+          "value": "true",
+          "reason": "record B: a non-root principal reaching an admin setting, declared-function-is-effect, out of grammar"
+        }
+      ],
+      "patched_version": "26.7.1"
+    },
+    {
+      "server_package": "npm:@ooples/token-optimizer-mcp",
+      "reaching_flaw": "CVE-2026-55157",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-55157",
+          "tools": [
+            {
+              "vulnerable_name": "smart_user",
+              "patched_name": "smart_user",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "5.1.1",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "smart_user",
+              "arguments": {
+                "operation": "get-user-info",
+                "username": "root",
+                "useCache": false
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-37646717615c12ec039568e79da1a431",
+            "exploit_calls": [
+              "smart_user"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-55156",
+          "tools": [],
+          "effect_class": "read_outside_scope",
+          "patched_version": "5.1.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_session_stats",
+              "arguments": {}
+            }
+          ],
+          "backend_need": "external",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-4e6f05403e52d711d6c75976cdd66079",
+            "exploit_calls": [
+              "get_session_stats"
+            ],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "token-optimizer",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:@ooples/token-optimizer-mcp",
+          "flaw": "CVE-2026-55157",
+          "field": "patched_source",
+          "value": "fix_commit",
+          "reason": "5.1.0, the advisory's first-patched version, was never published to npm; 5.1.1 is the first npm release carrying the argv-mode execFileSafe fix and is the deployable pin"
+        },
+        {
+          "server_package": "npm:@ooples/token-optimizer-mcp",
+          "flaw": "CVE-2026-55156",
+          "field": "tools",
+          "value": "",
+          "reason": "dropped: the path traversal is in the dashboard HTTP server (started only by the separate daemon), not an MCP tool; the stdio server exposes no tool that reaches it, so there is no counted tool"
+        }
+      ],
+      "patched_version": "5.1.1"
+    },
+    {
+      "server_package": "npm:claude-in-mobile",
+      "reaching_flaw": "CVE-2026-81562",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-81562",
+          "tools": [
+            {
+              "vulnerable_name": "system",
+              "patched_name": "system",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "3.10.3",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "system",
+              "arguments": {
+                "action": "shell",
+                "platform": "android",
+                "command": "getprop ro.build.version.sdk"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-5c59476616cf965bde7daf3345d5960d",
+            "exploit_calls": [
+              "system"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "claude-in-mobile",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-81562",
+          "field": "tools",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:claude-in-mobile",
+          "flaw": "CVE-2026-81562",
+          "field": "tools",
+          "value": "system",
+          "reason": "record B: the counted tool is the system meta-tool, the only tool tools/list returns; record A's app and the system_shell alias are not exposed tools"
+        }
+      ],
+      "patched_version": "3.10.3"
+    },
+    {
+      "server_package": "PyPI:awslabs-aws-api-mcp-server",
+      "reaching_flaw": "CVE-2026-4270",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-4270",
+          "tools": [
+            {
+              "vulnerable_name": "call_aws",
+              "patched_name": "call_aws",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "1.3.9",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "call_aws",
+              "arguments": {
+                "cli_command": "aws ec2 describe-instances help"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-a6abb8dd996a3dbb7168c977598cb332",
+            "exploit_calls": [
+              "call_aws"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-16584",
+          "tools": [
+            {
+              "vulnerable_name": "call_aws",
+              "patched_name": "call_aws",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "suggest_aws_commands",
+              "patched_name": "suggest_aws_commands",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "1.3.47",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "call_aws",
+              "arguments": {
+                "cli_command": "aws ec2 describe-instances help"
+              }
+            },
+            {
+              "tool": "suggest_aws_commands",
+              "arguments": {
+                "query": "list all running EC2 instances in us-east-1"
+              }
+            }
+          ],
+          "backend_need": "external",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-34c6dd9fae6771bd1a7c98b1ccffbd6a",
+            "exploit_calls": [
+              "call_aws"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": true
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "aws-api-mcp",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "PyPI:awslabs-aws-api-mcp-server",
+          "flaw": "CVE-2026-4270",
+          "field": "tools",
+          "value": "call_aws",
+          "reason": "suggest_aws_commands dropped from the counted tools: it does not reach the read-outside-scope flaw, which is in call_aws' CLI command path"
+        },
+        {
+          "server_package": "PyPI:awslabs-aws-api-mcp-server",
+          "flaw": "CVE-2026-4270",
+          "field": "backend_need",
+          "value": "none",
+          "reason": "record B: the counted benign call_aws runs 'aws ec2 describe-instances help', offline CLI help that needs no AWS backend"
+        },
+        {
+          "server_package": "PyPI:awslabs-aws-api-mcp-server",
+          "flaw": "CVE-2026-4270",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the aws holdout twin's own calibrated flaw at the same version (1.3.9), so its fix_check recopies the holdout calibration and aws carries no committed vulnerable fixture or FixCheckTarget"
+        },
+        {
+          "server_package": "PyPI:awslabs-aws-api-mcp-server",
+          "flaw": "CVE-2026-16584",
+          "field": "effect_class",
+          "value": "null",
+          "reason": "CWE-455 policy bypass, outside the nonce grammar; record A's internal_fetch reading was an exploit artifact. Its benign errors on the patched image, so it could not be a counted flaw regardless"
+        }
+      ],
+      "patched_version": "1.3.9"
+    },
+    {
+      "server_package": "npm:@aborruso/ckan-mcp-server",
+      "reaching_flaw": "CVE-2026-33060",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-73844",
+          "tools": [
+            {
+              "vulnerable_name": "ckan_package_search",
+              "patched_name": "ckan_package_search",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "0.4.112",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "ckan_package_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it",
+                "q": "water",
+                "rows": 1
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-90ada6424f74d00b2b5e695ce19ca340",
+            "exploit_calls": [
+              "ckan_package_search"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-73845",
+          "tools": [
+            {
+              "vulnerable_name": "ckan_get_mqa_quality",
+              "patched_name": "ckan_get_mqa_quality",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality_details",
+              "patched_name": "ckan_get_mqa_quality_details",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "0.4.112",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "ckan_get_mqa_quality",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "test-dataset"
+              }
+            },
+            {
+              "tool": "ckan_get_mqa_quality_details",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "test-dataset"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-9de97f8136e32992be0d93d0365a752b",
+            "exploit_calls": [
+              "ckan_get_mqa_quality",
+              "ckan_get_mqa_quality_details"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-33060",
+          "tools": [
+            {
+              "vulnerable_name": "ckan_package_search",
+              "patched_name": "ckan_package_search",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search_sql",
+              "patched_name": "ckan_datastore_search_sql",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sparql_query",
+              "patched_name": "sparql_query",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "0.4.85",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "ckan_package_search",
+              "arguments": {
+                "server_url": "https://demo.ckan.org",
+                "q": "water"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-3dffba2d1b676d0d899871e25dbf1026",
+            "exploit_calls": [
+              "ckan_package_search"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-53509",
+          "tools": [
+            {
+              "vulnerable_name": "ckan_package_search",
+              "patched_name": "ckan_package_search",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search_sql",
+              "patched_name": "ckan_datastore_search_sql",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sparql_query",
+              "patched_name": "sparql_query",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "0.4.106",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "ckan_package_search",
+              "arguments": {
+                "server_url": "https://demo.ckan.org",
+                "q": "water"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-da317005435b51865dc848e992869d91",
+            "exploit_calls": [
+              "ckan_package_search"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-61612",
+          "tools": [
+            {
+              "vulnerable_name": "ckan_package_search",
+              "patched_name": "ckan_package_search",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search_sql",
+              "patched_name": "ckan_datastore_search_sql",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sparql_query",
+              "patched_name": "sparql_query",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "0.4.108",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "ckan_package_search",
+              "arguments": {
+                "server_url": "https://demo.ckan.org",
+                "q": "water"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-3a3be20091d460db8ee5be96ad14ec69",
+            "exploit_calls": [
+              "ckan_package_search"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-73846",
+          "tools": [
+            {
+              "vulnerable_name": "ckan_package_search",
+              "patched_name": "ckan_package_search",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search",
+              "patched_name": "ckan_datastore_search",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "ckan_package_show",
+              "patched_name": "ckan_package_show",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "0.4.112",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "ckan_package_search",
+              "arguments": {
+                "server_url": "https://demo.ckan.org",
+                "q": "water"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-41df4611785433518fbd2edc2edba22f",
+            "exploit_calls": [
+              "ckan_package_search"
+            ],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "ckan",
+      "backend": {
+        "provisioner": "ckan",
+        "image": "mcp-auditor-cve-ckan-responder:local",
+        "network": "mcp-auditor-cve-ckan-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-73845",
+          "field": "benign_calls",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-73844",
+          "field": "tools",
+          "value": "ckan_package_search",
+          "reason": "the counted carrier is ckan_package_search (the committed fix-check reproduces the SSRF through it); ckan_datastore_search_sql and ckan_package_show are not counted"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-73845",
+          "field": "benign_calls",
+          "value": "ckan_get_mqa_quality, ckan_get_mqa_quality_details on dati.gov.it",
+          "reason": "record B: the MQA benign targets ckan_get_mqa_quality on dati.gov.it (record A targeted the wrong tool and a rejected domain); ckan_get_mqa_quality_details is added as the second counted tool's benign"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-33060",
+          "field": "effect_class",
+          "value": "null",
+          "reason": "real class internal_fetch, dropped as declared-function-is-effect; effect_class recorded null so the flaw does not count (its tool is not a false-alarm candidate)"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-53509",
+          "field": "effect_class",
+          "value": "null",
+          "reason": "real class internal_fetch, dropped as declared-function-is-effect; effect_class recorded null so the flaw does not count (its tool is not a false-alarm candidate)"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-61612",
+          "field": "effect_class",
+          "value": "null",
+          "reason": "real class internal_fetch, dropped as declared-function-is-effect; effect_class recorded null so the flaw does not count (its tool is not a false-alarm candidate)"
+        }
+      ],
+      "patched_version": "0.4.112"
+    },
+    {
+      "server_package": "PyPI:mcp-contextforge-gateway",
+      "reaching_flaw": "CVE-2026-18905",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-18905",
+          "tools": [
+            {
+              "vulnerable_name": "fetch-report",
+              "patched_name": "fetch-report",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "1.0.7",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "fetch-report",
+              "arguments": {}
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-contextforge-18905",
+            "exploit_calls": [
+              "t-contextforge-18905-imds"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "contextforge",
+      "backend": {
+        "provisioner": "contextforge",
+        "image": "mcp-auditor-cve-contextforge-responder:local",
+        "network": "mcp-auditor-cve-contextforge-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "PyPI:mcp-contextforge-gateway",
+          "flaw": null,
+          "field": "runs_over_stdio",
+          "value": "true",
+          "reason": "record A rebuilt the gateway as an HTTP service and concluded false; the holdout twin exposes it over MCP stdio via contextforge_ssrf_env, so stdio is the settled value, and the counted tool, benign and exploit are taken from that stdio fixture (record A ran it as HTTP, so its tools and benign are empty)"
+        }
+      ],
+      "patched_version": "1.0.7"
+    },
+    {
+      "server_package": "PyPI:doris-mcp-server",
+      "reaching_flaw": "CVE-2025-66335",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-66335",
+          "tools": [
+            {
+              "vulnerable_name": "get_table_comment",
+              "patched_name": "get_table_comment",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "0.6.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_table_comment",
+              "arguments": {
+                "table_name": "t1",
+                "db_name": "test_db"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-217ede00fa232416fc5806f70669457c",
+            "exploit_calls": [
+              "get_table_comment"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-66336",
+          "tools": [
+            {
+              "vulnerable_name": "get_table_comment",
+              "patched_name": "get_table_comment",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "0.6.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_table_comment",
+              "arguments": {
+                "table_name": "t1",
+                "db_name": "test_db"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-8771397fe5ab841322f62a3c343cb053",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-58337",
+          "tools": [
+            {
+              "vulnerable_name": "exec_query",
+              "patched_name": "exec_query",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "0.6.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "exec_query",
+              "arguments": {
+                "sql": "SELECT 1"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-9642c44f78b4dba50e2ea0a8a69353b5",
+            "exploit_calls": [
+              "exec_query"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "doris",
+      "backend": {
+        "provisioner": "doris",
+        "image": "apache/doris:all-in-one-4.1.3",
+        "network": "mcp-auditor-cve-doris-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "PyPI:doris-mcp-server",
+          "flaw": "CVE-2025-66335",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "66335 is the holdout twin's own calibrated-green flaw (internal_fetch via get_table_comment's SQL injection into Doris' http() TVF) at the same patched version 0.6.1, so its fix_check recopies the holdout calibration and doris carries no committed nuisance fixture, exactly as aws-api does (decision 5)"
+        },
+        {
+          "server_package": "PyPI:doris-mcp-server",
+          "flaw": "CVE-2025-66335",
+          "field": "effect_class",
+          "value": "internal_fetch",
+          "reason": "the holdout ground truth (calibrated green): 66335 is internal_fetch via get_table_comment, declared-function not the effect; the blind admission run's command_execution / declared-function-is-effect reading of 66335 was its mis-wired re-derivation error and is not followed"
+        },
+        {
+          "server_package": "PyPI:doris-mcp-server",
+          "flaw": "CVE-2025-66336",
+          "field": "effect_class",
+          "value": "null",
+          "reason": "CVE-2025-66336 is not independently reproducible as a distinct read-outside-scope flaw in this setup: the only working doris read vehicle is 66335's get_table_comment http() injection, so 66336 is dropped (class left unspecified) rather than carry a guessed label or a counted tool that re-counts 66335's vehicle"
+        }
+      ],
+      "patched_version": "0.6.1"
+    },
+    {
+      "server_package": "PyPI:flyto-core",
+      "reaching_flaw": "CVE-2026-55787",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-55787",
+          "tools": [
+            {
+              "vulnerable_name": "execute_module",
+              "patched_name": "execute_module",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "2.26.3",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_module",
+              "arguments": {
+                "module_id": "string.uppercase",
+                "params": {
+                  "text": "hello"
+                }
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-bab9bc3686878c71babc74a7cf621764",
+            "exploit_calls": [
+              "execute_module"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-67424",
+          "tools": [
+            {
+              "vulnerable_name": "execute_module",
+              "patched_name": "execute_module",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "2.26.7",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_module",
+              "arguments": {
+                "module_id": "string.uppercase",
+                "params": {
+                  "text": "hello"
+                }
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-76bea483fbb34a70a617912d5359a31e",
+            "exploit_calls": [
+              "execute_module"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-67427",
+          "tools": [
+            {
+              "vulnerable_name": "run_recipe",
+              "patched_name": "run_recipe",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "2.26.7",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "run_recipe",
+              "arguments": {
+                "recipe_name": "nb08benign",
+                "args": {}
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-6421f1c53c2fa35a8866b3931152cb5f",
+            "exploit_calls": [
+              "run_recipe"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-67428",
+          "tools": [
+            {
+              "vulnerable_name": "execute_module",
+              "patched_name": "execute_module",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "2.26.7",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_module",
+              "arguments": {
+                "module_id": "string.uppercase",
+                "params": {
+                  "text": "hello"
+                }
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-0d2aba980616f56afb867f68ff80a187",
+            "exploit_calls": [
+              "execute_module"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-73530",
+          "tools": [
+            {
+              "vulnerable_name": "execute_module",
+              "patched_name": "execute_module",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "2.28.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_module",
+              "arguments": {
+                "module_id": "string.uppercase",
+                "params": {
+                  "text": "hello"
+                }
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-5cb86ad9439a145dc834278640cb127d",
+            "exploit_calls": [
+              "execute_module"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-55786",
+          "tools": [
+            {
+              "vulnerable_name": "execute_module",
+              "patched_name": "execute_module",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "2.26.5",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_module",
+              "arguments": {
+                "module_id": "string.uppercase",
+                "params": {
+                  "text": "hello"
+                }
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-7e1e99dbb9e21679001f678a707d39e8",
+            "exploit_calls": [
+              "execute_module"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-67425",
+          "tools": [
+            {
+              "vulnerable_name": "execute_module",
+              "patched_name": "execute_module",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "2.26.7",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_module",
+              "arguments": {
+                "module_id": "string.uppercase",
+                "params": {
+                  "text": "hello"
+                }
+              }
+            }
+          ],
+          "backend_need": "external",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-f5f34d18b1605178d5cd83017c1be5ba",
+            "exploit_calls": [
+              "execute_module"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-67429",
+          "tools": [
+            {
+              "vulnerable_name": "execute_module",
+              "patched_name": "execute_module",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "2.26.7",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_module",
+              "arguments": {
+                "module_id": "string.uppercase",
+                "params": {
+                  "text": "hello"
+                }
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-de6872997051a1decd3d68ee4756ccaa",
+            "exploit_calls": [
+              "execute_module"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "flyto",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "PyPI:flyto-core",
+          "flaw": null,
+          "field": "backend_need",
+          "value": "none",
+          "reason": "decision 1: the counted benign calls (execute_module string.uppercase, run_recipe nb08benign) are backend-free, so no run backend is provisioned and the server host needs no network at run time; the SSRF sentinel is a fix-check-only concern on the kit builders"
+        },
+        {
+          "server_package": "PyPI:flyto-core",
+          "flaw": "CVE-2026-55786",
+          "field": "declared_function_is_effect",
+          "value": "true",
+          "reason": "dropped: command execution is execute_module's declared function"
+        },
+        {
+          "server_package": "PyPI:flyto-core",
+          "flaw": "CVE-2026-67429",
+          "field": "declared_function_is_effect",
+          "value": "true",
+          "reason": "dropped: declared-function-is-effect, out of the nonce grammar"
+        },
+        {
+          "server_package": "PyPI:flyto-core",
+          "flaw": "CVE-2026-55786",
+          "field": "effect_class",
+          "value": "null",
+          "reason": "real class command_execution, dropped as declared-function-is-effect; effect_class recorded null so the flaw does not count (its tool is not a false-alarm candidate)"
+        }
+      ],
+      "patched_version": "2.28.0"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# @ooples/token-optimizer-mcp 5.0.1, vulnerable to CVE-2026-55157 (smart_user get-user-info OS
+# command injection through string interpolation into a shell command). Installed from npm.
+# node:20-bookworm ships the python3 and C++ toolchain better-sqlite3 compiles with. No COPY/ADD.
+FROM node:20-bookworm
+ENV CI=true
+WORKDIR /app
+RUN npm init -y >/dev/null 2>&1 \
+ && npm install @ooples/token-optimizer-mcp@5.0.1 >/dev/null 2>&1
+ENTRYPOINT ["node", "/app/node_modules/@ooples/token-optimizer-mcp/dist/server/index.js"]

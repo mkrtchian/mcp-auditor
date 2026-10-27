@@ -1,0 +1,33 @@
+# Vulnerable target for the nuisance fix-check of CVE-2026-65831: ArcadeDB 26.6.1, polyglot JS
+# over the MCP stdio server. execute_command forwards {language:"js", command:<script>} to
+# PolyglotQueryEngine, which runs the script under HostAccess.ALL, so a bound-object reflection
+# chain (database.getClass().getClassLoader().loadClass(...)) reaches java.io.* and reads any
+# host file outside the database scope.
+# No COPY/ADD: the fingerprint hashes instructions only, so the launch config and entrypoint are
+# inlined by RUN.
+FROM arcadedata/arcadedb:26.6.1
+
+USER root
+
+RUN mkdir -p /home/arcadedb/config /home/arcadedb/databases /home/arcadedb/backups /home/arcadedb/log
+
+# The MCP deployment that enables the server and allows execute_command to reach the polyglot
+# engine: this is a deployment choice, not the flaw. Identical on the patched image.
+RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["*"]}' \
+  > /home/arcadedb/config/mcp-config.json
+
+# Launches the ArcadeDB MCP stdio server with a root password and one default database.
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'SET="-Darcadedb.server.rootPassword=${ARCADE_ROOT_PW:-admin-secret-123} -Darcadedb.server.defaultDatabases=mcp[root]"' \
+  'if [ -n "$CLUSTER_TOKEN" ]; then' \
+  '  SET="$SET -Darcadedb.ha.clusterToken=$CLUSTER_TOKEN"' \
+  'fi' \
+  'export ARCADEDB_SETTINGS="$SET"' \
+  'exec /home/arcadedb/bin/mcp-stdio.sh' \
+  > /usr/local/bin/entrypoint-mcp.sh \
+ && chmod +x /usr/local/bin/entrypoint-mcp.sh
+
+RUN chmod -R 0777 /home/arcadedb/databases /home/arcadedb/backups /home/arcadedb/log /home/arcadedb/config
+
+ENTRYPOINT ["/usr/local/bin/entrypoint-mcp.sh"]

@@ -1,0 +1,30 @@
+# claude-in-mobile 3.10.2 (vulnerable to CVE-2026-81562, OS command injection). The `system`
+# meta-tool's `shell` action passes `command` into AdbClient.exec, which builds
+# `adb shell <command>` and runs it with execSync (/bin/sh -c). The 3.10.2 denylist blocks
+# `;`, `|`, backtick, `&&`, `||`, redirects and `$(` but misses a lone `&`, so
+# `probe & cat /flag` backgrounds the adb call and runs the rest in the host shell.
+# 3.10.2 was never published to npm (earliest npm release is 3.10.3), so the real vulnerable
+# software is built from its public GitHub tag v3.10.2 (commit 14577ab, the parent of the fix
+# commit a86d9e5). This is the genuine upstream code, not a stand-in.
+FROM node:22-bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+RUN git clone https://github.com/AlexGladkov/claude-in-mobile.git app \
+    && cd app \
+    && git checkout 14577ab53f46a8bf1ad97bd2afc9c8d495809532
+
+WORKDIR /opt/app
+RUN npm install --no-audit --no-fund --loglevel=error \
+    && npm run build
+
+# A stub `adb` so resolveAdbPath() succeeds and `adb shell <cmd>` returns at once with no
+# device. The flaw is host-side shell injection in how the adb argv is assembled, independent
+# of any real device, so a stub preserves the vulnerable code path exactly.
+RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/adb && chmod 0755 /usr/local/bin/adb
+ENV ADB_PATH=/usr/local/bin/adb
+
+ENTRYPOINT ["node", "/opt/app/dist/index.js"]

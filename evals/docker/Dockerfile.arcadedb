@@ -1,0 +1,31 @@
+# Patched target for the nuisance fix-check of CVE-2026-65831: ArcadeDB 26.7.1, the first version
+# whose GraalVM host-access policy denies Class/ClassLoader/reflect, so the reflection chain off
+# the bound `database` object throws before it reaches java.io.* and reads a host file.
+# No COPY/ADD: the fingerprint hashes instructions only, so the launch config and entrypoint are
+# inlined by RUN.
+FROM arcadedata/arcadedb:26.7.1
+
+USER root
+
+RUN mkdir -p /home/arcadedb/config /home/arcadedb/databases /home/arcadedb/backups /home/arcadedb/log
+
+# Identical MCP deployment to the vulnerable image: write-class tool calls permitted, so the only
+# behavioural difference between the two images is the engine's host-access policy.
+RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["*"]}' \
+  > /home/arcadedb/config/mcp-config.json
+
+# Launches the ArcadeDB MCP stdio server with a root password and one default database.
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'SET="-Darcadedb.server.rootPassword=${ARCADE_ROOT_PW:-admin-secret-123} -Darcadedb.server.defaultDatabases=mcp[root]"' \
+  'if [ -n "$CLUSTER_TOKEN" ]; then' \
+  '  SET="$SET -Darcadedb.ha.clusterToken=$CLUSTER_TOKEN"' \
+  'fi' \
+  'export ARCADEDB_SETTINGS="$SET"' \
+  'exec /home/arcadedb/bin/mcp-stdio.sh' \
+  > /usr/local/bin/entrypoint-mcp.sh \
+ && chmod +x /usr/local/bin/entrypoint-mcp.sh
+
+RUN chmod -R 0777 /home/arcadedb/databases /home/arcadedb/backups /home/arcadedb/log /home/arcadedb/config
+
+ENTRYPOINT ["/usr/local/bin/entrypoint-mcp.sh"]

@@ -1,0 +1,26 @@
+# doris-mcp-server 0.6.1 (patched, fixed by validate_identifier, the fix of CVE-2025-66335).
+# The MCP server only: the Doris cluster it talks to is provisioned at run time.
+# No COPY/ADD: the fingerprint hashes instructions only, so the entrypoint is inlined by RUN.
+FROM python:3.12-slim
+RUN pip install --no-cache-dir "doris-mcp-server==0.6.1"
+
+# Translate the fix-check launch flags into the DORIS_* env vars the server reads, then run it
+# over stdio.
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'set -e' \
+  'while [ $# -gt 0 ]; do' \
+  '  case "$1" in' \
+  '    --db-host) export DORIS_HOST="$2"; shift 2 ;;' \
+  '    --db-port) export DORIS_PORT="$2"; shift 2 ;;' \
+  '    --db-user) export DORIS_USER="$2"; shift 2 ;;' \
+  '    --db-database) export DORIS_DATABASE="$2"; shift 2 ;;' \
+  '    *) shift ;;' \
+  '  esac' \
+  'done' \
+  'export DORIS_PASSWORD="${DORIS_PASSWORD:-}"' \
+  'exec doris-mcp-server --transport stdio' \
+  > /usr/local/bin/doris_mcp_entrypoint.sh \
+ && chmod +x /usr/local/bin/doris_mcp_entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/doris_mcp_entrypoint.sh"]

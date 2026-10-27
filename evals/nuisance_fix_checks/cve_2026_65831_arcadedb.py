@@ -31,7 +31,7 @@ WITNESS = Place(
 )
 AIM = re.compile(r"getClassLoader\(\)")
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/home/arcadedb", has_network=False)
-DATABASE = "mydb"
+DATABASE = "mcp"
 
 _READ_FLAG_JS = (
     "var cl=database.getClass().getClassLoader();"
@@ -61,7 +61,7 @@ async def _benign_execute_command(places: Places, client: KitClient) -> None:
 async def _benign_query(places: Places, client: KitClient) -> None:
     await client.call_tool(
         "query",
-        {"database": DATABASE, "language": "sql", "command": "SELECT 1 AS ok"},
+        {"database": DATABASE, "language": "sql", "query": "SELECT 1 AS ok"},
     )
 
 

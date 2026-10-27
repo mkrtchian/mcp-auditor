@@ -1,0 +1,10 @@
+# @aborruso/ckan-mcp-server@0.4.112 (patched: server_url validated, private and link-local hosts rejected)
+# for the nuisance suite's
+# CVE-2026-73844 and CVE-2026-73845 fix-checks. Runs the MCP server over stdio. The CKAN backend
+# a benign tool call needs is the separate ckan-responder image.
+# No COPY/ADD: the fingerprint hashes instructions only.
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g @aborruso/ckan-mcp-server@0.4.112 \
+ && npm cache clean --force
+ENV TRANSPORT=stdio
+ENTRYPOINT ["ckan-mcp-server"]

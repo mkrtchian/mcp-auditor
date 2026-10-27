@@ -23,8 +23,10 @@ Landmine flags (CLAUDE.md), each named against the failure it guards:
 
 import json
 import os
+import secrets
 import subprocess
 import tempfile
+import time
 from collections.abc import Generator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -34,12 +36,14 @@ from pathlib import Path
 from evals.cve_layout import ANCHOR_PATHS, build_empty_layout, build_layout
 from evals.cve_places import LayoutAnchor
 from evals.cve_planting import (
+    SENTINEL_IMAGE,
     DockerPlanting,
     PlantedArgs,
     PlantingSpec,
     SentinelIntent,
     confinement_args,
     planted,
+    unprivileged_user_args,
 )
 
 
@@ -272,3 +276,164 @@ def _git_launch(
         max_chain_steps=max_chain_steps,
         scope=_PROJECT,
     )
+
+
+# flyto SSRF variants whose sentinel the standard planting cannot bind. Each stands a sentinel in a
+# network holder the server joins, so the server reaches it on loopback (cve_planting's sentinel
+# sits on a bridge, not the server's loopback). Trimmed from the validated nb08 fix-check driver,
+# mcp_auditor-free like the builders above.
+_HOLDER_SLEEP = "2147483647"
+
+
+def _run_detached(name: str, tail: list[str]) -> None:
+    subprocess.run(
+        ["docker", "run", "-d", "--rm", "--name", name, *confinement_args(), *tail],
+        check=True,
+        capture_output=True,
+    )
+
+
+def _remove(*names: str) -> None:
+    for name in names:
+        subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+
+
+@contextmanager
+def ipv6_loopback_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    # CVE-2026-73530: `http://[::]/` routes to the IPv6 loopback, which the standard sentinel cannot
+    # bind. A default-bound (dual-stack) sentinel in the server's own namespace holder is reached on
+    # loopback by both `[::]` and `localhost`.
+    nonce = next(iter(spec.nonces.values()))
+    token = secrets.token_hex(4)
+    holder = f"mcp-auditor-kit-flyto530-h-{token}"
+    sentinel = f"mcp-auditor-kit-flyto530-s-{token}"
+    try:
+        _run_detached(
+            holder, ["--network", "none", "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
+        )
+        _run_detached(
+            sentinel,
+            [
+                "--cap-add",
+                "NET_BIND_SERVICE",
+                "--network",
+                f"container:{holder}",
+                "-e",
+                f"FLAG={nonce}",
+                "-e",
+                "SERVE_FILE=/flag",
+                SENTINEL_IMAGE,
+            ],
+        )
+        time.sleep(1.5)
+        yield Launch(
+            command="docker",
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                *unprivileged_user_args(),
+                "--network",
+                f"container:{holder}",
+                image,
+            ],
+        )
+    finally:
+        _remove(sentinel, holder)
+
+
+_REDIRECTOR_TAG = "mcp-auditor-kit-flyto-redirector:local"
+# A 302 redirector: an allowlisted host that bounces to the internal sentinel. Built inline (no
+# build context, no COPY) so the fix-check is self-contained.
+_REDIRECTOR_DOCKERFILE = """FROM python:3.12-slim
+RUN printf '%s\\n' \\
+  'from http.server import BaseHTTPRequestHandler, HTTPServer' \\
+  'import os' \\
+  'TARGET = os.environ.get("REDIR_TARGET", "http://127.0.0.1/flag")' \\
+  'class H(BaseHTTPRequestHandler):' \\
+  '    def do_GET(self):' \\
+  '        self.send_response(302); self.send_header("Location", TARGET); self.end_headers()' \\
+  '    def log_message(self, *a): pass' \\
+  'HTTPServer(("0.0.0.0", 8080), H).serve_forever()' \\
+  > /redirector.py
+ENTRYPOINT ["python", "/redirector.py"]
+"""
+
+
+def _ensure_redirector_image() -> None:
+    present = (
+        subprocess.run(
+            ["docker", "image", "inspect", _REDIRECTOR_TAG], capture_output=True
+        ).returncode
+        == 0
+    )
+    if not present:
+        subprocess.run(
+            ["docker", "build", "-t", _REDIRECTOR_TAG, "-"],
+            input=_REDIRECTOR_DOCKERFILE.encode(),
+            check=True,
+        )
+
+
+@contextmanager
+def redirect_ssrf_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    # CVE-2026-67424: the guard validates the first URL (the allowlisted redirector at
+    # localhost:8080) but follows its 302 to the internal sentinel at 127.0.0.1:80 without
+    # revalidating. The redirector and the sentinel share the server's namespace holder.
+    nonce = next(iter(spec.nonces.values()))
+    _ensure_redirector_image()
+    token = secrets.token_hex(4)
+    holder = f"mcp-auditor-kit-flyto424-h-{token}"
+    sentinel = f"mcp-auditor-kit-flyto424-s-{token}"
+    redirector = f"mcp-auditor-kit-flyto424-r-{token}"
+    try:
+        _run_detached(
+            holder, ["--network", "none", "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
+        )
+        _run_detached(
+            sentinel,
+            [
+                "--cap-add",
+                "NET_BIND_SERVICE",
+                "--network",
+                f"container:{holder}",
+                "-e",
+                f"FLAG={nonce}",
+                "-e",
+                "SERVE_FILE=/flag",
+                "-e",
+                "BIND_ADDR=127.0.0.1",
+                SENTINEL_IMAGE,
+            ],
+        )
+        _run_detached(
+            redirector,
+            [
+                "--network",
+                f"container:{holder}",
+                "-e",
+                "REDIR_TARGET=http://127.0.0.1/flag",
+                _REDIRECTOR_TAG,
+            ],
+        )
+        time.sleep(1.5)
+        yield Launch(
+            command="docker",
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                *unprivileged_user_args(),
+                "--network",
+                f"container:{holder}",
+                image,
+            ],
+        )
+    finally:
+        _remove(redirector, sentinel, holder)

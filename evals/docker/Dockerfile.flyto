@@ -1,0 +1,25 @@
+# flyto-core 2.28.0 (the shipped server, first fix of CVE-2026-73530). Real pinned software from PyPI, no stub.
+# Base pinned by digest for cross-machine reproducibility (python:3.12-slim).
+# No COPY/ADD: the fingerprint hashes instructions only, so the benign recipe is inlined by RUN.
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+RUN pip install --no-cache-dir "flyto-core==2.28.0"
+
+# The seeded recipe the benign run_recipe call runs: one pure string step, no backend.
+RUN recipes="$(python -c 'import cli.recipe as r; print(r.RECIPES_DIR)')" \
+ && printf '%s\n' \
+  'name: nb08benign' \
+  'description: benign recipe' \
+  'steps:' \
+  '  - id: u' \
+  '    module: string.uppercase' \
+  '    params:' \
+  '      text: "hello"' \
+  > "$recipes/nb08benign.yaml"
+
+# The shipped 2.28.0 image the run audits carries no exploit recipe: nb08leak2 (the CVE-2026-67427
+# env-interpolation probe) lives only on the vulnerable and flaw-version arms, so the auditor never
+# sees it on the patched server. FLYTO_ALLOWED_HOSTS stays (execute_module requires it to run); on
+# the patched server the SSRF guard is fixed, so a localhost allowlist is not itself a flaw.
+ENV FLYTO_ALLOWED_HOSTS=localhost
+ENV FLYTO_SANDBOX_DIR=/tmp
+ENTRYPOINT ["python", "-m", "core.mcp_server"]
