@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from evals import run_cve_benchmark
+from evals.baseline import BaselineStatus
 from evals.cve_audit import RunOverrides
 from evals.cve_measurement import MEASUREMENT_UNGATED, STEPS_WITHOUT_CHAINS
 from tests.unit.support import test_run_cve_benchmark_given as given
@@ -177,3 +178,80 @@ def test_a_graded_run_reports_the_tree_it_ran_on_and_the_tokens_billed(
     report = json.loads(report_path.read_text())
     assert (report["commit"], report["dirty"]) == ("c0ffee", True)
     assert report["provider_usage"]["input_tokens"] == 500
+
+
+def test_an_exploratory_recording_names_the_command_that_confirms_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    output = given.a_captured_console(monkeypatch)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.EXPLORATORY)
+
+    given.exit_code_of(monkeypatch, "--record-baseline", "--report", str(tmp_path / "r.json"))
+
+    assert (
+        "Run uv run python -m evals.run_cve_benchmark --record-baseline again now, at this commit"
+        " and on these images, to confirm it. Commit evals/baselines/cve/ by hand once confirmed."
+    ) in output.getvalue()
+
+
+def test_the_confirming_command_repeats_the_target_filter_and_a_non_default_run_count(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    output = given.a_captured_console(monkeypatch)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.EXPLORATORY)
+    report = str(tmp_path / "r.json")
+
+    given.exit_code_of(
+        monkeypatch,
+        "--record-baseline",
+        "--cve",
+        given.RECORDED_CVE,
+        "--runs",
+        "5",
+        "--report",
+        report,
+    )
+
+    assert (
+        "Run uv run python -m evals.run_cve_benchmark --record-baseline"
+        f" --cve {given.RECORDED_CVE} --runs 5 again now"
+    ) in output.getvalue()
+
+
+def test_the_confirming_command_leaves_the_default_run_count_and_budget_out(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    output = given.a_captured_console(monkeypatch)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.EXPLORATORY)
+    report = str(tmp_path / "r.json")
+
+    given.exit_code_of(monkeypatch, "--record-baseline", "--runs", "3", "--report", report)
+
+    assert "--runs" not in output.getvalue()
+    assert "--budget" not in output.getvalue()
+
+
+def test_a_confirmed_recording_says_to_commit_the_baseline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    output = given.a_captured_console(monkeypatch)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.CONFIRMED)
+
+    given.exit_code_of(monkeypatch, "--record-baseline", "--report", str(tmp_path / "r.json"))
+
+    assert "Commit evals/baselines/cve/ by hand." in output.getvalue()
+    assert "again now" not in output.getvalue()
+
+
+def test_a_recording_prints_the_verdict_once_before_the_recorded_baselines(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    output = given.a_captured_console(monkeypatch)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.EXPLORATORY)
+
+    given.exit_code_of(monkeypatch, "--record-baseline", "--report", str(tmp_path / "r.json"))
+
+    printed = output.getvalue()
+    assert printed.count("Gate green.") == 1
+    assert "Gate:" not in printed
+    assert printed.index("Gate green.") < printed.index("Baseline recorded (exploratory)")

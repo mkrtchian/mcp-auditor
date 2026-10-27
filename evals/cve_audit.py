@@ -6,7 +6,6 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
-from rich.console import Console
 from rich.markup import escape
 
 from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
@@ -18,6 +17,7 @@ from evals.cve_replay import RecordedCall, RunToCheck, replay_credit
 from evals.cve_report_units import units_of
 from evals.cve_session_model import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
+from evals.eval_display import console
 from evals.metrics import SessionThrottles, blocked_reasons, missed_steps
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
@@ -26,8 +26,6 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
-
-console = Console()
 
 # A missed step (a policy refusal or an unreadable answer) leaves the run saying nothing of
 # detection. The generated prompts differ from one audit to the next, so a new attempt usually

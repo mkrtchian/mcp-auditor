@@ -1,16 +1,22 @@
 from collections.abc import Callable
+from io import StringIO
 
 import pytest
+from rich.console import Console
 
-from evals import run_cve_benchmark
+from evals import cve_console, cve_recording_console, eval_display, run_cve_benchmark
+from evals.baseline import BaselineStatus
+from evals.cve_gate import CVEGateResult, CVEGateVerdict
 from evals.cve_session import CVESessionResult
 from evals.cve_session_model import AuditTarget, CVEHarness, CVEOptions
+from evals.cve_session_recording import WrittenBaseline
 from evals.eval_session import TreeState
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
 
 BILLED_CVE = "CVE-billed"
 PRICED_MODEL = "gpt-6-luna"
+RECORDED_CVE = "CVE-2025-53109"
 
 
 def exit_code_of(monkeypatch: pytest.MonkeyPatch, *flags: str) -> object:
@@ -34,6 +40,37 @@ def a_session_under_priced_models(
     monkeypatch.setattr(run_cve_benchmark, "read_tree", lambda: TreeState("c0ffee", dirty=dirty))
     monkeypatch.setattr(run_cve_benchmark, "audit_target", audit_target or a_billing_audit_target)
     monkeypatch.setattr(run_cve_benchmark, "run_gated", a_session_auditing_nothing)
+
+
+def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
+    buffer = StringIO()
+    shared = Console(file=buffer, width=400)
+    for module in (run_cve_benchmark, cve_console, cve_recording_console, eval_display):
+        monkeypatch.setattr(module, "console", shared)
+    return buffer
+
+
+def a_recording_session_writing(monkeypatch: pytest.MonkeyPatch, status: BaselineStatus) -> None:
+    """A green recording run that writes one baseline file with this status, reaching no Docker."""
+    a_session_under_priced_models(monkeypatch)
+
+    async def confirm_admission(*_args: object, **_kwargs: object) -> list[str]:
+        return []
+
+    async def session(options: CVEOptions, harness: CVEHarness) -> CVESessionResult:
+        return CVESessionResult(
+            grades={target.cve_id: [] for target in options.targets},
+            audits=[],
+            gate=CVEGateResult(verdict=CVEGateVerdict.GREEN, reasons=[], targets=[]),
+            not_run={},
+            orphans=[],
+            written=[WrittenBaseline(RECORDED_CVE, status, leaves_gated_set=False)],
+            recording_refused=[],
+            exit_code=0,
+        )
+
+    monkeypatch.setattr(run_cve_benchmark, "confirm_admission", confirm_admission)
+    monkeypatch.setattr(run_cve_benchmark, "run_gated", session)
 
 
 def a_billing_audit_target(

@@ -3,23 +3,25 @@ import asyncio
 import json
 import sys
 import traceback
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from rich.console import Console
+from rich.progress import Progress
 
 from evals import eval_display as display
-from evals.baseline import BaselineStatus
+from evals.audit_progress import AuditProgress
 from evals.concurrency import bounded, positive_int
 from evals.cve_audit import audit_target
 from evals.cve_baseline import (
     CVE_BASELINE_DIRECTORY,
     CVERunConditions,
-    grammar_fingerprint,
     image_ids,
+    run_conditions,
 )
 from evals.cve_calibration import calibrate_all, calibrate_one, check_target
-from evals.cve_costs import TIERED_REQUEST_INPUT_TOKENS, CostPricing, large_request_targets
+from evals.cve_console import print_cve_summary
+from evals.cve_costs import CostPricing
 from evals.cve_layout_check import confirm_admission
 from evals.cve_measurement import (
     MeasurementSettings,
@@ -39,15 +41,17 @@ from evals.cve_oracle import (
 )
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_preflight import preflight_ok
+from evals.cve_recording_console import print_recording
 from evals.cve_session import CVESessionResult, run_gated
 from evals.cve_session_model import CVEHarness, CVEOptions
 from evals.cve_survey import survey_all, survey_one
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
+from evals.eval_display import console
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
 from evals.export import export_cve_judged_cases
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.metrics import SessionThrottles, quiet_throttle_waits
-from mcp_auditor.config import Settings, load_settings
+from mcp_auditor.config import load_settings
 
 CVE_RUNS = 3
 CVE_TEST_BUDGET = 10
@@ -55,16 +59,6 @@ CVE_CONCURRENCY = 6
 DEFAULT_REPORT_PATH = "output/cve_report.json"
 NOT_COMPARABLE_EXIT = 3
 CRASHED_EXIT = 4
-
-console = Console()
-
-
-_NEXT_STEP = {
-    BaselineStatus.EXPLORATORY: (
-        "Run --record-baseline again now, at this commit and on these images, to confirm them."
-    ),
-    BaselineStatus.CONFIRMED: "Commit evals/baselines/cve/ by hand.",
-}
 
 
 def main() -> None:
@@ -187,12 +181,14 @@ async def _run_graded(
     places: Places,
 ) -> int:
     tree = read_tree()
-    conditions = _run_conditions(load_settings(), args.runs, args.budget)
+    conditions = run_conditions(load_settings(), args.runs, args.budget)
     measurement = measurement_from(args)
     pricing = _cost_pricing(args.ungated, measurement, conditions)
     options = CVEOptions(graded, conditions, args.ungated, args.record_baseline)
     throttles = SessionThrottles()
-    session = await run_gated(options, _harness(args, throttles, places))
+    with Progress(console=console) as bar:
+        tracking = _Tracking(throttles, AuditProgress(bar))
+        session = await run_gated(options, _harness(args, places, tracking))
     results = [_result(target, session, args.budget) for target in graded]
     results.extend(out_of_scope_results(tracked))
     report = CVEBenchmarkReport(
@@ -209,9 +205,11 @@ async def _run_graded(
         costs=[] if pricing is None else pricing.costs(throttles.by_target),
         prices_as_of=None if pricing is None else pricing.as_of,
     )
-    _write_reports(report, Path(args.report))
-    export_cve_judged_cases(session.audits, Path(args.report))
-    _print_session(session, report)
+    report_path = Path(args.report)
+    _write_reports(report, report_path)
+    export_cve_judged_cases(session.audits, report_path)
+    print_cve_summary(report, report_path)
+    print_recording(session, _recorded_flags(args))
     if session.recording_refused:
         display.print_refusal(RECORDING_REFUSED, session.recording_refused)
         return NOT_COMPARABLE_EXIT
@@ -237,13 +235,20 @@ def _result(target: CVETarget, session: CVESessionResult, budget: int) -> CVERes
     return result_for(target, grades, budget) if grades else not_run(target, conditions)
 
 
-def _harness(args: argparse.Namespace, throttles: SessionThrottles, places: Places) -> CVEHarness:
+@dataclass(frozen=True)
+class _Tracking:
+    throttles: SessionThrottles
+    progress: AuditProgress
+
+
+def _harness(args: argparse.Namespace, places: Places, tracking: _Tracking) -> CVEHarness:
     measurement = measurement_from(args)
     overrides = None if measurement is None else run_overrides(measurement)
+    audit = audit_target(args.budget, tracking.throttles, places, overrides)
     return CVEHarness(
-        audit=bounded(audit_target(args.budget, throttles, places, overrides), args.concurrency),
+        audit=tracking.progress.tracked(bounded(audit, args.concurrency)),
         check=bounded(lambda target: check_target(target, places), args.concurrency),
-        announce_audits=lambda _: None,
+        announce_audits=tracking.progress.announce,
         baselines=CVE_BASELINE_DIRECTORY,
         read_tree=read_tree,
         image_ids=image_ids,
@@ -252,54 +257,22 @@ def _harness(args: argparse.Namespace, throttles: SessionThrottles, places: Plac
     )
 
 
-def _print_session(session: CVESessionResult, report: CVEBenchmarkReport) -> None:
-    if session.gate is None:
-        console.print("[yellow]Ungated run: nothing compared to evals/baselines/cve/.[/yellow]")
-    else:
-        console.print(f"Gate: [bold]{session.gate.verdict.value}[/bold].")
-    if report.throttled_requests > 0:
-        console.print(
-            f"[yellow]Throttled by the model provider: {report.throttled_requests} requests"
-            f" at concurrency {report.concurrency}[/yellow]"
-        )
-    for cve_id in large_request_targets(report.costs):
-        console.print(
-            f"[yellow]{cve_id}: a request above {TIERED_REQUEST_INPUT_TOKENS} input tokens, "
-            "its cost is under-reported for a vendor that bills such a request higher.[/yellow]"
-        )
-    for orphan in session.orphans:
-        console.print(f"[yellow]Orphaned baseline file, not compared:[/yellow] {orphan}")
-    for written in session.written:
-        path = CVE_BASELINE_DIRECTORY / f"{written.cve_id}.json"
-        console.print(f"[green]Baseline recorded ({written.status}) to {path}.[/green]")
-        if written.leaves_gated_set:
-            console.print(f"  {written.cve_id} leaves the gated set.")
-    # A recording can confirm some files and start others, and each status has its next step.
-    for status in dict.fromkeys(written.status for written in session.written):
-        console.print(_NEXT_STEP[status])
-
-
-def _run_conditions(settings: Settings, runs: int, budget: int) -> CVERunConditions:
-    return CVERunConditions(
-        runs=runs,
-        budget=budget,
-        tools_filtered=True,
-        provider=settings.provider,
-        model=settings.resolve_model(),
-        judge_model=settings.resolve_judge_model(),
-        reasoning=settings.resolve_reasoning(settings.resolve_model()),
-        judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
-        grammar_fingerprint=grammar_fingerprint(),
-    )
+def _recorded_flags(args: argparse.Namespace) -> list[str]:
+    # The confirming recording refuses on a condition mismatch: it repeats the target filter and
+    # every flag that enters the recorded conditions.
+    cve_ids: list[str] = args.cve or []
+    flags = [f"--cve {cve_id}" for cve_id in cve_ids]
+    if args.runs != CVE_RUNS:
+        flags.append(f"--runs {args.runs}")
+    if args.budget != CVE_TEST_BUDGET:
+        flags.append(f"--budget {args.budget}")
+    return flags
 
 
 def _write_reports(report: CVEBenchmarkReport, report_path: Path) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report.model_dump(mode="json"), indent=2))
-    markdown = render_markdown(report)
-    report_path.with_suffix(".md").write_text(markdown)
-    console.print(markdown)
-    console.print(f"Report written to {report_path}")
+    report_path.with_suffix(".md").write_text(render_markdown(report))
 
 
 def _filter_by_cve[T: (CVETarget, OutOfScopeCVE)](items: list[T], ids: list[str] | None) -> list[T]:

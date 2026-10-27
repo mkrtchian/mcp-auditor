@@ -38,11 +38,14 @@ def export_judged_cases(
                         f.write(json.dumps(line) + "\n")
 
 
+def cve_export_path(report_path: Path) -> Path:
+    return report_path.with_name("cve_judged_cases.jsonl")
+
+
 def export_cve_judged_cases(audits: list[CVEAudit], report_path: Path) -> None:
     """Single-step cases only: a CVE target has no per-case ground truth, and chains are
     judged by another prompt."""
-    export_path = report_path.with_name("cve_judged_cases.jsonl")
-    with export_path.open("w") as f:
+    with cve_export_path(report_path).open("w") as f:
         for audit in audits:
             for tool_report in audit.report.tool_reports:
                 for case in tool_report.cases:

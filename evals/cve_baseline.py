@@ -34,6 +34,7 @@ from evals.cve_targets import (
     image_tag,
 )
 from evals.gate import ReplayRule
+from mcp_auditor.config import Settings
 
 CVE_BASELINE_DIRECTORY = Path(__file__).parent / "baselines" / "cve"
 # Fingerprinted in this fixed order, so the fingerprint names one version of the grammar.
@@ -68,6 +69,20 @@ class CVERunConditions(BaseModel):
     reasoning: str | None
     judge_reasoning: str | None
     grammar_fingerprint: str
+
+
+def run_conditions(settings: Settings, runs: int, budget: int) -> CVERunConditions:
+    return CVERunConditions(
+        runs=runs,
+        budget=budget,
+        tools_filtered=True,
+        provider=settings.provider,
+        model=settings.resolve_model(),
+        judge_model=settings.resolve_judge_model(),
+        reasoning=settings.resolve_reasoning(settings.resolve_model()),
+        judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
+        grammar_fingerprint=grammar_fingerprint(),
+    )
 
 
 class CVETargetBaseline(BaseModel):

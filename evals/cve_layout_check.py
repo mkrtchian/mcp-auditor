@@ -29,15 +29,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import IO
 
-from rich.console import Console
 from rich.markup import escape
 
 from evals.cve_environments import LaunchShape, connect
 from evals.cve_places import Place, Places, kept_records
 from evals.cve_route import RouteObservations, route_admits, route_observations
 from evals.cve_targets import CVETarget, LaunchMode, TargetVersion
-
-console = Console()
+from evals.eval_display import console
 
 # When a target already in the fallback launch-mode cannot start even the fallback launch, the
 # admission gives up: the container cannot run the server (holdout-rule.md:159).

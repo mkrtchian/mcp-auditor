@@ -150,7 +150,7 @@ def render_markdown(report: CVEBenchmarkReport) -> str:
     return "\n".join(
         [
             render_conditions(report),
-            *_render_measurement(report),
+            *render_measurement_lines(report),
             "",
             header,
             separator,
@@ -189,7 +189,7 @@ def _render_throttled(report: CVEBenchmarkReport) -> list[str]:
     ]
 
 
-def _render_measurement(report: CVEBenchmarkReport) -> list[str]:
+def render_measurement_lines(report: CVEBenchmarkReport) -> list[str]:
     return [] if report.measurement is None else [render_measurement(report.measurement)]
 
 
@@ -197,8 +197,11 @@ def _render_costs(report: CVEBenchmarkReport) -> list[str]:
     # A target with no report was billed nothing, so it has no row.
     if not report.costs:
         return []
-    title = f"Cost per target, all attempts, dollars at the prices as of {report.prices_as_of}:"
-    return ["", title, "", *render_cost_table(report.costs)]
+    return ["", render_cost_title(report), "", *render_cost_table(report.costs)]
+
+
+def render_cost_title(report: CVEBenchmarkReport) -> str:
+    return f"Cost per target, all attempts, dollars at the prices as of {report.prices_as_of}:"
 
 
 def render_replay_credits(results: Sequence[CVEResult]) -> list[str]:
@@ -295,15 +298,15 @@ def _render_row(result: CVEResult) -> str:
         result.severity,
         result.mechanism or "-",
         result.status.value,
-        _fraction(result.detected_runs, result.runs),
+        run_fraction(result.detected_runs, result.runs),
         result.miss_class or "-",
-        _fraction(result.aimed_runs, result.runs),
-        _fraction(result.fail_without_proof_runs, result.runs),
+        run_fraction(result.aimed_runs, result.runs),
+        run_fraction(result.fail_without_proof_runs, result.runs),
         result.awaited_capability or "-",
         result.note,
     ]
     return f"| {' | '.join(cells)} |"
 
 
-def _fraction(count: int, runs: int) -> str:
+def run_fraction(count: int, runs: int) -> str:
     return f"{count}/{runs}" if runs else "-"

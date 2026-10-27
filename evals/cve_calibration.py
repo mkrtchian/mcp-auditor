@@ -18,7 +18,6 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import IO, cast
 
-from rich.console import Console
 from rich.markup import escape
 
 from evals.cve_environments import connect
@@ -28,8 +27,7 @@ from evals.cve_proofs import is_aimed, proofs_in
 from evals.cve_recording_client import Exchange, RecordingClient
 from evals.cve_targets import CVETarget, TargetVersion
 from evals.cve_units import Unit, unit_of_exchanges
-
-console = Console()
+from evals.eval_display import console
 
 
 async def calibrate_all(

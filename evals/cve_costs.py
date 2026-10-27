@@ -71,17 +71,28 @@ class CostPricing:
         return target_costs(by_target, self.generator, self.judge)
 
 
+COST_COLUMNS = (
+    "CVE",
+    "Input tokens",
+    "Output tokens",
+    "Largest request",
+    "Single-step",
+    "Chains",
+    "Judge",
+    "Total",
+)
+
+
 def render_cost_table(costs: Sequence[TargetCost]) -> list[str]:
     return [
-        "| CVE | Input tokens | Output tokens | Largest request | Single-step | Chains | Judge "
-        "| Total |",
-        "|---|---|---|---|---|---|---|---|",
-        *(_render_cost_row(cost) for cost in costs),
+        f"| {' | '.join(COST_COLUMNS)} |",
+        "|" + "---|" * len(COST_COLUMNS),
+        *(f"| {' | '.join(cost_cells(cost))} |" for cost in costs),
     ]
 
 
-def _render_cost_row(cost: TargetCost) -> str:
-    cells = [
+def cost_cells(cost: TargetCost) -> list[str]:
+    return [
         cost.cve_id,
         str(cost.usage.total.input_tokens),
         str(cost.usage.total.output_tokens),
@@ -91,7 +102,6 @@ def _render_cost_row(cost: TargetCost) -> str:
         _dollars(cost.judge),
         _dollars(cost.total),
     ]
-    return f"| {' | '.join(cells)} |"
 
 
 def _dollars(amount: float | None) -> str:
