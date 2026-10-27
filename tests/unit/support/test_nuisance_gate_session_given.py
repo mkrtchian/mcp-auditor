@@ -60,6 +60,8 @@ def a_harness(
     benign_call: Mapping[str, str] | None = None,
     tree: TreeState = CLEAN_TREE,
     tree_after_runs: TreeState | None = None,
+    announce: Callable[[int], None] = lambda _: None,
+    throttled_requests: int = 0,
 ) -> NuisanceGateHarness:
     """`benign_call` maps a package to its failure. `tree_after_runs` is what every read of the
     tree after the first returns, `tree` by default."""
@@ -77,6 +79,8 @@ def a_harness(
     return NuisanceGateHarness(
         audit=audit,
         benign_call=call,
+        announce_audits=announce,
+        throttled_requests=lambda: throttled_requests,
         rebuild=lambda services: None,
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
         backend_image_ids=lambda tags: {tag: f"sha256:{tag}" for tag in tags},

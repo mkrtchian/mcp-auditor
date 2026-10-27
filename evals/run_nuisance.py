@@ -381,6 +381,7 @@ def _run_gate(args: argparse.Namespace, admission: NuisanceAdmission, current: s
         commit=tree.commit,
         dirty=tree.dirty,
         concurrency=args.concurrency,
+        throttled_requests=session.throttled_requests,
         servers=server_lines(session, options.servers),
         not_run=session.not_run,
         not_admitted=not_admitted(admission, current),

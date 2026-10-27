@@ -88,6 +88,43 @@ async def test_a_server_whose_benign_call_fails_is_not_run_and_not_comparable(tm
     assert session.exit_code == 3
 
 
+async def test_the_session_announces_the_runs_of_the_servers_the_benign_call_let_through(
+    tmp_path: Path,
+):
+    announced: list[int] = []
+    harness = given.a_harness(
+        tmp_path,
+        given.scripted({FILESYSTEM.server_package: given.clean_runs(2)}),
+        benign_call={KUBERNETES.server_package: "no answer"},
+        announce=announced.append,
+    )
+
+    await run_gate(given.options([FILESYSTEM, KUBERNETES], runs=2), harness)
+
+    assert announced == [2]
+
+
+async def test_the_session_carries_the_throttled_total(tmp_path: Path):
+    audit = given.scripted({FILESYSTEM.server_package: given.clean_runs()})
+    harness = given.a_harness(tmp_path, audit, throttled_requests=7)
+
+    session = await run_gate(given.options([FILESYSTEM]), harness)
+
+    assert session.throttled_requests == 7
+
+
+async def test_a_not_run_server_with_a_baseline_carries_its_baseline_runs(tmp_path: Path):
+    given.a_gated_file(tmp_path, FILESYSTEM)
+    harness = given.a_harness(
+        tmp_path, given.scripted({}), benign_call={FILESYSTEM.server_package: "no answer"}
+    )
+
+    session = await run_gate(given.options([FILESYSTEM]), harness)
+
+    comparison = _the_one_server_ends(session, ServerOutcome.NOT_RUN, GateVerdict.NOT_COMPARABLE)
+    assert comparison.baseline_runs == [False] * 6
+
+
 async def test_a_failing_benign_call_refuses_a_recording_before_any_audit(tmp_path: Path):
     harness = given.a_harness(
         tmp_path, given.scripted({}), benign_call={FILESYSTEM.server_package: "no answer"}

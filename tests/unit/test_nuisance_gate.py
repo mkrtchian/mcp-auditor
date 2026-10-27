@@ -4,7 +4,7 @@ import tests.unit.support.test_nuisance_gate_given as given
 from evals.gate import ReplayRule
 from evals.gate_verdict import GateVerdict
 from evals.nuisance_gate import ServerOutcome, compare_server, exit_code, judge, settle
-from evals.nuisance_gate_baseline import WHOLE_RESET
+from evals.nuisance_gate_baseline import WHOLE_RESET, NuisanceServerBaseline
 
 CLEAN = [False] * 3
 ONE_ALARM = [False, True, False]
@@ -71,6 +71,40 @@ def test_a_gated_server(runs: list[bool], outcome: ServerOutcome):
     comparison = compare_server(given.a_gated_baseline(), given.a_candidate(runs))
 
     assert comparison.outcome == outcome
+
+
+@pytest.mark.parametrize(
+    ("baseline", "runs", "outcome"),
+    [
+        (given.a_gated_baseline(), CLEAN, ServerOutcome.HELD),
+        (given.a_gated_baseline(), ONE_ALARM, ServerOutcome.PENDING_REPLAY),
+        (given.a_confirmed_baseline([False] * 5 + [True]), CLEAN, ServerOutcome.NOT_GATED),
+        (given.an_exploratory_baseline(), ONE_ALARM, ServerOutcome.NOT_GATED),
+    ],
+    ids=["held", "pending", "flagged baseline", "exploratory"],
+)
+def test_a_comparison_carries_the_baseline_runs(
+    baseline: NuisanceServerBaseline, runs: list[bool], outcome: ServerOutcome
+):
+    comparison = compare_server(baseline, given.a_candidate(runs))
+
+    assert comparison.outcome == outcome
+    assert comparison.baseline_runs == baseline.runs
+
+
+def test_a_comparison_without_a_baseline_carries_no_baseline_runs():
+    comparison = compare_server(None, given.a_candidate(CLEAN))
+
+    assert comparison.baseline_runs == []
+
+
+def test_settle_keeps_the_baseline_runs():
+    pending = compare_server(given.a_gated_baseline(), given.a_candidate(ONE_ALARM))
+
+    settled = settle(pending, [True] * 4, ReplayRule())
+
+    assert settled.outcome == ServerOutcome.REGRESSION
+    assert settled.baseline_runs == [False] * 6
 
 
 def test_an_alarm_reproduced_four_times_is_a_regression():

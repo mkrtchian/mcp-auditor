@@ -38,6 +38,7 @@ from evals.nuisance_gate import (
 from evals.nuisance_gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     NuisanceGateConditions,
+    NuisanceServerBaseline,
     condition_mismatches,
 )
 from evals.nuisance_gate_session_model import (
@@ -81,7 +82,8 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
     overrides = RunOverrides(
         conditions.chain_budget, conditions.max_chain_steps, conditions.tool_call_timeout
     )
-    auditor = NuisanceAuditor(build_auditor(conditions.budget), overrides, SessionThrottles())
+    throttles = SessionThrottles()
+    auditor = NuisanceAuditor(build_auditor(conditions.budget), overrides, throttles)
 
     async def audit(server: AdmittedServer) -> GateRun | None:
         return await gate_run(
@@ -92,6 +94,8 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
     return NuisanceGateHarness(
         audit=bounded(audit, concurrency),
         benign_call=bounded(benign_call, concurrency),
+        announce_audits=lambda _: None,
+        throttled_requests=lambda: throttles.requests,
         rebuild=rebuild_images,
         image_ids=functools.partial(image_ids, tag=image_tag),
         backend_image_ids=backend_image_ids,
@@ -118,6 +122,7 @@ async def run_gate(
         orphans=opened.orphans(),
         written=[] if isinstance(recorded, RecordingRefused) else recorded,
         recording_refused=refused,
+        throttled_requests=opened.harness.throttled_requests(),
         # A green gate whose recording was refused never exits 0.
         exit_code=3 if refused else exit_code(gate.verdict),
     )
@@ -151,6 +156,7 @@ async def _vetted(opened: OpenedGate) -> dict[str, str]:
 async def _run_servers(opened: OpenedGate, not_run: dict[str, str]) -> list[ServerRuns]:
     count = opened.options.conditions.runs
     servers = [s for s in opened.options.servers if s.server_package not in not_run]
+    opened.harness.announce_audits(len(servers) * count)
     # gather keeps submission order, so each server's runs keep the order of a sequence.
     outcomes = await asyncio.gather(
         *(opened.harness.audit(server) for server in servers for _ in range(count))
@@ -191,7 +197,11 @@ async def _gate(
         )
     by_package = {comparison.server_package: comparison for comparison in audited}
     comparisons = [
-        _not_run_comparison(server.server_package, not_run[server.server_package])
+        _not_run_comparison(
+            server.server_package,
+            not_run[server.server_package],
+            baselines.get(server.server_package),
+        )
         if server.server_package in not_run
         else by_package[server.server_package]
         for server in opened.options.servers
@@ -225,10 +235,13 @@ async def _settled(
     return settled
 
 
-def _not_run_comparison(server_package: str, failure: str) -> ServerComparison:
+def _not_run_comparison(
+    server_package: str, failure: str, baseline: NuisanceServerBaseline | None
+) -> ServerComparison:
     return ServerComparison(
         server_package=server_package,
         outcome=ServerOutcome.NOT_RUN,
         candidate_runs=[],
+        baseline_runs=[] if baseline is None else baseline.runs,
         detail=failure,
     )

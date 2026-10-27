@@ -26,6 +26,8 @@ class NuisanceGateHarness:
     # itself how many audits run at once.
     audit: Callable[[AdmittedServer], Awaitable[GateRun | None]]
     benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure, or None
+    announce_audits: Callable[[int], None]  # the main runs about to start, once vetted
+    throttled_requests: Callable[[], int]  # the session's total so far
     rebuild: Callable[[Sequence[str]], None]
     image_ids: Callable[[Sequence[str]], dict[str, str]]
     backend_image_ids: Callable[[Sequence[str]], dict[str, str]]
@@ -67,6 +69,7 @@ class NuisanceGateSession:
     orphans: list[str]  # baseline files of servers outside the gate set
     written: list[WrittenBaseline]
     recording_refused: list[str]  # why a recording was refused once the runs were paid for
+    throttled_requests: int
     exit_code: int
 
 

@@ -41,6 +41,7 @@ class ServerComparison(BaseModel):
     server_package: str
     outcome: ServerOutcome
     candidate_runs: list[bool]
+    baseline_runs: list[bool] = []  # empty without a baseline
     replays: list[bool] = []  # True: the alarm reproduced
     detail: str | None = None
 
@@ -59,6 +60,7 @@ def compare_server(
             server_package=candidate.server_package,
             outcome=value,
             candidate_runs=candidate.runs,
+            baseline_runs=[] if baseline is None else baseline.runs,
             detail=detail,
         )
 

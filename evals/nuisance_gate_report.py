@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel
 
+from evals.cell_grid import replay_fraction
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_counter import flagged_tools, raw_fail_count
 from evals.nuisance_counting import counted_tools
@@ -27,6 +28,7 @@ class NuisanceGateReport(BaseModel):
     commit: str
     dirty: bool
     concurrency: int
+    throttled_requests: int
     servers: list[GateServerLine]
     not_run: dict[str, str]
     not_admitted: list[str]
@@ -69,6 +71,7 @@ def render_markdown(report: NuisanceGateReport) -> str:
             f"Commit: {report.commit}{dirty}",
             f"Model: {conditions.provider} {conditions.model}, judge {conditions.judge_model}, "
             f"{conditions.runs} run(s), concurrency {report.concurrency}",
+            *_throttled(report),
             "",
             f"Verdict: **{report.gate.verdict.value}**",
             *[f"- {reason}" for reason in report.gate.reasons],
@@ -81,9 +84,21 @@ def render_markdown(report: NuisanceGateReport) -> str:
                 [f"{e.server_package}: {e.reason}" for e in report.outside_gate],
             ),
             *_listed("## Orphaned baseline files", report.orphans),
-            *_listed("## Recording", [*report.written, *report.recording_refused]),
+            *_listed(
+                "## Recording",
+                [*report.written, *(f"refused: {why}" for why in report.recording_refused)],
+            ),
         ]
     )
+
+
+def _throttled(report: NuisanceGateReport) -> list[str]:
+    if report.throttled_requests == 0:
+        return []
+    return [
+        f"Throttled by the model provider: {report.throttled_requests} requests "
+        f"at concurrency {report.concurrency}"
+    ]
 
 
 def _servers_section(report: NuisanceGateReport) -> list[str]:
@@ -94,34 +109,50 @@ def _servers_section(report: NuisanceGateReport) -> list[str]:
     return [
         "## Servers",
         "",
-        "| Server | Outcome | Runs | Replays | Flagged tools |",
-        "|---|---|---|---|---|",
+        "| Server | Outcome | Baseline | Runs | Replays | Detail |",
+        "|---|---|---|---|---|---|",
         *rows,
+        "",
+        GATE_LEGEND,
         "",
     ]
 
 
+GATE_LEGEND = (
+    "Runs: A an alarm on a counted tool, . none. "
+    "Baseline: every run its file holds, both recordings once confirmed. "
+    "Replays: the alarm reproduced in k of n replays."
+)
+
+
 def _row(comparison: ServerComparison, line: GateServerLine | None) -> str:
-    replays = _letters(comparison.replays) or "-"
-    return (
-        f"| {comparison.server_package} | {comparison.outcome.value} "
-        f"| {_letters(comparison.candidate_runs) or '-'} | {replays} | {_flagged_tools(line)} |"
-    )
+    cells = [
+        comparison.server_package,
+        comparison.outcome.value,
+        server_letters(comparison.baseline_runs) or "-",
+        server_letters(comparison.candidate_runs) or "-",
+        replay_fraction(comparison.replays),
+        _detail(comparison, line).replace("|", "\\|"),
+    ]
+    return f"| {' | '.join(cells)} |"
 
 
-def _letters(flagged: Sequence[bool]) -> str:
+def server_letters(flagged: Sequence[bool]) -> str:
     return "".join("A" if alarm else "." for alarm in flagged)
 
 
-def _flagged_tools(line: GateServerLine | None) -> str:
-    if line is None:
-        return "-"
-    runs = [
+def _detail(comparison: ServerComparison, line: GateServerLine | None) -> str:
+    runs = [] if line is None else _flagged_tools(line)
+    parts = [*([comparison.detail] if comparison.detail else []), *runs]
+    return "; ".join(parts) or "-"
+
+
+def _flagged_tools(line: GateServerLine) -> list[str]:
+    return [
         f"run {index + 1}: {', '.join(tools)}"
         for index, tools in enumerate(line.flagged_tools_per_run)
         if tools
     ]
-    return " / ".join(runs) or "none"
 
 
 def _listed(header: str, items: Sequence[str]) -> list[str]:
