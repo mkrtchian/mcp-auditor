@@ -58,6 +58,19 @@ def test_an_unknown_backend_is_refused(tmp_path: Path):
     assert not out.exists()
 
 
+def test_the_shared_kit_carries_no_worked_exploit(tmp_path: Path):
+    # A worked exploit named by its CVE in the shared launch module would reach the admitting
+    # agent through the copied kit and pre-answer the flaw it is meant to re-derive. Such a
+    # builder belongs with its fixture (evals/nuisance_fix_checks), which the dossier never copies.
+    out = tmp_path / "dossier"
+    write_dossier(given.a_census(), _SERVER, out)
+
+    kit = (out / "evals" / "holdout_kit" / "kit_launch.py").read_text()
+    assert "CVE-" not in kit
+    assert "redirect_ssrf_env" not in kit
+    assert "ipv6_loopback_env" not in kit
+
+
 def test_the_written_dossier_imports_nothing_from_mcp_auditor(tmp_path: Path):
     out = tmp_path / "dossier"
     write_dossier(given.a_census(), _SERVER, out)
