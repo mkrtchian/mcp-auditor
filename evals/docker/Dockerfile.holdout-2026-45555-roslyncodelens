@@ -3,7 +3,7 @@
 # is true (its default), with no allowlist, signature check or confirmation. CVE-2026-45555 / CWE-94.
 # The REAL dotnet tool is installed from NuGet and launched on stdio; the exploit is a real compiled
 # malicious Roslyn DiagnosticAnalyzer referenced by a baked solution the server loads at startup.
-FROM mcr.microsoft.com/dotnet/sdk:10.0
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:de4fe90a98845d75910b9769662465c84de1a934665c431279d1382b2bddc02b
 
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     DOTNET_NOLOGO=1 \

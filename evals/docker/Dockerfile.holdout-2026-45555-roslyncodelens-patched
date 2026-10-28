@@ -2,7 +2,7 @@
 # loading and running the analyzer assemblies an untrusted solution references, so the same baked
 # malicious analyzer never executes and no planted nonce surfaces. Same real dotnet tool, same
 # solution and analyzer, only the pinned version differs from the vulnerable image.
-FROM mcr.microsoft.com/dotnet/sdk:10.0
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:de4fe90a98845d75910b9769662465c84de1a934665c431279d1382b2bddc02b
 
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     DOTNET_NOLOGO=1 \

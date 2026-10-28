@@ -6,7 +6,7 @@
 # reproducing upstream's own Dockerfile: the npm-published build/ is stale and predates the fix,
 # so a registry install would not distinguish the versions. npm ci also pins undici to 6.24.0,
 # which loads on node:18 (undici 7.x, pulled by a fresh resolve, needs Node 20's global File).
-FROM node:18-alpine
+FROM node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
 RUN apk add --no-cache git \
  && git clone --branch v2.1.6 --depth 1 https://github.com/Aas-ee/open-webSearch.git /app \
  && cd /app \

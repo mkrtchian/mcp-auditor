@@ -1,7 +1,7 @@
 # Real IBM ContextForge MCP Gateway for the nuisance suite, vulnerable build (CVE-2026-18905 present,
 # <= 1.0.6). The package is installed unchanged from PyPI; only the bootstrap entrypoint is added.
 # No COPY/ADD: the fingerprint hashes instructions only, so the entrypoint is inlined by RUN.
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
 
 ARG GATEWAY_VERSION=1.0.6
 ENV PIP_NO_CACHE_DIR=1 \

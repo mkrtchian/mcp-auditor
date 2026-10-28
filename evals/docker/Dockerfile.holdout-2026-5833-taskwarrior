@@ -2,7 +2,7 @@
 # The CallToolRequestSchema handler builds a shell string and runs it through
 # execSync (`task ${identifier} done`), so a shell metacharacter in a tool argument
 # is command injection. Fixed in commit 1ee3d282 (execFileSync), see Dockerfile.taskwarrior-patched.
-FROM node:22-bookworm
+FROM node:22-bookworm@sha256:18a6d90fd60542269850c80ca03b29b1d9b14d6b221ac7ee8e35b0d33ef904bd
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       taskwarrior git curl ca-certificates \

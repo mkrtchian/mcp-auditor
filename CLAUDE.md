@@ -5,7 +5,7 @@
 ```bash
 uv run pytest -n auto            # Unit + integration tests, the full check that closes a step
 uv run pytest tests/unit -n auto --maxprocesses 4  # Unit tests only, the short loop
-uv run pytest tests/integration -n auto  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker; the three Docker image tests (holdout kit, CVE planting, git reference arm) build the images they need on first run, Docker and network, and skip without Docker; CVE_PLANTING_REQUIRED=1 turns that skip into a failure; the Doris backend builder test runs only behind NUISANCE_DORIS=1, pulls apache/doris:all-in-one-4.1.3 and mysql:8.0.46, and leaves the persistent cluster running)
+uv run pytest tests/integration -n auto  # Integration tests only, the fault injection on the gate included (one test needs Docker and network access, it skips without Docker; the three Docker image tests (holdout kit, CVE planting, git reference arm) build the images they need on first run, Docker and network, and skip without Docker; CVE_PLANTING_REQUIRED=1 turns that skip into a failure; the Doris backend builder test runs only behind NUISANCE_DORIS=1, pulls apache/doris:all-in-one-4.1.3 and mysql:8.0.46, both pinned by digest, and leaves the persistent cluster running)
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyright                   # Type check (strict mode)

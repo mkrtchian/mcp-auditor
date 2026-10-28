@@ -8,12 +8,14 @@ from evals.cve_images import (
     dockerfile_fingerprint,
     ensure_images,
     stale_services,
+    unpinned_bases,
 )
 from evals.cve_targets import image_tag
 from tests.fakes.image_store import FakeImageStore
 
 FILESYSTEM_TAG = image_tag("filesystem")
 SENTINEL_TAG = image_tag("sentinel")
+DIGEST = "sha256:" + "0123456789abcdef" * 4
 
 
 def test_a_tag_carrying_its_dockerfile_fingerprint_is_not_rebuilt():
@@ -95,3 +97,48 @@ def test_changing_an_instruction_moves_the_fingerprint(tmp_path: Path):
     dockerfile.write_text("FROM node:22\nRUN npm install demo@1.0.1\n")
 
     assert dockerfile_fingerprint("demo", tmp_path) != before
+
+
+def test_a_base_named_by_tag_only_is_unpinned():
+    assert unpinned_bases(["FROM node:22-bookworm-slim"]) == ["node:22-bookworm-slim"]
+
+
+def test_a_base_named_by_tag_and_digest_is_pinned():
+    assert unpinned_bases([f"FROM node:22-bookworm-slim@{DIGEST}"]) == []
+
+
+def test_a_base_named_by_digest_without_tag_is_pinned():
+    assert unpinned_bases([f"FROM node@{DIGEST}"]) == []
+
+
+def test_a_platform_flag_and_a_stage_name_leave_the_bare_reference():
+    instructions = ["FROM --platform=linux/amd64 python:3.12-slim AS build"]
+
+    assert unpinned_bases(instructions) == ["python:3.12-slim"]
+
+
+def test_a_reference_to_an_earlier_stage_needs_no_digest():
+    instructions = [
+        f"FROM golang:1.25-alpine@{DIGEST} AS build",
+        "RUN go build ./...",
+        "FROM build",
+        "FROM alpine:3.20",
+    ]
+
+    assert unpinned_bases(instructions) == ["alpine:3.20"]
+
+
+def test_a_lower_case_from_is_read():
+    assert unpinned_bases(["from node:20"]) == ["node:20"]
+
+
+def test_scratch_needs_no_digest():
+    assert unpinned_bases(["FROM scratch"]) == []
+
+
+def test_a_build_argument_reference_is_unpinned():
+    assert unpinned_bases(["FROM ${BASE}"]) == ["${BASE}"]
+
+
+def test_a_digest_of_the_wrong_length_is_unpinned():
+    assert unpinned_bases(["FROM node:20@sha256:abc"]) == ["node:20@sha256:abc"]

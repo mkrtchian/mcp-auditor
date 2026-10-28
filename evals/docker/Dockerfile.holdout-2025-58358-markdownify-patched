@@ -4,7 +4,7 @@
 # "0.0.2" (the fix was merged but never published under that number; npm jumps 0.0.1 -> 1.0.0).
 # By this commit the two sibling flaws are already fixed as well (URL validation / is_ip_private
 # for SSRF, and a Markdown-extension check for get-markdown-file), both merged 2025-05-07.
-FROM node:22-bookworm
+FROM node:22-bookworm@sha256:18a6d90fd60542269850c80ca03b29b1d9b14d6b221ac7ee8e35b0d33ef904bd
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 

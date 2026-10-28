@@ -2,7 +2,7 @@
 # version; the symlink scope-bypass fix a1177ec / PR #321 lands in 0.2.33). The real npm package,
 # no reimplementation. validatePath runs isPathAllowed on the unresolved path, then fs.realpath,
 # so an in-scope symlink to an out-of-scope target is followed and read.
-FROM node:22-bookworm-slim
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
 # --ignore-scripts: skip the setup-claude-server postinstall (it edits the host Claude config and
 # is irrelevant to the server). The published package already ships the built dist/.

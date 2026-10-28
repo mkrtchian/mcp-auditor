@@ -9,6 +9,7 @@ from evals.cve_images import (
     FINGERPRINT_LABEL,
     dockerfile_fingerprint,
     dockerfile_instructions,
+    unpinned_bases,
 )
 from evals.cve_planting_base import SENTINEL_SERVICE
 from evals.cve_targets import CVE_TARGETS, DOCKER_DIRECTORY
@@ -45,3 +46,12 @@ def test_no_dockerfile_copies_from_the_build_context(dockerfile: Path):
     ]
 
     assert copying == [], f"{dockerfile.name}: the fingerprint would miss the copied source"
+
+
+@pytest.mark.parametrize(
+    "dockerfile", sorted(DOCKER_DIRECTORY.glob("Dockerfile.*")), ids=lambda path: path.name
+)
+def test_every_base_image_is_pinned_by_digest(dockerfile: Path):
+    unpinned = unpinned_bases(dockerfile_instructions(dockerfile))
+
+    assert not unpinned, f"{dockerfile.name}: pin {unpinned} to image:tag@sha256:<digest>"

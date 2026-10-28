@@ -3,7 +3,7 @@
 # chain (database.getClass().getClassLoader().loadClass(...)) reaches java.io.* and reads any
 # host file. The MCP stdio session authenticates as root, but the flaw does not depend on the
 # principal: 26.6.1 has no reflection deny-list on the GraalVM host access.
-FROM arcadedata/arcadedb:26.6.1
+FROM arcadedata/arcadedb:26.6.1@sha256:b89478bd698ebfb6301918ec6745818a02759515b7d00dd1c86c842470274f5b
 
 # The launch runs as a non-root uid (the kit's planting host). Make the install tree writable by
 # any uid so the server can open its database directory and write its log, independent of uid.

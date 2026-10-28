@@ -3,7 +3,7 @@
 # child_process.execFile ('ssh', [hostAlias, command]) in 1.0.4 (commit cd2566a); 1.1.0 only adds
 # Include-directive handling on top. So 1.0.4 is the first version where the command injection is
 # gone (see calibration_releve.md). Same base and tools as the vulnerable build.
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openssh-client wget ca-certificates \

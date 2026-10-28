@@ -2,7 +2,7 @@
 # (first fixed version; the detector strips SQL comments before the keyword scan
 # and rejects MySQL conditional comments). Identical to Dockerfile.holdout-2026-85788-mysql
 # apart from the pinned server version, so the only variable is the fix.
-FROM mysql:8.0
+FROM mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
 
 RUN microdnf -y install python3.12 python3.12-pip && microdnf clean all
 RUN ln -sf /usr/bin/python3.12 /usr/local/bin/python3

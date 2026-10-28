@@ -3,7 +3,7 @@
 # value as a separate argv element, plus repo/issue-number validation. Not on npm (npm stops at
 # 0.3.0); built from the v0.4.1 git tag.
 # No COPY/ADD: the fingerprint hashes instructions only, so the gh stub is inlined by RUN.
-FROM node:20
+FROM node:20@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
 RUN git clone --depth 1 --branch v0.4.1 \
       https://github.com/sunwood-ai-labs/github-kanban-mcp-server.git /app
 WORKDIR /app

@@ -52,7 +52,8 @@ _STAND_IN_TAG = "mcp-auditor-kit-n8n-standin:local"
 #   - GET /api/v1/workflows/<any other id>   -> 200, an active webhook workflow
 #   - GET /webhook/r/<host>/<rest>           -> 302 to http://<host>/<rest> (GHSA-8g7g)
 #   - GET /webhook/<path>                    -> 200, workflow started
-_STAND_IN_DOCKERFILE = """FROM python:3.12-slim
+_STAND_IN_DOCKERFILE = """\
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
 RUN printf '%s\\n' \\
   "import json, os, re" \\
   "from http.server import BaseHTTPRequestHandler, HTTPServer" \\

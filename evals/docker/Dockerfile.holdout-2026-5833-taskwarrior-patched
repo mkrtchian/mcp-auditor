@@ -2,7 +2,7 @@
 # The handler now calls execFileSync('task', [identifier, 'done'], ...): no shell, each
 # argument is passed literally, so shell metacharacters are inert. Same base and taskwarrior
 # as the vulnerable image; only the server source commit differs.
-FROM node:22-bookworm
+FROM node:22-bookworm@sha256:18a6d90fd60542269850c80ca03b29b1d9b14d6b221ac7ee8e35b0d33ef904bd
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       taskwarrior git curl ca-certificates \

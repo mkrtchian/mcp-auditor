@@ -1,6 +1,6 @@
 # mcp-maigret 1.0.12: the version carrying CVE-2026-2130 (shell command injection in
 # search_username / parse_url, built from unsanitised input and run through child_process.exec).
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
 
 # The real maigret OSINT tool the server shells out to, node to run the server, and the
 # unix tooling the command-injection exploits read through (cat, id, whoami, env, curl).

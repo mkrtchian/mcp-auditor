@@ -1,7 +1,7 @@
 # Vulnerable github-kanban-mcp-server (CVE-2025-53818, OS command injection in add_comment).
 # Built from the real pinned upstream source at the commit immediately before the fix
 # (0a4f9f92a13a201fe31cda310da1c95d63876579, the last vulnerable state; package tree ~ v0.4.0).
-FROM node:20-bookworm
+FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
 
 # Tools the exploit command-execution reach uses once injected (curl for the SSRF endpoints);
 # coreutils / getent / hostname ship with the base image.

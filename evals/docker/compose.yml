@@ -91,7 +91,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-4270-aws-api-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "709201c9e04a7f783a10be201514bcc139cbd553eb1e00854b40e1608224a66d"
+        org.mcp-auditor.dockerfile-fingerprint: "9f0aedfb23139ea947145a65b6bd23789bc19ec4de8cc062303a4b528fc7e3fd"
     image: mcp-auditor-cve-holdout-2026-4270-aws-api-mcp:local
 
   holdout-2026-4270-aws-api-mcp-patched:
@@ -99,7 +99,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-4270-aws-api-mcp-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "21ae49695c4330f7b827c0851e170541d7abcf510e91050e6c426639419f207f"
+        org.mcp-auditor.dockerfile-fingerprint: "c4515490e1b6232d76270441df700e4f2508aa77668a602ab908be67b37eba80"
     image: mcp-auditor-cve-holdout-2026-4270-aws-api-mcp-patched:local
 
   holdout-2026-2130-maigret:
@@ -107,7 +107,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-2130-maigret
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "5dffd38cb64a2ddbb2ee0acc18ef6779e1645e0781565f27f0ee9e3a78146971"
+        org.mcp-auditor.dockerfile-fingerprint: "953aa175c0b9b4ac835c97e7be66e57f50563a4d0da3a174fcf3cf5a4800ba4c"
     image: mcp-auditor-cve-holdout-2026-2130-maigret:local
 
   holdout-2026-2130-maigret-patched:
@@ -115,7 +115,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-2130-maigret-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "e411f3d4c12ecbbb653454f65eaede7b0c61399ca17df8c4ec84e5ca9a857316"
+        org.mcp-auditor.dockerfile-fingerprint: "0dafbc00cef3411ec4a6788013d1a090244e9350d68621557ef6e84bec7bd6fd"
     image: mcp-auditor-cve-holdout-2026-2130-maigret-patched:local
 
   # SSRF target: reuses the shared sentinel service (no per-target sentinel).
@@ -124,7 +124,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-104120-fetch
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "145b081408abf74fd1555c4fdbdadf7638335963a6869e73185f156284d7bd5a"
+        org.mcp-auditor.dockerfile-fingerprint: "ac8819c4af88f691eeec775619810da11e9097a415a4a99d8f990eae74a8f27f"
     image: mcp-auditor-cve-holdout-2026-104120-fetch:local
 
   holdout-2026-104120-fetch-patched:
@@ -132,7 +132,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-104120-fetch-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "2dd73ad33e518d60e6c3408ac0f1ab6ba03376f07b2edae7f443870e5579feb0"
+        org.mcp-auditor.dockerfile-fingerprint: "0631645bc99bed8205ab3928a714da3cd6e1552756bd47afc55a29b61473a650"
     image: mcp-auditor-cve-holdout-2026-104120-fetch-patched:local
 
   holdout-2026-85788-mysql:
@@ -140,7 +140,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-85788-mysql
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0d19ff3b54cfd135f44f6189852ea6fd4b9b0e76336a6ac6275f523e38feec59"
+        org.mcp-auditor.dockerfile-fingerprint: "85723fbc278a6e0127a05058f5bd9637e5b9a68a36bdb17af23a3ec145252480"
     image: mcp-auditor-cve-holdout-2026-85788-mysql:local
 
   holdout-2026-85788-mysql-patched:
@@ -148,7 +148,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-85788-mysql-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "1487e666d46ad432b80ccb020e5dac6ffb01f9b97ffaf7d99ea85d57467ddb1b"
+        org.mcp-auditor.dockerfile-fingerprint: "803b6704c00fbf6de690142a65a138f23ff6f60064f2471e163367663e63d241"
     image: mcp-auditor-cve-holdout-2026-85788-mysql-patched:local
 
   holdout-2026-25546-godot-mcp:
@@ -156,7 +156,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-25546-godot-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "44927ed8de21ca802ccfd5d071c807945c75ea245167853c62105f5a8e817c17"
+        org.mcp-auditor.dockerfile-fingerprint: "bbe876d01fa531040886e31594f5fbaebe0b813a104b64148318ead77875f861"
     image: mcp-auditor-cve-holdout-2026-25546-godot-mcp:local
 
   holdout-2026-25546-godot-mcp-patched:
@@ -164,7 +164,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-25546-godot-mcp-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "c710f00df2b7364522cb659bae001617deb3f49e6eeb33f55b08da819fea943f"
+        org.mcp-auditor.dockerfile-fingerprint: "a5b7e1272250d7f8d0771c1b3aca440586e6e1d36db5ec3bca889c796f21d990"
     image: mcp-auditor-cve-holdout-2026-25546-godot-mcp-patched:local
 
   holdout-2025-11489-desktop-commander:
@@ -172,7 +172,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-11489-desktop-commander
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a7c3369fb566df07f7c0f6eb0eff1aed9ccae7c4df40431a636e09ece65ebe99"
+        org.mcp-auditor.dockerfile-fingerprint: "a1661e988ce3e604035f780767ccb8b34f48b3b6047a709d93a6064ac20e15cc"
     image: mcp-auditor-cve-holdout-2025-11489-desktop-commander:local
 
   holdout-2025-11489-desktop-commander-patched:
@@ -180,7 +180,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-11489-desktop-commander-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "6d722e4c4eee32027bcb29439c83b9ed6857ab099dcbd1a259a4cd49b67f6c37"
+        org.mcp-auditor.dockerfile-fingerprint: "a3c57c5e05acd3bc3bc83d8c8fb170a8a16df05001c8c7f836d2a317856526a9"
     image: mcp-auditor-cve-holdout-2025-11489-desktop-commander-patched:local
 
   # Internal-fetch target: a real Apache Doris backend does the fetch (http() TVF), reusing the
@@ -190,7 +190,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-66335-doris
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "1ce275366a8a5dfaca77c19e27df4aa5564e805a7a8e8e261ff5c4db3eada17d"
+        org.mcp-auditor.dockerfile-fingerprint: "345cadd9c4161be401e94d0186ed89a965f8ee15cde3f996c12431710315fea4"
     image: mcp-auditor-cve-holdout-2025-66335-doris:local
 
   holdout-2025-66335-doris-patched:
@@ -198,7 +198,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-66335-doris-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "727d3c995769ac239ec4ff849b441937b7226f82376ec87b174089cae967d3e2"
+        org.mcp-auditor.dockerfile-fingerprint: "79d5b65033888a75df71ebc8bb853452d96aa40c58ea06fd1490cf00db253c9c"
     image: mcp-auditor-cve-holdout-2025-66335-doris-patched:local
 
   # Redirect-following SSRF target: the shared sentinel serves the nonce, a stand-in service serves
@@ -209,7 +209,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "4a19c8784686d9a57e2c2e4f05aac420690e41e9b6e8ea7c299799487d596fb6"
+        org.mcp-auditor.dockerfile-fingerprint: "db97163b04f25233bb5a902359afc08d6ed2167b1d23e74b9b433612731827c4"
     image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n:local
 
   holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched:
@@ -217,7 +217,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "c940928888fbacf12ec825805187a8ce150505a78f3619f59ee0d14b1d79b569"
+        org.mcp-auditor.dockerfile-fingerprint: "5398e59d7157c8372eac04ce836f53bc7db24a490b53713753c8bfe7c844e016"
     image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched:local
 
   holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:
@@ -225,7 +225,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a3f29b6a000aa579f1f26ec6c0e08fa767e001481df38443b9bde0b352078ebd"
+        org.mcp-auditor.dockerfile-fingerprint: "f9d8a70d16ccd31086819bf9a7f9cbba09f1396ee1315d98cc5307e2645f2e13"
     image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:local
 
   # Read-plus-fetch target: the polyglot-JS sandbox escape reads host files and fetches the
@@ -236,7 +236,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-65831-arcadedb
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0f74668e9881ebd2b8319dc50a5c1421f69fc8179f0c713c4aabd99208e1e248"
+        org.mcp-auditor.dockerfile-fingerprint: "9fef6e691293fc52cef4d2286841a1eb803ff81e7f7aeb6d09eea279cc161b41"
     image: mcp-auditor-cve-holdout-2026-65831-arcadedb:local
 
   holdout-2026-65831-arcadedb-patched:
@@ -244,7 +244,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-65831-arcadedb-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ef40347a7dba4bade6c55b3339f1deb3ba54966a6dd23fb4bac4220d46ef449e"
+        org.mcp-auditor.dockerfile-fingerprint: "b8ae784314f1fc925fa167e7c5d84ceedad3efeffae8e6d9921b1fe5c0288122"
     image: mcp-auditor-cve-holdout-2026-65831-arcadedb-patched:local
 
   # Command-execution target: get_diagnostics runs the analyzers a baked malicious solution
@@ -255,7 +255,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-45555-roslyncodelens
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9f23525bb3606a7b5cca8deb2e5849b57bcb93d1cd482466b8168f3be383f781"
+        org.mcp-auditor.dockerfile-fingerprint: "97bfec51d46fed179d97ae4b26ece4a85664e080e208694c9b4e77273204e349"
     image: mcp-auditor-cve-holdout-2026-45555-roslyncodelens:local
 
   holdout-2026-45555-roslyncodelens-patched:
@@ -263,7 +263,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-45555-roslyncodelens-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "8fcae983be321749886744abb630c3c0d6f66884b7890b8a72f2094d5dc37d81"
+        org.mcp-auditor.dockerfile-fingerprint: "2364776cb7d3d42fb0d53200d5db043a37e83dfdaa0cb70bbe8047ef0f33ef86"
     image: mcp-auditor-cve-holdout-2026-45555-roslyncodelens-patched:local
 
   # SSRF target: audit_webpage / get_summary drive Puppeteer page.goto to a caller-chosen URL with
@@ -275,7 +275,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "73b5155d143472fb81048f47fd1667e3412f6f0a8e67fd9a011b4cd9f54dc77f"
+        org.mcp-auditor.dockerfile-fingerprint: "bcc09a2e952b57ccd633a731c42c963a8e1b9b2efe3f855d35b9a88496f2d237"
     image: mcp-auditor-cve-holdout-2026-5323-a11y:local
 
   holdout-2026-5323-a11y-patched:
@@ -283,7 +283,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "175f73284dd01960bee7676853e57de0a9b82b38c3dc08ff5a33a78b9d0c8be8"
+        org.mcp-auditor.dockerfile-fingerprint: "247ef1274f96aa28985d03152758f09b88af28aaa63ac628318fce2b44ca811b"
     image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
 
   # SSRF target: every CKAN tool fetches its caller-supplied server_url with no validation
@@ -294,7 +294,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-33060-ckan
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "f7221ac6ceb3700c27a06b74c163102c117046d3602fbfda77e1ac5ae5001f1e"
+        org.mcp-auditor.dockerfile-fingerprint: "2ee3528351cc216e30095edec697484b315a5f26649a62c564fe643ff53c8167"
     image: mcp-auditor-cve-holdout-2026-33060-ckan:local
 
   holdout-2026-33060-ckan-patched:
@@ -302,7 +302,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-33060-ckan-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "fcbc4e0ba85c9df1f4ab425977a99b384ffbbbe9eca5c66a883894d7a0b5b1cd"
+        org.mcp-auditor.dockerfile-fingerprint: "f5420a8353824634060cf09535ef3827231205e885ead93387d38903dd28651d"
     image: mcp-auditor-cve-holdout-2026-33060-ckan-patched:local
 
   # SSRF target: flyto-core's is_private_ip never unwraps the IPv4 embedded in an IPv6 transition
@@ -333,7 +333,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-58485-searxng
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a29adf17e582caa51c4270a1a3115477abdb9a4c31cdaebb953d73a74138423b"
+        org.mcp-auditor.dockerfile-fingerprint: "79e3c9e7c0ed4d1ea1a4ab13bbfae5e291d8bd5ae3f0ba89d27c2a015447cf53"
     image: mcp-auditor-cve-holdout-2026-58485-searxng:local
 
   holdout-2026-58485-searxng-patched:
@@ -341,7 +341,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-58485-searxng-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "3f4afd5269ab1f3bd6e1302079acc3ed96e73231f158b7c61e5f27cb43beaa30"
+        org.mcp-auditor.dockerfile-fingerprint: "2ec3bc4b6d4ee92bac597e881e59439fe33933b2528700285655b3a779a6dc4a"
     image: mcp-auditor-cve-holdout-2026-58485-searxng-patched:local
 
   # SSRF target: open-websearch's isPrivateOrLocalHostname inspects URL.hostname, which keeps an
@@ -353,7 +353,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-42260-open-websearch
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "fee77589fbdfc9e5377040aa80bdcb222ae3101dabe8a0947216c1d9a91e31b1"
+        org.mcp-auditor.dockerfile-fingerprint: "d9a7b2a277521e9c4dd76dca29f5f82998a5ce2f27ad4fca71997e1c79ec733b"
     image: mcp-auditor-cve-holdout-2026-42260-open-websearch:local
 
   holdout-2026-42260-open-websearch-patched:
@@ -361,7 +361,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-42260-open-websearch-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "2b7c9c05960d851235d5fc55bc90754f290e3cd64b8e89d6c7a2fd774819c651"
+        org.mcp-auditor.dockerfile-fingerprint: "7675e3363a6588d9dbf91e43dcc0806e1896f1650d8101c693701999361416c6"
     image: mcp-auditor-cve-holdout-2026-42260-open-websearch-patched:local
 
   # SSRF target: ContextForge's gateway validates a REST tool's URL against its SSRF guard only at
@@ -374,7 +374,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-18905-contextforge
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9d7c91b81069c7323fac810816e93daea4d4eb0590b7204be34c3cbec3587446"
+        org.mcp-auditor.dockerfile-fingerprint: "af0818bffe04646739e259012a785bd35530ab237f7fbc527770f19815eee19b"
     image: mcp-auditor-cve-holdout-2026-18905-contextforge:local
 
   holdout-2026-18905-contextforge-patched:
@@ -382,7 +382,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-18905-contextforge-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "638e73e11d796d41a48f1b65c88e6064534c988067b796abbfeb2dfaf1bd7900"
+        org.mcp-auditor.dockerfile-fingerprint: "a48e33fae56b204d4a56a36c24c43afcbb3cd5f7a9479f04d3714c96f87ccb31"
     image: mcp-auditor-cve-holdout-2026-18905-contextforge-patched:local
 
   # Command-execution target: wireshark-mcp's quick_capture interpolates the interface argument
@@ -393,7 +393,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-7785-wireshark
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "efc017660548235e82856a34af9a27a217c88dcd7c0556c503c375901f417be1"
+        org.mcp-auditor.dockerfile-fingerprint: "c4922dbbb26d5358ccbb08d7cef4563d48e90e3f7e3d4808fdf7bf14bb87edb9"
     image: mcp-auditor-cve-holdout-2026-7785-wireshark:local
 
   holdout-2026-7785-wireshark-patched:
@@ -401,7 +401,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-7785-wireshark-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "154ae69bacfe2c0bedb46fa8911897277ae6e64b7fe4a5d532a58c4492a27ecf"
+        org.mcp-auditor.dockerfile-fingerprint: "95df3df250c07a08edf6b38ad613ed8b229d187d2c2f84c251c365f725000359"
     image: mcp-auditor-cve-holdout-2026-7785-wireshark-patched:local
 
   # Command-execution target: mcp-ssh's runRemoteCommand concatenates the hostAlias into an
@@ -412,7 +412,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-9654-mcp-ssh
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "bfbbce9412929e4673792045f9d0ae1d484285f0e27c16d3c9c1e052cd74391c"
+        org.mcp-auditor.dockerfile-fingerprint: "bb76cef57f96c3a944a5d05957c00bfcbd68c688c9fa8aa7d75af233f6d68c2c"
     image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh:local
 
   holdout-2025-9654-mcp-ssh-patched:
@@ -420,7 +420,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-9654-mcp-ssh-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "5c0755e483501405a16a688671cd8b027807461239178ddbec622e20ad578065"
+        org.mcp-auditor.dockerfile-fingerprint: "e91cb43d9a7949f8be1746621a1b5003a2668d96719f4c28ffefd49c13705f3c"
     image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh-patched:local
 
   # Command-execution target: android-mcp-server's executeAdbCommand interpolates the deviceId into
@@ -431,7 +431,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-19978-android
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "59bfab211a2b0cd46cafab480aeaa8b057dfbc4137a6b983b440a5006ef8b0f9"
+        org.mcp-auditor.dockerfile-fingerprint: "271f048a7dc94a8a39f74669e3d1214aa82107e2bae555d1264ed678d9a59906"
     image: mcp-auditor-cve-holdout-2026-19978-android:local
 
   holdout-2026-19978-android-patched:
@@ -439,7 +439,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-19978-android-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "5c5016cbb054ad2a8209e9314ca371e4129da5b330cd745de99294bcf15a41e1"
+        org.mcp-auditor.dockerfile-fingerprint: "0215b87d870d8e3e5c7703f34d3e4dd591c24c997bb444916cc7c0a82c441a62"
     image: mcp-auditor-cve-holdout-2026-19978-android-patched:local
 
   holdout-2026-55581-mcp-shell:
@@ -447,7 +447,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-55581-mcp-shell
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "cf7ae555133467ef00505dbe1e45c05c3c1b9b703f45395ee04b59d7ae5097f2"
+        org.mcp-auditor.dockerfile-fingerprint: "4583f680578ece8632daffde0105926b7055b6c02c903ed66af99fd37eb6cf73"
     image: mcp-auditor-cve-holdout-2026-55581-mcp-shell:local
 
   holdout-2026-55581-mcp-shell-patched:
@@ -455,7 +455,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-55581-mcp-shell-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "18d2db659c2e27a715ed16221688aec656ccfdf3251db16b35b849539d4a5e28"
+        org.mcp-auditor.dockerfile-fingerprint: "e530d30ba11c06096422d8fa6ce039d3be4c219defbf385a538b7ab4d710e846"
     image: mcp-auditor-cve-holdout-2026-55581-mcp-shell-patched:local
 
   holdout-2025-58358-markdownify:
@@ -463,7 +463,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-58358-markdownify
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a35cbdd876f953f96d0b18910dc51a1d030cbe857947e2b9eedceb321af01919"
+        org.mcp-auditor.dockerfile-fingerprint: "88c51c899324a2aec295c868526aebbad67dc0ab8c5e51a262c76f4ef6aa3f68"
     image: mcp-auditor-cve-holdout-2025-58358-markdownify:local
 
   holdout-2025-58358-markdownify-patched:
@@ -471,7 +471,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-58358-markdownify-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "b2e2f21757bed3e7c568a75566f28b3858b1e80b499b2a13eaa6e5c3e3630e4a"
+        org.mcp-auditor.dockerfile-fingerprint: "55431fd0778839b66f13a11d2a01421d4b29386f028d023ad31db17f48baa384"
     image: mcp-auditor-cve-holdout-2025-58358-markdownify-patched:local
 
   holdout-2026-5603-magento2:
@@ -479,7 +479,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5603-magento2
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9d0a33b962bd97a8839b7ad26294a5df50934254924c0778451a4f4cabfcc546"
+        org.mcp-auditor.dockerfile-fingerprint: "8737a111a1d6702623f56510c2cc84f29824d0d17130945123aac19ce8384e9a"
     image: mcp-auditor-cve-holdout-2026-5603-magento2:local
 
   holdout-2026-5603-magento2-patched:
@@ -487,7 +487,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5603-magento2-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "39547c094fedd472beb135f058c100bec28ea742be5ff9a7b37a7a2e98d794a7"
+        org.mcp-auditor.dockerfile-fingerprint: "7a6f1e67204824889dc42b9ddbf7627059babd04a780d7ee10a252c2b297f241"
     image: mcp-auditor-cve-holdout-2026-5603-magento2-patched:local
 
   holdout-2025-53818-github-kanban:
@@ -495,7 +495,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-53818-github-kanban
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "80f9affe498e4e5172d2aa1f040d72b8ea913c2552ca9986b444f9f55e2fd38c"
+        org.mcp-auditor.dockerfile-fingerprint: "3e89a8dee4f88cbc703c72c85fe26c87c0031975aa11c74ae29260c84c82f4e5"
     image: mcp-auditor-cve-holdout-2025-53818-github-kanban:local
 
   holdout-2025-53818-github-kanban-patched:
@@ -503,7 +503,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-53818-github-kanban-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "eefd842c6e1c0ca287de83d72a3f779ac544bc320aff366fa7a9ad111bb6e19c"
+        org.mcp-auditor.dockerfile-fingerprint: "9dc43fcee7f14632bac4b39903aab6b8acf77323d901bd6be6842a380e9a7778"
     image: mcp-auditor-cve-holdout-2025-53818-github-kanban-patched:local
 
   holdout-2026-5833-taskwarrior:
@@ -511,7 +511,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5833-taskwarrior
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "f94e3d5c08c3bffacc4a79ff0beb2661fe8658c3299b2be7efa1605fa29ca4da"
+        org.mcp-auditor.dockerfile-fingerprint: "aa67694c5d4390b1abfd7ba6b9d456a7cba655a5bb68b56ecbe66087807c5cd3"
     image: mcp-auditor-cve-holdout-2026-5833-taskwarrior:local
 
   holdout-2026-5833-taskwarrior-patched:
@@ -519,7 +519,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5833-taskwarrior-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "7fbfb4f21b0858802bd3fb9653d041579b26c280cef6bfd8077ce448f944b8b0"
+        org.mcp-auditor.dockerfile-fingerprint: "94e140df8369cbd8e8fbc3f52ce2e647544200a32540bb863ebe15ffa507912c"
     image: mcp-auditor-cve-holdout-2026-5833-taskwarrior-patched:local
 
   holdout-2026-26029-sf-mcp:
@@ -527,7 +527,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-26029-sf-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "406de8ca7a3d23263f35333db9ae1d0a2d9ccd588fb4e93a2b72214c74fa4176"
+        org.mcp-auditor.dockerfile-fingerprint: "02d2d0c219c88a83b63a7e7f40e7fa8018f7da269ab39aa9651e22dc97884124"
     image: mcp-auditor-cve-holdout-2026-26029-sf-mcp:local
 
   holdout-2026-26029-sf-mcp-patched:
@@ -535,7 +535,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-26029-sf-mcp-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0f67cf91cb4e1fa7d9a21e78fc8cd4a37228e1b1d311d6335d96d21ec639a6a3"
+        org.mcp-auditor.dockerfile-fingerprint: "cca54d8060329836c84beaa3b382a097a484fd69719d3f68aa921bb6ea890b8f"
     image: mcp-auditor-cve-holdout-2026-26029-sf-mcp-patched:local
 
   holdout-2026-3484-nmap:
@@ -559,7 +559,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-3680-biome
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "54b831af9e6ed0785362a98195cb652436c7e6884abef92bcbafde05d13969d9"
+        org.mcp-auditor.dockerfile-fingerprint: "95bc3b8a9f7d8782aa6bcc65d7172ebd8f472aac46fef639b8cdfe2de45cc920"
     image: mcp-auditor-cve-holdout-2026-3680-biome:local
 
   holdout-2026-3680-biome-patched:
@@ -567,7 +567,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-3680-biome-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "faec24d9a6977202ed92b44df426e208d1ada8d786830faa01645eac33810bae"
+        org.mcp-auditor.dockerfile-fingerprint: "6037040418a370e9a71d16bc5340f7332fb1b69857e4a94084525bf853c1843f"
     image: mcp-auditor-cve-holdout-2026-3680-biome-patched:local
 
   holdout-2026-5602-heim:
@@ -575,7 +575,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5602-heim
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ea27d53d10b25523104e13a475e0ff241328051685171f67f260a7a7792ae558"
+        org.mcp-auditor.dockerfile-fingerprint: "50350210e78b5003e7e6aaafa8c1b62dc848c88c670a24d5afd6fdb45dfab9a2"
     image: mcp-auditor-cve-holdout-2026-5602-heim:local
 
   holdout-2026-5602-heim-patched:
@@ -583,7 +583,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5602-heim-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "021def7c3a5ff7a1222705aee4d5e7f7a9167a0a456459edf1aea7e0ccc90dc6"
+        org.mcp-auditor.dockerfile-fingerprint: "1bb82cba0e0a6868a5545238b3f0268e1cf85a97c74d801fde94c061e790cd00"
     image: mcp-auditor-cve-holdout-2026-5602-heim-patched:local
 
   holdout-2026-55157-token-optimizer:
@@ -607,7 +607,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "915d0c98cd94b19ea98b822fdfc194492debd23b64e2d3a4abc723ad4cc0e5f4"
+        org.mcp-auditor.dockerfile-fingerprint: "409ea0b6e7b9c5ac0cf6e3754a88cbfb58a3194a4572128eff1ff05cb9dad410"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile:local
 
   holdout-2026-81562-claude-in-mobile-patched:
@@ -615,5 +615,5 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "8e29b6b16a562fb1ef336ab54427eeff4eada8d9f14f734135b103ee95c89532"
+        org.mcp-auditor.dockerfile-fingerprint: "b9490fae38084007cdaa99dd76f81c2438d759983c3c6c27e90db1ee4eab3145"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile-patched:local

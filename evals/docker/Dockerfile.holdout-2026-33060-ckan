@@ -4,7 +4,7 @@
 # no SSRF guard, so a caller-chosen server_url is fetched verbatim. validateServerUrl is
 # wired into makeCkanRequest only in 0.4.84, and into the SPARQL path in 0.4.85 (the first
 # version the advisory lists as patched).
-FROM node:20-alpine
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
 
 # Install the exact published version globally; the bin is `ckan-mcp-server` -> dist/index.js.
 RUN npm install -g @aborruso/ckan-mcp-server@0.4.83 && npm cache clean --force

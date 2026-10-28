@@ -5,7 +5,7 @@
 # host file outside the database scope.
 # No COPY/ADD: the fingerprint hashes instructions only, so the launch config and entrypoint are
 # inlined by RUN.
-FROM arcadedata/arcadedb:26.6.1
+FROM arcadedata/arcadedb:26.6.1@sha256:b89478bd698ebfb6301918ec6745818a02759515b7d00dd1c86c842470274f5b
 
 USER root
 

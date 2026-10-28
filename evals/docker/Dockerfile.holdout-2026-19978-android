@@ -2,7 +2,7 @@
 # cfb872b (OS command injection in executeAdbCommand: child_process.exec with the deviceId /
 # packageName / permission / text / path arguments interpolated into a shell string).
 # Real software, pinned by commit, cloned from the public repo and built with its own toolchain.
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
 # adb is the binary the server shells out to (passed as argv[2]); git to fetch the pinned commit;
 # curl present so the command-execution primitive can reach internal http endpoints (a realistic

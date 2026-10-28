@@ -2,7 +2,7 @@
 # Real pinned software: cloned from the public repo and checked out at the commit that is the
 # parent of the fix (99fba01), i.e. the last commit still carrying the `exec` command injection
 # in query_records' executeSoqlQuery.
-FROM node:22-bookworm-slim
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
 # curl: used only by the command-injection exploit payload (an attacker who already has RCE
 # would fetch an internal endpoint with it); git/ca-certificates: to fetch the pinned source.

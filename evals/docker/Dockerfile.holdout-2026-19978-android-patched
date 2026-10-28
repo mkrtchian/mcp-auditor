@@ -2,7 +2,7 @@
 # (createAdbExecutor runs adb through execFile with an argument vector and validates the
 # package/permission/deviceId inputs, so caller input can no longer become host shell syntax).
 # Same base and toolchain as the vulnerable image; only the checked-out commit differs.
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates adb curl \

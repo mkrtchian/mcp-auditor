@@ -2,7 +2,7 @@
 # pptx-to-markdown filepath, interpolated into a shell string run with child_process.exec).
 # Pinned to commit 949f12e (npm 0.0.1, the affected release), which also carries the two
 # sibling flaws (CVE-2025-5273 arbitrary file read, CVE-2025-5276 SSRF).
-FROM node:22-bookworm
+FROM node:22-bookworm@sha256:18a6d90fd60542269850c80ca03b29b1d9b14d6b221ac7ee8e35b0d33ef904bd
 
 # uv provides Python 3.11 and installs markitdown into the project .venv, exactly as the
 # upstream setup.sh does. The vulnerable _markitdown requires .venv/bin/markitdown to exist

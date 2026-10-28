@@ -154,7 +154,8 @@ def ipv6_loopback_env(
 _REDIRECTOR_TAG = "mcp-auditor-kit-flyto-redirector:local"
 # A 302 redirector: an allowlisted host that bounces to the internal sentinel. Built inline (no
 # build context, no COPY) so the fix-check is self-contained.
-_REDIRECTOR_DOCKERFILE = """FROM python:3.12-slim
+_REDIRECTOR_DOCKERFILE = """\
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
 RUN printf '%s\\n' \\
   'from http.server import BaseHTTPRequestHandler, HTTPServer' \\
   'import os' \\

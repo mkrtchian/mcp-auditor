@@ -2,10 +2,10 @@
 
 The guard the unit isolation test cannot be: the builder ensures the heavy FE+BE cluster and
 yields a launch that connects, and the holdout fixture's benign call answers without error. Behind
-NUISANCE_DORIS=1 because it pulls apache/doris:all-in-one-4.1.3 and mysql:8.0.46, waits on the
-cluster's health (up to 240 s + 180 s) and leaves the persistent cluster and its two networks
-running, as the holdout does by design. Under the flag, Docker absent skips, or fails when
-CVE_PLANTING_REQUIRED=1 (the test_cve_planting.py convention).
+NUISANCE_DORIS=1 because it pulls apache/doris:all-in-one-4.1.3 and mysql:8.0.46, both pinned by
+digest, waits on the cluster's health (up to 240 s + 180 s) and leaves the persistent cluster and
+its two networks running, as the holdout does by design. Under the flag, Docker absent skips, or
+fails when CVE_PLANTING_REQUIRED=1 (the test_cve_planting.py convention).
 """
 
 import os
@@ -41,7 +41,8 @@ def _prerequisites() -> None:
     if os.environ.get("NUISANCE_DORIS") != "1":
         pytest.skip(
             "the nuisance Doris backend test pulls apache/doris:all-in-one-4.1.3 and "
-            "mysql:8.0.46, waits on the cluster and leaves it running; set NUISANCE_DORIS=1 to run"
+            "mysql:8.0.46, both pinned by digest, waits on the cluster and leaves it running; "
+            "set NUISANCE_DORIS=1 to run"
         )
     missing = _missing_prerequisite()
     if missing is not None:

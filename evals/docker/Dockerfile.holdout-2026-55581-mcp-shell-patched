@@ -4,7 +4,7 @@
 # CVE-2026-55581 bypass is blocked. Real pinned software, cloned from the public source at the
 # v0.6.0 tag and built from it. Single stage for the same fingerprint reason as the vulnerable
 # image; the runtime packages mirror the upstream alpine runtime of the tag.
-FROM golang:1.25-alpine
+FROM golang:1.25-alpine@sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59
 
 RUN apk add --no-cache \
     bash curl wget git make findutils grep sed gawk tar gzip unzip ca-certificates \

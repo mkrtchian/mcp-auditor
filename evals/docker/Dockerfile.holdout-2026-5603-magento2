@@ -1,7 +1,7 @@
 # Vulnerable version of @elgentos/magento2-dev-mcp (CVE-2026-5603, OS command injection
 # in executeMagerun2Command). The real, pinned npm release 1.0.2 (latest published, vulnerable),
 # installed from the public registry. dist/ ships pre-compiled, so no build step.
-FROM node:20.18-bookworm-slim
+FROM node:20.18-bookworm-slim@sha256:ffc11dbf16dd0abcbb7b837410601b4d5592db2d03741e13a4a5336ab74d7ccb
 
 # Real dependencies the server shells out to / the exploits use:
 #   php-cli + n98-magerun2 = the genuine `magerun2` binary executeMagerun2Command invokes.

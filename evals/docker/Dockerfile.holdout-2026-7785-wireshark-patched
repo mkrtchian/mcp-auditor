@@ -1,7 +1,7 @@
 # Patched wireshark-mcp (first fixed commit 6e56043): quick_capture runs tshark via argv
 # (shell=False) and validate_capture_interface rejects shell metacharacters and requires an
 # exact match against enumerated interfaces. Real software, pinned at the fixing commit.
-FROM python:3.11-slim
+FROM python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
 
 ENV DEBIAN_FRONTEND=noninteractive
 # tshark is required: the server's preflight (ensure_ready_or_exit) exits non-zero without it.

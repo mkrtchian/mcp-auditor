@@ -35,10 +35,15 @@ from evals.cve_planting_base import (
     unprivileged_user_args,
 )
 
-DORIS_IMAGE = "apache/doris:all-in-one-4.1.3"
-# a throwaway MySQL-protocol client for the FE on port 9030, patch-pinned like DORIS_IMAGE: the
-# bare 8.0 tag floats across its patch releases.
-MYSQL_CLIENT_IMAGE = "mysql:8.0.46"
+DORIS_IMAGE = (
+    "apache/doris:all-in-one-4.1.3"
+    "@sha256:82a5cabc7900ebcd3d080412d636c0cebd6602799fffe2605c652b2ea7d42609"
+)
+# a throwaway MySQL-protocol client for the FE on port 9030, pinned by digest like DORIS_IMAGE:
+# the bare 8.0 tag floats across its patch releases, and a tag can be rewritten.
+MYSQL_CLIENT_IMAGE = (
+    "mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+)
 DORIS_CONTAINER = "mcp-auditor-cve-doris"
 DORIS_BRIDGE = "mcp-auditor-cve-doris-bridge"  # server <-> Doris FE, name resolution
 _DORIS_LLNET = "mcp-auditor-cve-doris-llnet"  # Doris <-> sentinels, static link-local IPs

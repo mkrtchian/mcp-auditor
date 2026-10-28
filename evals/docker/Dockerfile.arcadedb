@@ -3,7 +3,7 @@
 # the bound `database` object throws before it reaches java.io.* and reads a host file.
 # No COPY/ADD: the fingerprint hashes instructions only, so the launch config and entrypoint are
 # inlined by RUN.
-FROM arcadedata/arcadedb:26.7.1
+FROM arcadedata/arcadedb:26.7.1@sha256:37db3d210bde5849ba5c772ce33b8666b215a77f7b88331fda31fbbf2d130738
 
 USER root
 

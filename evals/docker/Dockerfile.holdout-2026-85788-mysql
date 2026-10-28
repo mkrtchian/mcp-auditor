@@ -4,7 +4,7 @@
 # MySQL and a local AWS stub (moto, for the server's Secrets Manager / RDS
 # credential lookup only, never a stand-in for the server or the database) in the
 # background, then execs the real server on stdio.
-FROM mysql:8.0
+FROM mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
 
 # mcp<2 pins the SDK generation the server is written against (FastMCP); the
 # server's own metadata allows mcp 2.x, which renamed that API. This is a

@@ -1,7 +1,7 @@
 # Real IBM ContextForge MCP Gateway, first patched version (CVE-2026-18905 fixed in 1.0.7).
 # Identical to Dockerfile.contextforge apart from the pinned version: 1.0.7 re-validates and
 # pins the resolved IP of a REST tool's URL at invocation time, blocking the rebinding.
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
 
 ARG GATEWAY_VERSION=1.0.7
 ENV PIP_NO_CACHE_DIR=1 \

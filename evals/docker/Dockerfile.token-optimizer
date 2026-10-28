@@ -1,7 +1,7 @@
 # @ooples/token-optimizer-mcp 5.1.1, the first npm release carrying the CVE-2026-55157 fix
 # (smart_user runs argv-mode execFileSafe). The advisory names 5.1.0, which is a git tag only.
 # node:20-bookworm ships the python3 and C++ toolchain better-sqlite3 compiles with. No COPY/ADD.
-FROM node:20-bookworm
+FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
 ENV CI=true
 WORKDIR /app
 RUN npm init -y >/dev/null 2>&1 \

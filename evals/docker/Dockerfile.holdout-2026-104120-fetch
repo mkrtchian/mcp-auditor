@@ -2,7 +2,7 @@
 # (PyPI mcp-server-fetch 2026.6.4, released 2026-06-04). No SSRF egress guard: fetch_url and the
 # robots.txt pre-check request any caller-supplied URL, including link-local / cloud-metadata
 # addresses. Real software from PyPI, never a reimplementation.
-FROM python:3.12-slim
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
 
 # The server declares mcp>=1.1.3 with no upper bound; mcp 2.x renamed McpError and breaks its
 # import, so pin the SDK to the last 1.x current at this server's release (2026-06-04).

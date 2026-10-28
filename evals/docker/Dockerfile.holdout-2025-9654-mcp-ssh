@@ -3,7 +3,7 @@
 # passed to child_process.exec (`ssh "${hostAlias}" "${command}"`), so an unescaped hostAlias
 # yields local OS command injection (CWE-74 command injection). The real npm package is
 # installed unchanged; nothing of the flaw is reimplemented.
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
 # ssh/scp so the benign path behaves like a real deployment; wget so a command-execution
 # payload can reach an internal HTTP endpoint (IMDS-style places).

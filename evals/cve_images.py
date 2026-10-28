@@ -3,6 +3,7 @@ the Dockerfile's instructions, written in compose.yml, read back on each tag to 
 image from a stale or foreign one, which is then rebuilt through compose."""
 
 import hashlib
+import re
 import subprocess
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -13,6 +14,7 @@ from evals.cve_targets import DOCKER_DIRECTORY, image_dockerfile, image_tag
 FINGERPRINT_LABEL = "org.mcp-auditor.dockerfile-fingerprint"
 COMPOSE_FILE = DOCKER_DIRECTORY / "compose.yml"
 _STDERR_TAIL_LINES = 20
+_PINNED = re.compile(r"@sha256:[0-9a-f]{64}$")
 
 
 class ImageBuildFailed(Exception):
@@ -55,6 +57,29 @@ def dockerfile_fingerprint(service: str, docker_directory: Path = DOCKER_DIRECTO
 def dockerfile_instructions(path: Path) -> list[str]:
     lines = (line.strip() for line in path.read_text().splitlines())
     return [line for line in lines if line and not line.startswith("#")]
+
+
+def unpinned_bases(instructions: Sequence[str]) -> list[str]:
+    """A FROM naming an earlier stage of the same Dockerfile, or `scratch`, pulls nothing and
+    needs no digest."""
+    stages = {"scratch"}
+    unpinned: list[str] = []
+    for instruction in instructions:
+        words = instruction.split()
+        if words[0].upper() != "FROM":
+            continue
+        reference, stage = _base_and_stage(words[1:])
+        if reference not in stages and not _PINNED.search(reference):
+            unpinned.append(reference)
+        if stage:
+            stages.add(stage)
+    return unpinned
+
+
+def _base_and_stage(arguments: list[str]) -> tuple[str, str | None]:
+    words = [word for word in arguments if not word.startswith("--")]
+    has_stage = len(words) >= 3 and words[1].upper() == "AS"
+    return words[0], words[2] if has_stage else None
 
 
 class ComposeImageStore:

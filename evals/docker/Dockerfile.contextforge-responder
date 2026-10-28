@@ -3,6 +3,6 @@
 # container's TEST-NET-2 static IP) answers without error. Never spoken to over MCP stdio: the
 # audited gateway reaches it as an outbound REST fetch.
 # No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
-FROM node:20-alpine
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
 
 ENTRYPOINT ["node", "-e", "const http=require('http');const body=JSON.stringify({status:'ok',report:'All systems nominal'});http.createServer((req,res)=>{req.resume();res.writeHead(200,{'content-type':'application/json'});res.end(body);}).listen(80);"]

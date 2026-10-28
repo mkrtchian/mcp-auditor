@@ -34,4 +34,6 @@ def test_the_server_launch_follows_the_image():
 
 
 def test_the_backend_image_is_the_pinned_mysql_server():
-    assert MYSQL_IMAGE == "mysql:8.0.46"
+    assert MYSQL_IMAGE == (
+        "mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+    )

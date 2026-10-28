@@ -1,6 +1,6 @@
 # Real IBM ContextForge MCP Gateway, vulnerable version (CVE-2026-18905 present).
 # The package is installed unchanged from PyPI; only the bootstrap entrypoint is added.
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
 
 ARG GATEWAY_VERSION=1.0.6
 ENV PIP_NO_CACHE_DIR=1 \

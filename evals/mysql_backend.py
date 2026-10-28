@@ -26,7 +26,9 @@ from evals.doris_backend import MYSQL_CLIENT_IMAGE, user_args
 from evals.responder_backend import remove
 
 MYSQL_IMAGE = MYSQL_CLIENT_IMAGE
-_MOTO_IMAGE = "motoserver/moto:5.2.5"
+_MOTO_IMAGE = (
+    "motoserver/moto:5.2.5@sha256:59a1965d845249b04def37a0e2565f9cc6c44543cb89b68e90f28f344b3b0d1a"
+)
 MYSQL_CONTAINER = "mcp-auditor-cve-mysql"
 MOTO_CONTAINER = "mcp-auditor-cve-mysql-moto"
 MOTO_ENDPOINT = f"http://{MOTO_CONTAINER}:5000"
