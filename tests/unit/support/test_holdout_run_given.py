@@ -1,6 +1,6 @@
 import asyncio
 import dataclasses
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from datetime import date
 from typing import Any
 
@@ -96,15 +96,34 @@ class InterruptingAudit:
         raise AssertionError("a run that never ends completed")
 
 
+class RunningContainers:
+    """Answers each listing of the running containers with the next of `listings`, then with
+    none, and records the tags listed and the containers removed."""
+
+    def __init__(self, *listings: list[str]) -> None:
+        self.listed_tags: list[list[str]] = []
+        self.removed: list[str] = []
+        self._listings = list(listings)
+
+    def running(self, tags: Sequence[str]) -> list[str]:
+        self.listed_tags.append(list(tags))
+        return self._listings.pop(0) if self._listings else []
+
+    def remove(self, containers: Sequence[str]) -> None:
+        self.removed.extend(containers)
+
+
 def deps_auditing(
     audit: Audit,
     *,
     check: dict[str, list[str]] | None = None,
     layout: dict[str, LayoutCheck] | None = None,
     throttled: int = 0,
+    containers: RunningContainers | None = None,
 ) -> HoldoutDeps:
     checks = check or {}
     layouts = layout or {}
+    docker = containers or RunningContainers()
 
     async def _check(target: CVETarget) -> list[str]:
         return checks.get(target.cve_id, [])
@@ -123,6 +142,8 @@ def deps_auditing(
         clock=lambda: RECORDED_AT,
         announce_audits=lambda audits: None,
         throttled_requests=lambda: throttled,
+        running_containers=docker.running,
+        remove_containers=docker.remove,
     )
 
 
@@ -157,6 +178,12 @@ def deps_reaching_nothing() -> HoldoutDeps:
     def throttled_requests() -> int:
         raise AssertionError("the throttled requests were read")
 
+    def running_containers(_tags: object) -> list[str]:
+        raise AssertionError("the running containers were listed")
+
+    def remove_containers(_containers: object) -> None:
+        raise AssertionError("a container was removed")
+
     return HoldoutDeps(
         audit,
         check,
@@ -168,6 +195,8 @@ def deps_reaching_nothing() -> HoldoutDeps:
         clock,
         announce_audits,
         throttled_requests,
+        running_containers,
+        remove_containers,
     )
 
 

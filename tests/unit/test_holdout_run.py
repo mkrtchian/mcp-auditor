@@ -12,8 +12,9 @@ from evals.cve_layout_check import LayoutCheck
 from evals.cve_targets import LaunchMode
 from evals.eval_session import Refused, TreeState
 from evals.holdout_audit import DroppedRun, IncompleteRun
-from evals.holdout_results import NotRunCause
+from evals.holdout_results import NotRunCause, RunInterrupted
 from evals.probe import call_cost
+from evals.provider_errors import ProviderFatal
 from mcp_auditor.domain.models import ProviderUsage
 
 
@@ -277,3 +278,99 @@ async def test_a_target_with_an_unknown_kept_place_refuses_before_any_dep():
 
     with pytest.raises(Refused, match="no such place"):
         await given.run([target], given.deps_reaching_nothing())
+
+
+async def test_a_container_of_the_run_images_running_at_start_refuses_before_the_rebuild():
+    deps = dataclasses.replace(
+        given.deps_reaching_nothing(),
+        read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
+        running_containers=given.RunningContainers(["leftover_filesystem"]).running,
+    )
+
+    with pytest.raises(Refused) as refused:
+        await given.run([given.a_target(given.FILESYSTEM)], deps)
+
+    assert any("leftover_filesystem" in reason for reason in refused.value.reasons)
+
+
+async def test_a_container_seen_only_after_the_rebuild_refuses_and_is_left_running():
+    target = given.a_target(given.FILESYSTEM)
+    containers = given.RunningContainers([], ["concurrent_filesystem"])
+    deps = given.deps_auditing(given.scripted({target.cve_id: []}), containers=containers)
+
+    with pytest.raises(Refused) as refused:
+        await given.run([target], deps)
+
+    assert any("concurrent_filesystem" in reason for reason in refused.value.reasons)
+    assert containers.removed == []
+
+
+async def test_the_containers_left_running_at_the_end_are_removed_and_counted(
+    capsys: pytest.CaptureFixture[str],
+):
+    target = given.a_target(given.FILESYSTEM)
+    containers = given.RunningContainers([], [], ["stuck_one", "stuck_two"])
+    deps = given.deps_auditing(
+        given.scripted({target.cve_id: given.three_detections()}), containers=containers
+    )
+
+    await given.run([target], deps)
+
+    assert containers.removed == ["stuck_one", "stuck_two"]
+    assert "2" in capsys.readouterr().out
+
+
+async def test_no_container_left_at_the_end_removes_and_prints_nothing(
+    capsys: pytest.CaptureFixture[str],
+):
+    target = given.a_target(given.FILESYSTEM)
+    containers = given.RunningContainers()
+    deps = given.deps_auditing(
+        given.scripted({target.cve_id: given.three_detections()}), containers=containers
+    )
+
+    await given.run([target], deps)
+
+    assert containers.removed == []
+    assert capsys.readouterr().out == ""
+
+
+async def test_the_sweep_runs_when_an_audit_raises():
+    target = given.a_target(given.FILESYSTEM)
+    containers = given.RunningContainers([], [], ["stuck_one"])
+
+    async def audit(_target: object) -> given.Outcome:
+        raise ProviderFatal(PermissionError("the key was revoked"))
+
+    with pytest.raises(RunInterrupted):
+        await given.run([target], given.deps_auditing(audit, containers=containers))
+
+    assert containers.removed == ["stuck_one"]
+
+
+async def test_the_sweep_runs_when_no_target_survives():
+    dead = given.a_target(given.KUBERNETES)
+    containers = given.RunningContainers([], [], ["stuck_one"])
+    deps = given.deps_auditing(
+        given.scripted({dead.cve_id: []}),
+        check={dead.cve_id: ["vulnerable: no exploit surfaces"]},
+        containers=containers,
+    )
+
+    with pytest.raises(Refused, match="no target survived"):
+        await given.run([dead], deps)
+
+    assert containers.removed == ["stuck_one"]
+
+
+async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
+    target = given.a_target(backend_images=("apache/doris:all-in-one-4.1.3",))
+    containers = given.RunningContainers()
+    deps = given.deps_auditing(
+        given.scripted({target.cve_id: given.three_detections()}), containers=containers
+    )
+
+    await given.run([target], deps)
+
+    run_tags = ["mcp-auditor-cve-filesystem:local", "mcp-auditor-cve-filesystem-patched:local"]
+    assert containers.listed_tags == [run_tags, run_tags, run_tags]

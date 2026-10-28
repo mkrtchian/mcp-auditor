@@ -50,7 +50,13 @@ from evals.nuisance_results import (
     RunInterrupted,
 )
 from evals.probe_candidates import Prices
-from evals.run_images import rebuild_images
+from evals.run_images import (
+    rebuild_images,
+    refuse_running_containers,
+    remove_containers,
+    running_containers,
+    sweep_containers,
+)
 from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport
@@ -75,6 +81,8 @@ class NuisanceDeps:
     clock: Callable[[], str]  # ISO timestamp for recorded_at
     announce_audits: Callable[[int], None]
     throttled_requests: Callable[[], int]
+    running_containers: Callable[[Sequence[str]], list[str]]
+    remove_containers: Callable[[Sequence[str]], None]
 
 
 @dataclass(frozen=True)
@@ -106,7 +114,24 @@ async def run_nuisance(
     deps = deps or default_deps(nuisance_overrides(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
-    deps.rebuild(_services(population.audited))
+    services = _services(population.audited)
+    tags = [nuisance_images.image_tag(service) for service in services]
+    _refuse_running_containers(deps, tags)
+    deps.rebuild(services)
+    _refuse_running_containers(deps, tags)
+    try:
+        return await _run_surviving(population, deps, ctx, tree)
+    finally:
+        sweep_containers(tags, deps.running_containers, deps.remove_containers)
+
+
+def _refuse_running_containers(deps: NuisanceDeps, tags: Sequence[str]) -> None:
+    refuse_running_containers(deps.running_containers(tags), "nuisance run refused")
+
+
+async def _run_surviving(
+    population: RunPopulation, deps: NuisanceDeps, ctx: _RunContext, tree: TreeState
+) -> NuisanceRunResult:
     not_run, surviving = await _vet_all(population.audited, deps)
     assembled, dropped, failure = await _run_all(surviving, deps, ctx)
     all_not_run = [*not_run, *dropped]
@@ -166,6 +191,8 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         lambda: datetime.now(UTC).isoformat(),
         lambda audits: None,
         lambda: throttles.requests,
+        running_containers,
+        remove_containers,
     )
 
 

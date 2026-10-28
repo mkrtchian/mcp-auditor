@@ -24,7 +24,7 @@ from evals.cve_calibration import check_target
 from evals.cve_layout_check import LayoutCheck
 from evals.cve_places import Places, kept_records
 from evals.cve_session_model import GradedAudit
-from evals.cve_targets import CVETarget
+from evals.cve_targets import CVETarget, image_tag
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.failure_text import TYPES_ONLY
@@ -41,7 +41,14 @@ from evals.holdout_results import (
 )
 from evals.holdout_vetting import observe_layout, vet_all
 from evals.metrics import SessionThrottles
-from evals.run_images import rebuild_images, target_services
+from evals.run_images import (
+    rebuild_images,
+    refuse_running_containers,
+    remove_containers,
+    running_containers,
+    sweep_containers,
+    target_services,
+)
 from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
 
@@ -65,6 +72,8 @@ class HoldoutDeps:
     clock: Callable[[], str]  # ISO timestamp for recorded_at
     announce_audits: Callable[[int], None]
     throttled_requests: Callable[[], int]
+    running_containers: Callable[[Sequence[str]], list[str]]
+    remove_containers: Callable[[Sequence[str]], None]
 
 
 @dataclass(frozen=True)
@@ -103,7 +112,24 @@ async def run_holdout(
     deps = deps or default_deps(places, holdout_overrides(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
-    deps.rebuild(target_services(list(targets)))
+    services = target_services(list(targets))
+    tags = [image_tag(service) for service in services]
+    _refuse_running_containers(deps, tags)
+    deps.rebuild(services)
+    _refuse_running_containers(deps, tags)
+    try:
+        return await _run_surviving(targets, deps, ctx, tree)
+    finally:
+        sweep_containers(tags, deps.running_containers, deps.remove_containers)
+
+
+def _refuse_running_containers(deps: HoldoutDeps, tags: Sequence[str]) -> None:
+    refuse_running_containers(deps.running_containers(tags), "holdout run refused")
+
+
+async def _run_surviving(
+    targets: Sequence[CVETarget], deps: HoldoutDeps, ctx: _RunContext, tree: TreeState
+) -> HoldoutRunResult:
     not_run, surviving = await vet_all(targets, deps.check, deps.layout)
     assembled, dropped, failure = await _run_all(surviving, deps, ctx)
     all_not_run = [*not_run, *dropped]
@@ -196,6 +222,8 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
         lambda: datetime.now(UTC).isoformat(),
         lambda audits: None,
         lambda: throttles.requests,
+        running_containers,
+        remove_containers,
     )
 
 

@@ -16,9 +16,10 @@ from evals.nuisance_assembly import assemble_server, split_flaw_of
 from evals.nuisance_audit import DroppedRun
 from evals.nuisance_counter import counter_fingerprint
 from evals.nuisance_images import nuisance_fixture_fingerprint
-from evals.nuisance_results import FigureExit, NotRunCause, NuisanceRunStatus
+from evals.nuisance_results import FigureExit, NotRunCause, NuisanceRunStatus, RunInterrupted
 from evals.nuisance_run import benign_call
 from evals.probe import call_cost
+from evals.provider_errors import ProviderFatal
 from mcp_auditor.domain.models import MissCause, ProviderUsage, ToolResponse
 
 _EARLY = date(2025, 3, 1)
@@ -323,3 +324,95 @@ async def test_a_benign_call_whose_teardown_fails_once_connected_is_not_retried(
 
     assert reason == "failed to connect for the benign call: OSError"
     assert launches.launches == 1
+
+
+async def test_a_container_of_the_run_images_running_at_start_refuses_before_the_rebuild():
+    deps = dataclasses.replace(
+        given.deps_reaching_nothing(),
+        read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
+        running_containers=given.RunningContainers(["leftover_server"]).running,
+    )
+
+    with pytest.raises(Refused) as refused:
+        await given.run([given.a_server()], deps)
+
+    assert any("leftover_server" in reason for reason in refused.value.reasons)
+
+
+async def test_a_container_seen_only_after_the_rebuild_refuses_and_is_left_running():
+    server = given.a_server()
+    containers = given.RunningContainers([], ["concurrent_server"])
+    deps = given.deps_auditing(given.scripted({server.server_package: []}), containers=containers)
+
+    with pytest.raises(Refused) as refused:
+        await given.run([server], deps)
+
+    assert any("concurrent_server" in reason for reason in refused.value.reasons)
+    assert containers.removed == []
+
+
+async def test_the_containers_left_running_at_the_end_are_removed_and_counted(
+    capsys: pytest.CaptureFixture[str],
+):
+    server = given.a_server()
+    containers = given.RunningContainers([], [], ["stuck_one", "stuck_two"])
+    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+
+    await given.run([server], given.deps_auditing(audit, containers=containers))
+
+    assert containers.removed == ["stuck_one", "stuck_two"]
+    assert "2" in capsys.readouterr().out
+
+
+async def test_no_container_left_at_the_end_removes_and_prints_nothing(
+    capsys: pytest.CaptureFixture[str],
+):
+    server = given.a_server()
+    containers = given.RunningContainers()
+    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+
+    await given.run([server], given.deps_auditing(audit, containers=containers))
+
+    assert containers.removed == []
+    assert capsys.readouterr().out == ""
+
+
+async def test_the_sweep_runs_when_an_audit_raises():
+    containers = given.RunningContainers([], [], ["stuck_one"])
+
+    async def audit(_server: object) -> given.Outcome:
+        raise ProviderFatal(PermissionError("the key was revoked"))
+
+    with pytest.raises(RunInterrupted):
+        await given.run([given.a_server()], given.deps_auditing(audit, containers=containers))
+
+    assert containers.removed == ["stuck_one"]
+
+
+async def test_the_sweep_runs_when_no_server_survives():
+    server = given.a_server()
+    containers = given.RunningContainers([], [], ["stuck_one"])
+    deps = given.deps_auditing(
+        given.scripted({server.server_package: []}),
+        benign_call={server.server_package: "benign call errored"},
+        containers=containers,
+    )
+
+    with pytest.raises(Refused, match="nuisance run refused"):
+        await given.run([server], deps)
+
+    assert containers.removed == ["stuck_one"]
+
+
+async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
+    server = admission.with_a_backend(
+        given.a_server(),
+        BackendFixture(provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"),
+    )
+    containers = given.RunningContainers()
+    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+
+    await given.run([server], given.deps_auditing(audit, containers=containers))
+
+    run_tags = ["mcp-auditor-nuisance-filesystem-patched:local"]
+    assert containers.listed_tags == [run_tags, run_tags, run_tags]

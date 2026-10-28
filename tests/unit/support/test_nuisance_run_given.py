@@ -32,6 +32,7 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
+from tests.unit.support.test_holdout_run_given import RunningContainers
 
 FIRST_FLAW = admission.FIRST_FLAW
 SECOND_FLAW = admission.SECOND_FLAW
@@ -164,9 +165,14 @@ class InterruptingAudit:
 
 
 def deps_auditing(
-    audit: Audit, *, benign_call: dict[str, str | None] | None = None, throttled: int = 0
+    audit: Audit,
+    *,
+    benign_call: dict[str, str | None] | None = None,
+    throttled: int = 0,
+    containers: RunningContainers | None = None,
 ) -> NuisanceDeps:
     reasons = benign_call or {}
+    docker = containers or RunningContainers()
 
     async def _benign_call(server: AdmittedServer) -> str | None:
         return reasons.get(server.server_package)
@@ -181,6 +187,8 @@ def deps_auditing(
         clock=lambda: RECORDED_AT,
         announce_audits=lambda audits: None,
         throttled_requests=lambda: throttled,
+        running_containers=docker.running,
+        remove_containers=docker.remove,
     )
 
 
@@ -212,6 +220,12 @@ def deps_reaching_nothing() -> NuisanceDeps:
     def throttled_requests() -> int:
         raise AssertionError("the throttled requests were read")
 
+    def running_containers(_tags: object) -> list[str]:
+        raise AssertionError("the running containers were listed")
+
+    def remove_containers(_containers: object) -> None:
+        raise AssertionError("a container was removed")
+
     return NuisanceDeps(
         audit,
         benign_call,
@@ -222,6 +236,8 @@ def deps_reaching_nothing() -> NuisanceDeps:
         clock,
         announce_audits,
         throttled_requests,
+        running_containers,
+        remove_containers,
     )
 
 
