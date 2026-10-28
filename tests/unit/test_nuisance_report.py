@@ -1,6 +1,7 @@
 """The nuisance report model and its markdown: the structural guarantee that a nuisance run keeps
 no proof. The model carries no evidence, no judge input and no per-case verdict field."""
 
+import dataclasses
 from datetime import date
 
 import tests.unit.support.test_nuisance_report_given as given
@@ -23,7 +24,13 @@ from evals.nuisance_report import (
     SideLine,
     build_report,
 )
-from evals.nuisance_results import DROPPED_RUN_REASONS, FigureExit, NotRunCause, NotRunServer
+from evals.nuisance_results import (
+    DROPPED_RUN_REASONS,
+    FigureExit,
+    NotRunCause,
+    NotRunServer,
+    NuisanceServerResult,
+)
 from tests.unit.support.test_nuisance_statistic_given import a_server_result
 
 PROOF_WORDS = {"evidence", "justification", "response", "payload", "verdict"}
@@ -114,10 +121,77 @@ def test_a_server_line_keeps_its_split_flaw_and_the_facts_of_each_run():
 
     assert (line.split_flaw, line.split_disclosure_date) == ("CVE-2025-0001", date(2026, 1, 1))
     assert line.per_run == [
-        ServerRunLine(flagged=True, split_flagged=False, incomplete=False),
-        ServerRunLine(flagged=False, split_flagged=False, incomplete=False),
-        ServerRunLine(flagged=False, split_flagged=False, incomplete=True),
+        _clean_run_line(flagged=True, incomplete=False),
+        _clean_run_line(flagged=False, incomplete=False),
+        _clean_run_line(flagged=False, incomplete=True),
     ]
+
+
+def _clean_run_line(*, flagged: bool, incomplete: bool) -> ServerRunLine:
+    return ServerRunLine(
+        flagged=flagged,
+        split_flagged=False,
+        incomplete=incomplete,
+        non_protocol_lines=0,
+        lost_connection_responses=0,
+        miss_causes=[],
+    )
+
+
+def _with_incidents(server: NuisanceServerResult) -> NuisanceServerResult:
+    lost, refused, clean = server.statuses
+    return dataclasses.replace(
+        server,
+        statuses=(
+            dataclasses.replace(lost, non_protocol_lines=2, lost_connection_responses=1),
+            dataclasses.replace(
+                refused, incomplete=True, miss_causes=["provider_refusal", "unreadable_answer"]
+            ),
+            clean,
+        ),
+    )
+
+
+def _run_with_incidents():
+    servers = [_with_incidents(a_server_result("A")), a_server_result("B")]
+    return given.a_run(servers)
+
+
+def test_a_server_line_sums_its_health_and_counts_its_incomplete_runs_by_cause():
+    report = build_report(_run_with_incidents())
+
+    line = report.servers[0]
+
+    assert (line.non_protocol_lines, line.lost_connection_responses) == (2, 1)
+    assert line.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
+    assert line.per_run[0].non_protocol_lines == 2
+    assert line.per_run[1].miss_causes == ["provider_refusal", "unreadable_answer"]
+    assert report.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
+
+
+def test_the_markdown_names_each_server_with_a_health_count():
+    markdown = render_markdown(build_report(_run_with_incidents()))
+
+    assert (
+        "## Server health\n- A: non-protocol lines 2, connection lost on 1 call(s)\n"
+    ) in markdown
+    assert "- B: non-protocol" not in markdown
+
+
+def test_the_markdown_splits_the_incomplete_runs_by_cause():
+    markdown = render_markdown(build_report(_run_with_incidents()))
+
+    assert (
+        "Incomplete runs (a step refused or unreadable): 1 (A)\n"
+        "- provider_refusal: 1 run(s)\n"
+        "- unreadable_answer: 1 run(s)\n"
+    ) in markdown
+
+
+def test_the_markdown_leaves_the_health_section_out_when_nothing_happened():
+    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
+
+    assert "## Server health" not in markdown
 
 
 def test_the_recorded_at_line_carries_the_run_timestamp():
@@ -200,7 +274,7 @@ def test_the_report_holds_no_proof_text():
         IntervalModel,
     ]
     run = given.a_run(
-        [a_server_result("A", flagged_runs=1)],
+        [_with_incidents(a_server_result("A", flagged_runs=1))],
         not_run=[NotRunServer("npm:b", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED)],
         outside_figure=[FigureExit("npm:c", "an acceptance server")],
     )

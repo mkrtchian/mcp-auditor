@@ -47,6 +47,11 @@ def _result(
                 aimed=index < detected_runs,
                 fail_without_proof=False,
                 incomplete=False,
+                non_protocol_lines=0,
+                lost_connection_responses=0,
+                unchecked_reason=None,
+                replay_attempt_failures=[],
+                miss_causes=[],
             )
             for index in range(runs)
         ),

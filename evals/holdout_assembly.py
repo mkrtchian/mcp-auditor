@@ -26,7 +26,6 @@ def assemble_target(
     disclosure_date: date,
     prices: tuple[Prices, Prices],
 ) -> HoldoutTargetResult:
-    grades = [outcome.grade if isinstance(outcome, GradedAudit) else None for outcome in outcomes]
     reports = [outcome.report for outcome in outcomes]
     gen_price, judge_price = prices
     return HoldoutTargetResult(
@@ -35,25 +34,17 @@ def assemble_target(
         mechanism_label=None if target.mechanism is None else target.mechanism.value,
         tools_count=len(reports[0].tool_reports),
         ran_in_fallback=target.launch_mode is LaunchMode.FALLBACK,
-        statuses=tuple(_run_status(grade) for grade in grades),
+        statuses=tuple(_run_status(outcome) for outcome in outcomes),
         run_cost=sum(_run_cost(report, gen_price, judge_price) for report in reports),
     )
 
 
-def _run_status(grade: RunGrade | None) -> HoldoutRunStatus:
-    if grade is None:
-        return HoldoutRunStatus(
-            detected=False,
-            detected_if_unchecked_missed=False,
-            surfaced_places=[],
-            struck_places=[],
-            unchecked_places=[],
-            aimed=False,
-            fail_without_proof=False,
-            incomplete=True,
-        )
+def _run_status(outcome: GradedAudit | IncompleteRun) -> HoldoutRunStatus:
+    if isinstance(outcome, IncompleteRun):
+        return _incomplete_status(outcome)
+    grade = outcome.grade
     return HoldoutRunStatus(
-        detected=_detected(grade),
+        detected=grade.status in DETECTION_RUNGS,
         detected_if_unchecked_missed=_detected_if_unchecked_missed(grade),
         surfaced_places=sorted(grade.surfaced_places),
         struck_places=sorted(grade.struck_places),
@@ -61,16 +52,35 @@ def _run_status(grade: RunGrade | None) -> HoldoutRunStatus:
         aimed=grade.aimed,
         fail_without_proof=grade.fail_without_proof,
         incomplete=False,
+        non_protocol_lines=outcome.health.non_protocol_lines,
+        lost_connection_responses=outcome.health.lost_connection_responses,
+        unchecked_reason=None
+        if outcome.unchecked_reason is None
+        else outcome.unchecked_reason.value,
+        replay_attempt_failures=[failure.value for failure in outcome.replay_attempt_failures],
+        miss_causes=[],
     )
 
 
-def _detected(grade: RunGrade | None) -> bool:
-    return grade is not None and grade.status in DETECTION_RUNGS
+def _incomplete_status(run: IncompleteRun) -> HoldoutRunStatus:
+    return HoldoutRunStatus(
+        detected=False,
+        detected_if_unchecked_missed=False,
+        surfaced_places=[],
+        struck_places=[],
+        unchecked_places=[],
+        aimed=False,
+        fail_without_proof=False,
+        incomplete=True,
+        non_protocol_lines=run.health.non_protocol_lines,
+        lost_connection_responses=run.health.lost_connection_responses,
+        unchecked_reason=None,
+        replay_attempt_failures=[],
+        miss_causes=sorted({missed.cause.value for missed in run.report.missed_steps}),
+    )
 
 
-def _detected_if_unchecked_missed(grade: RunGrade | None) -> bool:
-    if grade is None:
-        return False
+def _detected_if_unchecked_missed(grade: RunGrade) -> bool:
     return (grade.status_if_unchecked_missed or grade.status) in DETECTION_RUNGS
 
 

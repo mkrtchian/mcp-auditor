@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from evals.holdout_conditions import Cutoff
 from evals.holdout_intervals import Interval
 from evals.holdout_not_run import NotRunLine
-from evals.holdout_results import HoldoutRunResult, HoldoutTargetResult
+from evals.holdout_results import HoldoutRunResult, HoldoutRunStatus, HoldoutTargetResult
 from evals.holdout_statistic import (
     MethodPlacement,
     Side,
@@ -68,6 +68,11 @@ class TargetRunLine(BaseModel):
     aimed: bool
     fail_without_proof: bool
     incomplete: bool
+    non_protocol_lines: int
+    lost_connection_responses: int
+    unchecked_reason: str | None
+    replay_attempt_failures: list[str]
+    miss_causes: list[str]
 
 
 class TargetLine(BaseModel):
@@ -84,6 +89,11 @@ class TargetLine(BaseModel):
     ran_in_fallback: bool
     tools_count: int
     cost: float
+    non_protocol_lines: int
+    lost_connection_responses: int
+    unchecked_runs_by_reason: dict[str, int]
+    replay_attempt_failures_by_cause: dict[str, int]
+    incomplete_runs_by_cause: dict[str, int]
     per_run: list[TargetRunLine]
 
 
@@ -118,6 +128,7 @@ class HoldoutReport(BaseModel):
     targets: list[TargetLine]
     not_run: list[NotRunLine]
     incomplete_run_count: int
+    incomplete_runs_by_cause: dict[str, int]  # a run missing steps of two causes counts twice
     total_cost: float
     prices_as_of: date
     commit: str
@@ -167,6 +178,14 @@ def build_report(run: HoldoutRunResult) -> HoldoutReport:
         targets=[_target_line(target) for target in run.targets],
         not_run=[NotRunLine.of(target) for target in run.not_run],
         incomplete_run_count=run.incomplete_run_count,
+        incomplete_runs_by_cause=dict(
+            Counter(
+                cause
+                for target in run.targets
+                for status in target.statuses
+                for cause in status.miss_causes
+            )
+        ),
         total_cost=run.total_cost,
         prices_as_of=run.prices_as_of,
         commit=run.commit,
@@ -249,14 +268,25 @@ def _target_line(target: HoldoutTargetResult) -> TargetLine:
         ran_in_fallback=target.ran_in_fallback,
         tools_count=target.tools_count,
         cost=target.run_cost,
-        per_run=[
-            TargetRunLine(
-                detected=status.detected,
-                detected_if_unchecked_missed=status.detected_if_unchecked_missed,
-                aimed=status.aimed,
-                fail_without_proof=status.fail_without_proof,
-                incomplete=status.incomplete,
-            )
-            for status in target.statuses
-        ],
+        non_protocol_lines=target.non_protocol_lines,
+        lost_connection_responses=target.lost_connection_responses,
+        unchecked_runs_by_reason=target.unchecked_runs_by_reason,
+        replay_attempt_failures_by_cause=target.replay_attempt_failures_by_cause,
+        incomplete_runs_by_cause=target.incomplete_runs_by_cause,
+        per_run=[_run_line(status) for status in target.statuses],
+    )
+
+
+def _run_line(status: HoldoutRunStatus) -> TargetRunLine:
+    return TargetRunLine(
+        detected=status.detected,
+        detected_if_unchecked_missed=status.detected_if_unchecked_missed,
+        aimed=status.aimed,
+        fail_without_proof=status.fail_without_proof,
+        incomplete=status.incomplete,
+        non_protocol_lines=status.non_protocol_lines,
+        lost_connection_responses=status.lost_connection_responses,
+        unchecked_reason=status.unchecked_reason,
+        replay_attempt_failures=status.replay_attempt_failures,
+        miss_causes=status.miss_causes,
     )

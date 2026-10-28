@@ -22,7 +22,8 @@ def render_markdown(report: NuisanceReport) -> str:
             *_raw_fail_section(report.servers),
             *_outside_figure_section(report),
             *_not_run_section(report.not_run, len(report.servers)),
-            _incomplete_runs_line(report),
+            *_health_section(report.servers),
+            *_incomplete_runs_lines(report),
             *_throttled_lines(report),
             f"Total cost: ${report.total_cost:.2f}",
         ]
@@ -121,14 +122,28 @@ def _not_run_section(not_run: Sequence[NotRunLine], audited_servers: int) -> lis
     return ["## Not run", *counts, *servers, ""]
 
 
+def _health_section(servers: Sequence[ServerLine]) -> list[str]:
+    """Report-only: one line per server that wrote non-protocol lines or lost its connection."""
+    lines = [
+        f"- {line.server_package}: non-protocol lines {line.non_protocol_lines},"
+        f" connection lost on {line.lost_connection_responses} call(s)"
+        for line in servers
+        if line.non_protocol_lines or line.lost_connection_responses
+    ]
+    return ["## Server health", *lines, ""] if lines else []
+
+
 _INCOMPLETE_RUNS = "Incomplete runs (a step refused or unreadable)"
 
 
-def _incomplete_runs_line(report: NuisanceReport) -> str:
+def _incomplete_runs_lines(report: NuisanceReport) -> list[str]:
     touched = [line.server_package for line in report.servers if line.incomplete_runs > 0]
-    if not touched:
-        return f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count}"
-    return f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count} ({', '.join(touched)})"
+    count = f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count}"
+    by_cause = [
+        f"- {cause}: {runs} run(s)"
+        for cause, runs in sorted(report.incomplete_runs_by_cause.items())
+    ]
+    return [f"{count} ({', '.join(touched)})" if touched else count, *by_cause]
 
 
 def _throttled_lines(report: NuisanceReport) -> list[str]:
