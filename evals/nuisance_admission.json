@@ -1302,7 +1302,7 @@
           "flaw": "CVE-2025-66335",
           "field": "fix_check.source",
           "value": "holdout_calibration",
-          "reason": "66335 is the holdout twin's own calibrated-green flaw (internal_fetch via get_table_comment's SQL injection into Doris' http() TVF) at the same patched version 0.6.1, so its fix_check recopies the holdout calibration and doris carries no committed nuisance fixture, exactly as aws-api does (decision 5)"
+          "reason": "66335 is the holdout twin's own calibrated-green flaw (internal_fetch via get_table_comment's SQL injection into Doris' http() TVF) at the same patched version 0.6.1, so its fix_check recopies the holdout calibration and doris carries no committed nuisance fixture, exactly as aws-api does"
         },
         {
           "server_package": "PyPI:doris-mcp-server",
@@ -1682,6 +1682,1084 @@
         }
       ],
       "patched_version": "2.28.0"
+    },
+    {
+      "server_package": "npm:mcp-maigret",
+      "reaching_flaw": "CVE-2026-2130",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-2130",
+          "tools": [
+            {
+              "vulnerable_name": "search_username",
+              "patched_name": "search_username",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "parse_url",
+              "patched_name": "parse_url",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.0.13",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "search_username",
+              "arguments": {
+                "username": "testuser"
+              }
+            },
+            {
+              "tool": "parse_url",
+              "arguments": {
+                "url": "https://github.com/testuser"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-b0c184cb3e0fe049a6b96f1368588f8f",
+            "exploit_calls": [
+              "search_username"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "maigret",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-maigret",
+          "flaw": "CVE-2026-2130",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the maigret holdout twin's own calibrated command_execution flaw at the same patched version 1.0.13, so its fix_check recopies the holdout calibration and maigret carries no committed vulnerable fixture or FixCheckTarget, as aws-api does."
+        }
+      ],
+      "patched_version": "1.0.13"
+    },
+    {
+      "server_package": "npm:mcp-nmap-server",
+      "reaching_flaw": "CVE-2026-3484",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-3484",
+          "tools": [
+            {
+              "vulnerable_name": "run_nmap_scan",
+              "patched_name": "run_nmap_scan",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "30a6b9e1c7fa6146f51e28d6ab83a2568d9a3488",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "run_nmap_scan",
+              "arguments": {
+                "target": "127.0.0.1",
+                "scanType": "quick"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-6183875544065c67eaf49dd29aa9a191",
+            "exploit_calls": [
+              "run_nmap_scan"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "nmap",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-nmap-server",
+          "flaw": "CVE-2026-3484",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the nmap holdout twin's own calibrated command_execution flaw at the same patched commit 30a6b9e, so its fix_check recopies the holdout calibration and nmap carries no committed vulnerable fixture or FixCheckTarget. No npm release carries the fix, so the patched artifact is the fix commit, as the holdout pins it."
+        }
+      ],
+      "patched_version": "30a6b9e1c7fa6146f51e28d6ab83a2568d9a3488"
+    },
+    {
+      "server_package": "https://github.com/jiantao88/android-mcp-server",
+      "reaching_flaw": "CVE-2026-19978",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-19978",
+          "tools": [
+            {
+              "vulnerable_name": "list-packages",
+              "patched_name": "list-packages",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "input-text",
+              "patched_name": "input-text",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "install-apk",
+              "patched_name": "install-apk",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "uninstall-apk",
+              "patched_name": "uninstall-apk",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "screencap",
+              "patched_name": "screencap",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "clear-app-data",
+              "patched_name": "clear-app-data",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "grant-permission",
+              "patched_name": "grant-permission",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "revoke-permission",
+              "patched_name": "revoke-permission",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "reset-permissions",
+              "patched_name": "reset-permissions",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "push",
+              "patched_name": "push",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "pull",
+              "patched_name": "pull",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "rm",
+              "patched_name": "rm",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "clear-logcat",
+              "patched_name": "clear-logcat",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "get-crash-log",
+              "patched_name": "get-crash-log",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "start-activity",
+              "patched_name": "start-activity",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "activity-containers",
+              "patched_name": "activity-containers",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "window-info",
+              "patched_name": "window-info",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "surface-flinger",
+              "patched_name": "surface-flinger",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "input-info",
+              "patched_name": "input-info",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "monitor-events",
+              "patched_name": "monitor-events",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "display-info",
+              "patched_name": "display-info",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "battery-info",
+              "patched_name": "battery-info",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "network-info",
+              "patched_name": "network-info",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "list-services",
+              "patched_name": "list-services",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "memory-info",
+              "patched_name": "memory-info",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "cpu-info",
+              "patched_name": "cpu-info",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "14e2bf27c88ba137e35cbb0c2a75f72b595bb98a",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "list-packages",
+              "arguments": {}
+            },
+            {
+              "tool": "input-text",
+              "arguments": {
+                "text": "hello"
+              }
+            },
+            {
+              "tool": "install-apk",
+              "arguments": {
+                "apkPath": "/opt/app.apk"
+              }
+            },
+            {
+              "tool": "uninstall-apk",
+              "arguments": {
+                "packageName": "com.example.app"
+              }
+            },
+            {
+              "tool": "screencap",
+              "arguments": {
+                "remotePath": "/sdcard/screen.png"
+              }
+            },
+            {
+              "tool": "clear-app-data",
+              "arguments": {
+                "packageName": "com.example.app"
+              }
+            },
+            {
+              "tool": "grant-permission",
+              "arguments": {
+                "packageName": "com.example.app",
+                "permission": "android.permission.CAMERA"
+              }
+            },
+            {
+              "tool": "revoke-permission",
+              "arguments": {
+                "packageName": "com.example.app",
+                "permission": "android.permission.CAMERA"
+              }
+            },
+            {
+              "tool": "reset-permissions",
+              "arguments": {
+                "packageName": "com.example.app"
+              }
+            },
+            {
+              "tool": "push",
+              "arguments": {
+                "localPath": "/opt/file.txt",
+                "remotePath": "/sdcard/file.txt"
+              }
+            },
+            {
+              "tool": "pull",
+              "arguments": {
+                "remotePath": "/sdcard/file.txt",
+                "localPath": "/tmp/file.txt"
+              }
+            },
+            {
+              "tool": "rm",
+              "arguments": {
+                "path": "/sdcard/file.txt"
+              }
+            },
+            {
+              "tool": "clear-logcat",
+              "arguments": {
+                "buffer": "main"
+              }
+            },
+            {
+              "tool": "get-crash-log",
+              "arguments": {
+                "packageName": "com.example.app",
+                "lines": 50
+              }
+            },
+            {
+              "tool": "start-activity",
+              "arguments": {
+                "component": "com.example.app/.MainActivity"
+              }
+            },
+            {
+              "tool": "activity-containers",
+              "arguments": {}
+            },
+            {
+              "tool": "window-info",
+              "arguments": {}
+            },
+            {
+              "tool": "surface-flinger",
+              "arguments": {}
+            },
+            {
+              "tool": "input-info",
+              "arguments": {}
+            },
+            {
+              "tool": "monitor-events",
+              "arguments": {
+                "timeout": 1
+              }
+            },
+            {
+              "tool": "display-info",
+              "arguments": {}
+            },
+            {
+              "tool": "battery-info",
+              "arguments": {}
+            },
+            {
+              "tool": "network-info",
+              "arguments": {}
+            },
+            {
+              "tool": "list-services",
+              "arguments": {}
+            },
+            {
+              "tool": "memory-info",
+              "arguments": {
+                "packageName": "com.example.app"
+              }
+            },
+            {
+              "tool": "cpu-info",
+              "arguments": {
+                "packageName": "com.example.app"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-513d4ed296e84f7c73703a1e1dce2bd2",
+            "exploit_calls": [
+              "list-packages"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "android",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-19978",
+          "field": "tools",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/jiantao88/android-mcp-server",
+          "flaw": "CVE-2026-19978",
+          "field": "tools",
+          "value": "26 tools",
+          "reason": "settled from the vulnerable source (commit cfb872b): executeAdbCommand interpolates the caller-controlled deviceId unescaped as `-s ${deviceId}` into a child_process.exec shell string, so every tool that forwards a caller-supplied deviceId (spread via deviceSelectionParams) or interpolates another user argument reaches the injection: 26 of the 30 tools. The four that take no caller input into the shell (get-devices, help, kill-server, start-server) do not. Record A's 13 counted only tools with a non-deviceId argument; record B's 30 included the four input-free tools."
+        },
+        {
+          "server_package": "https://github.com/jiantao88/android-mcp-server",
+          "flaw": "CVE-2026-19978",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the android holdout twin's own calibrated command_execution flaw at the same patched commit 14e2bf27, so its fix_check recopies the holdout calibration and android carries no committed vulnerable fixture or FixCheckTarget. No registry release carries the fix, so the patched artifact is the fix commit, as the holdout pins it."
+        }
+      ],
+      "patched_version": "14e2bf27c88ba137e35cbb0c2a75f72b595bb98a"
+    },
+    {
+      "server_package": "npm:mcp-markdownify-server",
+      "reaching_flaw": "CVE-2025-58358",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-58358",
+          "tools": [
+            {
+              "vulnerable_name": "pdf-to-markdown",
+              "patched_name": "pdf-to-markdown",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "image-to-markdown",
+              "patched_name": "image-to-markdown",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "audio-to-markdown",
+              "patched_name": "audio-to-markdown",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "docx-to-markdown",
+              "patched_name": "docx-to-markdown",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "xlsx-to-markdown",
+              "patched_name": "xlsx-to-markdown",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "pptx-to-markdown",
+              "patched_name": "pptx-to-markdown",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "a31204de058b",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "pdf-to-markdown",
+              "arguments": {
+                "filepath": "/opt/benign.pdf"
+              }
+            },
+            {
+              "tool": "image-to-markdown",
+              "arguments": {
+                "filepath": "/opt/benign.png"
+              }
+            },
+            {
+              "tool": "audio-to-markdown",
+              "arguments": {
+                "filepath": "/opt/benign.wav"
+              }
+            },
+            {
+              "tool": "docx-to-markdown",
+              "arguments": {
+                "filepath": "/opt/benign.docx"
+              }
+            },
+            {
+              "tool": "xlsx-to-markdown",
+              "arguments": {
+                "filepath": "/opt/benign.xlsx"
+              }
+            },
+            {
+              "tool": "pptx-to-markdown",
+              "arguments": {
+                "filepath": "/opt/benign.pptx"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-2bcfbb4cfad3418874f24efb9592a648",
+            "exploit_calls": [
+              "pptx-to-markdown"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-5273",
+          "tools": [],
+          "effect_class": "read_outside_scope",
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-ebcc1ba7fde3e157881730613211950e",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-5276",
+          "tools": [],
+          "effect_class": "internal_fetch",
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-b350781ede8b3e89ce771cd4100004d4",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "markdownify",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-58358",
+          "field": "tools",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-markdownify-server",
+          "flaw": "CVE-2025-58358",
+          "field": "tools",
+          "value": "6 converters",
+          "reason": "settled from the vulnerable source (commit 949f12e): the six filepath converters (pdf/image/audio/docx/xlsx/pptx-to-markdown) all route their caller-controlled filepath through the same Markdownify._markitdown, which interpolates it into a child_process.exec shell string, so all six reach the injection. The three URL tools fetch first and the run host has no network; get-markdown-file uses fs.readFile and no shell. Record A listed only pptx-to-markdown (the one the twin demonstrates); record B listed the six. Settled to six."
+        },
+        {
+          "server_package": "npm:mcp-markdownify-server",
+          "flaw": "CVE-2025-58358",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the markdownify holdout twin's own calibrated command_execution flaw; its fix_check recopies the holdout calibration and markdownify carries no committed vulnerable fixture or FixCheckTarget. The deferred run image pins the twin's fix commit a31204de058b (not npm 1.0.0, a later build with the same execFile fix), so the recopied booleans describe the run image byte-for-byte."
+        }
+      ],
+      "patched_version": "a31204de058b"
+    },
+    {
+      "server_package": "npm:@wonderwhy-er/desktop-commander",
+      "reaching_flaw": "CVE-2025-11489",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-11489",
+          "tools": [
+            {
+              "vulnerable_name": "read_file",
+              "patched_name": "read_file",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "0.2.33",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "read_file",
+              "arguments": {
+                "path": "/srv/app/.git/HEAD"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-d443edb8cd48091b4c1793e9c0776afa",
+            "exploit_calls": [
+              "read_file"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-11490",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-443bc87fcb0d67f2941532f55fee9a52",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-11491",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-66bbab4b54579c6a68a3b5b693799b5c",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-10690",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-63c9d63e42d72ca0b04a8ac03862a2e4",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-10691",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-7d8b6ee933cc041f3f90e88070cdb502",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "desktop-commander",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-11489",
+          "field": "patched_version",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:@wonderwhy-er/desktop-commander",
+          "flaw": null,
+          "field": "host",
+          "value": "unprivileged / / no network",
+          "reason": "host taken from record A; record B ignored the pre-filled host."
+        },
+        {
+          "server_package": "npm:@wonderwhy-er/desktop-commander",
+          "flaw": "CVE-2025-11489",
+          "field": "patched_version",
+          "value": "0.2.33",
+          "reason": "patched 0.2.33, the holdout first-fix (the first release whose validatePath resolves the symlink with fs.realpath before the scope check); record B's 0.3.1 is a later release, not the first fix."
+        },
+        {
+          "server_package": "npm:@wonderwhy-er/desktop-commander",
+          "flaw": "CVE-2025-11489",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the desktop-commander holdout twin's own calibrated read_outside_scope flaw at the same patched version 0.2.33, so its fix_check recopies the holdout calibration and the server carries no committed vulnerable fixture or FixCheckTarget, as aws-api does."
+        }
+      ],
+      "patched_version": "0.2.33"
+    },
+    {
+      "server_package": "npm:mcp-server-taskwarrior",
+      "reaching_flaw": "CVE-2026-5833",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-5833",
+          "tools": [
+            {
+              "vulnerable_name": "get_next_tasks",
+              "patched_name": "get_next_tasks",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "mark_task_done",
+              "patched_name": "mark_task_done",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "add_task",
+              "patched_name": "add_task",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_next_tasks",
+              "arguments": {}
+            },
+            {
+              "tool": "mark_task_done",
+              "arguments": {
+                "identifier": "1"
+              }
+            },
+            {
+              "tool": "add_task",
+              "arguments": {
+                "description": "buy milk"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-4d6111674f8d5636539d8b260fda8348",
+            "exploit_calls": [
+              "mark_task_done"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "taskwarrior",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-5833",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-server-taskwarrior",
+          "flaw": "CVE-2026-5833",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "the tool descriptions declare task management (list, complete, add tasks), not command execution, so by the rule's description test the declared function is not the effect of the command_execution class and the injection is a bug, not the contract. Record B over-called declared_function_is_effect true on the CLI wrapper."
+        },
+        {
+          "server_package": "npm:mcp-server-taskwarrior",
+          "flaw": "CVE-2026-5833",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the taskwarrior holdout twin's own calibrated command_execution flaw at the same patched commit 1ee3d282, so its fix_check recopies the holdout calibration and taskwarrior carries no committed vulnerable fixture or FixCheckTarget. No registry release carries the fix, so the patched artifact is the fix commit, as the holdout pins it."
+        }
+      ],
+      "patched_version": "1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2"
+    },
+    {
+      "server_package": "https://github.com/A-G-U-P-T-A/wireshark-mcp",
+      "reaching_flaw": "CVE-2026-7785",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-7785",
+          "tools": [
+            {
+              "vulnerable_name": "quick_capture",
+              "patched_name": "quick_capture",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "v0.2.2",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "quick_capture",
+              "arguments": {
+                "interface": "lo",
+                "duration": 1,
+                "packet_limit": 1
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-6017dd2cc8cb1e9199acf23b32c20c08",
+            "exploit_calls": [
+              "quick_capture"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "wireshark",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-7785",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-7785",
+          "field": "patched_version",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/A-G-U-P-T-A/wireshark-mcp",
+          "flaw": "CVE-2026-7785",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "the tool description declares packet capture, not command execution, so by the rule's description test the declared function is not the effect of the command_execution class and the injection is a bug, not the contract. Record B over-called declared_function_is_effect true on the CLI wrapper."
+        },
+        {
+          "server_package": "https://github.com/A-G-U-P-T-A/wireshark-mcp",
+          "flaw": "CVE-2026-7785",
+          "field": "patched_version",
+          "value": "v0.2.2",
+          "reason": "patched source the earliest public tag v0.2.2, the earliest public release carrying the fix; it resolves to a tree whose server code is identical to the fix commit 6e56043c (two later commits touch only docs and CI). Record A used the fix commit, record B the tag; settled to the tag as the earliest public release."
+        },
+        {
+          "server_package": "https://github.com/A-G-U-P-T-A/wireshark-mcp",
+          "flaw": "CVE-2026-7785",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the wireshark holdout twin's own calibrated command_execution flaw; its fix_check recopies the holdout calibration and wireshark carries no committed vulnerable fixture or FixCheckTarget. The deferred run image pins the twin's fix commit 6e56043c (= tag v0.2.2's server code), so the recopied booleans describe the run image."
+        }
+      ],
+      "patched_version": "v0.2.2"
     }
   ]
 }
