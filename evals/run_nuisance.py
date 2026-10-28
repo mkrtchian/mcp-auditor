@@ -29,18 +29,20 @@ from evals.holdout_census import HoldoutCensus, load_census
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
 from evals.metrics import quiet_throttle_waits
-from evals.nuisance_admission import ADMISSION_PATH, NuisanceAdmission
+from evals.nuisance_admission import ADMISSION_PATH
 from evals.nuisance_calibrate_command import add_calibrate_arguments
 from evals.nuisance_commands import (
     CENSUS_PATH,
+    CRASHED_EXIT,
     REFUSED_EXIT,
     committed_admission,
+    malformed_input_refused,
     write_report,
 )
 from evals.nuisance_dossier import write_dossier
 from evals.nuisance_gate_command import add_gate_arguments
 from evals.nuisance_markdown import render_markdown
-from evals.nuisance_population import run_population
+from evals.nuisance_population import RunPopulation, run_population
 from evals.nuisance_report import build_report
 from evals.nuisance_results import NuisanceRunResult
 from evals.nuisance_run import (
@@ -52,6 +54,8 @@ from evals.nuisance_run import (
     run_nuisance,
 )
 from evals.nuisance_walk import acceptance_servers, nuisance_population
+from evals.provider_errors import ProviderFatal, describe_provider_error
+from evals.run_files import partial_result_kept, refuse_existing_report, write_result
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
@@ -67,10 +71,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     except Refused as refusal:
         display.print_refusal(refusal.title, refusal.reasons)
         return REFUSED_EXIT
-    except ValueError as error:
-        # A malformed census or admission must not read as success.
-        display.print_refusal("Refused: the census or the admission is malformed.", [str(error)])
-        return REFUSED_EXIT
+    except ProviderFatal as fatal:
+        display.print_refusal(
+            "Crashed: a fatal model provider error stopped the run.",
+            [describe_provider_error(fatal.cause)],
+        )
+        return CRASHED_EXIT
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -109,8 +115,9 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _walk(args: argparse.Namespace) -> int:
-    census = load_census(args.census)
-    population = nuisance_population(census)
+    with malformed_input_refused():
+        census = load_census(args.census)
+        population = nuisance_population(census)
     outcomes: dict[str, str] = {}
     for step in census.draw.walk if census.draw else []:
         outcomes.setdefault(step.identifier, step.outcome)
@@ -128,7 +135,8 @@ def _walk(args: argparse.Namespace) -> int:
 
 
 def _nuisance_dossier(args: argparse.Namespace) -> int:
-    census = load_census(args.census)
+    with malformed_input_refused():
+        census = load_census(args.census)
     write_dossier(census, args.server, args.out, args.backend)
     print(f"Admission dossier for {args.server} written to {args.out}")
     return 0
@@ -136,16 +144,22 @@ def _nuisance_dossier(args: argparse.Namespace) -> int:
 
 def _run(args: argparse.Namespace) -> int:
     _refuse_tracing()
+    refuse_existing_report(args.report, "nuisance run refused")
     conditions = load_conditions(CONDITIONS_PATH)
-    census = load_census(args.census)
-    admission = committed_admission(args.admission, census)
-    if admission is None or not admission.servers:
-        print("no server is admitted")
-        return 0
+    with malformed_input_refused():
+        census = load_census(args.census)
+        admission = committed_admission(args.admission, census)
+        if admission is None or not admission.servers:
+            print("no server is admitted")
+            return 0
+        population = run_population(
+            nuisance_population(census), admission, acceptance_servers(census)
+        )
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    run = _audit_admitted_servers(args, _ReadyRun(census, admission, conditions, settings))
+    run = _audit_admitted_servers(args, _ReadyRun(census, population, conditions, settings))
+    write_result(args.report, run)
     report = build_report(run)
     markdown = render_markdown(report)
     write_report(args.report, report, markdown)
@@ -159,22 +173,18 @@ class _ReadyRun:
     """What a nuisance run reads, once its conditions are checked ready for its models."""
 
     census: HoldoutCensus
-    admission: NuisanceAdmission
+    population: RunPopulation
     conditions: HoldoutConditions
     settings: Settings
 
 
 def _audit_admitted_servers(args: argparse.Namespace, ready: _ReadyRun) -> NuisanceRunResult:
-    census = ready.census
-    population = run_population(
-        nuisance_population(census), ready.admission, acceptance_servers(census)
-    )
     deps = default_deps(nuisance_overrides(ready.conditions), args.concurrency)
-    with Progress(console=display.console) as bar:
+    with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(
             run_nuisance(
-                population,
-                draw_order(census),
+                ready.population,
+                draw_order(ready.census),
                 ready.conditions,
                 ready.settings,
                 last_commit(args.census),

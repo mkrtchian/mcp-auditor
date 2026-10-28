@@ -1,13 +1,9 @@
+import asyncio
 import dataclasses
-import subprocess
-import sys
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import date
 from typing import Any
 
-import pytest
-
-from evals import holdout_run
 from evals.cve_grammar import CVEStatus, RunGrade
 from evals.cve_layout_check import LayoutCheck
 from evals.cve_places import HOLDOUT_PLACES, load_places
@@ -25,6 +21,7 @@ from tests.unit.support import test_cve_grammar_given as grammar
 
 FILESYSTEM = "CVE-2025-53109"
 KUBERNETES = "CVE-2025-53355"
+GIT = "CVE-2025-68143"
 LUNA_PRICE = Prices(input=0.10, cached_input=0.01, output=0.50)
 RECORDED_AT = "2026-10-28T09:30:00+00:00"
 SETTINGS = Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none")
@@ -37,19 +34,6 @@ def a_target(cve_id: str = FILESYSTEM, **changes: Any) -> CVETarget:
     """A real target, since run_holdout plants its kept places and fingerprints its fixture."""
     (target,) = [target for target in CVE_TARGETS if target.cve_id == cve_id]
     return dataclasses.replace(target, **{"tools_filter": None, **changes})
-
-
-def a_build_exiting(
-    monkeypatch: pytest.MonkeyPatch, returncode: int, stdout: str, stderr: str = ""
-) -> None:
-    def run(command: Sequence[str], **options: object) -> subprocess.CompletedProcess[str]:
-        if not options.get("capture_output"):
-            print(stdout)
-            print(stderr, file=sys.stderr)
-            return subprocess.CompletedProcess(command, returncode)
-        return subprocess.CompletedProcess(command, returncode, stdout, stderr)
-
-    monkeypatch.setattr(holdout_run.subprocess, "run", run)
 
 
 def a_report(provider: ProviderUsage, judge: ProviderUsage) -> AuditReport:
@@ -73,6 +57,43 @@ def scripted(outcomes_by_id: Mapping[str, list[Outcome]]) -> Audit:
         return scripts[target.cve_id].pop(0)
 
     return audit
+
+
+class InterruptingAudit:
+    """The finished target's runs detect at once. The failing target's first run raises `error`
+    once the finished target is done, and every other run waits until it is cancelled."""
+
+    def __init__(self, finished: str, failing: str, error: Exception) -> None:
+        self.cancelled: list[str] = []
+        self._finished, self._failing, self._error = finished, failing, error
+        self._detections = three_detections()
+        self._finished_done = asyncio.Event()
+        self._failing_calls = 0
+
+    async def __call__(self, target: CVETarget) -> Outcome:
+        if target.cve_id == self._finished:
+            return self._detection()
+        if target.cve_id == self._failing:
+            self._failing_calls += 1
+            if self._failing_calls == 1:
+                await self._finished_done.wait()
+                await asyncio.sleep(0.01)  # lets the finished target's task complete
+                raise self._error
+        return await self._until_cancelled(target)
+
+    def _detection(self) -> Outcome:
+        outcome = self._detections.pop(0)
+        if not self._detections:
+            self._finished_done.set()
+        return outcome
+
+    async def _until_cancelled(self, target: CVETarget) -> Outcome:
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.cancelled.append(target.cve_id)
+            raise
+        raise AssertionError("a run that never ends completed")
 
 
 def deps_auditing(

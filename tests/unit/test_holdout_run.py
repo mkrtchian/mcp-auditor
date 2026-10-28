@@ -13,7 +13,6 @@ from evals.cve_targets import LaunchMode
 from evals.eval_session import Refused, TreeState
 from evals.holdout_audit import DroppedRun, IncompleteRun
 from evals.holdout_results import NotRunCause
-from evals.holdout_run import rebuild_images, target_services
 from evals.probe import call_cost
 from mcp_auditor.domain.models import ProviderUsage
 
@@ -22,46 +21,6 @@ from mcp_auditor.domain.models import ProviderUsage
 def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
     monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
-def test_target_services_dedups_images_and_patched_twins():
-    first = given.a_target(images=("app",), patched_image="app-patched")
-    second = given.a_target(images=("app", "sentinel"), patched_image="other-patched")
-
-    services = target_services([first, second])
-
-    assert services == ["app", "app-patched", "sentinel", "other-patched"]
-
-
-def test_target_services_is_empty_for_no_target():
-    assert target_services([]) == []
-
-
-def test_a_failed_image_build_raises_with_the_tail_of_its_output(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    stdout = "\n".join(f"step {index}" for index in range(50))
-    given.a_build_exiting(monkeypatch, 1, stdout, "failed to solve: no such file")
-
-    with pytest.raises(RuntimeError) as raised:
-        rebuild_images(["app", "app-patched"])
-
-    message = str(raised.value)
-    assert "app, app-patched" in message
-    assert "step 49" in message
-    assert "step 10" in message
-    assert "step 9\n" not in message
-    assert "failed to solve: no such file" in message
-
-
-def test_a_successful_image_build_prints_nothing(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-):
-    given.a_build_exiting(monkeypatch, 0, "built app")
-
-    rebuild_images(["app"])
-
-    assert capsys.readouterr() == ("", "")
 
 
 async def test_a_target_is_assembled_from_its_runs():
@@ -215,6 +174,23 @@ async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
     assert not_run.cve_id == sick.cve_id
     assert not_run.reason == "throttled by the model provider past every retry"
     assert not_run.cause is NotRunCause.THROTTLED
+
+
+async def test_a_provider_error_wins_over_a_launch_failure():
+    sick, healthy = given.a_target(given.KUBERNETES), given.a_target(given.FILESYSTEM)
+    report = given.a_report(ProviderUsage(), ProviderUsage())
+    sick_outcomes: list[given.Outcome] = [
+        DroppedRun(NotRunCause.LAUNCH_FAILURE),
+        DroppedRun(NotRunCause.PROVIDER_ERROR),
+        given.graded(CVEStatus.DETECTED, report, aimed=True),
+    ]
+    audit = given.scripted({sick.cve_id: sick_outcomes, healthy.cve_id: given.three_detections()})
+
+    result = await given.run([sick, healthy], given.deps_auditing(audit))
+
+    (not_run,) = result.not_run
+    assert not_run.reason == "a run hit a provider error past every retry"
+    assert not_run.cause is NotRunCause.PROVIDER_ERROR
 
 
 async def test_the_run_announces_the_audits_of_the_surviving_targets_only():

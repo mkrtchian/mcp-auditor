@@ -231,6 +231,25 @@ async def test_throttled_wins_over_a_launch_failure():
     assert not_run.cause == NotRunCause.THROTTLED
 
 
+async def test_a_provider_error_wins_over_a_launch_failure():
+    dropped, kept = given.a_server("npm:dropped"), given.a_server("npm:kept")
+    audit = given.scripted(
+        {
+            "npm:dropped": [
+                DroppedRun(NotRunCause.LAUNCH_FAILURE),
+                DroppedRun(NotRunCause.PROVIDER_ERROR),
+                given.a_report(False),
+            ],
+            "npm:kept": [given.a_report(False) for _ in range(3)],
+        }
+    )
+
+    result = await given.run([dropped, kept], given.deps_auditing(audit))
+
+    (not_run,) = result.not_run
+    assert not_run.cause == NotRunCause.PROVIDER_ERROR
+
+
 async def test_a_run_where_every_server_drops_is_refused_with_each_reason():
     failing, dropped = given.a_server("npm:failing"), given.a_server("npm:dropped")
     audit = given.scripted(

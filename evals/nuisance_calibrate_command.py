@@ -18,6 +18,7 @@ from evals.nuisance_commands import (
     CRASHED_EXIT,
     UNKNOWN_SERVER_EXIT,
     committed_admission,
+    malformed_input_refused,
 )
 from evals.nuisance_run import NUISANCE_CONCURRENCY
 
@@ -31,8 +32,9 @@ def add_calibrate_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def calibrate(args: argparse.Namespace) -> int:
-    census = load_census(args.census)
-    admission = committed_admission(args.admission, census)
+    with malformed_input_refused():
+        census = load_census(args.census)
+        admission = committed_admission(args.admission, census)
     if admission is None or not admission.servers or not nuisance_fixtures.FIX_CHECK_TARGETS:
         print("nothing is drawn")
         return 0

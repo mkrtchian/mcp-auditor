@@ -26,7 +26,7 @@ from evals.eval_session import Refused, TreeState, read_tree
 from evals.failure_text import TYPES_ONLY
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_draw import DrawEntry
-from evals.holdout_run import HOLDOUT_BUDGET, rebuild_images
+from evals.holdout_run import HOLDOUT_BUDGET
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_assembly import assemble_server
@@ -47,13 +47,17 @@ from evals.nuisance_results import (
     NotRunServer,
     NuisanceRunResult,
     NuisanceServerResult,
+    RunInterrupted,
 )
 from evals.probe_candidates import Prices
+from evals.run_images import rebuild_images
+from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport
 
 NUISANCE_RUNS = 3  # the log sets it before the first real run, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
+_DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 # The budget is the holdout's HOLDOUT_BUDGET: the rule reads the figure beside the holdout run,
 # whose budget is a constant, not a flag (holdout-rule.md:227), so no budget of its own here.
 
@@ -104,8 +108,11 @@ async def run_nuisance(
     _refuse_dirty_tree(tree)
     deps.rebuild(_services(population.audited))
     not_run, surviving = await _vet_all(population.audited, deps)
-    assembled, dropped = await _run_all(surviving, deps, ctx)
+    assembled, dropped, failure = await _run_all(surviving, deps, ctx)
     all_not_run = [*not_run, *dropped]
+    if failure is not None:
+        partial = _assemble_run(ctx, deps, population, assembled, all_not_run, tree)
+        raise RunInterrupted(dataclasses.replace(partial, partial=True), failure)
     if not assembled:
         raise Refused(
             "nuisance run refused",
@@ -200,32 +207,35 @@ async def _vet_all(
 
 async def _run_all(
     surviving: Sequence[AdmittedServer], deps: NuisanceDeps, ctx: _RunContext
-) -> tuple[list[tuple[AdmittedServer, NuisanceServerResult]], list[NotRunServer]]:
+) -> tuple[
+    list[tuple[AdmittedServer, NuisanceServerResult]], list[NotRunServer], BaseException | None
+]:
+    """The finished servers, assembled or dropped, and the exception that stopped the run, if
+    any: a first exception out of a server's runs cancels every server still in flight."""
     deps.announce_audits(len(surviving) * ctx.runs)
-    runs_per = await asyncio.gather(
-        *(_run_server(server, deps.audit, ctx.runs) for server in surviving)
+    finished, failure = await first_failure(
+        surviving, lambda server: _run_server(server, deps.audit, ctx.runs)
     )
     assembled: list[tuple[AdmittedServer, NuisanceServerResult]] = []
     dropped: list[NotRunServer] = []
-    for server, outcomes in zip(surviving, runs_per, strict=True):
+    for server, outcomes in finished:
         if isinstance(outcomes, DroppedRun):
             reason = DROPPED_RUN_REASONS[outcomes.cause]
             dropped.append(NotRunServer(server.server_package, reason, outcomes.cause))
         else:
             result = assemble_server(server, outcomes, ctx.draw_order, _prices(ctx))
             assembled.append((server, result))
-    return assembled, dropped
+    return assembled, dropped, failure
 
 
 async def _run_server(
     server: AdmittedServer, audit: Audit, runs: int
 ) -> list[AuditReport] | DroppedRun:
-    outcomes = await asyncio.gather(*(audit(server) for _ in range(runs)))
+    outcomes = await sibling_runs(runs, lambda: audit(server))
     causes = {outcome.cause for outcome in outcomes if isinstance(outcome, DroppedRun)}
-    if NotRunCause.THROTTLED in causes:
-        return DroppedRun(NotRunCause.THROTTLED)
-    if causes:
-        return DroppedRun(NotRunCause.LAUNCH_FAILURE)
+    for cause in _DROP_PRECEDENCE:
+        if cause in causes:
+            return DroppedRun(cause)
     return [outcome for outcome in outcomes if not isinstance(outcome, DroppedRun)]
 
 

@@ -107,6 +107,7 @@ def test_run_refuses_an_acceptance_target_for_its_tools_filter(
 ):
     _no_tracing(monkeypatch)
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")  # the auditor is built, never called
     monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (CVE_TARGETS[0],))
 
     assert run_holdout.main(["run"]) == run_holdout.REFUSED_EXIT

@@ -27,6 +27,7 @@ from evals.nuisance_commands import (
     CRASHED_EXIT,
     UNKNOWN_SERVER_EXIT,
     committed_admission,
+    malformed_input_refused,
     write_report,
 )
 from evals.nuisance_gate_baseline import (
@@ -68,8 +69,9 @@ def add_gate_arguments(gate_parser: argparse.ArgumentParser) -> None:
 
 
 def gate(args: argparse.Namespace) -> int:
-    census = load_census(args.census)
-    admission = committed_admission(args.admission, census)
+    with malformed_input_refused():
+        census = load_census(args.census)
+        admission = committed_admission(args.admission, census)
     current = current_acceptance_servers(census)
     servers = [] if admission is None else gate_servers(admission, current)
     if admission is None or not servers:

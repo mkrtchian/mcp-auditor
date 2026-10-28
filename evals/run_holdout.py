@@ -23,7 +23,7 @@ from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_targets import CVETarget
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
-from evals.holdout_census import load_census
+from evals.holdout_census import HoldoutCensus, load_census
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
 from evals.holdout_markdown import render_markdown
@@ -38,6 +38,8 @@ from evals.holdout_run import (
 )
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
+from evals.provider_errors import ProviderFatal, describe_provider_error
+from evals.run_files import partial_result_kept, refuse_existing_report, write_result
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
@@ -56,10 +58,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     except Refused as refusal:
         display.print_refusal(refusal.title, refusal.reasons)
         return REFUSED_EXIT
-    except ValueError as error:
-        # A malformed census must not read as success.
-        display.print_refusal("Refused: the census is malformed.", [str(error)])
-        return REFUSED_EXIT
+    except ProviderFatal as fatal:
+        display.print_refusal(
+            "Crashed: a fatal model provider error stopped the run.",
+            [describe_provider_error(fatal.cause)],
+        )
+        return CRASHED_EXIT
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -94,8 +98,17 @@ def _add_calibrate(commands: "_SubParsersAction[argparse.ArgumentParser]") -> No
     calibrate.add_argument("--concurrency", type=positive_int, default=6)
 
 
+def _census(path: Path) -> HoldoutCensus:
+    """Only the census load reads a ValueError as a refusal: a malformed census must not read as
+    success, and a ValueError raised later is a crash."""
+    try:
+        return load_census(path)
+    except ValueError as error:
+        raise Refused("Refused: the census is malformed.", [str(error)]) from error
+
+
 def _draw_order(args: argparse.Namespace) -> int:
-    census = load_census(args.census)
+    census = _census(args.census)
     entries = draw_order(census)
     print(f"{len(entries)} candidates in draw order:")
     for entry in entries:
@@ -104,7 +117,7 @@ def _draw_order(args: argparse.Namespace) -> int:
 
 
 def _calibration_dossier(args: argparse.Namespace) -> int:
-    census = load_census(args.census)
+    census = _census(args.census)
     calibration_dossier.write_kit(census, args.cve, args.out)
     print(f"Calibration kit for {args.cve} written to {args.out}")
     return 0
@@ -112,6 +125,7 @@ def _calibration_dossier(args: argparse.Namespace) -> int:
 
 def _run(args: argparse.Namespace) -> int:
     _refuse_tracing()
+    refuse_existing_report(args.report, "holdout run refused")
     conditions = load_conditions(CONDITIONS_PATH)
     if not holdout_targets.HOLDOUT_TARGETS:
         print("no holdout target is drawn")
@@ -120,6 +134,7 @@ def _run(args: argparse.Namespace) -> int:
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
     run = _audit_drawn_targets(args, conditions, settings)
+    write_result(args.report, run)
     report = build_report(run)
     markdown = render_markdown(report)
     _write_report(args.report, report, markdown)
@@ -131,11 +146,11 @@ def _run(args: argparse.Namespace) -> int:
 def _audit_drawn_targets(
     args: argparse.Namespace, conditions: HoldoutConditions, settings: Settings
 ) -> HoldoutRunResult:
-    census = load_census(args.census)
+    census = _census(args.census)
     disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
     places = load_places(HOLDOUT_PLACES)
     deps = default_deps(places, holdout_overrides(conditions), args.concurrency)
-    with Progress(console=display.console) as bar:
+    with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(
             run_holdout(
                 holdout_targets.HOLDOUT_TARGETS,

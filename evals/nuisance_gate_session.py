@@ -15,7 +15,6 @@ from evals.concurrency import bounded
 from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import image_ids
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree
-from evals.holdout_run import rebuild_images
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 from evals.nuisance_audit import (
@@ -54,6 +53,7 @@ from evals.nuisance_images import backend_image_ids, image_tag, nuisance_fixture
 from evals.nuisance_population import standing_exit
 from evals.nuisance_results import FigureExit
 from evals.recording import RecordingRefused
+from evals.run_images import rebuild_images
 
 
 def gate_servers(admission: NuisanceAdmission, current: set[str]) -> list[AdmittedServer]:

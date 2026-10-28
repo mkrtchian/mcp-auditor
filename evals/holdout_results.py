@@ -123,3 +123,13 @@ class HoldoutRunResult:
     prices_as_of: date
     concurrency: int
     throttled_requests: int
+    partial: bool = False  # a run stopped by an exception, its finished entries only
+
+
+class RunInterrupted(Exception):
+    """A run stopped by an exception out of one of its audits, with what had finished."""
+
+    def __init__(self, partial: HoldoutRunResult, cause: BaseException) -> None:
+        super().__init__(f"the run stopped on {type(cause).__name__}")
+        self.partial = partial
+        self.cause = cause

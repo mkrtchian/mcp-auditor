@@ -7,9 +7,7 @@ from `HOLDOUT_TARGETS` here, so the tests hand it crafted ones. The heavy I/O is
 `HoldoutDeps`, faked by the unit tests and built from the live settings by `default_deps`.
 """
 
-import asyncio
 import dataclasses
-import subprocess
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -23,7 +21,6 @@ from evals.cve_baseline import (
     image_ids,
 )
 from evals.cve_calibration import check_target
-from evals.cve_images import COMPOSE_FILE
 from evals.cve_layout_check import LayoutCheck
 from evals.cve_places import Places, kept_records
 from evals.cve_session_model import GradedAudit
@@ -40,15 +37,18 @@ from evals.holdout_results import (
     HoldoutTargetResult,
     NotRunCause,
     NotRunTarget,
+    RunInterrupted,
 )
 from evals.holdout_vetting import observe_layout, vet_all
 from evals.metrics import SessionThrottles
+from evals.run_images import rebuild_images, target_services
+from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
 
 HOLDOUT_RUNS = 3  # holdout-rule.md:235, lowerable to 1 and logged
 HOLDOUT_BUDGET = 10  # holdout-rule.md:227, a constant, not a flag
 HOLDOUT_CONCURRENCY = 6
-_BUILD_TAIL_LINES = 40
+_DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 
 type Audit = Callable[[CVETarget], Awaitable[GradedAudit | IncompleteRun | DroppedRun]]
 
@@ -105,8 +105,11 @@ async def run_holdout(
     _refuse_dirty_tree(tree)
     deps.rebuild(target_services(list(targets)))
     not_run, surviving = await vet_all(targets, deps.check, deps.layout)
-    assembled, dropped = await _run_all(surviving, deps, ctx)
+    assembled, dropped, failure = await _run_all(surviving, deps, ctx)
     all_not_run = [*not_run, *dropped]
+    if failure is not None:
+        partial = _assemble_run(ctx, deps, assembled, all_not_run, tree)
+        raise RunInterrupted(dataclasses.replace(partial, partial=True), failure)
     if not assembled:
         raise Refused(
             "holdout run refused",
@@ -198,33 +201,34 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
 
 async def _run_all(
     surviving: Sequence[CVETarget], deps: HoldoutDeps, ctx: _RunContext
-) -> tuple[list[tuple[CVETarget, HoldoutTargetResult]], list[NotRunTarget]]:
+) -> tuple[list[tuple[CVETarget, HoldoutTargetResult]], list[NotRunTarget], BaseException | None]:
+    """The finished targets, assembled or dropped, and the exception that stopped the run, if
+    any: a first exception out of a target's runs cancels every target still in flight."""
     deps.announce_audits(len(surviving) * ctx.runs)
-    runs_per = await asyncio.gather(
-        *(_run_target(target, deps.audit, ctx.runs) for target in surviving)
+    finished, failure = await first_failure(
+        surviving, lambda target: _run_target(target, deps.audit, ctx.runs)
     )
     prices = holdout_prices(ctx.conditions, ctx.settings)
     assembled: list[tuple[CVETarget, HoldoutTargetResult]] = []
     dropped: list[NotRunTarget] = []
-    for target, outcomes in zip(surviving, runs_per, strict=True):
+    for target, outcomes in finished:
         if isinstance(outcomes, DroppedRun):
             reason = DROPPED_RUN_REASONS[outcomes.cause]
             dropped.append(NotRunTarget(target.cve_id, reason, outcomes.cause))
         else:
             result = assemble_target(target, outcomes, ctx.disclosure_dates[target.cve_id], prices)
             assembled.append((target, result))
-    return assembled, dropped
+    return assembled, dropped, failure
 
 
 async def _run_target(
     target: CVETarget, audit: Audit, runs: int
 ) -> list[GradedAudit | IncompleteRun] | DroppedRun:
-    outcomes = await asyncio.gather(*(audit(target) for _ in range(runs)))
+    outcomes = await sibling_runs(runs, lambda: audit(target))
     causes = {outcome.cause for outcome in outcomes if isinstance(outcome, DroppedRun)}
-    if NotRunCause.THROTTLED in causes:
-        return DroppedRun(NotRunCause.THROTTLED)
-    if causes:
-        return DroppedRun(NotRunCause.LAUNCH_FAILURE)
+    for cause in _DROP_PRECEDENCE:
+        if cause in causes:
+            return DroppedRun(cause)
     return [outcome for outcome in outcomes if not isinstance(outcome, DroppedRun)]
 
 
@@ -268,35 +272,6 @@ def _assemble_run(
         concurrency=ctx.concurrency,
         throttled_requests=deps.throttled_requests(),
     )
-
-
-def rebuild_images(services: Sequence[str]) -> None:
-    if not services:
-        return
-    build = subprocess.run(
-        ["docker", "compose", "-f", str(COMPOSE_FILE), "build", *services],
-        capture_output=True,
-        text=True,
-    )
-    if build.returncode != 0:
-        raise RuntimeError(
-            f"docker compose build failed for {', '.join(services)}:\n"
-            f"{_tail(build.stdout)}\n{_tail(build.stderr)}"
-        )
-
-
-def _tail(output: str) -> str:
-    return "\n".join(output.splitlines()[-_BUILD_TAIL_LINES:])
-
-
-def target_services(targets: Sequence[CVETarget]) -> list[str]:
-    """The deduplicated compose services of every target: its images and its patched twin."""
-    services: list[str] = []
-    for target in targets:
-        for service in (*target.images, target.patched_image):
-            if service not in services:
-                services.append(service)
-    return services
 
 
 def _backend_images(targets: Sequence[CVETarget]) -> list[str]:
