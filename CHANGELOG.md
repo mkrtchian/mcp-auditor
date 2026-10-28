@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The holdout and nuisance reports keep what their statistic is computed from, so a stored report recomputes its number, its controls and its cutoff-side split without a run: each holdout target line gains its `disclosure_date` and a `per_run` list (`detected`, `detected_if_unchecked_missed`, `aimed`, `fail_without_proof`, `incomplete`), each nuisance server line gains its `split_flaw`, its `split_disclosure_date` and a `per_run` list (`flagged`, `split_flagged`, `incomplete`), and the holdout report gains `recorded_at`, shown at the top of its Markdown, as the nuisance report has, since a model can change behind one identifier. The fields are additive: the statistic and the run are unchanged.
 - The judge writes its justification before its verdict: the `Judgment` schema it answers in asks for the justification first, and both judge prompts, single-step and chain, ask it to write its justification, then decide, then give the severity, so the verdict can follow from the justification.
 - On the `openai` provider, the judge's answer is bound to its schema in strict mode.
 - The holdout run's per-target result carries its runs as a tuple of per-run statuses, its aggregates (detected runs, detection share, places, aimed, incomplete runs) computed from them, so no two can disagree. The report is unchanged.

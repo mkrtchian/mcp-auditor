@@ -9,6 +9,8 @@ def render_markdown(report: HoldoutReport) -> str:
         [
             "# Holdout capability",
             "",
+            f"Recorded at: {report.recorded_at}",
+            "",
             f"Capability: {report.primary_number:.3f} (95% Wilson {_span(report.cited_interval)})",
             "",
             *_ladder_section(report),

@@ -16,6 +16,7 @@ from evals.holdout_report import (
     RunCutoffModel,
     SideLine,
     TargetLine,
+    TargetRunLine,
     build_report,
 )
 from evals.holdout_results import (
@@ -31,6 +32,7 @@ LUNA_CUTOFF = Cutoff(
     date=date(2026, 5, 18), type="training", source="https://example.test/luna", note=None
 )
 RUNS = 3
+RECORDED_AT = "2026-10-28T09:30:00+00:00"
 
 
 def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, incomplete_runs: int = 0):
@@ -79,6 +81,7 @@ def _run_result() -> HoldoutRunResult:
         commit="deadbeef",
         census_commit="cafe1234",
         image_ids={"vuln": "sha256:1"},
+        recorded_at=RECORDED_AT,
         targets=tuple(targets),
         not_run=(
             NotRunTarget(
@@ -165,11 +168,49 @@ def test_the_not_run_section_counts_nothing_when_no_target_dropped_during_the_ru
     assert "target(s) launched" not in markdown
 
 
+def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
+    report = build_report(_run_result())
+
+    line = next(line for line in report.targets if line.cve_id == "CVE-B")
+
+    assert line.disclosure_date == date(2026, 12, 1)
+    assert line.per_run == [
+        TargetRunLine(
+            detected=True,
+            detected_if_unchecked_missed=True,
+            aimed=True,
+            fail_without_proof=False,
+            incomplete=False,
+        ),
+        TargetRunLine(
+            detected=False,
+            detected_if_unchecked_missed=False,
+            aimed=False,
+            fail_without_proof=False,
+            incomplete=False,
+        ),
+        TargetRunLine(
+            detected=False,
+            detected_if_unchecked_missed=False,
+            aimed=False,
+            fail_without_proof=False,
+            incomplete=True,
+        ),
+    ]
+
+
+def test_the_recorded_at_line_carries_the_run_timestamp():
+    markdown = render_markdown(build_report(_run_result()))
+
+    assert f"Recorded at: {RECORDED_AT}\n" in markdown
+
+
 def test_the_report_holds_no_proof_text_fields():
     forbidden = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_class"}
     models = [
         HoldoutReport,
         TargetLine,
+        TargetRunLine,
         SideLine,
         MethodLine,
         ConclusionLine,
@@ -194,6 +235,7 @@ def test_build_report_carries_the_run_conditions_and_provenance():
     assert report.grammar_fingerprint == "grammar-abc"
     assert report.fixture_fingerprints == {"CVE-A": "fa", "CVE-B": "fb"}
     assert report.image_ids == {"vuln": "sha256:1"}
+    assert report.recorded_at == RECORDED_AT
     assert report.cutoffs["gpt-6-luna"] == CutoffModel(
         date=date(2026, 5, 18), type="training", source="https://example.test/luna", note=None
     )

@@ -62,8 +62,17 @@ class SideLine(BaseModel):
     targets: int
 
 
+class TargetRunLine(BaseModel):
+    detected: bool
+    detected_if_unchecked_missed: bool
+    aimed: bool
+    fail_without_proof: bool
+    incomplete: bool
+
+
 class TargetLine(BaseModel):
     cve_id: str
+    disclosure_date: date  # with per_run, lets a stored report recompute the statistic and split
     mechanism_label: str | None
     detection_share: float
     surfaced_places: list[list[str]]
@@ -75,6 +84,7 @@ class TargetLine(BaseModel):
     ran_in_fallback: bool
     tools_count: int
     cost: float
+    per_run: list[TargetRunLine]
 
 
 class CutoffModel(BaseModel):
@@ -112,6 +122,7 @@ class HoldoutReport(BaseModel):
     prices_as_of: date
     commit: str
     census_commit: str
+    recorded_at: str  # ISO timestamp: a model can change behind one identifier
     # The run conditions and provenance, so a reader can tell two runs apart (holdout-rule.md:247).
     provider: str
     model: str
@@ -160,6 +171,7 @@ def build_report(run: HoldoutRunResult) -> HoldoutReport:
         prices_as_of=run.prices_as_of,
         commit=run.commit,
         census_commit=run.census_commit,
+        recorded_at=run.recorded_at,
         provider=run.provider,
         model=run.model,
         judge_model=run.judge_model,
@@ -225,6 +237,7 @@ def _side_line(side: SideStatistic) -> SideLine:
 def _target_line(target: HoldoutTargetResult) -> TargetLine:
     return TargetLine(
         cve_id=target.cve_id,
+        disclosure_date=target.disclosure_date,
         mechanism_label=target.mechanism_label,
         detection_share=target.detection_share,
         surfaced_places=target.surfaced_places,
@@ -236,4 +249,14 @@ def _target_line(target: HoldoutTargetResult) -> TargetLine:
         ran_in_fallback=target.ran_in_fallback,
         tools_count=target.tools_count,
         cost=target.run_cost,
+        per_run=[
+            TargetRunLine(
+                detected=status.detected,
+                detected_if_unchecked_missed=status.detected_if_unchecked_missed,
+                aimed=status.aimed,
+                fail_without_proof=status.fail_without_proof,
+                incomplete=status.incomplete,
+            )
+            for status in target.statuses
+        ],
     )

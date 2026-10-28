@@ -19,6 +19,7 @@ from evals.nuisance_report import (
     NotRunLine,
     NuisanceReport,
     ServerLine,
+    ServerRunLine,
     SideLine,
     build_report,
 )
@@ -106,6 +107,19 @@ def test_the_raw_fail_count_is_reported_per_server_and_per_run():
     )
 
 
+def test_a_server_line_keeps_its_split_flaw_and_the_facts_of_each_run():
+    server = a_server_result("A", flagged_runs=1, split_flagged_runs=0, incomplete_unflagged_runs=1)
+
+    line = build_report(given.a_run([server])).servers[0]
+
+    assert (line.split_flaw, line.split_disclosure_date) == ("CVE-2025-0001", date(2026, 1, 1))
+    assert line.per_run == [
+        ServerRunLine(flagged=True, split_flagged=False, incomplete=False),
+        ServerRunLine(flagged=False, split_flagged=False, incomplete=False),
+        ServerRunLine(flagged=False, split_flagged=False, incomplete=True),
+    ]
+
+
 def test_the_recorded_at_line_carries_the_run_timestamp():
     markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
 
@@ -175,6 +189,7 @@ def test_the_report_holds_no_proof_text():
     models = [
         NuisanceReport,
         ServerLine,
+        ServerRunLine,
         SideLine,
         NotRunLine,
         FigureExitLine,

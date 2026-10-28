@@ -26,6 +26,7 @@ from tests.unit.support import test_cve_grammar_given as grammar
 FILESYSTEM = "CVE-2025-53109"
 KUBERNETES = "CVE-2025-53355"
 LUNA_PRICE = Prices(input=0.10, cached_input=0.01, output=0.50)
+RECORDED_AT = "2026-10-28T09:30:00+00:00"
 SETTINGS = Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none")
 
 type Outcome = GradedAudit | IncompleteRun | DroppedRun
@@ -98,6 +99,7 @@ def deps_auditing(
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
         backend_image_ids=lambda tags: {tag: f"sha256:{tag}" for tag in tags},
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
+        clock=lambda: RECORDED_AT,
         announce_audits=lambda audits: None,
         throttled_requests=lambda: throttled,
     )
@@ -125,6 +127,9 @@ def deps_reaching_nothing() -> HoldoutDeps:
     def read_tree() -> TreeState:
         raise AssertionError("read_tree was reached")
 
+    def clock() -> str:
+        raise AssertionError("the clock was read")
+
     def announce_audits(_audits: int) -> None:
         raise AssertionError("the audits were announced")
 
@@ -139,6 +144,7 @@ def deps_reaching_nothing() -> HoldoutDeps:
         image_ids,
         backend_image_ids,
         read_tree,
+        clock,
         announce_audits,
         throttled_requests,
     )

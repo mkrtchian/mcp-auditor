@@ -113,6 +113,7 @@ class HoldoutRunResult:
     commit: str
     census_commit: str
     image_ids: dict[str, str]
+    recorded_at: str  # ISO timestamp: a model can change behind one identifier
     targets: Sequence[HoldoutTargetResult]
     not_run: Sequence[NotRunTarget]
     incomplete_run_count: int

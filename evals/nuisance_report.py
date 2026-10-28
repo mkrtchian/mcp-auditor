@@ -40,8 +40,17 @@ class SideLine(BaseModel):
     servers: int
 
 
+class ServerRunLine(BaseModel):
+    flagged: bool
+    split_flagged: bool
+    incomplete: bool
+
+
 class ServerLine(BaseModel):
     server_package: str
+    # With per_run, lets a stored report recompute the figure, its controls and the split.
+    split_flaw: str | None
+    split_disclosure_date: date | None
     flagged_share: float
     flagged_per_run: list[bool]
     incomplete_runs: int
@@ -49,6 +58,7 @@ class ServerLine(BaseModel):
     tools_count: int
     raw_fail_per_run: list[int]  # report-only, never compared
     cost: float
+    per_run: list[ServerRunLine]
 
 
 class NotRunLine(BaseModel):
@@ -198,6 +208,8 @@ def _side_line(side: SideStatistic) -> SideLine:
 def _server_line(server: NuisanceServerResult) -> ServerLine:
     return ServerLine(
         server_package=server.server_package,
+        split_flaw=server.split_flaw,
+        split_disclosure_date=server.split_disclosure_date,
         flagged_share=server.flagged_share,
         flagged_per_run=server.flagged_per_run,
         incomplete_runs=server.incomplete_runs,
@@ -205,4 +217,12 @@ def _server_line(server: NuisanceServerResult) -> ServerLine:
         tools_count=server.tools_count,
         raw_fail_per_run=server.raw_fail_per_run,
         cost=server.run_cost,
+        per_run=[
+            ServerRunLine(
+                flagged=status.flagged,
+                split_flagged=status.split_flagged,
+                incomplete=status.incomplete,
+            )
+            for status in server.statuses
+        ],
     )

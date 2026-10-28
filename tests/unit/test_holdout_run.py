@@ -241,6 +241,15 @@ async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
     assert result.throttled_requests == 7
 
 
+async def test_the_result_carries_the_run_timestamp():
+    target = given.a_target(given.FILESYSTEM)
+    audit = given.scripted({target.cve_id: given.three_detections()})
+
+    result = await given.run([target], given.deps_auditing(audit))
+
+    assert result.recorded_at == given.RECORDED_AT
+
+
 async def test_a_drawn_target_with_a_tools_filter_refuses_before_any_check():
     target = given.a_target(given.KUBERNETES, tools_filter=frozenset({"kubectl_generic"}))
 

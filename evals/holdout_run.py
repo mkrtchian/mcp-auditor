@@ -11,7 +11,7 @@ import asyncio
 import subprocess
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 
 from evals.concurrency import bounded
 from evals.cve_audit import RunOverrides, attempt_once, build_auditor
@@ -60,6 +60,7 @@ class HoldoutDeps:
     image_ids: Callable[[Sequence[str]], dict[str, str]]
     backend_image_ids: Callable[[Sequence[str]], dict[str, str]]
     read_tree: Callable[[], TreeState]
+    clock: Callable[[], str]  # ISO timestamp for recorded_at
     announce_audits: Callable[[int], None]
     throttled_requests: Callable[[], int]
 
@@ -187,6 +188,7 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
         image_ids,
         backend_image_ids,
         read_tree,
+        lambda: datetime.now(UTC).isoformat(),
         lambda audits: None,
         lambda: throttles.requests,
     )
@@ -255,6 +257,7 @@ def _assemble_run(
             **deps.image_ids(target_services(targets)),
             **deps.backend_image_ids(_backend_images(targets)),
         },
+        recorded_at=deps.clock(),
         targets=results,
         not_run=not_run,
         incomplete_run_count=sum(result.incomplete_runs for result in results),
