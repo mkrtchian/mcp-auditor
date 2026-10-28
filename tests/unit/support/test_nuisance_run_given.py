@@ -9,7 +9,7 @@ import pytest
 import tests.unit.support.test_cve_grammar_given as grammar
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_counter_given as counter
-from evals import nuisance_run
+from evals import nuisance_vetting
 from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.eval_session import TreeState
@@ -319,6 +319,6 @@ def launches_failing(
     teardown_fails: bool = False,
 ) -> FlakyLaunches:
     flaky = FlakyLaunches(failing, answer or ToolResponse(content="ok"), teardown_fails)
-    monkeypatch.setattr(nuisance_run, "nuisance_environment", flaky.environment)
-    monkeypatch.setattr(nuisance_run, "connect", flaky.connect)
+    monkeypatch.setattr(nuisance_vetting, "nuisance_environment", flaky.environment)
+    monkeypatch.setattr(nuisance_vetting, "connect", flaky.connect)
     return flaky

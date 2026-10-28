@@ -5,7 +5,7 @@ from langchain_core.exceptions import ModelAuthenticationError
 from rich.console import Console
 
 from evals import holdout_audit as holdout_audit_module
-from evals.cve_audit import (
+from evals.audit_attempts import (
     AttemptOutcome,
     IncompleteAttempt,
     ProviderErrorAttempt,

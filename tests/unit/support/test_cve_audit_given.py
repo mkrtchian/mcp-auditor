@@ -8,8 +8,9 @@ from typing import Any
 import pytest
 from rich.console import Console
 
-from evals import cve_audit
-from evals.cve_audit import AttemptOutcome, Auditor
+from evals import audit_attempts, cve_audit
+from evals.audit_attempts import AttemptOutcome
+from evals.cve_audit import Auditor
 from evals.cve_environments import Launch, LaunchShape
 from evals.cve_grammar import PlantedTarget
 from evals.cve_planting_base import PlantingSpec
@@ -38,7 +39,9 @@ A_LAUNCH = Launch("x", [])
 
 def captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
     output = StringIO()
-    monkeypatch.setattr(cve_audit, "console", Console(file=output, width=200))
+    console = Console(file=output, width=200)
+    monkeypatch.setattr(cve_audit, "console", console)
+    monkeypatch.setattr(audit_attempts, "console", console)
     return output
 
 

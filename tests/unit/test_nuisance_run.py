@@ -17,7 +17,7 @@ from evals.nuisance_audit import DroppedRun
 from evals.nuisance_counter import counter_fingerprint
 from evals.nuisance_images import nuisance_fixture_fingerprint
 from evals.nuisance_results import FigureExit, NotRunCause, NuisanceRunStatus, RunInterrupted
-from evals.nuisance_run import benign_call
+from evals.nuisance_vetting import benign_call
 from evals.probe import call_cost
 from evals.provider_errors import ProviderFatal
 from evals.server_health import ServerHealth

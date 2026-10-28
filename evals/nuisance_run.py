@@ -3,24 +3,21 @@ under the holdout's run conditions, keep no per-case trace, and assemble the run
 
 A sibling of `holdout_run.run_holdout`. The servers are passed in, so the tests hand it crafted
 ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the unit tests and built from the live
-settings by `default_deps`. The per-server assembly is `nuisance_assembly`'s, the retry policy
-`nuisance_audit`'s.
+settings by `default_deps`. The pre-run check is `nuisance_vetting`'s, the per-server assembly
+`nuisance_assembly`'s, the retry policy `nuisance_audit`'s.
 """
 
-import asyncio
 import dataclasses
 import functools
-import os
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from evals import nuisance_images
-from evals.concurrency import bounded, entered_in_thread
+from evals.concurrency import bounded
 from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import grammar_fingerprint, image_ids
-from evals.cve_calibration import PRE_RUN_LAUNCH_ATTEMPTS
-from evals.cve_environments import TOOL_CALL_TIMEOUT, connect
+from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.failure_text import TYPES_ONLY
@@ -35,9 +32,7 @@ from evals.nuisance_audit import (
     NuisanceAudit,
     NuisanceAuditor,
     audit_once,
-    benign_call_failure,
     nuisance_audit,
-    nuisance_environment,
 )
 from evals.nuisance_counter import counter_fingerprint
 from evals.nuisance_images import nuisance_fixture_fingerprint
@@ -50,6 +45,7 @@ from evals.nuisance_results import (
     NuisanceServerResult,
     RunInterrupted,
 )
+from evals.nuisance_vetting import benign_call, vet_all
 from evals.probe_candidates import Prices
 from evals.run_images import (
     rebuild_images,
@@ -132,7 +128,7 @@ def _refuse_running_containers(deps: NuisanceDeps, tags: Sequence[str]) -> None:
 async def _run_surviving(
     population: RunPopulation, deps: NuisanceDeps, ctx: _RunContext, tree: TreeState
 ) -> NuisanceRunResult:
-    not_run, surviving = await _vet_all(population.audited, deps)
+    not_run, surviving = await vet_all(population.audited, deps.benign_call)
     assembled, dropped, failure = await _run_all(surviving, deps, ctx)
     all_not_run = [*not_run, *dropped]
     if failure is not None:
@@ -194,42 +190,6 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         running_containers,
         remove_containers,
     )
-
-
-async def benign_call(server: AdmittedServer, timeout: int) -> str | None:
-    """The benign call's failure reason, or None when it answers. A launch or connection that
-    fails is retried up to `PRE_RUN_LAUNCH_ATTEMPTS` launches and keeps the last reason. An answer
-    that errors is an observation of a launch that ran, returned at once: retrying it would keep
-    the best of several tries, and so is a failure once connected, a teardown's included."""
-    reason = ""
-    for _ in range(PRE_RUN_LAUNCH_ATTEMPTS):
-        connected = False
-        try:
-            with open(os.devnull, "w") as devnull:
-                async with (
-                    entered_in_thread(nuisance_environment(server)) as launch,
-                    connect(launch, devnull, tool_call_timeout=timeout) as client,
-                ):
-                    connected = True
-                    return await benign_call_failure(server, client)
-        except Exception as exc:
-            reason = f"failed to connect for the benign call: {TYPES_ONLY.describe(exc)}"
-            if connected:
-                return reason
-    return reason
-
-
-async def _vet_all(
-    servers: Sequence[AdmittedServer], deps: NuisanceDeps
-) -> tuple[list[NotRunServer], list[AdmittedServer]]:
-    reasons = await asyncio.gather(*(deps.benign_call(server) for server in servers))
-    paired = list(zip(servers, reasons, strict=True))
-    not_run = [
-        NotRunServer(server.server_package, reason, NotRunCause.BENIGN_CALL_FAILED)
-        for server, reason in paired
-        if reason is not None
-    ]
-    return not_run, [server for server, reason in paired if reason is None]
 
 
 async def _run_all(

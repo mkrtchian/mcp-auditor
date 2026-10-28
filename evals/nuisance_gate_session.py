@@ -10,7 +10,7 @@ import functools
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from evals import nuisance_run
+from evals import nuisance_vetting
 from evals.concurrency import bounded
 from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import image_ids
@@ -90,7 +90,9 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
             server, lambda: nuisance_audit(server, lambda: audit_once(server, auditor))
         )
 
-    benign_call = functools.partial(nuisance_run.benign_call, timeout=conditions.tool_call_timeout)
+    benign_call = functools.partial(
+        nuisance_vetting.benign_call, timeout=conditions.tool_call_timeout
+    )
     return NuisanceGateHarness(
         audit=bounded(audit, concurrency),
         benign_call=bounded(benign_call, concurrency),

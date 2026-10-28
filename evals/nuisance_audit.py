@@ -9,8 +9,9 @@ from dataclasses import dataclass
 
 from rich.markup import escape
 
+from evals.audit_attempts import INCOMPLETE_ATTEMPTS, describe_miss_causes
 from evals.concurrency import entered_in_thread
-from evals.cve_audit import INCOMPLETE_ATTEMPTS, Auditor, RunOverrides, describe_miss_causes
+from evals.cve_audit import Auditor, RunOverrides
 from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve_planting_base import confinement_args, no_network_args
 from evals.cve_recording_client import RecordingClient
