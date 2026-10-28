@@ -3087,6 +3087,932 @@
         }
       ],
       "patched_version": "2.50.2"
+    },
+    {
+      "server_package": "npm:@coding-solo/godot-mcp",
+      "reaching_flaw": "CVE-2026-25546",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-25546",
+          "tools": [
+            {
+              "vulnerable_name": "create_scene",
+              "patched_name": "create_scene",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "add_node",
+              "patched_name": "add_node",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "load_sprite",
+              "patched_name": "load_sprite",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "export_mesh_library",
+              "patched_name": "export_mesh_library",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "save_scene",
+              "patched_name": "save_scene",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "get_uid",
+              "patched_name": "get_uid",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "update_project_uids",
+              "patched_name": "update_project_uids",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "21c785d923cfdb471ea60323c13807d62dfecc5a",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "create_scene",
+              "arguments": {
+                "projectPath": "/srv/app",
+                "scenePath": "res://scene.tscn"
+              }
+            },
+            {
+              "tool": "add_node",
+              "arguments": {
+                "projectPath": "/srv/app",
+                "scenePath": "res://scene.tscn",
+                "nodeType": "Node2D",
+                "nodeName": "Root"
+              }
+            },
+            {
+              "tool": "load_sprite",
+              "arguments": {
+                "projectPath": "/srv/app",
+                "scenePath": "res://scene.tscn",
+                "nodePath": "Root",
+                "texturePath": "res://sprite.png"
+              }
+            },
+            {
+              "tool": "export_mesh_library",
+              "arguments": {
+                "projectPath": "/srv/app",
+                "scenePath": "res://scene.tscn",
+                "outputPath": "res://out.meshlib"
+              }
+            },
+            {
+              "tool": "save_scene",
+              "arguments": {
+                "projectPath": "/srv/app",
+                "scenePath": "res://scene.tscn"
+              }
+            },
+            {
+              "tool": "get_uid",
+              "arguments": {
+                "projectPath": "/srv/app",
+                "filePath": "res://scene.tscn"
+              }
+            },
+            {
+              "tool": "update_project_uids",
+              "arguments": {
+                "projectPath": "/srv/app"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-godot-mcp-recopied",
+            "exploit_calls": [
+              "create_scene"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/app",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "godot-mcp",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:@coding-solo/godot-mcp",
+          "flaw": "CVE-2026-25546",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+        }
+      ],
+      "patched_version": "21c785d923cfdb471ea60323c13807d62dfecc5a"
+    },
+    {
+      "server_package": "https://github.com/akutishevsky/sf-mcp-server",
+      "reaching_flaw": "CVE-2026-26029",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-26029",
+          "tools": [
+            {
+              "vulnerable_name": "query_records",
+              "patched_name": "query_records",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "99fba0171b8c22b5ee3c0405053ccfd2910a066d",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "query_records",
+              "arguments": {
+                "input": {
+                  "targetOrg": "playground",
+                  "sObject": "Account",
+                  "fields": "Id,Name"
+                }
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-sf-mcp-recopied",
+            "exploit_calls": [
+              "query_records"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/srv/app",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "sf-mcp",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-26029",
+          "field": "tools",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/akutishevsky/sf-mcp-server",
+          "flaw": "CVE-2026-26029",
+          "field": "tools",
+          "value": "query_records",
+          "reason": "record A also listed list_connected_salesforce_orgs, which runs the fixed string `sf org list` and takes no caller SQL, so it does not reach the injection; only query_records interpolates caller input into the shell command."
+        },
+        {
+          "server_package": "https://github.com/akutishevsky/sf-mcp-server",
+          "flaw": "CVE-2026-26029",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+        }
+      ],
+      "patched_version": "99fba0171b8c22b5ee3c0405053ccfd2910a066d"
+    },
+    {
+      "server_package": "https://github.com/RyuzakiShinji/biome-mcp-server",
+      "reaching_flaw": "CVE-2026-3680",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-3680",
+          "tools": [
+            {
+              "vulnerable_name": "biome-lint",
+              "patched_name": "biome-lint",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "biome-format",
+              "patched_name": "biome-format",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "335e1727147efeef011f1ff8b05dd751d8a660be",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "biome-lint",
+              "arguments": {
+                "paths": [
+                  "."
+                ]
+              }
+            },
+            {
+              "tool": "biome-format",
+              "arguments": {
+                "paths": [
+                  "."
+                ]
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-biome-recopied",
+            "exploit_calls": [
+              "biome-lint"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/opt/server",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "biome",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-3680",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/RyuzakiShinji/biome-mcp-server",
+          "flaw": "CVE-2026-3680",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B read the declared function (run Biome lint/format on the caller's files) as the effect itself; the declared contract is to run a fixed Biome operation on caller-supplied paths, not to execute an arbitrary shell command, so the exec() injection is a bug, not the contract."
+        },
+        {
+          "server_package": "https://github.com/RyuzakiShinji/biome-mcp-server",
+          "flaw": "CVE-2026-3680",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+        }
+      ],
+      "patched_version": "335e1727147efeef011f1ff8b05dd751d8a660be"
+    },
+    {
+      "server_package": "npm:@nor2/heim-mcp",
+      "reaching_flaw": "CVE-2026-5602",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-5602",
+          "tools": [
+            {
+              "vulnerable_name": "new_heim_application",
+              "patched_name": "new_heim_application",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "deploy_heim_application",
+              "patched_name": "deploy_heim_application",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "deploy_heim_application_to_cloud",
+              "patched_name": "deploy_heim_application_to_cloud",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "c321d8af25f77668781e6ccb43a1336f9185df37",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "new_heim_application",
+              "arguments": {
+                "path": "/srv/app",
+                "openApiPath": "openapi.yaml",
+                "name": "app",
+                "language": "typescript"
+              }
+            },
+            {
+              "tool": "deploy_heim_application",
+              "arguments": {
+                "path": "/srv/app"
+              }
+            },
+            {
+              "tool": "deploy_heim_application_to_cloud",
+              "arguments": {
+                "path": "/srv/app"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-heim-recopied",
+            "exploit_calls": [
+              "deploy_heim_application"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/srv/app",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "heim",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-5602",
+          "field": "tools",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:@nor2/heim-mcp",
+          "flaw": "CVE-2026-5602",
+          "field": "tools",
+          "value": "new_heim_application, deploy_heim_application, deploy_heim_application_to_cloud",
+          "reason": "record A also listed heim_start, heim_clear and heim_update, which run constant strings and take no caller path, so they do not reach the injection; only the three argument-taking deploy tools interpolate the caller's path into the shell command."
+        },
+        {
+          "server_package": "npm:@nor2/heim-mcp",
+          "flaw": "CVE-2026-5602",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+        }
+      ],
+      "patched_version": "c321d8af25f77668781e6ccb43a1336f9185df37"
+    },
+    {
+      "server_package": "npm:@elgentos/magento2-dev-mcp",
+      "reaching_flaw": "CVE-2026-5603",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-5603",
+          "tools": [
+            {
+              "vulnerable_name": "cache-clean",
+              "patched_name": "cache-clean",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "cache-disable",
+              "patched_name": "cache-disable",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "cache-enable",
+              "patched_name": "cache-enable",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "cache-flush",
+              "patched_name": "cache-flush",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "cache-status",
+              "patched_name": "cache-status",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "cache-view",
+              "patched_name": "cache-view",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "config-set",
+              "patched_name": "config-set",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "config-show",
+              "patched_name": "config-show",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "config-store-get",
+              "patched_name": "config-store-get",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "config-store-set",
+              "patched_name": "config-store-set",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "db-query",
+              "patched_name": "db-query",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "dev-module-create",
+              "patched_name": "dev-module-create",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "dev-module-list",
+              "patched_name": "dev-module-list",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "dev-module-observer-list",
+              "patched_name": "dev-module-observer-list",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "dev-plugin-list",
+              "patched_name": "dev-plugin-list",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "dev-theme-list",
+              "patched_name": "dev-theme-list",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "get-di-preferences",
+              "patched_name": "get-di-preferences",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "setup-db-status",
+              "patched_name": "setup-db-status",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "setup-di-compile",
+              "patched_name": "setup-di-compile",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "setup-static-content-deploy",
+              "patched_name": "setup-static-content-deploy",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "setup-upgrade",
+              "patched_name": "setup-upgrade",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sys-check",
+              "patched_name": "sys-check",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sys-cron-list",
+              "patched_name": "sys-cron-list",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sys-cron-run",
+              "patched_name": "sys-cron-run",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sys-info",
+              "patched_name": "sys-info",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sys-store-config-base-url-list",
+              "patched_name": "sys-store-config-base-url-list",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sys-store-list",
+              "patched_name": "sys-store-list",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sys-url-list",
+              "patched_name": "sys-url-list",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "sys-website-list",
+              "patched_name": "sys-website-list",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "aa1ffcc0aea1b212c69787391783af27df15ae9d",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "cache-clean",
+              "arguments": {}
+            },
+            {
+              "tool": "cache-disable",
+              "arguments": {
+                "types": [
+                  "config"
+                ]
+              }
+            },
+            {
+              "tool": "cache-enable",
+              "arguments": {
+                "types": [
+                  "config"
+                ]
+              }
+            },
+            {
+              "tool": "cache-flush",
+              "arguments": {}
+            },
+            {
+              "tool": "cache-status",
+              "arguments": {}
+            },
+            {
+              "tool": "cache-view",
+              "arguments": {
+                "key": "config"
+              }
+            },
+            {
+              "tool": "config-set",
+              "arguments": {
+                "path": "general/locale/code",
+                "value": "en_US"
+              }
+            },
+            {
+              "tool": "config-show",
+              "arguments": {}
+            },
+            {
+              "tool": "config-store-get",
+              "arguments": {
+                "path": "general/locale/code"
+              }
+            },
+            {
+              "tool": "config-store-set",
+              "arguments": {
+                "path": "general/locale/code",
+                "value": "en_US"
+              }
+            },
+            {
+              "tool": "db-query",
+              "arguments": {
+                "query": "SELECT 1"
+              }
+            },
+            {
+              "tool": "dev-module-create",
+              "arguments": {
+                "vendorNamespace": "Acme",
+                "moduleName": "Demo"
+              }
+            },
+            {
+              "tool": "dev-module-list",
+              "arguments": {}
+            },
+            {
+              "tool": "dev-module-observer-list",
+              "arguments": {}
+            },
+            {
+              "tool": "dev-plugin-list",
+              "arguments": {
+                "className": "Magento\\Catalog\\Model\\Product"
+              }
+            },
+            {
+              "tool": "dev-theme-list",
+              "arguments": {}
+            },
+            {
+              "tool": "get-di-preferences",
+              "arguments": {}
+            },
+            {
+              "tool": "setup-db-status",
+              "arguments": {}
+            },
+            {
+              "tool": "setup-di-compile",
+              "arguments": {}
+            },
+            {
+              "tool": "setup-static-content-deploy",
+              "arguments": {}
+            },
+            {
+              "tool": "setup-upgrade",
+              "arguments": {}
+            },
+            {
+              "tool": "sys-check",
+              "arguments": {}
+            },
+            {
+              "tool": "sys-cron-list",
+              "arguments": {}
+            },
+            {
+              "tool": "sys-cron-run",
+              "arguments": {}
+            },
+            {
+              "tool": "sys-info",
+              "arguments": {}
+            },
+            {
+              "tool": "sys-store-config-base-url-list",
+              "arguments": {}
+            },
+            {
+              "tool": "sys-store-list",
+              "arguments": {}
+            },
+            {
+              "tool": "sys-url-list",
+              "arguments": {}
+            },
+            {
+              "tool": "sys-website-list",
+              "arguments": {}
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-magento2-recopied",
+            "exploit_calls": [
+              "db-query"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "magento2",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:@elgentos/magento2-dev-mcp",
+          "flaw": "CVE-2026-5603",
+          "field": "tools",
+          "value": "all 29 registerTool tools",
+          "reason": "every one of the server's 29 registerTool tools builds a template-string command passed to the single executeMagerun2Command shell sink, so all 29 reach the injection; the rule counts a flaw's tools as those a tools/call reaches it through and has no injectability test, so none is trimmed."
+        },
+        {
+          "server_package": "npm:@elgentos/magento2-dev-mcp",
+          "flaw": "CVE-2026-5603",
+          "field": "patched_version",
+          "value": "aa1ffcc0aea1b212c69787391783af27df15ae9d",
+          "reason": "tag 1.0.3 points at this commit and is the holdout pin and the census first_patched; the immutable commit is recorded rather than the tag, and npm stops at 1.0.2 (still vulnerable)."
+        },
+        {
+          "server_package": "npm:@elgentos/magento2-dev-mcp",
+          "flaw": "CVE-2026-5603",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+        }
+      ],
+      "patched_version": "aa1ffcc0aea1b212c69787391783af27df15ae9d"
+    },
+    {
+      "server_package": "PyPI:awslabs-mysql-mcp-server",
+      "reaching_flaw": "CVE-2026-85788",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-85788",
+          "tools": [
+            {
+              "vulnerable_name": "run_query",
+              "patched_name": "run_query",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "1.0.23",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "run_query",
+              "arguments": {
+                "connection_method": "mysqlwire",
+                "cluster_identifier": "app-cluster",
+                "db_endpoint": "mcp-auditor-cve-mysql",
+                "database": "app",
+                "sql": "SELECT 1 AS n"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "holdout_calibration",
+            "witness": "MCPAUDIT-mysql-recopied",
+            "exploit_calls": [
+              "run_query"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "mysql",
+      "backend": {
+        "provisioner": "mysql",
+        "image": "mysql:8.0.46",
+        "network": "mcp-auditor-cve-mysql-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-85788",
+          "field": "effect_class",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-85788",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "PyPI:awslabs-mysql-mcp-server",
+          "flaw": "CVE-2026-85788",
+          "field": "effect_class",
+          "value": "read_outside_scope",
+          "reason": "record B re-derived the write-bypass face and called the class null with declared_function_is_effect true; record A's read_outside_scope matches the holdout (run_query's SQL gate is bypassed to LOAD_FILE an out-of-scope file), so read_outside_scope is the settled class."
+        },
+        {
+          "server_package": "PyPI:awslabs-mysql-mcp-server",
+          "flaw": "CVE-2026-85788",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "run_query's declared contract is to run a bounded SQL query against MySQL, not to read arbitrary host files; the LOAD_FILE out-of-scope read is a gate bypass, not the contract, so the declared function is not the effect."
+        },
+        {
+          "server_package": "PyPI:awslabs-mysql-mcp-server",
+          "flaw": "CVE-2026-85788",
+          "field": "fix_check.source",
+          "value": "holdout_calibration",
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+        }
+      ],
+      "patched_version": "1.0.23"
     }
   ]
 }
