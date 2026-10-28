@@ -20,6 +20,7 @@ from evals.nuisance_results import FigureExit, NotRunCause, NuisanceRunStatus, R
 from evals.nuisance_run import benign_call
 from evals.probe import call_cost
 from evals.provider_errors import ProviderFatal
+from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage, ToolResponse
 
 _EARLY = date(2025, 3, 1)
@@ -61,23 +62,24 @@ def test_a_flaw_with_no_counted_tool_is_skipped_for_the_next():
     assert split is not None and split.identifier == given.FIRST_FLAW
 
 
-def test_a_server_is_assembled_from_its_reports_in_run_order():
+def test_a_server_is_assembled_from_its_audits_in_run_order():
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)
     judge = ProviderUsage(input_tokens=100, output_tokens=200)
-    reports = [
-        given.a_report(True, provider=provider, judge=judge),
-        given.a_report(True, missed=MissCause.PROVIDER_REFUSAL, provider=provider, judge=judge),
-        given.a_report(False, missed=MissCause.UNREADABLE_ANSWER, provider=provider, judge=judge),
+    audits = [
+        given.an_audit(True, provider=provider, judge=judge),
+        given.an_audit(True, missed=MissCause.PROVIDER_REFUSAL, provider=provider, judge=judge),
+        given.an_audit(False, missed=MissCause.UNREADABLE_ANSWER, provider=provider, judge=judge),
     ]
     draw = given.draw_entries((given.FIRST_FLAW, _EARLY))
 
-    result = assemble_server(given.a_server(), reports, draw, _PRICES)
+    result = assemble_server(given.a_server(), audits, draw, _PRICES)
 
-    assert result.statuses == (
-        NuisanceRunStatus(flagged=True, split_flagged=True, incomplete=False, raw_fail_count=1),
-        NuisanceRunStatus(True, True, True, 1),
-        NuisanceRunStatus(False, False, True, 0),
-    )
+    assert [(status.flagged, status.split_flagged) for status in result.statuses] == [
+        (True, True),
+        (True, True),
+        (False, False),
+    ]
+    assert [status.incomplete for status in result.statuses] == [False, True, True]
     assert result.flagged_per_run == [True, True, False]
     assert result.flagged_runs == 2
     assert result.flagged_share == pytest.approx(2 / 3)
@@ -85,17 +87,44 @@ def test_a_server_is_assembled_from_its_reports_in_run_order():
     assert result.incomplete_unflagged_runs == 1
     assert result.raw_fail_per_run == [1, 1, 0]
     assert (result.counted_tools_count, result.tools_count) == (1, 1)
-    generator = reports[0].generator_usage
+    generator = audits[0].report.generator_usage
     one_run = call_cost(generator, given.LUNA_PRICE) + call_cost(judge, given.LUNA_PRICE)
     assert result.run_cost == pytest.approx(3 * one_run)
     assert (result.split_flaw, result.split_disclosure_date) == (given.FIRST_FLAW, _EARLY)
 
 
+def test_each_run_status_carries_its_server_health_and_miss_causes():
+    audits = [
+        given.an_audit(False, health=ServerHealth(2, 1)),
+        given.an_audit(False, missed=MissCause.PROVIDER_REFUSAL, health=ServerHealth(0, 3)),
+        given.an_audit(False, missed=MissCause.UNREADABLE_ANSWER),
+    ]
+
+    result = assemble_server(given.a_server(), audits, given.draw_entries(), _PRICES)
+
+    assert result.statuses == (
+        NuisanceRunStatus(False, False, False, 0, 2, 1, []),
+        NuisanceRunStatus(False, False, True, 0, 0, 3, ["provider_refusal"]),
+        NuisanceRunStatus(False, False, True, 0, 0, 0, ["unreadable_answer"]),
+    )
+    assert (result.non_protocol_lines, result.lost_connection_responses) == (2, 4)
+    assert result.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
+
+
+def test_a_throttled_step_is_not_a_miss_cause_of_a_run():
+    audits = [given.an_audit(False, missed=MissCause.PROVIDER_THROTTLED)]
+
+    result = assemble_server(given.a_server(), audits, given.draw_entries(), _PRICES)
+
+    assert result.statuses[0].miss_causes == []
+    assert result.incomplete_runs_by_cause == {}
+
+
 def test_a_flag_on_a_tool_of_another_flaw_is_not_split_flagged():
     draw = given.draw_entries((given.SECOND_FLAW, _LATE), (given.FIRST_FLAW, _EARLY))
-    reports = [given.a_report(True) for _ in range(3)]
+    audits = [given.an_audit(True) for _ in range(3)]
 
-    result = assemble_server(given.a_two_flaw_server(), reports, draw, _PRICES)
+    result = assemble_server(given.a_two_flaw_server(), audits, draw, _PRICES)
 
     assert result.split_flaw == given.SECOND_FLAW
     assert result.flagged_runs == 3
@@ -106,11 +135,11 @@ def test_a_flag_on_a_tool_of_another_flaw_is_not_split_flagged():
 async def test_every_audited_server_is_assembled_with_the_run_conditions():
     first, second = given.a_server("npm:first"), given.a_server("npm:second")
     usage = ProviderUsage(input_tokens=10, output_tokens=20)
-    refused = given.a_report(False, missed=MissCause.PROVIDER_REFUSAL, provider=usage)
+    refused = given.an_audit(False, missed=MissCause.PROVIDER_REFUSAL, provider=usage)
     audit = given.scripted(
         {
-            "npm:first": [given.a_report(True, provider=usage) for _ in range(3)],
-            "npm:second": [refused, given.a_report(False), given.a_report(False)],
+            "npm:first": [given.an_audit(True, provider=usage) for _ in range(3)],
+            "npm:second": [refused, given.an_audit(False), given.an_audit(False)],
         }
     )
     exits = [FigureExit("npm:walked", "marked by the walk")]
@@ -136,7 +165,7 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
 
 async def test_the_run_announces_the_audits_of_the_surviving_servers_only():
     failing, healthy = given.a_server("npm:failing"), given.a_server("npm:healthy")
-    audit = given.scripted({"npm:healthy": [given.a_report(False) for _ in range(3)]})
+    audit = given.scripted({"npm:healthy": [given.an_audit(False) for _ in range(3)]})
     announced: list[int] = []
     deps = dataclasses.replace(
         given.deps_auditing(audit, benign_call={"npm:failing": "boom"}),
@@ -150,7 +179,7 @@ async def test_the_run_announces_the_audits_of_the_surviving_servers_only():
 
 async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
     server = given.a_server()
-    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 
     result = await given.run([server], given.deps_auditing(audit, throttled=7), concurrency=4)
 
@@ -163,7 +192,7 @@ async def test_a_backend_server_records_its_backend_image_beside_its_service():
         given.a_server(),
         BackendFixture(provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"),
     )
-    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 
     result = await given.run([server], given.deps_auditing(audit))
 
@@ -176,7 +205,7 @@ async def test_a_backend_server_records_its_backend_image_beside_its_service():
 async def test_a_server_failing_its_benign_call_is_never_audited():
     failing, kept = given.a_server("npm:failing"), given.a_server("npm:kept")
     audit = given.scripted(
-        {"npm:failing": [], "npm:kept": [given.a_report(False) for _ in range(3)]}
+        {"npm:failing": [], "npm:kept": [given.an_audit(False) for _ in range(3)]}
     )
     deps = given.deps_auditing(audit, benign_call={"npm:failing": "benign call errored"})
 
@@ -198,11 +227,11 @@ async def test_a_server_dropped_in_one_run_is_not_run():
     audit = given.scripted(
         {
             "npm:dropped": [
-                given.a_report(False),
+                given.an_audit(False),
                 DroppedRun(NotRunCause.LAUNCH_FAILURE),
-                given.a_report(False),
+                given.an_audit(False),
             ],
-            "npm:kept": [given.a_report(False) for _ in range(3)],
+            "npm:kept": [given.an_audit(False) for _ in range(3)],
         }
     )
 
@@ -220,9 +249,9 @@ async def test_throttled_wins_over_a_launch_failure():
             "npm:dropped": [
                 DroppedRun(NotRunCause.THROTTLED),
                 DroppedRun(NotRunCause.LAUNCH_FAILURE),
-                given.a_report(False),
+                given.an_audit(False),
             ],
-            "npm:kept": [given.a_report(False) for _ in range(3)],
+            "npm:kept": [given.an_audit(False) for _ in range(3)],
         }
     )
 
@@ -239,9 +268,9 @@ async def test_a_provider_error_wins_over_a_launch_failure():
             "npm:dropped": [
                 DroppedRun(NotRunCause.LAUNCH_FAILURE),
                 DroppedRun(NotRunCause.PROVIDER_ERROR),
-                given.a_report(False),
+                given.an_audit(False),
             ],
-            "npm:kept": [given.a_report(False) for _ in range(3)],
+            "npm:kept": [given.an_audit(False) for _ in range(3)],
         }
     )
 
@@ -356,7 +385,7 @@ async def test_the_containers_left_running_at_the_end_are_removed_and_counted(
 ):
     server = given.a_server()
     containers = given.RunningContainers([], [], ["stuck_one", "stuck_two"])
-    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 
     await given.run([server], given.deps_auditing(audit, containers=containers))
 
@@ -369,7 +398,7 @@ async def test_no_container_left_at_the_end_removes_and_prints_nothing(
 ):
     server = given.a_server()
     containers = given.RunningContainers()
-    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 
     await given.run([server], given.deps_auditing(audit, containers=containers))
 
@@ -410,7 +439,7 @@ async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
         BackendFixture(provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"),
     )
     containers = given.RunningContainers()
-    audit = given.scripted({server.server_package: [given.a_report(False) for _ in range(3)]})
+    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 
     await given.run([server], given.deps_auditing(audit, containers=containers))
 

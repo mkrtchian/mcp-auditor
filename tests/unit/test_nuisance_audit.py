@@ -24,6 +24,7 @@ from evals.nuisance_audit import (
     NUISANCE_INFRA_ATTEMPTS,
     DroppedRun,
     LaunchFailed,
+    NuisanceAudit,
     NuisanceAuditor,
     ProviderError,
     audit_once,
@@ -36,13 +37,18 @@ from evals.nuisance_audit import (
 from evals.nuisance_backends import RegisteredBackend
 from evals.nuisance_results import NotRunCause
 from evals.provider_errors import ProviderFatal
+from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.domain import ToolResponse
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import (
+    AuditCategory,
+    AuditPayload,
     AuditReport,
     AuditStep,
     MissCause,
     MissedStep,
     ProviderUsage,
+    ToolDefinition,
 )
 from tests.fakes.llm import FakeLLM
 from tests.fakes.mcp_client import FakeMCPClient
@@ -154,8 +160,33 @@ async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttle
 
     outcome = await nuisance_audit(SERVER, lambda: audit_once(SERVER, auditor))
 
-    assert outcome is clean
+    assert isinstance(outcome, NuisanceAudit)
+    assert outcome.report is clean
     assert auditor.throttles.requests == 5
+
+
+async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = _captured_console(monkeypatch)
+    _audits_on_a_noisy_server(monkeypatch, non_protocol_lines=2, lost_calls=1)
+
+    outcome = await audit_once(SERVER, _an_auditor())
+
+    assert isinstance(outcome, NuisanceAudit)
+    assert outcome.health == ServerHealth(2, 1)
+    assert f"{SERVER.server_package}: server connection lost on 1 call(s)" in output.getvalue()
+
+
+async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = _captured_console(monkeypatch)
+    _audits_on_a_noisy_server(monkeypatch, non_protocol_lines=2, lost_calls=0)
+
+    await audit_once(SERVER, _an_auditor())
+
+    assert "connection lost" not in output.getvalue()
 
 
 async def test_two_concurrent_environments_of_one_backend_server_both_complete():
@@ -206,23 +237,24 @@ async def test_a_benign_call_raising_names_the_tool():
 
 async def test_a_clean_report_stands_at_the_first_call(monkeypatch: pytest.MonkeyPatch):
     _captured_console(monkeypatch)
-    report = grammar.a_report()
-    attempt = _ScriptedAttempts([report])
+    audit = _audited(grammar.a_report())
+    attempt = _ScriptedAttempts([audit])
 
     outcome = await nuisance_audit(SERVER, attempt)
 
-    assert outcome is report
+    assert outcome is audit
     assert attempt.calls == 1
 
 
 async def test_a_refused_step_with_a_fail_is_kept(monkeypatch: pytest.MonkeyPatch):
     _captured_console(monkeypatch)
     report = _missing_a_step(grammar.a_report([grammar.a_case()]), MissCause.PROVIDER_REFUSAL)
-    attempt = _ScriptedAttempts([report])
+    audit = _audited(report)
+    attempt = _ScriptedAttempts([audit])
 
     outcome = await nuisance_audit(SERVER, attempt)
 
-    assert outcome is report
+    assert outcome is audit
     assert attempt.calls == 1
 
 
@@ -232,9 +264,11 @@ async def test_an_unreadable_step_with_no_fail_is_kept_as_incomplete(
     _captured_console(monkeypatch)
     report = _missing_a_step(grammar.a_report(), MissCause.UNREADABLE_ANSWER)
 
-    outcome = await nuisance_audit(SERVER, _ScriptedAttempts([report]))
+    audit = _audited(report)
 
-    assert outcome is report
+    outcome = await nuisance_audit(SERVER, _ScriptedAttempts([audit]))
+
+    assert outcome is audit
     assert is_incomplete(report)
 
 
@@ -256,7 +290,7 @@ async def test_a_run_throttled_at_any_attempt_drops_as_throttled(monkeypatch: py
     output = _captured_console(monkeypatch)
     throttled = _missing_a_step(grammar.a_report(), MissCause.PROVIDER_THROTTLED)
 
-    attempt = _ScriptedAttempts([_PROVIDER_ERROR, LaunchFailed("no image"), throttled])
+    attempt = _ScriptedAttempts([_PROVIDER_ERROR, LaunchFailed("no image"), _audited(throttled)])
 
     outcome = await nuisance_audit(SERVER, attempt)
 
@@ -269,12 +303,12 @@ async def test_a_launch_failure_is_retried_and_a_later_report_stands(
     monkeypatch: pytest.MonkeyPatch,
 ):
     _captured_console(monkeypatch)
-    report = grammar.a_report()
-    attempt = _ScriptedAttempts([LaunchFailed("no image"), report])
+    audit = _audited(grammar.a_report())
+    attempt = _ScriptedAttempts([LaunchFailed("no image"), audit])
 
     outcome = await nuisance_audit(SERVER, attempt)
 
-    assert outcome is report
+    assert outcome is audit
     assert attempt.calls == 2
 
 
@@ -345,11 +379,11 @@ async def test_a_provider_error_is_retried_and_a_later_report_stands(
     monkeypatch: pytest.MonkeyPatch,
 ):
     _captured_console(monkeypatch)
-    report = grammar.a_report()
+    audit = _audited(grammar.a_report())
 
-    outcome = await nuisance_audit(SERVER, _ScriptedAttempts([_PROVIDER_ERROR, report]))
+    outcome = await nuisance_audit(SERVER, _ScriptedAttempts([_PROVIDER_ERROR, audit]))
 
-    assert outcome is report
+    assert outcome is audit
 
 
 async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provider_error(
@@ -368,7 +402,7 @@ async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refused_step(
 ):
     _captured_console(monkeypatch)
     report = run_given.a_report(True, missed=MissCause.PROVIDER_REFUSAL)
-    audit = _ScriptedAudits([report])
+    audit = _ScriptedAudits([_audited(report)])
 
     run = await gate_run(run_given.a_server(), audit)
 
@@ -383,7 +417,8 @@ async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
 ):
     output = _captured_console(monkeypatch)
     clean = run_given.a_report(False)
-    audit = _ScriptedAudits([run_given.a_report(False, missed=MissCause.UNREADABLE_ANSWER), clean])
+    unreadable = run_given.a_report(False, missed=MissCause.UNREADABLE_ANSWER)
+    audit = _ScriptedAudits([_audited(unreadable), _audited(clean)])
 
     run = await gate_run(run_given.a_server(), audit)
 
@@ -399,7 +434,7 @@ async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
 ):
     output = _captured_console(monkeypatch)
     incomplete = run_given.a_report(False, missed=MissCause.PROVIDER_REFUSAL)
-    audit = _ScriptedAudits([incomplete] * 3)
+    audit = _ScriptedAudits([_audited(incomplete)] * 3)
 
     run = await gate_run(run_given.a_server(), audit)
 
@@ -460,6 +495,43 @@ def _audits_reporting(monkeypatch: pytest.MonkeyPatch, reports: list[AuditReport
     monkeypatch.setattr(nuisance_audit_module, "connect", _a_fake_connect(grouped=True))
 
 
+def _audits_on_a_noisy_server(
+    monkeypatch: pytest.MonkeyPatch, *, non_protocol_lines: int, lost_calls: int
+) -> None:
+    """The graph sends one call per lost connection, each answered "Connection closed", to a
+    client that read `non_protocol_lines` lines it could not parse."""
+
+    class CallingGraph:
+        def __init__(self, server: AuditedServer) -> None:
+            self._server = server
+
+        async def ainvoke(self, _graph_input: dict[str, object]) -> dict[str, object]:
+            for _ in range(lost_calls):
+                await self._server.attempt(_READ, _A_PAYLOAD)
+            return {"audit_report": grammar.a_report()}
+
+    def calling_build_graph(_llm: object, server: AuditedServer, **_kwargs: object) -> CallingGraph:
+        return CallingGraph(server)
+
+    monkeypatch.setattr(nuisance_audit_module, "build_graph", calling_build_graph)
+    monkeypatch.setattr(
+        nuisance_audit_module, "connect", _a_fake_connect(client=_NoisyClient(non_protocol_lines))
+    )
+
+
+_READ = ToolDefinition(name="read", input_schema={})
+_A_PAYLOAD = AuditPayload(
+    category=AuditCategory.INPUT_VALIDATION, description="a read", arguments={"path": "/x"}
+)
+
+
+class _NoisyClient(FakeMCPClient):
+    def __init__(self, non_protocol_lines: int) -> None:
+        lost = ToolResponse(content="Connection closed", is_error=True, error_type="McpError")
+        super().__init__([_READ], {"read": lost})
+        self.non_protocol_lines = non_protocol_lines
+
+
 def _audits_raising(monkeypatch: pytest.MonkeyPatch, error: Exception, *, grouped: bool) -> None:
     """The graph raises `error`, which leaves the client in nested groups as the MCP SDK's task
     groups wrap it, or bare as it leaves a server noisy at shutdown."""
@@ -475,13 +547,15 @@ def _audits_raising(monkeypatch: pytest.MonkeyPatch, error: Exception, *, groupe
     monkeypatch.setattr(nuisance_audit_module, "connect", _a_fake_connect(grouped=grouped))
 
 
-def _a_fake_connect(*, grouped: bool) -> Callable[..., AbstractAsyncContextManager[FakeMCPClient]]:
+def _a_fake_connect(
+    *, grouped: bool = True, client: FakeMCPClient | None = None
+) -> Callable[..., AbstractAsyncContextManager[FakeMCPClient]]:
     @asynccontextmanager
     async def fake_connect(
         _launch: Launch, _stderr: object, *, tool_call_timeout: int
     ) -> AsyncGenerator[FakeMCPClient]:
         try:
-            yield FakeMCPClient([])
+            yield FakeMCPClient([]) if client is None else client
         except Exception as exc:
             if not grouped:
                 raise
@@ -497,6 +571,10 @@ def _launch_args(server: AdmittedServer, backends: Any = BACKENDS) -> list[str]:
 
 def _follows(args: list[str], flag: str, value: str) -> bool:
     return any(args[i : i + 2] == [flag, value] for i in range(len(args) - 1))
+
+
+def _audited(report: AuditReport) -> NuisanceAudit:
+    return NuisanceAudit(report, NO_INCIDENTS)
 
 
 def _missing_a_step(report: AuditReport, cause: MissCause, detail: str = "") -> AuditReport:
@@ -517,12 +595,12 @@ class _RaisingClient(FakeMCPClient):
 
 class _ScriptedAttempts:
     def __init__(
-        self, outcomes: list[AuditReport | LaunchFailed | ProviderError | ProviderFatal]
+        self, outcomes: list[NuisanceAudit | LaunchFailed | ProviderError | ProviderFatal]
     ) -> None:
         self._outcomes = outcomes
         self.calls = 0
 
-    async def __call__(self) -> AuditReport | LaunchFailed | ProviderError:
+    async def __call__(self) -> NuisanceAudit | LaunchFailed | ProviderError:
         self.calls += 1
         outcome = self._outcomes.pop(0)
         if isinstance(outcome, ProviderFatal):
@@ -531,11 +609,11 @@ class _ScriptedAttempts:
 
 
 class _ScriptedAudits:
-    def __init__(self, outcomes: list[AuditReport | DroppedRun]) -> None:
+    def __init__(self, outcomes: list[NuisanceAudit | DroppedRun]) -> None:
         self._outcomes = outcomes
         self.calls = 0
 
-    async def __call__(self) -> AuditReport | DroppedRun:
+    async def __call__(self) -> NuisanceAudit | DroppedRun:
         self.calls += 1
         return self._outcomes.pop(0)
 

@@ -21,6 +21,9 @@ def a_server_result(
             split_flagged=index < split_flagged,
             incomplete=index >= flagged_runs and index >= first_incomplete,
             raw_fail_count=1 if index < flagged_runs else 0,
+            non_protocol_lines=0,
+            lost_connection_responses=0,
+            miss_causes=[],
         )
         for index in range(runs)
     )

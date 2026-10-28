@@ -3,6 +3,7 @@ orchestrator all import them without a cycle (the orchestrator imports the stati
 report, which both consume these). The per-run facts of a server live in its run statuses and the
 aggregates are computed from them, so no two fields can disagree."""
 
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
@@ -17,6 +18,9 @@ class NuisanceRunStatus:
     split_flagged: bool  # flagged through a counted tool of the split flaw
     incomplete: bool  # a step refused or unreadable
     raw_fail_count: int  # report-only
+    non_protocol_lines: int  # report-only, as the two below
+    lost_connection_responses: int
+    miss_causes: list[str]  # the causes that make it incomplete, sorted, empty on a complete run
 
 
 @dataclass(frozen=True)
@@ -58,8 +62,20 @@ class NuisanceServerResult:
         return sum(status.incomplete and not status.flagged for status in self.statuses)
 
     @property
+    def incomplete_runs_by_cause(self) -> dict[str, int]:
+        return dict(Counter(cause for status in self.statuses for cause in status.miss_causes))
+
+    @property
     def raw_fail_per_run(self) -> list[int]:
         return [status.raw_fail_count for status in self.statuses]
+
+    @property
+    def non_protocol_lines(self) -> int:
+        return sum(status.non_protocol_lines for status in self.statuses)
+
+    @property
+    def lost_connection_responses(self) -> int:
+        return sum(status.lost_connection_responses for status in self.statuses)
 
 
 class NotRunCause(StrEnum):

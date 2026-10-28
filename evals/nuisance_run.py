@@ -32,6 +32,7 @@ from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_assembly import assemble_server
 from evals.nuisance_audit import (
     DroppedRun,
+    NuisanceAudit,
     NuisanceAuditor,
     audit_once,
     benign_call_failure,
@@ -59,7 +60,6 @@ from evals.run_images import (
 )
 from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import AuditReport
 
 NUISANCE_RUNS = 3  # the log sets it before the first real run, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
@@ -67,7 +67,7 @@ _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCau
 # The budget is the holdout's HOLDOUT_BUDGET: the rule reads the figure beside the holdout run,
 # whose budget is a constant, not a flag (holdout-rule.md:227), so no budget of its own here.
 
-type Audit = Callable[[AdmittedServer], Awaitable[AuditReport | DroppedRun]]
+type Audit = Callable[[AdmittedServer], Awaitable[NuisanceAudit | DroppedRun]]
 
 
 @dataclass(frozen=True)
@@ -178,7 +178,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
     auditor = NuisanceAuditor(run_auditor, overrides, throttles)
     timeout = overrides.tool_call_timeout or TOOL_CALL_TIMEOUT
 
-    async def audit(server: AdmittedServer) -> AuditReport | DroppedRun:
+    async def audit(server: AdmittedServer) -> NuisanceAudit | DroppedRun:
         return await nuisance_audit(server, lambda: audit_once(server, auditor))
 
     return NuisanceDeps(
@@ -257,7 +257,7 @@ async def _run_all(
 
 async def _run_server(
     server: AdmittedServer, audit: Audit, runs: int
-) -> list[AuditReport] | DroppedRun:
+) -> list[NuisanceAudit] | DroppedRun:
     outcomes = await sibling_runs(runs, lambda: audit(server))
     causes = {outcome.cause for outcome in outcomes if isinstance(outcome, DroppedRun)}
     for cause in _DROP_PRECEDENCE:
