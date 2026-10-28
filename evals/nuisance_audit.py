@@ -9,10 +9,12 @@ from dataclasses import dataclass
 
 from rich.markup import escape
 
+from evals.audit_attempts import INCOMPLETE_ATTEMPTS, describe_miss_causes
 from evals.concurrency import entered_in_thread
-from evals.cve_audit import INCOMPLETE_ATTEMPTS, Auditor, RunOverrides, describe_miss_causes
+from evals.cve_audit import Auditor, RunOverrides
 from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve_planting_base import confinement_args, no_network_args
+from evals.cve_recording_client import RecordingClient
 from evals.doris_backend import user_args
 from evals.eval_display import console
 from evals.failure_text import ReportDetail
@@ -31,6 +33,7 @@ from evals.provider_errors import (
     classified,
     describe_provider_error,
 )
+from evals.server_health import ServerHealth, health_of
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
@@ -121,6 +124,12 @@ class DroppedRun:
 
 
 @dataclass(frozen=True)
+class NuisanceAudit:
+    report: AuditReport
+    health: ServerHealth
+
+
+@dataclass(frozen=True)
 class NuisanceAuditor:
     auditor: Auditor
     overrides: RunOverrides
@@ -132,31 +141,33 @@ async def audit_once(
     auditor: NuisanceAuditor,
     *,
     backends: Mapping[str, RegisteredBackend] = BACKENDS,
-) -> AuditReport | LaunchFailed | ProviderError:
+) -> NuisanceAudit | LaunchFailed | ProviderError:
     """Raises `ProviderFatal` on a provider error no retry cures."""
     # The provisioner blocks for minutes and `DORIS_LAUNCH_LOCK` is a thread lock, so a plain
     # `with` inside the coroutine would freeze the loop and deadlock the server's gathered runs.
     try:
         with audit_failures_unwrapped():
             async with entered_in_thread(nuisance_environment(server, backends)) as launch:
-                report = await _audit(launch, auditor.auditor, auditor.overrides)
+                audit = await _audit(launch, auditor.auditor, auditor.overrides)
     except AuditFailed as failure:
         if failure.kind is ProviderErrorKind.FATAL:
             raise ProviderFatal(failure.cause) from failure.cause
         return ProviderError(describe_provider_error(failure.cause))
     except Exception as exc:
         return LaunchFailed(auditor.auditor.report_detail.describe(exc))
-    auditor.throttles.count(report)
-    _print_incidents(server, report, auditor.auditor.report_detail)
-    return report
+    auditor.throttles.count(audit.report)
+    _print_incidents(server, audit.report, auditor.auditor.report_detail)
+    _print_lost_connections(server, audit.health)
+    return audit
 
 
-async def _audit(launch: Launch, auditor: Auditor, overrides: RunOverrides) -> AuditReport:
+async def _audit(launch: Launch, auditor: Auditor, overrides: RunOverrides) -> NuisanceAudit:
     timeout = _either(overrides.tool_call_timeout, TOOL_CALL_TIMEOUT)
     with open(os.devnull, "w") as devnull:
         async with connect(launch, devnull, tool_call_timeout=timeout) as client:
+            recorder = RecordingClient(client)
             graph = build_graph(
-                auditor.llm, AuditedServer(client), judge_llm=auditor.judge_llm, tools_filter=None
+                auditor.llm, AuditedServer(recorder), judge_llm=auditor.judge_llm, tools_filter=None
             )
             with one_audit():
                 result = await classified(
@@ -172,11 +183,19 @@ async def _audit(launch: Launch, auditor: Auditor, overrides: RunOverrides) -> A
                         }
                     )
                 )
-            return result["audit_report"]
+            return NuisanceAudit(result["audit_report"], health_of(client, recorder.exchanges))
 
 
 def _either(forced: int | None, own: int) -> int:
     return own if forced is None else forced
+
+
+def _print_lost_connections(server: AdmittedServer, health: ServerHealth) -> None:
+    if health.lost_connection_responses > 0:
+        console.print(
+            f"[yellow]{server.server_package}: server connection lost on"
+            f" {health.lost_connection_responses} call(s)[/yellow]"
+        )
 
 
 def _print_incidents(server: AdmittedServer, report: AuditReport, detail: ReportDetail) -> None:
@@ -193,8 +212,8 @@ def _print_incidents(server: AdmittedServer, report: AuditReport, detail: Report
 
 async def nuisance_audit(
     server: AdmittedServer,
-    attempt: Callable[[], Awaitable[AuditReport | LaunchFailed | ProviderError]],
-) -> AuditReport | DroppedRun:
+    attempt: Callable[[], Awaitable[NuisanceAudit | LaunchFailed | ProviderError]],
+) -> NuisanceAudit | DroppedRun:
     """One run of one server, at most `NUISANCE_INFRA_ATTEMPTS` calls. A report with no
     throttled step stands, an alarm in it whatever step was refused. A throttled report, a
     launch failure or a provider error is retried. The run drops as throttled when any attempt
@@ -202,7 +221,7 @@ async def nuisance_audit(
     causes: set[NotRunCause] = set()
     for number in range(1, NUISANCE_INFRA_ATTEMPTS + 1):
         outcome = await attempt()
-        if isinstance(outcome, AuditReport) and not _is_throttled(outcome):
+        if isinstance(outcome, NuisanceAudit) and not _is_throttled(outcome.report):
             return outcome
         causes.add(_cause_of(outcome))
         console.print(
@@ -215,16 +234,16 @@ async def nuisance_audit(
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 
 
-def _cause_of(outcome: AuditReport | LaunchFailed | ProviderError) -> NotRunCause:
-    if isinstance(outcome, AuditReport):
+def _cause_of(outcome: NuisanceAudit | LaunchFailed | ProviderError) -> NotRunCause:
+    if isinstance(outcome, NuisanceAudit):
         return NotRunCause.THROTTLED
     if isinstance(outcome, ProviderError):
         return NotRunCause.PROVIDER_ERROR
     return NotRunCause.LAUNCH_FAILURE
 
 
-def _failure(outcome: AuditReport | LaunchFailed | ProviderError) -> str:
-    if isinstance(outcome, AuditReport):
+def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderError) -> str:
+    if isinstance(outcome, NuisanceAudit):
         return "throttled by the model provider past every retry"
     if isinstance(outcome, ProviderError):
         return f"provider error ({outcome.reason})"
@@ -242,7 +261,7 @@ class GateRun:
 
 
 async def gate_run(
-    server: AdmittedServer, audit: Callable[[], Awaitable[AuditReport | DroppedRun]]
+    server: AdmittedServer, audit: Callable[[], Awaitable[NuisanceAudit | DroppedRun]]
 ) -> GateRun | None:
     """One run of the nuisance gate, at most `INCOMPLETE_ATTEMPTS` audits: the acceptance gate's
     policy on an incomplete attempt, with an alarm in place of a detection, unlike the nuisance
@@ -253,10 +272,11 @@ async def gate_run(
         outcome = await audit()
         if isinstance(outcome, DroppedRun):
             return None
-        flagged = bool(flagged_tools(outcome, counted_tools(server)))
-        if flagged or not is_incomplete(outcome):
-            return GateRun(flagged=flagged, report=outcome)
-        attempt_causes = _incomplete_causes(outcome)
+        report = outcome.report
+        flagged = bool(flagged_tools(report, counted_tools(server)))
+        if flagged or not is_incomplete(report):
+            return GateRun(flagged=flagged, report=report)
+        attempt_causes = incomplete_causes(report)
         causes |= attempt_causes
         console.print(
             f"[yellow]{server.server_package}: attempt {number}/{INCOMPLETE_ATTEMPTS}:"
@@ -269,7 +289,7 @@ async def gate_run(
     return None
 
 
-def _incomplete_causes(report: AuditReport) -> frozenset[MissCause]:
+def incomplete_causes(report: AuditReport) -> frozenset[MissCause]:
     return frozenset(
         missed.cause for missed in report.missed_steps if missed.cause in _INCOMPLETE_CAUSES
     )

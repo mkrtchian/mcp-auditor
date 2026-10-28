@@ -52,6 +52,11 @@ def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, incomplet
                 aimed=index < detected_runs,
                 fail_without_proof=False,
                 incomplete=index >= RUNS - incomplete_runs,
+                non_protocol_lines=0,
+                lost_connection_responses=0,
+                unchecked_reason=None,
+                replay_attempt_failures=[],
+                miss_causes=["provider_refusal"] if index >= RUNS - incomplete_runs else [],
             )
             for index in range(RUNS)
         ),
@@ -129,6 +134,7 @@ def test_render_markdown_states_the_throttled_requests_after_the_incomplete_runs
     assert (report.throttled_requests, report.concurrency) == (12, 4)
     assert (
         "Incomplete runs (a step refused or unreadable): 1 (CVE-B)\n"
+        "- provider_refusal: 1 run(s)\n"
         "Throttled by the model provider: 12 requests at concurrency 4\n"
     ) in markdown
 
@@ -181,6 +187,11 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
             aimed=True,
             fail_without_proof=False,
             incomplete=False,
+            non_protocol_lines=0,
+            lost_connection_responses=0,
+            unchecked_reason=None,
+            replay_attempt_failures=[],
+            miss_causes=[],
         ),
         TargetRunLine(
             detected=False,
@@ -188,6 +199,11 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
             aimed=False,
             fail_without_proof=False,
             incomplete=False,
+            non_protocol_lines=0,
+            lost_connection_responses=0,
+            unchecked_reason=None,
+            replay_attempt_failures=[],
+            miss_causes=[],
         ),
         TargetRunLine(
             detected=False,
@@ -195,8 +211,87 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
             aimed=False,
             fail_without_proof=False,
             incomplete=True,
+            non_protocol_lines=0,
+            lost_connection_responses=0,
+            unchecked_reason=None,
+            replay_attempt_failures=[],
+            miss_causes=["provider_refusal"],
         ),
     ]
+
+
+def _with_incidents(target: HoldoutTargetResult) -> HoldoutTargetResult:
+    unchecked, refused, clean = target.statuses
+    return dataclasses.replace(
+        target,
+        statuses=(
+            dataclasses.replace(
+                unchecked,
+                non_protocol_lines=2,
+                lost_connection_responses=1,
+                unchecked_reason="no_attempt_decided",
+                replay_attempt_failures=["launch_failed", "launch_failed"],
+            ),
+            dataclasses.replace(
+                refused,
+                detected=False,
+                detected_if_unchecked_missed=False,
+                surfaced_places=[],
+                incomplete=True,
+                miss_causes=["provider_refusal", "unreadable_answer"],
+            ),
+            clean,
+        ),
+    )
+
+
+def _run_with_incidents() -> HoldoutRunResult:
+    run = _run_result()
+    first, second = run.targets
+    return dataclasses.replace(
+        run, targets=(_with_incidents(first), second), incomplete_run_count=2
+    )
+
+
+def test_a_target_line_sums_its_health_and_counts_its_replay_and_miss_causes():
+    report = build_report(_run_with_incidents())
+
+    line = next(line for line in report.targets if line.cve_id == "CVE-A")
+
+    assert (line.non_protocol_lines, line.lost_connection_responses) == (2, 1)
+    assert line.unchecked_runs_by_reason == {"no_attempt_decided": 1}
+    assert line.replay_attempt_failures_by_cause == {"launch_failed": 2}
+    assert line.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
+    assert line.per_run[0].replay_attempt_failures == ["launch_failed", "launch_failed"]
+    assert line.per_run[1].miss_causes == ["provider_refusal", "unreadable_answer"]
+    assert report.incomplete_runs_by_cause == {"provider_refusal": 2, "unreadable_answer": 1}
+
+
+def test_the_markdown_names_each_target_with_a_health_count_or_a_replay_failure():
+    markdown = render_markdown(build_report(_run_with_incidents()))
+
+    assert (
+        "## Server health and replay\n"
+        "- CVE-A: non-protocol lines 2, connection lost on 1 call(s),"
+        " replay unchecked: no_attempt_decided x1, replay attempt failures: launch_failed x2\n"
+    ) in markdown
+    assert "- CVE-B: non-protocol" not in markdown
+
+
+def test_the_markdown_splits_the_incomplete_runs_by_cause():
+    markdown = render_markdown(build_report(_run_with_incidents()))
+
+    assert (
+        "Incomplete runs (a step refused or unreadable): 2 (CVE-A, CVE-B)\n"
+        "- provider_refusal: 2 run(s)\n"
+        "- unreadable_answer: 1 run(s)\n"
+    ) in markdown
+
+
+def test_the_markdown_leaves_the_health_section_out_when_nothing_happened():
+    markdown = render_markdown(build_report(_run_result()))
+
+    assert "## Server health and replay" not in markdown
 
 
 def test_the_recorded_at_line_carries_the_run_timestamp():
@@ -221,6 +316,8 @@ def test_the_report_holds_no_proof_text_fields():
     ]
     for model in models:
         assert set(model.model_fields).isdisjoint(forbidden)
+    markdown = render_markdown(build_report(_run_with_incidents()))
+    assert "evidence" not in markdown and "verdict" not in markdown
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():

@@ -9,13 +9,16 @@ import pytest
 import tests.unit.support.test_holdout_run_given as given
 from evals.cve_grammar import CVEStatus
 from evals.cve_layout_check import LayoutCheck
+from evals.cve_replay import ReplayAttemptFailure, UncheckedReason
+from evals.cve_session_model import GradedAudit
 from evals.cve_targets import LaunchMode
 from evals.eval_session import Refused, TreeState
 from evals.holdout_audit import DroppedRun, IncompleteRun
 from evals.holdout_results import NotRunCause, RunInterrupted
 from evals.probe import call_cost
 from evals.provider_errors import ProviderFatal
-from mcp_auditor.domain.models import ProviderUsage
+from evals.server_health import ServerHealth
+from mcp_auditor.domain.models import MissCause, ProviderUsage
 
 
 @pytest.fixture(autouse=True)
@@ -91,6 +94,39 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
     assert assembled.incomplete_runs == 2
     assert result.incomplete_run_count == 2
     assert assembled.run_cost == pytest.approx(3 * call_cost(provider, given.LUNA_PRICE))
+
+
+async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss_causes():
+    target = given.a_target(given.KUBERNETES)
+    detection = given.graded(CVEStatus.DETECTED, given.a_report(ProviderUsage(), ProviderUsage()))
+    unchecked = GradedAudit(
+        detection.grade,
+        detection.report,
+        ServerHealth(non_protocol_lines=2, lost_connection_responses=1),
+        UncheckedReason.NO_ATTEMPT_DECIDED,
+        (ReplayAttemptFailure.LAUNCH_FAILED, ReplayAttemptFailure.LOST_CONNECTION),
+    )
+    refused = IncompleteRun(
+        given.a_report_missing(MissCause.UNREADABLE_ANSWER, MissCause.PROVIDER_REFUSAL),
+        ServerHealth(non_protocol_lines=0, lost_connection_responses=3),
+    )
+    audit = given.scripted({target.cve_id: [unchecked, refused, detection]})
+
+    result = await given.run([target], given.deps_auditing(audit))
+
+    (assembled,) = result.targets
+    first, second, third = assembled.statuses
+    assert (first.non_protocol_lines, first.lost_connection_responses) == (2, 1)
+    assert first.unchecked_reason == "no_attempt_decided"
+    assert first.replay_attempt_failures == ["launch_failed", "lost_connection"]
+    assert first.miss_causes == []
+    assert second.miss_causes == ["provider_refusal", "unreadable_answer"]
+    assert (second.unchecked_reason, second.replay_attempt_failures) == (None, [])
+    assert (third.non_protocol_lines, third.lost_connection_responses) == (0, 0)
+    assert (assembled.non_protocol_lines, assembled.lost_connection_responses) == (2, 4)
+    assert assembled.unchecked_runs_by_reason == {"no_attempt_decided": 1}
+    assert assembled.replay_attempt_failures_by_cause == {"launch_failed": 1, "lost_connection": 1}
+    assert assembled.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
 
 
 async def test_a_target_dead_on_a_version_is_not_run():

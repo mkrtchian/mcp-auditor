@@ -75,7 +75,14 @@ def sweep_containers(
     remove: Callable[[Sequence[str]], None],
 ) -> None:
     """Some servers outlive the end of their audit, the SIGKILL of their `docker` CLI included."""
-    running = list_running(tags)
+    # A failed listing is only warned of, as a failed removal is not checked: an error raised
+    # from the run's `finally` would replace the run result it guards. The next run's container
+    # check refuses while a leftover is running.
+    try:
+        running = list_running(tags)
+    except subprocess.CalledProcessError:
+        print("could not list the containers of the run's images, none removed")
+        return
     if running:
         remove(running)
         print(f"removed {len(running)} containers of the run's images left running")

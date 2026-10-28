@@ -4,6 +4,7 @@ which both consume these, so they cannot live in holdout_run as the plan's prose
 The per-run facts of a target live in its run statuses and the aggregates are computed from them,
 so no two fields can disagree."""
 
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
@@ -22,6 +23,11 @@ class HoldoutRunStatus:
     aimed: bool
     fail_without_proof: bool
     incomplete: bool
+    non_protocol_lines: int  # report-only, as every field below
+    lost_connection_responses: int
+    unchecked_reason: str | None  # set on a graded run whose replay was left unchecked
+    replay_attempt_failures: list[str]  # in attempt order, empty on an incomplete run
+    miss_causes: list[str]  # an incomplete run's missed-step causes, sorted
 
 
 @dataclass(frozen=True)
@@ -73,6 +79,31 @@ class HoldoutTargetResult:
     @property
     def incomplete_runs(self) -> int:
         return sum(status.incomplete for status in self.statuses)
+
+    @property
+    def non_protocol_lines(self) -> int:
+        return sum(status.non_protocol_lines for status in self.statuses)
+
+    @property
+    def lost_connection_responses(self) -> int:
+        return sum(status.lost_connection_responses for status in self.statuses)
+
+    @property
+    def unchecked_runs_by_reason(self) -> dict[str, int]:
+        return dict(
+            Counter(status.unchecked_reason for status in self.statuses if status.unchecked_reason)
+        )
+
+    @property
+    def replay_attempt_failures_by_cause(self) -> dict[str, int]:
+        return dict(
+            Counter(cause for status in self.statuses for cause in status.replay_attempt_failures)
+        )
+
+    @property
+    def incomplete_runs_by_cause(self) -> dict[str, int]:
+        """A run missing steps of two causes counts under both."""
+        return dict(Counter(cause for status in self.statuses for cause in status.miss_causes))
 
 
 class NotRunCause(StrEnum):

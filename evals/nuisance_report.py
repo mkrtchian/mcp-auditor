@@ -2,6 +2,7 @@
 lines (statuses and counts), never evidence, judge input or a per-case verdict, so a nuisance run
 cannot write proof text even by mistake."""
 
+from collections import Counter
 from datetime import date
 
 from pydantic import BaseModel
@@ -44,6 +45,9 @@ class ServerRunLine(BaseModel):
     flagged: bool
     split_flagged: bool
     incomplete: bool
+    non_protocol_lines: int
+    lost_connection_responses: int
+    miss_causes: list[str]
 
 
 class ServerLine(BaseModel):
@@ -56,7 +60,10 @@ class ServerLine(BaseModel):
     incomplete_runs: int
     counted_tools_count: int
     tools_count: int
-    raw_fail_per_run: list[int]  # report-only, never compared
+    raw_fail_per_run: list[int]  # report-only, never compared, as the three below
+    non_protocol_lines: int
+    lost_connection_responses: int
+    incomplete_runs_by_cause: dict[str, int]
     cost: float
     per_run: list[ServerRunLine]
 
@@ -92,6 +99,7 @@ class NuisanceReport(BaseModel):
     not_run: list[NotRunLine]
     outside_figure: list[FigureExitLine]
     incomplete_run_count: int
+    incomplete_runs_by_cause: dict[str, int]  # a run missing steps of two causes counts twice
     total_cost: float
     prices_as_of: date
     commit: str
@@ -142,6 +150,14 @@ def build_report(run: NuisanceRunResult) -> NuisanceReport:
         not_run=[NotRunLine.of(server) for server in run.not_run],
         outside_figure=[FigureExitLine.of(exit_row) for exit_row in run.outside_figure],
         incomplete_run_count=run.incomplete_run_count,
+        incomplete_runs_by_cause=dict(
+            Counter(
+                cause
+                for server in run.servers
+                for status in server.statuses
+                for cause in status.miss_causes
+            )
+        ),
         total_cost=run.total_cost,
         prices_as_of=run.prices_as_of,
         commit=run.commit,
@@ -216,12 +232,18 @@ def _server_line(server: NuisanceServerResult) -> ServerLine:
         counted_tools_count=server.counted_tools_count,
         tools_count=server.tools_count,
         raw_fail_per_run=server.raw_fail_per_run,
+        non_protocol_lines=server.non_protocol_lines,
+        lost_connection_responses=server.lost_connection_responses,
+        incomplete_runs_by_cause=server.incomplete_runs_by_cause,
         cost=server.run_cost,
         per_run=[
             ServerRunLine(
                 flagged=status.flagged,
                 split_flagged=status.split_flagged,
                 incomplete=status.incomplete,
+                non_protocol_lines=status.non_protocol_lines,
+                lost_connection_responses=status.lost_connection_responses,
+                miss_causes=status.miss_causes,
             )
             for status in server.statuses
         ],

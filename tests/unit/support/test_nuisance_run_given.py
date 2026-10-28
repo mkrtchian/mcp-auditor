@@ -9,18 +9,19 @@ import pytest
 import tests.unit.support.test_cve_grammar_given as grammar
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_counter_given as counter
-from evals import nuisance_run
+from evals import nuisance_vetting
 from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.eval_session import TreeState
 from evals.holdout_conditions import Cutoff, HoldoutConditions
 from evals.holdout_draw import DrawEntry
 from evals.nuisance_admission import AdmittedServer, FlawRecord
-from evals.nuisance_audit import DroppedRun
+from evals.nuisance_audit import DroppedRun, NuisanceAudit
 from evals.nuisance_population import RunPopulation
 from evals.nuisance_results import FigureExit, NuisanceRunResult
 from evals.nuisance_run import NuisanceDeps, run_nuisance
 from evals.probe_candidates import Prices
+from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import (
     AuditReport,
@@ -41,7 +42,7 @@ LUNA_PRICE = Prices(input=0.10, cached_input=0.01, output=0.50)
 SETTINGS = Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none")
 RECORDED_AT = "2026-10-22T00:00:00+00:00"
 
-type Outcome = AuditReport | DroppedRun
+type Outcome = NuisanceAudit | DroppedRun
 type Audit = Callable[[AdmittedServer], Awaitable[Outcome]]
 
 
@@ -118,6 +119,17 @@ def a_report(
     )
 
 
+def an_audit(
+    flagged: bool,
+    *,
+    missed: MissCause | None = None,
+    provider: ProviderUsage | None = None,
+    judge: ProviderUsage | None = None,
+    health: ServerHealth = NO_INCIDENTS,
+) -> NuisanceAudit:
+    return NuisanceAudit(a_report(flagged, missed=missed, provider=provider, judge=judge), health)
+
+
 def scripted(outcomes_by_package: Mapping[str, list[Outcome]]) -> Audit:
     scripts = {package: list(outcomes) for package, outcomes in outcomes_by_package.items()}
 
@@ -134,7 +146,7 @@ class InterruptingAudit:
     def __init__(self, finished: str, failing: str, error: Exception) -> None:
         self.cancelled: list[str] = []
         self._finished, self._failing, self._error = finished, failing, error
-        self._reports: list[Outcome] = [a_report(False) for _ in range(3)]
+        self._reports: list[Outcome] = [an_audit(False) for _ in range(3)]
         self._finished_done = asyncio.Event()
         self._failing_calls = 0
 
@@ -307,6 +319,6 @@ def launches_failing(
     teardown_fails: bool = False,
 ) -> FlakyLaunches:
     flaky = FlakyLaunches(failing, answer or ToolResponse(content="ok"), teardown_fails)
-    monkeypatch.setattr(nuisance_run, "nuisance_environment", flaky.environment)
-    monkeypatch.setattr(nuisance_run, "connect", flaky.connect)
+    monkeypatch.setattr(nuisance_vetting, "nuisance_environment", flaky.environment)
+    monkeypatch.setattr(nuisance_vetting, "connect", flaky.connect)
     return flaky

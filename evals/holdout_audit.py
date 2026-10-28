@@ -4,7 +4,7 @@ stands as a non-detection and is never retried, only an infra failure is retried
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from evals.cve_audit import (
+from evals.audit_attempts import (
     AttemptOutcome,
     IncompleteAttempt,
     ProviderErrorAttempt,

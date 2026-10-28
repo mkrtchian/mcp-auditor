@@ -1,7 +1,15 @@
 """The markdown of a holdout report, rendered from the proof-free report model alone."""
 
+from collections.abc import Mapping, Sequence
+
 from evals.holdout_not_run import not_run_section
-from evals.holdout_report import ConclusionLine, HoldoutReport, IntervalModel, RunCutoffModel
+from evals.holdout_report import (
+    ConclusionLine,
+    HoldoutReport,
+    IntervalModel,
+    RunCutoffModel,
+    TargetLine,
+)
 
 
 def render_markdown(report: HoldoutReport) -> str:
@@ -17,7 +25,8 @@ def render_markdown(report: HoldoutReport) -> str:
             *_split_section(report),
             *_controls_section(report),
             *not_run_section(report.not_run, len(report.targets)),
-            _incomplete_runs_line(report),
+            *_health_section(report.targets),
+            *_incomplete_runs_lines(report),
             *_throttled_lines(report),
             f"Total cost: ${report.total_cost:.2f}",
         ]
@@ -65,16 +74,42 @@ def _controls_section(report: HoldoutReport) -> list[str]:
     return ["## Controls", *lines, ""]
 
 
+def _health_section(targets: Sequence[TargetLine]) -> list[str]:
+    """Report-only: one line per target whose server misbehaved or whose replay failed."""
+    lines = [f"- {line.cve_id}: {facts}" for line in targets if (facts := _health_facts(line))]
+    return ["## Server health and replay", *lines, ""] if lines else []
+
+
+def _health_facts(line: TargetLine) -> str:
+    facts: list[str] = []
+    if line.non_protocol_lines:
+        facts.append(f"non-protocol lines {line.non_protocol_lines}")
+    if line.lost_connection_responses:
+        facts.append(f"connection lost on {line.lost_connection_responses} call(s)")
+    if line.unchecked_runs_by_reason:
+        facts.append(f"replay unchecked: {_by_cause(line.unchecked_runs_by_reason)}")
+    if line.replay_attempt_failures_by_cause:
+        facts.append(f"replay attempt failures: {_by_cause(line.replay_attempt_failures_by_cause)}")
+    return ", ".join(facts)
+
+
+def _by_cause(counts: Mapping[str, int]) -> str:
+    return ", ".join(f"{cause} x{count}" for cause, count in sorted(counts.items()))
+
+
 _INCOMPLETE_RUNS = "Incomplete runs (a step refused or unreadable)"
 
 
-def _incomplete_runs_line(report: HoldoutReport) -> str:
+def _incomplete_runs_lines(report: HoldoutReport) -> list[str]:
     """The count with the targets it touches (holdout-rule.md:249), derived from the per-target
-    incomplete-run counts."""
+    incomplete-run counts, then one line per cause."""
     touched = [target.cve_id for target in report.targets if target.incomplete_runs > 0]
-    if not touched:
-        return f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count}"
-    return f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count} ({', '.join(touched)})"
+    count = f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count}"
+    by_cause = [
+        f"- {cause}: {runs} run(s)"
+        for cause, runs in sorted(report.incomplete_runs_by_cause.items())
+    ]
+    return [f"{count} ({', '.join(touched)})" if touched else count, *by_cause]
 
 
 def _throttled_lines(report: HoldoutReport) -> list[str]:
