@@ -143,8 +143,9 @@ async def attempt_once(
             report, calls = await _audit(planted.launch, target, auditor, overrides)
             throttles.count(report, target.cve_id)
             _print_incidents(target, report)
-            # Captured before __exit__ fires, so a best-effort teardown error cannot erase a
-            # completed run. The nonces travel per launch, so the graded target is built here.
+            # Captured before the target's launch is left, so a raising exit of `target.launched`
+            # cannot erase a completed run (the client's own teardown error is tolerated inside
+            # `connect`). The nonces travel per launch, so the graded target is built here.
             run = RunToCheck(
                 target=target,
                 run_target=PlantedTarget(target.mechanism, target.aim, planted.nonces),
