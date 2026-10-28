@@ -1,0 +1,31 @@
+# Stand-in for the external n8n instance a patched n8n-mcp deployment points N8N_API_URL at, for
+# the nuisance RUN. It is NOT the server under test and carries none of the flaw: it answers only
+# the two requests a benign workflow trigger makes, with no redirect route to follow, so a patched
+# n8n-mcp@2.50.2 benign call answers without error:
+#   - GET /api/v1/workflows/<id>  -> an active workflow holding a webhook trigger node
+#   - /webhook/<path>             -> 200 (the trigger fires)
+# The benign half of Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect, dropping its /webhook/r/
+# 302: the run exercises the patched server, which must not reach an internal host. BIND_ADDR/PORT
+# choose where it listens (0.0.0.0:80 by default, the N8N_API_URL port).
+# No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
+FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+
+RUN printf '%s\n' \
+  "const http=require('http');" \
+  "const BIND=process.env.BIND_ADDR||'0.0.0.0', PORT=Number(process.env.PORT||80);" \
+  "http.createServer((req,res)=>{" \
+  "  console.error('REQ '+req.method+' '+req.url);" \
+  "  const wf=req.url.match(/^\\/api\\/v1\\/workflows\\/([^/?]+)/);" \
+  "  if(wf){" \
+  "    res.writeHead(200,{'Content-Type':'application/json'});" \
+  "    res.end(JSON.stringify({id:wf[1],name:'calib',active:true,connections:{}," \
+  "      nodes:[{id:'n1',name:'Webhook',type:'n8n-nodes-base.webhook',typeVersion:1," \
+  "        position:[0,0],parameters:{path:'calib',httpMethod:'GET'}}]}));" \
+  "    return;" \
+  "  }" \
+  "  if(req.url.startsWith('/webhook/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,message:'workflow started'}));return;}" \
+  "  res.writeHead(404,{'Content-Type':'text/plain'});res.end('no route');" \
+  "}).listen(PORT,BIND,()=>console.error('stub on '+BIND+':'+PORT));" \
+  > /stub.js
+
+ENTRYPOINT ["node", "/stub.js"]

@@ -49,6 +49,14 @@ from evals.mysql_backend import (
     mysql_rm,
     mysql_server_args,
 )
+from evals.n8n_backend import (
+    N8N_BRIDGE,
+    N8N_LAUNCH_LOCK,
+    N8N_RESPONDER_IMAGE,
+    ensure_n8n_responder,
+    n8n_rm,
+    n8n_server_args,
+)
 from evals.nuisance_images import image_tag
 
 if TYPE_CHECKING:
@@ -115,6 +123,22 @@ def contextforge_provisioner(server: AdmittedServer) -> Generator[Launch]:
 
 
 @contextmanager
+def n8n_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no sentinel, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with N8N_LAUNCH_LOCK:
+        ensure_n8n_responder()
+    name = f"{LABEL}-n8n-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=n8n_server_args(name, image_tag(server.service), server.host, server.launch),
+        )
+    finally:
+        n8n_rm(name)
+
+
+@contextmanager
 def mysql_provisioner(server: AdmittedServer) -> Generator[Launch]:
     # The nuisance run plants nothing, so the lock serialises only the stand-up of the pair, not
     # the yield: a server's concurrent runs share the one pair that serves them all.
@@ -137,6 +161,7 @@ BACKENDS: dict[str, RegisteredBackend] = {
     "contextforge": RegisteredBackend(
         contextforge_provisioner, CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
     ),
+    "n8n": RegisteredBackend(n8n_provisioner, N8N_BRIDGE, N8N_RESPONDER_IMAGE),
 }
 
 
