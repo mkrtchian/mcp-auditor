@@ -1,6 +1,6 @@
 """One audit of one admitted server on its patched image, with the suite's retry policy: a
-refused or unreadable step is kept and counted downstream, a launch failure or a throttled
-attempt is retried."""
+refused or unreadable step is kept and counted downstream, a launch failure, a throttled attempt
+or a transient provider error is retried, and a fatal provider error stops the run."""
 
 import os
 from collections.abc import Awaitable, Callable, Generator, Mapping
@@ -23,6 +23,14 @@ from evals.nuisance_counter import flagged_tools
 from evals.nuisance_counting import counted_flaws, counted_tools
 from evals.nuisance_images import image_tag
 from evals.nuisance_results import NotRunCause
+from evals.provider_errors import (
+    AuditFailed,
+    ProviderErrorKind,
+    ProviderFatal,
+    audit_failures_unwrapped,
+    classified,
+    describe_provider_error,
+)
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
@@ -99,6 +107,13 @@ class LaunchFailed:
 
 
 @dataclass(frozen=True)
+class ProviderError:
+    """A transient provider error, its reason the error's type and status, never its message."""
+
+    reason: str
+
+
+@dataclass(frozen=True)
 class DroppedRun:
     """A run that never produced a report, which drops its server from the nuisance run."""
 
@@ -117,12 +132,18 @@ async def audit_once(
     auditor: NuisanceAuditor,
     *,
     backends: Mapping[str, RegisteredBackend] = BACKENDS,
-) -> AuditReport | LaunchFailed:
+) -> AuditReport | LaunchFailed | ProviderError:
+    """Raises `ProviderFatal` on a provider error no retry cures."""
     # The provisioner blocks for minutes and `DORIS_LAUNCH_LOCK` is a thread lock, so a plain
     # `with` inside the coroutine would freeze the loop and deadlock the server's gathered runs.
     try:
-        async with entered_in_thread(nuisance_environment(server, backends)) as launch:
-            report = await _audit(launch, auditor.auditor, auditor.overrides)
+        with audit_failures_unwrapped():
+            async with entered_in_thread(nuisance_environment(server, backends)) as launch:
+                report = await _audit(launch, auditor.auditor, auditor.overrides)
+    except AuditFailed as failure:
+        if failure.kind is ProviderErrorKind.FATAL:
+            raise ProviderFatal(failure.cause) from failure.cause
+        return ProviderError(describe_provider_error(failure.cause))
     except Exception as exc:
         return LaunchFailed(auditor.auditor.report_detail.describe(exc))
     auditor.throttles.count(report)
@@ -138,16 +159,18 @@ async def _audit(launch: Launch, auditor: Auditor, overrides: RunOverrides) -> A
                 auditor.llm, AuditedServer(client), judge_llm=auditor.judge_llm, tools_filter=None
             )
             with one_audit():
-                result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                    {
-                        "target": f"{launch.command} {' '.join(launch.args)}",
-                        "test_budget": auditor.budget,
-                        "attack_context": AttackContext(),
-                        "chain_budget": _either(overrides.chain_budget, launch.chain_budget),
-                        "max_chain_steps": _either(
-                            overrides.max_chain_steps, launch.max_chain_steps
-                        ),
-                    }
+                result = await classified(
+                    graph.ainvoke(  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+                        {
+                            "target": f"{launch.command} {' '.join(launch.args)}",
+                            "test_budget": auditor.budget,
+                            "attack_context": AttackContext(),
+                            "chain_budget": _either(overrides.chain_budget, launch.chain_budget),
+                            "max_chain_steps": _either(
+                                overrides.max_chain_steps, launch.max_chain_steps
+                            ),
+                        }
+                    )
                 )
             return result["audit_report"]
 
@@ -169,27 +192,43 @@ def _print_incidents(server: AdmittedServer, report: AuditReport, detail: Report
 
 
 async def nuisance_audit(
-    server: AdmittedServer, attempt: Callable[[], Awaitable[AuditReport | LaunchFailed]]
+    server: AdmittedServer,
+    attempt: Callable[[], Awaitable[AuditReport | LaunchFailed | ProviderError]],
 ) -> AuditReport | DroppedRun:
     """One run of one server, at most `NUISANCE_INFRA_ATTEMPTS` calls. A report with no
-    throttled step stands, an alarm in it whatever step was refused. A throttled report or a
-    launch failure is retried, and the run drops as throttled when any attempt was."""
-    throttled = False
+    throttled step stands, an alarm in it whatever step was refused. A throttled report, a
+    launch failure or a provider error is retried. The run drops as throttled when any attempt
+    was, else as a provider error when any attempt met one, else as a launch failure."""
+    causes: set[NotRunCause] = set()
     for number in range(1, NUISANCE_INFRA_ATTEMPTS + 1):
         outcome = await attempt()
         if isinstance(outcome, AuditReport) and not _is_throttled(outcome):
             return outcome
-        throttled = throttled or isinstance(outcome, AuditReport)
-        failure = (
-            "throttled by the model provider past every retry"
-            if isinstance(outcome, AuditReport)
-            else f"run failed to launch ({escape(outcome.reason)})"
-        )
+        causes.add(_cause_of(outcome))
         console.print(
-            f"[yellow]{server.server_package}: {failure},"
+            f"[yellow]{server.server_package}: {_failure(outcome)},"
             f" attempt {number}/{NUISANCE_INFRA_ATTEMPTS}[/yellow]"
         )
-    return DroppedRun(NotRunCause.THROTTLED if throttled else NotRunCause.LAUNCH_FAILURE)
+    return DroppedRun(next(cause for cause in _DROP_PRECEDENCE if cause in causes))
+
+
+_DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
+
+
+def _cause_of(outcome: AuditReport | LaunchFailed | ProviderError) -> NotRunCause:
+    if isinstance(outcome, AuditReport):
+        return NotRunCause.THROTTLED
+    if isinstance(outcome, ProviderError):
+        return NotRunCause.PROVIDER_ERROR
+    return NotRunCause.LAUNCH_FAILURE
+
+
+def _failure(outcome: AuditReport | LaunchFailed | ProviderError) -> str:
+    if isinstance(outcome, AuditReport):
+        return "throttled by the model provider past every retry"
+    if isinstance(outcome, ProviderError):
+        return f"provider error ({outcome.reason})"
+    return f"run failed to launch ({escape(outcome.reason)})"
 
 
 def _is_throttled(report: AuditReport) -> bool:

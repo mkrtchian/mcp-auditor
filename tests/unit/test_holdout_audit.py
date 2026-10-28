@@ -1,10 +1,16 @@
 from io import StringIO
 
 import pytest
+from langchain_core.exceptions import ModelAuthenticationError
 from rich.console import Console
 
 from evals import holdout_audit as holdout_audit_module
-from evals.cve_audit import IncompleteAttempt, ThrottledAttempt
+from evals.cve_audit import (
+    AttemptOutcome,
+    IncompleteAttempt,
+    ProviderErrorAttempt,
+    ThrottledAttempt,
+)
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_audit import (
@@ -14,11 +20,13 @@ from evals.holdout_audit import (
     holdout_audit,
 )
 from evals.holdout_results import NotRunCause
+from evals.provider_errors import ProviderFatal
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_cve_oracle_given import a_detected_grade
 
 TARGET = CVE_TARGETS[0]
+_PROVIDER_ERROR = ProviderErrorAttempt("ModelAPIError, status 500")
 
 
 async def test_a_graded_audit_passes_through(monkeypatch: pytest.MonkeyPatch):
@@ -111,10 +119,11 @@ async def test_a_throttled_attempt_is_retried_and_a_later_graded_attempt_stands(
     [
         [ThrottledAttempt()] * HOLDOUT_INFRA_ATTEMPTS,
         [None, ThrottledAttempt(), None],
+        [_PROVIDER_ERROR, ThrottledAttempt(), None],
     ],
 )
 async def test_a_run_throttled_at_any_attempt_is_dropped_as_throttled(
-    monkeypatch: pytest.MonkeyPatch, outcomes: list[ThrottledAttempt | None]
+    monkeypatch: pytest.MonkeyPatch, outcomes: list[AttemptOutcome[GradedAudit]]
 ):
     _captured_console(monkeypatch)
 
@@ -123,16 +132,63 @@ async def test_a_run_throttled_at_any_attempt_is_dropped_as_throttled(
     assert outcome == DroppedRun(NotRunCause.THROTTLED)
 
 
+async def test_a_fatal_provider_error_stops_the_run_at_once(monkeypatch: pytest.MonkeyPatch):
+    _captured_console(monkeypatch)
+    attempt = _ScriptedAttempts([ProviderFatal(ModelAuthenticationError("invalid key"))])
+
+    with pytest.raises(ProviderFatal):
+        await holdout_audit(TARGET, attempt)
+
+    assert attempt.calls == 1
+
+
+async def test_a_provider_error_at_every_attempt_drops_the_run_as_a_provider_error(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = _captured_console(monkeypatch)
+    attempt = _ScriptedAttempts([_PROVIDER_ERROR] * HOLDOUT_INFRA_ATTEMPTS)
+
+    outcome = await holdout_audit(TARGET, attempt)
+
+    assert outcome == DroppedRun(NotRunCause.PROVIDER_ERROR)
+    assert attempt.calls == HOLDOUT_INFRA_ATTEMPTS
+    assert f"{TARGET.cve_id}: provider error (ModelAPIError, status 500), attempt 1/3" in (
+        output.getvalue()
+    )
+
+
+async def test_a_provider_error_is_retried_and_a_later_graded_attempt_stands(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _captured_console(monkeypatch)
+    graded = GradedAudit(a_detected_grade(), grammar.a_report())
+
+    outcome = await holdout_audit(TARGET, _ScriptedAttempts([_PROVIDER_ERROR, graded]))
+
+    assert outcome is graded
+
+
+async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provider_error(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _captured_console(monkeypatch)
+
+    outcome = await holdout_audit(TARGET, _ScriptedAttempts([None, _PROVIDER_ERROR, None]))
+
+    assert outcome == DroppedRun(NotRunCause.PROVIDER_ERROR)
+
+
 class _ScriptedAttempts:
-    def __init__(
-        self, outcomes: list[GradedAudit | IncompleteAttempt | ThrottledAttempt | None]
-    ) -> None:
+    def __init__(self, outcomes: list[AttemptOutcome[GradedAudit] | ProviderFatal]) -> None:
         self._outcomes = outcomes
         self.calls = 0
 
-    async def __call__(self) -> GradedAudit | IncompleteAttempt | ThrottledAttempt | None:
+    async def __call__(self) -> AttemptOutcome[GradedAudit]:
         self.calls += 1
-        return self._outcomes.pop(0)
+        outcome = self._outcomes.pop(0)
+        if isinstance(outcome, ProviderFatal):
+            raise outcome
+        return outcome
 
 
 def _captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:

@@ -1,6 +1,6 @@
 import dataclasses
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any
@@ -9,7 +9,7 @@ import pytest
 from rich.console import Console
 
 from evals import cve_audit
-from evals.cve_audit import Auditor, IncompleteAttempt, ThrottledAttempt
+from evals.cve_audit import AttemptOutcome, Auditor
 from evals.cve_environments import Launch, LaunchShape
 from evals.cve_grammar import CreditCheck, PlantedTarget
 from evals.cve_planting_base import PlantingSpec
@@ -79,16 +79,44 @@ def an_audit_reporting(
         seen.tools_filters.append(kwargs["tools_filter"])
         return FakeGraph()
 
+    monkeypatch.setattr(cve_audit, "build_graph", fake_build_graph)
+    monkeypatch.setattr(cve_audit, "connect", _a_fake_connect(seen.timeouts))
+    return seen
+
+
+def an_audit_raising(
+    monkeypatch: pytest.MonkeyPatch, error: Exception, *, grouped: bool = True
+) -> None:
+    """The graph raises `error`, which leaves the client wrapped in nested groups as the MCP
+    SDK's task groups wrap it, or bare as it leaves a server noisy at shutdown."""
+
+    class RaisingGraph:
+        async def ainvoke(self, _graph_input: dict[str, object]) -> dict[str, object]:
+            raise error
+
+    def raising_build_graph(*_args: object, **_kwargs: object) -> RaisingGraph:
+        return RaisingGraph()
+
+    monkeypatch.setattr(cve_audit, "build_graph", raising_build_graph)
+    monkeypatch.setattr(cve_audit, "connect", _a_fake_connect([], grouped=grouped))
+
+
+def _a_fake_connect(
+    timeouts: list[int], *, grouped: bool = True
+) -> Callable[..., AbstractAsyncContextManager[FakeMCPClient]]:
     @asynccontextmanager
     async def fake_connect(
         _launch: Launch, _stderr: object, *, tool_call_timeout: int
     ) -> AsyncGenerator[FakeMCPClient]:
-        seen.timeouts.append(tool_call_timeout)
-        yield FakeMCPClient([])
+        timeouts.append(tool_call_timeout)
+        try:
+            yield FakeMCPClient([])
+        except Exception as exc:
+            if not grouped:
+                raise
+            raise ExceptionGroup("client", [ExceptionGroup("session", [exc])]) from None
 
-    monkeypatch.setattr(cve_audit, "build_graph", fake_build_graph)
-    monkeypatch.setattr(cve_audit, "connect", fake_connect)
-    return seen
+    return fake_connect
 
 
 def a_report_missing(*causes: MissCause) -> AuditReport:
@@ -136,10 +164,10 @@ def a_report_billed(input_tokens: int, output_tokens: int) -> AuditReport:
 
 
 class ScriptedAttempts[T]:
-    def __init__(self, outcomes: list[T | IncompleteAttempt | ThrottledAttempt | None]) -> None:
+    def __init__(self, outcomes: list[AttemptOutcome[T]]) -> None:
         self._outcomes = outcomes
         self.calls = 0
 
-    async def __call__(self) -> T | IncompleteAttempt | ThrottledAttempt | None:
+    async def __call__(self) -> AttemptOutcome[T]:
         self.calls += 1
         return self._outcomes.pop(0)

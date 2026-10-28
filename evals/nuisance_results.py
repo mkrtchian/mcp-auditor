@@ -66,6 +66,7 @@ class NotRunCause(StrEnum):
     BENIGN_CALL_FAILED = "benign_call_failed"
     LAUNCH_FAILURE = "launch_failure"
     THROTTLED = "throttled"
+    PROVIDER_ERROR = "provider_error"
 
 
 # The reasons of a server dropped during the runs, one per cause, so the report counts them. A
@@ -73,6 +74,7 @@ class NotRunCause(StrEnum):
 DROPPED_RUN_REASONS = {
     NotRunCause.LAUNCH_FAILURE: "a run failed to launch after retries",
     NotRunCause.THROTTLED: "throttled by the model provider past every retry",
+    NotRunCause.PROVIDER_ERROR: "a run hit a provider error past every retry",
 }
 
 

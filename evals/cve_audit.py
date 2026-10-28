@@ -20,6 +20,14 @@ from evals.cve_targets import CVETarget
 from evals.eval_display import console
 from evals.failure_text import FULL_DETAIL, ReportDetail
 from evals.metrics import SessionThrottles, blocked_reasons
+from evals.provider_errors import (
+    AuditFailed,
+    ProviderErrorKind,
+    ProviderFatal,
+    audit_failures_unwrapped,
+    classified,
+    describe_provider_error,
+)
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.config import load_settings
@@ -94,16 +102,27 @@ class ThrottledAttempt:
     """An audit whose report holds a step throttled past every retry, thrown away ungraded."""
 
 
+@dataclass(frozen=True)
+class ProviderErrorAttempt:
+    """An audit stopped by a provider error a later attempt may not meet, thrown away ungraded.
+    The description holds the error's type and status, never its message."""
+
+    description: str
+
+
+# None is a run skipped at launch.
+type AttemptOutcome[T] = T | IncompleteAttempt | ThrottledAttempt | ProviderErrorAttempt | None
+
+
 async def graded_despite_missed_steps[T](
-    target: CVETarget,
-    attempt: Callable[[], Awaitable[T | IncompleteAttempt | ThrottledAttempt | None]],
+    target: CVETarget, attempt: Callable[[], Awaitable[AttemptOutcome[T]]]
 ) -> T | None:
     """The first complete attempt grades the run. None when every attempt missed a step, and at
-    once on a throttled attempt, as on a run skipped at launch."""
+    once on a throttled attempt or a provider error, as on a run skipped at launch."""
     causes: frozenset[MissCause] = frozenset()
     for number in range(1, INCOMPLETE_ATTEMPTS + 1):
         outcome = await attempt()
-        if isinstance(outcome, ThrottledAttempt):
+        if isinstance(outcome, ThrottledAttempt | ProviderErrorAttempt):
             return None
         if not isinstance(outcome, IncompleteAttempt):
             return outcome
@@ -135,7 +154,8 @@ async def attempt_once(
     throttles: SessionThrottles,
     places: Places,
     overrides: RunOverrides | None = None,
-) -> GradedAudit | IncompleteAttempt | ThrottledAttempt | None:
+) -> AttemptOutcome[GradedAudit]:
+    """Raises `ProviderFatal` on a provider error no retry cures."""
     # An unknown kept id or a planting_spec refusal is a configuration error: it is not
     # caught here, so it crashes the run rather than reading as a skip the gate cannot compare.
     records = kept_records(target.kept_places, places)
@@ -155,6 +175,8 @@ async def attempt_once(
                 recorded_calls=calls,
                 records=records,
             )
+    except AuditFailed as failure:
+        return _provider_error_attempt(target, failure)
     except (LaunchError, PlantingFailed, subprocess.CalledProcessError) as exc:
         failure = "run skipped" if run is None else "teardown failed"
         described = auditor.report_detail.describe(exc)
@@ -168,6 +190,14 @@ async def attempt_once(
         )
         return ThrottledAttempt()
     return await _graded(run)
+
+
+def _provider_error_attempt(target: CVETarget, failure: AuditFailed) -> ProviderErrorAttempt:
+    if failure.kind is ProviderErrorKind.FATAL:
+        raise ProviderFatal(failure.cause) from failure.cause
+    description = describe_provider_error(failure.cause)
+    console.print(f"[yellow]{target.cve_id} run skipped:[/yellow] provider error ({description})")
+    return ProviderErrorAttempt(description)
 
 
 async def _graded(run: RunToCheck) -> GradedAudit | IncompleteAttempt:
@@ -224,25 +254,30 @@ async def _audit(
     chain_budget = _either(forced.chain_budget, launch.chain_budget)
     max_chain_steps = _either(forced.max_chain_steps, launch.max_chain_steps)
     try:
-        async with _silent_client(launch, overrides) as mcp_client:
-            recorder = RecordingClient(mcp_client)
-            graph = build_graph(
-                auditor.llm,
-                AuditedServer(recorder),
-                judge_llm=auditor.judge_llm,
-                tools_filter=None if forced.audit_every_tool else target.tools_filter,
-            )
-            with one_audit():
-                result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
-                    {
-                        "target": f"{launch.command} {' '.join(launch.args)}",
-                        "test_budget": auditor.budget,
-                        "attack_context": AttackContext(),
-                        "chain_budget": chain_budget,
-                        "max_chain_steps": max_chain_steps,
-                    }
+        with audit_failures_unwrapped():
+            async with _silent_client(launch, overrides) as mcp_client:
+                recorder = RecordingClient(mcp_client)
+                graph = build_graph(
+                    auditor.llm,
+                    AuditedServer(recorder),
+                    judge_llm=auditor.judge_llm,
+                    tools_filter=None if forced.audit_every_tool else target.tools_filter,
                 )
-            return result["audit_report"], recorder.exchanges
+                with one_audit():
+                    result = await classified(
+                        graph.ainvoke(  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+                            {
+                                "target": f"{launch.command} {' '.join(launch.args)}",
+                                "test_budget": auditor.budget,
+                                "attack_context": AttackContext(),
+                                "chain_budget": chain_budget,
+                                "max_chain_steps": max_chain_steps,
+                            }
+                        )
+                    )
+                return result["audit_report"], recorder.exchanges
+    except AuditFailed:
+        raise
     except Exception as exc:
         raise LaunchError(str(exc)) from exc
 

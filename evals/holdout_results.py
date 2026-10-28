@@ -79,12 +79,14 @@ class NotRunCause(StrEnum):
     PRE_RUN_CHECK = "pre_run_check"
     LAUNCH_FAILURE = "launch_failure"
     THROTTLED = "throttled"
+    PROVIDER_ERROR = "provider_error"
 
 
 # The reasons of a target dropped during the run, one per cause, so the report counts them.
 DROPPED_RUN_REASONS = {
     NotRunCause.LAUNCH_FAILURE: "a run failed to launch after retries",
     NotRunCause.THROTTLED: "throttled by the model provider past every retry",
+    NotRunCause.PROVIDER_ERROR: "a run hit a provider error past every retry",
 }
 
 

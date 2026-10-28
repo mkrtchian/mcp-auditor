@@ -1,10 +1,13 @@
 import pytest
+from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
 
 from evals import cve_audit
 from evals.cve_audit import (
     INCOMPLETE_ATTEMPTS,
+    AttemptOutcome,
     IncompleteAttempt,
     LaunchError,
+    ProviderErrorAttempt,
     RunOverrides,
     ThrottledAttempt,
     attempt_once,
@@ -19,6 +22,7 @@ from evals.cve_report_units import units_of
 from evals.cve_session_model import GradedAudit
 from evals.failure_text import TYPES_ONLY
 from evals.metrics import SessionThrottles
+from evals.provider_errors import ProviderFatal
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_audit_given as given
 from tests.unit.support import test_cve_grammar_given as grammar
@@ -76,7 +80,7 @@ async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
 ):
     output = given.captured_console(monkeypatch)
     unreadable = IncompleteAttempt(grammar.a_report(), frozenset({MissCause.UNREADABLE_ANSWER}))
-    outcomes: list[GradedAudit | IncompleteAttempt | ThrottledAttempt | None] = [
+    outcomes: list[AttemptOutcome[GradedAudit]] = [
         IncompleteAttempt(grammar.a_report(), _REFUSED),
         *[unreadable] * (INCOMPLETE_ATTEMPTS - 1),
     ]
@@ -327,3 +331,61 @@ async def test_a_missed_step_on_a_holdout_run_prints_its_cause_without_the_provi
     printed = output.getvalue()
     assert "Refused by the model provider" in printed
     assert "Invalid prompt" not in printed
+
+
+_SHAPES = pytest.mark.parametrize("grouped", [True, False], ids=["grouped", "bare"])
+
+
+@_SHAPES
+async def test_a_server_failing_inside_the_graph_is_a_run_skipped(
+    monkeypatch: pytest.MonkeyPatch, grouped: bool
+):
+    output = given.captured_console(monkeypatch)
+    given.an_audit_raising(monkeypatch, TimeoutError("list_tools timed out"), grouped=grouped)
+
+    outcome = await attempt_once(
+        given.a_target_launching(), given.an_auditor(), SessionThrottles(), {}
+    )
+
+    assert outcome is None
+    assert f"{TARGET.cve_id} run skipped" in output.getvalue()
+
+
+@_SHAPES
+async def test_a_fatal_provider_error_stops_the_run(monkeypatch: pytest.MonkeyPatch, grouped: bool):
+    given.captured_console(monkeypatch)
+    error = ModelAuthenticationError("invalid key")
+    given.an_audit_raising(monkeypatch, error, grouped=grouped)
+
+    with pytest.raises(ProviderFatal) as stopped:
+        await attempt_once(given.a_target_launching(), given.an_auditor(), SessionThrottles(), {})
+
+    assert stopped.value.cause is error
+
+
+@_SHAPES
+async def test_a_transient_provider_error_throws_the_attempt_away_naming_it_without_its_message(
+    monkeypatch: pytest.MonkeyPatch, grouped: bool
+):
+    output = given.captured_console(monkeypatch)
+    given.an_audit_raising(monkeypatch, ModelAPIError("secret-nonce"), grouped=grouped)
+
+    outcome = await attempt_once(
+        given.a_target_launching(), given.an_auditor(), SessionThrottles(), {}
+    )
+
+    assert isinstance(outcome, ProviderErrorAttempt)
+    printed = output.getvalue()
+    assert f"{TARGET.cve_id} run skipped" in printed
+    assert "ModelAPIError" in printed
+    assert "secret-nonce" not in printed
+
+
+async def test_a_provider_error_attempt_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
+    given.captured_console(monkeypatch)
+    attempt = given.ScriptedAttempts[GradedAudit]([ProviderErrorAttempt("ModelAPIError")])
+
+    grade = await graded_despite_missed_steps(TARGET, attempt)
+
+    assert grade is None
+    assert attempt.calls == 1

@@ -11,12 +11,15 @@ from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from typing import cast
 
 from langchain_core.exceptions import ModelRateLimitError
 
 _TOO_MANY_REQUESTS = 429
-# OpenAI's billing limits, raised as rate-limit errors although waiting cannot cure them.
-_BILLING_TYPE = "insufficient_quota"
+_PAYMENT_REQUIRED = 402
+# Billing limits, some raised as rate-limit errors although waiting cannot cure them: OpenAI's
+# quota type, Anthropic's billing type (its 402), and their codes.
+_BILLING_TYPES = frozenset({"insufficient_quota", "billing_error"})
 _BILLING_CODES = frozenset(
     {
         "credit_balance_exhausted",
@@ -24,7 +27,16 @@ _BILLING_CODES = frozenset(
         "project_spend_limit_exceeded",
         "organization_usage_limit_exceeded",
         "insufficient_quota",
+        # Anthropic's tier spend cap, a 429 with no retry hint.
+        "enforced_spend_limit_reached",
     }
+)
+# Anthropic answers a spend limit the organization set, and a credit balance run dry, with a
+# plain 400 `invalid_request_error` that only its message tells apart.
+_BILLING_MESSAGES = (
+    "You have reached your specified API usage limits",
+    "You have reached your specified workspace API usage limits",
+    "credit balance is too low",
 )
 
 
@@ -36,7 +48,7 @@ class Throttle:
 def throttle_of(error: Exception) -> Throttle | None:
     if not _is_rate_limit(error):
         return None
-    if _is_billing_limit(error):
+    if is_billing_limit(error):
         return None
     headers = _response_headers(error)
     if headers.get("x-should-retry") == "false":
@@ -51,11 +63,36 @@ def _is_rate_limit(error: Exception) -> bool:
     )
 
 
-def _is_billing_limit(error: Exception) -> bool:
+def is_billing_limit(error: BaseException) -> bool:
+    body = _error_body(error)
+    message = body.get("message")
     return (
-        getattr(error, "type", None) == _BILLING_TYPE
-        or getattr(error, "code", None) in _BILLING_CODES
+        _named_in(getattr(error, "type", None), _BILLING_TYPES)
+        or _named_in(getattr(error, "code", None), _BILLING_CODES)
+        or getattr(error, "status_code", None) == _PAYMENT_REQUIRED
+        or _named_in(_detail_code(body), _BILLING_CODES)
+        or (isinstance(message, str) and any(text in message for text in _BILLING_MESSAGES))
     )
+
+
+def _named_in(value: object, names: frozenset[str]) -> bool:
+    # Read on any error out of an audit, whose `code` may be unhashable.
+    return isinstance(value, str) and value in names
+
+
+def _error_body(error: BaseException) -> dict[str, object]:
+    # OpenAI's SDK keeps the error object as the body, Anthropic's the whole response.
+    body: object = getattr(error, "body", None)
+    if not isinstance(body, dict):
+        return {}
+    response = cast(dict[str, object], body)
+    inner = response.get("error", response)
+    return cast(dict[str, object], inner) if isinstance(inner, dict) else {}
+
+
+def _detail_code(body: dict[str, object]) -> object:
+    details = body.get("details")
+    return cast(dict[str, object], details).get("error_code") if isinstance(details, dict) else None
 
 
 def _response_headers(error: Exception) -> dict[str, str]:

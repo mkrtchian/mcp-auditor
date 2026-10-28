@@ -4,6 +4,7 @@ import tests.unit.support.test_llm_throttling_given as given
 from mcp_auditor.adapters.llm_throttling import (
     Throttle,
     ThrottlePatience,
+    is_billing_limit,
     one_audit,
     throttle_of,
 )
@@ -111,3 +112,24 @@ class TestThrottleBreaker:
             breaker.trip("second")
 
         assert breaker.tripped_by == "first"
+
+
+class TestIsBillingLimit:
+    @pytest.mark.parametrize(
+        "build",
+        [
+            given.an_anthropic_billing_error,
+            given.an_anthropic_spend_limit_reached,
+            given.an_anthropic_workspace_spend_limit_reached,
+            given.an_anthropic_spend_cap_reached,
+            given.an_anthropic_credit_balance_too_low,
+        ],
+    )
+    def test_an_anthropic_billing_limit_is_one(self, build: given.RateLimitBuilder):
+        assert is_billing_limit(build())
+
+    def test_an_anthropic_invalid_request_is_none(self):
+        assert not is_billing_limit(given.an_anthropic_invalid_request())
+
+    def test_an_anthropic_spend_cap_is_no_throttle(self):
+        assert throttle_of(given.an_anthropic_spend_cap_reached()) is None
