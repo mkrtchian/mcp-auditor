@@ -181,53 +181,59 @@ def ssrf_redirect_env(
             holder, ["--network", "none", "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
         )
         _add_public_address(holder)
-        _run_detached(
-            sentinel,
-            [
-                "--cap-add",
-                "NET_BIND_SERVICE",
-                "--network",
-                f"container:{holder}",
-                "-e",
-                f"FLAG={nonce}",
-                "-e",
-                "SERVE_FILE=/flag",
-                "-e",
-                "BIND_ADDR=127.0.0.1",
-                SENTINEL_IMAGE,
-            ],
-        )
-        _run_detached(
-            stand_in,
-            [
-                "--cap-add",
-                "NET_BIND_SERVICE",
-                "--network",
-                f"container:{holder}",
-                "-e",
-                "REDIR_TARGET=http://127.0.0.1/flag",
-                "-e",
-                f"BIND_ADDR={STAND_IN_IP}",
-                _STAND_IN_TAG,
-            ],
-        )
+        _run_detached(sentinel, _sentinel_tail(holder, nonce))
+        _run_detached(stand_in, _stand_in_tail(holder))
         time.sleep(1.5)
-        yield Launch(
-            command="docker",
-            args=[
-                "run",
-                "-i",
-                "--rm",
-                *confinement_args(),
-                *unprivileged_user_args(),
-                "--network",
-                f"container:{holder}",
-                *n8n_server_env_args(),
-                image,
-            ],
-        )
+        yield _server_launch(holder, image)
     finally:
         _remove(stand_in, sentinel, holder)
+
+
+def _sentinel_tail(holder: str, nonce: str) -> list[str]:
+    return [
+        "--cap-add",
+        "NET_BIND_SERVICE",
+        "--network",
+        f"container:{holder}",
+        "-e",
+        f"FLAG={nonce}",
+        "-e",
+        "SERVE_FILE=/flag",
+        "-e",
+        "BIND_ADDR=127.0.0.1",
+        SENTINEL_IMAGE,
+    ]
+
+
+def _stand_in_tail(holder: str) -> list[str]:
+    return [
+        "--cap-add",
+        "NET_BIND_SERVICE",
+        "--network",
+        f"container:{holder}",
+        "-e",
+        "REDIR_TARGET=http://127.0.0.1/flag",
+        "-e",
+        f"BIND_ADDR={STAND_IN_IP}",
+        _STAND_IN_TAG,
+    ]
+
+
+def _server_launch(holder: str, image: str) -> Launch:
+    return Launch(
+        command="docker",
+        args=[
+            "run",
+            "-i",
+            "--rm",
+            *confinement_args(),
+            *unprivileged_user_args(),
+            "--network",
+            f"container:{holder}",
+            *n8n_server_env_args(),
+            image,
+        ],
+    )
 
 
 def http_place(place_id: str) -> Place:
