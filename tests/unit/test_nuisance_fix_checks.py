@@ -1,4 +1,6 @@
+import ast
 from collections.abc import Collection
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -16,6 +18,40 @@ from evals.nuisance_admission import (
 )
 from evals.nuisance_counting import counted_flaws, flaw_counted_tools
 from evals.run_census import CENSUS_PATH
+from tests.unit.support.holdout_kit_isolation import scan_tree
+
+_FIX_CHECK_DIR = Path(__file__).resolve().parents[2] / "evals" / "nuisance_fix_checks"
+
+
+def _cve_environments_imports(source: str, filename: str) -> list[str]:
+    offenders: list[str] = []
+    for node in ast.walk(ast.parse(source, filename=filename)):
+        if isinstance(node, ast.Import):
+            offenders += [alias.name for alias in node.names if _is_cve_environments(alias.name)]
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module is not None
+            and _is_cve_environments(node.module)
+        ):
+            offenders.append(node.module)
+    return offenders
+
+
+def _is_cve_environments(name: str) -> bool:
+    return name == "evals.cve_environments" or name.startswith("evals.cve_environments.")
+
+
+def test_no_fix_check_module_imports_mcp_auditor():
+    assert scan_tree(_FIX_CHECK_DIR) == {}
+
+
+def test_no_fix_check_module_imports_cve_environments():
+    offenders = {
+        str(path): names
+        for path in sorted(_FIX_CHECK_DIR.rglob("*.py"))
+        if (names := _cve_environments_imports(path.read_text(), str(path)))
+    }
+    assert offenders == {}
 
 
 def _admission_or_skip() -> NuisanceAdmission:

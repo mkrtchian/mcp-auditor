@@ -2760,6 +2760,333 @@
         }
       ],
       "patched_version": "v0.2.2"
+    },
+    {
+      "server_package": "npm:n8n-mcp",
+      "reaching_flaw": "GHSA-8g7g-hmwm-6rv2",
+      "flaws": [
+        {
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "tools": [
+            {
+              "vulnerable_name": "n8n_test_workflow",
+              "patched_name": "n8n_test_workflow",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "2.50.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "n8n_test_workflow",
+              "arguments": {
+                "workflowId": "calib",
+                "triggerType": "webhook",
+                "httpMethod": "GET",
+                "webhookPath": "calib",
+                "waitForResponse": true
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-ghsa8g7ghmwm6rv2",
+            "exploit_calls": [
+              "n8n_test_workflow"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-44694",
+          "tools": [
+            {
+              "vulnerable_name": "n8n_get_workflow",
+              "patched_name": "n8n_get_workflow",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "2.50.2",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "n8n_get_workflow",
+              "arguments": {
+                "id": "calib"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202644694",
+            "exploit_calls": [
+              "n8n_get_workflow"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-39974",
+          "tools": [],
+          "effect_class": "internal_fetch",
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202639974",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-42449",
+          "tools": [],
+          "effect_class": "internal_fetch",
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202642449",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "GHSA-75hx-xj24-mqrw",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-ghsa75hxxj24mqrw",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-41495",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202641495",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-42282",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202642282",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-45582",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202645582",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-45707",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202645707",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-54052",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202654052",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-55608",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-n8n-cve202655608",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/srv/app",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "n8n",
+      "backend": {
+        "provisioner": "n8n",
+        "image": "mcp-auditor-cve-n8n-responder:local",
+        "network": "mcp-auditor-cve-n8n-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "field": "effect_class",
+          "agreed": false
+        },
+        {
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-44694",
+          "field": "fix_check.vulnerable_surfaces",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:n8n-mcp",
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "field": "effect_class",
+          "value": "internal_fetch",
+          "reason": "record B derived read_outside_scope from the path-traversal face of the webhook URL; record A's internal_fetch matches the holdout twin (GHSA-8g7g-hmwm-6rv2 is a redirect-following SSRF reaching an internal host, CWE-918), so internal_fetch is the settled class."
+        },
+        {
+          "server_package": "npm:n8n-mcp",
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B read n8n_test_workflow's declared function (trigger a workflow over HTTP) as the effect itself; the declared contract is to trigger the caller's own workflow, not to fetch an internal host it is redirected to, so the SSRF is a bug, not the contract (re-verified in 4.8 from the real tool description)."
+        },
+        {
+          "server_package": "npm:n8n-mcp",
+          "flaw": "CVE-2026-44694",
+          "field": "fix_check.vulnerable_surfaces",
+          "value": "true",
+          "reason": "record A did not run the fix check and recorded vulnerable_surfaces false; record B reproduced it (the main axios client follows a 302 from its own stand-in and returns the sentinel via n8n_get_workflow on 2.50.1, dead on 2.50.2), so the flaw surfaces on the vulnerable version."
+        }
+      ],
+      "patched_version": "2.50.2"
     }
   ]
 }
