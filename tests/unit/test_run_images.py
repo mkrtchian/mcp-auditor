@@ -1,10 +1,13 @@
-"""The image rebuild and the compose services both run orchestrators build."""
+"""The image rebuild, the compose services and the container sweep both run orchestrators share."""
+
+import subprocess
+from collections.abc import Sequence
 
 import pytest
 
 import tests.unit.support.test_holdout_run_given as targets
 import tests.unit.support.test_run_images_given as given
-from evals.run_images import rebuild_images, target_services
+from evals.run_images import rebuild_images, sweep_containers, target_services
 
 
 def test_target_services_dedups_images_and_patched_twins():
@@ -45,3 +48,17 @@ def test_a_successful_image_build_prints_nothing(
     rebuild_images(["app"])
 
     assert capsys.readouterr() == ("", "")
+
+
+def test_a_sweep_whose_listing_fails_warns_and_removes_nothing(
+    capsys: pytest.CaptureFixture[str],
+):
+    removed: list[str] = []
+
+    def failing_listing(tags: Sequence[str]) -> list[str]:
+        raise subprocess.CalledProcessError(1, ["docker", "ps"])
+
+    sweep_containers(["app"], failing_listing, removed.extend)
+
+    assert removed == []
+    assert "could not list" in capsys.readouterr().out
