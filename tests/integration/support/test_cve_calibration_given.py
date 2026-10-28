@@ -3,11 +3,12 @@ import re
 import sys
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import dataclass
 
 from evals.cve_environments import Launch, LaunchShape
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_planting import PlantingSpec
-from evals.cve_targets import CVE_TARGETS, CVETarget
+from evals.cve_targets import CVE_TARGETS, CVETarget, TargetVersion
 from mcp_auditor.adapters.docker import DockerRuntime
 from tests.integration.support.cve_stub_target import Builder, a_file_place, a_stub_target, reading
 
@@ -98,6 +99,49 @@ def a_target_whose_patched_benign_errors(cve_id: str) -> CVETarget:
     return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
 
 
+def a_target_whose_vulnerable_launch_fails(
+    cve_id: str, tmp_path: pathlib.Path, times: int
+) -> CVETarget:
+    """Live once launched. Its vulnerable server exits at startup on its first `times` launches."""
+    counter = _LaunchCounter(_launches_directory(tmp_path), vulnerable_failures=times)
+    builder = _serving_builder(counter=counter)
+    return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
+
+
+def a_counted_target_whose_exploit_misses(cve_id: str, tmp_path: pathlib.Path) -> CVETarget:
+    counter = _LaunchCounter(_launches_directory(tmp_path))
+    builder = _serving_builder(vulnerable=False, counter=counter)
+    return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
+
+
+def a_counted_target_whose_tools_list_breaks(cve_id: str, tmp_path: pathlib.Path) -> CVETarget:
+    counter = _LaunchCounter(_launches_directory(tmp_path))
+    builder = _serving_builder(counter=counter, broken_tools_list=True)
+    return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
+
+
+def launches_of(tmp_path: pathlib.Path, version: TargetVersion) -> int:
+    counter = _launches_directory(tmp_path) / version.value
+    return len(counter.read_text()) if counter.exists() else 0
+
+
+def _launches_directory(tmp_path: pathlib.Path) -> pathlib.Path:
+    directory = tmp_path / "launches"
+    directory.mkdir(exist_ok=True)
+    return directory
+
+
+@dataclass(frozen=True)
+class _LaunchCounter:
+    directory: pathlib.Path
+    vulnerable_failures: int = 0
+
+    def args(self, is_patched: bool) -> list[str]:
+        version = TargetVersion.PATCHED if is_patched else TargetVersion.VULNERABLE
+        failures = 0 if is_patched else self.vulnerable_failures
+        return [f"launches={self.directory / version.value}:{failures}"]
+
+
 def a_survey_target(cve_id: str) -> CVETarget:
     # Serves every planted place on both versions, so the exploit reads the outside place and the
     # benign call the inside place, and the patched launch still surfaces the outside place.
@@ -107,7 +151,11 @@ def a_survey_target(cve_id: str) -> CVETarget:
 
 
 def _serving_builder(
-    vulnerable: bool = True, patched: bool = False, patched_error_paths: tuple[str, ...] = ()
+    vulnerable: bool = True,
+    patched: bool = False,
+    patched_error_paths: tuple[str, ...] = (),
+    counter: _LaunchCounter | None = None,
+    broken_tools_list: bool = False,
 ) -> Builder:
     @contextmanager
     def builder(image: str, spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
@@ -115,6 +163,10 @@ def _serving_builder(
         args = _serve_args(spec) if (patched if is_patched else vulnerable) else []
         if is_patched:
             args += [f"error={path}" for path in patched_error_paths]
+        if counter is not None:
+            args += counter.args(is_patched)
+        if broken_tools_list:
+            args.append("broken-tools-list")
         yield Launch("docker", ["run", sys.executable, str(STUB_PATH), *args])
 
     return builder

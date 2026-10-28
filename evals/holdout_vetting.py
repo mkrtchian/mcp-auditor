@@ -7,6 +7,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from evals.cve_layout_check import LayoutCheck, layout_check, observe_versions
 from evals.cve_places import Places, kept_records
 from evals.cve_targets import CVETarget, LaunchMode
+from evals.failure_text import FULL_DETAIL, ReportDetail
 from evals.holdout_results import NotRunCause, NotRunTarget
 
 
@@ -48,6 +49,8 @@ def vet_reason(target: CVETarget, conditions: list[str], layout: LayoutCheck) ->
     return None
 
 
-async def observe_layout(target: CVETarget, places: Places) -> LayoutCheck:
-    vuln, patched = await observe_versions(target, places)
+async def observe_layout(
+    target: CVETarget, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
+) -> LayoutCheck:
+    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
     return layout_check(target, kept_records(target.kept_places, places), vuln, patched)

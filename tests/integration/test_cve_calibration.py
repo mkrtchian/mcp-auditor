@@ -1,16 +1,18 @@
 import os
+import pathlib
 from collections.abc import Awaitable, Callable
 
 import pytest
 
 import tests.integration.support.test_cve_calibration_given as given
 from evals.concurrency import bounded
-from evals.cve_calibration import calibrate_all, calibrate_one
+from evals.cve_calibration import calibrate_all, calibrate_one, check_target
 from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve_layout_check import confirm_admission
+from evals.cve_layout_check import confirm_admission, observe_versions
 from evals.cve_places import Places
 from evals.cve_survey import TargetSurvey, survey_all, survey_one
-from evals.cve_targets import CVETarget
+from evals.cve_targets import CVETarget, TargetVersion
+from evals.failure_text import TYPES_ONLY
 
 
 def _calibrate(places: Places, limit: int) -> Callable[[CVETarget], Awaitable[bool]]:
@@ -90,6 +92,7 @@ async def test_a_kept_place_the_exploit_misses_reads_dead(capsys: pytest.Capture
     output = capsys.readouterr().out
     assert not all_live
     assert "exploit surfaces no nonce for fict-flag" in output
+    assert "CVE-MISS exploit 0, tool exchanges" in output
     assert "dead  CVE-MISS" in output
 
 
@@ -131,6 +134,102 @@ async def test_a_patched_benign_call_that_errors_reads_dead(capsys: pytest.Captu
     assert not all_live
     assert "patched: benign call errored" in output
     assert "dead  CVE-BENIGN-ERR" in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_vulnerable_launch_that_fails_twice_then_serves_reads_live(tmp_path: pathlib.Path):
+    target = given.a_target_whose_vulnerable_launch_fails("CVE-FLAKY", tmp_path, times=2)
+
+    conditions = await check_target(target, given.a_places_mapping())
+
+    assert conditions == []
+    assert given.launches_of(tmp_path, TargetVersion.VULNERABLE) == 3
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_vulnerable_launch_that_fails_three_times_did_not_launch(tmp_path: pathlib.Path):
+    target = given.a_target_whose_vulnerable_launch_fails("CVE-FLAKY", tmp_path, times=3)
+
+    conditions = await check_target(target, given.a_places_mapping())
+
+    assert conditions == ["the vulnerable version did not launch"]
+    assert given.launches_of(tmp_path, TargetVersion.VULNERABLE) == 3
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_dead_condition_read_from_a_launch_is_not_retried(tmp_path: pathlib.Path):
+    target = given.a_counted_target_whose_exploit_misses("CVE-MISS", tmp_path)
+
+    conditions = await check_target(target, given.a_places_mapping())
+
+    assert conditions == ["exploit surfaces no nonce for fict-flag"]
+    assert given.launches_of(tmp_path, TargetVersion.VULNERABLE) == 1
+    assert given.launches_of(tmp_path, TargetVersion.PATCHED) == 1
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_the_types_only_check_prints_the_dead_conditions_and_no_server_text(
+    capsys: pytest.CaptureFixture[str],
+):
+    places = given.a_places_mapping()
+    exits = given.a_target_whose_server_exits_at_startup("CVE-DEAD", "no tools registered")
+    misses = given.a_target_whose_exploit_misses("CVE-MISS")
+
+    await check_target(exits, places, report_detail=TYPES_ONLY)
+    await check_target(misses, places, report_detail=TYPES_ONLY)
+
+    output = capsys.readouterr().out
+    assert "CVE-DEAD calibration error" in output
+    assert "CVE-MISS dead: exploit surfaces no nonce for fict-flag" in output
+    assert "no tools registered" not in output
+    assert "Connection closed" not in output
+    assert "tool exchanges" not in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_layout_launch_that_fails_twice_then_serves_is_observed(tmp_path: pathlib.Path):
+    target = given.a_target_whose_vulnerable_launch_fails("CVE-FLAKY", tmp_path, times=2)
+
+    vulnerable, _ = await observe_versions(target, given.a_places_mapping())
+
+    assert vulnerable.reference.tools_list_succeeded
+    assert vulnerable.planted.tools_list_succeeded
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_layout_launch_that_fails_three_times_is_a_failed_observation(
+    tmp_path: pathlib.Path,
+):
+    target = given.a_target_whose_vulnerable_launch_fails("CVE-FLAKY", tmp_path, times=3)
+
+    vulnerable, _ = await observe_versions(target, given.a_places_mapping())
+
+    assert not vulnerable.reference.tools_list_succeeded
+    assert vulnerable.planted.tools_list_succeeded
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_a_launched_server_whose_tools_list_fails_is_observed_once(tmp_path: pathlib.Path):
+    target = given.a_counted_target_whose_tools_list_breaks("CVE-NOLIST", tmp_path)
+
+    vulnerable, _ = await observe_versions(target, given.a_places_mapping())
+
+    assert not vulnerable.reference.tools_list_succeeded
+    assert given.launches_of(tmp_path, TargetVersion.VULNERABLE) == 2
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
+async def test_the_types_only_layout_check_prints_no_stderr_line(
+    capsys: pytest.CaptureFixture[str],
+):
+    target = given.a_target_whose_server_exits_at_startup("CVE-DEAD", "no tools registered")
+
+    await observe_versions(target, given.a_places_mapping(), report_detail=TYPES_ONLY)
+
+    output = capsys.readouterr().out
+    assert "CVE-DEAD admission launch error" in output
+    assert "no tools registered" not in output
+    assert "unhandled errors" not in output
 
 
 @pytest.mark.usefixtures("docker_on_the_host")

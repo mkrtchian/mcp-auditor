@@ -177,10 +177,10 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
         )
 
     async def check(target: CVETarget) -> list[str]:
-        return await check_target(target, places)
+        return await check_target(target, places, report_detail=TYPES_ONLY)
 
     async def layout(target: CVETarget) -> LayoutCheck:
-        return await observe_layout(target, places)
+        return await observe_layout(target, places, report_detail=TYPES_ONLY)
 
     return HoldoutDeps(
         bounded(audit, concurrency),

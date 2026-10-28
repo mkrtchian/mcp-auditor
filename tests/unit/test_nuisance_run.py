@@ -17,8 +17,9 @@ from evals.nuisance_audit import DroppedRun
 from evals.nuisance_counter import counter_fingerprint
 from evals.nuisance_images import nuisance_fixture_fingerprint
 from evals.nuisance_results import FigureExit, NotRunCause, NuisanceRunStatus
+from evals.nuisance_run import benign_call
 from evals.probe import call_cost
-from mcp_auditor.domain.models import MissCause, ProviderUsage
+from mcp_auditor.domain.models import MissCause, ProviderUsage, ToolResponse
 
 _EARLY = date(2025, 3, 1)
 _LATE = date(2026, 4, 1)
@@ -258,3 +259,48 @@ async def test_a_dirty_tree_refuses_before_any_rebuild_or_audit():
 
     with pytest.raises(Refused):
         await given.run([given.a_server()], deps)
+
+
+async def test_a_benign_call_whose_connection_fails_twice_then_answers_passes(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    launches = given.launches_failing(monkeypatch, failing=2)
+
+    reason = await benign_call(given.a_server(), timeout=30)
+
+    assert reason is None
+    assert launches.launches == 3
+
+
+async def test_a_benign_call_whose_connection_fails_three_times_keeps_the_last_reason(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    launches = given.launches_failing(monkeypatch, failing=3)
+
+    reason = await benign_call(given.a_server(), timeout=30)
+
+    assert reason == "failed to connect for the benign call: TimeoutError"
+    assert launches.launches == 3
+
+
+async def test_a_benign_call_answering_with_an_error_is_not_retried(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    answer = ToolResponse(content="denied", is_error=True)
+    launches = given.launches_failing(monkeypatch, failing=0, answer=answer)
+
+    reason = await benign_call(given.a_server(), timeout=30)
+
+    assert reason == f"benign call of {given.COUNTED_TOOL!r} returned an error: denied"
+    assert launches.launches == 1
+
+
+async def test_a_benign_call_whose_teardown_fails_once_connected_is_not_retried(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    launches = given.launches_failing(monkeypatch, failing=0, teardown_fails=True)
+
+    reason = await benign_call(given.a_server(), timeout=30)
+
+    assert reason == "failed to connect for the benign call: OSError"
+    assert launches.launches == 1

@@ -19,6 +19,7 @@ from evals import nuisance_images
 from evals.concurrency import bounded, entered_in_thread
 from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import grammar_fingerprint, image_ids
+from evals.cve_calibration import PRE_RUN_LAUNCH_ATTEMPTS
 from evals.cve_environments import TOOL_CALL_TIMEOUT, connect
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
@@ -162,16 +163,26 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
 
 
 async def benign_call(server: AdmittedServer, timeout: int) -> str | None:
-    """The benign call's failure reason, or None when it answers."""
-    try:
-        with open(os.devnull, "w") as devnull:
-            async with (
-                entered_in_thread(nuisance_environment(server)) as launch,
-                connect(launch, devnull, tool_call_timeout=timeout) as client,
-            ):
-                return await benign_call_failure(server, client)
-    except Exception as exc:
-        return f"failed to connect for the benign call: {exc}"
+    """The benign call's failure reason, or None when it answers. A launch or connection that
+    fails is retried up to `PRE_RUN_LAUNCH_ATTEMPTS` launches and keeps the last reason. An answer
+    that errors is an observation of a launch that ran, returned at once: retrying it would keep
+    the best of several tries, and so is a failure once connected, a teardown's included."""
+    reason = ""
+    for _ in range(PRE_RUN_LAUNCH_ATTEMPTS):
+        connected = False
+        try:
+            with open(os.devnull, "w") as devnull:
+                async with (
+                    entered_in_thread(nuisance_environment(server)) as launch,
+                    connect(launch, devnull, tool_call_timeout=timeout) as client,
+                ):
+                    connected = True
+                    return await benign_call_failure(server, client)
+        except Exception as exc:
+            reason = f"failed to connect for the benign call: {TYPES_ONLY.describe(exc)}"
+            if connected:
+                return reason
+    return reason
 
 
 async def _vet_all(

@@ -1,9 +1,15 @@
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import AsyncGenerator, Awaitable, Callable, Generator, Mapping, Sequence
+from contextlib import asynccontextmanager, contextmanager
 from datetime import date
+from typing import IO
+
+import pytest
 
 import tests.unit.support.test_cve_grammar_given as grammar
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_counter_given as counter
+from evals import nuisance_run
+from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.eval_session import TreeState
 from evals.holdout_conditions import Cutoff, HoldoutConditions
@@ -15,7 +21,16 @@ from evals.nuisance_results import FigureExit, NuisanceRunResult
 from evals.nuisance_run import NuisanceDeps, run_nuisance
 from evals.probe_candidates import Prices
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep, ProviderUsage
+from mcp_auditor.domain.models import (
+    AuditReport,
+    AuditStep,
+    MissCause,
+    MissedStep,
+    ProviderUsage,
+    ToolResponse,
+)
+from mcp_auditor.domain.ports import MCPClientPort
+from tests.fakes.mcp_client import FakeMCPClient
 
 FIRST_FLAW = admission.FIRST_FLAW
 SECOND_FLAW = admission.SECOND_FLAW
@@ -200,3 +215,44 @@ async def run(
         concurrency=concurrency,
         deps=deps,
     )
+
+
+class FlakyLaunches:
+    """Stands in for the server's launch and connection: the first `failing` connections fail,
+    the last of them on a timeout, and the next ones answer every benign call with `answer`, then
+    fail their teardown when `teardown_fails`."""
+
+    def __init__(self, failing: int, answer: ToolResponse, teardown_fails: bool) -> None:
+        self.launches = 0
+        self._failing = failing
+        self._answer = answer
+        self._teardown_fails = teardown_fails
+
+    @contextmanager
+    def environment(self, _server: AdmittedServer) -> Generator[Launch]:
+        self.launches += 1
+        yield Launch("docker", [])
+
+    @asynccontextmanager
+    async def connect(
+        self, _launch: Launch, _stderr: IO[str], *, tool_call_timeout: int
+    ) -> AsyncGenerator[MCPClientPort]:
+        if self.launches == self._failing:
+            raise TimeoutError("initialize timed out")
+        if self.launches < self._failing:
+            raise ConnectionError("Connection closed")
+        yield FakeMCPClient([], {COUNTED_TOOL: self._answer})
+        if self._teardown_fails:
+            raise OSError("container removal failed")
+
+
+def launches_failing(
+    monkeypatch: pytest.MonkeyPatch,
+    failing: int,
+    answer: ToolResponse | None = None,
+    teardown_fails: bool = False,
+) -> FlakyLaunches:
+    flaky = FlakyLaunches(failing, answer or ToolResponse(content="ok"), teardown_fails)
+    monkeypatch.setattr(nuisance_run, "nuisance_environment", flaky.environment)
+    monkeypatch.setattr(nuisance_run, "connect", flaky.connect)
+    return flaky

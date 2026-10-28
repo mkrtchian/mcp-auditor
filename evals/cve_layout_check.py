@@ -31,11 +31,13 @@ from typing import IO
 
 from rich.markup import escape
 
+from evals.cve_calibration import NotLaunched, first_launch
 from evals.cve_environments import LaunchShape, connect
 from evals.cve_places import Place, Places, kept_records
 from evals.cve_route import RouteObservations, route_admits, route_observations
 from evals.cve_targets import CVETarget, LaunchMode, TargetVersion
 from evals.eval_display import console
+from evals.failure_text import FULL_DETAIL, ReportDetail
 
 # When a target already in the fallback launch-mode cannot start even the fallback launch, the
 # admission gives up: the container cannot run the server (holdout-rule.md:159).
@@ -122,12 +124,14 @@ def layout_check(
 
 
 async def observe_versions(
-    target: CVETarget, places: Places
+    target: CVETarget, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
 ) -> tuple[VersionObservation, VersionObservation]:
     """Launch and observe both versions of a target (the reference arm then the planted one on
-    each), the no-LLM observation the layout check reads."""
-    vuln = await _observe_version(target, places, TargetVersion.VULNERABLE)
-    patched = await _observe_version(target, places, TargetVersion.PATCHED)
+    each), the no-LLM observation the layout check reads. `report_detail` sets how much server
+    text the log shows."""
+    observer = _Observer(target, places, report_detail)
+    vuln = await observer.version(TargetVersion.VULNERABLE)
+    patched = await observer.version(TargetVersion.PATCHED)
     return vuln, patched
 
 
@@ -182,39 +186,52 @@ def _report_route(cve_id: str, place: Place, admits: bool) -> None:
     console.print(f"  {status}  {cve_id} -> {place.id}")
 
 
-async def _observe_version(
-    target: CVETarget, places: Places, version: TargetVersion
-) -> VersionObservation:
-    reference, _ = await _observe(
-        target, (), places, shape=LaunchShape.EMPTY_LAYOUT, version=version
-    )
-    planted, nonces = await _observe(target, target.kept_places, places, version=version)
-    return VersionObservation(reference, planted, nonces)
+@dataclass(frozen=True)
+class _Arm:
+    kept: tuple[str, ...]
+    shape: LaunchShape | None
+    version: TargetVersion
 
 
-async def _observe(
-    target: CVETarget,
-    kept: tuple[str, ...],
-    places: Places,
-    shape: LaunchShape | None = None,
-    version: TargetVersion = TargetVersion.VULNERABLE,
-) -> tuple[RouteObservations, tuple[str, ...]]:
-    # A server that fails to start, or a connection that drops, is a break observation
-    # (tools/list did not succeed), not a benchmark crash: the break detector's criterion names a
-    # failed launch, so catch it here rather than let it reach the exit-4 crash handler. The planted
-    # arm reads shape=None, so the launch-mode field picks the launch (normal, or the fallback).
-    records = kept_records(kept, places)
-    with tempfile.TemporaryFile("w+") as server_stderr:
-        try:
-            async with (
-                target.launched(records, shape=shape, version=version) as planted,
-                connect(planted.launch, server_stderr) as client,
-            ):
-                observations = await route_observations(target, client, planted.launch)
-            return observations, tuple(planted.nonces.values())
-        except Exception as exc:
-            _report_launch_error(target.cve_id, exc, server_stderr)
-            return _failed_observation(), ()
+@dataclass(frozen=True)
+class _Observer:
+    target: CVETarget
+    places: Places
+    report_detail: ReportDetail
+
+    async def version(self, version: TargetVersion) -> VersionObservation:
+        empty = _Arm((), LaunchShape.EMPTY_LAYOUT, version)
+        reference, _ = await self._observe(empty)
+        planted, nonces = await self._observe(_Arm(self.target.kept_places, None, version))
+        return VersionObservation(reference, planted, nonces)
+
+    async def _observe(self, arm: _Arm) -> tuple[RouteObservations, tuple[str, ...]]:
+        observed = await first_launch(lambda: self._launch(arm))
+        return observed if observed is not None else (_failed_observation(), ())
+
+    async def _launch(self, arm: _Arm) -> tuple[RouteObservations, tuple[str, ...]]:
+        # A server that fails to start, or a connection that drops, is a break observation
+        # (tools/list did not succeed), not a benchmark crash: the break detector's criterion
+        # names a failed launch, so catch it here rather than let it reach the exit-4 crash
+        # handler. Only a launch or handshake that fails raises NotLaunched, for a retry: a
+        # failure on a launched server is observed at once. The planted arm reads shape=None, so
+        # the launch-mode field picks the launch (normal, or the fallback).
+        records = kept_records(arm.kept, self.places)
+        with tempfile.TemporaryFile("w+") as server_stderr:
+            launched = False
+            try:
+                async with (
+                    self.target.launched(records, shape=arm.shape, version=arm.version) as planted,
+                    connect(planted.launch, server_stderr) as client,
+                ):
+                    launched = True
+                    observations = await route_observations(self.target, client, planted.launch)
+                return observations, tuple(planted.nonces.values())
+            except Exception as exc:
+                _report_launch_error(self.target.cve_id, exc, server_stderr, self.report_detail)
+                if not launched:
+                    raise NotLaunched from exc
+                return _failed_observation(), ()
 
 
 def _failed_observation() -> RouteObservations:
@@ -228,10 +245,13 @@ def _failed_observation() -> RouteObservations:
     )
 
 
-def _report_launch_error(cve_id: str, exc: Exception, server_stderr: IO[str]) -> None:
-    console.print(f"[yellow]{cve_id} admission launch error:[/yellow] {escape(str(exc))}")
+def _report_launch_error(
+    cve_id: str, exc: Exception, server_stderr: IO[str], report_detail: ReportDetail
+) -> None:
+    reason = report_detail.describe(exc)
+    console.print(f"[yellow]{cve_id} admission launch error:[/yellow] {escape(reason)}")
     server_stderr.seek(0)
-    for line in server_stderr.read().splitlines()[-10:]:
+    for line in report_detail.server_lines(server_stderr.read().splitlines()[-10:]):
         console.print(f"  {line}", markup=False, highlight=False)
 
 

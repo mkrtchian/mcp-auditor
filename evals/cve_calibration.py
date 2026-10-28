@@ -28,6 +28,12 @@ from evals.cve_recording_client import Exchange, RecordingClient
 from evals.cve_targets import CVETarget, TargetVersion
 from evals.cve_units import Unit, unit_of_exchanges
 from evals.eval_display import console
+from evals.failure_text import FULL_DETAIL, ReportDetail
+from mcp_auditor.domain.ports import MCPClientPort
+
+# A launch or handshake that fails is retried up to this many launches of the version: one
+# observation of a version may take that many launches. A launch that ran is never retried.
+PRE_RUN_LAUNCH_ATTEMPTS = 3
 
 
 async def calibrate_all(
@@ -110,40 +116,51 @@ def _egress_reachable(host: str = _EGRESS_CANARY, timeout: float = 5.0) -> bool:
         return False
 
 
-async def check_target(target: CVETarget, places: Places) -> list[str]:
+async def check_target(
+    target: CVETarget, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
+) -> list[str]:
     """The dead conditions of a target on both versions, empty when it is live: the no-LLM check
-    the pre-run check (`cve_session`) and calibration share. It resolves the kept records and
-    checks the spec before any launch, so a configuration error (an unknown kept id, a
+    the pre-run check (`cve_session`, `holdout_run`) and calibration share. It resolves the kept
+    records and checks the spec before any launch, so a configuration error (an unknown kept id, a
     planting_spec refusal) propagates instead of reading dead, then exercises the vulnerable
-    version and, once it is torn down, the patched one."""
+    version and, once it is torn down, the patched one. `report_detail` sets how much server text
+    the log shows."""
     records = kept_records(target.kept_places, places)
     target.planting_spec(records)
-    vulnerable = await _exercise(target, records, TargetVersion.VULNERABLE, places)
+    exercise = _Exercise(target, records, places, report_detail)
+    vulnerable = await first_launch(lambda: exercise.version(TargetVersion.VULNERABLE))
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
     conditions = dead_conditions(
         _graded(target, vulnerable), _units(vulnerable.exploits), _unit(vulnerable.benign)
     )
-    patched = await _exercise(target, records, TargetVersion.PATCHED, places)
+    patched = await first_launch(lambda: exercise.version(TargetVersion.PATCHED))
     if patched is None:
         conditions.append(_launch_failed(TargetVersion.PATCHED))
     else:
-        benign_errored = _any_error(patched.benign)
-        conditions += patched_dead_conditions(
-            _graded(target, patched), _units(patched.exploits), benign_errored
-        )
-        needs_network = target.planting_host.has_network
-        reachable = _egress_reachable() if needs_network and benign_errored else True
-        warning = egress_warning(needs_network, benign_errored, reachable)
-        if warning is not None:
-            console.print(f"[yellow]{target.cve_id} egress[/yellow]: {warning}")
+        conditions += _patched_conditions(target, patched)
     if conditions:
-        _report_dead(target.cve_id, conditions, vulnerable.exploits, vulnerable.benign)
+        _report_dead(target.cve_id, conditions, vulnerable, report_detail)
     return conditions
 
 
 async def calibrate_one(target: CVETarget, places: Places) -> bool:
     return not await check_target(target, places)
+
+
+class NotLaunched(Exception):
+    """A launch or handshake that failed: the one failure the pre-run check retries."""
+
+
+async def first_launch[T](attempt: Callable[[], Awaitable[T]]) -> T | None:
+    """What the first launch that ran observed, in up to `PRE_RUN_LAUNCH_ATTEMPTS` launches, or
+    None when none of them launched."""
+    for _ in range(PRE_RUN_LAUNCH_ATTEMPTS):
+        try:
+            return await attempt()
+        except NotLaunched:
+            continue
+    return None
 
 
 def _launch_failed(version: TargetVersion) -> str:
@@ -157,33 +174,56 @@ class _Exercised:
     benign: list[Exchange]
 
 
-async def _exercise(
-    target: CVETarget, records: tuple[Place, ...], version: TargetVersion, places: Places
-) -> _Exercised | None:
-    # Any failure reads as not live and the next target still runs. A server that dies before
-    # the handshake only says "Connection closed", so its stderr carries the cause. Reports
-    # print with no await between their lines, so targets calibrated side by side do not
-    # interleave them.
-    with tempfile.TemporaryFile("w+") as server_stderr:
-        try:
-            async with (
-                target.launched(records, version=version) as planted,
-                connect(planted.launch, server_stderr) as client,
-            ):
-                benign = RecordingClient(client)
-                await target.benign(places, benign)
-                exploits: list[RecordingClient] = []
-                for exploit in target.exploits:
-                    recorder = RecordingClient(client)
-                    await exploit(places, recorder)
-                    exploits.append(recorder)
-        except Exception as exc:
-            cause = _root_cause(exc)
-            reason = f"{type(cause).__name__}: {cause}"
-            console.print(f"[yellow]{target.cve_id} calibration error:[/yellow] {escape(reason)}")
-            _print_tail(server_stderr)
-            return None
-    return _Exercised(planted.nonces, [r.exchanges for r in exploits], benign.exchanges)
+def _patched_conditions(target: CVETarget, patched: _Exercised) -> list[str]:
+    benign_errored = _any_error(patched.benign)
+    conditions = patched_dead_conditions(
+        _graded(target, patched), _units(patched.exploits), benign_errored
+    )
+    needs_network = target.planting_host.has_network
+    reachable = _egress_reachable() if needs_network and benign_errored else True
+    warning = egress_warning(needs_network, benign_errored, reachable)
+    if warning is not None:
+        console.print(f"[yellow]{target.cve_id} egress[/yellow]: {warning}")
+    return conditions
+
+
+@dataclass(frozen=True)
+class _Exercise:
+    target: CVETarget
+    records: tuple[Place, ...]
+    places: Places
+    report_detail: ReportDetail
+
+    async def version(self, version: TargetVersion) -> _Exercised | None:
+        # A failure before the server is up raises NotLaunched, for a retry. Any later failure
+        # reads as not live, and the next target still runs. A server that dies before the
+        # handshake only says "Connection closed", so its stderr carries the cause. Reports print
+        # with no await between their lines, so targets calibrated side by side do not interleave.
+        with tempfile.TemporaryFile("w+") as server_stderr:
+            launched = False
+            try:
+                async with (
+                    self.target.launched(self.records, version=version) as planted,
+                    connect(planted.launch, server_stderr) as client,
+                ):
+                    launched = True
+                    benign, exploits = await self._calls(client)
+            except Exception as exc:
+                _report_error(self.target.cve_id, exc, server_stderr, self.report_detail)
+                if not launched:
+                    raise NotLaunched from exc
+                return None
+        return _Exercised(planted.nonces, exploits, benign)
+
+    async def _calls(self, client: MCPClientPort) -> tuple[list[Exchange], list[list[Exchange]]]:
+        benign = RecordingClient(client)
+        await self.target.benign(self.places, benign)
+        exploits: list[list[Exchange]] = []
+        for exploit in self.target.exploits:
+            recorder = RecordingClient(client)
+            await exploit(self.places, recorder)
+            exploits.append(recorder.exchanges)
+        return benign.exchanges, exploits
 
 
 def _graded(target: CVETarget, exercised: _Exercised) -> PlantedTarget:
@@ -202,6 +242,24 @@ def _unit(exchanges: list[Exchange]) -> Unit:
     return unit_of_exchanges([(args, response.content) for _, args, response in exchanges])
 
 
+def _report_error(
+    cve_id: str, exc: Exception, server_stderr: IO[str], report_detail: ReportDetail
+) -> None:
+    if report_detail.shows_server_text:
+        cause = _root_cause(exc)
+        reason = f"{type(cause).__name__}: {cause}"
+    else:
+        reason = report_detail.describe(exc)
+    console.print(f"[yellow]{cve_id} calibration error:[/yellow] {escape(reason)}")
+    for line in report_detail.server_lines(_tail(server_stderr)):
+        console.print(f"  {line}", markup=False, highlight=False)
+
+
+def _tail(server_stderr: IO[str], lines: int = 10) -> list[str]:
+    server_stderr.seek(0)
+    return server_stderr.read().splitlines()[-lines:]
+
+
 def _root_cause(exc: BaseException) -> BaseException:
     if not isinstance(exc, BaseExceptionGroup):
         return exc
@@ -209,20 +267,15 @@ def _root_cause(exc: BaseException) -> BaseException:
     return _root_cause(group.exceptions[0]) if len(group.exceptions) == 1 else group
 
 
-def _print_tail(server_stderr: IO[str], lines: int = 10) -> None:
-    server_stderr.seek(0)
-    for line in server_stderr.read().splitlines()[-lines:]:
-        console.print(f"  {line}", markup=False, highlight=False)
-
-
 def _report_dead(
-    cve_id: str, conditions: list[str], exploits: list[list[Exchange]], benign: list[Exchange]
+    cve_id: str, conditions: list[str], vulnerable: _Exercised, report_detail: ReportDetail
 ) -> None:
     for condition in conditions:
         console.print(f"[yellow]{cve_id} dead:[/yellow] {escape(condition)}")
-    for index, exchanges in enumerate(exploits):
-        _dump_exchanges(f"{cve_id} exploit {index}", exchanges)
-    _dump_exchanges(f"{cve_id} benign call", benign)
+    dumps = [(f"{cve_id} exploit {index}", ex) for index, ex in enumerate(vulnerable.exploits)]
+    dumps.append((f"{cve_id} benign call", vulnerable.benign))
+    for label, exchanges in report_detail.server_lines(dumps):
+        _dump_exchanges(label, exchanges)
 
 
 def _dump_exchanges(label: str, exchanges: list[Exchange]) -> None:
