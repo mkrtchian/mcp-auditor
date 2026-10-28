@@ -41,6 +41,14 @@ from evals.doris_backend import (
     doris_server_args,
     ensure_doris,
 )
+from evals.mysql_backend import (
+    MYSQL_BRIDGE,
+    MYSQL_IMAGE,
+    MYSQL_LAUNCH_LOCK,
+    ensure_mysql,
+    mysql_rm,
+    mysql_server_args,
+)
 from evals.nuisance_images import image_tag
 
 if TYPE_CHECKING:
@@ -106,8 +114,25 @@ def contextforge_provisioner(server: AdmittedServer) -> Generator[Launch]:
         contextforge_rm(name)
 
 
+@contextmanager
+def mysql_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run plants nothing, so the lock serialises only the stand-up of the pair, not
+    # the yield: a server's concurrent runs share the one pair that serves them all.
+    with MYSQL_LAUNCH_LOCK:
+        ensure_mysql()
+    name = f"{LABEL}-mysql-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=mysql_server_args(name, image_tag(server.service), server.host, server.launch),
+        )
+    finally:
+        mysql_rm(name)
+
+
 BACKENDS: dict[str, RegisteredBackend] = {
     "doris": RegisteredBackend(doris_provisioner, DORIS_BRIDGE, DORIS_IMAGE),
+    "mysql": RegisteredBackend(mysql_provisioner, MYSQL_BRIDGE, MYSQL_IMAGE),
     "ckan": RegisteredBackend(ckan_provisioner, CKAN_BRIDGE, CKAN_RESPONDER_IMAGE),
     "contextforge": RegisteredBackend(
         contextforge_provisioner, CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
