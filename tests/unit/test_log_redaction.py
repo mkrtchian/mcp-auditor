@@ -2,7 +2,11 @@ import io
 import logging
 
 import tests.unit.support.test_log_redaction_given as given
-from mcp_auditor.adapters.log_redaction import RedactingFilter, redacted_sdk_logging
+from mcp_auditor.adapters.log_redaction import (
+    RedactingFilter,
+    redacted_sdk_logging,
+    silenced_stdio_logging,
+)
 from mcp_auditor.domain.redaction import Redaction, marker
 
 REDACTION = Redaction({"TOKEN": given.VALUE})
@@ -48,3 +52,14 @@ def test_an_inactive_redaction_leaves_every_record_as_logged() -> None:
         given.server_data_logged()
 
     assert all(given.VALUE in output.getvalue() for output in outputs.values())
+
+
+def test_the_silenced_stdio_logger_reaches_no_handler_until_its_exit() -> None:
+    with given.sdk_output() as outputs:
+        with silenced_stdio_logging():
+            given.server_data_logged()
+        silenced = outputs["mcp.client.stdio"].getvalue()
+        given.server_data_logged()
+
+    assert silenced == ""
+    assert given.VALUE in outputs["mcp.client.stdio"].getvalue()

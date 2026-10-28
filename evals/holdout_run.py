@@ -8,6 +8,7 @@ from `HOLDOUT_TARGETS` here, so the tests hand it crafted ones. The heavy I/O is
 """
 
 import asyncio
+import dataclasses
 import subprocess
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -29,6 +30,7 @@ from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVETarget
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
+from evals.failure_text import TYPES_ONLY
 from evals.holdout_assembly import assemble_target, holdout_prices
 from evals.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
 from evals.holdout_conditions import HoldoutConditions
@@ -166,7 +168,7 @@ def holdout_overrides(conditions: HoldoutConditions) -> RunOverrides:
 
 
 def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> HoldoutDeps:
-    auditor = build_auditor(HOLDOUT_BUDGET)
+    auditor = dataclasses.replace(build_auditor(HOLDOUT_BUDGET), report_detail=TYPES_ONLY)
     throttles = SessionThrottles()
 
     async def audit(target: CVETarget) -> GradedAudit | IncompleteRun | DroppedRun:

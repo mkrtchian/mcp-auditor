@@ -52,6 +52,7 @@ from evals.nuisance_run import (
     run_nuisance,
 )
 from evals.nuisance_walk import acceptance_servers, nuisance_population
+from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
 DEFAULT_REPORT_PATH = "output/nuisance_report.json"
@@ -61,7 +62,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     quiet_throttle_waits()
     args = _parser().parse_args(argv)
     try:
-        return args.command(args)
+        with silenced_stdio_logging():
+            return args.command(args)
     except Refused as refusal:
         display.print_refusal(refusal.title, refusal.reasons)
         return REFUSED_EXIT

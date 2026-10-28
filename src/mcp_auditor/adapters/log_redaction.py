@@ -20,18 +20,26 @@ def redacted_sdk_logging(redaction: Redaction) -> Generator[None]:
     # from a child, so each logger that quotes the server carries its own.
     redacted = [logging.getLogger(name) for name in _SDK_LOGGERS_REDACTED]
     log_filter = RedactingFilter(redaction)
-    silenced = logging.getLogger(_SDK_LOGGER_SILENCED)
-    previous_level = silenced.level
     for logger in redacted:
         logger.addFilter(log_filter)
-    # Its exception quotes the raw line the server wrote.
+    try:
+        with silenced_stdio_logging():
+            yield
+    finally:
+        for logger in redacted:
+            logger.removeFilter(log_filter)
+
+
+@contextmanager
+def silenced_stdio_logging() -> Generator[None]:
+    """The stdio transport's exception quotes the raw line the server wrote."""
+    silenced = logging.getLogger(_SDK_LOGGER_SILENCED)
+    previous_level = silenced.level
     silenced.setLevel(logging.CRITICAL)
     try:
         yield
     finally:
         silenced.setLevel(previous_level)
-        for logger in redacted:
-            logger.removeFilter(log_filter)
 
 
 class RedactingFilter(logging.Filter):

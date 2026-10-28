@@ -15,6 +15,7 @@ from evals.cve_grammar import CreditCheck, PlantedTarget
 from evals.cve_planting_base import PlantingSpec
 from evals.cve_replay import RunToCheck
 from evals.cve_targets import CVE_TARGETS, CVETarget
+from evals.failure_text import FULL_DETAIL, ReportDetail
 from mcp_auditor.adapters.llm_throttling import ThrottleBreaker, current_breaker
 from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep, ProviderUsage
 from tests.fakes import FakeLLM, FakeMCPClient
@@ -30,8 +31,8 @@ def captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
     return output
 
 
-def an_auditor() -> Auditor:
-    return Auditor(FakeLLM([]), FakeLLM([]), budget=10)
+def an_auditor(report_detail: ReportDetail = FULL_DETAIL) -> Auditor:
+    return Auditor(FakeLLM([]), FakeLLM([]), budget=10, report_detail=report_detail)
 
 
 def a_target_launching(launch: Launch = A_LAUNCH) -> CVETarget:
@@ -42,6 +43,15 @@ def a_target_launching(launch: Launch = A_LAUNCH) -> CVETarget:
         yield launch
 
     return dataclasses.replace(TARGET, kept_places=(), builder=no_container)
+
+
+def a_target_failing_to_launch(error: Exception) -> CVETarget:
+    @contextmanager
+    def failing_container(_tag: str, _spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
+        raise error
+        yield A_LAUNCH
+
+    return dataclasses.replace(TARGET, kept_places=(), builder=failing_container)
 
 
 @dataclass

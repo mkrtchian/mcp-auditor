@@ -8,6 +8,7 @@ settings by `default_deps`. The per-server assembly is `nuisance_assembly`'s, th
 """
 
 import asyncio
+import dataclasses
 import functools
 import os
 from collections.abc import Awaitable, Callable, Sequence
@@ -21,6 +22,7 @@ from evals.cve_baseline import grammar_fingerprint, image_ids
 from evals.cve_environments import TOOL_CALL_TIMEOUT, connect
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
+from evals.failure_text import TYPES_ONLY
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_draw import DrawEntry
 from evals.holdout_run import HOLDOUT_BUDGET, rebuild_images
@@ -139,7 +141,8 @@ def nuisance_overrides(conditions: HoldoutConditions) -> RunOverrides:
 
 def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
     throttles = SessionThrottles()
-    auditor = NuisanceAuditor(build_auditor(HOLDOUT_BUDGET), overrides, throttles)
+    run_auditor = dataclasses.replace(build_auditor(HOLDOUT_BUDGET), report_detail=TYPES_ONLY)
+    auditor = NuisanceAuditor(run_auditor, overrides, throttles)
     timeout = overrides.tool_call_timeout or TOOL_CALL_TIMEOUT
 
     async def audit(server: AdmittedServer) -> AuditReport | DroppedRun:

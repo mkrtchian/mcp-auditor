@@ -15,7 +15,8 @@ from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve_planting_base import confinement_args, no_network_args
 from evals.doris_backend import user_args
 from evals.eval_display import console
-from evals.metrics import SessionThrottles, missed_steps
+from evals.failure_text import ReportDetail
+from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer, BenignCall
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
 from evals.nuisance_counter import flagged_tools
@@ -123,9 +124,9 @@ async def audit_once(
         async with entered_in_thread(nuisance_environment(server, backends)) as launch:
             report = await _audit(launch, auditor.auditor, auditor.overrides)
     except Exception as exc:
-        return LaunchFailed(str(exc))
+        return LaunchFailed(auditor.auditor.report_detail.describe(exc))
     auditor.throttles.count(report)
-    _print_incidents(server, report)
+    _print_incidents(server, report, auditor.auditor.report_detail)
     return report
 
 
@@ -155,9 +156,10 @@ def _either(forced: int | None, own: int) -> int:
     return own if forced is None else forced
 
 
-def _print_incidents(server: AdmittedServer, report: AuditReport) -> None:
-    for missed in missed_steps(report):
-        console.print(f"[yellow]{server.server_package}: {escape(missed)}[/yellow]")
+def _print_incidents(server: AdmittedServer, report: AuditReport, detail: ReportDetail) -> None:
+    for missed in report.missed_steps:
+        line = escape(detail.missed_detail(missed))
+        console.print(f"[yellow]{server.server_package}: {line}[/yellow]")
     throttled = report.provider_usage.throttled_requests
     if throttled > 0:
         console.print(

@@ -38,6 +38,7 @@ from evals.holdout_run import (
 )
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
+from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
 CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
@@ -50,7 +51,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     quiet_throttle_waits()
     args = _parser().parse_args(argv)
     try:
-        return args.command(args)
+        with silenced_stdio_logging():
+            return args.command(args)
     except Refused as refusal:
         display.print_refusal(refusal.title, refusal.reasons)
         return REFUSED_EXIT

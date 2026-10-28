@@ -18,7 +18,8 @@ from evals.cve_report_units import units_of
 from evals.cve_session_model import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
 from evals.eval_display import console
-from evals.metrics import SessionThrottles, blocked_reasons, missed_steps
+from evals.failure_text import FULL_DETAIL, ReportDetail
+from evals.metrics import SessionThrottles, blocked_reasons
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.config import load_settings
@@ -42,6 +43,7 @@ class Auditor:
     llm: LLMPort
     judge_llm: LLMPort
     budget: int
+    report_detail: ReportDetail = FULL_DETAIL
 
 
 @dataclass(frozen=True)
@@ -142,7 +144,7 @@ async def attempt_once(
         async with target.launched(records) as planted:
             report, calls = await _audit(planted.launch, target, auditor, overrides)
             throttles.count(report, target.cve_id)
-            _print_incidents(target, report)
+            _print_incidents(target, report, auditor.report_detail)
             # Captured before the target's launch is left, so a raising exit of `target.launched`
             # cannot erase a completed run (the client's own teardown error is tolerated inside
             # `connect`). The nonces travel per launch, so the graded target is built here.
@@ -155,7 +157,8 @@ async def attempt_once(
             )
     except (LaunchError, PlantingFailed, subprocess.CalledProcessError) as exc:
         failure = "run skipped" if run is None else "teardown failed"
-        console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {exc}")
+        described = auditor.report_detail.describe(exc)
+        console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {escape(described)}")
     if run is None:
         return None
     if any(missed.cause is MissCause.PROVIDER_THROTTLED for missed in run.report.missed_steps):
@@ -201,11 +204,11 @@ def graded_or_incomplete(grade: RunGrade, report: AuditReport) -> RunGrade | Inc
     return grade
 
 
-def _print_incidents(target: CVETarget, report: AuditReport) -> None:
+def _print_incidents(target: CVETarget, report: AuditReport, detail: ReportDetail) -> None:
     for reason in blocked_reasons(report):
         console.print(f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]")
-    for missed in missed_steps(report):
-        console.print(f"[yellow]{target.cve_id}: {escape(missed)}[/yellow]")
+    for missed in report.missed_steps:
+        console.print(f"[yellow]{target.cve_id}: {escape(detail.missed_detail(missed))}[/yellow]")
     throttled = report.provider_usage.throttled_requests
     if throttled > 0:
         console.print(

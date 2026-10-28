@@ -4,6 +4,7 @@ from evals import cve_audit
 from evals.cve_audit import (
     INCOMPLETE_ATTEMPTS,
     IncompleteAttempt,
+    LaunchError,
     RunOverrides,
     ThrottledAttempt,
     attempt_once,
@@ -16,6 +17,7 @@ from evals.cve_grammar import CreditCheck, CVEStatus, MissClass, RunGrade, grade
 from evals.cve_proofs import UnitPlace
 from evals.cve_report_units import units_of
 from evals.cve_session_model import GradedAudit
+from evals.failure_text import TYPES_ONLY
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_audit_given as given
@@ -286,3 +288,42 @@ async def test_each_attempt_audits_under_a_breaker_of_its_own(monkeypatch: pytes
     first, second = seen.breakers
     assert first is not None and second is not None
     assert first is not second
+
+
+async def test_a_run_skipped_on_a_holdout_run_prints_the_error_type_without_its_message(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.captured_console(monkeypatch)
+    target = given.a_target_failing_to_launch(LaunchError("secret-nonce"))
+
+    await attempt_once(target, given.an_auditor(TYPES_ONLY), SessionThrottles(), {})
+
+    printed = output.getvalue()
+    assert f"{target.cve_id} run skipped" in printed
+    assert "LaunchError" in printed
+    assert "secret-nonce" not in printed
+
+
+async def test_a_run_skipped_on_the_acceptance_gate_prints_the_error_message(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.captured_console(monkeypatch)
+    target = given.a_target_failing_to_launch(LaunchError("secret-nonce"))
+
+    await attempt_once(target, given.an_auditor(), SessionThrottles(), {})
+
+    assert f"{target.cve_id} run skipped: secret-nonce" in output.getvalue()
+
+
+async def test_a_missed_step_on_a_holdout_run_prints_its_cause_without_the_provider_message(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.captured_console(monkeypatch)
+    given.an_audit_reporting(monkeypatch, given.a_report_missing(MissCause.PROVIDER_REFUSAL))
+    auditor = given.an_auditor(TYPES_ONLY)
+
+    await attempt_once(given.a_target_launching(), auditor, SessionThrottles(), {})
+
+    printed = output.getvalue()
+    assert "Refused by the model provider" in printed
+    assert "Invalid prompt" not in printed

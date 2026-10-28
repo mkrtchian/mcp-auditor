@@ -51,6 +51,7 @@ from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
 from evals.export import export_cve_judged_cases
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.metrics import SessionThrottles, quiet_throttle_waits
+from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import load_settings
 
 CVE_RUNS = 3
@@ -77,7 +78,8 @@ def main() -> None:
         sys.exit(CRASHED_EXIT)
 
     try:
-        code = asyncio.run(_run(args, graded, tracked))
+        with silenced_stdio_logging():
+            code = asyncio.run(_run(args, graded, tracked))
     except Refused as refused:
         display.print_refusal(refused.title, refused.reasons)
         code = NOT_COMPARABLE_EXIT

@@ -15,6 +15,7 @@ from evals.cve_audit import Auditor, RunOverrides
 from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
+from evals.failure_text import FULL_DETAIL, TYPES_ONLY, ReportDetail
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_audit import (
@@ -107,20 +108,35 @@ def test_a_backend_server_launches_through_its_registered_provisioner():
 
 
 async def test_a_provisioner_failing_on_enter_is_a_launch_failure():
-    @contextmanager
-    def failing_provisioner(server: AdmittedServer) -> Generator[Launch]:
-        raise RuntimeError("cluster never healthy")
-        yield Launch("docker", [])
-
-    registry = {"fail": RegisteredBackend(failing_provisioner, "fake-net", "fake/backend:1.0")}
-    server = with_a_backend(
-        SERVER, BackendFixture(provisioner="fail", image="fake/backend:1.0", network="fake-net")
-    )
+    server, registry = _a_server_whose_provisioner_raises(RuntimeError("cluster never healthy"))
 
     outcome = await audit_once(server, _an_auditor(), backends=registry)
 
     assert isinstance(outcome, LaunchFailed)
     assert "cluster never healthy" in outcome.reason
+
+
+async def test_a_launch_failure_on_a_nuisance_run_carries_the_error_type_without_its_message():
+    server, registry = _a_server_whose_provisioner_raises(RuntimeError("secret-nonce"))
+
+    outcome = await audit_once(server, _an_auditor(TYPES_ONLY), backends=registry)
+
+    assert isinstance(outcome, LaunchFailed)
+    assert "RuntimeError" in outcome.reason
+    assert "secret-nonce" not in outcome.reason
+
+
+async def test_a_missed_step_on_a_nuisance_run_prints_its_cause_without_the_provider_message(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = _captured_console(monkeypatch)
+    refused = _missing_a_step(_a_report_throttled(0), MissCause.PROVIDER_REFUSAL, "secret-nonce")
+    _audits_reporting(monkeypatch, [refused])
+
+    await audit_once(SERVER, _an_auditor(TYPES_ONLY))
+
+    assert "Refused by the model provider" in output.getvalue()
+    assert "secret-nonce" not in output.getvalue()
 
 
 async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttled_requests(
@@ -313,10 +329,27 @@ async def test_a_dropped_gate_run_does_not_complete_at_once(monkeypatch: pytest.
     assert audit.calls == 1
 
 
-def _an_auditor() -> NuisanceAuditor:
+def _an_auditor(report_detail: ReportDetail = FULL_DETAIL) -> NuisanceAuditor:
     return NuisanceAuditor(
-        Auditor(FakeLLM([]), FakeLLM([]), 1), RunOverrides(None, None, None), SessionThrottles()
+        Auditor(FakeLLM([]), FakeLLM([]), 1, report_detail),
+        RunOverrides(None, None, None),
+        SessionThrottles(),
     )
+
+
+def _a_server_whose_provisioner_raises(
+    error: Exception,
+) -> tuple[AdmittedServer, dict[str, RegisteredBackend]]:
+    @contextmanager
+    def failing_provisioner(server: AdmittedServer) -> Generator[Launch]:
+        raise error
+        yield Launch("docker", [])
+
+    registry = {"fail": RegisteredBackend(failing_provisioner, "fake-net", "fake/backend:1.0")}
+    server = with_a_backend(
+        SERVER, BackendFixture(provisioner="fail", image="fake/backend:1.0", network="fake-net")
+    )
+    return server, registry
 
 
 def _a_report_throttled(requests: int) -> AuditReport:
@@ -353,8 +386,8 @@ def _follows(args: list[str], flag: str, value: str) -> bool:
     return any(args[i : i + 2] == [flag, value] for i in range(len(args) - 1))
 
 
-def _missing_a_step(report: AuditReport, cause: MissCause) -> AuditReport:
-    missed = MissedStep(tool_name="read_file", step=AuditStep.JUDGMENT, cause=cause, detail="")
+def _missing_a_step(report: AuditReport, cause: MissCause, detail: str = "") -> AuditReport:
+    missed = MissedStep(tool_name="read_file", step=AuditStep.JUDGMENT, cause=cause, detail=detail)
     return report.model_copy(update={"missed_steps": [missed]})
 
 
