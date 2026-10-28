@@ -52,6 +52,14 @@ async def test_a_fresh_nonce_of_another_location_strikes_nothing():
     assert not check.unchecked
 
 
+async def test_a_complete_attempt_decides_when_only_the_patched_teardown_raises():
+    run = given.a_declared_run_on_a_server_noisy_at_shutdown()
+
+    check = await replay_credit(run)
+
+    then.the_flaw_credit_is_struck(check)
+
+
 async def test_a_patched_launch_that_always_fails_leaves_the_credit_unchecked():
     run = given.a_patched_launch_failure_run()
 

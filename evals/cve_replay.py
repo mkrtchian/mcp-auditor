@@ -8,16 +8,18 @@ patched version live here, in the caller, not in the fingerprint (section 3).
 
 A patched server gone mid-call looks like an ordinary error, so the replay counts an attempt as
 failed when a response reads as a lost connection at a call the vulnerable run still answered, or
-when entering or leaving the launch raises. When the patched connection is lost at a call the
-vulnerable run had already lost, the attempt instead ends there, truncated, with the outputs
-gathered so far: the vulnerable run earned no credit past its own death. A truncated attempt is
-provisional, since only another launch tells a transient patched death from a deterministic one,
+when entering the launch raises, or leaving it before every call was answered. An attempt whose
+calls were all answered stands even if leaving the launch raises, since a server that logs its
+shutdown to stdout makes the MCP client raise on that line. When the patched connection is lost at a
+call the vulnerable run had already lost, the attempt instead ends there, truncated, with the
+outputs gathered so far: the vulnerable run earned no credit past its own death. A truncated attempt
+is provisional, since only another launch tells a transient patched death from a deterministic one,
 so failed and truncated attempts are both retried, up to three attempts in all, and a complete
-attempt ends the replay. The run is then decided on the union of the strikes of every attempt
-that completed or was truncated: with a complete attempt, or on truncated outputs alone when
-every attempt ended where the vulnerable run did. Otherwise (no attempt got through, or truncated
-and failed attempts mixed with no complete one) the run's credits are kept unchecked. The calls
-and patched outputs stay in memory and are never written.
+attempt ends the replay. The run is then decided on the union of the strikes of every attempt that
+completed or was truncated: with a complete attempt, or on truncated outputs alone when every
+attempt ended where the vulnerable run did. Otherwise (no attempt got through, or truncated and
+failed attempts mixed with no complete one) the run's credits are kept unchecked. The calls and
+patched outputs stay in memory and are never written.
 """
 
 import os
@@ -33,6 +35,7 @@ from evals.cve_report_units import units_of
 from evals.cve_targets import CVETarget, TargetVersion
 from evals.cve_units import Step, Unit
 from mcp_auditor.domain.models import AuditReport, ToolResponse
+from mcp_auditor.domain.ports import MCPClientPort
 
 # Each recorded call keeps the vulnerable response it drew, so the replay can end where the
 # vulnerable run itself ended (a lost connection) instead of retrying a death it cannot outlive.
@@ -113,32 +116,42 @@ async def _run_patched(
     target: CVETarget, records: tuple[Place, ...], calls: Sequence[RecordedCall], timeout: int
 ) -> ReplayedRun | None:
     """The patched outputs of one fresh launch, or None when the launch could not be reached:
-    a lost connection at a call the vulnerable run still answered, or an exception entering or
-    leaving the launch or its client. A patched loss at a call the vulnerable run had already
-    lost ends the attempt there, truncated, with the outputs gathered so far: it is provisional,
-    since only another launch can tell a transient death from a deterministic one."""
+    a lost connection at a call the vulnerable run still answered, or an exception entering the
+    launch or its client, or leaving it before every call was answered. A patched loss at a call
+    the vulnerable run had already lost ends the attempt there, truncated, with the outputs
+    gathered so far: it is provisional, since only another launch can tell a transient death from
+    a deterministic one."""
+    replayed: ReplayedRun | None = None
     try:
         async with target.launched(records, version=TargetVersion.PATCHED) as planted:
             with open(os.devnull, "w") as devnull:
                 async with connect(planted.launch, devnull, tool_call_timeout=timeout) as client:
-                    outputs: list[str] = []
-                    vulnerable_lost = False
-                    for name, args, vulnerable in calls:
-                        vulnerable_lost = vulnerable_lost or lost_connection(vulnerable)
-                        response = await client.call_tool(name, args)
-                        if lost_connection(response):
-                            if not vulnerable_lost:
-                                return None
-                            return ReplayedRun(planted.nonces, outputs, complete=False)
-                        outputs.append(response.content)
-                    return ReplayedRun(planted.nonces, outputs, complete=True)
+                    replayed = await _sent_again(client, planted.nonces, calls)
     except Exception:
         # The records arrive pre-resolved and pre-planted by `attempt_once` on the vulnerable
         # version, so a `planting_spec` config error cannot reach here: only launch and connection
         # failures of this fresh patched launch are. Narrowing this to a hand-picked exception set
         # would crash the whole benchmark on a transient infra blip, worse than the unchecked it
-        # returns.
-        return None
+        # returns. A complete attempt survives a raising teardown, as the vulnerable run does in
+        # `attempt_once`: a server that logs its shutdown to stdout makes the client raise there.
+        return replayed if replayed is not None and replayed.complete else None
+    return replayed
+
+
+async def _sent_again(
+    client: MCPClientPort, nonces: Mapping[str, str], calls: Sequence[RecordedCall]
+) -> ReplayedRun | None:
+    outputs: list[str] = []
+    vulnerable_lost = False
+    for name, args, vulnerable in calls:
+        vulnerable_lost = vulnerable_lost or lost_connection(vulnerable)
+        response = await client.call_tool(name, args)
+        if lost_connection(response):
+            if not vulnerable_lost:
+                return None
+            return ReplayedRun(nonces, outputs, complete=False)
+        outputs.append(response.content)
+    return ReplayedRun(nonces, outputs, complete=True)
 
 
 def replayed_units(units: Sequence[Unit], outputs: Sequence[str]) -> list[Unit]:

@@ -102,6 +102,12 @@ def a_fresh_other_location_run() -> RunToCheck:
     )
 
 
+def a_declared_run_on_a_server_noisy_at_shutdown() -> RunToCheck:
+    # Every call is answered, then the patched server writes to stdout as it exits, which the
+    # MCP client raises on when the launch is left: the complete attempt still decides.
+    return _single_run(_serving({FLAW_PATH: FLAW_ID}, noisy_shutdown=True), (FLAW_ID,))
+
+
 def a_patched_launch_failure_run() -> RunToCheck:
     return _single_run(_dead(), (FLAW_ID,))
 
@@ -233,11 +239,15 @@ def _a_response(error_type: str | None, content: str) -> ToolResponse:
     return ToolResponse(content=content, is_error=error_type is not None, error_type=error_type)
 
 
-def _serving(paths_to_ids: dict[str, str], *, exit_on_call: int = 0) -> Serve:
+def _serving(
+    paths_to_ids: dict[str, str], *, exit_on_call: int = 0, noisy_shutdown: bool = False
+) -> Serve:
     def serve(spec: PlantingSpec) -> list[str]:
         args = [f"{path}={spec.nonces[place_id]}" for path, place_id in paths_to_ids.items()]
         if exit_on_call:
             args.append(f"exit_on_call={exit_on_call}")
+        if noisy_shutdown:
+            args.append("noisy_shutdown")
         return args
 
     return serve
