@@ -21,6 +21,7 @@ from evals.holdout_audit import (
 )
 from evals.holdout_results import NotRunCause
 from evals.provider_errors import ProviderFatal
+from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_cve_oracle_given import a_detected_grade
@@ -60,6 +61,19 @@ async def test_an_incomplete_attempt_is_not_retried(
     assert isinstance(outcome, IncompleteRun)
     assert outcome.report is report
     assert attempt.calls == 1
+
+
+async def test_an_incomplete_run_carries_the_server_health_of_its_attempt(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _captured_console(monkeypatch)
+    refused = frozenset({MissCause.PROVIDER_REFUSAL})
+    incomplete = IncompleteAttempt(grammar.a_report(), refused, ServerHealth(2, 1))
+
+    outcome = await holdout_audit(TARGET, _ScriptedAttempts([incomplete]))
+
+    assert isinstance(outcome, IncompleteRun)
+    assert outcome.health == ServerHealth(2, 1)
 
 
 async def test_an_attempt_missing_steps_names_their_causes(monkeypatch: pytest.MonkeyPatch):

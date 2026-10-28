@@ -20,11 +20,18 @@ completed or was truncated: with a complete attempt, or on truncated outputs alo
 attempt ended where the vulnerable run did. Otherwise (no attempt got through, or truncated and
 failed attempts mixed with no complete one) the run's credits are kept unchecked. The calls and
 patched outputs stay in memory and are never written.
+
+Beside the credit check, the replay names why a run stayed unchecked: its recorded calls disagree
+with its report (no attempt launched), or no attempt decided it. Each attempt that failed carries
+its cause: the launch failed (an exception entering it, or leaving it before every call was
+answered), or the connection was lost at a call the vulnerable run answered. A truncated attempt is
+no failure. A decided run has no reason, but its failed attempts, if any, still carry their causes.
 """
 
 import os
 from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 
 from evals.cve_environments import TOOL_CALL_TIMEOUT, connect
 from evals.cve_grammar import CreditCheck, PlantedTarget
@@ -34,22 +41,13 @@ from evals.cve_recording_client import Exchange
 from evals.cve_report_units import units_of
 from evals.cve_targets import CVETarget, TargetVersion
 from evals.cve_units import Step, Unit
-from mcp_auditor.domain.models import AuditReport, ToolResponse
+from evals.server_health import lost_connection
+from mcp_auditor.domain.models import AuditReport
 from mcp_auditor.domain.ports import MCPClientPort
 
 # Each recorded call keeps the vulnerable response it drew, so the replay can end where the
 # vulnerable run itself ended (a lost connection) instead of retrying a death it cannot outlive.
 type RecordedCall = Exchange
-
-# A patched server gone mid-call looks like an ordinary error: SDK 1.30 turns a call in flight
-# when the server exits into an McpError reading "Connection closed", and the stdio transport
-# surfaces a closed or broken stream under anyio's own error names. Any other McpError (invalid
-# params, a removed tool) and a TimeoutError on a live server are ordinary responses.
-LOST_CONNECTION_RESPONSES: tuple[tuple[str, str | None], ...] = (
-    ("McpError", "Connection closed"),
-    ("ClosedResourceError", None),
-    ("BrokenResourceError", None),
-)
 
 # One attempt and at most two retries, after a failed or a truncated attempt.
 REPLAY_ATTEMPTS = 3
@@ -71,28 +69,52 @@ class ReplayedRun:
     complete: bool  # False when the attempt ended at a call the vulnerable run had already lost
 
 
-async def replay_credit(
+class ReplayAttemptFailure(StrEnum):
+    LAUNCH_FAILED = "launch_failed"
+    LOST_CONNECTION = "lost_connection"  # at a call the vulnerable run answered
+
+
+class UncheckedReason(StrEnum):
+    ARGUMENTS_DISAGREE = "arguments_disagree"  # no attempt launched
+    NO_ATTEMPT_DECIDED = "no_attempt_decided"
+
+
+@dataclass(frozen=True)
+class ReplayOutcome:
+    check: CreditCheck
+    unchecked_reason: UncheckedReason | None  # None on a decided run
+    attempt_failures: tuple[ReplayAttemptFailure, ...]  # in attempt order
+
+
+async def replay_with_causes(
     run: RunToCheck, *, tool_call_timeout: int = TOOL_CALL_TIMEOUT
-) -> CreditCheck:
+) -> ReplayOutcome:
     """The strike the replay earns against the patched server, or an unchecked verdict when the
     recorded calls disagree with the report or the patched launches did not settle the run."""
     units = units_of(run.report)
     if not arguments_agree(units, run.recorded_calls):
-        return CreditCheck(frozenset(), unchecked=True)
-    replayed = [
-        attempt async for attempt in _attempts(run, tool_call_timeout) if attempt is not None
-    ]
+        return ReplayOutcome(_UNCHECKED, UncheckedReason.ARGUMENTS_DISAGREE, ())
+    attempts = [attempt async for attempt in _attempts(run, tool_call_timeout)]
+    replayed = [attempt for attempt in attempts if isinstance(attempt, ReplayedRun)]
+    failures = tuple(attempt for attempt in attempts if isinstance(attempt, ReplayAttemptFailure))
     if not _decides(replayed):
-        return CreditCheck(frozenset(), unchecked=True)
+        return ReplayOutcome(_UNCHECKED, UncheckedReason.NO_ATTEMPT_DECIDED, failures)
     struck = (_struck(run.run_target, units, attempt) for attempt in replayed)
-    return CreditCheck(frozenset[UnitPlace]().union(*struck), unchecked=False)
+    return ReplayOutcome(
+        CreditCheck(frozenset[UnitPlace]().union(*struck), unchecked=False), None, failures
+    )
 
 
-async def _attempts(run: RunToCheck, timeout: int) -> AsyncIterator[ReplayedRun | None]:
+_UNCHECKED = CreditCheck(frozenset(), unchecked=True)
+
+type _Attempt = ReplayedRun | ReplayAttemptFailure
+
+
+async def _attempts(run: RunToCheck, timeout: int) -> AsyncIterator[_Attempt]:
     for _ in range(REPLAY_ATTEMPTS):
         attempt = await _run_patched(run.target, run.records, run.recorded_calls, timeout)
         yield attempt
-        if attempt is not None and attempt.complete:
+        if isinstance(attempt, ReplayedRun) and attempt.complete:
             return
 
 
@@ -114,19 +136,19 @@ def _struck(
 
 async def _run_patched(
     target: CVETarget, records: tuple[Place, ...], calls: Sequence[RecordedCall], timeout: int
-) -> ReplayedRun | None:
-    """The patched outputs of one fresh launch, or None when the launch could not be reached:
-    a lost connection at a call the vulnerable run still answered, or an exception entering the
-    launch or its client, or leaving it before every call was answered. A patched loss at a call
-    the vulnerable run had already lost ends the attempt there, truncated, with the outputs
-    gathered so far: it is provisional, since only another launch can tell a transient death from
-    a deterministic one."""
-    replayed: ReplayedRun | None = None
+) -> _Attempt:
+    """The patched outputs of one fresh launch, or the cause it could not be reached: a lost
+    connection at a call the vulnerable run still answered, or a failed launch, an exception
+    entering the launch or its client, or leaving it before every call was answered. A patched
+    loss at a call the vulnerable run had already lost ends the attempt there, truncated, with the
+    outputs gathered so far: it is provisional, since only another launch can tell a transient
+    death from a deterministic one."""
+    attempt: _Attempt = ReplayAttemptFailure.LAUNCH_FAILED
     try:
         async with target.launched(records, version=TargetVersion.PATCHED) as planted:
             with open(os.devnull, "w") as devnull:
                 async with connect(planted.launch, devnull, tool_call_timeout=timeout) as client:
-                    replayed = await _sent_again(client, planted.nonces, calls)
+                    attempt = await _sent_again(client, planted.nonces, calls)
     except Exception:
         # The records arrive pre-resolved and pre-planted by `attempt_once` on the vulnerable
         # version, so a `planting_spec` config error cannot reach here: only launch and connection
@@ -134,13 +156,15 @@ async def _run_patched(
         # would crash the whole benchmark on a transient infra blip, worse than the unchecked it
         # returns. A complete attempt survives a raising teardown, as the vulnerable run does in
         # `attempt_once`: a server that logs its shutdown to stdout makes the client raise there.
-        return replayed if replayed is not None and replayed.complete else None
-    return replayed
+        # A connection already lost keeps its cause, since a dead server's teardown raises too.
+        if isinstance(attempt, ReplayedRun) and not attempt.complete:
+            return ReplayAttemptFailure.LAUNCH_FAILED
+    return attempt
 
 
 async def _sent_again(
     client: MCPClientPort, nonces: Mapping[str, str], calls: Sequence[RecordedCall]
-) -> ReplayedRun | None:
+) -> _Attempt:
     outputs: list[str] = []
     vulnerable_lost = False
     for name, args, vulnerable in calls:
@@ -148,7 +172,7 @@ async def _sent_again(
         response = await client.call_tool(name, args)
         if lost_connection(response):
             if not vulnerable_lost:
-                return None
+                return ReplayAttemptFailure.LOST_CONNECTION
             return ReplayedRun(nonces, outputs, complete=False)
         outputs.append(response.content)
     return ReplayedRun(nonces, outputs, complete=True)
@@ -190,10 +214,3 @@ def _sent_a_call(unit: Unit, step: Step) -> bool:
     # A blocked case and a chain blocked at its first step carry one step that reached no server,
     # so it has no output. Every step that ran carries the output the call returned.
     return not unit.blocked or bool(step.outputs)
-
-
-def lost_connection(response: ToolResponse) -> bool:
-    return response.is_error and any(
-        response.error_type == error_type and (content is None or response.content == content)
-        for error_type, content in LOST_CONNECTION_RESPONSES
-    )

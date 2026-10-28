@@ -15,6 +15,7 @@ from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVETarget
 from evals.eval_display import console
 from evals.holdout_results import NotRunCause
+from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.domain.models import AuditReport
 
 HOLDOUT_INFRA_ATTEMPTS = 3  # one try, two retries
@@ -26,6 +27,7 @@ class IncompleteRun:
     report is kept only for its usage and tools count."""
 
     report: AuditReport
+    health: ServerHealth = NO_INCIDENTS
 
 
 @dataclass(frozen=True)
@@ -54,7 +56,7 @@ async def holdout_audit(
                 f"[yellow]{target.cve_id}: {describe_miss_causes(outcome.causes)}, counted as"
                 " not detected[/yellow]"
             )
-            return IncompleteRun(outcome.report)
+            return IncompleteRun(outcome.report, outcome.health)
         causes.add(_cause_of(outcome))
         console.print(
             f"[yellow]{target.cve_id}: {_failure(outcome)},"

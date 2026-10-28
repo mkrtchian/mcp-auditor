@@ -18,11 +18,13 @@ from evals.cve_audit import (
 from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch
 from evals.cve_grammar import CreditCheck, CVEStatus, MissClass, RunGrade, grade_run
 from evals.cve_proofs import UnitPlace
+from evals.cve_replay import ReplayAttemptFailure, ReplayOutcome, UncheckedReason
 from evals.cve_report_units import units_of
 from evals.cve_session_model import GradedAudit
 from evals.failure_text import TYPES_ONLY
 from evals.metrics import SessionThrottles
 from evals.provider_errors import ProviderFatal
+from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_audit_given as given
 from tests.unit.support import test_cve_grammar_given as grammar
@@ -60,6 +62,32 @@ async def test_an_audit_never_throttled_says_nothing_of_throttling(
     await attempt_once(given.a_target_launching(), given.an_auditor(), SessionThrottles(), {})
 
     assert "throttled" not in output.getvalue()
+
+
+async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.captured_console(monkeypatch)
+    given.an_audit_on_a_noisy_server(monkeypatch, non_protocol_lines=2, lost_calls=1)
+
+    outcome = await attempt_once(
+        given.a_target_launching(), given.an_auditor(), SessionThrottles(), {}
+    )
+
+    assert isinstance(outcome, GradedAudit)
+    assert outcome.health == ServerHealth(2, 1)
+    assert f"{TARGET.cve_id}: server connection lost on 1 call(s)" in output.getvalue()
+
+
+async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.captured_console(monkeypatch)
+    given.an_audit_on_a_noisy_server(monkeypatch, non_protocol_lines=2, lost_calls=0)
+
+    await attempt_once(given.a_target_launching(), given.an_auditor(), SessionThrottles(), {})
+
+    assert "connection lost" not in output.getvalue()
 
 
 async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_not_refused(
@@ -153,25 +181,38 @@ def test_a_struck_only_credit_with_a_refused_step_reads_as_refused():
 async def test_a_non_detecting_run_is_graded_without_replaying():
     run = given.a_run(grammar.a_report(cases=[grammar.a_case(verdict=grammar.PASS)]))
 
-    grade = await cve_audit._checked_grade(run, replay=given.a_replay_that_must_not_run)  # pyright: ignore[reportPrivateUsage]
+    grade, _ = await cve_audit._checked_grade(run, replay=given.a_replay_that_must_not_run)  # pyright: ignore[reportPrivateUsage]
 
     assert grade.status == grade_run(run.run_target, units_of(run.report)).status
 
 
 async def test_a_detecting_run_is_regraded_on_the_credits_the_replay_strikes():
-    report = grammar.a_report(
-        cases=[
-            grammar.a_case(
-                response=f"leaked {grammar.SENTINEL}", arguments={"path": grammar.AIMED_PATH}
-            )
-        ]
-    )
-    run = given.a_run(report, {grammar.PLACE: grammar.SENTINEL})
+    run = given.a_detecting_run()
     struck = CreditCheck(frozenset({UnitPlace(0, grammar.PLACE)}), unchecked=False)
+    replayed = ReplayOutcome(struck, unchecked_reason=None, attempt_failures=())
 
-    grade = await cve_audit._checked_grade(run, replay=given.a_replay_returning(struck))  # pyright: ignore[reportPrivateUsage]
+    grade, outcome = await cve_audit._checked_grade(run, replay=given.a_replay_returning(replayed))  # pyright: ignore[reportPrivateUsage]
 
     assert grade.status == CVEStatus.MISSED
+    assert outcome is replayed
+
+
+async def test_an_unchecked_replay_is_printed_with_its_reason_and_attempt_causes(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.captured_console(monkeypatch)
+    unchecked = ReplayOutcome(
+        CreditCheck(frozenset(), unchecked=True),
+        UncheckedReason.NO_ATTEMPT_DECIDED,
+        (ReplayAttemptFailure.LAUNCH_FAILED,) * 3,
+    )
+
+    replay = given.a_replay_returning(unchecked)
+
+    await cve_audit._checked_grade(given.a_detecting_run(), replay=replay)  # pyright: ignore[reportPrivateUsage]
+
+    line = f"{TARGET.cve_id}: replay unchecked, no_attempt_decided (launch_failed x3)"
+    assert line in output.getvalue()
 
 
 @pytest.mark.parametrize(

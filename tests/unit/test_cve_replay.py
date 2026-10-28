@@ -1,15 +1,13 @@
 import re
 
-import pytest
-
 import tests.unit.support.test_cve_replay_given as given
 from evals.cve_grammar import CreditCheck, MechanismClass, PlantedTarget
 from evals.cve_replay import (
     RecordedCall,
     RunToCheck,
+    UncheckedReason,
     arguments_agree,
-    lost_connection,
-    replay_credit,
+    replay_with_causes,
     replayed_units,
 )
 from evals.cve_report_units import units_of
@@ -63,26 +61,8 @@ async def test_an_argument_mismatch_makes_the_run_unchecked_without_launching():
         records=(),
     )
 
-    check = await replay_credit(run)
+    outcome = await replay_with_causes(run)
 
-    assert check == CreditCheck(frozenset(), unchecked=True)
-
-
-@pytest.mark.parametrize(
-    ("error_type", "content", "lost"),
-    [
-        ("McpError", "Connection closed", True),
-        ("ClosedResourceError", "", True),
-        ("BrokenResourceError", "", True),
-        ("McpError", "Invalid params", False),
-        ("TimeoutError", "Tool call timed out after 2s", False),
-        (None, "the flag", False),
-    ],
-    ids=["connection_closed", "closed_stream", "broken_stream", "other_mcp", "timeout", "ok"],
-)
-def test_a_lost_connection_is_read_from_the_pinned_responses(
-    error_type: str | None, content: str, lost: bool
-):
-    response = given.a_response(error_type, content)
-
-    assert lost_connection(response) is lost
+    assert outcome.check == CreditCheck(frozenset(), unchecked=True)
+    assert outcome.unchecked_reason is UncheckedReason.ARGUMENTS_DISAGREE
+    assert outcome.attempt_failures == ()

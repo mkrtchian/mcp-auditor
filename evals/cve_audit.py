@@ -1,7 +1,9 @@
 """One graded audit of a CVE target on its pinned server, for the gated session."""
 
+import dataclasses
 import os
 import subprocess
+from collections import Counter
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -13,7 +15,7 @@ from evals.cve_grammar import DETECTION_RUNGS, CreditCheck, PlantedTarget, RunGr
 from evals.cve_places import Places, kept_records
 from evals.cve_planting import PlantingFailed
 from evals.cve_recording_client import RecordingClient
-from evals.cve_replay import RecordedCall, RunToCheck, replay_credit
+from evals.cve_replay import RecordedCall, ReplayOutcome, RunToCheck, replay_with_causes
 from evals.cve_report_units import units_of
 from evals.cve_session_model import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
@@ -28,6 +30,7 @@ from evals.provider_errors import (
     classified,
     describe_provider_error,
 )
+from evals.server_health import NO_INCIDENTS, ServerHealth, health_of
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.config import load_settings
@@ -95,6 +98,7 @@ class IncompleteAttempt:
 
     report: AuditReport
     causes: frozenset[MissCause]
+    health: ServerHealth = NO_INCIDENTS
 
 
 @dataclass(frozen=True)
@@ -160,11 +164,13 @@ async def attempt_once(
     # caught here, so it crashes the run rather than reading as a skip the gate cannot compare.
     records = kept_records(target.kept_places, places)
     run: RunToCheck | None = None
+    health = NO_INCIDENTS
     try:
         async with target.launched(records) as planted:
-            report, calls = await _audit(planted.launch, target, auditor, overrides)
+            report, calls, health = await _audit(planted.launch, target, auditor, overrides)
             throttles.count(report, target.cve_id)
             _print_incidents(target, report, auditor.report_detail)
+            _print_lost_connections(target, health)
             # Captured before the target's launch is left, so a raising exit of `target.launched`
             # cannot erase a completed run (the client's own teardown error is tolerated inside
             # `connect`). The nonces travel per launch, so the graded target is built here.
@@ -189,7 +195,7 @@ async def attempt_once(
             " throttled by the model provider past every retry"
         )
         return ThrottledAttempt()
-    return await _graded(run)
+    return await _graded(run, health)
 
 
 def _provider_error_attempt(target: CVETarget, failure: AuditFailed) -> ProviderErrorAttempt:
@@ -200,30 +206,48 @@ def _provider_error_attempt(target: CVETarget, failure: AuditFailed) -> Provider
     return ProviderErrorAttempt(description)
 
 
-async def _graded(run: RunToCheck) -> GradedAudit | IncompleteAttempt:
+async def _graded(run: RunToCheck, health: ServerHealth) -> GradedAudit | IncompleteAttempt:
     # The replay launches the patched version, so it runs only once the vulnerable one has exited.
-    grade = await _checked_grade(run)
+    grade, replayed = await _checked_grade(run)
     outcome = graded_or_incomplete(grade, run.report)
-    if isinstance(outcome, RunGrade):
-        console.print(f"{run.target.cve_id}: {outcome.status}")
-        return GradedAudit(outcome, run.report)
-    return outcome
+    if isinstance(outcome, IncompleteAttempt):
+        return dataclasses.replace(outcome, health=health)
+    console.print(f"{run.target.cve_id}: {outcome.status}")
+    return GradedAudit(
+        outcome, run.report, health, replayed.unchecked_reason, replayed.attempt_failures
+    )
 
 
 async def _checked_grade(
     run: RunToCheck,
     *,
-    replay: Callable[[RunToCheck], Awaitable[CreditCheck]] = replay_credit,
-) -> RunGrade:
+    replay: Callable[[RunToCheck], Awaitable[ReplayOutcome]] = replay_with_causes,
+) -> tuple[RunGrade, ReplayOutcome]:
     """The run's final grade: a detecting run is replayed against the patched version and graded
     on the credits that survive the strike. A run that did not detect needs no check, since the
     strike only removes a detection."""
     units = units_of(run.report)
     grade = grade_run(run.run_target, units)
     if grade.status not in DETECTION_RUNGS:
-        return grade
-    check = await replay(run)
-    return grade_run(run.run_target, units, check)
+        return grade, _NOT_REPLAYED
+    replayed = await replay(run)
+    if replayed.unchecked_reason is not None:
+        console.print(
+            f"[yellow]{run.target.cve_id}: replay unchecked,"
+            f" {_describe_unchecked_replay(replayed)}[/yellow]"
+        )
+    return grade_run(run.run_target, units, replayed.check), replayed
+
+
+_NOT_REPLAYED = ReplayOutcome(CreditCheck(frozenset(), unchecked=False), None, ())
+
+
+def _describe_unchecked_replay(replayed: ReplayOutcome) -> str:
+    counts = Counter(replayed.attempt_failures)
+    if not counts:
+        return str(replayed.unchecked_reason)
+    by_cause = ", ".join(f"{cause} x{count}" for cause, count in sorted(counts.items()))
+    return f"{replayed.unchecked_reason} ({by_cause})"
 
 
 def graded_or_incomplete(grade: RunGrade, report: AuditReport) -> RunGrade | IncompleteAttempt:
@@ -232,6 +256,14 @@ def graded_or_incomplete(grade: RunGrade, report: AuditReport) -> RunGrade | Inc
     if report.missed_steps and grade.status not in DETECTION_RUNGS:
         return IncompleteAttempt(report, frozenset(missed.cause for missed in report.missed_steps))
     return grade
+
+
+def _print_lost_connections(target: CVETarget, health: ServerHealth) -> None:
+    if health.lost_connection_responses > 0:
+        console.print(
+            f"[yellow]{target.cve_id}: server connection lost on"
+            f" {health.lost_connection_responses} call(s)[/yellow]"
+        )
 
 
 def _print_incidents(target: CVETarget, report: AuditReport, detail: ReportDetail) -> None:
@@ -249,7 +281,7 @@ def _print_incidents(target: CVETarget, report: AuditReport, detail: ReportDetai
 
 async def _audit(
     launch: Launch, target: CVETarget, auditor: Auditor, overrides: RunOverrides | None
-) -> tuple[AuditReport, list[RecordedCall]]:
+) -> tuple[AuditReport, list[RecordedCall], ServerHealth]:
     forced = overrides or RunOverrides(None, None, None)
     chain_budget = _either(forced.chain_budget, launch.chain_budget)
     max_chain_steps = _either(forced.max_chain_steps, launch.max_chain_steps)
@@ -275,7 +307,8 @@ async def _audit(
                             }
                         )
                     )
-                return result["audit_report"], recorder.exchanges
+                health = health_of(mcp_client, recorder.exchanges)
+                return result["audit_report"], recorder.exchanges, health
     except AuditFailed:
         raise
     except Exception as exc:

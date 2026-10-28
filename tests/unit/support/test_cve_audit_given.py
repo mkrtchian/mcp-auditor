@@ -11,13 +11,24 @@ from rich.console import Console
 from evals import cve_audit
 from evals.cve_audit import AttemptOutcome, Auditor
 from evals.cve_environments import Launch, LaunchShape
-from evals.cve_grammar import CreditCheck, PlantedTarget
+from evals.cve_grammar import PlantedTarget
 from evals.cve_planting_base import PlantingSpec
-from evals.cve_replay import RunToCheck
+from evals.cve_replay import ReplayOutcome, RunToCheck
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.failure_text import FULL_DETAIL, ReportDetail
 from mcp_auditor.adapters.llm_throttling import ThrottleBreaker, current_breaker
-from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep, ProviderUsage
+from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.models import (
+    AuditCategory,
+    AuditPayload,
+    AuditReport,
+    AuditStep,
+    MissCause,
+    MissedStep,
+    ProviderUsage,
+    ToolDefinition,
+    ToolResponse,
+)
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
 
@@ -84,6 +95,43 @@ def an_audit_reporting(
     return seen
 
 
+def an_audit_on_a_noisy_server(
+    monkeypatch: pytest.MonkeyPatch, *, non_protocol_lines: int, lost_calls: int
+) -> None:
+    """The graph sends one call per lost connection, each answered "Connection closed", to a
+    client that read `non_protocol_lines` lines it could not parse."""
+
+    class CallingGraph:
+        def __init__(self, server: AuditedServer) -> None:
+            self._server = server
+
+        async def ainvoke(self, _graph_input: dict[str, object]) -> dict[str, object]:
+            for _ in range(lost_calls):
+                await self._server.attempt(_READ, _A_PAYLOAD)
+            return {"audit_report": grammar.a_report()}
+
+    def calling_build_graph(_llm: object, server: AuditedServer, **_kwargs: object) -> CallingGraph:
+        return CallingGraph(server)
+
+    monkeypatch.setattr(cve_audit, "build_graph", calling_build_graph)
+    monkeypatch.setattr(
+        cve_audit, "connect", _a_fake_connect([], client=_NoisyClient(non_protocol_lines))
+    )
+
+
+_READ = ToolDefinition(name="read", input_schema={})
+_A_PAYLOAD = AuditPayload(
+    category=AuditCategory.INPUT_VALIDATION, description="a read", arguments={"path": "/x"}
+)
+
+
+class _NoisyClient(FakeMCPClient):
+    def __init__(self, non_protocol_lines: int) -> None:
+        lost = ToolResponse(content="Connection closed", is_error=True, error_type="McpError")
+        super().__init__([_READ], {"read": lost})
+        self.non_protocol_lines = non_protocol_lines
+
+
 def an_audit_raising(
     monkeypatch: pytest.MonkeyPatch, error: Exception, *, grouped: bool = True
 ) -> None:
@@ -102,7 +150,7 @@ def an_audit_raising(
 
 
 def _a_fake_connect(
-    timeouts: list[int], *, grouped: bool = True
+    timeouts: list[int], *, grouped: bool = True, client: FakeMCPClient | None = None
 ) -> Callable[..., AbstractAsyncContextManager[FakeMCPClient]]:
     @asynccontextmanager
     async def fake_connect(
@@ -110,7 +158,7 @@ def _a_fake_connect(
     ) -> AsyncGenerator[FakeMCPClient]:
         timeouts.append(tool_call_timeout)
         try:
-            yield FakeMCPClient([])
+            yield FakeMCPClient([]) if client is None else client
         except Exception as exc:
             if not grouped:
                 raise
@@ -147,13 +195,26 @@ def a_run(report: AuditReport, nonces: dict[str, str] | None = None) -> RunToChe
     )
 
 
-async def a_replay_that_must_not_run(_run: RunToCheck) -> CreditCheck:
+def a_detecting_run() -> RunToCheck:
+    report = grammar.a_report(
+        cases=[
+            grammar.a_case(
+                response=f"leaked {grammar.SENTINEL}", arguments={"path": grammar.AIMED_PATH}
+            )
+        ]
+    )
+    return a_run(report, {grammar.PLACE: grammar.SENTINEL})
+
+
+async def a_replay_that_must_not_run(_run: RunToCheck) -> ReplayOutcome:
     raise AssertionError("a non-detecting run must be graded without replaying")
 
 
-def a_replay_returning(check: CreditCheck) -> Callable[[RunToCheck], Awaitable[CreditCheck]]:
-    async def replay(_run: RunToCheck) -> CreditCheck:
-        return check
+def a_replay_returning(
+    outcome: ReplayOutcome,
+) -> Callable[[RunToCheck], Awaitable[ReplayOutcome]]:
+    async def replay(_run: RunToCheck) -> ReplayOutcome:
+        return outcome
 
     return replay
 

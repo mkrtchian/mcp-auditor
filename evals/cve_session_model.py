@@ -8,8 +8,10 @@ from pathlib import Path
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_grammar import RunGrade
 from evals.cve_places import Places
+from evals.cve_replay import ReplayAttemptFailure, UncheckedReason
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.eval_session import TreeState
+from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.domain.models import AuditReport
 
 
@@ -17,6 +19,9 @@ from mcp_auditor.domain.models import AuditReport
 class GradedAudit:
     grade: RunGrade
     report: AuditReport
+    health: ServerHealth = NO_INCIDENTS
+    unchecked_reason: UncheckedReason | None = None  # set on a replay left unchecked
+    replay_attempt_failures: tuple[ReplayAttemptFailure, ...] = ()
 
 
 type AuditTarget = Callable[[CVETarget], Awaitable[GradedAudit | None]]
