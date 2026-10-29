@@ -56,7 +56,6 @@ HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
 _OUT_OF_ALLOWLIST = "SECRET"
 _ALLOWED = "ALLOWED"
-_SERVER_LAUNCH = ["--transport", "stdio"]
 # The singleton sits on the bridge's first address, the per-launch responders above it.
 _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
@@ -85,7 +84,6 @@ def server_args(image: str, responder_address: str) -> list[str]:
         *unprivileged_user_args(),
         "-w", HOST.working_directory,
         image,
-        *_SERVER_LAUNCH,
     ]  # fmt: skip
 
 
