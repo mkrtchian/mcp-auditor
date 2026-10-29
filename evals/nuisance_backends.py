@@ -23,6 +23,7 @@ from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
 from evals.mysql_backend import MYSQL_BRIDGE, MYSQL_IMAGE
 from evals.n8n_backend import N8N_BRIDGE, N8N_RESPONDER_IMAGE
+from evals.neo4j_backend import NEO4J_BRIDGE, NEO4J_IMAGE
 from evals.nuisance_provisioners import (
     apify_provisioner,
     atlassian_provisioner,
@@ -32,6 +33,7 @@ from evals.nuisance_provisioners import (
     jenkins_provisioner,
     mysql_provisioner,
     n8n_provisioner,
+    neo4j_provisioner,
 )
 
 if TYPE_CHECKING:
@@ -60,6 +62,7 @@ BACKENDS: dict[str, RegisteredBackend] = {
     ),
     "apify": RegisteredBackend(apify_provisioner, APIFY_BRIDGE, APIFY_RESPONDER_IMAGE),
     "jenkins": RegisteredBackend(jenkins_provisioner, JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE),
+    "neo4j": RegisteredBackend(neo4j_provisioner, NEO4J_BRIDGE, NEO4J_IMAGE),
 }
 
 

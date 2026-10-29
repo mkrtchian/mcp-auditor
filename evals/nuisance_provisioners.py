@@ -46,6 +46,7 @@ from evals.jenkins_backend import (
 )
 from evals.mysql_backend import MYSQL_LAUNCH_LOCK, ensure_mysql, mysql_rm, mysql_server_args
 from evals.n8n_backend import N8N_LAUNCH_LOCK, ensure_n8n_responder, n8n_rm, n8n_server_args
+from evals.neo4j_backend import NEO4J_LAUNCH_LOCK, ensure_neo4j, neo4j_rm, neo4j_server_args
 from evals.nuisance_images import image_tag
 
 if TYPE_CHECKING:
@@ -180,3 +181,19 @@ def jenkins_provisioner(server: AdmittedServer) -> Generator[Launch]:
         )
     finally:
         jenkins_rm(name)
+
+
+@contextmanager
+def neo4j_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run plants nothing, so the lock serialises only the stand-up of the database,
+    # not the yield: a server's concurrent runs share the one database that serves them all.
+    with NEO4J_LAUNCH_LOCK:
+        ensure_neo4j()
+    name = f"{LABEL}-neo4j-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=neo4j_server_args(name, image_tag(server.service), server.host, server.launch),
+        )
+    finally:
+        neo4j_rm(name)
