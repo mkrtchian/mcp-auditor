@@ -1,0 +1,14 @@
+# vibe-trading-ai 0.1.9, last version before the CVE-2026-58171 fix. Real pinned software from
+# PyPI, no stub. Base pinned by digest for cross-machine reproducibility (python:3.12-slim).
+# No COPY/ADD: the fingerprint hashes instructions only, so the seeded run is written by RUN.
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+RUN pip install --no-cache-dir "vibe-trading-ai==0.1.9"
+
+# A seeded run the benign get_run_result call can fetch cleanly, world-readable so the
+# unprivileged fix-check user can read it.
+RUN RUNS="$(python3 -c 'import src.swarm.store as s; print(s.swarm_runs_root())')" \
+ && mkdir -p "$RUNS/seedrun" \
+ && printf '%s' '{"id": "seedrun", "preset_name": "seed", "status": "completed", "created_at": "2024-01-01T00:00:00Z", "final_report": "seed report"}' > "$RUNS/seedrun/run.json" \
+ && chmod -R a+rX "$(dirname "$RUNS")"
+
+ENTRYPOINT ["vibe-trading-mcp"]

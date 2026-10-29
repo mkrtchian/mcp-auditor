@@ -4257,6 +4257,255 @@
         }
       ],
       "patched_version": "0.11.5"
+    },
+    {
+      "server_package": "PyPI:vibe-trading-ai",
+      "reaching_flaw": "CVE-2026-58171",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-58171",
+          "tools": [
+            {
+              "vulnerable_name": "get_run_result",
+              "patched_name": "get_run_result",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "0.1.10",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_run_result",
+              "arguments": {
+                "run_id": "seedrun"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "get_run_result"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "vibe-trading",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-58171",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "PyPI:vibe-trading-ai",
+          "flaw": "CVE-2026-58171",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; get_run_result loads a run by bare identifier under the runs directory, the crafted-identifier traversal out of that directory is the flaw, not the declared function"
+        },
+        {
+          "server_package": "PyPI:vibe-trading-ai",
+          "flaw": "CVE-2026-58171",
+          "field": "tools",
+          "value": "get_run_result",
+          "reason": "only get_run_result is counted: get_swarm_status does not surface the traversed file's content, and retry_run would overwrite the planted witness"
+        }
+      ],
+      "patched_version": "0.1.10"
+    },
+    {
+      "server_package": "PyPI:praisonai",
+      "reaching_flaw": "CVE-2026-47394",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-47394",
+          "tools": [
+            {
+              "vulnerable_name": "praisonai.workflow.show",
+              "patched_name": "praisonai.workflow.show",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "4.6.40",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "praisonai.workflow.show",
+              "arguments": {
+                "file_path": "agents.yaml"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "praisonai.workflow.show"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-44336",
+          "tools": [
+            {
+              "vulnerable_name": "praisonai.rules.show",
+              "patched_name": "praisonai.rules.show",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "4.6.34",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "praisonai.rules.show",
+              "arguments": {
+                "rule_name": "seed.txt"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "praisonai.rules.show"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "praisonai",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-47394",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-44336",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "PyPI:praisonai",
+          "flaw": "CVE-2026-47394",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; praisonai.workflow.show shows a workflow entry, the uncontained absolute-path read is the flaw, not the declared function"
+        },
+        {
+          "server_package": "PyPI:praisonai",
+          "flaw": "CVE-2026-44336",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; rules.show shows a rule entry under ~/.praison/rules/, the traversal out of that directory is the flaw, not the declared function"
+        },
+        {
+          "server_package": "PyPI:praisonai",
+          "flaw": "CVE-2026-44336",
+          "field": "tools",
+          "value": "praisonai.rules.show",
+          "reason": "of the rules.* handlers only rules.show is a read that returns content; rules.create and rules.delete are the write/delete side of the traversal (no surfacing witness, and delete would destroy a planted witness) and are not counted"
+        },
+        {
+          "server_package": "PyPI:praisonai",
+          "flaw": "CVE-2026-34935",
+          "field": "counted",
+          "value": "false",
+          "reason": "command_execution, dfie true (the declared function is to run a command), out of the nonce grammar; not counted"
+        },
+        {
+          "server_package": "PyPI:praisonai",
+          "flaw": "CVE-2026-41497",
+          "field": "counted",
+          "value": "false",
+          "reason": "command_execution, dfie true, out of the nonce grammar; not counted"
+        },
+        {
+          "server_package": "PyPI:praisonai",
+          "flaw": "CVE-2026-57124",
+          "field": "counted",
+          "value": "false",
+          "reason": "command_execution, dfie true, out of the nonce grammar; not counted"
+        },
+        {
+          "server_package": "PyPI:praisonai",
+          "flaw": "CVE-2026-47394",
+          "field": "tools",
+          "value": "praisonai.workflow.show",
+          "reason": "only praisonai.workflow.show is counted: it returns yaml_path.read_text() with no containment on the vulnerable version; praisonai.workflow.validate and praisonai.deploy.validate never disclose file content at any version (they are validity oracles: success echoes the caller's own path, missing keys list key names, YAML errors give only filename/line/column), so no nonce witness can surface through them and they fall outside the disclosure grammar (no oracle class is added this batch)"
+        }
+      ],
+      "patched_version": "4.6.40"
     }
   ]
 }

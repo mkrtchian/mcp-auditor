@@ -1,0 +1,20 @@
+# praisonai 4.6.33, last version before either the CVE-2026-44336 or the CVE-2026-47394 fix
+# (rules.show's rule_name and workflow.show's file_path both join onto their base directory
+# with no containment check). Real pinned software from PyPI, no stub. mcp is pinned below 2.0
+# because the server's FastMCP-era API is v1-only and PyPI's default resolution of praisonai's
+# unbounded "mcp>=1.20.0" picks the incompatible v2 line otherwise (confirmed: `mcp.server.
+# fastmcp` was renamed in mcp 2.x). Base pinned by digest for cross-machine reproducibility
+# (python:3.12-slim). No COPY/ADD: the fingerprint hashes instructions only, so the seeded rule
+# the benign calls read is written by RUN. The server is started by calling
+# praisonai.mcp_server.cli.handle_mcp_command directly, not through the `praisonai` console
+# script: `praisonai serve mcp --transport stdio` writes informational lines to stdout before
+# the JSON-RPC stream starts (corrupting it), and `praisonai mcp serve` is swallowed by a Typer
+# "mcp" command group that has no "serve" subcommand in this version.
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+RUN pip install --no-cache-dir "praisonai==4.6.33" "mcp>=1.20.0,<2"
+
+RUN mkdir -p /tmp/.praison/rules \
+ && printf 'seed rule content\n' > /tmp/.praison/rules/seed.txt \
+ && chmod -R a+rX /tmp/.praison
+
+ENTRYPOINT ["python3", "-c", "from praisonai.mcp_server.cli import handle_mcp_command; import sys; sys.exit(handle_mcp_command(['serve', '--transport', 'stdio']))"]

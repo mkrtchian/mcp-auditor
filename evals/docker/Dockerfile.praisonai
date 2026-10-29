@@ -1,0 +1,12 @@
+# praisonai 4.6.40, the shipped server (first fix of CVE-2026-47394, carrying CVE-2026-44336's
+# earlier fix too). Real pinned software from PyPI, no stub. mcp pinned below 2.0, same reason
+# as Dockerfile.praisonai-vuln. Base pinned by digest for cross-machine reproducibility
+# (python:3.12-slim). No COPY/ADD: the fingerprint hashes instructions only.
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+RUN pip install --no-cache-dir "praisonai==4.6.40" "mcp>=1.20.0,<2"
+
+RUN mkdir -p /tmp/.praison/rules \
+ && printf 'seed rule content\n' > /tmp/.praison/rules/seed.txt \
+ && chmod -R a+rX /tmp/.praison
+
+ENTRYPOINT ["python3", "-c", "from praisonai.mcp_server.cli import handle_mcp_command; import sys; sys.exit(handle_mcp_command(['serve', '--transport', 'stdio']))"]
