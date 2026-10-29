@@ -4013,6 +4013,250 @@
         }
       ],
       "patched_version": "1.0.23"
+    },
+    {
+      "server_package": "npm:knowns",
+      "reaching_flaw": "CVE-2026-86439",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-86439",
+          "tools": [
+            {
+              "vulnerable_name": "docs",
+              "patched_name": "docs",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "memory",
+              "patched_name": "memory",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "0.30.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "docs",
+              "arguments": {
+                "action": "get",
+                "path": "intro"
+              }
+            },
+            {
+              "tool": "memory",
+              "arguments": {
+                "action": "get",
+                "id": "intro"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "docs",
+              "memory"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "knowns",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-86439",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:knowns",
+          "flaw": "CVE-2026-86439",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; the docs/memory tools serve notes under the docs root, the traversal out of that root is the flaw, not the declared function (the read_note/ckan shape)"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": "GHSA-qjrq-cvv4-3g9w",
+          "field": "counted",
+          "value": "false",
+          "reason": "withdrawn 2026-09-25 as a duplicate of CVE-2026-86439 (same package, same 0.30.0 fix); counting it would score the same flaw twice, so it is left out of the counted set"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": "CVE-2026-88938",
+          "field": "counted",
+          "value": "false",
+          "reason": "no patched version removes the leak (patched_surfaces stays true), so the flaw cannot be proved fixed and is not counted"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": "CVE-2026-88939",
+          "field": "counted",
+          "value": "false",
+          "reason": "no patched version removes the leak (patched_surfaces stays true), so the flaw cannot be proved fixed and is not counted"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": "CVE-2026-30632",
+          "field": "counted",
+          "value": "false",
+          "reason": "settled out of this batch: a write (create_doc) with no surfacing witness, and the two blind records disagreed on its reproduction; revisited in a later batch rather than chased here"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": "CVE-2026-86541",
+          "field": "counted",
+          "value": "false",
+          "reason": "settled out of this batch: the two blind records disagreed on its reproduction; knowns already admits on its two solid read flaws"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": "CVE-2026-86544",
+          "field": "counted",
+          "value": "false",
+          "reason": "settled out of this batch: the two blind records disagreed on its reproduction; knowns already admits on its two solid read flaws"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": "CVE-2026-30633",
+          "field": "counted",
+          "value": "false",
+          "reason": "subsumed by CVE-2026-86439: no distinct get_doc tool exists (doc access is unified behind the single docs tool), and CVE-2026-30633 is an informal pre-vendor gist disclosure of the same DocStore.Get traversal the vendor advisory CVE-2026-86439 covers; counting it would score the same traversal on the same tool twice, so it is left out of the counted set like the withdrawn GHSA-qjrq-cvv4-3g9w"
+        }
+      ],
+      "patched_version": "0.30.0"
+    },
+    {
+      "server_package": "npm:@bitbonsai/mcpvault",
+      "reaching_flaw": "CVE-2026-57442",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-57442",
+          "tools": [
+            {
+              "vulnerable_name": "read_note",
+              "patched_name": "read_note",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "read_multiple_notes",
+              "patched_name": "read_multiple_notes",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "0.11.5",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "read_note",
+              "arguments": {
+                "path": "welcome.md"
+              }
+            },
+            {
+              "tool": "read_multiple_notes",
+              "arguments": {
+                "paths": [
+                  "welcome.md"
+                ]
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "read_note",
+              "read_multiple_notes"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "mcpvault",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-57442",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:@bitbonsai/mcpvault",
+          "flaw": "CVE-2026-57442",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; read_note serves a note under the vault, the root-anchored deny-list missing nested .git/.obsidian/node_modules metadata is a confinement gap, not reading a caller-named arbitrary file"
+        },
+        {
+          "server_package": "npm:@bitbonsai/mcpvault",
+          "flaw": "CVE-2026-57441",
+          "field": "counted",
+          "value": "false",
+          "reason": "not counted: its bypasses are case variants (case-insensitive macOS/Windows only) and Windows trailing dot or space, neither reproducible on the Linux run filesystem"
+        }
+      ],
+      "patched_version": "0.11.5"
     }
   ]
 }

@@ -14,10 +14,12 @@ from evals.nuisance_fix_checks import (
     cve_2026_44694_n8n,
     cve_2026_55157_token_optimizer,
     cve_2026_55787_flyto,
+    cve_2026_57442_mcpvault,
     cve_2026_65831_arcadedb,
     cve_2026_73844_ckan,
     cve_2026_73845_ckan,
     cve_2026_81562_claude_in_mobile,
+    cve_2026_86439_knowns,
     ghsa_8g7g_hmwm_6rv2_n8n,
 )
 
@@ -32,4 +34,6 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_18905_contextforge.TARGETS,
     *cve_2026_44694_n8n.TARGETS,
     *ghsa_8g7g_hmwm_6rv2_n8n.TARGETS,
+    *cve_2026_86439_knowns.TARGETS,
+    *cve_2026_57442_mcpvault.TARGETS,
 )

@@ -1,0 +1,23 @@
+# Patched target for the nuisance fix-check of CVE-2026-86439: knowns 0.30.0,
+# the first version whose doc and memory stores reject a path or id containing ".." before
+# joining it onto the docs/memory directory (GHSA-9gfj-28hw-jchp).
+#
+# The server takes no scope argument on its command line; the project root is set explicitly
+# with --project so the launch's -w override (set by the planting host) cannot move it. The
+# project is baked in at build time, docs/memory seeded for the fix check's benign calls, since
+# the mounted /srv the kit gives this builder plays no part in knowns' own storage.
+#
+# No COPY/ADD: the fingerprint hashes instructions only, so the project is built by RUN.
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
+
+RUN npm install -g knowns@0.30.0
+
+RUN mkdir -p /home/knowns/project \
+    && cd /home/knowns/project \
+    && knowns init --no-wizard >/dev/null 2>&1 \
+    && mkdir -p .knowns/docs .knowns/memory \
+    && printf 'Hello\n' > .knowns/docs/intro.md \
+    && printf 'A seeded fact for the fix check benign call.\n' > .knowns/memory/memory-intro.md \
+    && chmod -R a+rX /home/knowns
+
+ENTRYPOINT ["knowns", "mcp", "--stdio", "--project", "/home/knowns/project"]
