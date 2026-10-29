@@ -4506,6 +4506,118 @@
         }
       ],
       "patched_version": "4.6.40"
+    },
+    {
+      "server_package": "PyPI:mcp-atlassian",
+      "reaching_flaw": "CVE-2026-77252",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-77252",
+          "tools": [
+            {
+              "vulnerable_name": "jira_search",
+              "patched_name": "jira_search",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "confluence_search",
+              "patched_name": "confluence_search",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "0.22.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "jira_search",
+              "arguments": {
+                "jql": "project = ALLOWED",
+                "projects_filter": "ALLOWED"
+              }
+            },
+            {
+              "tool": "confluence_search",
+              "arguments": {
+                "query": "space = ALLOWED",
+                "spaces_filter": "ALLOWED"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "jira_search",
+              "confluence_search"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "atlassian",
+      "backend": {
+        "provisioner": "atlassian",
+        "image": "mcp-auditor-cve-atlassian-responder:local",
+        "network": "mcp-auditor-cve-atlassian-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-77252",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "PyPI:mcp-atlassian",
+          "flaw": "CVE-2026-77252",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; jira_search and confluence_search search a configured project/space allowlist, the caller projects_filter/spaces_filter overriding JIRA_PROJECTS_FILTER/CONFLUENCE_SPACES_FILTER to read an out-of-allowlist project is the access-control bypass, not the declared function"
+        },
+        {
+          "server_package": "PyPI:mcp-atlassian",
+          "flaw": "CVE-2026-77251",
+          "field": "counted",
+          "value": "false",
+          "reason": "not counted in this admission: its Agile board endpoints are a larger mock surface and it is not confirmed to take a projects_filter argument"
+        },
+        {
+          "server_package": "PyPI:mcp-atlassian",
+          "flaw": null,
+          "field": "counted",
+          "value": "false",
+          "reason": "the confluence_upload_attachment traversal flaws are dfie true (the declared function is to write the caller-named attachment path) and the dependency advisories are out of the nonce grammar; none is counted"
+        }
+      ],
+      "patched_version": "0.22.0"
     }
   ]
 }

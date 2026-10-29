@@ -21,6 +21,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_65831_arcadedb,
     cve_2026_73844_ckan,
     cve_2026_73845_ckan,
+    cve_2026_77252_atlassian,
     cve_2026_81562_claude_in_mobile,
     cve_2026_86439_knowns,
     ghsa_8g7g_hmwm_6rv2_n8n,
@@ -42,4 +43,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_58171_vibe_trading.TARGETS,
     *cve_2026_44336_praisonai.TARGETS,
     *cve_2026_47394_praisonai.TARGETS,
+    *cve_2026_77252_atlassian.TARGETS,
 )
