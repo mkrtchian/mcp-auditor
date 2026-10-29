@@ -4728,6 +4728,104 @@
         }
       ],
       "patched_version": "0.9.21"
+    },
+    {
+      "server_package": "https://github.com/hekmon8/Jenkins-server-mcp",
+      "reaching_flaw": "CVE-2026-10276",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-10276",
+          "tools": [
+            {
+              "vulnerable_name": "get_build_log",
+              "patched_name": "get_build_log",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "get_build_status",
+              "patched_name": "get_build_status",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "dcee5f1aa4b3",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_build_log",
+              "arguments": {
+                "jobPath": "job/MyJob",
+                "buildNumber": "lastBuild"
+              }
+            },
+            {
+              "tool": "get_build_status",
+              "arguments": {
+                "jobPath": "job/MyJob",
+                "buildNumber": "lastBuild"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "get_build_log",
+              "get_build_status"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "jenkins",
+      "backend": {
+        "provisioner": "jenkins",
+        "image": "mcp-auditor-cve-jenkins-responder:local",
+        "network": "mcp-auditor-cve-jenkins-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-10276",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/hekmon8/Jenkins-server-mcp",
+          "flaw": "CVE-2026-10276",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "records A and B both marked dfie true; flipped to false on source analysis of src/index.ts and an independent adversarial review: get_build_log and get_build_status fetch the configured JENKINS_URL (axios baseURL) and validateJobPath blocks absolute schemes, so the percent-encoded traversal in jobPath (%2f/%5c/%2e%2e) that escapes the job namespace to reach an internal path under the configured host is a bypass of the bounded fetch contract, not the declared function"
+        }
+      ],
+      "patched_version": "dcee5f1aa4b3"
     }
   ]
 }

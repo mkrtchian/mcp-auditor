@@ -1,0 +1,16 @@
+# Patched: Jenkins-server-mcp at commit dcee5f1aa4b3, the earliest commit whose validateJobPath
+# rejects every reproducible vector INCLUDING encoded separators/traversal (%2f, %5c, %2e%2e). The
+# intermediate commit 833d3215 blocks only literal ".." and is bypassed by %2e%2e, so it is not a
+# complete fix; dcee5f1 is. Doubles as the nuisance run image.
+# No COPY/ADD from the build context; the clone is a RUN fetch.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+RUN git clone https://github.com/hekmon8/Jenkins-server-mcp.git . \
+    && git checkout dcee5f1aa4b3
+RUN npm install && npm run build
+# The run responder singleton's fixed address (jenkins_backend.JENKINS_RESPONDER_IP); the fix-check
+# overrides JENKINS_URL with its own -e to reach the per-launch responder.
+ENV JENKINS_URL=http://198.18.2.2 JENKINS_USER=admin JENKINS_TOKEN=token
+ENTRYPOINT ["node", "/app/build/index.js"]
