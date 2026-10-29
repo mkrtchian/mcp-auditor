@@ -1,23 +1,22 @@
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as given
-from evals import nuisance_backends
+from evals import nuisance_provisioners
 from evals.ckan_backend import CKAN_ALIASES, CKAN_BRIDGE, CKAN_RESPONDER_IMAGE, CKAN_RESPONDER_IP
 from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.mysql_backend import MYSQL_BRIDGE, MYSQL_IMAGE
 from evals.n8n_backend import N8N_BRIDGE, N8N_RESPONDER_IMAGE
 from evals.nuisance_admission import AdmittedServer, BackendFixture
-from evals.nuisance_backends import (
-    BACKENDS,
-    backend_problems,
+from evals.nuisance_backends import BACKENDS, backend_problems
+from evals.nuisance_images import image_tag
+from evals.nuisance_provisioners import (
     ckan_provisioner,
     contextforge_provisioner,
     doris_provisioner,
     mysql_provisioner,
     n8n_provisioner,
 )
-from evals.nuisance_images import image_tag
 
 
 def _value_after(args: list[str], flag: str) -> str:
@@ -44,8 +43,8 @@ def test_doris_provisioner_wires_the_cluster_and_reaps_the_server(monkeypatch: p
     def record_rm(name: str) -> None:
         removed.append(name)
 
-    monkeypatch.setattr(nuisance_backends, "ensure_doris", record_ensure)
-    monkeypatch.setattr(nuisance_backends, "doris_rm", record_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_doris", record_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "doris_rm", record_rm)
     server = _a_server()
 
     with doris_provisioner(server) as launch:
@@ -68,8 +67,8 @@ def test_two_doris_provisioners_of_one_server_are_open_at_once(monkeypatch: pyte
     def noop_rm(name: str) -> None:
         pass
 
-    monkeypatch.setattr(nuisance_backends, "ensure_doris", noop_ensure)
-    monkeypatch.setattr(nuisance_backends, "doris_rm", noop_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_doris", noop_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "doris_rm", noop_rm)
     server = _a_server()
 
     with doris_provisioner(server), doris_provisioner(server):
@@ -98,8 +97,8 @@ def test_ckan_provisioner_wires_the_responder_and_reaps_the_server(
     def record_rm(name: str) -> None:
         removed.append(name)
 
-    monkeypatch.setattr(nuisance_backends, "ensure_ckan_responder", record_ensure)
-    monkeypatch.setattr(nuisance_backends, "ckan_rm", record_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_ckan_responder", record_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "ckan_rm", record_rm)
     server = _a_server()
 
     with ckan_provisioner(server) as launch:
@@ -125,8 +124,8 @@ def test_two_ckan_provisioners_of_one_server_are_open_at_once(monkeypatch: pytes
     def noop_rm(name: str) -> None:
         pass
 
-    monkeypatch.setattr(nuisance_backends, "ensure_ckan_responder", noop_ensure)
-    monkeypatch.setattr(nuisance_backends, "ckan_rm", noop_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_ckan_responder", noop_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "ckan_rm", noop_rm)
     server = _a_server()
 
     with ckan_provisioner(server), ckan_provisioner(server):
@@ -155,8 +154,8 @@ def test_contextforge_provisioner_wires_the_responder_and_reaps_the_server(
     def record_rm(name: str) -> None:
         removed.append(name)
 
-    monkeypatch.setattr(nuisance_backends, "ensure_contextforge_responder", record_ensure)
-    monkeypatch.setattr(nuisance_backends, "contextforge_rm", record_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_contextforge_responder", record_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "contextforge_rm", record_rm)
     server = _a_server()
 
     with contextforge_provisioner(server) as launch:
@@ -181,8 +180,8 @@ def test_two_contextforge_provisioners_of_one_server_are_open_at_once(
     def noop_rm(name: str) -> None:
         pass
 
-    monkeypatch.setattr(nuisance_backends, "ensure_contextforge_responder", noop_ensure)
-    monkeypatch.setattr(nuisance_backends, "contextforge_rm", noop_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_contextforge_responder", noop_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "contextforge_rm", noop_rm)
     server = _a_server()
 
     with contextforge_provisioner(server), contextforge_provisioner(server):
@@ -205,8 +204,8 @@ def test_mysql_provisioner_wires_the_pair_and_reaps_the_server(monkeypatch: pyte
     def record_rm(name: str) -> None:
         removed.append(name)
 
-    monkeypatch.setattr(nuisance_backends, "ensure_mysql", record_ensure)
-    monkeypatch.setattr(nuisance_backends, "mysql_rm", record_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_mysql", record_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "mysql_rm", record_rm)
     server = _a_server()
 
     with mysql_provisioner(server) as launch:
@@ -229,8 +228,8 @@ def test_two_mysql_provisioners_of_one_server_are_open_at_once(monkeypatch: pyte
     def noop_rm(name: str) -> None:
         pass
 
-    monkeypatch.setattr(nuisance_backends, "ensure_mysql", noop_ensure)
-    monkeypatch.setattr(nuisance_backends, "mysql_rm", noop_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_mysql", noop_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "mysql_rm", noop_rm)
     server = _a_server()
 
     with mysql_provisioner(server), mysql_provisioner(server):
@@ -253,8 +252,8 @@ def test_n8n_provisioner_wires_the_responder_and_reaps_the_server(monkeypatch: p
     def record_rm(name: str) -> None:
         removed.append(name)
 
-    monkeypatch.setattr(nuisance_backends, "ensure_n8n_responder", record_ensure)
-    monkeypatch.setattr(nuisance_backends, "n8n_rm", record_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_n8n_responder", record_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "n8n_rm", record_rm)
     server = _a_server()
 
     with n8n_provisioner(server) as launch:
@@ -277,8 +276,8 @@ def test_two_n8n_provisioners_of_one_server_are_open_at_once(monkeypatch: pytest
     def noop_rm(name: str) -> None:
         pass
 
-    monkeypatch.setattr(nuisance_backends, "ensure_n8n_responder", noop_ensure)
-    monkeypatch.setattr(nuisance_backends, "n8n_rm", noop_rm)
+    monkeypatch.setattr(nuisance_provisioners, "ensure_n8n_responder", noop_ensure)
+    monkeypatch.setattr(nuisance_provisioners, "n8n_rm", noop_rm)
     server = _a_server()
 
     with n8n_provisioner(server), n8n_provisioner(server):

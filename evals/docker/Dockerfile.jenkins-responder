@@ -1,0 +1,47 @@
+# HTTP mock-Jenkins responder for the nuisance suite's jenkins backend, the controller that the
+# get_build_log, get_build_status and trigger_build tools of hekmon8/Jenkins-server-mcp reach
+# through JENKINS_URL on port 80. It is NOT the server under test and carries none of its flaw.
+# Paths are percent-decoded and normalised before routing, as a Jenkins behind a proxy would see
+# them. It answers:
+#   - <job path>/<build>/consoleText: a fixed benign console log
+#   - <job path>/api/json and <job path>/<build>/api/json: a fixed benign build description
+#   - /crumbIssuer/api/json and any POST: what trigger_build needs to succeed
+#   - /internal/...: 404, unless WITNESS_NONCE is set, then the nonce in a consoleText body or in
+#     the result field of an api/json body, so a per-launch container holds the fix-check
+#     witness and the shared singleton serves none
+# Never spoken to over MCP stdio: the audited server reaches it as an outbound HTTP request.
+# No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+
+RUN printf '%s\n' \
+  "const http = require('http');" \
+  "const path = require('path');" \
+  "" \
+  "const NONCE = process.env.WITNESS_NONCE;" \
+  "const LOG = 'Started by user admin\nBuilding in workspace\nFinished: SUCCESS\n';" \
+  "" \
+  "function reply(res, status, type, body) {" \
+  "  res.writeHead(status, { 'content-type': type });" \
+  "  res.end(body);" \
+  "}" \
+  "" \
+  "function describe(result) {" \
+  "  return JSON.stringify({ name: 'public', building: false, result: result, timestamp: 1767225600000, duration: 4200, url: 'http://jenkins/job/public/1/', lastFailedBuild: { number: 1, url: 'http://jenkins/job/public/1/' } });" \
+  "}" \
+  "" \
+  "http.createServer((req, res) => {" \
+  "  req.resume();" \
+  "  let pathname = req.url.split('?')[0];" \
+  "  try { pathname = decodeURIComponent(pathname); } catch (e) { /* keep the raw path */ }" \
+  "  pathname = path.posix.normalize(pathname);" \
+  "  const internal = pathname.startsWith('/internal/');" \
+  "  if (internal && !NONCE) return reply(res, 404, 'text/plain', 'Not Found');" \
+  "  if (req.method === 'POST') return reply(res, 201, 'text/plain', '');" \
+  "  if (pathname === '/crumbIssuer/api/json') return reply(res, 200, 'application/json', JSON.stringify({ crumbRequestField: 'Jenkins-Crumb', crumb: 'calib-crumb' }));" \
+  "  if (pathname.endsWith('/consoleText')) return reply(res, 200, 'text/plain', internal ? NONCE + '\n' : LOG);" \
+  "  if (pathname.endsWith('/api/json')) return reply(res, 200, 'application/json', describe(internal ? NONCE : 'SUCCESS'));" \
+  "  return reply(res, 404, 'text/plain', 'Not Found');" \
+  "}).listen(80);" \
+  > /responder.js
+
+ENTRYPOINT ["node", "/responder.js"]
