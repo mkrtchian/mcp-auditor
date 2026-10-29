@@ -1,0 +1,9 @@
+# @apify/actors-mcp-server 0.9.21 (patched: fetch-apify-docs parses the URL and compares its
+# hostname to a set, instead of a raw startsWith on the allowlisted origins) for the nuisance
+# suite's CVE-2026-46341 fix-check. Real pinned software from npm, runs the MCP server over
+# stdio. The documentation host a tool call fetches from is the separate apify-responder image.
+# No COPY/ADD: the fingerprint hashes instructions only.
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g @apify/actors-mcp-server@0.9.21 \
+ && npm cache clean --force
+ENTRYPOINT ["actors-mcp-server"]

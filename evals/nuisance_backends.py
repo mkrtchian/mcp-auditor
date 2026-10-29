@@ -15,6 +15,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from evals.apify_backend import (
+    APIFY_BRIDGE,
+    APIFY_LAUNCH_LOCK,
+    APIFY_RESPONDER_IMAGE,
+    apify_rm,
+    apify_server_args,
+    ensure_apify_responder,
+)
 from evals.atlassian_backend import (
     ATLASSIAN_BRIDGE,
     ATLASSIAN_LAUNCH_LOCK,
@@ -129,6 +137,22 @@ def atlassian_provisioner(server: AdmittedServer) -> Generator[Launch]:
 
 
 @contextmanager
+def apify_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no witness, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with APIFY_LAUNCH_LOCK:
+        ensure_apify_responder()
+    name = f"{LABEL}-apify-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=apify_server_args(name, image_tag(server.service), server.host, server.launch),
+        )
+    finally:
+        apify_rm(name)
+
+
+@contextmanager
 def contextforge_provisioner(server: AdmittedServer) -> Generator[Launch]:
     # The nuisance run stands no sentinel, so the lock serialises only the responder stand-up,
     # not the yield: a server's concurrent runs share the one responder that serves them all.
@@ -189,6 +213,7 @@ BACKENDS: dict[str, RegisteredBackend] = {
     "atlassian": RegisteredBackend(
         atlassian_provisioner, ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
     ),
+    "apify": RegisteredBackend(apify_provisioner, APIFY_BRIDGE, APIFY_RESPONDER_IMAGE),
 }
 
 
