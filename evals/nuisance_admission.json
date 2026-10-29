@@ -4269,6 +4269,11 @@
               "vulnerable_name": "get_run_result",
               "patched_name": "get_run_result",
               "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "get_swarm_status",
+              "patched_name": "get_swarm_status",
+              "status": "unchanged"
             }
           ],
           "effect_class": "read_outside_scope",
@@ -4281,6 +4286,12 @@
               "arguments": {
                 "run_id": "seedrun"
               }
+            },
+            {
+              "tool": "get_swarm_status",
+              "arguments": {
+                "run_id": "seedrun"
+              }
             }
           ],
           "backend_need": "none",
@@ -4289,7 +4300,8 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "get_run_result"
+              "get_run_result",
+              "get_swarm_status"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
@@ -4339,8 +4351,8 @@
           "server_package": "PyPI:vibe-trading-ai",
           "flaw": "CVE-2026-58171",
           "field": "tools",
-          "value": "get_run_result",
-          "reason": "only get_run_result is counted: get_swarm_status does not surface the traversed file's content, and retry_run would overwrite the planted witness"
+          "value": "get_run_result, get_swarm_status",
+          "reason": "get_run_result and get_swarm_status both load the run by bare identifier through the same traversal-vulnerable store.load_run and return _run_to_dict including final_report, so both surface the planted witness and both are counted; retry_run is not counted because it re-runs the loaded run and overwrites the planted witness"
         }
       ],
       "patched_version": "0.1.10"

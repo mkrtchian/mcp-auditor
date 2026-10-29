@@ -1,12 +1,12 @@
-"""vibe-trading-ai fix-check fixture: CVE-2026-58171 (run_id traversal via get_run_result).
+"""vibe-trading-ai fix-check fixture: CVE-2026-58171 (run_id traversal on two tools).
 
 SwarmStore.run_dir (agent/src/swarm/store.py) joins the caller-supplied run_id onto the swarm
 runs base directory (swarm_runs_root, <site-packages>/.swarm/runs) with no containment check in
 0.1.9, so a run_id built from a fixed `../` run walks out of that directory. get_run_result
-reads run_dir(run_id)/"run.json", parses it as a SwarmRun and returns the parsed content, so a
-planted file named run.json that parses as a SwarmRun surfaces its final_report field in the
-response. The 0.1.10 fix rejects a run_id that is absolute, multi-segment, or contains "." /
-".." / a path separator before the join.
+and get_swarm_status read run_dir(run_id)/"run.json", parse it as a SwarmRun and return the
+parsed content, so a planted file named run.json that parses as a SwarmRun surfaces its
+final_report field in the response. The 0.1.10 fix rejects a run_id that is absolute,
+multi-segment, or contains "." / ".." / a path separator before the join.
 
 The generic per-file plant writes the bare nonce as content, but get_run_result needs a file
 that parses as a SwarmRun, so the witness is written by hand below (spec.files cleared) instead
@@ -16,10 +16,9 @@ python:3.12-slim base (/usr/local/lib/python3.12/site-packages/.swarm/runs); the
 uses the same fixed eight-segment `../` run as the knowns fixture (the extra segments collapse
 harmlessly at the root), landing on a witness mounted directly at /tmp/run.json.
 
-get_swarm_status and retry_run are not counted: get_swarm_status's own projection carries the
-same fields as get_run_result's and would count identically, but the admission counts only
-get_run_result (see evals/nuisance_admission.json's settlement); retry_run would overwrite the
-planted witness rather than read it.
+Both tools load the run through the same traversal and return the same projection with
+final_report, so both are counted. retry_run is not counted: it would overwrite the planted
+witness rather than read it.
 """
 
 import dataclasses
@@ -95,8 +94,16 @@ async def _exploit_get_run_result(places: Places, client: KitClient) -> None:
     await client.call_tool("get_run_result", {"run_id": _TRAVERSAL_RUN_ID})
 
 
+async def _exploit_get_swarm_status(places: Places, client: KitClient) -> None:
+    await client.call_tool("get_swarm_status", {"run_id": _TRAVERSAL_RUN_ID})
+
+
 async def _benign_get_run_result(places: Places, client: KitClient) -> None:
     await client.call_tool("get_run_result", {"run_id": _SEEDED_RUN_ID})
+
+
+async def _benign_get_swarm_status(places: Places, client: KitClient) -> None:
+    await client.call_tool("get_swarm_status", {"run_id": _SEEDED_RUN_ID})
 
 
 TARGET = FixCheckTarget(
@@ -106,8 +113,8 @@ TARGET = FixCheckTarget(
     witness=WITNESS,
     planting_host=HOST,
     builder=vibe_trading_env,
-    exploits=(_exploit_get_run_result,),
-    benign_calls=(_benign_get_run_result,),
+    exploits=(_exploit_get_run_result, _exploit_get_swarm_status),
+    benign_calls=(_benign_get_run_result, _benign_get_swarm_status),
     vulnerable_service="vibe-trading-vuln",
     patched_service="vibe-trading",
     server_patched_service=None,
