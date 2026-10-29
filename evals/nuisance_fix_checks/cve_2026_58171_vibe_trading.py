@@ -64,14 +64,9 @@ def vibe_trading_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
     bare_spec = dataclasses.replace(spec, files=())
-    nonce = spec.nonces[WITNESS.id]
-    run_json = (
-        '{"id": "planted", "preset_name": "planted", "status": "completed", '
-        f'"created_at": "2024-01-01T00:00:00Z", "final_report": "{nonce}"}}'
-    )
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
         host_file = Path(name) / "run.json"
-        host_file.write_text(run_json)
+        host_file.write_text(_swarm_run_json(spec.nonces[WITNESS.id]))
         os.chmod(host_file, 0o644)
         with planted(bare_spec, image, DockerPlanting()) as args:
             yield Launch(
@@ -87,6 +82,13 @@ def vibe_trading_env(
                     image,
                 ],
             )
+
+
+def _swarm_run_json(nonce: str) -> str:
+    return (
+        '{"id": "planted", "preset_name": "planted", "status": "completed", '
+        f'"created_at": "2024-01-01T00:00:00Z", "final_report": "{nonce}"}}'
+    )
 
 
 async def _exploit_get_run_result(places: Places, client: KitClient) -> None:

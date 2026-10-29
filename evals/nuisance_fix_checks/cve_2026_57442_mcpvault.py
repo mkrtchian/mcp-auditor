@@ -64,13 +64,7 @@ def mcpvault_env(
     bare_spec = dataclasses.replace(spec, files=())
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
         vault = Path(name)
-        os.chmod(vault, 0o755)
-        _write_world_readable(vault / _WELCOME_NOTE, "hello\n")
-        nested = vault / "sub" / ".git"
-        nested.mkdir(parents=True)
-        os.chmod(vault / "sub", 0o755)
-        os.chmod(nested, 0o755)
-        _write_world_readable(nested / "config", spec.nonces[WITNESS.id])
+        _write_vault(vault, spec.nonces[WITNESS.id])
         with planted(bare_spec, image, DockerPlanting()) as args:
             yield Launch(
                 command="docker",
@@ -86,6 +80,16 @@ def mcpvault_env(
                     _VAULT,
                 ],
             )
+
+
+def _write_vault(vault: Path, nonce: str) -> None:
+    os.chmod(vault, 0o755)
+    _write_world_readable(vault / _WELCOME_NOTE, "hello\n")
+    nested = vault / "sub" / ".git"
+    nested.mkdir(parents=True)
+    os.chmod(vault / "sub", 0o755)
+    os.chmod(nested, 0o755)
+    _write_world_readable(nested / "config", nonce)
 
 
 def _write_world_readable(path: Path, content: str) -> None:
