@@ -1,0 +1,197 @@
+# Mock Jira and Confluence Server/DC search API for the nuisance suite's atlassian backend, the
+# external Atlassian instance an mcp-atlassian deployment points JIRA_URL and CONFLUENCE_URL at.
+# It is NOT the server under test and carries none of its flaw. Two scopes, ALLOWED and SECRET:
+#   - GET /rest/api/2/search?jql=...  -> the issues whose project satisfies the JQL (jira.jql, the
+#     Server/DC path a local JIRA_URL selects)
+#   - GET /rest/api/search?cql=...    -> the pages whose space satisfies the CQL (confluence.cql)
+# Only a tiny boolean grammar is evaluated: project = X, space = X, IN (...), AND, OR and
+# parentheses. Any other clause counts as true and a trailing ORDER BY is ignored. The SECRET
+# issue and page carry WITNESS_NONCE when it is set, else a fixed non-secret summary, so a
+# per-launch container holds the fix-check witness and the shared singleton serves none.
+# Never spoken to over MCP stdio. No COPY/ADD: the fingerprint hashes instructions only, so the
+# responder is inlined.
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+
+RUN printf '%s\n' \
+  "import json" \
+  "import os" \
+  "from http.server import BaseHTTPRequestHandler, HTTPServer" \
+  "from urllib.parse import parse_qs, urlparse" \
+  "" \
+  "NONCE = os.environ.get('WITNESS_NONCE')" \
+  "NOTE = 'Incident notes ' + NONCE if NONCE else 'Quarterly planning notes'" \
+  "ISSUES = [('ALLOWED-1', 'ALLOWED', 'Roadmap review'), ('SECRET-1', 'SECRET', NOTE)]" \
+  "PAGES = [('1001', 'ALLOWED', 'Team handbook'), ('1002', 'SECRET', NOTE)]" \
+  "STOPS = ('AND', 'OR', 'ORDER')" \
+  "QUOTES = chr(34) + chr(39)" \
+  "" \
+  "" \
+  "def tokenize(query):" \
+  "    tokens, i = [], 0" \
+  "    while i < len(query):" \
+  "        c = query[i]" \
+  "        if c.isspace():" \
+  "            i += 1" \
+  "        elif c in '(),':" \
+  "            tokens.append(('p', c))" \
+  "            i += 1" \
+  "        elif c in QUOTES:" \
+  "            end = query.index(c, i + 1)" \
+  "            tokens.append(('s', query[i + 1:end]))" \
+  "            i = end + 1" \
+  "        else:" \
+  "            j = i" \
+  "            while j < len(query) and not query[j].isspace() and query[j] not in '(),' + QUOTES:" \
+  "                j += 1" \
+  "            tokens.append(('w', query[i:j]))" \
+  "            i = j" \
+  "    return tokens" \
+  "" \
+  "" \
+  "class Parser:" \
+  "    def __init__(self, tokens):" \
+  "        self.tokens = tokens" \
+  "        self.at = 0" \
+  "" \
+  "    def peek(self):" \
+  "        return self.tokens[self.at] if self.at < len(self.tokens) else ('end', '')" \
+  "" \
+  "    def next(self):" \
+  "        token = self.peek()" \
+  "        self.at += 1" \
+  "        return token" \
+  "" \
+  "    def keyword(self, *words):" \
+  "        kind, text = self.peek()" \
+  "        return kind == 'w' and text.upper() in words" \
+  "" \
+  "    def parse_or(self):" \
+  "        left = self.parse_and()" \
+  "        while self.keyword('OR'):" \
+  "            self.next()" \
+  "            left = ('or', left, self.parse_and())" \
+  "        return left" \
+  "" \
+  "    def parse_and(self):" \
+  "        left = self.parse_atom()" \
+  "        while self.keyword('AND'):" \
+  "            self.next()" \
+  "            left = ('and', left, self.parse_atom())" \
+  "        return left" \
+  "" \
+  "    def parse_atom(self):" \
+  "        if self.peek() == ('p', '('):" \
+  "            self.next()" \
+  "            inner = self.parse_or()" \
+  "            self.next()" \
+  "            return inner" \
+  "        field = self.next()[1].lower()" \
+  "        if field in ('project', 'space'):" \
+  "            scoped = self.parse_scope(field)" \
+  "            if scoped is not None:" \
+  "                return scoped" \
+  "        self.skip_clause()" \
+  "        return ('true',)" \
+  "" \
+  "    def parse_scope(self, field):" \
+  "        start = self.at" \
+  "        op = self.next()" \
+  "        if op == ('w', '='):" \
+  "            return ('in', field, [self.next()[1].upper()])" \
+  "        if op[0] == 'w' and op[1].upper() == 'IN' and self.peek() == ('p', '('):" \
+  "            self.next()" \
+  "            keys = []" \
+  "            while self.peek() != ('p', ')'):" \
+  "                kind, text = self.next()" \
+  "                if kind != 'p':" \
+  "                    keys.append(text.upper())" \
+  "            self.next()" \
+  "            return ('in', field, keys)" \
+  "        self.at = start" \
+  "        return None" \
+  "" \
+  "    def skip_clause(self):" \
+  "        while self.peek()[0] != 'end' and self.peek() != ('p', ')') and not self.keyword(*STOPS):" \
+  "            if self.next() == ('p', '('):" \
+  "                depth = 1" \
+  "                while depth and self.peek()[0] != 'end':" \
+  "                    token = self.next()" \
+  "                    depth += (token == ('p', '(')) - (token == ('p', ')'))" \
+  "" \
+  "" \
+  "def matches(tree, scopes):" \
+  "    if tree[0] == 'true':" \
+  "        return True" \
+  "    if tree[0] == 'in':" \
+  "        return scopes.get(tree[1]) in tree[2]" \
+  "    left, right = matches(tree[1], scopes), matches(tree[2], scopes)" \
+  "    return (left and right) if tree[0] == 'and' else (left or right)" \
+  "" \
+  "" \
+  "def accepts(query, scopes):" \
+  "    if not query.strip():" \
+  "        return True" \
+  "    parser = Parser(tokenize(query))" \
+  "    tree = parser.parse_or()" \
+  "    if parser.peek()[0] != 'end' and not parser.keyword('ORDER'):" \
+  "        raise ValueError('unsupported query')" \
+  "    return matches(tree, scopes)" \
+  "" \
+  "" \
+  "def issue(key, project, summary):" \
+  "    return {'id': key.split('-')[1], 'key': key, 'self': '/rest/api/2/issue/' + key," \
+  "            'fields': {'summary': summary, 'description': summary, 'project': {'key': project, 'name': project}," \
+  "                       'status': {'name': 'Open'}, 'issuetype': {'name': 'Task'}," \
+  "                       'created': '2024-01-01T10:00:00.000+0000', 'updated': '2024-01-02T10:00:00.000+0000'}}" \
+  "" \
+  "" \
+  "def page(identifier, space, title):" \
+  "    link = '/spaces/' + space + '/pages/' + identifier" \
+  "    return {'content': {'id': identifier, 'type': 'page', 'status': 'current', 'title': title," \
+  "                        'space': {'key': space, 'name': space}, '_links': {'webui': link}}," \
+  "            'title': title, 'excerpt': title, 'url': link, 'entityType': 'content'," \
+  "            'resultGlobalContainer': {'title': space, 'displayUrl': '/spaces/' + space}," \
+  "            'lastModified': '2024-01-01T08:00:00.000Z', 'score': 0.0}" \
+  "" \
+  "" \
+  "def search_jira(query):" \
+  "    found = [issue(*row) for row in ISSUES if accepts(query, {'project': row[1]})]" \
+  "    return {'startAt': 0, 'maxResults': 50, 'total': len(found), 'issues': found}" \
+  "" \
+  "" \
+  "def search_confluence(query):" \
+  "    found = [page(*row) for row in PAGES if accepts(query, {'space': row[1]})]" \
+  "    return {'results': found, 'start': 0, 'limit': 50, 'size': len(found), 'totalSize': len(found)," \
+  "            'cqlQuery': query, '_links': {}}" \
+  "" \
+  "" \
+  "class Handler(BaseHTTPRequestHandler):" \
+  "    def do_GET(self):" \
+  "        url = urlparse(self.path)" \
+  "        params = parse_qs(url.query)" \
+  "        try:" \
+  "            if url.path.rstrip('/') == '/rest/api/2/search':" \
+  "                self.reply(200, search_jira(params.get('jql', [''])[0]))" \
+  "            elif url.path.rstrip('/') == '/rest/api/search':" \
+  "                self.reply(200, search_confluence(params.get('cql', [''])[0]))" \
+  "            else:" \
+  "                self.reply(404, {'message': 'no route'})" \
+  "        except ValueError:" \
+  "            self.reply(400, {'message': 'unsupported query'})" \
+  "" \
+  "    def reply(self, code, payload):" \
+  "        body = json.dumps(payload).encode()" \
+  "        self.send_response(code)" \
+  "        self.send_header('Content-Type', 'application/json')" \
+  "        self.send_header('Content-Length', str(len(body)))" \
+  "        self.end_headers()" \
+  "        self.wfile.write(body)" \
+  "" \
+  "    def log_message(self, *args):" \
+  "        pass" \
+  "" \
+  "" \
+  "HTTPServer(('0.0.0.0', 80), Handler).serve_forever()" \
+  > /responder.py
+
+ENTRYPOINT ["python", "/responder.py"]

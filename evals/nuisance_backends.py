@@ -15,6 +15,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from evals.atlassian_backend import (
+    ATLASSIAN_BRIDGE,
+    ATLASSIAN_LAUNCH_LOCK,
+    ATLASSIAN_RESPONDER_IMAGE,
+    atlassian_rm,
+    atlassian_server_args,
+    ensure_atlassian_responder,
+)
 from evals.ckan_backend import (
     CKAN_BRIDGE,
     CKAN_LAUNCH_LOCK,
@@ -105,6 +113,22 @@ def ckan_provisioner(server: AdmittedServer) -> Generator[Launch]:
 
 
 @contextmanager
+def atlassian_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no witness, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with ATLASSIAN_LAUNCH_LOCK:
+        ensure_atlassian_responder()
+    name = f"{LABEL}-atlassian-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=atlassian_server_args(name, image_tag(server.service), server.host, server.launch),
+        )
+    finally:
+        atlassian_rm(name)
+
+
+@contextmanager
 def contextforge_provisioner(server: AdmittedServer) -> Generator[Launch]:
     # The nuisance run stands no sentinel, so the lock serialises only the responder stand-up,
     # not the yield: a server's concurrent runs share the one responder that serves them all.
@@ -162,6 +186,9 @@ BACKENDS: dict[str, RegisteredBackend] = {
         contextforge_provisioner, CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
     ),
     "n8n": RegisteredBackend(n8n_provisioner, N8N_BRIDGE, N8N_RESPONDER_IMAGE),
+    "atlassian": RegisteredBackend(
+        atlassian_provisioner, ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
+    ),
 }
 
 

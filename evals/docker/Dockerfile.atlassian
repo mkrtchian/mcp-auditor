@@ -1,0 +1,8 @@
+# mcp-atlassian 0.22.0 (patched: a caller's projects_filter / spaces_filter only narrows the
+# JIRA_PROJECTS_FILTER / CONFLUENCE_SPACES_FILTER allowlist) for the nuisance suite's
+# CVE-2026-77252 fix-check. Real pinned software from PyPI, runs the MCP server over stdio. The
+# Jira and Confluence API a tool call needs is the separate atlassian-responder image. Base
+# pinned by digest (python:3.12-slim). No COPY/ADD: the fingerprint hashes instructions only.
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+RUN pip install --no-cache-dir "mcp-atlassian==0.22.0"
+ENTRYPOINT ["mcp-atlassian", "--transport", "stdio"]
