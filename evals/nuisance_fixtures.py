@@ -13,6 +13,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_18905_contextforge,
     cve_2026_44336_praisonai,
     cve_2026_44694_n8n,
+    cve_2026_46341_apify,
     cve_2026_47394_praisonai,
     cve_2026_55157_token_optimizer,
     cve_2026_55787_flyto,
@@ -44,4 +45,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_44336_praisonai.TARGETS,
     *cve_2026_47394_praisonai.TARGETS,
     *cve_2026_77252_atlassian.TARGETS,
+    *cve_2026_46341_apify.TARGETS,
 )

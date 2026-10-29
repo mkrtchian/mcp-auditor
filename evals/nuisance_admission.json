@@ -4618,6 +4618,104 @@
         }
       ],
       "patched_version": "0.22.0"
+    },
+    {
+      "server_package": "npm:@apify/actors-mcp-server",
+      "reaching_flaw": "CVE-2026-81093",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-46341",
+          "tools": [
+            {
+              "vulnerable_name": "fetch-apify-docs",
+              "patched_name": "fetch-apify-docs",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "0.9.21",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "fetch-apify-docs",
+              "arguments": {
+                "url": "https://docs.apify.com/platform/actors.md"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "fetch-apify-docs"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "apify",
+      "backend": {
+        "provisioner": "apify",
+        "image": "mcp-auditor-cve-apify-responder:local",
+        "network": "mcp-auditor-cve-apify-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-46341",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:@apify/actors-mcp-server",
+          "flaw": "CVE-2026-46341",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; fetch-apify-docs is declared to fetch Apify/Crawlee documentation, the suffix-host bypass of the startsWith allowlist to fetch an attacker-controlled host is the flaw, not the declared function"
+        },
+        {
+          "server_package": "npm:@apify/actors-mcp-server",
+          "flaw": "CVE-2026-50143",
+          "field": "counted",
+          "value": "false",
+          "reason": "not counted: call-actor's attacker vector is the Actor definition fetched from the hardcoded api.apify.com, not a tool-call argument, and reproducing it needs the hosted platform"
+        },
+        {
+          "server_package": "npm:@apify/actors-mcp-server",
+          "flaw": "CVE-2026-81093",
+          "field": "counted",
+          "value": "false",
+          "reason": "not counted: get-html-skeleton is dfie true (its declared function is to fetch and render the caller-named URL); removed at 0.9.12"
+        }
+      ],
+      "patched_version": "0.9.21"
     }
   ]
 }
