@@ -5129,7 +5129,7 @@
           "flaw": "CVE-2025-67366",
           "field": "patched_source",
           "value": "fix_commit",
-          "reason": "the @sylphxltd/@sylphx npm line has no installable release carrying the fix (0.6.0-0.7.2 wrap the JSON-RPC envelope into the strict Zod schema so every tool call errors); the patched arm is the Rust rewrite built from git tag v0.7.1 (fix commit 9943de5), whose resolve_path canonicalises and rejects a real path outside the root"
+          "reason": "the @sylphxltd/@sylphx npm line has no installable release carrying the fix (the published npm releases 0.7.0-0.7.2 wrap the JSON-RPC envelope into the strict Zod schema so every tool call errors; the git tag v0.6.0 carries the fix but was never published to npm); the patched arm is the Rust rewrite built from git tag v0.7.1 (fix commit 9943de5), whose resolve_path canonicalises and rejects a real path outside the root"
         }
       ],
       "patched_version": "0.7.1"
