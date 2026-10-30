@@ -4826,6 +4826,147 @@
         }
       ],
       "patched_version": "dcee5f1aa4b3"
+    },
+    {
+      "server_package": "PyPI:mcp-neo4j-cypher",
+      "reaching_flaw": "CVE-2026-35402",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-35402",
+          "tools": [
+            {
+              "vulnerable_name": "read_neo4j_cypher",
+              "patched_name": "read_neo4j_cypher",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "0.6.0",
+          "patched_source": "advisory",
+          "launch_option": {
+            "option": "--read-only",
+            "value": "",
+            "reason": "The server is admitted in read-only mode; the flaw is a bypass of that mode's read-tool gate. In <0.6.0 the gate is a keyword regex (MERGE|CREATE|INSERT|SET|DELETE|REMOVE|ADD) that never inspects CALL procedures, so a write-mode procedure call with no write keyword slips past it. 0.6.0 replaces the regex with an EXPLAIN query_type classification that rejects anything classified 'rw'.",
+            "documentation": "README / CLI: --read-only 'Allow only read-only queries (default: False)'. GHSA-x3cv-r3g3-fpg9."
+          },
+          "benign_calls": [
+            {
+              "tool": "read_neo4j_cypher",
+              "arguments": {
+                "query": "RETURN 1 AS n"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "read_neo4j_cypher"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-10193",
+          "tools": [
+            {
+              "vulnerable_name": "read_neo4j_cypher",
+              "patched_name": "read_neo4j_cypher",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "get_neo4j_schema",
+              "patched_name": "get_neo4j_schema",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "0.4.0",
+          "patched_source": "advisory",
+          "launch_option": {
+            "option": "--transport",
+            "value": "stdio",
+            "reason": "CVE-2025-10193 is a DNS-rebinding / origin-validation flaw (CWE-346): versions >=0.2.2,<0.4.0 ship the http/sse transports with no CORS or TrustedHost middleware, so a malicious web page can rebind DNS and drive the local server. 0.4.0 adds CORSMiddleware + TrustedHostMiddleware. The flaw lives entirely in the http/sse transport and a browser same-origin bypass; it is unreachable over the stdio transport this suite admits and falls outside the three graded effect classes, so no stdio fix-check witness exists.",
+            "documentation": "GHSA-vcqx-v2mg-7chx. Advisory mitigation: 'run in stdio mode instead'. Fix commit 5b9fbdda6401668d7aa006daf7e644805c067c15 (PR #165)."
+          },
+          "benign_calls": [
+            {
+              "tool": "read_neo4j_cypher",
+              "arguments": {
+                "query": "RETURN 1 AS n"
+              }
+            },
+            {
+              "tool": "get_neo4j_schema",
+              "arguments": {
+                "sample_size": 100
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [
+        "--read-only"
+      ],
+      "service": "neo4j",
+      "backend": {
+        "provisioner": "neo4j",
+        "image": "mcp-auditor-cve-neo4j-backend:local",
+        "network": "mcp-auditor-cve-neo4j-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "PyPI:mcp-neo4j-cypher",
+          "flaw": "CVE-2026-35402",
+          "field": "counted_tools",
+          "value": "read_neo4j_cypher",
+          "reason": "read_neo4j_cypher is the counted tool; get_neo4j_schema runs a fixed apoc.meta.schema introspection query whose sole argument is an integer sample_size, so no caller URL or procedure reaches it and the SSRF is unreachable through it"
+        },
+        {
+          "server_package": "PyPI:mcp-neo4j-cypher",
+          "flaw": "CVE-2025-10193",
+          "field": "counted",
+          "value": "false",
+          "reason": "not counted: a DNS-rebinding / origin-validation flaw in the http/sse transport (CWE-346), unreachable over the stdio transport this suite admits and outside the three graded effect classes; kept with a null class and logged"
+        }
+      ],
+      "patched_version": "0.6.0"
     }
   ]
 }

@@ -12,6 +12,7 @@ from evals.nuisance_fix_checks import (
     cve_2025_53818_github_kanban,
     cve_2026_10276_jenkins,
     cve_2026_18905_contextforge,
+    cve_2026_35402_neo4j_cypher,
     cve_2026_44336_praisonai,
     cve_2026_44694_n8n,
     cve_2026_46341_apify,
@@ -48,4 +49,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_77252_atlassian.TARGETS,
     *cve_2026_46341_apify.TARGETS,
     *cve_2026_10276_jenkins.TARGETS,
+    *cve_2026_35402_neo4j_cypher.TARGETS,
 )
