@@ -1,0 +1,16 @@
+# claude-faf-mcp (GHSA-rr55-jp92-8wp2) patched: npm claude-faf-mcp 5.7.2, the advisory's first
+# patched release (npm `latest` is 7.1.0, left unpinned per the advisory). safe-path.ts's
+# confineFileOp canonicalises the path and confines faf_read/faf_write to the process cwd plus the
+# OS temp dir(s) (no FAF_ALLOWED_ROOTS set here), rejecting an absolute path or a `..` traversal
+# that leaves the project. Same /work scope and in-scope project.faf as the vulnerable image, so
+# only the server version differs. Doubles as the nuisance run image. No COPY/ADD from the build
+# context.
+FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+ENV CI=true
+WORKDIR /app
+RUN npm init -y >/dev/null 2>&1 \
+ && npm install claude-faf-mcp@5.7.2 >/dev/null 2>&1
+RUN mkdir -p /work \
+ && printf '# Project\n\nBenign in-scope .faf project context.\n' > /work/project.faf \
+ && chmod -R a+rX /work
+ENTRYPOINT ["node", "/app/node_modules/claude-faf-mcp/dist/src/index.js"]

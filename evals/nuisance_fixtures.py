@@ -34,6 +34,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_81562_claude_in_mobile,
     cve_2026_86439_knowns,
     ghsa_8g7g_hmwm_6rv2_n8n,
+    ghsa_rr55_jp92_8wp2_claude_faf,
 )
 
 FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
@@ -62,4 +63,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_0758_siri_shortcuts.TARGETS,
     *cve_2025_69256_serverless.TARGETS,
     *cve_2026_7728_mcp_rtfm.TARGETS,
+    *ghsa_rr55_jp92_8wp2_claude_faf.TARGETS,
 )
