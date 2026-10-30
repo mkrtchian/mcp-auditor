@@ -5552,6 +5552,97 @@
         }
       ],
       "patched_version": "5.7.2"
+    },
+    {
+      "server_package": "npm:grok-faf-mcp",
+      "reaching_flaw": "GHSA-cc2g-gq8c-r332",
+      "flaws": [
+        {
+          "flaw": "GHSA-cc2g-gq8c-r332",
+          "tools": [
+            {
+              "vulnerable_name": "faf_read",
+              "patched_name": "faf_read",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "1.5.3",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "faf_read",
+              "arguments": {
+                "path": "project.faf"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "faf_read"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/work",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "grok-faf",
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "GHSA-cc2g-gq8c-r332",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "GHSA-cc2g-gq8c-r332",
+          "field": "tools",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:grok-faf-mcp",
+          "flaw": "GHSA-cc2g-gq8c-r332",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "records A and B both marked dfie true; flipped to false on source, jointly with claude-faf: both records applied the test to the declared function (reading a file by path) instead of to the bounded scope. faf_read declares reading the .faf project file, and an absolute path such as /secret-cc2g.md escapes the .faf project scope (the process cwd), which is the flaw and not the contract (the unified read_outside_scope principle: a traversal out of a declared scope is the flaw, not the declared read)"
+        },
+        {
+          "server_package": "npm:grok-faf-mcp",
+          "flaw": "GHSA-cc2g-gq8c-r332",
+          "field": "exploit_argument_form",
+          "value": "absolute_path",
+          "reason": "on source at 1.5.2 a '..' traversal is already rejected by the literal-substring check in PathValidator.validate (normalized.includes('..')), so only an absolute path (e.g. /secret-cc2g.md) reaches outside the .faf scope; the fix-check exploit uses the absolute form, the only one that differentiates the vulnerable and patched images"
+        }
+      ],
+      "patched_version": "1.5.3"
     }
   ]
 }

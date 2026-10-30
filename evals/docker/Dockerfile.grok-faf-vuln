@@ -1,0 +1,15 @@
+# grok-faf-mcp (GHSA-cc2g-gq8c-r332) vulnerable: npm grok-faf-mcp 1.5.2. faf_read/faf_write
+# resolve their `path` argument (path.normalize + path.resolve) and only reject a forbidden prefix
+# (/etc, /sys, /proc, /private/etc) or a literal ".." substring left after path.normalize, so a
+# ".." traversal is already rejected but an absolute path elsewhere reaches any file the server's
+# user can read or write, outside the `.faf` project scope (cwd). No COPY/ADD from the build
+# context.
+FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+ENV CI=true
+WORKDIR /app
+RUN npm init -y >/dev/null 2>&1 \
+ && npm install grok-faf-mcp@1.5.2 >/dev/null 2>&1
+RUN mkdir -p /work \
+ && printf '# Project\n\nBenign in-scope .faf project context.\n' > /work/project.faf \
+ && chmod -R a+rX /work
+ENTRYPOINT ["node", "/app/node_modules/grok-faf-mcp/dist/src/index.js"]
