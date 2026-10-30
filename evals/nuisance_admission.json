@@ -5133,6 +5133,79 @@
         }
       ],
       "patched_version": "0.7.1"
+    },
+    {
+      "server_package": "https://github.com/611711Dark/mcp_calculate_server",
+      "reaching_flaw": "CVE-2026-44717",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-44717",
+          "tools": [
+            {
+              "vulnerable_name": "calculate_expression",
+              "patched_name": "calculate_expression",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "9dee7f04",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "calculate_expression",
+              "arguments": {
+                "expression": "2 + 3*5"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "calculate_expression"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "calc",
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "https://github.com/611711Dark/mcp_calculate_server",
+          "flaw": "CVE-2026-44717",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "records A and B agree dfie false; the declared contract is to evaluate a math expression, and the patch replaces eval() with a bounded ast.NodeVisitor math parser, so the arbitrary-code path does not exist on the patched server and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+        }
+      ],
+      "patched_version": "9dee7f04"
     }
   ]
 }

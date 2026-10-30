@@ -16,6 +16,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_35402_neo4j_cypher,
     cve_2026_44336_praisonai,
     cve_2026_44694_n8n,
+    cve_2026_44717_calc,
     cve_2026_46341_apify,
     cve_2026_47394_praisonai,
     cve_2026_54785_gemini_bridge,
@@ -34,6 +35,7 @@ from evals.nuisance_fix_checks import (
 
 FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2025_53818_github_kanban.TARGETS,
+    *cve_2026_44717_calc.TARGETS,
     *cve_2026_55157_token_optimizer.TARGETS,
     *cve_2026_81562_claude_in_mobile.TARGETS,
     *cve_2026_55787_flyto.TARGETS,
