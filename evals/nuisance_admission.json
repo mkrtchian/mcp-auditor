@@ -5206,6 +5206,86 @@
         }
       ],
       "patched_version": "9dee7f04"
+    },
+    {
+      "server_package": "npm:mcp-server-siri-shortcuts",
+      "reaching_flaw": "CVE-2026-0758",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-0758",
+          "tools": [
+            {
+              "vulnerable_name": "run_shortcut",
+              "patched_name": "run_shortcut",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "a23f3d00",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "run_shortcut",
+              "arguments": {
+                "name": "Daily Briefing"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "run_shortcut"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "siri-shortcuts",
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-server-siri-shortcuts",
+          "flaw": "CVE-2026-0758",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "records A and B agree dfie false; the declared contract is to run a named shortcut, and the patched spawn(..., { shell: false }) call takes the name as one literal argv element, so the shell-injection path does not exist on the patched server (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+        },
+        {
+          "server_package": "npm:mcp-server-siri-shortcuts",
+          "flaw": "CVE-2026-0758",
+          "field": "tools",
+          "value": "run_shortcut",
+          "reason": "list_shortcuts dropped from the counted tools: record A adds it, but it takes no arguments (shortcuts list --show-identifiers is static) and has no injection point of its own; the validated fix-check surfaces the witness through run_shortcut alone"
+        }
+      ],
+      "patched_version": "a23f3d00"
     }
   ]
 }

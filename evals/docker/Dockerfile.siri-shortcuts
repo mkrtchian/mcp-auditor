@@ -1,0 +1,25 @@
+# mcp-server-siri-shortcuts, the fix for CVE-2026-0758 (fix_commit a23f3d0, "Secure Siri shortcut
+# execution", three commits ahead of the 1.1.0 tag on main, no npm release carries it):
+# shortcuts.ts replaces the shell `exec` with `spawn("shortcuts", args, { shell: false })`, so the
+# shortcut name reaches the subprocess as one argv element and no shell command injection is
+# possible.
+# No COPY/ADD: the fingerprint hashes instructions only, so the `shortcuts` stub is inlined by RUN.
+FROM node:20@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+RUN git clone https://github.com/dvcrn/mcp-server-siri-shortcuts.git /app \
+ && cd /app && git checkout a23f3d003700a57d6cca7a176034fbb41243049d
+WORKDIR /app
+RUN npm install && npm run build
+
+# A stubbed `shortcuts` CLI on PATH: the real binary is macOS-only (Shortcuts.app), so the
+# benign call answers with no external backend. `run` echoes a plausible confirmation line;
+# every other subcommand (and the startup `list --show-identifiers`) exits 0 with no output.
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'if [ "$1" = "run" ]; then' \
+  '  echo "Shortcut ran: $2"' \
+  'fi' \
+  'exit 0' \
+  > /usr/local/bin/shortcuts \
+ && chmod +x /usr/local/bin/shortcuts
+
+ENTRYPOINT ["node", "/app/dist/index.js"]
