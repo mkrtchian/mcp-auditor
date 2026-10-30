@@ -10,6 +10,7 @@ modules hold the callables and keep the kit's import closure.
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.nuisance_fix_checks import (
     cve_2025_53818_github_kanban,
+    cve_2025_67366_sylphxltd_filesystem,
     cve_2026_10276_jenkins,
     cve_2026_18905_contextforge,
     cve_2026_35402_neo4j_cypher,
@@ -17,6 +18,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_44694_n8n,
     cve_2026_46341_apify,
     cve_2026_47394_praisonai,
+    cve_2026_54785_gemini_bridge,
     cve_2026_55157_token_optimizer,
     cve_2026_55787_flyto,
     cve_2026_57442_mcpvault,
@@ -50,4 +52,6 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_46341_apify.TARGETS,
     *cve_2026_10276_jenkins.TARGETS,
     *cve_2026_35402_neo4j_cypher.TARGETS,
+    *cve_2026_54785_gemini_bridge.TARGETS,
+    *cve_2025_67366_sylphxltd_filesystem.TARGETS,
 )

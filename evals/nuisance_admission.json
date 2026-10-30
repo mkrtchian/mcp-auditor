@@ -4967,6 +4967,172 @@
         }
       ],
       "patched_version": "0.6.0"
+    },
+    {
+      "server_package": "PyPI:gemini-bridge",
+      "reaching_flaw": "CVE-2026-54785",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-54785",
+          "tools": [
+            {
+              "vulnerable_name": "consult_gemini_with_files",
+              "patched_name": "consult_gemini_with_files",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "1.3.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "consult_gemini_with_files",
+              "arguments": {
+                "query": "Give me a one line summary.",
+                "directory": "/work",
+                "files": [
+                  "sample.txt"
+                ],
+                "mode": "inline"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "consult_gemini_with_files"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "gemini-bridge",
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "PyPI:gemini-bridge",
+          "flaw": "CVE-2026-54785",
+          "field": "counted_tools",
+          "value": "consult_gemini_with_files",
+          "reason": "consult_gemini_with_files (inline mode) is the counted tool; consult_gemini and web_search take no file-attachment argument, so the out-of-scope read bypassing the `directory` perimeter is reachable only through consult_gemini_with_files"
+        }
+      ],
+      "patched_version": "1.3.1"
+    },
+    {
+      "server_package": "npm:@sylphxltd/filesystem-mcp",
+      "reaching_flaw": "CVE-2025-67366",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-67366",
+          "tools": [
+            {
+              "vulnerable_name": "read_content",
+              "patched_name": "read_content",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "0.7.1",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "read_content",
+              "arguments": {
+                "paths": [
+                  "hello.txt"
+                ]
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "read_content"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/opt/fs",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "sylphxltd-filesystem",
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-67366",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:@sylphxltd/filesystem-mcp",
+          "flaw": "CVE-2025-67366",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; read_content's declared function is to read files within the bounded PROJECT_ROOT (the process cwd), and the symlink traversal that follows a link out of that root (the startsWith check precedes symlink resolution while fs.readFile follows it) is a bypass of that perimeter, not the declared function"
+        },
+        {
+          "server_package": "npm:@sylphxltd/filesystem-mcp",
+          "flaw": "CVE-2025-67366",
+          "field": "patched_source",
+          "value": "fix_commit",
+          "reason": "the @sylphxltd/@sylphx npm line has no installable release carrying the fix (0.6.0-0.7.2 wrap the JSON-RPC envelope into the strict Zod schema so every tool call errors); the patched arm is the Rust rewrite built from git tag v0.7.1 (fix commit 9943de5), whose resolve_path canonicalises and rejects a real path outside the root"
+        }
+      ],
+      "patched_version": "0.7.1"
     }
   ]
 }

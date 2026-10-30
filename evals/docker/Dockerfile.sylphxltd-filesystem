@@ -1,0 +1,22 @@
+# CVE-2025-67366 patched: the filesystem-mcp Rust server at git tag v0.7.1, the earliest tag that
+# both carries the symlink fix and functions. The post-0.5.8 TypeScript line is broken (0.6.0+ wraps
+# the whole JSON-RPC envelope into the strict Zod schema, so every tool call errors), and the project
+# was rewritten in Rust; the admitted @sylphxltd scope has no published release carrying the fix, so
+# patched_source is "fix_commit" (9943de5, ancestor of tag v0.7.1). filesystem-core::resolve_path
+# canonicalises the target and rejects a real path outside the root, closing the symlink traversal.
+# Root = cwd (the cli falls back to std::env::current_dir()), baked WORKDIR /opt/fs, matching the
+# vulnerable image. Single stage so no COPY/ADD from the build context; the binary runs from
+# /build/target/release. Doubles as the nuisance run image.
+FROM rust:1-slim-bookworm@sha256:24707e70a4f1e23d9a7b25202ec43126d28a52294b96aad5c670df1fd1f1d400
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch v0.7.1 https://github.com/SylphxAI/filesystem-mcp /build
+WORKDIR /build
+RUN cargo build --release -p filesystem-core -p filesystem-cli -p filesystem-mcp-server \
+ && test -f target/release/filesystem-cli && test -f target/release/filesystem-mcp-server
+RUN mkdir -p /opt/fs /zone \
+ && printf 'benign file content\n' > /opt/fs/hello.txt \
+ && ln -s /zone/secret /opt/fs/leaklink
+ENV FILESYSTEM_CLI_BIN=/build/target/release/filesystem-cli
+WORKDIR /opt/fs
+ENTRYPOINT ["/build/target/release/filesystem-mcp-server"]
