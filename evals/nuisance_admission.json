@@ -5286,6 +5286,82 @@
         }
       ],
       "patched_version": "a23f3d00"
+    },
+    {
+      "server_package": "npm:serverless",
+      "reaching_flaw": "CVE-2025-69256",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-69256",
+          "tools": [
+            {
+              "vulnerable_name": "list-projects",
+              "patched_name": "list-projects",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "4.29.3",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "list-projects",
+              "arguments": {
+                "workspaceRoots": [
+                  "/tmp"
+                ],
+                "userConfirmed": true
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "list-projects"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "serverless",
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:serverless",
+          "flaw": "CVE-2025-69256",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "the secondary blind record was incomplete for this server, so the primary record's dfie judgement stands on the source read: list-projects's declared function is to enumerate serverless-framework, CloudFormation and SAM projects under the given workspace roots, unrelated to the unescaped shell command the advisory names, so the flaw does not declare the effect it exploits"
+        }
+      ],
+      "patched_version": "4.29.3"
     }
   ]
 }

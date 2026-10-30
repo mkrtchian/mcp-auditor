@@ -1,0 +1,24 @@
+# npm:serverless 4.29.0, vulnerable to CVE-2025-69256 (list-projects tool command injection: a
+# workspaceRoots entry is shelled into `find "<root>" -name "serverless.yml" ...` unescaped).
+# node:20-bookworm ships the toolchain the Framework's own installer build needs. No COPY/ADD.
+#
+# The npm package is a thin installer stub: `run.js`/`binary.js` are byte-identical across every
+# release and always fetch the CURRENT build from a single, un-versioned URL, so the npm semver
+# alone does not select which Framework binary runs. `frameworkVersion` in a `serverless.yml` the
+# CLI reads from its working directory is what actually pins the release. The kit launch sets the
+# container's working directory to /tmp (its own confined-run convention, not this Dockerfile's),
+# so the pin lives at /tmp/serverless.yml, baked and resolved once here at build time (HOME=/tmp,
+# matching the kit launch's unprivileged run) so the pinned release is cached and no network is
+# needed at launch.
+FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+ENV CI=true
+WORKDIR /app
+RUN npm init -y >/dev/null 2>&1 \
+ && npm install serverless@4.29.0 >/dev/null 2>&1
+ENV HOME=/tmp
+WORKDIR /tmp
+RUN printf 'service: fixture\nframeworkVersion: "4.29.0"\nprovider:\n  name: aws\n' \
+      > /tmp/serverless.yml \
+ && /app/node_modules/.bin/serverless --version \
+ && chmod -R a+rwX /tmp/.serverless /tmp/serverless.yml
+ENTRYPOINT ["/app/node_modules/.bin/serverless", "mcp", "--transport", "stdio"]

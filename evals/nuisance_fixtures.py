@@ -11,6 +11,7 @@ from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.nuisance_fix_checks import (
     cve_2025_53818_github_kanban,
     cve_2025_67366_sylphxltd_filesystem,
+    cve_2025_69256_serverless,
     cve_2026_0758_siri_shortcuts,
     cve_2026_10276_jenkins,
     cve_2026_18905_contextforge,
@@ -58,4 +59,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_54785_gemini_bridge.TARGETS,
     *cve_2025_67366_sylphxltd_filesystem.TARGETS,
     *cve_2026_0758_siri_shortcuts.TARGETS,
+    *cve_2025_69256_serverless.TARGETS,
 )

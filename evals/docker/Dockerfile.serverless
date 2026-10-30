@@ -1,0 +1,19 @@
+# npm:serverless 4.29.3, the first release carrying the CVE-2025-69256 fix (list-projects quotes
+# each workspaceRoots entry safely before shelling it into `find`). Also the run image.
+#
+# Same installer-stub caveat as Dockerfile.serverless-vuln: the npm semver does not select the
+# downloaded Framework binary, `frameworkVersion` in serverless.yml does, and the kit launch's
+# working directory is /tmp, so the pin lives at /tmp/serverless.yml. Baked and resolved once here
+# at build time (HOME=/tmp) so the pinned release is cached and no network is needed at launch.
+FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+ENV CI=true
+WORKDIR /app
+RUN npm init -y >/dev/null 2>&1 \
+ && npm install serverless@4.29.3 >/dev/null 2>&1
+ENV HOME=/tmp
+WORKDIR /tmp
+RUN printf 'service: fixture\nframeworkVersion: "4.29.3"\nprovider:\n  name: aws\n' \
+      > /tmp/serverless.yml \
+ && /app/node_modules/.bin/serverless --version \
+ && chmod -R a+rwX /tmp/.serverless /tmp/serverless.yml
+ENTRYPOINT ["/app/node_modules/.bin/serverless", "mcp", "--transport", "stdio"]
