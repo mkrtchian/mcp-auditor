@@ -1,0 +1,15 @@
+# mcp-rtfm (CVE-2026-7728), fix commit e6f0686fc360 (issue #5): validateDocFile rejects a docFile
+# with a path separator or `..` and checks the resolved path stays under .handoff_docs, and
+# read_doc, update_doc, get_related_docs and refresh_documentation call it. The repository has no
+# git tags and is not on npm, so both arms are git commits.
+# The image bakes /work as the project with an in-scope /work/.handoff_docs/techStack.md.
+# No COPY/ADD from the build context; the clone is a RUN fetch.
+FROM node:20@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+RUN git clone https://github.com/ryanjoachim/mcp-rtfm.git /app \
+    && git -C /app checkout e6f0686fc36012f78236e7fed172c81444904b0b
+WORKDIR /app
+RUN npm install && npm run build
+RUN mkdir -p /work/.handoff_docs \
+    && printf '# Tech stack\n\nBenign in-scope document.\n' > /work/.handoff_docs/techStack.md \
+    && chmod -R a+rX /work /app
+ENTRYPOINT ["node", "/app/build/index.js"]

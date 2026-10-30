@@ -13,6 +13,7 @@ from evals.nuisance_fix_checks import (
     cve_2025_67366_sylphxltd_filesystem,
     cve_2025_69256_serverless,
     cve_2026_0758_siri_shortcuts,
+    cve_2026_7728_mcp_rtfm,
     cve_2026_10276_jenkins,
     cve_2026_18905_contextforge,
     cve_2026_35402_neo4j_cypher,
@@ -60,4 +61,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2025_67366_sylphxltd_filesystem.TARGETS,
     *cve_2026_0758_siri_shortcuts.TARGETS,
     *cve_2025_69256_serverless.TARGETS,
+    *cve_2026_7728_mcp_rtfm.TARGETS,
 )
