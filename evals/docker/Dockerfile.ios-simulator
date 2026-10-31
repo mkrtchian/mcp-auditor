@@ -1,0 +1,12 @@
+# Patched and run image (execFile argv arrays + strict UDID validation, fix eb53a4f): ios-simulator-mcp 1.3.3. The simulator CLIs idb and xcrun simctl are macOS-proprietary binaries
+# a Linux container cannot run, so stub CLIs are baked in (the siri-shortcuts / github-kanban
+# precedent: a stub of the macOS-only CLI the injection merely has to execute). getBootedDevice
+# parses 'xcrun simctl list devices' for a Booted line, so the xcrun stub prints one; idb answers
+# any 'idb ui ...' benignly. No COPY/ADD from the build context; the install and the stubs are RUN.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g ios-simulator-mcp@1.3.3
+RUN printf '%s\n' '#!/bin/sh' \
+  'if [ "$1" = "simctl" ] && [ "$2" = "list" ]; then echo "    iPhone 15 (ABCDEF12-3456-7890-ABCD-EF1234567890) (Booted)"; fi' \
+  'exit 0' > /usr/local/bin/xcrun && chmod +x /usr/local/bin/xcrun
+RUN printf '%s\n' '#!/bin/sh' 'echo "{}"' 'exit 0' > /usr/local/bin/idb && chmod +x /usr/local/bin/idb
+ENTRYPOINT ["ios-simulator-mcp"]

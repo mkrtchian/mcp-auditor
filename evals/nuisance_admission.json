@@ -6286,6 +6286,104 @@
         }
       ],
       "patched_version": "2.1.38"
+    },
+    {
+      "server_package": "npm:ios-simulator-mcp",
+      "reaching_flaw": "CVE-2025-52573",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-52573",
+          "tools": [
+            {
+              "vulnerable_name": "ui_describe_all",
+              "patched_name": "ui_describe_all",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "ui_describe_point",
+              "patched_name": "ui_describe_point",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.3.3",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "ui_describe_all",
+              "arguments": {}
+            },
+            {
+              "tool": "ui_describe_point",
+              "arguments": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "ui_describe_all",
+              "ui_describe_point"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "ios-simulator",
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:ios-simulator-mcp",
+          "flaw": "CVE-2025-52573",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "the ui_* tools' declared function is to drive the simulator (describe the screen, tap, type); the patched 1.3.3 replaces the shell exec with execFile argv arrays and validates the udid against a strict UUID pattern, so a command_execution finding on the patched server is a false alarm (the guard-rail limb of the unified principle)"
+        },
+        {
+          "server_package": "npm:ios-simulator-mcp",
+          "flaw": "CVE-2025-52573",
+          "field": "counted_tools",
+          "value": "ui_describe_all, ui_describe_point",
+          "reason": "record A named four ui_* tools and record B ui_tap alone; settled at calibration to the two whose exploit surfaces the witness in a non-error tool response (both return the injected command's stdout). ui_tap, ui_type, ui_swipe and screenshot surface the witness only inside an error message, so they are kept uncounted"
+        },
+        {
+          "server_package": "npm:ios-simulator-mcp",
+          "flaw": "CVE-2025-52573",
+          "field": "backend_need",
+          "value": "fixture",
+          "reason": "the simulator CLIs idb and xcrun are macOS-proprietary binaries a Linux container cannot run, so stub CLIs are baked into both images (the siri-shortcuts and github-kanban baked-stub precedent); backend_need is fixture (a tool needs a backend baked into the image) and backend is null (no registered provisioner)"
+        }
+      ],
+      "patched_version": "1.3.3"
     }
   ]
 }
