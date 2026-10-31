@@ -1,0 +1,16 @@
+# geekgod382/filesystem-mcp-server (CVE-2026-7400) vulnerable: v1.0.0 (commit 6695911).
+# is_path_allowed resolves with os.path.abspath (no symlink resolution) and tests a bare
+# startswith against the allowed root, which lacks a trailing separator, so a sibling path that
+# merely shares the root's textual prefix (HOME=/tmp, so /tmproot/secret) passes and
+# read_file_tool returns it. No registry release exists, so both arms are git commits. The
+# in-scope /tmp/benign.txt is the benign read_file_tool target. No COPY/ADD from the build
+# context; the clone is a RUN fetch.
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir "mcp[cli]==1.25.0"
+RUN git clone https://github.com/geekgod382/filesystem-mcp-server /app \
+    && cd /app && git checkout 6695911aec68305122f5f1bb7fde3975ce067275
+RUN printf 'benign in-scope file\n' > /tmp/benign.txt && chmod a+r /tmp/benign.txt
+WORKDIR /app
+ENTRYPOINT ["python", "/app/server.py"]

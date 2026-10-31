@@ -1,0 +1,15 @@
+# geekgod382/filesystem-mcp-server (CVE-2026-7400) patched: v1.1.0 (commit 4536454, "fixed
+# ALLOWED_PATHS check bypass issue"), the repository's fix tag, with no registry release.
+# is_path_allowed now resolves with os.path.realpath and anchors the prefix on the allowed root
+# plus os.sep, plus an exact-match branch, rejecting a sibling-prefix path or a symlink escape.
+# Same /tmp/benign.txt as the vulnerable image, so only the server version differs. Doubles as
+# the nuisance run image. No COPY/ADD from the build context; the clone is a RUN fetch.
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir "mcp[cli]==1.25.0"
+RUN git clone https://github.com/geekgod382/filesystem-mcp-server /app \
+    && cd /app && git checkout 45364545fc60dc80aadcd4379f08042d3d3d292e
+RUN printf 'benign in-scope file\n' > /tmp/benign.txt && chmod a+r /tmp/benign.txt
+WORKDIR /app
+ENTRYPOINT ["python", "/app/server.py"]
