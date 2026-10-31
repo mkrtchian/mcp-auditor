@@ -1,4 +1,5 @@
-# googleapis/mcp-toolbox run image for the nuisance suite, toolbox 1.2.0. The official toolbox image is
+# googleapis/mcp-toolbox vulnerable arm for the nuisance suite, toolbox 1.2.0 (before the 1.3.0 base-path
+# fix and the 1.5.0 SSRF guard, so both counted flaws are live). The official toolbox image is
 # distroless (no shell, so no RUN) and COPY/ADD is forbidden here, so the pinned-digest base is a
 # glibc node-slim and the toolbox 1.2.0 binary is fetched by RUN from the release bucket (the version
 # frozen in the URL, as the npm/pip nuisance images freeze theirs). The HTTP tool is configured in
