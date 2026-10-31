@@ -1,0 +1,30 @@
+# adb-mcp (CVE-2025-59834), vulnerable npm release 0.1.0. Every bounded tool that takes a
+# `device` argument builds `adb -s ${device} ...` by string interpolation and runs it through
+# child_process.exec, so a device value that closes with `;` chains an attacker command. A real
+# Android device is impossible on Linux, so an `adb` stub is baked in (the siri-shortcuts /
+# ios-simulator baked-stub precedent): it answers devices/version/pull/push/install well enough
+# for the benign calls and falls through to a generic success line otherwise. No COPY/ADD from
+# the build context; the package is installed from the npm registry by RUN.
+FROM node:20-slim@sha256:3d0f05455dea2c82e2f76e7e2543964c30f6b7d673fc1a83286736d44fe4c41c
+
+RUN printf '%s\n' '#!/bin/sh' \
+  'while [ "$1" = "-s" ]; do shift 2; done' \
+  'cmd="$1"; [ $# -gt 0 ] && shift' \
+  'case "$cmd" in' \
+  '  devices) echo "List of devices attached" ;;' \
+  '  version) echo "Android Debug Bridge version 1.0.41" ;;' \
+  '  pull)' \
+  '    dest=""' \
+  '    for a in "$@"; do dest="$a"; done' \
+  '    [ -n "$dest" ] && printf "<hierarchy rotation=\"0\"></hierarchy>" > "$dest" 2>/dev/null' \
+  '    echo "1 file pulled"' \
+  '    ;;' \
+  '  push) echo "1 file pushed" ;;' \
+  '  install) echo "Success" ;;' \
+  '  *) echo "OK" ;;' \
+  'esac' \
+  'exit 0' > /usr/local/bin/adb && chmod +x /usr/local/bin/adb
+
+RUN npm install -g adb-mcp@0.1.0
+
+ENTRYPOINT ["adb-mcp"]

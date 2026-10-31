@@ -1,0 +1,30 @@
+# adb-mcp (CVE-2025-59834), patched npm release 0.1.1 (fix commit
+# 041729c0b25432df3199ff71b3163a307cf4c28c, merged as PR #8 "security-patch"; the GHSA advisory
+# names no fixed version, only that commit). runAdb now uses execFile("adb", args) with
+# arguments passed as a literal array (buildDeviceArgs returns ["-s", device]), so no shell
+# parses the device value: no injection. Doubles as the nuisance run image. Same baked `adb`
+# stub as the vulnerable image (the server's own in-image dependency, not a separate service).
+# No COPY/ADD from the build context; the package is installed from the npm registry by RUN.
+FROM node:20-slim@sha256:3d0f05455dea2c82e2f76e7e2543964c30f6b7d673fc1a83286736d44fe4c41c
+
+RUN printf '%s\n' '#!/bin/sh' \
+  'while [ "$1" = "-s" ]; do shift 2; done' \
+  'cmd="$1"; [ $# -gt 0 ] && shift' \
+  'case "$cmd" in' \
+  '  devices) echo "List of devices attached" ;;' \
+  '  version) echo "Android Debug Bridge version 1.0.41" ;;' \
+  '  pull)' \
+  '    dest=""' \
+  '    for a in "$@"; do dest="$a"; done' \
+  '    [ -n "$dest" ] && printf "<hierarchy rotation=\"0\"></hierarchy>" > "$dest" 2>/dev/null' \
+  '    echo "1 file pulled"' \
+  '    ;;' \
+  '  push) echo "1 file pushed" ;;' \
+  '  install) echo "Success" ;;' \
+  '  *) echo "OK" ;;' \
+  'esac' \
+  'exit 0' > /usr/local/bin/adb && chmod +x /usr/local/bin/adb
+
+RUN npm install -g adb-mcp@0.1.1
+
+ENTRYPOINT ["adb-mcp"]

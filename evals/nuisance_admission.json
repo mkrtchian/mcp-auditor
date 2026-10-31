@@ -6813,6 +6813,155 @@
         }
       ],
       "patched_version": "f7d992c830c5f2ec5749852e66c0195e3ed7fe30"
+    },
+    {
+      "server_package": "npm:adb-mcp",
+      "reaching_flaw": "CVE-2025-59834",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-59834",
+          "tools": [
+            {
+              "vulnerable_name": "adb_install",
+              "patched_name": "adb_install",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "adb_logcat",
+              "patched_name": "adb_logcat",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "adb_pull",
+              "patched_name": "adb_pull",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "adb_push",
+              "patched_name": "adb_push",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "0.1.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "adb_install",
+              "arguments": {
+                "apkPath": "/tmp/app.apk"
+              }
+            },
+            {
+              "tool": "adb_logcat",
+              "arguments": {
+                "lines": 10
+              }
+            },
+            {
+              "tool": "adb_pull",
+              "arguments": {
+                "remotePath": "/sdcard/build.prop",
+                "asBase64": true
+              }
+            },
+            {
+              "tool": "adb_push",
+              "arguments": {
+                "remotePath": "/sdcard/note.txt",
+                "fileBase64": "aGVsbG8="
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "adb_install",
+              "adb_logcat",
+              "adb_pull",
+              "adb_push"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "adb-mcp",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-59834",
+          "field": "backend_need",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-59834",
+          "field": "patched_source",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-59834",
+          "field": "tools",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:adb-mcp",
+          "flaw": "CVE-2025-59834",
+          "field": "tools",
+          "value": "adb_install, adb_logcat, adb_pull, adb_push",
+          "reason": "adb_shell is excluded from this flaw's tools entirely: its declared function is to run an arbitrary shell command on the device, i.e. command execution is itself what adb_shell is for, and a FlawRecord carries one declared_function_is_effect boolean for its whole tools list, so a runner cannot share a flaw with non-runner bounded tools without forcing that boolean to lie about one side or the other (records A and B both exploited adb_shell alongside a bounded tool). adb_devices takes no device argument, so it is not reachable by this CVE's mechanism at all. Of the remaining device-taking tools, inspect_ui and dump_image (record A's second exploit target, and a plan candidate) were tried against the built images and do not surface: both discard every intermediate command's stdout and re-read a local temp file that only a real adb pull populates, and the device-only injection breaks that real pull, so the file never exists and the tool returns an ENOENT error with no witness. adb_install, adb_logcat, adb_push and adb_pull (asBase64=false) all route through a helper or return value that captures and returns combined stdout, confirmed surfacing on the vulnerable image and clean on 0.1.1."
+        },
+        {
+          "server_package": "npm:adb-mcp",
+          "flaw": "CVE-2025-59834",
+          "field": "backend_need",
+          "value": "fixture",
+          "reason": "record A said none, record B said fixture. Settled to fixture on the ios-simulator precedent: a stub adb CLI is baked into both images standing in for the real Android Debug Bridge binary (the server's own in-image dependency, not a provisioned backend), which is what backend_need=fixture names; backend stays null since no registered provisioner answers it."
+        },
+        {
+          "server_package": "npm:adb-mcp",
+          "flaw": "CVE-2025-59834",
+          "field": "patched_source",
+          "value": "advisory",
+          "reason": "record A said advisory, record B said fix_commit. Settled to advisory: npm publishes adb-mcp 0.1.1 (2026-03-16) and that release carries the fix (runAdb uses execFile with an argv array), so a registry-published release carries the fix and the patched image installs adb-mcp@0.1.1 from npm. The GHSA-54j7-grvr-9xwg advisory citing fix commit 041729c does not change that a published registry release exists; the repo convention reserves fix_commit for a flaw whose fix is only at a git ref with no registry release (kanban, gitlab, sylphxltd)."
+        },
+        {
+          "server_package": "npm:adb-mcp",
+          "flaw": "CVE-2025-59834",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "adb_install, adb_logcat, adb_pull and adb_push each declare a bounded adb operation on a device (install an APK, read the log, pull or push a file), not running an arbitrary command; the 0.1.1 fix switches every call site to execFile(\"adb\", argv), so the arbitrary-command path does not exist on the patched server and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability). adb_shell, whose declared function is the command itself, is excluded from the flaw for that reason"
+        }
+      ],
+      "patched_version": "0.1.1"
     }
   ]
 }
