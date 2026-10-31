@@ -20,6 +20,7 @@ from evals.ckan_backend import CKAN_BRIDGE, CKAN_RESPONDER_IMAGE
 from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
 from evals.cve_environments import Launch
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
+from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
 from evals.mysql_backend import MYSQL_BRIDGE, MYSQL_IMAGE
@@ -31,6 +32,7 @@ from evals.nuisance_provisioners import (
     ckan_provisioner,
     contextforge_provisioner,
     doris_provisioner,
+    gitlab_provisioner,
     googleapis_provisioner,
     jenkins_provisioner,
     mysql_provisioner,
@@ -64,6 +66,7 @@ BACKENDS: dict[str, RegisteredBackend] = {
     ),
     "apify": RegisteredBackend(apify_provisioner, APIFY_BRIDGE, APIFY_RESPONDER_IMAGE),
     "jenkins": RegisteredBackend(jenkins_provisioner, JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE),
+    "gitlab": RegisteredBackend(gitlab_provisioner, GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE),
     "googleapis": RegisteredBackend(
         googleapis_provisioner, GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
     ),

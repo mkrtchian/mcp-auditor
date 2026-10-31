@@ -1,0 +1,20 @@
+# HTTP mock-GitLab responder for the nuisance suite's gitlab backend, the GitLab API that the
+# pipeline-job tools of @zereight/mcp-gitlab (get_pipeline_job_output, get_job_artifact_file, ...)
+# reach through GITLAB_API_URL on port 80. It is NOT the server under test and carries none of its
+# flaw. It answers:
+#   - any path ending /trace: a fixed benign job trace
+#   - any path under /artifacts: fixed benign artifact bytes
+#   - any other path: a fixed benign job description
+#   - a path containing /internal/: 404, unless WITNESS_NONCE is set, then the nonce in the trace
+#     body or the artifact body, so a per-launch container holds the fix-check witness and the
+#     shared singleton serves none
+# Routing is on the RAW request path, treating %2F as a literal character inside a segment, as a
+# real HTTP router does: the vulnerable server sends a traversal with real slashes (its raw jobId
+# reaches /internal/secret), while the patched server percent-encodes the jobId
+# (encodeGitLabPathSegment), so the request path arrives with %2Finternal%2F and never matches
+# /internal/. Decoding the path here would erase that distinction.
+# Never spoken to over MCP stdio: the audited server reaches it as an outbound HTTP request.
+# No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+
+ENTRYPOINT ["node", "-e", "const http=require('http');const n=process.env.WITNESS_NONCE;const TRACE='Running job\\nJob succeeded\\n';http.createServer((q,r)=>{q.resume();const raw=q.url.split('?')[0];const internal=raw.includes('/internal/');if(internal&&!n){r.writeHead(404,{'content-type':'text/plain'});return r.end('Not Found');}if(raw.endsWith('/trace')){r.writeHead(200,{'content-type':'text/plain'});return r.end(internal?n+'\\n':TRACE);}if(raw.includes('/artifacts')){r.writeHead(200,{'content-type':'text/plain'});return r.end(internal?n:'benign-artifact-bytes');}r.writeHead(200,{'content-type':'application/json'});r.end(JSON.stringify({id:1,status:'success'}));}).listen(80);"]

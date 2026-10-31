@@ -38,6 +38,12 @@ from evals.contextforge_backend import (
 from evals.cve_environments import Launch
 from evals.cve_planting_base import LABEL
 from evals.doris_backend import DORIS_LAUNCH_LOCK, doris_rm, doris_server_args, ensure_doris
+from evals.gitlab_backend import (
+    GITLAB_LAUNCH_LOCK,
+    ensure_gitlab_responder,
+    gitlab_rm,
+    gitlab_server_args,
+)
 from evals.googleapis_backend import (
     GOOGLEAPIS_LAUNCH_LOCK,
     ensure_googleapis_responder,
@@ -187,6 +193,22 @@ def jenkins_provisioner(server: AdmittedServer) -> Generator[Launch]:
         )
     finally:
         jenkins_rm(name)
+
+
+@contextmanager
+def gitlab_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no witness, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with GITLAB_LAUNCH_LOCK:
+        ensure_gitlab_responder()
+    name = f"{LABEL}-gitlab-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=gitlab_server_args(name, image_tag(server.service), server.host, server.launch),
+        )
+    finally:
+        gitlab_rm(name)
 
 
 @contextmanager
