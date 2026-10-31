@@ -38,6 +38,12 @@ from evals.contextforge_backend import (
 from evals.cve_environments import Launch
 from evals.cve_planting_base import LABEL
 from evals.doris_backend import DORIS_LAUNCH_LOCK, doris_rm, doris_server_args, ensure_doris
+from evals.googleapis_backend import (
+    GOOGLEAPIS_LAUNCH_LOCK,
+    ensure_googleapis_responder,
+    googleapis_rm,
+    googleapis_server_args,
+)
 from evals.jenkins_backend import (
     JENKINS_LAUNCH_LOCK,
     ensure_jenkins_responder,
@@ -181,6 +187,24 @@ def jenkins_provisioner(server: AdmittedServer) -> Generator[Launch]:
         )
     finally:
         jenkins_rm(name)
+
+
+@contextmanager
+def googleapis_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no witness, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with GOOGLEAPIS_LAUNCH_LOCK:
+        ensure_googleapis_responder()
+    name = f"{LABEL}-googleapis-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=googleapis_server_args(
+                name, image_tag(server.service), server.host, server.launch
+            ),
+        )
+    finally:
+        googleapis_rm(name)
 
 
 @contextmanager

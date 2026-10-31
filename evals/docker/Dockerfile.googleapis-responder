@@ -1,0 +1,12 @@
+# HTTP mock-upstream responder for the nuisance suite's googleapis backend, the upstream that the
+# HTTP tool of googleapis/mcp-toolbox reaches on port 80. It is NOT the server under test and
+# carries none of its flaw. It answers a fixed benign JSON body to any request under the tool's
+# configured base path, so a patched toolbox's benign HTTP-tool call (aimed at this container's
+# public-range static IP, which the 1.10.0 SSRF guard lets through) answers without error. It
+# stands no sentinel route: a fix-check stands its own container of the same image with the
+# out-of-scope and redirect routes carrying the per-launch nonce.
+# Never spoken to over MCP stdio: the audited server reaches it as an outbound HTTP request.
+# No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+
+ENTRYPOINT ["node", "-e", "const http=require('http');const body=JSON.stringify({status:'ok',users:[{id:1,name:'public'}]});http.createServer((req,res)=>{req.resume();res.writeHead(200,{'content-type':'application/json'});res.end(body);}).listen(80);"]
