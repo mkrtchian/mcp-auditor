@@ -1,0 +1,25 @@
+# mcp-package-docs (CVE-2025-54073), patched npm release 0.1.28 (the advisory's first patched
+# version). describe_go_package / describe_python_package switch their go call sites to
+# child_process.execFile with an argument array, so shell metacharacters in the package name no
+# longer reach a shell. Doubles as the nuisance run image.
+#
+# Same vscode-languageserver-protocol 3.17.5 pin as the vulnerable image (see that Dockerfile).
+# `turndown` is added because 0.1.28 imports it from rust-docs-integration.js but omits it from
+# its own dependencies (an unrelated packaging bug). Both pins work around load-time breaks
+# only, leaving the CVE fix as the sole behavioural difference between the two images. No
+# COPY/ADD from the build context.
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends golang-go ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+RUN npm init -y >/dev/null 2>&1 \
+    && npm pkg set overrides.vscode-languageserver-protocol=3.17.5 \
+    && npm install --omit=dev --no-audit --no-fund mcp-package-docs@0.1.28 turndown@7.2.0 \
+    && npm cache clean --force
+ENV GOPROXY=off \
+    GOFLAGS=-mod=mod \
+    GOTOOLCHAIN=local \
+    GOCACHE=/tmp/.cache/go-build \
+    GOPATH=/tmp/go
+ENTRYPOINT ["node", "/app/node_modules/mcp-package-docs/build/index.js"]

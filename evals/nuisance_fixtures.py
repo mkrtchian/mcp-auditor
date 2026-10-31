@@ -11,6 +11,7 @@ from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.nuisance_fix_checks import (
     cve_2025_52573_ios_simulator,
     cve_2025_53818_github_kanban,
+    cve_2025_54073_mcp_package_docs,
     cve_2025_67366_sylphxltd_filesystem,
     cve_2025_69256_serverless,
     cve_2026_0758_siri_shortcuts,
@@ -78,4 +79,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_58195_agentic_flow.TARGETS,
     *cve_2026_81097_rails_mcp.TARGETS,
     *cve_2026_7446_semgrep.TARGETS,
+    *cve_2025_54073_mcp_package_docs.TARGETS,
 )

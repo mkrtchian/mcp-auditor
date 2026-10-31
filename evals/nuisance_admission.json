@@ -6639,6 +6639,93 @@
         }
       ],
       "patched_version": "1.0.1"
+    },
+    {
+      "server_package": "npm:mcp-package-docs",
+      "reaching_flaw": "CVE-2025-54073",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-54073",
+          "tools": [
+            {
+              "vulnerable_name": "describe_go_package",
+              "patched_name": "describe_go_package",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "0.1.28",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "describe_go_package",
+              "arguments": {
+                "package": "fmt"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "describe_go_package"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "mcp-package-docs",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-54073",
+          "field": "tools",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-package-docs",
+          "flaw": "CVE-2025-54073",
+          "field": "tools",
+          "value": "describe_go_package",
+          "reason": "record A named describe_go_package alone; record B additionally named describe_python_package but demonstrated no exploit against it, only a benign call. Settled to describe_go_package alone, the one tool both records' own fixtures demonstrate an exploit for, under the parity rule that the counted tools equal the tools an exploit calls"
+        },
+        {
+          "server_package": "npm:mcp-package-docs",
+          "flaw": "CVE-2025-54073",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "describe_go_package's declared function is to look up Go package documentation; the patched 0.1.28 release switches the go call sites to execFile with a sanitised argument array, so the arbitrary-command path does not exist on the patched server and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+        }
+      ],
+      "patched_version": "0.1.28"
     }
   ]
 }
