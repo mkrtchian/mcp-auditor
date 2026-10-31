@@ -34,11 +34,10 @@ def test_the_target_pairs_the_vulnerable_and_patched_images():
 
 
 async def test_the_exploit_reads_outside_the_faf_scope_through_the_counted_tool_only():
-    calls = await _calls_of(claude_faf.TARGET.exploits)
+    [(tool, arguments)] = await _calls_of(claude_faf.TARGET.exploits)
 
-    for tool, arguments in calls:
-        assert tool == COUNTED_TOOL
-        assert claude_faf.AIM.search(str(arguments["path"]))
+    assert tool == COUNTED_TOOL
+    assert claude_faf.AIM.search(str(arguments["path"]))
 
 
 async def test_the_benign_call_stays_inside_the_faf_scope_and_escapes_nothing():
