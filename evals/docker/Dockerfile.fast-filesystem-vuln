@@ -1,0 +1,8 @@
+# fast-filesystem-mcp (npm:fast-filesystem-mcp), vulnerable release 3.5.0 for CVE-2026-5327:
+# handleGetDiskUsage (dist/index.js) interpolates the caller's `path` into a shell string
+# (`exec('df -h "${targetPath}"')`), so a path that closes the quoted argument chains an
+# attacker command. <= 3.5.0 affected (GHSA-5226-3rvg-hp4x). No COPY/ADD, the package installs
+# from the npm registry by RUN.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g --ignore-scripts fast-filesystem-mcp@3.5.0
+ENTRYPOINT ["fast-filesystem-mcp"]

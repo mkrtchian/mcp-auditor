@@ -1,0 +1,8 @@
+# fast-filesystem-mcp (npm:fast-filesystem-mcp) 3.5.2, patched build for CVE-2026-5327: handle
+# GetDiskUsage switches to execFile('df', ['-h', path]), an argv array with no shell, so shell
+# metacharacters in `path` are passed verbatim. No GitHub tag v3.5.1 exists; 3.5.0 is the last
+# release before the fix, 3.5.2 the first that carries it. Doubles as the nuisance run image.
+# No COPY/ADD, the package installs from the npm registry by RUN.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g --ignore-scripts fast-filesystem-mcp@3.5.2
+ENTRYPOINT ["fast-filesystem-mcp"]
