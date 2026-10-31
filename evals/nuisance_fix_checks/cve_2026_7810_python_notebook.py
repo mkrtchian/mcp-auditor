@@ -69,18 +69,9 @@ def notebook_env(
     """Plant a valid `.ipynb` carrying the witness nonce outside the workspace scope (`/srv/app`)
     and a benign notebook inside it, then launch the server over stdio against a writable
     `/srv`. The server has no scope-carrying layout, so this bypasses `cve_layout` entirely."""
-    nonce = spec.nonces[WITNESS_ID]
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
         root = Path(name)
-        app = root / "app"
-        app.mkdir()
-        (app / "main.ipynb").write_text(_notebook_with("benign workspace notebook"))
-        (root / "secret.ipynb").write_text(_notebook_with(nonce))
-        # World-writable so the unprivileged (65534) server can run the write-tool benign calls.
-        os.chmod(name, 0o777)
-        os.chmod(app, 0o777)
-        for path in (app / "main.ipynb", root / "secret.ipynb"):
-            os.chmod(path, 0o666)
+        _plant_notebooks(root, spec.nonces[WITNESS_ID])
         yield Launch(
             command="docker",
             args=[
@@ -96,6 +87,18 @@ def notebook_env(
                 image,
             ],
         )
+
+
+def _plant_notebooks(root: Path, nonce: str) -> None:
+    app = root / "app"
+    app.mkdir()
+    (app / "main.ipynb").write_text(_notebook_with("benign workspace notebook"))
+    (root / "secret.ipynb").write_text(_notebook_with(nonce))
+    # World-writable so the unprivileged (65534) server can run the write-tool benign calls.
+    for directory in (root, app):
+        os.chmod(directory, 0o777)
+    for path in (app / "main.ipynb", root / "secret.ipynb"):
+        os.chmod(path, 0o666)
 
 
 async def _initialize(client: KitClient) -> None:
