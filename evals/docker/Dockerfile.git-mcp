@@ -1,5 +1,6 @@
-# @cyanheads/git-mcp-server 2.15.3 (the server's shipped run image, CVE-2026-85626's own first
-# fix; doubles as CVE-2025-53107's server-patched arm since that flaw fixed earlier at 2.1.5).
+# @cyanheads/git-mcp-server 2.15.3 (the server's shipped run image; CVE-2026-85626 is fixed as of
+# 2.15.2 per the maintainer, 2.15.3 repairs 2.15.2's flag allow-list regression; doubles as
+# CVE-2025-53107's server-patched arm since that flaw fixed earlier at 2.1.5).
 # No COPY/ADD from the build context; the server installs from npm by RUN.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 RUN apt-get update \

@@ -6,7 +6,7 @@
 # that closes with `;` chains an attacker command whose combined stdout the tool returns
 # verbatim when called with pretty=true. No COPY/ADD from the build context; the repository is
 # fetched by RUN from the pinned tag.
-FROM node:20-bookworm-slim@sha256:3d0f05455dea2c82e2f76e7e2543964c30f6b7d673fc1a83286736d44fe4c41c
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*

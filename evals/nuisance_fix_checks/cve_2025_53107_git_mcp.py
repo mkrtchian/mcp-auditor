@@ -8,8 +8,9 @@ read_outside_scope): `git_diff`'s `source` argument reaches git's own CLI unchec
 file entirely outside it. Both plant the same witness file, reachable_by `command_execution`
 for the first flaw and `arbitrary_read` for the second: one file, two ways in.
 
-The server ships 2.15.3, CVE-2026-85626's own first fix, so that flaw's server_patched_service
-is None; CVE-2025-53107 fixed earlier at 2.1.5, so its server_patched_service is the run image
+The server ships 2.15.3 (CVE-2026-85626 is fixed as of 2.15.2 per the maintainer, 2.15.3 repairs
+2.15.2's flag allow-list regression), so that flaw's server_patched_service is None;
+CVE-2025-53107 fixed earlier at 2.1.5, so its server_patched_service is the run image
 (git-mcp), confirming the exploit stays refused past the server's own shipped version too.
 
 The git_add benign call stages a file into a world-writable throwaway repo baked into all four

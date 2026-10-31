@@ -6,7 +6,7 @@
 # check (execSync('docker info')) succeeds with no real daemon or socket; the exploit needs no
 # working `docker`. No COPY/ADD from the build context; the package is installed from the npm
 # registry by RUN.
-FROM node:22-slim@sha256:9f0dde62d10e7ff7a310ecaebd66225f6b46c17e6cb778449a77b05d3541bea2
+FROM node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
 RUN printf '%s\n' '#!/bin/sh' 'exit 0' > /usr/local/bin/docker && chmod +x /usr/local/bin/docker
 
