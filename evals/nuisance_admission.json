@@ -7860,6 +7860,93 @@
         }
       ],
       "patched_version": "3.5.2"
+    },
+    {
+      "server_package": "https://github.com/IBM/mcp-context-forge",
+      "reaching_flaw": "CVE-2026-53710",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-53710",
+          "tools": [
+            {
+              "vulnerable_name": "execute_code",
+              "patched_name": "execute_code",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.0.2",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_code",
+              "arguments": {
+                "code": "result = sum(range(10))\nresult"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "execute_code"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "contextforge-sandbox",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-53710",
+          "field": "tools",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/IBM/mcp-context-forge",
+          "flaw": "CVE-2026-53710",
+          "field": "tools",
+          "value": "execute_code",
+          "reason": "both records list validate_code and get_sandbox_info unchanged alongside execute_code, but neither carries the effect: validate_code only inspects source text (RestrictedPython's restricted-compile plus the substring/AST dunder checks) and never executes the submitted code, and get_sandbox_info takes no code argument at all; narrowed to execute_code, the one tool whose runtime exec() path the escape walks through"
+        },
+        {
+          "server_package": "https://github.com/IBM/mcp-context-forge",
+          "flaw": "CVE-2026-53710",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "execute_code's declared function is to run arbitrary Python in a restricted sandbox; the escape's effect is OS command execution outside that sandbox, which v1.0.2 removes by dropping the raw getattr/setattr/hasattr builtins the escape depends on (the capability the fix removes, not a narrower reading of the declared function itself)"
+        }
+      ],
+      "patched_version": "1.0.2"
     }
   ]
 }

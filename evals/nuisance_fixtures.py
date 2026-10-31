@@ -34,6 +34,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_44717_calc,
     cve_2026_46341_apify,
     cve_2026_47394_praisonai,
+    cve_2026_53710_contextforge_sandbox,
     cve_2026_54785_gemini_bridge,
     cve_2026_55157_token_optimizer,
     cve_2026_55787_flyto,
@@ -100,4 +101,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_7400_geekgod_fs.TARGETS,
     *ghsa_j4r7_8ph4_43g3_faf.TARGETS,
     *cve_2026_5327_fast_filesystem.TARGETS,
+    *cve_2026_53710_contextforge_sandbox.TARGETS,
 )

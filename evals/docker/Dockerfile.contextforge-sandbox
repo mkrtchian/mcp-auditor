@@ -1,0 +1,30 @@
+# python_sandbox_server, tag v1.0.2: the patched build for CVE-2026-53710. Drops the raw
+# getattr/setattr/hasattr builtins, injects _guarded_getattr/_guarded_setattr as the top-level
+# _getattr_/_setattr_ RestrictedPython mediates dotted access through, replaces the substring
+# dunder check with an AST walk, and fails closed when RestrictedPython is unavailable. Doubles
+# as the nuisance run image. No COPY/ADD: the source is fetched by RUN from the tagged
+# repository (https://github.com/IBM/mcp-context-forge), never baked in from the build context.
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+    "fastmcp>=3.2.4" \
+    "orjson>=3.11.8" \
+    "pydantic>=2.13.3" \
+    "RestrictedPython>=8.1" \
+    "typing-extensions>=4.15.0"
+
+RUN git clone --quiet --depth 1 --branch v1.0.2 https://github.com/IBM/mcp-context-forge.git /src \
+ && mkdir -p /app \
+ && cp -r /src/mcp-servers/python/python_sandbox_server/src/python_sandbox_server /app/python_sandbox_server \
+ && rm -rf /src
+
+WORKDIR /app
+# The kit launches with -w /, so pin the package on the path rather than relying on cwd.
+ENV PYTHONPATH=/app
+
+# Default transport is stdio (mcp.run()); no scope argument is taken.
+ENTRYPOINT ["python3", "-m", "python_sandbox_server.server_fastmcp"]
