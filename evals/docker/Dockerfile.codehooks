@@ -1,0 +1,23 @@
+# codehooks-mcp-server (CVE-2025-53100), patched git tag v0.2.2 (GHSA-fhq6-jf5q-qxvq's named
+# fix; package.json still reads 0.1.0, as it does at v0.2.1, since the package is private and
+# never published to npm). query_collection now builds an argv array and runs
+# child_process.execFile('coho', [...]), so the collection argument travels as one literal
+# token and no shell re-parses it. Doubles as the nuisance run image. No COPY/ADD from the
+# build context; the repository is fetched by RUN from the pinned tag.
+FROM node:20-bookworm-slim@sha256:3d0f05455dea2c82e2f76e7e2543964c30f6b7d673fc1a83286736d44fe4c41c
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+RUN git clone --depth 1 --branch v0.2.2 https://github.com/RestDB/codehooks-mcp-server.git /app \
+ && npm install \
+ && chmod -R a+rX /app
+
+RUN printf '%s\n' '#!/bin/sh' 'printf "[]\n"' 'exit 0' > /usr/local/bin/coho \
+ && chmod 755 /usr/local/bin/coho
+
+ENV CODEHOOKS_PROJECT_NAME=demo \
+    CODEHOOKS_SPACE=dev \
+    CODEHOOKS_ADMIN_TOKEN=dummy-admin-token-000
+
+ENTRYPOINT ["node", "/app/build/index.js"]

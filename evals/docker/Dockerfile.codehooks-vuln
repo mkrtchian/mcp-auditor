@@ -1,0 +1,29 @@
+# codehooks-mcp-server (CVE-2025-53100), vulnerable git tag v0.2.1. The package is private and
+# never published to npm, and package.json reads 0.1.0 at both v0.2.1 and v0.2.2, so the fix is
+# pinned by git tag (GHSA-fhq6-jf5q-qxvq: "This issue has been patched in version 0.2.2").
+# query_collection builds a shell string "coho query --collection <collection> --project ...
+# --space ... --admintoken ..." and runs it through child_process.exec, so a collection value
+# that closes with `;` chains an attacker command whose combined stdout the tool returns
+# verbatim when called with pretty=true. No COPY/ADD from the build context; the repository is
+# fetched by RUN from the pinned tag.
+FROM node:20-bookworm-slim@sha256:3d0f05455dea2c82e2f76e7e2543964c30f6b7d673fc1a83286736d44fe4c41c
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+RUN git clone --depth 1 --branch v0.2.1 https://github.com/RestDB/codehooks-mcp-server.git /app \
+ && npm install \
+ && chmod -R a+rX /app
+
+# `coho` CLI stub on PATH: the server shells out to it. A benign query gets valid JSON ("[]")
+# and exit 0, so benign calls succeed with no Codehooks.io account; an injected command still
+# runs because the vulnerable server hands the whole string to the shell.
+RUN printf '%s\n' '#!/bin/sh' 'printf "[]\n"' 'exit 0' > /usr/local/bin/coho \
+ && chmod 755 /usr/local/bin/coho
+
+# The server refuses any tools/call unless both are set (they gate on non-empty strings).
+ENV CODEHOOKS_PROJECT_NAME=demo \
+    CODEHOOKS_SPACE=dev \
+    CODEHOOKS_ADMIN_TOKEN=dummy-admin-token-000
+
+ENTRYPOINT ["node", "/app/build/index.js"]

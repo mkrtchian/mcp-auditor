@@ -7049,6 +7049,106 @@
         }
       ],
       "patched_version": "1.3.0"
+    },
+    {
+      "server_package": "https://github.com/RestDB/codehooks-mcp-server",
+      "reaching_flaw": "CVE-2025-53100",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-53100",
+          "tools": [
+            {
+              "vulnerable_name": "query_collection",
+              "patched_name": "query_collection",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "0.2.2",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "query_collection",
+              "arguments": {
+                "collection": "mydata",
+                "limit": 5
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "query_collection"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "codehooks",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-53100",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-53100",
+          "field": "patched_source",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/RestDB/codehooks-mcp-server",
+          "flaw": "CVE-2025-53100",
+          "field": "tools",
+          "value": "query_collection",
+          "reason": "record A counted query_collection alone; record B widened the flaw to all 21 tools, reasoning that each funnels a caller-controlled field into the same exec-built coho command line. Settled to record A's single tool: record B's 21-tool list is an extrapolation from a source diff, not a per-tool exploit run, and the suite counts tools whose injection is actually confirmed (the ios-simulator precedent: four ui_* tools were considered, two counted). query_collection's own injection and clean benign call are confirmed against the built images; the other 20 are left uncounted rather than claimed on an unexercised analogy."
+        },
+        {
+          "server_package": "https://github.com/RestDB/codehooks-mcp-server",
+          "flaw": "CVE-2025-53100",
+          "field": "patched_source",
+          "value": "fix_commit",
+          "reason": "record A said fix_commit, record B said advisory. Settled to fix_commit: codehooks-mcp-server (server_package the github repo RestDB/codehooks-mcp-server) is never published to any package registry (package.json reads 0.1.0 at both the vulnerable and patched git tags), so the fix exists only as git tag v0.2.2, which the patched image builds by cloning that tag. The repo convention records a git tag no registry release carries as fix_commit, regardless of the GHSA naming '0.2.2'."
+        },
+        {
+          "server_package": "https://github.com/RestDB/codehooks-mcp-server",
+          "flaw": "CVE-2025-53100",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "query_collection's declared function is to query one Codehooks collection; the v0.2.2 fix rewrites the call onto execFile with an argv array, so the arbitrary-command path does not exist on the patched server and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+        }
+      ],
+      "patched_version": "0.2.2"
     }
   ]
 }
