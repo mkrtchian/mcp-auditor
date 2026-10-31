@@ -6565,6 +6565,80 @@
         }
       ],
       "patched_version": "1.6.1"
+    },
+    {
+      "server_package": "npm:mcp-server-semgrep",
+      "reaching_flaw": "CVE-2026-7446",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-7446",
+          "tools": [
+            {
+              "vulnerable_name": "scan_directory",
+              "patched_name": "scan_directory",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.0.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "scan_directory",
+              "arguments": {
+                "path": "/tmp"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "scan_directory"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "semgrep",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-server-semgrep",
+          "flaw": "CVE-2026-7446",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "scan_directory's declared function is to run a semgrep scan over a bounded path; BASE_ALLOWED_PATH resolves to the package's grandparent directory (\"/\" once installed), so any absolute path passes, and the 1.0.1 fix switches the shell call to execFile() with an argv array, removing the arbitrary-command path on the patched server (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+        }
+      ],
+      "patched_version": "1.0.1"
     }
   ]
 }
