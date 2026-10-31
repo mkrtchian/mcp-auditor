@@ -1,0 +1,11 @@
+# faf-mcp (GHSA-j4r7-8ph4-43g3) vulnerable: npm faf-mcp 2.1.2. faf_read/faf_write resolve their
+# `path` argument behind only a forbidden-prefix denylist (/etc, /sys, /proc, /private/etc) and
+# a literal ".." check, so an absolute path elsewhere reaches any file the server's user can
+# read or write, outside the `.faf` project scope (cwd). No COPY/ADD from the build context.
+FROM node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
+ENV CI=true
+RUN npm install -g faf-mcp@2.1.2 >/dev/null 2>&1
+RUN mkdir -p /work \
+ && printf '# Project\n\nBenign in-scope .faf project context.\n' > /work/project.faf \
+ && chmod -R a+rX /work
+ENTRYPOINT ["faf-mcp"]
