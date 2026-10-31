@@ -21,6 +21,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_4198_auto_commit,
     cve_2026_7446_semgrep,
     cve_2026_7728_mcp_rtfm,
+    cve_2026_7810_python_notebook,
     cve_2026_10276_jenkins,
     cve_2026_11720_googleapis,
     cve_2026_18905_contextforge,
@@ -88,4 +89,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2025_59834_adb_mcp.TARGETS,
     *cve_2025_53372_node_sandbox.TARGETS,
     *cve_2025_53100_codehooks.TARGETS,
+    *cve_2026_7810_python_notebook.TARGETS,
 )

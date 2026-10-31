@@ -1,0 +1,17 @@
+# python-notebook-mcp (CVE-2026-7810), vulnerable commit a05a232 (ef20992's parent): resolve_path
+# joins a relative filepath against WORKSPACE_DIR with no containment check and returns an
+# absolute filepath unchanged, so initialize_workspace(WORKSPACE) followed by read_notebook with
+# an absolute path or a `../` traversal reads any notebook file the server's user can read,
+# outside the initialized workspace. No PyPI/npm release exists, so both arms are git commits.
+# server.py prints startup/status banners to stdout, which corrupts the MCP stdio (JSON-RPC)
+# channel, so the entrypoint routes builtins.print to stderr (the sylphxltd/adb-mcp shim
+# precedent); this changes no server logic.
+# No COPY/ADD from the build context; the clone is a RUN fetch.
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+RUN git clone https://github.com/UsamaK98/python-notebook-mcp.git . \
+    && git checkout a05a232815809a7e425b5fa7be26e0d4369894c2
+RUN pip install --no-cache-dir "mcp==1.30.0" "nbformat>=5.7.0"
+ENTRYPOINT ["python3", "-c", "import builtins, functools, sys, runpy; builtins.print = functools.partial(builtins.print, file=sys.stderr); runpy.run_path('/app/server.py', run_name='__main__')"]

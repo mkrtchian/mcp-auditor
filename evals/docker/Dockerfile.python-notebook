@@ -1,0 +1,20 @@
+# python-notebook-mcp (CVE-2026-7810), patched commit ef20992 (fix: security, context managers,
+# and code quality improvements, closes issue #5 CWE-22 Path Traversal): resolve_path now
+# canonicalises with Path.resolve() and asserts the result sits inside the canonical workspace
+# root via relative_to(), raising PermissionError on an absolute path or a `../` traversal that
+# escapes it; the same commit replaces every stdout print() with stderr logging, so no shim is
+# needed here. Doubles as the nuisance run image.
+# A later hardening on this same PR (86d51fe, folded into merge commit 72c3239) swaps the
+# containment check for os.path.realpath() + os.path.commonpath() to close a sibling-prefix false
+# positive (e.g. /workspace-evil matching /workspace) that ef20992's relative_to() check does not
+# guard against. The witness sits at /srv/secret.ipynb, not a sibling-prefix of /srv/app, and
+# calibration confirmed ef20992 rejects it, so no fallback to 72c3239 is needed.
+# No COPY/ADD from the build context; the clone is a RUN fetch.
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+RUN git clone https://github.com/UsamaK98/python-notebook-mcp.git . \
+    && git checkout ef20992aa8f74b6fc14af8a9e519aea03d47b69c
+RUN pip install --no-cache-dir "mcp==1.30.0" "nbformat>=5.7.0"
+ENTRYPOINT ["python3", "/app/server.py"]
