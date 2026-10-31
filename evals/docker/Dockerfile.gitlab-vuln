@@ -1,0 +1,8 @@
+# Vulnerable: @zereight/mcp-gitlab 2.1.30, before encodeGitLabPathSegment (fix e2a81a0 lands in
+# 2.1.38). The raw job_id is interpolated straight into the pipeline-job request paths, so a
+# literal traversal in job_id escapes /jobs/ and fetches an internal path on the configured
+# GITLAB_API_URL host. No COPY/ADD from the build context; the install is a RUN fetch from npm.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g @zereight/mcp-gitlab@2.1.30
+ENV GITLAB_API_URL=http://198.18.4.2/api/v4 GITLAB_PERSONAL_ACCESS_TOKEN=calib-token GITLAB_TOOLSETS=all
+ENTRYPOINT ["mcp-gitlab"]

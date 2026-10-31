@@ -1,0 +1,11 @@
+# Patched: @zereight/mcp-gitlab 2.1.38, the version whose encodeGitLabPathSegment encodes the raw
+# jobId in the pipeline-job request paths (fix commit e2a81a0), so a percent-encoded or literal
+# traversal in job_id no longer escapes /jobs/ to an internal path. Doubles as the nuisance run
+# image. No COPY/ADD from the build context; the install is a RUN fetch from npm.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g @zereight/mcp-gitlab@2.1.38
+# The run responder singleton's fixed address (gitlab_backend.GITLAB_RESPONDER_IP); the fix-check
+# overrides GITLAB_API_URL with its own -e to reach the per-launch responder carrying the nonce.
+# GITLAB_TOOLSETS=all enables the non-default pipelines toolset that holds the counted job tools.
+ENV GITLAB_API_URL=http://198.18.4.2/api/v4 GITLAB_PERSONAL_ACCESS_TOKEN=calib-token GITLAB_TOOLSETS=all
+ENTRYPOINT ["mcp-gitlab"]

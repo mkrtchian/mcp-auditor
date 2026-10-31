@@ -6066,6 +6066,226 @@
         }
       ],
       "patched_version": "1.10.0"
+    },
+    {
+      "server_package": "npm:@zereight/mcp-gitlab",
+      "reaching_flaw": "CVE-2026-61462",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-61462",
+          "tools": [
+            {
+              "vulnerable_name": "get_pipeline_job_output",
+              "patched_name": "get_pipeline_job_output",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "get_job_artifact_file",
+              "patched_name": "get_job_artifact_file",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "2.1.38",
+          "patched_source": "fix_commit",
+          "launch_option": {
+            "option": "GITLAB_TOOLSETS",
+            "value": "all",
+            "reason": "the pipelines toolset is not enabled by default (isDefault:false); GITLAB_TOOLSETS=all enables it, and it holds the job_id-taking pipeline tools the flaw reaches",
+            "documentation": "README: GITLAB_TOOLSETS=<group,...>; tools/registry parseEnabledToolsets returns every toolset for 'all'. CVE-2026-61462."
+          },
+          "benign_calls": [
+            {
+              "tool": "get_pipeline_job_output",
+              "arguments": {
+                "project_id": "1",
+                "job_id": "42"
+              }
+            },
+            {
+              "tool": "get_job_artifact_file",
+              "arguments": {
+                "project_id": "1",
+                "job_id": "42",
+                "artifact_path": "log.txt"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "get_pipeline_job_output",
+              "get_job_artifact_file"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-61560",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-61559",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-61568",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        },
+        {
+          "flaw": "GHSA-5648-rgj9-v224",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "gitlab",
+      "backend": {
+        "provisioner": "gitlab",
+        "image": "mcp-auditor-cve-gitlab-responder:local",
+        "network": "mcp-auditor-cve-gitlab-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-fable-5-1"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "CVE-2026-61462",
+          "field": "effect_class",
+          "value": "internal_fetch",
+          "reason": "flipped from record B's read_outside_scope on source and an independent contradictor read: GITLAB_API_URL fixes the host and only the path moves through the job_id, so the ../ traversal escaping /jobs/ to an internal path on the same host is a bounded-fetch bypass (internal_fetch), not an out-of-scope read"
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "CVE-2026-61462",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "the numeric job_id is an argument of a fixed get-job-trace / get-artifact-file operation on the configured host; the traversal escaping /jobs/ to an internal path is a bypass of that bounded fetch, not the declared function"
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "CVE-2026-61462",
+          "field": "counted_tools",
+          "value": "get_pipeline_job_output, get_job_artifact_file",
+          "reason": "of the eight job_id handlers the fix encodes, only these two return the internal fetch's raw body (the job trace as text, the artifact file content), so the witness surfaces through them; get_pipeline_job, list_job_artifacts and the play/retry/cancel tools validate the response against a job or array schema that an internal endpoint fails, and download_job_artifacts returns only metadata, so none surfaces the witness (settled at calibration)"
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "CVE-2026-61560",
+          "field": "counted",
+          "value": "false",
+          "reason": "upload_markdown arbitrary file read reachable on the SSE transport, not routable over the stdio transport this suite admits; kept with a null class and logged"
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "CVE-2026-61559",
+          "field": "counted",
+          "value": "false",
+          "reason": "SSRF through the X-GitLab-API-URL header under ENABLE_DYNAMIC_API_URL, a header-driven HTTP-transport vector not routable over stdio; kept with a null class and logged"
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "CVE-2026-61568",
+          "field": "counted",
+          "value": "false",
+          "reason": "DNS rebinding against the Streamable HTTP transport, not routable over stdio; kept with a null class and logged"
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "GHSA-5648-rgj9-v224",
+          "field": "counted",
+          "value": "false",
+          "reason": "safety-control bypasses not reaching one of the three graded effect classes over stdio; kept with a null class and logged"
+        }
+      ],
+      "patched_version": "2.1.38"
     }
   ]
 }
