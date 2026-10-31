@@ -29,6 +29,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_55787_flyto,
     cve_2026_57442_mcpvault,
     cve_2026_58171_vibe_trading,
+    cve_2026_58195_agentic_flow,
     cve_2026_61462_gitlab,
     cve_2026_65831_arcadedb,
     cve_2026_73844_ckan,
@@ -72,4 +73,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_7728_mcp_rtfm.TARGETS,
     *ghsa_rr55_jp92_8wp2_claude_faf.TARGETS,
     *ghsa_cc2g_gq8c_r332_grok_faf.TARGETS,
+    *cve_2026_58195_agentic_flow.TARGETS,
 )

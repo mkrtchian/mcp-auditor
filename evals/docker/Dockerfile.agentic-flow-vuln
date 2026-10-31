@@ -1,0 +1,9 @@
+# agentic-flow (CVE-2026-58195), vulnerable npm release 2.0.13. standalone-stdio.js
+# interpolates MCP tool parameters into shell strings run through execSync, e.g.
+# agentic_flow_agent_info builds `npx --yes agentic-flow agent info --name "${name}"`, so a
+# name value such as `coder" & cat /flag #` closes the quote and runs an attacker command. No
+# COPY/ADD from the build context; the package is installed from the npm registry by RUN.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g agentic-flow@2.0.13 && npm cache clean --force
+ENV npm_config_offline=true
+ENTRYPOINT ["node", "/usr/local/lib/node_modules/agentic-flow/dist/mcp/standalone-stdio.js"]
