@@ -44,6 +44,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_77252_atlassian,
     cve_2026_81097_rails_mcp,
     cve_2026_81562_claude_in_mobile,
+    cve_2026_81848_scrapling,
     cve_2026_86439_knowns,
     ghsa_8g7g_hmwm_6rv2_n8n,
     ghsa_cc2g_gq8c_r332_grok_faf,
@@ -90,4 +91,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2025_53372_node_sandbox.TARGETS,
     *cve_2025_53100_codehooks.TARGETS,
     *cve_2026_7810_python_notebook.TARGETS,
+    *cve_2026_81848_scrapling.TARGETS,
 )

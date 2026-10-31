@@ -7248,6 +7248,108 @@
         }
       ],
       "patched_version": "ef20992aa8f74b6fc14af8a9e519aea03d47b69c"
+    },
+    {
+      "server_package": "PyPI:scrapling-fetch-mcp",
+      "reaching_flaw": "CVE-2026-81848",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-81848",
+          "tools": [
+            {
+              "vulnerable_name": "s_fetch_page",
+              "patched_name": "s_fetch_page",
+              "status": "unchanged"
+            },
+            {
+              "vulnerable_name": "s_fetch_pattern",
+              "patched_name": "s_fetch_pattern",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "0.2.4",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "s_fetch_page",
+              "arguments": {
+                "url": "http://127.0.0.1:8080/",
+                "mode": "basic"
+              }
+            },
+            {
+              "tool": "s_fetch_pattern",
+              "arguments": {
+                "url": "http://127.0.0.1:8080/",
+                "search_pattern": "benign",
+                "mode": "basic"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "s_fetch_page",
+              "s_fetch_pattern"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "scrapling",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-81848",
+          "field": "backend_need",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "PyPI:scrapling-fetch-mcp",
+          "flaw": "CVE-2026-81848",
+          "field": "backend_need",
+          "value": "fixture",
+          "reason": "record A said fixture (a baked loopback http.server on 127.0.0.1:8080, has_network=False), record B said none (a real fetch of https://example.com over a bridge with has_network=True). Settled to record A's fixture: both tools are a general-purpose fetcher with no bounded scope, so patched_surfaces=false can only be trusted once the benign call is deterministic and the launch stays closed; a real outbound fetch to a third-party host makes patched_benign_errored depend on that host's availability and plants no fixture at all under the admission's own backend_need vocabulary (fixture vs none vs external), where a baked in-image dependency with no separate service is exactly the adb-mcp precedent. This also corrects the plan's premise that backend_need is none for every server but adb-mcp: 0.2.4 rejects file:// outright, so the benign call cannot itself be file://, and a deterministic closed benign target needs something to fetch, which only a backend_need of fixture records."
+        },
+        {
+          "server_package": "PyPI:scrapling-fetch-mcp",
+          "flaw": "CVE-2026-81848",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "s_fetch_page/s_fetch_pattern's declared function is to fetch a caller-given http/https URL; the 0.2.4 fix allowlists the scheme ahead of browse_url, so the file:// path does not exist on the patched build and a read_outside_scope finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability), and on the vulnerable build the arbitrary scheme (not the http/https fetch itself) is what crosses outside the fetcher's intended web scope"
+        }
+      ],
+      "patched_version": "0.2.4"
     }
   ]
 }

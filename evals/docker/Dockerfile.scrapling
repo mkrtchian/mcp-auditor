@@ -1,0 +1,16 @@
+# scrapling-fetch-mcp (CVE-2026-81848), patched PyPI release 0.2.4 (fix commit 9f6f34e,
+# advisory-named "0.2.3", never published to PyPI; 0.2.4 is the earliest registry release and was
+# confirmed by source diff to carry the identical fix). _require_web_url (_fetcher.py) allowlists
+# the http/https scheme ahead of browse_url in both tool implementations, rejecting file:// before
+# it reaches the fetcher. Same baked loopback http server as the vulnerable image (the server's
+# own in-image benign-fetch target, not a separate service). Doubles as the nuisance run image.
+# No COPY/ADD from the build context; the package is installed from the PyPI registry by RUN.
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+
+RUN pip install --no-cache-dir "mcp<2" "scrapling-fetch-mcp==0.2.4"
+
+RUN mkdir -p /srv/www \
+ && printf '%s' '<html><body><h1>local test site</h1><p>benign fetch target</p></body></html>' > /srv/www/index.html \
+ && chmod -R a+rX /srv/www
+
+ENTRYPOINT ["sh", "-c", "python3 -m http.server 8080 --directory /srv/www >/dev/null 2>&1 & exec scrapling-fetch-mcp"]
