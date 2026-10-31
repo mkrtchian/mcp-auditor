@@ -6726,6 +6726,93 @@
         }
       ],
       "patched_version": "0.1.28"
+    },
+    {
+      "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
+      "reaching_flaw": "CVE-2026-4198",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-4198",
+          "tools": [
+            {
+              "vulnerable_name": "git-changes-commit-message",
+              "patched_name": "git-changes-commit-message",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "f7d992c830c5f2ec5749852e66c0195e3ed7fe30",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "git-changes-commit-message",
+              "arguments": {
+                "autoCommitPath": "/srv/app"
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "git-changes-commit-message"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "host",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "auto-commit",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
+          "flaw": null,
+          "field": "host",
+          "value": "host",
+          "reason": "record A planted as the host user (working_directory /), since the git operations read the host-built /srv checkout and need the host uid, the filesystem/git-launch precedent; record B planted unprivileged with working_directory /app. Settled to record A's host, user host and working_directory /, kept consistent between this entry's host field and the FixCheckTarget's PlantingHost"
+        },
+        {
+          "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
+          "flaw": "CVE-2026-4198",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "git-changes-commit-message's declared function is to generate a commit message from the git changes of a directory; the fix commit (f7d992c830c5f2ec5749852e66c0195e3ed7fe30, an unmerged fork PR, the only place the fix exists) replaces exec with execFile(\"git\", argv, { cwd }) and drops the shell `cd` call entirely, so the arbitrary-command path does not exist on the patched build and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+        }
+      ],
+      "patched_version": "f7d992c830c5f2ec5749852e66c0195e3ed7fe30"
     }
   ]
 }

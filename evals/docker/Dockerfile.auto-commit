@@ -1,0 +1,18 @@
+# mcp-server-auto-commit (CVE-2026-4198), patched_source fix_commit: the only fix is an
+# unmerged fork PR (123mutouren321414/mcp-server-auto-commit#8, commit
+# f7d992c830c5f2ec5749852e66c0195e3ed7fe30), since upstream has published no tag, release or
+# merge for this flaw. The commit drops the shell `cd ${cwd}` call and replaces exec with
+# execFile and argument arrays, so autoCommitPath never reaches a shell. Doubles as the
+# nuisance run image. No COPY/ADD from the build context; index.ts is fetched by RUN from the
+# pinned fork commit.
+FROM node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && git config --system --add safe.directory '*'
+WORKDIR /app
+RUN printf '%s' '{"name":"mcp-server-auto-commit","version":"0.0.1","type":"module","dependencies":{"@modelcontextprotocol/sdk":"^1.5.0","zod":"^3.24.2","openai":"^4.28.0","dotenv":"^16.4.5","minimist":"^1.2.8"},"devDependencies":{"typescript":"^5.7.3","@types/node":"^22.13.5","@types/minimist":"^1.2.5"}}' > package.json
+RUN printf '%s' '{"compilerOptions":{"target":"ES2022","module":"Node16","moduleResolution":"Node16","outDir":"./build","rootDir":".","strict":true,"esModuleInterop":true,"skipLibCheck":true,"forceConsistentCasingInFileNames":true},"include":["./index.ts"]}' > tsconfig.json
+RUN curl -fsSL -o index.ts https://raw.githubusercontent.com/123mutouren321414/mcp-server-auto-commit/f7d992c830c5f2ec5749852e66c0195e3ed7fe30/index.ts
+RUN npm install --no-audit --no-fund --loglevel=error && npx tsc
+ENTRYPOINT ["node", "/app/build/index.js", "--key", "sk-dummy-key-for-offline-tests"]
