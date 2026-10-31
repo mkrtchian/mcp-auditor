@@ -1,0 +1,11 @@
+# node-code-sandbox-mcp (CVE-2025-53372), patched npm release 1.3.0. sandbox_stop now sanitizes
+# container_id and runs execFileSync('docker', ['rm', '-f', validId]) with no shell, so shell
+# metacharacters in container_id cannot inject a command. Doubles as the nuisance run image.
+# No COPY/ADD from the build context; the package is installed from the npm registry by RUN.
+FROM node:22-slim@sha256:9f0dde62d10e7ff7a310ecaebd66225f6b46c17e6cb778449a77b05d3541bea2
+
+RUN printf '%s\n' '#!/bin/sh' 'exit 0' > /usr/local/bin/docker && chmod +x /usr/local/bin/docker
+
+RUN npm install -g node-code-sandbox-mcp@1.3.0
+
+ENTRYPOINT ["node-code-sandbox-mcp"]

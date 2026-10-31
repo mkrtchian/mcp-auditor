@@ -1,0 +1,15 @@
+# node-code-sandbox-mcp (CVE-2025-53372), vulnerable npm release 1.2.0. sandbox_stop
+# interpolates the caller's container_id into execSync(`docker rm -f ${container_id}`), a shell
+# string, so a container_id that appends `; cat /flag >&2; exit 1` chains an attacker command;
+# the injected segment is chained with `;`, not `&&`, so it runs whatever the preceding
+# `docker rm -f` segment does. A `docker` CLI stub is baked in only so the server's own startup
+# check (execSync('docker info')) succeeds with no real daemon or socket; the exploit needs no
+# working `docker`. No COPY/ADD from the build context; the package is installed from the npm
+# registry by RUN.
+FROM node:22-slim@sha256:9f0dde62d10e7ff7a310ecaebd66225f6b46c17e6cb778449a77b05d3541bea2
+
+RUN printf '%s\n' '#!/bin/sh' 'exit 0' > /usr/local/bin/docker && chmod +x /usr/local/bin/docker
+
+RUN npm install -g node-code-sandbox-mcp@1.2.0
+
+ENTRYPOINT ["node-code-sandbox-mcp"]
