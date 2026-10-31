@@ -1,12 +1,23 @@
 # HTTP mock-upstream responder for the nuisance suite's googleapis backend, the upstream that the
 # HTTP tool of googleapis/mcp-toolbox reaches on port 80. It is NOT the server under test and
-# carries none of its flaw. It answers a fixed benign JSON body to any request under the tool's
-# configured base path, so a patched toolbox's benign HTTP-tool call (aimed at this container's
-# public-range static IP, which the 1.10.0 SSRF guard lets through) answers without error. It
-# stands no sentinel route: a fix-check stands its own container of the same image with the
-# out-of-scope and redirect routes carrying the per-launch nonce.
+# carries none of its flaw.
+#
+# In the run (no WITNESS_NONCE) it answers a fixed benign JSON body to any request, so a patched
+# toolbox's benign HTTP-tool call (aimed at this container's public-range static IP, which the
+# 1.10.0 SSRF guard lets through) answers without error. It stands no sentinel route then.
+#
+# A fix-check stands its own container of this image with WITNESS_NONCE set, on the backend's
+# public bridge and a second private bridge, which adds the two witness routes:
+#   - /admin/secret: the CVE-2026-11720 base-path-escape target, answering the nonce (the vulnerable
+#     toolbox resolves the `../../../admin/secret` path param out of the /api/v1/users/ base path to
+#     here; the patched one rejects the dot segments)
+#   - any path ending /redirect: a 302 to REDIRECT_TARGET, the CVE-2026-14540 off-origin redirect to
+#     an internal (private-range) address carrying the nonce on /sentinel (the vulnerable toolbox
+#     follows it; the patched one blocks the redirect to a private IP)
+#   - /sentinel: the nonce, served on the responder's private-bridge address, the redirect target
+# All three routes are gated on WITNESS_NONCE, so the run singleton serves none of them.
 # Never spoken to over MCP stdio: the audited server reaches it as an outbound HTTP request.
 # No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
 FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
 
-ENTRYPOINT ["node", "-e", "const http=require('http');const body=JSON.stringify({status:'ok',users:[{id:1,name:'public'}]});http.createServer((req,res)=>{req.resume();res.writeHead(200,{'content-type':'application/json'});res.end(body);}).listen(80);"]
+ENTRYPOINT ["node", "-e", "const http=require('http');const n=process.env.WITNESS_NONCE;const R=process.env.REDIRECT_TARGET;const benign=JSON.stringify({status:'ok',users:[{id:1,name:'public'}]});http.createServer((q,r)=>{q.resume();let p=q.url.split('?')[0];try{p=decodeURIComponent(p);}catch(e){}if(n&&p.includes('/admin/secret')){r.writeHead(200,{'content-type':'text/plain'});return r.end(n);}if(n&&R&&p.endsWith('/redirect')){r.writeHead(302,{location:R});return r.end();}if(n&&p==='/sentinel'){r.writeHead(200,{'content-type':'text/plain'});return r.end(n);}r.writeHead(200,{'content-type':'application/json'});r.end(benign);}).listen(80);"]
