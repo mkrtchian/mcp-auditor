@@ -6483,6 +6483,88 @@
         }
       ],
       "patched_version": "2.0.14"
+    },
+    {
+      "server_package": "RubyGems:rails-mcp-server",
+      "reaching_flaw": "CVE-2026-81097",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-81097",
+          "tools": [
+            {
+              "vulnerable_name": "execute_ruby",
+              "patched_name": "execute_ruby",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.6.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "execute_ruby",
+              "arguments": {
+                "code": "puts (2 + 3)",
+                "timeout": 25
+              }
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "execute_ruby"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "rails-mcp",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [],
+      "settlements": [
+        {
+          "server_package": "RubyGems:rails-mcp-server",
+          "flaw": "CVE-2026-81097",
+          "field": "patched_version",
+          "value": "1.6.1",
+          "reason": "the advisory offers 1.6.1 (require allowlist and a PTY forbidden pattern, execute_ruby kept) and 2.0.0 (execute_ruby removed outright); 1.6.1 is pinned because 2.0.0 would make the patched benign call error and fail the fix check on patched_benign_errored, not because the server's own capability changed"
+        },
+        {
+          "server_package": "RubyGems:rails-mcp-server",
+          "flaw": "CVE-2026-81097",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "execute_ruby's declared function is to run caller Ruby inside the active Rails project; the patch adds a /\\bPTY\\b/ forbidden pattern and a require allowlist that rejects require \"pty\", so the OS-escape path does not exist on the patched gem and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+        }
+      ],
+      "patched_version": "1.6.1"
     }
   ]
 }
