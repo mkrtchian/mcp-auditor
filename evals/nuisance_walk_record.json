@@ -1,6 +1,237 @@
 {
   "rule_commit": "93de2d8",
-  "addition": {"logged_on": "2026-10-29", "size": 43},
-  "settlements": [],
-  "identities": []
+  "addition": {
+    "logged_on": "2026-10-29",
+    "size": 43
+  },
+  "settlements": [
+    {
+      "flaw": "CVE-2026-85787",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read the read-only bypass as a blind write, one as visible through the server's query tool). Settled True on the NVD record (writes beyond the read-only scope before 1.1.7) and the PyPI wheels awslabs.postgres-mcp-server 1.1.6 and 1.1.7: the fix is in mutable_sql_detector.py (SET_CONFIG among the mutating keywords, comments folded and quoted identifiers unwrapped before matching). The server's data tool, run_query, returns the result rows of the submitted SQL, so a write that passes the keyword gate shows in the exploiting call when it returns rows (RETURNING) and in any later run_query SELECT of the same server that reads the modified data back. Effect shows in a tool response: True."
+    },
+    {
+      "flaw": "GHSA-382c-vx95-w3p5",
+      "criterion": "grammar_class",
+      "verdict": false,
+      "reason": "Classifiers split on grammar_class (one read the cross-contributor profile leak as read_outside_scope, one as an authorization bypass). Settled out of grammar on the advisory (GHSA-382c-vx95-w3p5, CWE-284) and the fix commit 811ef5fb of JSONbored/loopover: the fix adds requireContributorAccess(login) to GittensoryMcp.getContributorProfile and widens the redaction regex. The tool returns another contributor's profile from the server's own application database: no file outside an allowed directory, no command, no fetched address. The restriction to the caller's own contributor profile is an access rule between callers, not a scope the server declares for what it reads (a directory, a project or space allowlist), so a missing per-contributor authorization check on the server's own backend data reaches no grammar class. Satisfies grammar_class: False."
+    },
+    {
+      "flaw": "GHSA-382c-vx95-w3p5",
+      "criterion": "pinnable",
+      "verdict": true,
+      "reason": "Classifiers split on pinnable (one pinned two commits, one read the advisory's empty patched field and the npm version list). Settled True on the GitHub API: the advisory links the fix commit 811ef5fb9d748170011f8854d88c64627ad666a0 in the public repository JSONbored/loopover (gittensory redirects there), whose single parent 0fb238021991ac9f1cb033f311078b9e5643f239 is public too. Both are commits of a public source, so the vulnerable version and the first patched version can be pinned even though npm serves no installable 0.1.0. Pinnable: True."
+    },
+    {
+      "flaw": "CVE-2025-5277",
+      "criterion": "pinnable",
+      "verdict": true,
+      "reason": "Classifiers split on pinnable (one used the release tags 1.2.0 and 1.3.0, one took the fix commit 94d20ae as the vulnerable version and found no patch). Settled True on OSV and the GitHub API: the public repository alexei-led/aws-mcp-server (renamed cloud-mcp-server, archived) carries tags 1.2.0 (85513ba8) and 1.3.0 (39d26d10). The fix is the merge 94d20ae1 (PR #11, the AWS command validation system), which 1.2.0 predates and 1.3.0 contains, and OSV records the fix at 1.3.0. 94d20ae is the fix, not a vulnerable version. Pinnable: True."
+    },
+    {
+      "flaw": "CVE-2026-0758",
+      "criterion": "pinnable",
+      "verdict": true,
+      "reason": "Classifiers split on pinnable (one found no patched release, one pinned the commits 49d67127 and a23f3d00). Settled True on the source and the admission of npm:mcp-server-siri-shortcuts: no npm release carries the fix, but the public repository does, tag 1.1.0 vulnerable and the fix commit a23f3d00 (three commits ahead, exec replaced by spawn without a shell). The admission's fix check builds both under Docker and surfaces its witness through run_shortcut on 1.1.0 and not on a23f3d00. Pinnable: True."
+    },
+    {
+      "flaw": "CVE-2026-66004",
+      "criterion": "effect_in_tool_response",
+      "verdict": false,
+      "reason": "Classifiers split on effect_in_tool_response (one counted the import confirmation, one saw a blind write). Settled False on GHSA-4h8q-hh2j-755w and the fix commit 30a33084 of ahujasid/mcp-for-blender: the traversal is in the Blender addon's download_polyhaven_asset, which joins the keys of the include map of the Polyhaven API response to a temp directory and writes there. The MCP tool returns only a fixed import message and the imported object names, and the out-of-scope write lands on the Blender host's disk. The server's execute_blender_code tool runs arbitrary Python and could read any file, but that is a code execution capability of its own, not a read of what the flaw did: counting it would make every write on that server show. No tool reads the written file back through its own function. Effect shows in a tool response: False."
+    },
+    {
+      "flaw": "CVE-2026-15522",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read run_project's fixed reply as carrying nothing, one counted the later output). Settled True on OSV, issue #9 and the fix commit eb63add5 of tugcantopaloglu/godot-mcp (src/index.ts at 2.0.0): validatePath rejects only '..' substrings, so run_project accepts any absolute directory holding a project.godot, injects the interaction-server autoload into it and launches it. The same server's get_debug_output returns the launched process's output, the injected autoload's own line included, and read_file returns the modified project.godot. A later tool call of the same server shows the effect. Effect shows in a tool response: True."
+    },
+    {
+      "flaw": "CVE-2026-46341",
+      "criterion": "grammar_class",
+      "verdict": true,
+      "reason": "Classifiers split on grammar_class (one read a domain allowlist bypass outside the grammar, one an internal fetch). Settled internal_fetch on GHSA-jwp7-wg77-3w9v and the npm tarballs @apify/actors-mcp-server 0.9.20 and 0.9.21: in 0.9.20 fetch-apify-docs checks only url.startsWith against the allowed documentation domains, then fetches with redirects followed and returns the body. A host that starts with an allowed name, or a redirect from one, sends the fetch to an address the caller picks, internal ones included, and the content comes back in the response. 0.9.21 parses the URL and matches the exact hostname. The admission of this server counts the flaw as internal_fetch on the same tool. Satisfies grammar_class: True."
+    },
+    {
+      "flaw": "CVE-2026-15525",
+      "criterion": "effect_in_tool_response",
+      "verdict": false,
+      "reason": "Classifiers split on effect_in_tool_response (one read the SSRF as blind, one counted the validation outcome). Settled False on OSV, the fix commit 21739972 of kLOsk/adloop and src/adloop/ads/write.py at 0.9.0: draft_responsive_search_ad and draft_sitelinks send a HEAD (then GET) request to the caller's URLs with no address check, and the tool reports only whether the URL answered, an HTTP status or a socket error. The fetched content is never returned. A reachability signal is a blind error oracle, as in the draw settlement of CVE-2026-32111, not the effect of the request showing in the response. Effect shows in a tool response: False."
+    },
+    {
+      "flaw": "CVE-2026-85661",
+      "criterion": "pinnable",
+      "verdict": true,
+      "reason": "Classifiers split on pinnable (one found the fix in 1.0.0, one found no patched version in the CVE record). Settled True on OSV, PyPI, the tags and the changelog of haris-musa/excel-mcp-server: the CVE record names last_affected 0.1.8 (tag v0.1.8, PyPI 0.1.8). The 1.0.0 changelog, the next release, lists under Security the confinement of paths to the --allow-dir folders, citing the same report (GHSA-9h7m-8h6c-6jh7), and src/excel_mcp/paths.py at v1.0.0 replaces the unconfined get_excel_path. Both are public PyPI releases and tags. Pinnable: True."
+    },
+    {
+      "flaw": "CVE-2026-42078",
+      "criterion": "effect_in_tool_response",
+      "verdict": false,
+      "reason": "Classifiers split on effect_in_tool_response (one counted the success message that echoes the path, one saw a blind write). Settled False on GHSA-hrcw-xc63-g29m and the fix commit 418491a9 of icip-cas/PPTAgent (pptagent/mcp_server.py at 1.1.35): markdown_table_to_image writes a rendered PNG to the caller's path and returns only a fixed message repeating that path. No tool of the server reads a file back, so the written content never reaches a tool response. Effect shows in a tool response: False."
+    },
+    {
+      "flaw": "CVE-2026-50158",
+      "criterion": "effect_in_tool_response",
+      "verdict": false,
+      "reason": "Classifiers split on effect_in_tool_response (one read the arbitrary file write as visible, one as blind). Settled False on GHSA-2c7f-fxww-6w6c and the yutu source at v0.10.8: the caption download tool passes the caller's file to os.Create with no root confinement (fixed in 0.10.9-dev1 through pkg.Root). The tool returns only a line echoing the caller's path, and no yutu tool at v0.10.8 reads local files back. A write-only effect with no read-back through a tool response. Effect shows in a tool response: False."
+    },
+    {
+      "flaw": "CVE-2025-59834",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read the command injection as blind, one as visible). Settled True on the source and the admission of npm:adb-mcp: the device-taking tools interpolate device into an adb command run through child_process.exec, and adb_install, adb_logcat, adb_pull and adb_push return the command's combined stdout. The admission's fix check surfaces its witness in those tools' responses on the vulnerable version and not on 0.1.1 (fix commit 041729c0, execFile). Effect shows in a tool response: True."
+    },
+    {
+      "flaw": "CVE-2026-30633",
+      "criterion": "pinnable",
+      "verdict": true,
+      "reason": "Classifiers split on pinnable (one pinned 0.29.1 and 0.30.0, one took the advisory's 0.11.4 and its fix reference at face value and found no patch). Settled True on OSV, the reporter's gist, npm and the source of knowns-dev/knowns: the CVE's only fix reference, 62fb0daa, is a README change and the commit the gist tested as vulnerable. The fix is 09c5a96f (fix(security): contain filesystem paths), which routes the document store through safepath.Resolve, and v0.30.0 is the first tag that contains it. npm carries 0.29.1 and 0.30.0, both tagged in the public repository. Pinnable: True."
+    },
+    {
+      "flaw": "CVE-2026-53957",
+      "criterion": "effect_in_tool_response",
+      "verdict": false,
+      "reason": "Classifiers split on effect_in_tool_response (one read the token redirection as shown in the response, one as blind exfiltration). Settled False on GHSA-2xhg-73j7-rrgx and @contentful/mcp-tools 0.4.4, the dependency @contentful/mcp-server 1.7.18 pins: export_space passes the caller's host, proxy and headers to contentful-export with the server's management token, so the token is sent to the host the caller picks. The response holds only counts and the export path, or the error message. The token reaches the attacker on the attacker's own host and never a tool response. Effect shows in a tool response: False."
+    },
+    {
+      "flaw": "CVE-2026-59176",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read the code execution as blind, one as visible). Settled True on GHSA-wcjj-9m6g-2fr2 and the functype-mcp-server 1.4.3 dist: set_functype_version installs functype@<version> with pnpm and an unvalidated version (an npm: alias installs a package of the caller's choice), then imports it into the server process. The tool returns a string built from the imported module's VERSION, and search_docs, get_type_api and get_interfaces return its exports, so the attacker module's output reaches the exploiting call's response and later calls of the same server. Effect shows in a tool response: True."
+    },
+    {
+      "flaw": "GHSA-pqh8-p93p-2rx7",
+      "criterion": "grammar_class",
+      "verdict": false,
+      "reason": "Classifiers split on grammar_class (one read the DQL injection as read_outside_scope, one as query injection). Settled out of grammar on GHSA-pqh8-p93p-2rx7 and the fix commit 15d3546c (v2.1.1) of dynatrace-oss/dynatrace-mcp: five tools interpolate timeframe, entity names and cluster IDs into DQL unescaped. The advisory states the impact is bypassing the tools' contracts, not new data access, since the operator token already grants execute_dql and 2.1.0 ships an execute_dql tool. The injected stages query the same Dynatrace backend the server exposes, so no declared scope is crossed and no grammar class is reached. Satisfies grammar_class: False."
+    },
+    {
+      "flaw": "CVE-2026-75130",
+      "criterion": "pinnable",
+      "verdict": false,
+      "reason": "Classifiers split on pinnable (one found no patched version, one took the next npm release 2.1.3). Settled False on NVD, the VulnCheck advisory, the Noma Security write-up and the package source: the injected Custom AI Instructions are served by Context7's hosted backend, and the fix (rule sanitization) was deployed to that backend on 2026-02-23 with no version. @upstash/context7-mcp 2.1.2 and 2.1.3 hold no rule handling, and the 2.1.3 changelog is unrelated to the flaw. The vulnerable behaviour is not in public source, so no vulnerable and patched pair can be pinned. Pinnable: False."
+    },
+    {
+      "flaw": "CVE-2026-7810",
+      "criterion": "pinnable",
+      "verdict": true,
+      "reason": "Classifiers split on pinnable (one found no patched version, one pinned a fix commit). Settled True on the source and the admission of https://github.com/UsamaK98/python-notebook-mcp: the public repository holds the vulnerable commit a05a2328 and the fix commit ef20992a, which canonicalises the path and checks it against the workspace root. The admission's fix check builds both under Docker and surfaces its witness through read_notebook on a05a232 and not on ef20992. Pinnable: True."
+    },
+    {
+      "flaw": "CVE-2026-77261",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read the redirect SSRF as blind, one as visible). Settled True on GHSA-6529-c226-h328, PR #1448 and the mcp-atlassian 0.21.1 wheel: the redirect-validating hook is attached only on the header-PAT branch, and the global stdio fetcher has none in 0.21.1, so sessions follow redirects to internal addresses. The Confluence download_attachment tool and the Jira attachment path fetch the link with that session and return the bytes in the tool response, so a redirect to an internal service surfaces its body. Effect shows in a tool response: True."
+    },
+    {
+      "flaw": "CVE-2026-97228",
+      "criterion": "effect_in_tool_response",
+      "verdict": false,
+      "reason": "Classifiers split on effect_in_tool_response (one read the injected query's effect as visible, one as blind). Settled False on OSV and the rapid7-bulk-export-mcp source at v0.6.1: get_export_status formats export_id into the GraphQL string (fixed in 0.6.2, commit a14e4ff, by a query variable). The function reads only data.export and returns its id, status and URLs, so the injected selections are discarded. Only a GraphQL error string can come back. Effect shows in a tool response: False."
+    },
+    {
+      "flaw": "CVE-2026-18486",
+      "criterion": "stdio_tools_call",
+      "verdict": true,
+      "reason": "Classifiers split on stdio_tools_call (one counted the stdio wrapper, one saw an HTTP gateway). Settled True on IBM bulletin 7286052 and the mcp-context-forge sources at v1.0.7 and v1.0.8: the attacker's jq program runs in tool_service.py when the tool is invoked through tools/call, and the package ships mcpgateway.wrapper, the stdio bridge its README documents, which forwards tools/call to the gateway and relays the reply. The tool definition carrying the filter is fixture state, as for any server-side configuration. The admission of this server settles runs_over_stdio true on the same wrapper. Reached through a stdio tools/call: True."
+    },
+    {
+      "flaw": "CVE-2026-18486",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read a credential leak shown in the response, one an unreadable side effect). Settled True on IBM bulletin 7286052 and tool_service.py at v1.0.7: the output of the jq filter is the tool result, so a filter of $ENV returns the server's environment (JWT_SECRET_KEY, AUTH_ENCRYPTION_SECRET, DATABASE_URL) in the exploiting tools/call response. v1.0.8 refuses the restricted built-ins and runs jq in a sandboxed runner. Effect shows in a tool response: True."
+    },
+    {
+      "flaw": "CVE-2026-19266",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read the injected command as blind behind an LLM review, one saw its output). Settled True on OSV, issue #16 and the source of Kirachon/context-engine at d872548 (the 1.9.0 state, untagged): execGitCommand spawns git with shell true and review_git_diff passes target, base and include_patterns into it. A non-zero exit makes getGitDiff throw with the command's stderr, which server.ts returns as the error text, so an injected command writing to stderr surfaces in the tool response (the error-path route the admitted mcp-server-auto-commit fix check uses too). The fix e0729dcf sets shell false. Effect shows in a tool response: True."
+    },
+    {
+      "flaw": "GHSA-j7h9-2jh7-g967",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read the local transfer path bypass as observable, one as blind). Settled True on GHSA-j7h9-2jh7-g967 and the npm tarballs mcp-ssh-tool 2.1.0 and 2.1.1: in 2.1.0 file_upload applies the policy to the remote path only and reads any local file. The upload returns the file's size and sha256, and a later fs_read call of the same server returns the uploaded copy's content. 2.1.1 adds local path allow and deny prefixes with canonical-path checks. Effect shows in a tool response: True."
+    },
+    {
+      "flaw": "GHSA-j7h9-2jh7-g967",
+      "criterion": "pinnable",
+      "verdict": false,
+      "reason": "Classifiers split on pinnable (one pinned 2.1.0 and 2.1.1, one found nothing to pin). Settled False on the npm registry and GitHub: every version of mcp-ssh-tool was unpublished from npm on 2026-05-26 (the registry answers E404 Unpublished), and both source repositories, oaslananka/mcp-ssh-tool and oaslananka-lab/mcp-ssh-tool, return 404. The successor oaslananka/ssh-mcp-pro has a fresh history with no 2.1.0 code. The tarballs survive only on a third-party mirror (registry.npmmirror.com), which is not a public source of the project and may purge them. Pinnable: False."
+    },
+    {
+      "flaw": "CVE-2026-53818",
+      "criterion": "stdio_tools_call",
+      "verdict": false,
+      "reason": "Classifiers split on stdio_tools_call (one counted the stdio openclaw mcp serve bridge, one read the loopback endpoint as HTTP only). Settled False on GHSA-rj6p-xmxr-qj4h and the openclaw sources at v2026.4.23 and v2026.4.24: the flaw is in the MCP loopback server src/gateway/mcp-http.ts, an HTTP listener on 127.0.0.1 behind bearer tokens, and the fix adds the before-tool-call hook to its JSON-RPC handler. The stdio server (src/mcp/channel-server.ts) exposes channel conversation tools and never reaches the loopback handler. Reached through a stdio tools/call: False."
+    },
+    {
+      "flaw": "CVE-2026-7216",
+      "criterion": "effect_in_tool_response",
+      "verdict": false,
+      "reason": "Classifiers split on effect_in_tool_response (one counted the write's success message, one read the written file as unobservable). Settled False on OSV and processing_server.py of donchelo/processing-claude-mcp-bridge at e017b20a and b569b1ff: create_sketch joins the unvalidated sketch_name under the sketch directory and writes the caller's code there, so '../' writes outside it. The response is only a success acknowledgement, and none of the four tools reads a file back (list_sketches lists subdirectories of the configured directory). Effect shows in a tool response: False."
+    },
+    {
+      "flaw": "CVE-2026-42080",
+      "criterion": "effect_in_tool_response",
+      "verdict": false,
+      "reason": "Classifiers split on effect_in_tool_response (one counted the success message that echoes the path, one saw a blind write). Settled False on GHSA-pxhg-7xr2-w7xg and the fix commit 418491a9 of icip-cas/PPTAgent (1.1.35 to 1.1.36): save_generated_slides creates the parent directories of pptx_path and saves the deck there with no workspace check, returning only the slide count and the caller's path. No tool of the server reads a file back. Effect shows in a tool response: False."
+    },
+    {
+      "flaw": "CVE-2026-4198",
+      "criterion": "pinnable",
+      "verdict": true,
+      "reason": "Classifiers split on pinnable (one pinned the fix commit, one found no patched version). Settled True on the source and the admission of https://github.com/hypermodel-labs/mcp-server-auto-commit: upstream publishes no fix, and the fix exists only as commit f7d992c830c5f2ec5749852e66c0195e3ed7fe30 of a public fork pull request, which replaces exec with execFile and drops the shell cd. A commit of a public source is pinnable, and the admission's fix check builds the vulnerable commit 36b2651d and that commit under Docker, surfacing its witness on the first only. Pinnable: True."
+    },
+    {
+      "flaw": "CVE-2026-59563",
+      "criterion": "effect_in_tool_response",
+      "verdict": true,
+      "reason": "Classifiers split on effect_in_tool_response (one read the effect as a remote deletion, one as visible). Settled True on OSV, PR #41 and the zscaler-mcp-server sources at v0.7.1 and v0.7.2: in v0.7.1 the delete tools build the confirmation token without the resource identifier, so a token issued for one resource deletes another. The exploiting call returns the deletion's success where the patched server rejects the confirmation, and the same server's list tools read the deletion back. Effect shows in a tool response: True."
+    }
+  ],
+  "identities": [
+    {
+      "flaw": "CVE-2026-14537",
+      "server_package": "Go:github.com/googleapis/mcp-toolbox",
+      "reason": "Classifiers split on the package spelling (Go module against repository URL). The https://github.com/googleapis/mcp-toolbox spelling names the repository of the Go module github.com/googleapis/mcp-toolbox, the one server under which the census's other flaws of that repository and the admission file it."
+    },
+    {
+      "flaw": "CVE-2026-14538",
+      "server_package": "Go:github.com/googleapis/mcp-toolbox",
+      "reason": "The https://github.com/googleapis/mcp-toolbox spelling names the repository of the Go module github.com/googleapis/mcp-toolbox, the one server under which the census's other flaws of that repository and the admission file it."
+    },
+    {
+      "flaw": "CVE-2026-14539",
+      "server_package": "Go:github.com/googleapis/mcp-toolbox",
+      "reason": "The https://github.com/googleapis/mcp-toolbox spelling names the repository of the Go module github.com/googleapis/mcp-toolbox, the one server under which the census's other flaws of that repository and the admission file it."
+    },
+    {
+      "flaw": "CVE-2026-14541",
+      "server_package": "Go:github.com/googleapis/mcp-toolbox",
+      "reason": "The https://github.com/googleapis/mcp-toolbox spelling names the repository of the Go module github.com/googleapis/mcp-toolbox, the one server under which the census's other flaws of that repository and the admission file it."
+    },
+    {
+      "flaw": "CVE-2025-69902",
+      "server_package": "PyPI:kubectl-mcp-server",
+      "reason": "kubectl-mcp-tool is the same rohitg00 project as kubectl-mcp-server (CVE-2025-65719), both shell-injecting and both fixed at 1.2.0, settled a duplicate in the nuisance log on 2026-10-31."
+    },
+    {
+      "flaw": "CVE-2026-19337",
+      "server_package": "npm:@adenot/mcp-google-search",
+      "reason": "Classifiers split on the package spelling (npm package against repository URL). The npm package @adenot/mcp-google-search is published from github.com/adenot/mcp-google-search: its package.json names it, and the gitHead of npm 0.3.1, the last affected version, is ddbf0dba, the vulnerable commit the other classifier pinned. One server, under its registry spelling."
+    },
+    {
+      "flaw": "CVE-2025-66689",
+      "server_package": "https://github.com/BeehiveInnovations/pal-mcp-server",
+      "reason": "Classifiers split on the repository name. github.com/BeehiveInnovations/zen-mcp-server redirects (301) to github.com/BeehiveInnovations/pal-mcp-server, the project's current name, so both spellings name one server, kept under its current name."
+    },
+    {
+      "flaw": "CVE-2026-34884",
+      "server_package": "Go:github.com/apache/skywalking-mcp",
+      "reason": "Classifiers split on the package spelling (Go module against repository URL). github.com/apache/skywalking-mcp is the repository of the Go module of the same path (proxy.golang.org lists v0.1.0 and v0.2.0), under which both classifiers file the server's other census flaw, CVE-2026-34476."
+    }
+  ]
 }
