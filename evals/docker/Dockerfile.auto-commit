@@ -10,6 +10,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git curl ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && git config --system --add safe.directory '*'
+# A neutral repository for the nuisance run's benign call, which runs `git diff HEAD` in it.
+RUN mkdir -p /opt/repo && cd /opt/repo && git init -q \
+    && printf '%s\n' '# Notes' 'A sample project.' > README.md \
+    && git add README.md \
+    && git -c user.name=Example -c user.email=example@example.com commit -q -m "Initial commit"
 WORKDIR /app
 RUN printf '%s' '{"name":"mcp-server-auto-commit","version":"0.0.1","type":"module","dependencies":{"@modelcontextprotocol/sdk":"^1.5.0","zod":"^3.24.2","openai":"^4.28.0","dotenv":"^16.4.5","minimist":"^1.2.8"},"devDependencies":{"typescript":"^5.7.3","@types/node":"^22.13.5","@types/minimist":"^1.2.5"}}' > package.json
 RUN printf '%s' '{"compilerOptions":{"target":"ES2022","module":"Node16","moduleResolution":"Node16","outDir":"./build","rootDir":".","strict":true,"esModuleInterop":true,"skipLibCheck":true,"forceConsistentCasingInFileNames":true},"include":["./index.ts"]}' > tsconfig.json

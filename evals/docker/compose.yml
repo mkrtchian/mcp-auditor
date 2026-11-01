@@ -685,7 +685,7 @@ services:
       context: .
       dockerfile: Dockerfile.contextforge
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "cf5301597d2b36244972a090a41400f9fc7ed9210bc4ecc767f8220ffee77469"
+        org.mcp-auditor.dockerfile-fingerprint: "7add58af2615fb26a76f1890b2410b6543e0e5a0c04b227a54c2e2bffecd4cf5"
     image: mcp-auditor-nuisance-contextforge:local
     profiles: ["nuisance"]
 
@@ -1045,7 +1045,7 @@ services:
       context: .
       dockerfile: Dockerfile.auto-commit
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "5a6686642b1ad82d8bbef8fb4a0e283de7e297be2743451e0d2b780db1e3d8e0"
+        org.mcp-auditor.dockerfile-fingerprint: "d39f47942d71293581230b1de65e5f794e133ae3439677ee653428ae5ae5108a"
     image: mcp-auditor-nuisance-auto-commit:local
     profiles: ["nuisance"]
 

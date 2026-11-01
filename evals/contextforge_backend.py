@@ -6,9 +6,11 @@ singleton on a fixed address: stood once and reused across a server's concurrent
 reaped by the generic orphan sweep, so no lock is held across the yield.
 
 The audited gateway reaches the responder as an outbound REST fetch, not over MCP stdio. The
-patched 1.0.7 gateway re-resolves and pins the REST tool's host at invocation and rejects a private
-/ link-local address, so the responder sits at a public-range (TEST-NET-2) static IP on its own
-bridge and the benign REST tool points straight at that IP.
+patched 1.0.7 gateway checks the REST tool's host at creation and again at invocation, refusing
+any address `ipaddress` calls private (the RFC 5737 documentation and RFC 2544 benchmarking ranges
+included), loopback, link-local, carrier-grade NAT, reserved or multicast. So the responder sits at
+a static IP of the deprecated 6to4 relay anycast range (RFC 7526), global for that check yet out of
+service, on its own bridge, and the benign REST tool points straight at that IP.
 
 A caller drives this through `ensure_contextforge_responder`, `contextforge_server_args`,
 `contextforge_rm` and `CONTEXTFORGE_LAUNCH_LOCK`, built on the shared lifecycle of
@@ -25,8 +27,8 @@ from evals.responder_backend import Responder, remove
 CONTEXTFORGE_RESPONDER_IMAGE = "mcp-auditor-cve-contextforge-responder:local"
 CONTEXTFORGE_RESPONDER_CONTAINER = "mcp-auditor-cve-contextforge-responder"
 CONTEXTFORGE_BRIDGE = "mcp-auditor-cve-contextforge-bridge"  # gateway <-> responder, static IPs
-_CONTEXTFORGE_SUBNET = "198.51.100.0/24"  # TEST-NET-2: public-looking, so the SSRF guard passes
-CONTEXTFORGE_RESPONDER_IP = "198.51.100.2"  # the benign REST tool's target
+_CONTEXTFORGE_SUBNET = "192.88.99.0/24"  # deprecated 6to4 anycast: global, so the SSRF guard passes
+CONTEXTFORGE_RESPONDER_IP = "192.88.99.2"  # the benign REST tool's target
 
 # The responder is a singleton on a fixed IP, so a caller does not hold this across its yield: a
 # server's concurrent runs share the one responder. A plain Lock serialises only the stand-up,

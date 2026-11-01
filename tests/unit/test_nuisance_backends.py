@@ -1,9 +1,16 @@
+import ipaddress
+
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as given
 from evals import nuisance_provisioners
 from evals.ckan_backend import CKAN_ALIASES, CKAN_BRIDGE, CKAN_RESPONDER_IMAGE, CKAN_RESPONDER_IP
-from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
+from evals.contextforge_backend import (
+    CONTEXTFORGE_BRIDGE,
+    CONTEXTFORGE_RESPONDER_IMAGE,
+    CONTEXTFORGE_RESPONDER_IP,
+)
+from evals.cve_targets import DOCKER_DIRECTORY
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.mysql_backend import MYSQL_BRIDGE, MYSQL_IMAGE
 from evals.n8n_backend import N8N_BRIDGE, N8N_RESPONDER_IMAGE
@@ -140,6 +147,19 @@ def test_the_contextforge_fixture_is_accepted_by_the_registry():
     )
 
     assert backend_problems(given.with_a_backend(_a_server(), backend), BACKENDS) == []
+
+
+def test_the_contextforge_responder_ip_is_global():
+    # The patched gateway refuses a REST tool whose host is private by `ipaddress`, and the
+    # documentation ranges count as private there.
+    assert ipaddress.ip_address(CONTEXTFORGE_RESPONDER_IP).is_global
+
+
+@pytest.mark.parametrize("dockerfile", ["Dockerfile.contextforge", "Dockerfile.contextforge-vuln"])
+def test_the_gateway_benign_tool_aims_at_the_contextforge_responder(dockerfile: str):
+    baked = (DOCKER_DIRECTORY / dockerfile).read_text()
+
+    assert f'"GW_BENIGN_URL", "http://{CONTEXTFORGE_RESPONDER_IP}/"' in baked
 
 
 def test_contextforge_provisioner_wires_the_responder_and_reaps_the_server(

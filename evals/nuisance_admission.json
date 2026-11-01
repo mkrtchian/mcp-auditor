@@ -6760,7 +6760,7 @@
             {
               "tool": "git-changes-commit-message",
               "arguments": {
-                "autoCommitPath": "/srv/app"
+                "autoCommitPath": "/opt/repo"
               }
             }
           ],

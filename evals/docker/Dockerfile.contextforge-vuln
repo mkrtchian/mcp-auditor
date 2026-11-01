@@ -59,7 +59,7 @@ SERVER_NAME = os.environ.get("GW_SERVER_NAME", "ssrfserver")
 TOOLS = json.loads(os.environ.get("GW_TOOLS", "[]"))  # [{place,rebind,ip,path}]
 # Without GW_TOOLS (a nuisance run, no fix-check sentinel) the gateway registers one benign REST
 # tool aimed at the responder. A fix-check always sets GW_TOOLS, empty for the reference arm.
-BENIGN_URL = os.environ.get("GW_BENIGN_URL", "http://198.51.100.2/")
+BENIGN_URL = os.environ.get("GW_BENIGN_URL", "http://192.88.99.2/")
 HOSTS = "/etc/hosts"
 
 
