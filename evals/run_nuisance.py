@@ -1,7 +1,9 @@
 """Nuisance-specific commands, kept out of run_census, run_cve_benchmark and run_holdout.
 
-`walk` prints the servers the holdout walk reached, each with its reaching flaw and the flaws
-that set its version, for the maintainer to admit (no LLM, no network). `nuisance-dossier` writes
+`walk` prints the servers the walk reached, the holdout walk's then the addition's, each with the
+draw position of its reaching flaw and the flaws that set its version, for the maintainer to
+admit, and how many of the addition's servers the admission counts in the figure (no LLM, no
+network). `nuisance-dossier` writes
 the isolated admission dossier for one server (no LLM; the fix-check driver it ships needs
 Docker), copying a backend's kit builder and lifecycle under `--backend <key>`. `calibrate`
 rebuilds and reproduces each fix-check fixture against the admission (Docker, no LLM). `run`
@@ -29,6 +31,7 @@ from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_co
 from evals.holdout_draw import draw_order
 from evals.metrics import quiet_throttle_waits
 from evals.nuisance_admission import ADMISSION_PATH
+from evals.nuisance_admission_walk import addition_entries
 from evals.nuisance_calibrate_command import add_calibrate_arguments
 from evals.nuisance_commands import (
     CENSUS_PATH,
@@ -84,10 +87,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Nuisance admission commands.")
     commands = parser.add_subparsers(required=True)
-    walk = commands.add_parser("walk", help="print the servers the holdout walk reached to admit")
+    walk = commands.add_parser("walk", help="print the servers the walk reached to admit")
     walk.set_defaults(command=_walk)
     walk.add_argument("--census", type=Path, default=CENSUS_PATH)
     walk.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
+    walk.add_argument("--admission", type=Path, default=ADMISSION_PATH)
     dossier = commands.add_parser(
         "nuisance-dossier", help="write the isolated admission dossier for one server"
     )
@@ -122,21 +126,27 @@ def _parser() -> argparse.ArgumentParser:
 def _walk(args: argparse.Namespace) -> int:
     with malformed_input_refused():
         nuisance_census = committed_nuisance_census(args.census, args.walk_record)
-        population = [s for s in nuisance_population(nuisance_census) if not s.in_addition]
+        population = nuisance_population(nuisance_census)
+        admission = committed_admission(args.admission, nuisance_census)
     draw = nuisance_census.census.draw
     outcomes: dict[str, str] = {}
     for step in draw.walk if draw else []:
         outcomes.setdefault(step.identifier, step.outcome)
     print(f"{len(population)} servers reached by the walk:")
     for server in population:
-        outcome = outcomes.get(server.reaching_flaw, "?")
+        how = "addition" if server.in_addition else outcomes[server.reaching_flaw]
         line = (
-            f"  {server.server_package}  reached by {server.reaching_flaw} ({outcome})"
+            f"  #{server.reaching_position} {server.server_package}"
+            f"  reached by {server.reaching_flaw} ({how})"
             f"  sets version: {', '.join(server.version_setting)}"
         )
         if server.mark is not None:
             line += f"  [{server.mark.value}]"
         print(line)
+    if admission is not None:
+        admitted = len(addition_entries(admission, population))
+        size = nuisance_census.record.addition.size
+        print(f"{admitted} of {size} servers of the addition admitted and in the figure")
     return 0
 
 

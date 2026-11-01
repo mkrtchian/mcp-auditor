@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal
 
+import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import cve_baseline
@@ -11,7 +12,8 @@ from evals.census_work import AgentRecord, AgentRole
 from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.holdout_census import CLASSIFIERS
+from evals.holdout_census import CLASSIFIERS, HoldoutCensus
+from evals.holdout_draw import draw_digest
 from evals.nuisance_admission import (
     AdmissionSettlement,
     AdmittedServer,
@@ -34,8 +36,14 @@ SECOND_FLAW = census_given.OSV_ONLY_FLAW
 PATCHED_VERSION = "1.2.0"
 
 
+def a_census() -> HoldoutCensus:
+    """The holdout census whose walk reaches SERVER_PACKAGE through FIRST_FLAW. Its other flaws
+    of the package then add nothing to the queue."""
+    return draw_given.with_a_walk_skipping(census_given.a_census(), FIRST_FLAW)
+
+
 def a_nuisance_census() -> NuisanceCensus:
-    return walk_given.a_nuisance_census(census_given.a_census())
+    return walk_given.a_nuisance_census(a_census())
 
 
 def an_admission() -> NuisanceAdmission:
@@ -268,7 +276,7 @@ def with_a_counted_tool_missing_its_benign_call(admission: NuisanceAdmission) ->
 
 
 def a_nuisance_census_with_the_second_flaw_under_another_package() -> NuisanceCensus:
-    census = census_given.a_census()
+    census = a_census()
 
     def relabel(own: list[Classification]) -> list[Classification]:
         return [
@@ -320,3 +328,67 @@ def admitting_the_server_of(flaw: str, server_package: str, service: str) -> Nui
             ]
         }
     )
+
+
+def admitting_another_package_outside_the_walk() -> NuisanceAdmission:
+    """OTHER_PACKAGE admitted through SECOND_FLAW, a census flaw of it that is not a draw-order
+    candidate, so the walk never reaches it."""
+    return admitting_the_server_of(SECOND_FLAW, OTHER_PACKAGE, "context-forge-nuisance")
+
+
+def with_the_second_flaw_reaching(admission: NuisanceAdmission) -> NuisanceAdmission:
+    return _with_server(
+        admission, lambda server: server.model_copy(update={"reaching_flaw": SECOND_FLAW})
+    )
+
+
+_QUEUE_CENSUS_FLAWS = ["CVE-2025-1001", "CVE-2025-1002", "CVE-2025-1003"]
+
+
+def a_nuisance_census_with_two_queue_servers(addition_size: int) -> NuisanceCensus:
+    """Each flaw its own server, `npm:<flaw>`: the holdout walk reaches the first by draw order,
+    the queue the other two, the servers of `the_queue_packages`."""
+    census = walk_given.a_census_walking_the_first(1, of=_QUEUE_CENSUS_FLAWS)
+    return NuisanceCensus(census=census, record=walk_given.an_empty_record(addition_size))
+
+
+def the_queue_packages() -> list[str]:
+    return [f"npm:{flaw}" for flaw in sorted(_QUEUE_CENSUS_FLAWS, key=draw_digest)[1:]]
+
+
+def admitting_the_queue_servers() -> NuisanceAdmission:
+    """Listed against their draw order, so the size check has to sort them."""
+    servers = [
+        admitting_the_server_of(
+            package.removeprefix("npm:"), package, f"{package.removeprefix('npm:')}-nuisance"
+        ).servers[0]
+        for package in reversed(the_queue_packages())
+    ]
+    return an_admission().model_copy(update={"servers": servers})
+
+
+def without_stdio(admission: NuisanceAdmission, server_package: str) -> NuisanceAdmission:
+    servers = [
+        server.model_copy(update={"runs_over_stdio": False})
+        if server.server_package == server_package
+        else server
+        for server in admission.servers
+    ]
+    return admission.model_copy(update={"servers": servers})
+
+
+ACCEPTANCE_FLAW = "CVE-2025-53355"
+ACCEPTANCE_PACKAGE = "npm:mcp-server-kubernetes"
+
+
+def a_census_with_an_acceptance_server() -> HoldoutCensus:
+    """A census that also classifies the benchmark flaw ACCEPTANCE_FLAW, outside the draw order,
+    under ACCEPTANCE_PACKAGE."""
+    with_target = census_given.with_a_cve_of(
+        census_given.a_census(), ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE
+    )
+    return draw_given.with_a_walk_skipping(with_target, FIRST_FLAW)
+
+
+def admitting_the_acceptance_server() -> NuisanceAdmission:
+    return admitting_the_server_of(ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE, "kubernetes-nuisance")

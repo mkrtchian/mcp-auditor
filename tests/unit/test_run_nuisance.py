@@ -26,8 +26,11 @@ def test_walk_prints_the_population_and_exits_zero(
 ):
     census = draw_given.a_census_with_draw(draw_given.a_draw())
     path = given.written(tmp_path, census)
+    missing = tmp_path / "absent.json"
 
-    exit_code = run_nuisance.main(["walk", *_census_arguments(tmp_path, path)])
+    exit_code = run_nuisance.main(
+        ["walk", *_census_arguments(tmp_path, path), "--admission", str(missing)]
+    )
 
     out = capsys.readouterr().out
     assert exit_code == 0
@@ -36,11 +39,43 @@ def test_walk_prints_the_population_and_exits_zero(
     assert "reached by CVE-2025-0001 (drawn)" in out
 
 
+def test_walk_marks_a_queue_server_and_counts_the_admitted_ones(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    exit_code = run_nuisance.main(["walk", *arguments])
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert f"{run_given.QUEUE_SERVER}  reached by {run_given.QUEUE_FLAW} (addition)" in out
+    assert "1 of 1 servers of the addition admitted and in the figure" in out
+
+
+def test_walk_without_an_admission_prints_no_count_line(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=False)
+
+    exit_code = run_nuisance.main(["walk", *arguments])
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "(addition)" in out
+    assert "servers of the addition" not in out
+
+
 def test_a_malformed_census_exits_three(tmp_path: Path):
     path = tmp_path / "holdout_census.json"
     path.write_text("{ not valid json")
 
-    assert run_nuisance.main(["walk", *_census_arguments(tmp_path, path)]) == 3
+    missing = tmp_path / "absent.json"
+
+    exit_code = run_nuisance.main(
+        ["walk", *_census_arguments(tmp_path, path), "--admission", str(missing)]
+    )
+
+    assert exit_code == 3
 
 
 def test_a_missing_walk_record_is_refused_as_not_committed(
@@ -49,7 +84,17 @@ def test_a_missing_walk_record_is_refused_as_not_committed(
     census = given.written(tmp_path, draw_given.a_census_with_draw(draw_given.a_draw()))
     missing = tmp_path / "absent.json"
 
-    exit_code = run_nuisance.main(["walk", "--census", str(census), "--walk-record", str(missing)])
+    exit_code = run_nuisance.main(
+        [
+            "walk",
+            "--census",
+            str(census),
+            "--walk-record",
+            str(missing),
+            "--admission",
+            str(missing),
+        ]
+    )
 
     assert exit_code == run_nuisance.REFUSED_EXIT
     assert "the nuisance walk record is not committed" in capsys.readouterr().out
@@ -142,7 +187,7 @@ def test_run_without_an_admission_exits_zero_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     _no_tracing(monkeypatch)
-    census = given.written(tmp_path, given.a_census())
+    census = given.written(tmp_path, admission.a_census())
     missing = tmp_path / "absent.json"
 
     exit_code = run_nuisance.main(
@@ -157,7 +202,7 @@ def test_run_on_an_admission_with_no_server_exits_zero_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     _no_tracing(monkeypatch)
-    census = given.written(tmp_path, given.a_census())
+    census = given.written(tmp_path, admission.a_census())
     empty = admission.an_admission().model_copy(update={"servers": []})
     path = admission.written(tmp_path, empty)
 
@@ -173,7 +218,7 @@ def test_run_refuses_tracing_before_reading_the_admission(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     monkeypatch.setenv("LANGSMITH_TRACING", "true")
-    census = given.written(tmp_path, given.a_census())
+    census = given.written(tmp_path, admission.a_census())
     malformed = tmp_path / "nuisance_admission.json"
     malformed.write_text("{ not json")
 
@@ -191,7 +236,7 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     _no_tracing(monkeypatch)
-    census = given.written(tmp_path, given.a_census())
+    census = given.written(tmp_path, admission.a_census())
     stale = admission.with_a_stale_grammar_fingerprint(admission.an_admission())
     path = admission.written(tmp_path, stale)
 
@@ -203,7 +248,7 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
     assert "the census, the walk record or the admission is malformed" in capsys.readouterr().out
 
 
-_KUBERNETES = "npm:mcp-server-kubernetes"
+_KUBERNETES = admission.ACCEPTANCE_PACKAGE
 
 
 def _no_llm_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -212,16 +257,14 @@ def _no_llm_key(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _a_census_with_a_kubernetes_target(tmp_path: Path) -> Path:
-    return given.written(
-        tmp_path, given.with_a_cve_of(given.a_census(), "CVE-2025-53355", _KUBERNETES)
-    )
+    return given.written(tmp_path, admission.a_census_with_an_acceptance_server())
 
 
 def test_gate_without_an_admission_exits_zero_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     _no_llm_key(monkeypatch)
-    census = given.written(tmp_path, given.a_census())
+    census = given.written(tmp_path, admission.a_census())
     missing = tmp_path / "absent.json"
 
     exit_code = run_nuisance.main(

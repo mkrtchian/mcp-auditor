@@ -161,3 +161,19 @@ def _a_draw_of(identifiers: list[str]) -> DrawRecord:
         give_ups=[],
         drawn=identifiers,
     )
+
+
+def with_a_walk_skipping(census: HoldoutCensus, flaw: str) -> HoldoutCensus:
+    """The census with a draw whose holdout walk is one `skipped` step on `flaw`, which
+    `load_census` accepts with no card and no calibration agent."""
+    draw = DrawRecord(
+        rule_commit="abc1234",
+        grammar_fingerprint="deadbeef",
+        settlements=[],
+        walk=[DrawWalkStep(identifier=flaw, outcome="skipped", reason="")],
+        cards=[],
+        card_checks=[],
+        give_ups=[],
+        drawn=[],
+    )
+    return census.model_copy(update={"draw": draw})

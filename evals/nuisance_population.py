@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
+from evals.nuisance_admission_walk import standing_exit
 from evals.nuisance_results import FigureExit
 from evals.nuisance_walk import NuisanceServer, ServerMark
 
@@ -49,11 +50,3 @@ def run_population(
         else:
             outside.append(FigureExit(package, reason))
     return RunPopulation(audited, outside)
-
-
-def standing_exit(server: AdmittedServer) -> str | None:
-    if not server.runs_over_stdio:
-        return "does not run over stdio"
-    if not server.runs_under_docker:
-        return "its patched version does not run under Docker"
-    return None

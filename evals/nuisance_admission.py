@@ -20,6 +20,7 @@ from evals.census_work import AgentRecord
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost
 from evals.honeypots import REPO_ROOT
+from evals.nuisance_admission_walk import walk_problems
 from evals.nuisance_counting import counted_flaws, counted_tools
 from evals.nuisance_walk_record import NuisanceCensus
 
@@ -136,7 +137,7 @@ def admission_problems(
         problems += _benign_call_problems(server)
         problems += _patched_version_problems(server)
         problems += nuisance_backends.backend_problems(server, backends)
-    return problems
+    return problems + walk_problems(admission, nuisance_census)
 
 
 def _fingerprint_problems(admission: NuisanceAdmission, grammar_fingerprint: str) -> list[str]:

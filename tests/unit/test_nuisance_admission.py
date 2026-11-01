@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 import tests.unit.support.test_nuisance_admission_given as given
+import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import cve_baseline
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.nuisance_admission import (
@@ -14,6 +15,7 @@ from evals.nuisance_admission import (
     admission_problems,
     load_admission,
 )
+from evals.nuisance_walk_record import NuisanceCensus
 
 _MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
     given.with_a_stale_grammar_fingerprint,
@@ -188,3 +190,57 @@ def test_a_stale_fingerprint_is_the_named_problem():
     )
 
     assert "grammar fingerprint" in problem
+
+
+def _problems(admission: NuisanceAdmission, census: NuisanceCensus) -> list[str]:
+    return admission_problems(
+        admission, census, cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+    )
+
+
+def test_an_admitted_server_the_walk_does_not_reach_is_refused():
+    census = given.a_nuisance_census_with_the_second_flaw_under_another_package()
+
+    problems = _problems(given.admitting_another_package_outside_the_walk(), census)
+
+    assert problems == [f"{given.OTHER_PACKAGE}: not reached by the walk"]
+
+
+def test_an_admitted_acceptance_server_outside_the_walk_passes():
+    census = walk_given.a_nuisance_census(given.a_census_with_an_acceptance_server())
+
+    assert _problems(given.admitting_the_acceptance_server(), census) == []
+
+
+def test_a_wrong_reaching_flaw_is_refused_naming_both_flaws():
+    admission = given.with_the_second_flaw_reaching(given.an_admission())
+
+    [problem] = _problems(admission, given.a_nuisance_census())
+
+    assert given.SERVER_PACKAGE in problem
+    assert given.FIRST_FLAW in problem
+    assert given.SECOND_FLAW in problem
+
+
+def test_a_queue_server_past_the_addition_size_is_refused():
+    census = given.a_nuisance_census_with_two_queue_servers(addition_size=1)
+    first, second = given.the_queue_packages()
+
+    [problem] = _problems(given.admitting_the_queue_servers(), census)
+
+    assert second in problem
+    assert first not in problem
+
+
+def test_a_queue_server_with_a_standing_exit_does_not_count_toward_the_size():
+    census = given.a_nuisance_census_with_two_queue_servers(addition_size=1)
+    first, _ = given.the_queue_packages()
+    admission = given.without_stdio(given.admitting_the_queue_servers(), first)
+
+    assert _problems(admission, census) == []
+
+
+def test_queue_servers_within_the_addition_size_pass():
+    census = given.a_nuisance_census_with_two_queue_servers(addition_size=2)
+
+    assert _problems(given.admitting_the_queue_servers(), census) == []
