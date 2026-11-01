@@ -10,10 +10,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from evals.holdout_hierarchical import GammaPrior, contrast_hierarchical, hierarchical_interval
+from evals.holdout_hierarchical import GammaPrior, hierarchical_interval
 from evals.holdout_intervals import (
     Interval,
-    agresti_caffo,
     clopper_pearson,
     jeffreys,
     newcombe,
@@ -22,9 +21,10 @@ from evals.holdout_intervals import (
 from evals.holdout_statistic import (
     ConclusionVerdict,
     Contrast,
-    MethodPlacement,
+    Reading,
     Side,
-    placed,
+    conclude,
+    read_contrast,
     side_of,
 )
 from evals.nuisance_results import NuisanceServerResult
@@ -103,45 +103,27 @@ def check_conclusion(
 ) -> ConclusionVerdict | None:
     if side_a.servers < _MIN_SIDE or side_b.servers < _MIN_SIDE:
         return None
-    placements = _conclusion_methods(side_a, side_b, runs)
-    cited = placements[0]
-    disagreeing = tuple(m for m in placements[1:] if m.placement is not cited.placement)
-    if disagreeing:
-        return ConclusionVerdict(None, True, cited, disagreeing)
-    return ConclusionVerdict(cited.placement, False, cited, ())
-
-
-def _conclusion_methods(
-    side_a: SideStatistic, side_b: SideStatistic, runs: int
-) -> list[MethodPlacement]:
-    split_a, split_b = side_a.split_share_sum, side_b.split_share_sum
-    raised_a = _split_incomplete_as_flagged_sum(side_a.results, runs)
-    raised_b = _split_incomplete_as_flagged_sum(side_b.results, runs)
-    flagged_a = [r.split_flagged_runs for r in side_a.results]
-    flagged_b = [r.split_flagged_runs for r in side_b.results]
-    raised_runs_a = [r.split_flagged_runs + r.incomplete_unflagged_runs for r in side_a.results]
-    raised_runs_b = [r.split_flagged_runs + r.incomplete_unflagged_runs for r in side_b.results]
-    n_a, n_b = side_a.servers, side_b.servers
-    return [
-        placed("newcombe", newcombe(split_a, n_a, split_b, n_b)),
-        placed("agresti_caffo", agresti_caffo(split_a, n_a, split_b, n_b)),
-        placed(
-            "hierarchical_gamma_1_1", contrast_hierarchical(flagged_a, flagged_b, runs, _GAMMA_1_1)
-        ),
-        placed(
-            "hierarchical_gamma_2_2", contrast_hierarchical(flagged_a, flagged_b, runs, _GAMMA_2_2)
-        ),
-        placed("newcombe_incomplete_as_flagged", newcombe(raised_a, n_a, raised_b, n_b)),
-        placed("agresti_caffo_incomplete_as_flagged", agresti_caffo(raised_a, n_a, raised_b, n_b)),
-        placed(
-            "hierarchical_gamma_1_1_incomplete_as_flagged",
-            contrast_hierarchical(raised_runs_a, raised_runs_b, runs, _GAMMA_1_1),
-        ),
-        placed(
-            "hierarchical_gamma_2_2_incomplete_as_flagged",
-            contrast_hierarchical(raised_runs_a, raised_runs_b, runs, _GAMMA_2_2),
+    cited, *others = [
+        *read_contrast(observed(side_a), observed(side_b), runs),
+        *read_contrast(
+            incomplete_as_flagged(side_a, runs),
+            incomplete_as_flagged(side_b, runs),
+            runs,
+            "_incomplete_as_flagged",
         ),
     ]
+    return conclude(cited, others)
+
+
+def observed(side: SideStatistic) -> Reading:
+    return Reading(side.split_share_sum, tuple(r.split_flagged_runs for r in side.results))
+
+
+def incomplete_as_flagged(side: SideStatistic, runs: int) -> Reading:
+    return Reading(
+        _split_incomplete_as_flagged_sum(side.results, runs),
+        tuple(r.split_flagged_runs + r.incomplete_unflagged_runs for r in side.results),
+    )
 
 
 def _share_sum(results: Sequence[NuisanceServerResult]) -> float:

@@ -72,6 +72,18 @@ class MethodPlacement:
 
 
 @dataclass(frozen=True)
+class Reading:
+    """One way of counting a side: the sum of its shares, and the runs counted per member."""
+
+    share_sum: float
+    counted_runs: tuple[int, ...]
+
+    @property
+    def members(self) -> int:
+        return len(self.counted_runs)
+
+
+@dataclass(frozen=True)
 class ConclusionVerdict:
     placement: Placement | None  # the agreed placement, None when the methods disagree
     inconclusive: bool
@@ -130,41 +142,46 @@ def check_conclusion(
 ) -> ConclusionVerdict | None:
     if side_a.targets < _MIN_SIDE or side_b.targets < _MIN_SIDE:
         return None
-    placements = _conclusion_methods(side_a, side_b, runs)
-    cited = placements[0]
-    disagreeing = tuple(m for m in placements[1:] if m.placement is not cited.placement)
+    cited, *others = [
+        *read_contrast(observed(side_a), observed(side_b), runs),
+        *read_contrast(
+            unchecked_as_misses(side_a, runs), unchecked_as_misses(side_b, runs), runs, "_unchecked"
+        ),
+    ]
+    return conclude(cited, others)
+
+
+def conclude(cited: MethodPlacement, others: Sequence[MethodPlacement]) -> ConclusionVerdict:
+    disagreeing = tuple(m for m in others if m.placement is not cited.placement)
     if disagreeing:
         return ConclusionVerdict(None, True, cited, disagreeing)
     return ConclusionVerdict(cited.placement, False, cited, ())
 
 
-def _conclusion_methods(
-    side_a: SideStatistic, side_b: SideStatistic, runs: int
+def read_contrast(
+    reading_a: Reading, reading_b: Reading, runs: int, suffix: str = ""
 ) -> list[MethodPlacement]:
-    checked_a, checked_b = side_a.share_sum, side_b.share_sum
-    unchecked_a = _unchecked_sum(side_a.results, runs)
-    unchecked_b = _unchecked_sum(side_b.results, runs)
-    detected_a = [r.detected_runs for r in side_a.results]
-    detected_b = [r.detected_runs for r in side_b.results]
-    missed_a = [r.detected_runs_if_unchecked_missed for r in side_a.results]
-    missed_b = [r.detected_runs_if_unchecked_missed for r in side_b.results]
-    n_a, n_b = side_a.targets, side_b.targets
+    """Newcombe, Agresti-Caffo and the two hierarchical contrasts, in that order, each named
+    with the suffix appended."""
+    counts = (reading_a.share_sum, reading_a.members, reading_b.share_sum, reading_b.members)
+    a, b = reading_a.counted_runs, reading_b.counted_runs
     return [
-        placed("newcombe", newcombe(checked_a, n_a, checked_b, n_b)),
-        placed("agresti_caffo", agresti_caffo(checked_a, n_a, checked_b, n_b)),
-        placed("hierarchical_gamma_1_1", _hier_contrast(detected_a, detected_b, runs, _GAMMA_1_1)),
-        placed("hierarchical_gamma_2_2", _hier_contrast(detected_a, detected_b, runs, _GAMMA_2_2)),
-        placed("newcombe_unchecked", newcombe(unchecked_a, n_a, unchecked_b, n_b)),
-        placed("agresti_caffo_unchecked", agresti_caffo(unchecked_a, n_a, unchecked_b, n_b)),
-        placed(
-            "hierarchical_gamma_1_1_unchecked",
-            _hier_contrast(missed_a, missed_b, runs, _GAMMA_1_1),
-        ),
-        placed(
-            "hierarchical_gamma_2_2_unchecked",
-            _hier_contrast(missed_a, missed_b, runs, _GAMMA_2_2),
-        ),
+        placed(f"newcombe{suffix}", newcombe(*counts)),
+        placed(f"agresti_caffo{suffix}", agresti_caffo(*counts)),
+        placed(f"hierarchical_gamma_1_1{suffix}", contrast_hierarchical(a, b, runs, _GAMMA_1_1)),
+        placed(f"hierarchical_gamma_2_2{suffix}", contrast_hierarchical(a, b, runs, _GAMMA_2_2)),
     ]
+
+
+def observed(side: SideStatistic) -> Reading:
+    return Reading(side.share_sum, tuple(r.detected_runs for r in side.results))
+
+
+def unchecked_as_misses(side: SideStatistic, runs: int) -> Reading:
+    return Reading(
+        _unchecked_sum(side.results, runs),
+        tuple(r.detected_runs_if_unchecked_missed for r in side.results),
+    )
 
 
 def placed(method: str, interval: Interval) -> MethodPlacement:
@@ -181,10 +198,6 @@ def placement_of(interval: Interval) -> Placement:
 
 def _hierarchical(detected: list[int], runs: int, prior: GammaPrior) -> Interval:
     return hierarchical_interval(detected, runs, prior)
-
-
-def _hier_contrast(a: list[int], b: list[int], runs: int, prior: GammaPrior) -> Interval:
-    return contrast_hierarchical(a, b, runs, prior)
 
 
 def _share_sum(results: Sequence[HoldoutTargetResult]) -> float:

@@ -6,12 +6,14 @@ import math
 from datetime import date
 
 from evals.holdout_intervals import newcombe, wilson
-from evals.holdout_statistic import Placement, Side
+from evals.holdout_statistic import Side
 from evals.nuisance_statistic import (
     check_conclusion,
     cited_interval,
     contrast,
     figure,
+    incomplete_as_flagged,
+    observed,
     primary_controls,
     split_by_side,
 )
@@ -100,26 +102,20 @@ def test_check_conclusion_is_none_below_five_servers_a_side():
     assert check_conclusion(pre, post, RUNS) is None
 
 
-def test_check_conclusion_agrees_when_every_method_places_the_gap_above_zero():
-    pre, post = _sides(10, pre_flagged=3)
-    verdict = check_conclusion(pre, post, RUNS)
-    assert verdict is not None
-    assert verdict.inconclusive is False
-    assert verdict.placement is Placement.ABOVE
-    assert verdict.cited.method == "newcombe"
-    assert verdict.disagreeing == ()
+def test_observed_reads_only_the_runs_flagged_through_the_split_flaw():
+    pre, _ = _sides(5, pre_flagged=3)
+    elsewhere = a_server_result("A", flagged_runs=3, split_flagged_runs=1)
+    side = split_by_side([elsewhere, *pre.results], RUN_CUTOFF)[Side.PRE_CUTOFF]
+    reading = observed(side)
+    assert reading.share_sum == side.split_share_sum
+    assert reading.counted_runs == (1, 3, 3, 3, 3, 3)
 
 
-def test_check_conclusion_is_inconclusive_when_incomplete_runs_counted_as_flagged_move_it():
-    pre, post = _sides(10, pre_flagged=3, post_incomplete_unflagged=3)
-    verdict = check_conclusion(pre, post, RUNS)
-    assert verdict is not None
-    assert verdict.inconclusive is True
-    assert verdict.placement is None
-    assert verdict.cited.placement is Placement.ABOVE
-    disagreeing = {method.method for method in verdict.disagreeing}
-    assert "newcombe_incomplete_as_flagged" in disagreeing
-    assert all(name.endswith("_incomplete_as_flagged") for name in disagreeing)
+def test_incomplete_as_flagged_adds_the_incomplete_unflagged_runs_to_the_split_flagged_ones():
+    _, post = _sides(5, pre_flagged=3, post_flagged=1, post_incomplete_unflagged=2)
+    reading = incomplete_as_flagged(post, RUNS)
+    assert math.isclose(reading.share_sum, 5 * (1 + 2) / RUNS)
+    assert reading.counted_runs == (3,) * 5
 
 
 def test_primary_controls_returns_the_five_named_controls():
