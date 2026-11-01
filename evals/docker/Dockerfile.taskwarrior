@@ -1,4 +1,4 @@
-# Nuisance run image of taskwarrior: a copy of Dockerfile.holdout-2026-5833-taskwarrior-patched, instructions unchanged,
+# Nuisance run image of taskwarrior: a copy of Dockerfile.holdout-2026-5833-taskwarrior-patched, its instructions unchanged but for the seeding the run adds before its entrypoint,
 # pinning the admission's patched version, commit 1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2 (ARG COMMIT).
 
 # Patched mcp-server-taskwarrior, pinned to the first fix commit 1ee3d282 (PR #9 head).
@@ -23,5 +23,9 @@ RUN mkdir -p /opt/task/data \
  && chmod -R 0777 /opt/task
 ENV TASKRC=/opt/task/.taskrc
 ENV TASKDATA=/opt/task/data
+
+# One pending task, so the benign calls of get_next_tasks (task exits 1 on an empty list) and
+# mark_task_done (task 1) have a task to answer on.
+RUN task add "water the plants" && chmod -R 0777 /opt/task
 
 ENTRYPOINT ["node", "/opt/mcp/dist/index.js"]

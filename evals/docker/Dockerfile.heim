@@ -1,4 +1,4 @@
-# Nuisance run image of heim: a copy of Dockerfile.holdout-2026-5602-heim-patched, instructions unchanged,
+# Nuisance run image of heim: a copy of Dockerfile.holdout-2026-5602-heim-patched, its instructions unchanged but for the cargo stub the run adds before its entrypoint,
 # pinning the admission's patched version, commit c321d8af25f77668781e6ccb43a1336f9185df37 (abbreviated c321d8a below).
 
 # Patched @nor2/heim-mcp, pinned to commit c321d8a, the execFile() fix for CVE-2026-5602
@@ -17,5 +17,8 @@ RUN curl -sfL "https://codeload.github.com/Nor2-io/heim-mcp/tar.gz/${HEIM_COMMIT
 RUN npm install && npm run build
 
 RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/heim && chmod +x /usr/local/bin/heim
+# new_heim_application builds the generated Rust application with cargo after `heim new`; the
+# toolchain is stubbed like heim itself.
+RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/cargo && chmod +x /usr/local/bin/cargo
 
 ENTRYPOINT ["node", "/app/dist/index.js"]

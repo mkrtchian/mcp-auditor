@@ -23,6 +23,7 @@ ENV MCP_TRANSPORT_TYPE=stdio \
 # A world-writable throwaway git repo for the git_add benign call: staging into the
 # read-only /srv/app mount errors, so the benign stages a file here instead (the patched arm
 # must not error on the benign, or CVE-2025-53107 would not count).
+# The nuisance run's git_diff benign call reads it too, since the run mounts no /srv/app.
 RUN git init -q /tmp/benignrepo \
  && printf 'benign\n' > /tmp/benignrepo/note.txt \
  && chmod -R 0777 /tmp/benignrepo

@@ -730,7 +730,7 @@ services:
       context: .
       dockerfile: Dockerfile.android
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0215b87d870d8e3e5c7703f34d3e4dd591c24c997bb444916cc7c0a82c441a62"
+        org.mcp-auditor.dockerfile-fingerprint: "8d22b4b879f089173f9ae14dfaf72e0cf1bbc18fcc7779e5a8394489e040ffa1"
     image: mcp-auditor-nuisance-android:local
     profiles: ["nuisance"]
 
@@ -739,7 +739,7 @@ services:
       context: .
       dockerfile: Dockerfile.markdownify
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "55431fd0778839b66f13a11d2a01421d4b29386f028d023ad31db17f48baa384"
+        org.mcp-auditor.dockerfile-fingerprint: "eb3c82262e181cae049d279866ab04a4fed2c4eda3e4e6f4274f2fcf40ac4f13"
     image: mcp-auditor-nuisance-markdownify:local
     profiles: ["nuisance"]
 
@@ -748,7 +748,7 @@ services:
       context: .
       dockerfile: Dockerfile.desktop-commander
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a3c57c5e05acd3bc3bc83d8c8fb170a8a16df05001c8c7f836d2a317856526a9"
+        org.mcp-auditor.dockerfile-fingerprint: "ed34b32135a71ee1fcb95c2ef59ba316cb66adbf3c8c820f0bc9d3b62b4595b4"
     image: mcp-auditor-nuisance-desktop-commander:local
     profiles: ["nuisance"]
 
@@ -757,7 +757,7 @@ services:
       context: .
       dockerfile: Dockerfile.taskwarrior
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "94e140df8369cbd8e8fbc3f52ce2e647544200a32540bb863ebe15ffa507912c"
+        org.mcp-auditor.dockerfile-fingerprint: "2a6b4eed00b97ddac9797d50b6fe5a5a3f3b44c9eb83423dacfa554a49ff5bc7"
     image: mcp-auditor-nuisance-taskwarrior:local
     profiles: ["nuisance"]
 
@@ -784,7 +784,7 @@ services:
       context: .
       dockerfile: Dockerfile.godot-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a5b7e1272250d7f8d0771c1b3aca440586e6e1d36db5ec3bca889c796f21d990"
+        org.mcp-auditor.dockerfile-fingerprint: "240feb1fa65c14aeacf8a691c0d046706f6a5238d9566fcc66873dc8b8c8fb8a"
     image: mcp-auditor-nuisance-godot-mcp:local
     profiles: ["nuisance"]
 
@@ -811,7 +811,7 @@ services:
       context: .
       dockerfile: Dockerfile.heim
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "1bb82cba0e0a6868a5545238b3f0268e1cf85a97c74d801fde94c061e790cd00"
+        org.mcp-auditor.dockerfile-fingerprint: "328777b291d815c89b46a2767e86247fb571e2c7e76558d524fe085fd75fb593"
     image: mcp-auditor-nuisance-heim:local
     profiles: ["nuisance"]
 
@@ -820,7 +820,7 @@ services:
       context: .
       dockerfile: Dockerfile.magento2
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "7a6f1e67204824889dc42b9ddbf7627059babd04a780d7ee10a252c2b297f241"
+        org.mcp-auditor.dockerfile-fingerprint: "a1a8bb0521ef9d94c1f5b60ab67db56cfc00338505d7e543a7f247e3a68d318e"
     image: mcp-auditor-nuisance-magento2:local
     profiles: ["nuisance"]
 
@@ -847,7 +847,7 @@ services:
       context: .
       dockerfile: Dockerfile.mcpvault
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "58f4a9adf0201961b39cc3088d60dcfd58cbaf48693b9e939a5f21a73513da7e"
+        org.mcp-auditor.dockerfile-fingerprint: "8b1c4ede8f02d55ca3adc0259796cc65e28b37c893820bcb08ea80aad04ef453"
     image: mcp-auditor-nuisance-mcpvault:local
     profiles: ["nuisance"]
 
@@ -1081,7 +1081,7 @@ services:
       context: .
       dockerfile: Dockerfile.python-notebook
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "1fc8bb9cd44d7ce708c682c9b05dcf8dc2d594bd53af9c8daf3d37e595b6a56b"
+        org.mcp-auditor.dockerfile-fingerprint: "db9b3c9118f86c1d0c9ad81584299d98febe229e01cedb617a62e283939ba192"
     image: mcp-auditor-nuisance-python-notebook:local
     profiles: ["nuisance"]
 

@@ -1,4 +1,4 @@
-# Nuisance run image of magento2: a copy of Dockerfile.holdout-2026-5603-magento2-patched, instructions unchanged,
+# Nuisance run image of magento2: a copy of Dockerfile.holdout-2026-5603-magento2-patched, its instructions unchanged but for the magerun2 stub and the Magento skeleton the run adds before its entrypoint,
 # pinning the admission's patched version, commit aa1ffcc0aea1b212c69787391783af27df15ae9d.
 
 # Patched version of @elgentos/magento2-dev-mcp: the fix commit for CVE-2026-5603
@@ -20,5 +20,18 @@ RUN git clone https://github.com/elgentos/magento2-dev-mcp.git /app \
     && git checkout aa1ffcc0aea1b212c69787391783af27df15ae9d \
     && npm install \
     && npm run build
+
+# An installation stand-in for the nuisance run: every counted tool runs magerun2 or a PHP script
+# against a Magento root in the working directory, and no Magento installation runs here. The
+# stub answers each magerun2 invocation with exit 0, an empty JSON list when JSON is asked for
+# and the fixed line `ok` otherwise, never its arguments, and is selected through the server's MAGERUN2_COMMAND; the real magerun2 stays in the image.
+# The skeleton at /opt/magento carries the two files the PHP scripts load (an autoloader with an
+# empty component registrar, and a module list) and none of the server's Docker markers.
+RUN printf '#!/bin/sh\ncase " $* " in\n  *" --format=json "*) echo "[]" ;;\n  *) echo ok ;;\nesac\nexit 0\n' > /usr/local/bin/magerun2-stub \
+ && chmod +x /usr/local/bin/magerun2-stub \
+ && mkdir -p /opt/magento/vendor /opt/magento/app/etc \
+ && printf '<?php\nnamespace Magento\\Framework\\Component;\nclass ComponentRegistrar {\n    const MODULE = "module";\n    public function getPaths($type) { return []; }\n}\n' > /opt/magento/vendor/autoload.php \
+ && printf '<?php\nreturn ["modules" => []];\n' > /opt/magento/app/etc/config.php
+ENV MAGERUN2_COMMAND=/usr/local/bin/magerun2-stub
 
 ENTRYPOINT ["node", "/app/dist/index.js"]

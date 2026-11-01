@@ -1,4 +1,4 @@
-# Nuisance run image of markdownify: a copy of Dockerfile.holdout-2025-58358-markdownify-patched, instructions unchanged,
+# Nuisance run image of markdownify: a copy of Dockerfile.holdout-2025-58358-markdownify-patched, its instructions unchanged but for the holdout's benign /opt/benign.md left out and the benign files and the ffmpeg stub the run adds before its entrypoint,
 # pinning the admission's patched version, commit a31204de058b.
 
 # mcp-markdownify-server, patched for CVE-2025-58358. Pinned to commit a31204d ("Advisory
@@ -26,6 +26,23 @@ RUN npx tsc && npx shx chmod +x dist/*.js
 RUN uv sync
 ENV UV_PATH=/usr/local/bin/uv
 
-RUN printf '# Release notes\n\nNothing secret here.\n' > /opt/benign.md
+# The six files the converters' benign calls read, generated with the venv's own libraries, and
+# an ffmpeg stub: without ffmpeg on the PATH this markitdown leaves its audio flag undefined and
+# every audio conversion raises. The stub is only found, never asked to decode, since the WAV
+# path reads the file directly.
+RUN /app/.venv/bin/python -c 'import wave, zipfile; from PIL import Image; import openpyxl; from pptx import Presentation; \
+Image.new("RGB", (8, 8), "white").save("/opt/benign.png"); \
+w = wave.open("/opt/benign.wav", "wb"); w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000); w.writeframes(bytes(1600)); w.close(); \
+book = openpyxl.Workbook(); book.active["A1"] = "hello"; book.save("/opt/benign.xlsx"); \
+deck = Presentation(); slide = deck.slides.add_slide(deck.slide_layouts[5]); slide.shapes.title.text = "Hello"; deck.save("/opt/benign.pptx"); \
+ns = "http://schemas.openxmlformats.org"; \
+z = zipfile.ZipFile("/opt/benign.docx", "w"); \
+z.writestr("[Content_Types].xml", f"<?xml version=\"1.0\"?><Types xmlns=\"{ns}/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/></Types>"); \
+z.writestr("_rels/.rels", f"<?xml version=\"1.0\"?><Relationships xmlns=\"{ns}/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"{ns}/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/></Relationships>"); \
+z.writestr("word/document.xml", f"<?xml version=\"1.0\"?><w:document xmlns:w=\"{ns}/wordprocessingml/2006/main\"><w:body><w:p><w:r><w:t>Hello</w:t></w:r></w:p></w:body></w:document>"); \
+z.close(); \
+content = b"BT /F1 12 Tf 20 100 Td (Hello) Tj ET"; \
+open("/opt/benign.pdf", "wb").write(b"%%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n4 0 obj<</Length %d>>stream\n" % len(content) + content + b"\nendstream endobj\n5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\ntrailer<</Root 1 0 R>>\n%EOF\n")' \
+ && printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/ffmpeg && chmod +x /usr/local/bin/ffmpeg
 
 ENTRYPOINT ["node", "/app/dist/index.js"]

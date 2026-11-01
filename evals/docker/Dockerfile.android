@@ -1,4 +1,4 @@
-# Nuisance run image of android: a copy of Dockerfile.holdout-2026-19978-android-patched, instructions unchanged,
+# Nuisance run image of android: a copy of Dockerfile.holdout-2026-19978-android-patched, its instructions unchanged but for the adb stub the run adds before its command,
 # pinning the admission's patched version, commit 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a.
 
 # CVE-2026-19978 patched build: jiantao88/android-mcp-server at the fix commit 14e2bf2
@@ -16,5 +16,12 @@ RUN git clone https://github.com/jiantao88/android-mcp-server.git . \
  && git checkout 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a \
  && npm install --no-audit --no-fund \
  && npm run build
+
+# A device stand-in for the nuisance run: every counted tool drives a connected Android device
+# through adb, and no device or emulator runs under the confinement. The stub answers each adb
+# invocation with the fixed line `ok` and exit 0, never echoing its arguments. The launch passes it as the server's adb path;
+# the server's code, and the real adb, are unchanged.
+RUN printf '#!/bin/sh\necho ok\nexit 0\n' > /usr/local/bin/adb-device-stub \
+ && chmod +x /usr/local/bin/adb-device-stub
 
 CMD ["node", "/app/build/index.js", "/usr/bin/adb"]

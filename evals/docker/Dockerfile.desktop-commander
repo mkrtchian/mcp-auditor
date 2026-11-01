@@ -1,4 +1,4 @@
-# Nuisance run image of desktop-commander: a copy of Dockerfile.holdout-2025-11489-desktop-commander-patched, instructions unchanged,
+# Nuisance run image of desktop-commander: a copy of Dockerfile.holdout-2025-11489-desktop-commander-patched, its instructions unchanged but for the seeding the run adds before its entrypoint,
 # pinning the admission's patched version, @wonderwhy-er/desktop-commander 0.2.33.
 # The baked config keeps the holdout's allowedDirectories, the layout path /srv/app.
 
@@ -15,5 +15,9 @@ RUN mkdir -p /tmp/.claude-server-commander \
  && printf '%s' '{"allowedDirectories":["/srv/app"],"blockedCommands":[],"telemetryEnabled":false,"pendingWelcomeOnboarding":false,"fileReadLineLimit":100000,"fileWriteLineLimit":50}' \
       > /tmp/.claude-server-commander/config.json \
  && chmod -R 0777 /tmp/.claude-server-commander
+
+# The allowed directory the baked config names, with one plain file for the benign read: the
+# holdout mounted its layout tree there, the nuisance run mounts nothing.
+RUN mkdir -p /srv/app && printf '# app\n' > /srv/app/README.md
 
 ENTRYPOINT ["node", "/usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js", "--no-onboarding"]
