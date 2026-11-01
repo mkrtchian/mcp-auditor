@@ -9,6 +9,7 @@ from evals.census_classification import Criterion, Primitive, Transport
 from evals.census_draw import DrawRecord, DrawWalkStep, Settlement
 from evals.census_sources import SourceName, SourceRecord
 from evals.holdout_census import CLASSIFIERS, CensusFlaw, Discovery, HoldoutCensus
+from evals.nuisance_walk_record import Addition, NuisanceCensus, NuisanceWalkRecord
 
 Outcome = Literal["drawn", "skipped", "given_up", "excluded"]
 
@@ -94,6 +95,29 @@ def with_a_settlement(
 
 def written(tmp_path: Path, census: HoldoutCensus) -> Path:
     return census_given.written(tmp_path, census)
+
+
+def a_nuisance_census(census: HoldoutCensus) -> NuisanceCensus:
+    return NuisanceCensus(census=census, record=an_empty_record())
+
+
+def an_empty_record(size: int = 1) -> NuisanceWalkRecord:
+    return NuisanceWalkRecord(
+        rule_commit="abc1234",
+        addition=Addition(logged_on=date(2026, 10, 29), size=size),
+        settlements=[],
+        identities=[],
+    )
+
+
+def a_written_empty_record(tmp_path: Path) -> Path:
+    return written_record(tmp_path, an_empty_record())
+
+
+def written_record(tmp_path: Path, record: NuisanceWalkRecord) -> Path:
+    path = tmp_path / "nuisance_walk_record.json"
+    path.write_text(record.model_dump_json())
+    return path
 
 
 def _bare_census(identifiers: list[str]) -> HoldoutCensus:

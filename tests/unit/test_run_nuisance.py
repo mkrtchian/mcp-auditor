@@ -5,9 +5,15 @@ import pytest
 import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_holdout_census_given as given
 import tests.unit.support.test_nuisance_admission_given as admission
+import tests.unit.support.test_nuisance_walk_given as walk_given
 import tests.unit.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
 from evals.baseline import BaselineStatus
+
+
+def _census_arguments(tmp_path: Path, census: Path) -> list[str]:
+    record = walk_given.a_written_empty_record(tmp_path)
+    return ["--census", str(census), "--walk-record", str(record)]
 
 
 def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -21,7 +27,7 @@ def test_walk_prints_the_population_and_exits_zero(
     census = draw_given.a_census_with_draw(draw_given.a_draw())
     path = given.written(tmp_path, census)
 
-    exit_code = run_nuisance.main(["walk", "--census", str(path)])
+    exit_code = run_nuisance.main(["walk", *_census_arguments(tmp_path, path)])
 
     out = capsys.readouterr().out
     assert exit_code == 0
@@ -34,7 +40,19 @@ def test_a_malformed_census_exits_three(tmp_path: Path):
     path = tmp_path / "holdout_census.json"
     path.write_text("{ not valid json")
 
-    assert run_nuisance.main(["walk", "--census", str(path)]) == 3
+    assert run_nuisance.main(["walk", *_census_arguments(tmp_path, path)]) == 3
+
+
+def test_a_missing_walk_record_is_refused_as_not_committed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    census = given.written(tmp_path, draw_given.a_census_with_draw(draw_given.a_draw()))
+    missing = tmp_path / "absent.json"
+
+    exit_code = run_nuisance.main(["walk", "--census", str(census), "--walk-record", str(missing)])
+
+    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert "the nuisance walk record is not committed" in capsys.readouterr().out
 
 
 def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
@@ -44,8 +62,7 @@ def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.C
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            "--census",
-            str(census),
+            *_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -67,8 +84,7 @@ def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            "--census",
-            str(census),
+            *_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -89,8 +105,7 @@ def test_nuisance_dossier_with_an_unknown_backend_exits_three(tmp_path: Path):
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            "--census",
-            str(census),
+            *_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -109,7 +124,14 @@ def test_nuisance_dossier_on_an_unknown_server_exits_three(tmp_path: Path):
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
-        ["nuisance-dossier", "--census", str(census), "--server", "npm:ghost", "--out", str(out)]
+        [
+            "nuisance-dossier",
+            *_census_arguments(tmp_path, census),
+            "--server",
+            "npm:ghost",
+            "--out",
+            str(out),
+        ]
     )
 
     assert exit_code == 3
@@ -123,7 +145,9 @@ def test_run_without_an_admission_exits_zero_and_says_so(
     census = given.written(tmp_path, given.a_census())
     missing = tmp_path / "absent.json"
 
-    exit_code = run_nuisance.main(["run", "--census", str(census), "--admission", str(missing)])
+    exit_code = run_nuisance.main(
+        ["run", *_census_arguments(tmp_path, census), "--admission", str(missing)]
+    )
 
     assert exit_code == 0
     assert "no server is admitted" in capsys.readouterr().out
@@ -137,7 +161,9 @@ def test_run_on_an_admission_with_no_server_exits_zero_and_says_so(
     empty = admission.an_admission().model_copy(update={"servers": []})
     path = admission.written(tmp_path, empty)
 
-    exit_code = run_nuisance.main(["run", "--census", str(census), "--admission", str(path)])
+    exit_code = run_nuisance.main(
+        ["run", *_census_arguments(tmp_path, census), "--admission", str(path)]
+    )
 
     assert exit_code == 0
     assert "no server is admitted" in capsys.readouterr().out
@@ -151,7 +177,9 @@ def test_run_refuses_tracing_before_reading_the_admission(
     malformed = tmp_path / "nuisance_admission.json"
     malformed.write_text("{ not json")
 
-    exit_code = run_nuisance.main(["run", "--census", str(census), "--admission", str(malformed)])
+    exit_code = run_nuisance.main(
+        ["run", *_census_arguments(tmp_path, census), "--admission", str(malformed)]
+    )
 
     out = capsys.readouterr().out
     assert exit_code == run_nuisance.REFUSED_EXIT
@@ -167,10 +195,12 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
     stale = admission.with_a_stale_grammar_fingerprint(admission.an_admission())
     path = admission.written(tmp_path, stale)
 
-    exit_code = run_nuisance.main(["run", "--census", str(census), "--admission", str(path)])
+    exit_code = run_nuisance.main(
+        ["run", *_census_arguments(tmp_path, census), "--admission", str(path)]
+    )
 
     assert exit_code == run_nuisance.REFUSED_EXIT
-    assert "the census or the admission is malformed" in capsys.readouterr().out
+    assert "the census, the walk record or the admission is malformed" in capsys.readouterr().out
 
 
 _KUBERNETES = "npm:mcp-server-kubernetes"
@@ -194,7 +224,9 @@ def test_gate_without_an_admission_exits_zero_and_says_so(
     census = given.written(tmp_path, given.a_census())
     missing = tmp_path / "absent.json"
 
-    exit_code = run_nuisance.main(["gate", "--census", str(census), "--admission", str(missing)])
+    exit_code = run_nuisance.main(
+        ["gate", *_census_arguments(tmp_path, census), "--admission", str(missing)]
+    )
 
     assert exit_code == 0
     assert "no acceptance server is admitted" in capsys.readouterr().out
@@ -207,7 +239,9 @@ def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
     census = _a_census_with_a_kubernetes_target(tmp_path)
     path = admission.written(tmp_path, admission.an_admission())
 
-    exit_code = run_nuisance.main(["gate", "--census", str(census), "--admission", str(path)])
+    exit_code = run_nuisance.main(
+        ["gate", *_census_arguments(tmp_path, census), "--admission", str(path)]
+    )
 
     assert exit_code == 0
     assert "no acceptance server is admitted" in capsys.readouterr().out
@@ -227,7 +261,9 @@ def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
     )
     path = admission.written(tmp_path, no_stdio)
 
-    exit_code = run_nuisance.main(["gate", "--census", str(census), "--admission", str(path)])
+    exit_code = run_nuisance.main(
+        ["gate", *_census_arguments(tmp_path, census), "--admission", str(path)]
+    )
 
     out = capsys.readouterr().out
     assert exit_code == 0
@@ -247,7 +283,14 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
     path = admission.written(tmp_path, admitted)
 
     exit_code = run_nuisance.main(
-        ["gate", "--census", str(census), "--admission", str(path), "--server", "npm:other"]
+        [
+            "gate",
+            *_census_arguments(tmp_path, census),
+            "--admission",
+            str(path),
+            "--server",
+            "npm:other",
+        ]
     )
 
     assert exit_code == 2

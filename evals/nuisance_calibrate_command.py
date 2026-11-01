@@ -9,7 +9,6 @@ from pathlib import Path
 from evals import nuisance_fixtures
 from evals.concurrency import bounded, positive_int
 from evals.cve_targets import DOCKER_DIRECTORY
-from evals.holdout_census import load_census
 from evals.holdout_kit import kit_launch
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
 from evals.nuisance_admission import ADMISSION_PATH, FixCheckRecord
@@ -17,7 +16,9 @@ from evals.nuisance_commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
     UNKNOWN_SERVER_EXIT,
+    WALK_RECORD_PATH,
     committed_admission,
+    committed_nuisance_census,
     malformed_input_refused,
 )
 from evals.nuisance_run import NUISANCE_CONCURRENCY
@@ -28,13 +29,14 @@ def add_calibrate_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--cve", help="calibrate only this flaw; default: every drawn fixture")
     parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     parser.add_argument("--census", type=Path, default=CENSUS_PATH)
+    parser.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
     parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
 
 
 def calibrate(args: argparse.Namespace) -> int:
     with malformed_input_refused():
-        census = load_census(args.census)
-        admission = committed_admission(args.admission, census)
+        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
+        admission = committed_admission(args.admission, nuisance_census)
     if admission is None or not admission.servers or not nuisance_fixtures.FIX_CHECK_TARGETS:
         print("nothing is drawn")
         return 0

@@ -21,7 +21,7 @@ from evals.calibration_dossier import EVALS, KIT_MODULES, acceptance_services, c
 from evals.eval_session import Refused
 from evals.holdout_census import HoldoutCensus
 from evals.nuisance_admission import AdmittedServer, FlawRecord
-from evals.nuisance_walk_record import normalized_package
+from evals.nuisance_walk_record import NuisanceCensus, normalized_package
 from evals.run_census import GRAMMAR_CLASSES
 
 
@@ -39,9 +39,9 @@ _BACKEND_SOURCES: dict[str, BackendSources] = {
 
 
 def write_dossier(
-    census: HoldoutCensus, server_package: str, out: Path, backend: str | None = None
+    nuisance_census: NuisanceCensus, server_package: str, out: Path, backend: str | None = None
 ) -> None:
-    identifiers = nuisance_walk.census_flaws_of(normalized_package(server_package), census)
+    identifiers = nuisance_walk.census_flaws_of(normalized_package(server_package), nuisance_census)
     if not identifiers:
         raise Refused(
             f"Refused: no census flaw names the server {server_package}.",
@@ -49,7 +49,7 @@ def write_dossier(
         )
     sources = _backend_sources(backend)
     out.mkdir(parents=True, exist_ok=True)
-    _write_advisories(census, identifiers, out)
+    _write_advisories(nuisance_census.census, identifiers, out)
     copy_clean_sources(out, (*KIT_MODULES, "fix_check", *sources.kit_modules))
     for module in sources.evals_modules:
         shutil.copyfile(EVALS / f"{module}.py", out / "evals" / f"{module}.py")

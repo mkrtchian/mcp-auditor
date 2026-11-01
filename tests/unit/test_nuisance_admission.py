@@ -51,7 +51,7 @@ def test_the_clean_admission_has_no_problems():
     assert (
         admission_problems(
             admission,
-            given.a_census(),
+            given.a_nuisance_census(),
             cve_baseline.grammar_fingerprint(),
             given.a_backend_registry(),
         )
@@ -66,7 +66,10 @@ def test_each_mutation_yields_exactly_one_problem(
     admission = mutate(given.an_admission())
 
     problems = admission_problems(
-        admission, given.a_census(), cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+        admission,
+        given.a_nuisance_census(),
+        cve_baseline.grammar_fingerprint(),
+        given.a_backend_registry(),
     )
 
     assert len(problems) == 1, problems
@@ -80,7 +83,7 @@ def test_a_registered_backend_fixture_has_no_problem():
     assert (
         admission_problems(
             admission,
-            given.a_census(),
+            given.a_nuisance_census(),
             cve_baseline.grammar_fingerprint(),
             given.a_backend_registry(),
         )
@@ -92,7 +95,10 @@ def test_a_differing_backend_fixture_names_the_expected_one():
     admission = given.with_a_backend_fixture_differing_from_its_provisioner(given.an_admission())
 
     [problem] = admission_problems(
-        admission, given.a_census(), cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+        admission,
+        given.a_nuisance_census(),
+        cve_baseline.grammar_fingerprint(),
+        given.a_backend_registry(),
     )
 
     assert "fake/backend:1.0" in problem
@@ -104,7 +110,7 @@ def test_a_fixture_backend_need_with_no_backend_is_allowed():
     assert (
         admission_problems(
             admission,
-            given.a_census(),
+            given.a_nuisance_census(),
             cve_baseline.grammar_fingerprint(),
             given.a_backend_registry(),
         )
@@ -113,7 +119,7 @@ def test_a_fixture_backend_need_with_no_backend_is_allowed():
 
 
 def test_a_flaw_recorded_under_another_package_is_foreign_without_a_settlement():
-    census = given.a_census_with_the_second_flaw_under_another_package()
+    census = given.a_nuisance_census_with_the_second_flaw_under_another_package()
 
     problems = admission_problems(
         given.an_admission(), census, cve_baseline.grammar_fingerprint(), given.a_backend_registry()
@@ -123,7 +129,7 @@ def test_a_flaw_recorded_under_another_package_is_foreign_without_a_settlement()
 
 
 def test_a_server_package_settlement_unifies_the_foreign_flaw():
-    census = given.a_census_with_the_second_flaw_under_another_package()
+    census = given.a_nuisance_census_with_the_second_flaw_under_another_package()
     admission = given.with_the_second_flaw_settled_here(given.an_admission())
 
     assert (
@@ -138,13 +144,13 @@ def test_load_admission_returns_the_written_clean_admission(tmp_path: Path):
     admission = given.an_admission()
     path = given.written(tmp_path, admission)
 
-    assert load_admission(path, given.a_census()) == admission
+    assert load_admission(path, given.a_nuisance_census()) == admission
 
 
 def test_load_admission_reads_the_host_as_a_planting_host(tmp_path: Path):
     path = given.written(tmp_path, given.an_admission())
 
-    [server] = load_admission(path, given.a_census()).servers
+    [server] = load_admission(path, given.a_nuisance_census()).servers
 
     assert server.host == PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 
@@ -156,26 +162,29 @@ def test_load_admission_refuses_a_server_without_a_host(tmp_path: Path):
     path.write_text(json.dumps(document))
 
     with pytest.raises(ValueError):
-        load_admission(path, given.a_census())
+        load_admission(path, given.a_nuisance_census())
 
 
 def test_load_admission_on_a_missing_file_raises(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
-        load_admission(tmp_path / "absent.json", given.a_census())
+        load_admission(tmp_path / "absent.json", given.a_nuisance_census())
 
 
 def test_load_admission_on_a_mutated_admission_raises_with_the_problem(tmp_path: Path):
     path = given.written(tmp_path, given.with_a_flaw_of_another_server(given.an_admission()))
 
     with pytest.raises(ValueError, match="is not a census flaw"):
-        load_admission(path, given.a_census())
+        load_admission(path, given.a_nuisance_census())
 
 
 def test_a_stale_fingerprint_is_the_named_problem():
     admission = given.with_a_stale_grammar_fingerprint(given.an_admission())
 
     [problem] = admission_problems(
-        admission, given.a_census(), cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+        admission,
+        given.a_nuisance_census(),
+        cve_baseline.grammar_fingerprint(),
+        given.a_backend_registry(),
     )
 
     assert "grammar fingerprint" in problem

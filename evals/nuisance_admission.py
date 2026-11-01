@@ -19,9 +19,9 @@ from evals.census_draw import LaunchOption
 from evals.census_work import AgentRecord
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost
-from evals.holdout_census import HoldoutCensus
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_counting import counted_flaws, counted_tools
+from evals.nuisance_walk_record import NuisanceCensus
 
 ADMISSION_PATH = REPO_ROOT / "evals" / "nuisance_admission.json"
 
@@ -106,14 +106,14 @@ class NuisanceAdmission(BaseModel):
     servers: list[AdmittedServer]
 
 
-def load_admission(path: Path, census: HoldoutCensus) -> NuisanceAdmission:
+def load_admission(path: Path, nuisance_census: NuisanceCensus) -> NuisanceAdmission:
     if not path.exists():
         raise FileNotFoundError(
             f"no admission at {path}: the admission session has not been committed"
         )
     admission = NuisanceAdmission.model_validate_json(path.read_text())
     problems = admission_problems(
-        admission, census, cve_baseline.grammar_fingerprint(), nuisance_backends.BACKENDS
+        admission, nuisance_census, cve_baseline.grammar_fingerprint(), nuisance_backends.BACKENDS
     )
     if problems:
         raise ValueError(f"invalid nuisance admission {path}: {'; '.join(problems)}")
@@ -122,7 +122,7 @@ def load_admission(path: Path, census: HoldoutCensus) -> NuisanceAdmission:
 
 def admission_problems(
     admission: NuisanceAdmission,
-    census: HoldoutCensus,
+    nuisance_census: NuisanceCensus,
     grammar_fingerprint: str,
     backends: Mapping[str, nuisance_backends.RegisteredBackend],
 ) -> list[str]:
@@ -130,7 +130,7 @@ def admission_problems(
     problems += nuisance_images.namespace_problems(admission)
     for server in admission.servers:
         problems += _unsettled_disagreements(server)
-        problems += _foreign_flaws(server, census)
+        problems += _foreign_flaws(server, nuisance_census)
         problems += _tool_record_problems(server)
         problems += _counted_tool_problems(server)
         problems += _benign_call_problems(server)
@@ -166,9 +166,9 @@ def _is_settled(server: AdmittedServer, agreement: FieldAgreement) -> bool:
     )
 
 
-def _foreign_flaws(server: AdmittedServer, census: HoldoutCensus) -> list[str]:
-    census_flaws = set(nuisance_walk.census_flaws_of(server.server_package, census))
-    all_census_flaws = {flaw.identifier for flaw in census.flaws}
+def _foreign_flaws(server: AdmittedServer, nuisance_census: NuisanceCensus) -> list[str]:
+    census_flaws = set(nuisance_walk.census_flaws_of(server.server_package, nuisance_census))
+    all_census_flaws = {flaw.identifier for flaw in nuisance_census.census.flaws}
     return [
         f"{server.server_package}: flaw {flaw.flaw} is not a census flaw of the server"
         for flaw in server.flaws

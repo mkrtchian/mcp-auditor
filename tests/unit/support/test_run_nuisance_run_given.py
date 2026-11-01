@@ -8,6 +8,7 @@ import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_report_given as report_given
 import tests.unit.support.test_nuisance_run_given as run_given
+import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import run_nuisance
 from evals.nuisance_results import NuisanceRunResult
 from evals.nuisance_run import NuisanceDeps
@@ -19,11 +20,23 @@ def a_run_result() -> NuisanceRunResult:
 
 
 def a_run_command(tmp_path: Path) -> list[str]:
-    """The `run` arguments of a census with a draw walk and an admission of one server."""
+    """The `run` arguments of a census with a draw walk, an empty walk record and an admission of
+    one server."""
     census = census_given.written(tmp_path, draw_given.a_census_with_draw(draw_given.a_draw()))
     admitted = admission_given.written(tmp_path, admission_given.an_admission())
+    record = walk_given.a_written_empty_record(tmp_path)
     report = tmp_path / "nuisance_report.json"
-    return ["run", "--census", str(census), "--admission", str(admitted), "--report", str(report)]
+    return [
+        "run",
+        "--census",
+        str(census),
+        "--walk-record",
+        str(record),
+        "--admission",
+        str(admitted),
+        "--report",
+        str(report),
+    ]
 
 
 def an_admitted_run_ending_in(
@@ -55,7 +68,7 @@ def a_run_reaching_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
         raise AssertionError("the run was reached")
 
     a_ready_run(monkeypatch)
-    for name in ("load_conditions", "load_census", "default_deps", "run_nuisance"):
+    for name in ("load_conditions", "committed_nuisance_census", "default_deps", "run_nuisance"):
         monkeypatch.setattr(run_nuisance, name, unreached)
 
 

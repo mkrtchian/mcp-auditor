@@ -6,6 +6,7 @@ from rich.console import Console
 
 import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import eval_display, nuisance_gate_command, nuisance_gate_console
 from evals.baseline import BaselineStatus
 from evals.eval_session import TreeState
@@ -25,7 +26,7 @@ GATE_SERVER = KUBERNETES.server_package
 
 
 def a_gate_set_of_one_server(tmp_path: Path) -> list[str]:
-    """The census and admission arguments of a gate whose one server is GATE_SERVER."""
+    """The census, walk record and admission arguments of a gate whose one server is GATE_SERVER."""
     census = census_given.with_a_cve_of(census_given.a_census(), "CVE-2025-53355", GATE_SERVER)
     admitted = admission_given.admitting_the_server_of(
         "CVE-2025-53355", GATE_SERVER, "kubernetes-nuisance"
@@ -33,6 +34,8 @@ def a_gate_set_of_one_server(tmp_path: Path) -> list[str]:
     return [
         "--census",
         str(census_given.written(tmp_path, census)),
+        "--walk-record",
+        str(walk_given.a_written_empty_record(tmp_path)),
         "--admission",
         str(admission_given.written(tmp_path, admitted)),
         "--report",

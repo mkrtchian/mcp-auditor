@@ -19,14 +19,15 @@ from evals.concurrency import positive_int
 from evals.eval_display import console
 from evals.eval_session import Refused, read_tree
 from evals.export import export_nuisance_gate_judged_cases
-from evals.holdout_census import load_census
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer, NuisanceAdmission
 from evals.nuisance_commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
     UNKNOWN_SERVER_EXIT,
+    WALK_RECORD_PATH,
     committed_admission,
+    committed_nuisance_census,
     malformed_input_refused,
     write_report,
 )
@@ -65,14 +66,15 @@ def add_gate_arguments(gate_parser: argparse.ArgumentParser) -> None:
     )
     gate_parser.add_argument("--report", type=Path, default=Path(DEFAULT_GATE_REPORT_PATH))
     gate_parser.add_argument("--census", type=Path, default=CENSUS_PATH)
+    gate_parser.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
     gate_parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
 
 
 def gate(args: argparse.Namespace) -> int:
     with malformed_input_refused():
-        census = load_census(args.census)
-        admission = committed_admission(args.admission, census)
-    current = current_acceptance_servers(census)
+        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
+        admission = committed_admission(args.admission, nuisance_census)
+    current = current_acceptance_servers(nuisance_census)
     servers = [] if admission is None else gate_servers(admission, current)
     if admission is None or not servers:
         _print_empty_gate(admission, current)

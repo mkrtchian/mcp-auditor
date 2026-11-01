@@ -16,7 +16,9 @@ from evals.nuisance_admission import (
     NuisanceAdmission,
     load_admission,
 )
+from evals.nuisance_commands import WALK_RECORD_PATH
 from evals.nuisance_counting import counted_flaws, flaw_counted_tools
+from evals.nuisance_walk_record import load_walk_record
 from evals.run_census import CENSUS_PATH
 from tests.unit.support.holdout_kit_isolation import scan_tree
 
@@ -57,7 +59,9 @@ def test_no_fix_check_module_imports_cve_environments():
 def _admission_or_skip() -> NuisanceAdmission:
     if not ADMISSION_PATH.exists():
         pytest.skip("no admission committed yet")
-    return load_admission(ADMISSION_PATH, load_census(CENSUS_PATH))
+    return load_admission(
+        ADMISSION_PATH, load_walk_record(WALK_RECORD_PATH, load_census(CENSUS_PATH))
+    )
 
 
 def _flaw_records(admission: NuisanceAdmission) -> dict[str, FlawRecord]:

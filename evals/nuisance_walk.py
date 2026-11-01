@@ -14,7 +14,7 @@ from evals.census_draw import Settlement
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
-from evals.nuisance_walk_record import normalized_package, reached_identifiers
+from evals.nuisance_walk_record import NuisanceCensus, normalized_package, reached_identifiers
 
 
 class ServerMark(StrEnum):
@@ -31,57 +31,62 @@ class NuisanceServer:
     mark: ServerMark | None
 
 
-def server_of(identifier: str, census: HoldoutCensus) -> str:
-    for classification in census.classifications[CLASSIFIERS[0]]:
+def server_of(identifier: str, nuisance_census: NuisanceCensus) -> str:
+    for classification in nuisance_census.census.classifications[CLASSIFIERS[0]]:
         if classification.flaw == identifier:
             return normalized_package(classification.server_package)
     raise ValueError(f"no classification for flaw {identifier}")
 
 
-def census_flaws_of(server_package: str, census: HoldoutCensus) -> list[str]:
+def census_flaws_of(server_package: str, nuisance_census: NuisanceCensus) -> list[str]:
     return [
         flaw.identifier
-        for flaw in census.flaws
-        if server_of(flaw.identifier, census) == server_package
+        for flaw in nuisance_census.census.flaws
+        if server_of(flaw.identifier, nuisance_census) == server_package
     ]
 
 
-def version_setting_flaws(server_package: str, census: HoldoutCensus) -> list[str]:
-    return [flaw for flaw in census_flaws_of(server_package, census) if _sets_version(flaw, census)]
+def version_setting_flaws(server_package: str, nuisance_census: NuisanceCensus) -> list[str]:
+    return [
+        flaw
+        for flaw in census_flaws_of(server_package, nuisance_census)
+        if _sets_version(flaw, nuisance_census)
+    ]
 
 
-def acceptance_servers(census: HoldoutCensus) -> set[str]:
+def acceptance_servers(nuisance_census: NuisanceCensus) -> set[str]:
     """Every benchmark flaw's server, the dropped targets' included."""
-    return {server_of(flaw, census) for flaw in BENCHMARK_FLAWS if flaw in _classified(census)}
+    classified = _classified(nuisance_census.census)
+    return {server_of(flaw, nuisance_census) for flaw in BENCHMARK_FLAWS if flaw in classified}
 
 
-def current_acceptance_servers(census: HoldoutCensus) -> set[str]:
-    classified = _classified(census)
-    return {server_of(t.cve_id, census) for t in CVE_TARGETS if t.cve_id in classified}
+def current_acceptance_servers(nuisance_census: NuisanceCensus) -> set[str]:
+    classified = _classified(nuisance_census.census)
+    return {server_of(t.cve_id, nuisance_census) for t in CVE_TARGETS if t.cve_id in classified}
 
 
 def _classified(census: HoldoutCensus) -> set[str]:
     return {classification.flaw for classification in census.classifications[CLASSIFIERS[0]]}
 
 
-def nuisance_population(census: HoldoutCensus) -> list[NuisanceServer]:
-    acceptance = acceptance_servers(census)
+def nuisance_population(nuisance_census: NuisanceCensus) -> list[NuisanceServer]:
+    acceptance = acceptance_servers(nuisance_census)
     excluded = {normalized_package(package) for package in EXCLUDED_SERVERS}
     population: list[NuisanceServer] = []
     seen: set[str] = set()
-    for identifier in reached_identifiers(census):
-        server = server_of(identifier, census)
+    for identifier in reached_identifiers(nuisance_census.census):
+        server = server_of(identifier, nuisance_census)
         if server in seen:
             continue
         seen.add(server)
-        version_setting = version_setting_flaws(server, census)
+        version_setting = version_setting_flaws(server, nuisance_census)
         if not version_setting:
             continue
         population.append(
             NuisanceServer(
                 server_package=server,
                 reaching_flaw=identifier,
-                flaws=tuple(census_flaws_of(server, census)),
+                flaws=tuple(census_flaws_of(server, nuisance_census)),
                 version_setting=tuple(version_setting),
                 mark=_mark(server, acceptance, excluded),
             )
@@ -97,50 +102,60 @@ def _mark(server: str, acceptance: set[str], excluded: set[str]) -> ServerMark |
     return None
 
 
-def _sets_version(flaw: str, census: HoldoutCensus) -> bool:
-    seen = _classifications_of(flaw, census)
+def _sets_version(flaw: str, nuisance_census: NuisanceCensus) -> bool:
+    seen = _classifications_of(flaw, nuisance_census)
     return (
-        _met(flaw, census, Criterion.GRAMMAR_CLASS, any(in_grammar(c.effect_class) for c in seen))
+        _met(
+            flaw,
+            nuisance_census,
+            Criterion.GRAMMAR_CLASS,
+            any(in_grammar(c.effect_class) for c in seen),
+        )
         and _met(
             flaw,
-            census,
+            nuisance_census,
             Criterion.EFFECT_IN_TOOL_RESPONSE,
             any(c.effect_in_tool_response for c in seen),
         )
-        and _met(flaw, census, Criterion.PINNABLE, any(c.pinnable for c in seen))
-        and _tools_reached(flaw, census, seen)
+        and _met(flaw, nuisance_census, Criterion.PINNABLE, any(c.pinnable for c in seen))
+        and _tools_reached(flaw, nuisance_census, seen)
     )
 
 
-def _met(flaw: str, census: HoldoutCensus, criterion: Criterion, from_classifiers: bool) -> bool:
-    settlement = _settlement(flaw, census, criterion)
+def _met(
+    flaw: str, nuisance_census: NuisanceCensus, criterion: Criterion, from_classifiers: bool
+) -> bool:
+    settlement = _settlement(flaw, nuisance_census, criterion)
     if settlement is not None:
         return settlement.verdict
     return from_classifiers
 
 
-def _tools_reached(flaw: str, census: HoldoutCensus, seen: list[Classification]) -> bool:
+def _tools_reached(flaw: str, nuisance_census: NuisanceCensus, seen: list[Classification]) -> bool:
     if any(c.primitive == Primitive.TOOLS for c in seen):
         return True
     # A False STDIO_TOOLS_CALL settlement does not override: it may hold for the transport
     # alone (not stdio), and this suite counts a flaw whatever transport the census records.
-    settlement = _settlement(flaw, census, Criterion.STDIO_TOOLS_CALL)
+    settlement = _settlement(flaw, nuisance_census, Criterion.STDIO_TOOLS_CALL)
     return settlement is not None and settlement.verdict
 
 
-def _settlement(flaw: str, census: HoldoutCensus, criterion: Criterion) -> Settlement | None:
-    if census.draw is None:
+def _settlement(
+    flaw: str, nuisance_census: NuisanceCensus, criterion: Criterion
+) -> Settlement | None:
+    draw = nuisance_census.census.draw
+    if draw is None:
         return None
-    for settlement in census.draw.settlements:
+    for settlement in draw.settlements:
         if settlement.flaw == flaw and settlement.criterion == criterion:
             return settlement
     return None
 
 
-def _classifications_of(flaw: str, census: HoldoutCensus) -> list[Classification]:
+def _classifications_of(flaw: str, nuisance_census: NuisanceCensus) -> list[Classification]:
     return [
         classification
-        for own in census.classifications.values()
+        for own in nuisance_census.census.classifications.values()
         for classification in own
         if classification.flaw == flaw
     ]

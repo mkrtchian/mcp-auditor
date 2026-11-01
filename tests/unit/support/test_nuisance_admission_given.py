@@ -4,13 +4,14 @@ from pathlib import Path
 from typing import Literal
 
 import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import cve_baseline
 from evals.census_classification import Classification
 from evals.census_work import AgentRecord, AgentRole
 from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.holdout_census import CLASSIFIERS, HoldoutCensus
+from evals.holdout_census import CLASSIFIERS
 from evals.nuisance_admission import (
     AdmissionSettlement,
     AdmittedServer,
@@ -23,6 +24,7 @@ from evals.nuisance_admission import (
     ToolRecord,
 )
 from evals.nuisance_backends import RegisteredBackend
+from evals.nuisance_walk_record import NuisanceCensus
 
 OTHER_PACKAGE = "PyPI:context-forge"
 
@@ -32,8 +34,8 @@ SECOND_FLAW = census_given.OSV_ONLY_FLAW
 PATCHED_VERSION = "1.2.0"
 
 
-def a_census() -> HoldoutCensus:
-    return census_given.a_census()
+def a_nuisance_census() -> NuisanceCensus:
+    return walk_given.a_nuisance_census(census_given.a_census())
 
 
 def an_admission() -> NuisanceAdmission:
@@ -265,8 +267,8 @@ def with_a_counted_tool_missing_its_benign_call(admission: NuisanceAdmission) ->
     return _with_server(admission, changed)
 
 
-def a_census_with_the_second_flaw_under_another_package() -> HoldoutCensus:
-    census = a_census()
+def a_nuisance_census_with_the_second_flaw_under_another_package() -> NuisanceCensus:
+    census = census_given.a_census()
 
     def relabel(own: list[Classification]) -> list[Classification]:
         return [
@@ -279,7 +281,8 @@ def a_census_with_the_second_flaw_under_another_package() -> HoldoutCensus:
     classifications = {
         classifier: relabel(census.classifications[classifier]) for classifier in CLASSIFIERS
     }
-    return census.model_copy(update={"classifications": classifications})
+    relabeled = census.model_copy(update={"classifications": classifications})
+    return walk_given.a_nuisance_census(relabeled)
 
 
 def with_the_second_flaw_settled_here(admission: NuisanceAdmission) -> NuisanceAdmission:

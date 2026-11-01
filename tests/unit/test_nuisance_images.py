@@ -41,7 +41,10 @@ def test_admission_problems_carries_the_namespace_problem():
     admission = _with_service("sentinel")
 
     problems = admission_problems(
-        admission, given.a_census(), cve_baseline.grammar_fingerprint(), given.a_backend_registry()
+        admission,
+        given.a_nuisance_census(),
+        cve_baseline.grammar_fingerprint(),
+        given.a_backend_registry(),
     )
 
     assert any("sentinel" in problem for problem in problems)

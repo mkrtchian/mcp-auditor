@@ -25,7 +25,6 @@ from evals.audit_progress import AuditProgress
 from evals.concurrency import positive_int
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
-from evals.holdout_census import HoldoutCensus, load_census
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
 from evals.metrics import quiet_throttle_waits
@@ -35,7 +34,9 @@ from evals.nuisance_commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
     REFUSED_EXIT,
+    WALK_RECORD_PATH,
     committed_admission,
+    committed_nuisance_census,
     malformed_input_refused,
     write_report,
 )
@@ -54,6 +55,7 @@ from evals.nuisance_run import (
     run_nuisance,
 )
 from evals.nuisance_walk import acceptance_servers, nuisance_population
+from evals.nuisance_walk_record import NuisanceCensus
 from evals.provider_errors import ProviderFatal, describe_provider_error
 from evals.run_files import partial_result_kept, refuse_existing_report, write_result
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
@@ -85,11 +87,13 @@ def _parser() -> argparse.ArgumentParser:
     walk = commands.add_parser("walk", help="print the servers the holdout walk reached to admit")
     walk.set_defaults(command=_walk)
     walk.add_argument("--census", type=Path, default=CENSUS_PATH)
+    walk.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
     dossier = commands.add_parser(
         "nuisance-dossier", help="write the isolated admission dossier for one server"
     )
     dossier.set_defaults(command=_nuisance_dossier)
     dossier.add_argument("--census", type=Path, default=CENSUS_PATH)
+    dossier.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
     dossier.add_argument("--server", required=True)
     dossier.add_argument("--out", type=Path, required=True)
     dossier.add_argument(
@@ -101,6 +105,7 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--runs", type=positive_int, default=None, help="default 3, lowerable to 1")
     run.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     run.add_argument("--census", type=Path, default=CENSUS_PATH)
+    run.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
     run.add_argument("--admission", type=Path, default=ADMISSION_PATH)
     add_calibrate_arguments(
         commands.add_parser(
@@ -116,10 +121,11 @@ def _parser() -> argparse.ArgumentParser:
 
 def _walk(args: argparse.Namespace) -> int:
     with malformed_input_refused():
-        census = load_census(args.census)
-        population = nuisance_population(census)
+        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
+        population = nuisance_population(nuisance_census)
+    draw = nuisance_census.census.draw
     outcomes: dict[str, str] = {}
-    for step in census.draw.walk if census.draw else []:
+    for step in draw.walk if draw else []:
         outcomes.setdefault(step.identifier, step.outcome)
     print(f"{len(population)} servers reached by the walk:")
     for server in population:
@@ -136,8 +142,8 @@ def _walk(args: argparse.Namespace) -> int:
 
 def _nuisance_dossier(args: argparse.Namespace) -> int:
     with malformed_input_refused():
-        census = load_census(args.census)
-    write_dossier(census, args.server, args.out, args.backend)
+        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
+    write_dossier(nuisance_census, args.server, args.out, args.backend)
     print(f"Admission dossier for {args.server} written to {args.out}")
     return 0
 
@@ -147,18 +153,20 @@ def _run(args: argparse.Namespace) -> int:
     refuse_existing_report(args.report, "nuisance run refused")
     conditions = load_conditions(CONDITIONS_PATH)
     with malformed_input_refused():
-        census = load_census(args.census)
-        admission = committed_admission(args.admission, census)
+        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
+        admission = committed_admission(args.admission, nuisance_census)
         if admission is None or not admission.servers:
             print("no server is admitted")
             return 0
         population = run_population(
-            nuisance_population(census), admission, acceptance_servers(census)
+            nuisance_population(nuisance_census), admission, acceptance_servers(nuisance_census)
         )
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    run = _audit_admitted_servers(args, _ReadyRun(census, population, conditions, settings))
+    run = _audit_admitted_servers(
+        args, _ReadyRun(nuisance_census, population, conditions, settings)
+    )
     write_result(args.report, run)
     report = build_report(run)
     markdown = render_markdown(report)
@@ -172,7 +180,7 @@ def _run(args: argparse.Namespace) -> int:
 class _ReadyRun:
     """What a nuisance run reads, once its conditions are checked ready for its models."""
 
-    census: HoldoutCensus
+    nuisance_census: NuisanceCensus
     population: RunPopulation
     conditions: HoldoutConditions
     settings: Settings
@@ -184,7 +192,7 @@ def _audit_admitted_servers(args: argparse.Namespace, ready: _ReadyRun) -> Nuisa
         return asyncio.run(
             run_nuisance(
                 ready.population,
-                draw_order(ready.census),
+                draw_order(ready.nuisance_census.census),
                 ready.conditions,
                 ready.settings,
                 last_commit(args.census),
