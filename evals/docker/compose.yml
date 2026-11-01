@@ -13,9 +13,10 @@
 # (vulnerable and patched), named holdout-<year>-<num>-<service>; the same build command builds
 # them. SSRF holdout targets reuse the shared sentinel above, adding no sentinel of their own.
 # The nuisance block closes the file: one patched image per admitted server, tagged
-# mcp-auditor-nuisance-<service>:local. Its services carry the nuisance profile, so the build
-# command above leaves them out, while the nuisance run names its services and Compose enables
-# the profile of a named service. Build the whole block by hand with:
+# mcp-auditor-nuisance-<service>:local, then the backend images the fixtures build (the
+# responders and Neo4j) under their backend modules' tags. Its services carry the nuisance
+# profile, so the build command above leaves them out, while the nuisance run names its services
+# and Compose enables the profile of a named service. Build the whole block by hand with:
 #   docker compose -f evals/docker/compose.yml --profile nuisance build
 services:
   filesystem:
@@ -1154,4 +1155,106 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "ea43a319e1428dca0126fd3da7eb811f24e5bb2eea2c9bdae0671ccb7bceb07f"
     image: mcp-auditor-nuisance-figma:local
+    profiles: ["nuisance"]
+
+  # Nuisance backends: the images the backend fixtures build (the responders and Neo4j), tagged
+  # as their backend modules tag them, rebuilt by the nuisance run with its server images.
+
+  ckan-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.ckan-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "658c7cd2b47394cee05064a2039af30627f175f8416de662115f068ce75de592"
+    image: mcp-auditor-cve-ckan-responder:local
+    profiles: ["nuisance"]
+
+  contextforge-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.contextforge-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "bb42392c108764849601d002d46234c5f8223db231159138ae0ab3a1890862cc"
+    image: mcp-auditor-cve-contextforge-responder:local
+    profiles: ["nuisance"]
+
+  n8n-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.n8n-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0bc40319ebc33229bdc6baf3c4dbae51834025f1bff8bedcc0ac321e517259ce"
+    image: mcp-auditor-cve-n8n-responder:local
+    profiles: ["nuisance"]
+
+  atlassian-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlassian-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ea192969b9deb99cdf00bf012330c0fbd8e54d6f372b5ecbfea287071bccd179"
+    image: mcp-auditor-cve-atlassian-responder:local
+    profiles: ["nuisance"]
+
+  apify-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.apify-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "75c2674d318f2f0388e7e7ee0a3bfe44dd86dd7e285e5e49936c75202fdab694"
+    image: mcp-auditor-cve-apify-responder:local
+    profiles: ["nuisance"]
+
+  jenkins-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "403f4c56566e0172b66b92686b95484d6fc3d0df464f443f75bd921fa2cc2b7c"
+    image: mcp-auditor-cve-jenkins-responder:local
+    profiles: ["nuisance"]
+
+  gitlab-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.gitlab-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "61c8334d5c7b91609da6af67ac8a66f45553494245fc18e0f5d618c7a49d4aad"
+    image: mcp-auditor-cve-gitlab-responder:local
+    profiles: ["nuisance"]
+
+  googleapis-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.googleapis-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "f2467563776a0795f7ba000ecc14a14cba124bc1c0c4803f9e157ea921344d1c"
+    image: mcp-auditor-cve-googleapis-responder:local
+    profiles: ["nuisance"]
+
+  neo4j-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.neo4j-backend
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "be77fb211a89888f9466fe186e4d5aad7a5980111118cd546bef92b13b79197b"
+    image: mcp-auditor-cve-neo4j-backend:local
+    profiles: ["nuisance"]
+
+  facebook-ads-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.facebook-ads-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "221a8883b87e211c992471b139e2b1a473dd793f7ce4bc8b662cf407fda6ff29"
+    image: mcp-auditor-cve-facebook-ads-responder:local
+    profiles: ["nuisance"]
+
+  figma-responder:
+    build:
+      context: .
+      dockerfile: Dockerfile.figma-responder
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "d0046abe779503034eac8b04850205dcb35fac6366b60bf5fa4d6a6798708051"
+    image: mcp-auditor-cve-figma-responder:local
     profiles: ["nuisance"]

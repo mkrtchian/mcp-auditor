@@ -3,8 +3,9 @@ under the holdout's run conditions, keep no per-case trace, and assemble the run
 
 A sibling of `holdout_run.run_holdout`. The servers are passed in, so the tests hand it crafted
 ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the unit tests and built from the live
-settings by `default_deps`. The pre-run check is `nuisance_vetting`'s, the per-server assembly
-`nuisance_assembly`'s, the retry policy `nuisance_audit`'s.
+settings by `default_deps`. The pre-run check is `nuisance_vetting`'s, the container hygiene
+`nuisance_run_containers`', the per-server assembly `nuisance_assembly`'s, the retry policy
+`nuisance_audit`'s.
 """
 
 import dataclasses
@@ -45,20 +46,22 @@ from evals.nuisance_results import (
     NuisanceServerResult,
     RunInterrupted,
 )
+from evals.nuisance_run_containers import (
+    refuse_server_containers,
+    remove_backend_containers,
+    run_images,
+    server_services,
+    sweep_run_containers,
+)
 from evals.nuisance_vetting import benign_call, vet_all
 from evals.probe_candidates import Prices
-from evals.run_images import (
-    rebuild_images,
-    refuse_running_containers,
-    remove_containers,
-    running_containers,
-    sweep_containers,
-)
+from evals.run_images import rebuild_images, remove_containers, running_containers
 from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
 
 NUISANCE_RUNS = 3  # the log sets it before the first real run, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
+_REFUSAL = "nuisance run refused"
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 # The budget is the holdout's HOLDOUT_BUDGET: the rule reads the figure beside the holdout run,
 # whose budget is a constant, not a flag (holdout-rule.md:227), so no budget of its own here.
@@ -119,19 +122,15 @@ async def run_nuisance(
     deps = deps or default_deps(nuisance_overrides(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
-    services = _services(population.audited)
-    tags = [nuisance_images.image_tag(service) for service in services]
-    _refuse_running_containers(deps, tags)
-    deps.rebuild(services)
-    _refuse_running_containers(deps, tags)
+    images = run_images(population.audited)
+    refuse_server_containers(deps, images, _REFUSAL)
+    remove_backend_containers(deps, images)
+    deps.rebuild(images.services)
+    refuse_server_containers(deps, images, _REFUSAL)
     try:
         return await _run_surviving(population, deps, ctx, tree)
     finally:
-        sweep_containers(tags, deps.running_containers, deps.remove_containers)
-
-
-def _refuse_running_containers(deps: NuisanceDeps, tags: Sequence[str]) -> None:
-    refuse_running_containers(deps.running_containers(tags), "nuisance run refused")
+        sweep_run_containers(deps, images)
 
 
 async def _run_surviving(
@@ -145,7 +144,7 @@ async def _run_surviving(
         raise RunInterrupted(dataclasses.replace(partial, partial=True), failure)
     if not assembled:
         raise Refused(
-            "nuisance run refused",
+            _REFUSAL,
             [
                 "no server survived the pre-run check and the runs",
                 *(entry.reason for entry in all_not_run),
@@ -157,7 +156,7 @@ async def _run_surviving(
 def _refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
-            "nuisance run refused",
+            _REFUSAL,
             ["LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; a nuisance run keeps no trace"],
         )
 
@@ -165,7 +164,7 @@ def _refuse_tracing() -> None:
 def _refuse_dirty_tree(tree: TreeState) -> None:
     if tree.dirty:
         raise Refused(
-            "nuisance run refused",
+            _REFUSAL,
             ["the git tree is dirty: a nuisance run publishes from a clean tree"],
         )
 
@@ -271,7 +270,7 @@ def _assemble_run(
         census_commit=ctx.provenance.census_commit,
         walk_record_commit=ctx.provenance.walk_record_commit,
         image_ids={
-            **deps.image_ids(_services(servers)),
+            **deps.image_ids(server_services(servers)),
             **deps.backend_image_ids(_backend_images(servers)),
         },
         recorded_at=deps.clock(),
@@ -284,10 +283,6 @@ def _assemble_run(
         concurrency=ctx.concurrency,
         throttled_requests=deps.throttled_requests(),
     )
-
-
-def _services(servers: Sequence[AdmittedServer]) -> list[str]:
-    return list(dict.fromkeys(server.service for server in servers))
 
 
 def _backend_images(servers: Sequence[AdmittedServer]) -> list[str]:

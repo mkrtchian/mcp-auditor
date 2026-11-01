@@ -140,7 +140,10 @@ def _a_fake_provisioner(server: AdmittedServer) -> Generator[Launch]:
 def a_backend_registry() -> dict[str, RegisteredBackend]:
     return {
         "fake": RegisteredBackend(
-            provisioner=_a_fake_provisioner, network="fake-net", image="fake/backend:1.0"
+            provisioner=_a_fake_provisioner,
+            network="fake-net",
+            image="fake/backend:1.0",
+            built_service=None,
         )
     }
 
