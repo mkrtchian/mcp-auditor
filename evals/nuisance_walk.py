@@ -27,7 +27,6 @@ from evals.holdout_draw import draw_order
 from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
 from evals.nuisance_walk_record import (
     NuisanceCensus,
-    classifications_of,
     normalized_package,
     reached_identifiers,
 )
@@ -50,13 +49,10 @@ class NuisanceServer:
 
 
 def server_of(identifier: str, nuisance_census: NuisanceCensus) -> str:
-    for identity in nuisance_census.record.identities:
-        if identity.flaw == identifier:
-            return normalized_package(identity.server_package)
-    for classification in nuisance_census.census.classifications[CLASSIFIERS[0]]:
-        if classification.flaw == identifier:
-            return normalized_package(classification.server_package)
-    raise ValueError(f"no classification for flaw {identifier}")
+    server = nuisance_census.server_by_flaw.get(identifier)
+    if server is None:
+        raise ValueError(f"no classification for flaw {identifier}")
+    return server
 
 
 def census_flaws_of(server_package: str, nuisance_census: NuisanceCensus) -> list[str]:
@@ -146,7 +142,7 @@ def _walk(nuisance_census: NuisanceCensus) -> list[_Reach]:
 
 
 def _meets_draw_criteria(flaw: str, nuisance_census: NuisanceCensus) -> bool:
-    seen = classifications_of(nuisance_census.census, flaw)
+    seen = nuisance_census.classifications_by_flaw.get(flaw, [])
     return all(
         _met(flaw, nuisance_census, criterion, any(criteria_met(c)[criterion] for c in seen))
         for criterion in DRAW_ORDER_CRITERIA
@@ -162,7 +158,7 @@ def _mark(server: str, acceptance: set[str], excluded: set[str]) -> ServerMark |
 
 
 def _sets_version(flaw: str, nuisance_census: NuisanceCensus) -> bool:
-    seen = classifications_of(nuisance_census.census, flaw)
+    seen = nuisance_census.classifications_by_flaw.get(flaw, [])
     return (
         _met(
             flaw,
@@ -202,12 +198,4 @@ def _tools_reached(flaw: str, nuisance_census: NuisanceCensus, seen: list[Classi
 def _settlement(
     flaw: str, nuisance_census: NuisanceCensus, criterion: Criterion
 ) -> Settlement | None:
-    draw = nuisance_census.census.draw
-    settlements = [
-        *(draw.settlements if draw is not None else []),
-        *nuisance_census.record.settlements,
-    ]
-    return next(
-        (s for s in settlements if s.flaw == flaw and s.criterion == criterion),
-        None,
-    )
+    return nuisance_census.settlements_by_flaw.get((flaw, criterion))

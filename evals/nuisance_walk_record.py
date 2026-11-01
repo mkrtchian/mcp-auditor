@@ -10,16 +10,17 @@ from nuisance_walk, which imports it.
 """
 
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date
+from functools import cached_property
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from evals.census_classification import Classification, Criterion, criteria_met
 from evals.census_draw import DrawRecord, Settlement
-from evals.holdout_census import HoldoutCensus
+from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.holdout_draw import draw_order
 
 
@@ -43,8 +44,42 @@ class NuisanceWalkRecord(BaseModel):
 
 @dataclass(frozen=True)
 class NuisanceCensus:
+    """The census and the record, with the lookups the walk repeats per flaw indexed once:
+    rescanning every flaw for every flaw made a population build quadratic."""
+
     census: HoldoutCensus
     record: NuisanceWalkRecord
+
+    @cached_property
+    def classifications_by_flaw(self) -> dict[str, list[Classification]]:
+        indexed: dict[str, list[Classification]] = defaultdict(list)
+        for own in self.census.classifications.values():
+            for classification in own:
+                indexed[classification.flaw].append(classification)
+        return dict(indexed)
+
+    @cached_property
+    def settlements_by_flaw(self) -> dict[tuple[str, Criterion], Settlement]:
+        """The draw's settlement first, then the record's."""
+        drawn = self.census.draw.settlements if self.census.draw is not None else []
+        indexed: dict[tuple[str, Criterion], Settlement] = {}
+        for settlement in [*drawn, *self.record.settlements]:
+            indexed.setdefault((settlement.flaw, settlement.criterion), settlement)
+        return indexed
+
+    @cached_property
+    def server_by_flaw(self) -> dict[str, str]:
+        """An identity settlement wins, otherwise the first classifier's package."""
+        indexed: dict[str, str] = {}
+        for classification in self.census.classifications[CLASSIFIERS[0]]:
+            indexed.setdefault(
+                classification.flaw, normalized_package(classification.server_package)
+            )
+        identified = {
+            identity.flaw: normalized_package(identity.server_package)
+            for identity in reversed(self.record.identities)
+        }
+        return indexed | identified
 
 
 def load_walk_record(path: Path, census: HoldoutCensus) -> NuisanceCensus:
@@ -65,16 +100,12 @@ def walk_record_problems(nuisance_census: NuisanceCensus) -> list[str]:
         *_duplicate_problems(record),
         *_contradiction_problems(census, record),
         *_addition_problems(record.addition),
-        *_completeness_problems(census, record),
+        *_completeness_problems(nuisance_census),
     ]
 
 
 def reached_identifiers(census: HoldoutCensus) -> list[str]:
     return [step.identifier for step in _draw(census).walk]
-
-
-def classifications_of(census: HoldoutCensus, flaw: str) -> list[Classification]:
-    return [each for own in census.classifications.values() for each in own if each.flaw == flaw]
 
 
 def normalized_package(server_package: str) -> str:
@@ -132,7 +163,8 @@ def _addition_problems(addition: Addition) -> list[str]:
     return []
 
 
-def _completeness_problems(census: HoldoutCensus, record: NuisanceWalkRecord) -> list[str]:
+def _completeness_problems(nuisance_census: NuisanceCensus) -> list[str]:
+    census, record = nuisance_census.census, nuisance_census.record
     reached = set(reached_identifiers(census))
     settled = {(settlement.flaw, settlement.criterion) for settlement in record.settlements}
     identified = {identity.flaw for identity in record.identities}
@@ -140,7 +172,7 @@ def _completeness_problems(census: HoldoutCensus, record: NuisanceWalkRecord) ->
     for entry in draw_order(census):
         if entry.identifier in reached:
             continue
-        seen = classifications_of(census, entry.identifier)
+        seen = nuisance_census.classifications_by_flaw.get(entry.identifier, [])
         problems += [
             f"{entry.identifier}: the classifiers disagree on {criterion}, and no settlement"
             for criterion in Criterion
