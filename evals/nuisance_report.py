@@ -104,6 +104,7 @@ class NuisanceReport(BaseModel):
     prices_as_of: date
     commit: str
     census_commit: str
+    walk_record_commit: str
     # The run conditions and provenance, so a reader can tell two runs apart.
     provider: str
     model: str
@@ -162,6 +163,7 @@ def build_report(run: NuisanceRunResult) -> NuisanceReport:
         prices_as_of=run.prices_as_of,
         commit=run.commit,
         census_commit=run.census_commit,
+        walk_record_commit=run.walk_record_commit,
         provider=run.provider,
         model=run.model,
         judge_model=run.judge_model,

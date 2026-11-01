@@ -200,6 +200,15 @@ def test_the_recorded_at_line_carries_the_run_timestamp():
     assert f"Recorded at: {given.RECORDED_AT}\n" in markdown
 
 
+def test_the_provenance_line_names_the_census_and_walk_record_commits():
+    report = build_report(given.a_run([a_server_result("A")]))
+
+    assert (report.census_commit, report.walk_record_commit) == ("cafe1234", "beef5678")
+    assert "Commits: run deadbeef, census cafe1234, walk record beef5678\n" in render_markdown(
+        report
+    )
+
+
 def test_the_split_section_names_the_run_cutoff_and_both_sides():
     run = given.a_run(
         [

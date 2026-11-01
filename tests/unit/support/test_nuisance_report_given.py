@@ -42,6 +42,7 @@ def a_run(
         fixture_fingerprints={"npm:@acme/files": "fa"},
         commit="deadbeef",
         census_commit="cafe1234",
+        walk_record_commit="beef5678",
         image_ids={"patched": "sha256:1"},
         recorded_at=RECORDED_AT,
         servers=tuple(servers),

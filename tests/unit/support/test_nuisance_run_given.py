@@ -19,7 +19,7 @@ from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_audit import DroppedRun, NuisanceAudit
 from evals.nuisance_population import RunPopulation
 from evals.nuisance_results import FigureExit, NuisanceRunResult
-from evals.nuisance_run import NuisanceDeps, run_nuisance
+from evals.nuisance_run import NuisanceDeps, RunProvenance, run_nuisance
 from evals.probe_candidates import Prices
 from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.config import Settings
@@ -276,7 +276,7 @@ async def run(
         order,
         conditions(),
         SETTINGS,
-        census_commit="cafe",
+        RunProvenance(census_commit="cafe", walk_record_commit="beef"),
         runs=runs,
         concurrency=concurrency,
         deps=deps,

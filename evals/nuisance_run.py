@@ -82,6 +82,15 @@ class NuisanceDeps:
 
 
 @dataclass(frozen=True)
+class RunProvenance:
+    """The commits of the files that decided the run's population. Provenance, never a condition:
+    no baseline, gate or comparison reads it."""
+
+    census_commit: str
+    walk_record_commit: str
+
+
+@dataclass(frozen=True)
 class _RunContext:
     conditions: HoldoutConditions
     settings: Settings
@@ -89,7 +98,7 @@ class _RunContext:
     model_ids: list[str]
     runs: int
     concurrency: int
-    census_commit: str
+    provenance: RunProvenance
 
 
 async def run_nuisance(
@@ -97,7 +106,7 @@ async def run_nuisance(
     draw_order: Sequence[DrawEntry],
     conditions: HoldoutConditions,
     settings: Settings,
-    census_commit: str,
+    provenance: RunProvenance,
     *,
     runs: int = NUISANCE_RUNS,
     concurrency: int = NUISANCE_CONCURRENCY,
@@ -106,7 +115,7 @@ async def run_nuisance(
     _refuse_tracing()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    ctx = _RunContext(conditions, settings, draw_order, model_ids, runs, concurrency, census_commit)
+    ctx = _RunContext(conditions, settings, draw_order, model_ids, runs, concurrency, provenance)
     deps = deps or default_deps(nuisance_overrides(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
@@ -259,7 +268,8 @@ def _assemble_run(
         counter_fingerprint=counter_fingerprint(),
         fixture_fingerprints={s.server_package: nuisance_fixture_fingerprint(s) for s in servers},
         commit=tree.commit,
-        census_commit=ctx.census_commit,
+        census_commit=ctx.provenance.census_commit,
+        walk_record_commit=ctx.provenance.walk_record_commit,
         image_ids={
             **deps.image_ids(_services(servers)),
             **deps.backend_image_ids(_backend_images(servers)),

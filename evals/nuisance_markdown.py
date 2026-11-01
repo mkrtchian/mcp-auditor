@@ -13,6 +13,8 @@ def render_markdown(report: NuisanceReport) -> str:
             "# Nuisance suite",
             "",
             f"Recorded at: {report.recorded_at}",
+            f"Commits: run {report.commit}, census {report.census_commit}, "
+            f"walk record {report.walk_record_commit}",
             "",
             f"Figure: at most {report.figure:.3f} (95% Wilson {_span(report.cited_interval)})",
             "",

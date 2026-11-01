@@ -39,6 +39,19 @@ def test_run_writes_the_report_beside_its_result(tmp_path: Path, monkeypatch: py
     assert not json.loads(report.with_suffix(".result.json").read_text())["partial"]
 
 
+def test_run_records_the_census_and_walk_record_commits_in_its_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    given.an_admitted_run_keeping_its_provenance(monkeypatch)
+    report = tmp_path / "nuisance_report.json"
+
+    assert run_nuisance.main(given.a_run_command(tmp_path)) == 0
+
+    result = json.loads(report.with_suffix(".result.json").read_text())
+    assert result["census_commit"] == "commit-of-holdout_census.json"
+    assert result["walk_record_commit"] == "commit-of-nuisance_walk_record.json"
+
+
 def test_run_writes_its_result_before_the_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     given.an_admitted_run_ending_in(monkeypatch, given.a_run_result())
 

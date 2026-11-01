@@ -125,6 +125,7 @@ class NuisanceRunResult:
     fixture_fingerprints: dict[str, str]
     commit: str
     census_commit: str
+    walk_record_commit: str
     image_ids: dict[str, str]
     recorded_at: str  # ISO timestamp: a model can change behind one identifier
     servers: Sequence[NuisanceServerResult]
