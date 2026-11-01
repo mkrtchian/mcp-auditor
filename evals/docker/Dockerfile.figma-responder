@@ -1,0 +1,47 @@
+# TLS responder for the nuisance suite's figma backend, the api.figma.com host that the
+# get_figma_data tool of figma-developer-mcp reaches by name. It is NOT the server under test and
+# carries none of its flaw. It answers two ways, as application/json because the server calls
+# response.json():
+#   - a clean file path (^/v1/files/<alphanumeric>$) gets 200 and a fixed minimal-but-valid Figma
+#     file body (the getRawFile shape the simplifier accepts: document.children plus
+#     components/componentSets/styles), the benign call's response
+#   - any other path gets 404, replicating Figma's own rejection of a malformed file key: the
+#     server's fetch() sees a non-OK response and falls back to exec-ing curl, which is where the
+#     command injection fires on the vulnerable version
+# It carries no witness nonce: figma's fix-check plants the witness as a file read by the injected
+# shell command. The cert is a fixed self-signed pair embedded below (SAN api.figma.com). The Node
+# server trusts it through NODE_EXTRA_CA_CERTS and the curl child through CURL_CA_BUNDLE, both
+# pointed at the same public cert baked into the server image. Never spoken to over MCP stdio.
+# No COPY/ADD: the fingerprint hashes instructions only, so the cert is decoded from an inlined
+# base64 blob.
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+
+RUN echo 'LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURMVENDQWhXZ0F3SUJBZ0lVTXNzNnZxVXZzYld0YzJkUWtTWnBZak5lRlpFd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0dERVdNQlFHQTFVRUF3d05ZWEJwTG1acFoyMWhMbU52YlRBZ0Z3MHlOakV4TURFd016VTRNamxhR0E4eQpNVEkyTVRBd09EQXpOVGd5T1Zvd0dERVdNQlFHQTFVRUF3d05ZWEJwTG1acFoyMWhMbU52YlRDQ0FTSXdEUVlKCktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQUxJSERBcCs0T2lUYmhMTDJTczI2bXI1dDhRYkhaU3UKVFVjZ1V6YW8xcmRtVXU4VWZsVDErQnBveGJNSGsyaFBYYjdoUXhwTzlBaGxUS2MzVkcxR3oxd1pYRWZSa1JBUQp1TExQc1JHSFBTYVJkOGZveUdsSmNQdm9BOHhFcVlFem1yTTFRN25sRWF6a3p1SmJZZUlUb0V1UDhhTjZ3YmVhCkttTVRFbDBXM2ZzckxTL1BiTjBORjVyNE53T20wQTdJMFFKVVVwVVozV3F3aXQ2ZzN2VHRkVHFPa1ZIR1J6RXkKdjdEZkZMT3RXWEdsc3VmUWg5ditOMWJVU054QXM5TEJMcGpuT3huRDVtR2NybTczSXpJWjVZb1VqdkxCcVZ5Zgp5eWdIaWxEVDJPaVVJU0pCM0twNVNPR3N5dVdVd2Y2c09VQkdBVVJ1RU0vQUZmT3ZkeVFkOVZNQ0F3RUFBYU50Ck1Hc3dIUVlEVlIwT0JCWUVGQ3FGNHp4MFVFM3VFWlYyUk9LaFQ5dHM1UXFVTUI4R0ExVWRJd1FZTUJhQUZDcUYKNHp4MFVFM3VFWlYyUk9LaFQ5dHM1UXFVTUE4R0ExVWRFd0VCL3dRRk1BTUJBZjh3R0FZRFZSMFJCQkV3RDRJTgpZWEJwTG1acFoyMWhMbU52YlRBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQXFsdmRmdzhVNjVPRGNuR09OckxzClNRKzZiTFBydXE3ZERPYVJ5blhkc2ZNUzRSMHdqUDBHMVR0U0JzUFJYNGhuTzduN0NGdUt1ellzWHFSVmRUK04KMFVUUDlDaVMvd244cXRsdXFDZEw0aWhpOEJXWFZBNm9CMmlZWERCWXpLTVd3elVhQkVoeDB2czNFd3VzMjJvWAoxeG55aFlGQS95UHFnM0xMTVVwb3lJUTNFaXBreXhTRTBHcWVCQXhkYVdocnJYdm1sOHNGdFJJYWU1RU9tTFMyCmZ1MTdpVmR3dUM5dVNCc3RDWTJIUWFndm9TZGZTVnV6L0hmeStXL3FZMWF1U3QwS1hhSDVHalBrOE9EOUMwclEKQkxtZGtoZTYxNzVLdVRTMlM2bEVSSk96OVBIQ1N6ck1wb0xNT2lxYjJQRzgzZVpOeTFoYWJyRDJvRzBiZ0c2aQpwdz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K' | base64 -d > /cert.pem \
+ && echo 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktrd2dnU2xBZ0VBQW9JQkFRQ3lCd3dLZnVEb2syNFMKeTlrck51cHErYmZFR3gyVXJrMUhJRk0ycU5hM1psTHZGSDVVOWZnYWFNV3pCNU5vVDEyKzRVTWFUdlFJWlV5bgpOMVJ0UnM5Y0dWeEgwWkVRRUxpeXo3RVJoejBta1hmSDZNaHBTWEQ3NkFQTVJLbUJNNXF6TlVPNTVSR3M1TTdpClcySGlFNkJMai9HamVzRzNtaXBqRXhKZEZ0MzdLeTB2ejJ6ZERSZWErRGNEcHRBT3lORUNWRktWR2QxcXNJcmUKb043MDdYVTZqcEZSeGtjeE1yK3czeFN6clZseHBiTG4wSWZiL2pkVzFFamNRTFBTd1M2WTV6c1p3K1pobks1dQo5eU15R2VXS0ZJN3l3YWxjbjhzb0I0cFEwOWpvbENFaVFkeXFlVWpock1ybGxNSCtyRGxBUmdGRWJoRFB3Qlh6CnIzY2tIZlZUQWdNQkFBRUNnZ0VBQmMyQ3Fzdys3WHNjdStKeGNOMzkzeFhHVTg4NXlYRUlWaU5XR0Ywc0tTeUkKZmRWOUFWZWJ5aW5wdzhUMm5PV2dDSFdVTjlwNTl0VENjN0xkMUNBRTZKdHZyV3hGeVFYRkxNTGw5OHgyTUUzTwppZHdWdlk5N2JpS1R1UjFGMUhuSG9abHJYSXhSdXF2TW1JYU5BV1JOWUc1Nmh3UngwRmU4azUvT3IwSnNZdUErCm9TUFZ4OFljM29COGNFcXlxdHl2TVQ1a3pWN0YyQTNtZzZZYmpxYkVpaVpYSTMwSWRjSkplT0FQN1dtblgvZG0KaWZvT1hZZXkvWjE4aDR5aWJVY1ZnckVCNHNMazRqOTR1TzU2MUZBNTFXVlRob3hndm5lWU9aSDJDdFg0Nkc2eQpVMVlZYmNLaGxYUldqWEprbUc2bnRFRUFQM0xsQTlNZ1FJejlCcGV6dVFLQmdRRGpBdjBwOEo1RVI5WWhvdUkyCmR1dEU4MWpSQWFLcWxCeU8xd1FhZ0xGNUNEbVBoTlJPQVovUTdzOG9yY1pESE5pZVExckpzbWZURkZ3VnRiQ08KbFNqOExQL0E2cW5BR2k1ZFl4QVgra1lpM0RlRXZ3d1pHOEM1N3UzcXFzK2lubThLZWVKYUdxY2U1VXlMUTlweQpQbVF3c241ekNpQ2ZKQ1FRWXRFcFFXNHV5UUtCZ1FESXdzUTFxd2hZTEs1Nzhzd3gzU0dYRjY0NUtSa08wNmNTCko0a01nZHR6VHUyd2pJelZlbXpHalU3aHpMVjZoaFVrNzMwbTVKeUFROFZDbGZtMVI2UE9sTDl3OGF1UEdrN20KNFE0ZTRIVGppbmlrZ3hocXlDR09VUytQblRuemtkWk5YSEdEcUZ4MWcrZkVpb0ZTZCsxcTJxdzdUY3l0N0l2YQpueWtZZ2JWRk93S0JnUUNtSXpyYVpkRytVUUNpcjAxMDVNVThPZ2duTmxZeEZxSnIyMnFTWnRyN3BBeFVQN2NNCnU5MlZrQ0NtT2I5ZXdJNjhETGsxNGM1Z1NZYzNFRGg5c1NaRW9ENHdsc3pTM1paUEhEL2IvSHMxNmdycnFOSVcKMGh2VE44eUJNSzh5NlZhRXlUemlDcDJDVy9nUCtBRzRHSGRFdUcwWWpqSGZwaGlLc1hjNEJUMjVHUUtCZ1FDMgo2R1FWTlY4ajNvbVYyZTdhRzBzb09tWDhKQXAxYkxZUm56Mkl6S0xnbW0rSjQzUElaNExGSHlkWUo4YkwrMjgyCk9JL0FxSlpCY2YwOW5pQmtYZ0hMQzlDam1Uc2g1T2t3QnFsenpqSVF3UzhMUzNrcWlHMnlHUnVJNzhsRnRZQVcKK1h0ZVpUemZ3QzZmN1VUSG13WU96VzRQbGVFK01INTJ6MzJFbTJCSTB3S0JnUURDZ2RTRzNoYnpQYXNWNzNQMgpxZS9EbUQyWVNQK2dsWDJXRDBrV05naWZjcmw2M2RpUk1lM1loMzUzV1VRb2RDeU03TzZIb0tZVHhXVWpEeDhJCjYzQmxGY2VFK2p5dCtiS1J4dnBPWSt1NTIyV3UrWXEyT0hKaTRmUXArK1ZUNXZWR0FiS1ZDbHhkckN1VUlqR0QKMG8xVnNFbjdnY1EwQ0N0SmZ3ME9wQjN3Y3c9PQotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==' | base64 -d > /key.pem
+
+RUN printf '%s\n' \
+  "const https = require('https');" \
+  "const fs = require('fs');" \
+  "" \
+  "const FILE = JSON.stringify({" \
+  "  name: 'Benign Figma File'," \
+  "  lastModified: '2024-01-01T00:00:00Z'," \
+  "  thumbnailUrl: ''," \
+  "  document: { id: '0:0', name: 'Document', type: 'DOCUMENT', children: [] }," \
+  "  components: {}, componentSets: {}, styles: {}, schemaVersion: 0" \
+  "});" \
+  "const CLEAN = /^\/v1\/files\/[A-Za-z0-9]+$/;" \
+  "" \
+  "https.createServer({ key: fs.readFileSync('/key.pem'), cert: fs.readFileSync('/cert.pem') }, (req, res) => {" \
+  "  const path = (req.url || '').split('?')[0];" \
+  "  if (CLEAN.test(path)) {" \
+  "    res.writeHead(200, { 'content-type': 'application/json' });" \
+  "    res.end(FILE);" \
+  "  } else {" \
+  "    res.writeHead(404, { 'content-type': 'application/json' });" \
+  "    res.end(JSON.stringify({ status: 404, err: 'Not found' }));" \
+  "  }" \
+  "}).listen(443);" \
+  > /responder.js
+
+ENTRYPOINT ["node", "/responder.js"]

@@ -21,6 +21,7 @@ from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPOND
 from evals.cve_environments import Launch
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
+from evals.figma_backend import FIGMA_BRIDGE, FIGMA_RESPONDER_IMAGE
 from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
@@ -34,6 +35,7 @@ from evals.nuisance_provisioners import (
     contextforge_provisioner,
     doris_provisioner,
     facebook_ads_provisioner,
+    figma_provisioner,
     gitlab_provisioner,
     googleapis_provisioner,
     jenkins_provisioner,
@@ -76,6 +78,7 @@ BACKENDS: dict[str, RegisteredBackend] = {
     "facebook_ads": RegisteredBackend(
         facebook_ads_provisioner, FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
     ),
+    "figma": RegisteredBackend(figma_provisioner, FIGMA_BRIDGE, FIGMA_RESPONDER_IMAGE),
 }
 
 

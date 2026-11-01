@@ -44,6 +44,12 @@ from evals.facebook_ads_backend import (
     facebook_ads_rm,
     facebook_ads_server_args,
 )
+from evals.figma_backend import (
+    FIGMA_LAUNCH_LOCK,
+    ensure_figma_responder,
+    figma_rm,
+    figma_server_args,
+)
 from evals.gitlab_backend import (
     GITLAB_LAUNCH_LOCK,
     ensure_gitlab_responder,
@@ -267,3 +273,19 @@ def facebook_ads_provisioner(server: AdmittedServer) -> Generator[Launch]:
         )
     finally:
         facebook_ads_rm(name)
+
+
+@contextmanager
+def figma_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no witness, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with FIGMA_LAUNCH_LOCK:
+        ensure_figma_responder()
+    name = f"{LABEL}-figma-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=figma_server_args(name, image_tag(server.service), server.host, server.launch),
+        )
+    finally:
+        figma_rm(name)
