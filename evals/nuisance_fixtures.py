@@ -9,6 +9,7 @@ modules hold the callables and keep the kit's import closure.
 
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.nuisance_fix_checks import (
+    cve_2025_15061_figma,
     cve_2025_52573_ios_simulator,
     cve_2025_53100_codehooks,
     cve_2025_53107_git_mcp,
@@ -69,6 +70,7 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_73845_ckan.TARGETS,
     *cve_2026_18905_contextforge.TARGETS,
     *cve_2026_19956_facebook_ads.TARGETS,
+    *cve_2025_15061_figma.TARGETS,
     *cve_2026_44694_n8n.TARGETS,
     *ghsa_8g7g_hmwm_6rv2_n8n.TARGETS,
     *cve_2026_86439_knowns.TARGETS,

@@ -8082,6 +8082,140 @@
         }
       ],
       "patched_version": "4e53875aa22e8991c2fa4a7660d86e1caba66659"
+    },
+    {
+      "server_package": "npm:figma-developer-mcp",
+      "reaching_flaw": "CVE-2025-15061",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-15061",
+          "tools": [
+            {
+              "vulnerable_name": "get_figma_data",
+              "patched_name": "get_figma_data",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "0.6.3",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_figma_data",
+              "arguments": {
+                "fileKey": "abc123"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "get_figma_data"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [
+        "--stdio"
+      ],
+      "service": "figma",
+      "backend": {
+        "provisioner": "figma",
+        "image": "mcp-auditor-cve-figma-responder:local",
+        "network": "mcp-auditor-cve-figma-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "host.has_network",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-15061",
+          "field": "backend_need",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-15061",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-15061",
+          "field": "benign_calls",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": null,
+          "field": "launch",
+          "value": "--stdio",
+          "reason": "record A gave an empty launch, record B --figma-api-key <key> --stdio; the figma API key rides as the FIGMA_API_KEY env the backend sets, and the launch carries --stdio, the server's own transport flag (it starts an HTTP listener and never speaks MCP over stdio without it)"
+        },
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": null,
+          "field": "host.has_network",
+          "value": "true",
+          "reason": "both records set false; the command injection's curl child reaches the responder standing in for api.figma.com, so the server has_network is true"
+        },
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": "CVE-2025-15061",
+          "field": "backend_need",
+          "value": "fixture",
+          "reason": "both records marked backend_need external; corrected to fixture: api.figma.com is a public API a provisioned TLS responder stands in for, so the tool is provisioned and counted, not dropped (the apify/facebook_ads precedent)"
+        },
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": "CVE-2025-15061",
+          "field": "tools",
+          "value": "get_figma_data",
+          "reason": "both records listed get_figma_data and download_figma_images; only get_figma_data is counted: download_figma_images' fileKey is already restricted to ^[a-zA-Z0-9]+$ in the vulnerable 0.6.2 schema, so it cannot carry the shell injection on either arm, while get_figma_data's fileKey carries no restriction in 0.6.2 and gains the regex only in 0.6.3"
+        },
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": "CVE-2025-15061",
+          "field": "benign_calls",
+          "value": "get_figma_data with an alphanumeric fileKey",
+          "reason": "both records left benign_calls empty; the counted tool needs a benign call the responder answers, a plain get_figma_data of an alphanumeric fileKey the responder serves as a valid Figma file and the patched fileKey regex accepts"
+        }
+      ],
+      "patched_version": "0.6.3"
     }
   ]
 }
