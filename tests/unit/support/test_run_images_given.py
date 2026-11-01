@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 import pytest
 
-from evals import run_images
+from evals import cve_images, run_images
 
 
 def a_build_exiting(
@@ -18,3 +18,17 @@ def a_build_exiting(
         return subprocess.CompletedProcess(command, returncode, stdout, stderr)
 
     monkeypatch.setattr(run_images.subprocess, "run", run)
+
+
+def builds_recorded(monkeypatch: pytest.MonkeyPatch, failing: str | None = None) -> list[list[str]]:
+    """The services of each `docker compose build` call, the batch naming `failing` exiting 1."""
+    builds: list[list[str]] = []
+
+    def run(command: Sequence[str], **options: object) -> subprocess.CompletedProcess[str]:
+        services = list(command[command.index("build") + 1 :])
+        builds.append(services)
+        returncode = 1 if failing in services else 0
+        return subprocess.CompletedProcess(command, returncode, "", f"{failing} deadline")
+
+    monkeypatch.setattr(cve_images.subprocess, "run", run)
+    return builds

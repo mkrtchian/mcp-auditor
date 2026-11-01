@@ -4,7 +4,7 @@ containers of the run's images: refused when running before a run, swept at its 
 import subprocess
 from collections.abc import Callable, Sequence
 
-from evals.cve_images import COMPOSE_FILE
+from evals.cve_images import compose_build
 from evals.cve_targets import CVETarget
 from evals.eval_session import Refused
 
@@ -12,17 +12,11 @@ _BUILD_TAIL_LINES = 40
 
 
 def rebuild_images(services: Sequence[str]) -> None:
-    if not services:
-        return
-    build = subprocess.run(
-        ["docker", "compose", "-f", str(COMPOSE_FILE), "build", *services],
-        capture_output=True,
-        text=True,
-    )
-    if build.returncode != 0:
+    failed = compose_build(services)
+    if failed:
         raise RuntimeError(
-            f"docker compose build failed for {', '.join(services)}:\n"
-            f"{_tail(build.stdout)}\n{_tail(build.stderr)}"
+            f"docker compose build failed for {', '.join(failed.services)}:\n"
+            f"{_tail(failed.stdout)}\n{_tail(failed.stderr)}"
         )
 
 

@@ -6,6 +6,7 @@ import hashlib
 import re
 import subprocess
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
@@ -14,6 +15,9 @@ from evals.cve_targets import DOCKER_DIRECTORY, image_dockerfile, image_tag
 FINGERPRINT_LABEL = "org.mcp-auditor.dockerfile-fingerprint"
 COMPOSE_FILE = DOCKER_DIRECTORY / "compose.yml"
 _STDERR_TAIL_LINES = 20
+# One `docker compose build` of some seventy images makes BuildKit abandon one at random with
+# "context deadline exceeded", while each builds fine in a small group.
+COMPOSE_BUILD_BATCH_SIZE = 8
 _PINNED = re.compile(r"@sha256:[0-9a-f]{64}$")
 
 
@@ -99,8 +103,27 @@ class ComposeImageStore:
         return value if result.returncode == 0 and value else None
 
     def build(self, services: Sequence[str]) -> None:
-        command = ["docker", "compose", "-f", str(COMPOSE_FILE), "build", *services]
+        failed = compose_build(services)
+        if failed:
+            tail = "\n".join(failed.stderr.splitlines()[-_STDERR_TAIL_LINES:])
+            raise ImageBuildFailed(failed.services, tail)
+
+
+@dataclass(frozen=True)
+class FailedBuild:
+    services: list[str]
+    stdout: str
+    stderr: str
+
+
+def compose_build(services: Sequence[str]) -> FailedBuild | None:
+    """Builds the deduplicated services batch after batch, in order, and stops at the first
+    batch that fails."""
+    unique = list(dict.fromkeys(services))
+    for start in range(0, len(unique), COMPOSE_BUILD_BATCH_SIZE):
+        batch = unique[start : start + COMPOSE_BUILD_BATCH_SIZE]
+        command = ["docker", "compose", "-f", str(COMPOSE_FILE), "build", *batch]
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode != 0:
-            tail = "\n".join(result.stderr.splitlines()[-_STDERR_TAIL_LINES:])
-            raise ImageBuildFailed(services, tail)
+            return FailedBuild(batch, result.stdout, result.stderr)
+    return None

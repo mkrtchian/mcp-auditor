@@ -4,6 +4,8 @@ import pytest
 
 from evals import nuisance_images
 from evals.cve_images import (
+    COMPOSE_BUILD_BATCH_SIZE,
+    ComposeImageStore,
     ImageBuildFailed,
     dockerfile_fingerprint,
     ensure_images,
@@ -12,6 +14,7 @@ from evals.cve_images import (
 )
 from evals.cve_targets import image_tag
 from tests.fakes.image_store import FakeImageStore
+from tests.unit.support.test_run_images_given import builds_recorded
 
 FILESYSTEM_TAG = image_tag("filesystem")
 SENTINEL_TAG = image_tag("sentinel")
@@ -68,6 +71,20 @@ def test_a_build_failure_propagates():
 
     with pytest.raises(ImageBuildFailed):
         ensure_images(["filesystem"], store)
+
+
+def test_a_compose_build_fails_on_its_failing_batch_after_the_earlier_ones_built(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    services = [f"server-{index}" for index in range(3 * COMPOSE_BUILD_BATCH_SIZE)]
+    failing_batch = services[COMPOSE_BUILD_BATCH_SIZE : 2 * COMPOSE_BUILD_BATCH_SIZE]
+    builds = builds_recorded(monkeypatch, failing=failing_batch[0])
+
+    with pytest.raises(ImageBuildFailed) as raised:
+        ComposeImageStore().build(services)
+
+    assert builds == [services[:COMPOSE_BUILD_BATCH_SIZE], failing_batch]
+    assert raised.value.services == tuple(failing_batch)
 
 
 def test_the_injected_tag_selects_which_namespace_is_read():
