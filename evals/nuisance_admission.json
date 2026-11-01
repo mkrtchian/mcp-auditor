@@ -7947,6 +7947,141 @@
         }
       ],
       "patched_version": "1.0.2"
+    },
+    {
+      "server_package": "https://github.com/gomarble-ai/facebook-ads-mcp-server",
+      "reaching_flaw": "CVE-2026-19956",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-19956",
+          "tools": [
+            {
+              "vulnerable_name": "fetch_pagination_url",
+              "patched_name": "fetch_pagination_url",
+              "status": "unchanged"
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "4e53875aa22e8991c2fa4a7660d86e1caba66659",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "fetch_pagination_url",
+              "arguments": {
+                "url": "https://graph.facebook.com/v22.0/act_000000000000000/insights?after=EXAMPLE_CURSOR"
+              }
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "fetch_pagination_url"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [
+        "--fb-token",
+        "dummy"
+      ],
+      "service": "facebook-ads",
+      "backend": {
+        "provisioner": "facebook_ads",
+        "image": "mcp-auditor-cve-facebook-ads-responder:local",
+        "network": "mcp-auditor-cve-facebook-ads-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-sonnet-5-5"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": null,
+          "field": "host.has_network",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-19956",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-19956",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-19956",
+          "field": "backend_need",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/gomarble-ai/facebook-ads-mcp-server",
+          "flaw": null,
+          "field": "host.has_network",
+          "value": "true",
+          "reason": "record A set true, record B false; the SSRF reaches the responder over the network, so the server has_network is true"
+        },
+        {
+          "server_package": "https://github.com/gomarble-ai/facebook-ads-mcp-server",
+          "flaw": null,
+          "field": "launch",
+          "value": "--fb-token dummy",
+          "reason": "record B carried a --fb-token placeholder, record A none; _get_fb_access_token scans sys.argv for --fb-token at startup and raises before mcp.run if it is absent, so the launch carries a dummy token (fetch_pagination_url itself never reads it)"
+        },
+        {
+          "server_package": "https://github.com/gomarble-ai/facebook-ads-mcp-server",
+          "flaw": "CVE-2026-19956",
+          "field": "benign_calls",
+          "value": "fetch_pagination_url of a graph.facebook.com pagination URL",
+          "reason": "record A gave one benign call, record B none; the counted tool needs a benign call the responder answers, a legitimate graph.facebook.com pagination fetch the patched host-pin accepts"
+        },
+        {
+          "server_package": "https://github.com/gomarble-ai/facebook-ads-mcp-server",
+          "flaw": "CVE-2026-19956",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "record B over-marked dfie true; fetch_pagination_url is declared to fetch the Facebook Graph API next/previous page, the out-of-host fetch the vulnerable version follows (the patched version pins the host to graph.facebook.com) is the flaw, not the declared function (the apify precedent)"
+        },
+        {
+          "server_package": "https://github.com/gomarble-ai/facebook-ads-mcp-server",
+          "flaw": "CVE-2026-19956",
+          "field": "backend_need",
+          "value": "fixture",
+          "reason": "both records marked backend_need external; corrected to fixture: graph.facebook.com is a public API that a provisioned TLS responder stands in for, so the tool is provisioned and counted, not dropped (the apify precedent)"
+        }
+      ],
+      "patched_version": "4e53875aa22e8991c2fa4a7660d86e1caba66659"
     }
   ]
 }
