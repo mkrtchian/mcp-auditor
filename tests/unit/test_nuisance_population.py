@@ -69,7 +69,15 @@ def test_an_acceptance_server_also_marked_by_the_walk_is_outside_the_figure_once
 
 
 def _walked(package: str, mark: ServerMark | None) -> NuisanceServer:
-    return NuisanceServer(package, given.FIRST_FLAW, (given.FIRST_FLAW,), (given.FIRST_FLAW,), mark)
+    return NuisanceServer(
+        server_package=package,
+        reaching_flaw=given.FIRST_FLAW,
+        reaching_position=1,
+        in_addition=False,
+        flaws=(given.FIRST_FLAW,),
+        version_setting=(given.FIRST_FLAW,),
+        mark=mark,
+    )
 
 
 def _admitted(package: str, **update: bool) -> AdmittedServer:

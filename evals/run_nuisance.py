@@ -122,7 +122,7 @@ def _parser() -> argparse.ArgumentParser:
 def _walk(args: argparse.Namespace) -> int:
     with malformed_input_refused():
         nuisance_census = committed_nuisance_census(args.census, args.walk_record)
-        population = nuisance_population(nuisance_census)
+        population = [s for s in nuisance_population(nuisance_census) if not s.in_addition]
     draw = nuisance_census.census.draw
     outcomes: dict[str, str] = {}
     for step in draw.walk if draw else []:

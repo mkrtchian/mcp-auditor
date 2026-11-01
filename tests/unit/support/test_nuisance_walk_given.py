@@ -9,7 +9,13 @@ from evals.census_classification import Criterion, Primitive, Transport
 from evals.census_draw import DrawRecord, DrawWalkStep, Settlement
 from evals.census_sources import SourceName, SourceRecord
 from evals.holdout_census import CLASSIFIERS, CensusFlaw, Discovery, HoldoutCensus
-from evals.nuisance_walk_record import Addition, NuisanceCensus, NuisanceWalkRecord
+from evals.holdout_draw import draw_digest
+from evals.nuisance_walk_record import (
+    Addition,
+    IdentitySettlement,
+    NuisanceCensus,
+    NuisanceWalkRecord,
+)
 
 Outcome = Literal["drawn", "skipped", "given_up", "excluded"]
 
@@ -68,6 +74,16 @@ def a_census_walking(
     return _bare_census(order).model_copy(update={"classifications": classifications, "draw": draw})
 
 
+def a_census_walking_the_first(walked: int, of: list[str]) -> HoldoutCensus:
+    """Each flaw its own server, `npm:<flaw>`. The holdout walk takes the first `walked` flaws
+    of the draw order (the salted digest order, not the order written), the queue the rest."""
+    ordered = sorted(of, key=draw_digest)
+    return a_census_walking(
+        [(identifier, "drawn", f"npm:{identifier}") for identifier in ordered[:walked]],
+        **{identifier: {"server_package": f"npm:{identifier}"} for identifier in ordered[walked:]},
+    )
+
+
 def with_the_second_classifier_overriding(
     census: HoldoutCensus, flaw: str, override: dict[str, Any]
 ) -> HoldoutCensus:
@@ -91,6 +107,24 @@ def with_a_settlement(
     )
     draw = census.draw.model_copy(update={"settlements": [*census.draw.settlements, settlement]})
     return census.model_copy(update={"draw": draw})
+
+
+def with_a_record_settlement(
+    nuisance_census: NuisanceCensus, flaw: str, criterion: Criterion, verdict: bool
+) -> NuisanceCensus:
+    record = nuisance_census.record
+    settlement = Settlement(flaw=flaw, criterion=criterion, verdict=verdict, reason="the record")
+    settled = record.model_copy(update={"settlements": [*record.settlements, settlement]})
+    return NuisanceCensus(census=nuisance_census.census, record=settled)
+
+
+def with_an_identity(
+    nuisance_census: NuisanceCensus, flaw: str, server_package: str
+) -> NuisanceCensus:
+    record = nuisance_census.record
+    identity = IdentitySettlement(flaw=flaw, server_package=server_package, reason="one project")
+    identified = record.model_copy(update={"identities": [*record.identities, identity]})
+    return NuisanceCensus(census=nuisance_census.census, record=identified)
 
 
 def written(tmp_path: Path, census: HoldoutCensus) -> Path:

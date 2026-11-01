@@ -20,7 +20,7 @@ READERS = ("reader_1", "reader_2")
 NO_PROOF_GROUP = "no_proof_in_tool_output"
 
 # The criteria of eligibility checkable from an advisory, the class criterion of version 3 aside.
-_DRAW_ORDER_CRITERIA = (
+DRAW_ORDER_CRITERIA = (
     Criterion.MCP_SERVER,
     Criterion.STDIO_TOOLS_CALL,
     Criterion.EFFECT_IN_TOOL_RESPONSE,
@@ -99,7 +99,7 @@ def in_draw_order(flaw: str, seen: Sequence[Classification]) -> bool:
         flaw not in BENCHMARK_FLAWS
         and all(
             any(criteria_met(classification)[criterion] for classification in seen)
-            for criterion in _DRAW_ORDER_CRITERIA
+            for criterion in DRAW_ORDER_CRITERIA
         )
         and any(classification.server_package not in EXCLUDED_SERVERS for classification in seen)
     )

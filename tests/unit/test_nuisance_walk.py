@@ -2,6 +2,7 @@ import pytest
 
 import tests.unit.support.test_nuisance_walk_given as given
 from evals.census_classification import Criterion
+from evals.holdout_draw import draw_order
 from evals.nuisance_walk import (
     ServerMark,
     acceptance_servers,
@@ -139,7 +140,9 @@ def test_a_server_whose_every_flaw_fails_leaves_the_population():
 
 
 def test_a_benchmark_flaw_marks_its_server_acceptance():
-    census = given.a_census_walking([("CVE-2025-53109", "excluded", "npm:accsrv")])
+    census = given.a_census_walking(
+        [("a1", "drawn", "npm:accsrv")], **{"CVE-2025-53109": {"server_package": "npm:accsrv"}}
+    )
 
     [server] = nuisance_population(given.a_nuisance_census(census))
 
@@ -150,6 +153,9 @@ def test_an_excluded_server_is_marked_excluded():
     census = given.a_census_walking(
         [("exc1", "drawn", "npm:@modelcontextprotocol/server-filesystem")]
     )
+    census = given.with_the_second_classifier_overriding(
+        census, "exc1", {"server_package": "npm:another-label"}
+    )
 
     [server] = nuisance_population(given.a_nuisance_census(census))
 
@@ -157,8 +163,12 @@ def test_an_excluded_server_is_marked_excluded():
 
 
 def test_acceptance_wins_over_excluded():
+    filesystem = "npm:@modelcontextprotocol/server-filesystem"
     census = given.a_census_walking(
-        [("CVE-2025-53110", "drawn", "npm:@modelcontextprotocol/server-filesystem")]
+        [("exc1", "drawn", filesystem)], **{"CVE-2025-53110": {"server_package": filesystem}}
+    )
+    census = given.with_the_second_classifier_overriding(
+        census, "exc1", {"server_package": "npm:another-label"}
     )
 
     [server] = nuisance_population(given.a_nuisance_census(census))
@@ -181,3 +191,81 @@ def test_only_a_current_target_makes_its_server_a_current_acceptance_server():
         "npm:mcp-server-kubernetes",
         "npm:gemini-mcp-tool",
     }
+
+
+def test_the_walk_resumes_past_the_holdout_walk_in_draw_order():
+    census = given.a_census_walking_the_first(2, of=["q1", "q2", "q3", "q4"])
+    order = [entry.identifier for entry in draw_order(census)]
+
+    population = nuisance_population(given.a_nuisance_census(census))
+
+    assert [
+        (server.server_package, server.reaching_flaw, server.reaching_position, server.in_addition)
+        for server in population
+    ] == [
+        (f"npm:{order[0]}", order[0], 1, False),
+        (f"npm:{order[1]}", order[1], 2, False),
+        (f"npm:{order[2]}", order[2], 3, True),
+        (f"npm:{order[3]}", order[3], 4, True),
+    ]
+
+
+def test_a_queue_flaw_settled_against_a_draw_order_criterion_is_skipped():
+    census = given.a_census_walking([("a", "drawn", "npm:a")], q={"server_package": "npm:q"})
+    census = given.with_the_second_classifier_overriding(
+        census, "q", {"effect_in_tool_response": False}
+    )
+
+    settled_false = given.with_a_record_settlement(
+        given.a_nuisance_census(census), "q", Criterion.EFFECT_IN_TOOL_RESPONSE, False
+    )
+    settled_true = given.with_a_record_settlement(
+        given.a_nuisance_census(census), "q", Criterion.EFFECT_IN_TOOL_RESPONSE, True
+    )
+
+    assert [server.server_package for server in nuisance_population(settled_false)] == ["npm:a"]
+    assert [server.server_package for server in nuisance_population(settled_true)] == [
+        "npm:a",
+        "npm:q",
+    ]
+
+
+def test_an_identity_merges_two_labels_into_one_server():
+    census = given.a_census_walking(
+        [("go", "drawn", "Go:github.com/acme/toolbox")],
+        https={"server_package": "https://github.com/acme/toolbox"},
+    )
+    identified = given.with_an_identity(
+        given.a_nuisance_census(census), "https", "Go:github.com/acme/toolbox"
+    )
+
+    [server] = nuisance_population(identified)
+
+    assert server.server_package == "Go:github.com/acme/toolbox"
+    assert server.flaws == ("go", "https")
+    assert server.version_setting == ("go", "https")
+
+
+def test_an_identity_package_is_normalized():
+    census = given.a_census_walking([("k", "drawn", "PyPI:kubectl-mcp-tool")])
+    identified = given.with_an_identity(
+        given.a_nuisance_census(census), "k", "PyPI:Kubectl_MCP.Server"
+    )
+
+    assert server_of("k", identified) == "PyPI:kubectl-mcp-server"
+
+
+def test_a_record_settlement_takes_a_flaw_out_of_the_version_setting_flaws():
+    census = given.a_census_walking([("g", "drawn", "npm:srv")])
+    settled = given.with_a_record_settlement(
+        given.a_nuisance_census(census), "g", Criterion.GRAMMAR_CLASS, False
+    )
+
+    assert version_setting_flaws("npm:srv", settled) == []
+
+
+def test_a_holdout_walk_flaw_outside_the_draw_order_is_refused():
+    census = given.a_census_walking([("r", "drawn", "npm:srv")], r=given.ON_RESOURCES)
+
+    with pytest.raises(ValueError, match="outside the draw order"):
+        nuisance_population(given.a_nuisance_census(census))
