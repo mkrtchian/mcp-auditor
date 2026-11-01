@@ -6,12 +6,11 @@ from evals.nuisance_walk import (
     ServerMark,
     acceptance_servers,
     current_acceptance_servers,
-    normalized_package,
     nuisance_population,
-    reached_identifiers,
     server_of,
     version_setting_flaws,
 )
+from evals.nuisance_walk_record import normalized_package, reached_identifiers
 
 
 def test_reached_identifiers_raises_without_a_draw():

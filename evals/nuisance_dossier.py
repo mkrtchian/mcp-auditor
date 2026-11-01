@@ -21,6 +21,7 @@ from evals.calibration_dossier import EVALS, KIT_MODULES, acceptance_services, c
 from evals.eval_session import Refused
 from evals.holdout_census import HoldoutCensus
 from evals.nuisance_admission import AdmittedServer, FlawRecord
+from evals.nuisance_walk_record import normalized_package
 from evals.run_census import GRAMMAR_CLASSES
 
 
@@ -40,9 +41,7 @@ _BACKEND_SOURCES: dict[str, BackendSources] = {
 def write_dossier(
     census: HoldoutCensus, server_package: str, out: Path, backend: str | None = None
 ) -> None:
-    identifiers = nuisance_walk.census_flaws_of(
-        nuisance_walk.normalized_package(server_package), census
-    )
+    identifiers = nuisance_walk.census_flaws_of(normalized_package(server_package), census)
     if not identifiers:
         raise Refused(
             f"Refused: no census flaw names the server {server_package}.",

@@ -6,7 +6,6 @@ sets the version: in a graded class, reached through tools, its effect visible i
 response, and pinnable. Pure reads of the census and its draw settlements, no LLM, no network.
 """
 
-import re
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -15,6 +14,7 @@ from evals.census_draw import Settlement
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
+from evals.nuisance_walk_record import normalized_package, reached_identifiers
 
 
 class ServerMark(StrEnum):
@@ -29,20 +29,6 @@ class NuisanceServer:
     flaws: tuple[str, ...]
     version_setting: tuple[str, ...]
     mark: ServerMark | None
-
-
-def reached_identifiers(census: HoldoutCensus) -> list[str]:
-    if census.draw is None:
-        raise ValueError("the census has no draw walk to follow")
-    return [step.identifier for step in census.draw.walk]
-
-
-def normalized_package(server_package: str) -> str:
-    prefix = "PyPI:"
-    if not server_package.startswith(prefix):
-        return server_package
-    name = server_package[len(prefix) :]
-    return prefix + re.sub(r"[-_.]+", "-", name).lower()
 
 
 def server_of(identifier: str, census: HoldoutCensus) -> str:
