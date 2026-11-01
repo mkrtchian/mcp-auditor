@@ -27,7 +27,7 @@
       "flaw": "CVE-2025-5277",
       "criterion": "pinnable",
       "verdict": true,
-      "reason": "Classifiers split on pinnable (one used the release tags 1.2.0 and 1.3.0, one took the fix commit 94d20ae as the vulnerable version and found no patch). Settled True on OSV and the GitHub API: the public repository alexei-led/aws-mcp-server (renamed cloud-mcp-server, archived) carries tags 1.2.0 (85513ba8) and 1.3.0 (39d26d10). The fix is the merge 94d20ae1 (PR #11, the AWS command validation system), which 1.2.0 predates and 1.3.0 contains, and OSV records the fix at 1.3.0. 94d20ae is the fix, not a vulnerable version. Pinnable: True."
+      "reason": "Classifiers split on pinnable (one used the release tags 1.2.0 and 1.3.0, one took the fix commit 94d20ae as the vulnerable version and found no patch). Settled True on OSV and the GitHub API: the public repository alexei-led/aws-mcp-server (renamed cloud-mcp-server, archived) carries tags 1.2.0 (commit aa053adf) and 1.3.0 (commit df44aabe). The fix is the merge 94d20ae1 (PR #11, the AWS command validation system), which 1.2.0 predates and 1.3.0 contains, and OSV records the fix at 1.3.0. 94d20ae is the fix, not a vulnerable version. Pinnable: True."
     },
     {
       "flaw": "CVE-2026-0758",
@@ -45,7 +45,7 @@
       "flaw": "CVE-2026-15522",
       "criterion": "effect_in_tool_response",
       "verdict": true,
-      "reason": "Classifiers split on effect_in_tool_response (one read run_project's fixed reply as carrying nothing, one counted the later output). Settled True on OSV, issue #9 and the fix commit eb63add5 of tugcantopaloglu/godot-mcp (src/index.ts at 2.0.0): validatePath rejects only '..' substrings, so run_project accepts any absolute directory holding a project.godot, injects the interaction-server autoload into it and launches it. The same server's get_debug_output returns the launched process's output, the injected autoload's own line included, and read_file returns the modified project.godot. A later tool call of the same server shows the effect. Effect shows in a tool response: True."
+      "reason": "Classifiers split on effect_in_tool_response (one read run_project's fixed reply as carrying nothing, one counted the later output). Settled True on OSV, issue #9 and the fix commit eb63add5 of tugcantopaloglu/godot-mcp (src/utils.ts and src/index.ts at 2.0.0): validatePath rejects only '..' substrings, so run_project accepts any absolute directory holding a project.godot, injects the interaction-server autoload into it and launches it. The same server's get_debug_output returns the launched process's output, the injected autoload's own line included, and read_file returns the modified project.godot. A later tool call of the same server shows the effect. Effect shows in a tool response: True."
     },
     {
       "flaw": "CVE-2026-46341",
@@ -81,7 +81,7 @@
       "flaw": "CVE-2025-59834",
       "criterion": "effect_in_tool_response",
       "verdict": true,
-      "reason": "Classifiers split on effect_in_tool_response (one read the command injection as blind, one as visible). Settled True on the source and the admission of npm:adb-mcp: the device-taking tools interpolate device into an adb command run through child_process.exec, and adb_install, adb_logcat, adb_pull and adb_push return the command's combined stdout. The admission's fix check surfaces its witness in those tools' responses on the vulnerable version and not on 0.1.1 (fix commit 041729c0, execFile). Effect shows in a tool response: True."
+      "reason": "Classifiers split on effect_in_tool_response (one read the command injection as blind, one as visible). Settled True on the source and the admission of npm:adb-mcp: the device-taking tools interpolate device into an adb command run through child_process.exec, and adb_install, adb_logcat, adb_push and adb_pull (with asBase64 false) return the command's stdout, or its stderr as the error text. The admission's fix check surfaces its witness in those tools' responses on the vulnerable version and not on 0.1.1 (fix commit 041729c0, execFile). Effect shows in a tool response: True."
     },
     {
       "flaw": "CVE-2026-30633",
@@ -129,7 +129,7 @@
       "flaw": "CVE-2026-97228",
       "criterion": "effect_in_tool_response",
       "verdict": false,
-      "reason": "Classifiers split on effect_in_tool_response (one read the injected query's effect as visible, one as blind). Settled False on OSV and the rapid7-bulk-export-mcp source at v0.6.1: get_export_status formats export_id into the GraphQL string (fixed in 0.6.2, commit a14e4ff, by a query variable). The function reads only data.export and returns its id, status and URLs, so the injected selections are discarded. Only a GraphQL error string can come back. Effect shows in a tool response: False."
+      "reason": "Classifiers split on effect_in_tool_response (one read the injected query's effect as visible, one as blind). Settled False on OSV and the rapid7-bulk-export-mcp source at v0.6.1: get_export_status formats export_id into the GraphQL string (fixed in 0.6.2, commit a14e4ff, by a query variable). The function reads only data.export and returns its id, status, URLs and result list, all fields the query fixes, so the injected selections are discarded. Only a GraphQL error string can come back. Effect shows in a tool response: False."
     },
     {
       "flaw": "CVE-2026-18486",
@@ -216,7 +216,7 @@
     {
       "flaw": "CVE-2025-69902",
       "server_package": "PyPI:kubectl-mcp-server",
-      "reason": "kubectl-mcp-tool is the same rohitg00 project as kubectl-mcp-server (CVE-2025-65719), both shell-injecting and both fixed at 1.2.0, settled a duplicate in the nuisance log on 2026-10-31."
+      "reason": "kubectl-mcp-tool is the same rohitg00 project as kubectl-mcp-server (CVE-2025-65719), both shell-injecting and both fixed at 1.2.0, settled a duplicate in the nuisance log on 2026-10-31. The fix version is read on source, where kubectl_mcp_tool/minimal_wrapper.py runs subprocess.run with shell=True at tag v1.1.1 and shell=False with shlex.split at tag v1.2.0, the advisory naming 1.2.0 affected."
     },
     {
       "flaw": "CVE-2026-19337",
@@ -231,7 +231,7 @@
     {
       "flaw": "CVE-2026-34884",
       "server_package": "Go:github.com/apache/skywalking-mcp",
-      "reason": "Classifiers split on the package spelling (Go module against repository URL). github.com/apache/skywalking-mcp is the repository of the Go module of the same path (proxy.golang.org lists v0.1.0 and v0.2.0), under which both classifiers file the server's other census flaw, CVE-2026-34476."
+      "reason": "Classifiers split on the package spelling (Go module against repository URL). github.com/apache/skywalking-mcp is the repository of the Go module of the same path (proxy.golang.org lists its releases, v0.1.0 and v0.2.0 among them), under which both classifiers file the server's other census flaw, CVE-2026-34476."
     }
   ]
 }
