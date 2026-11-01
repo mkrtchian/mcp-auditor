@@ -1,0 +1,19 @@
+# Nuisance run image of mysql: awslabs.mysql-mcp-server 1.0.23, the admission's patched version,
+# derived from Dockerfile.holdout-2026-85788-mysql-patched but server-only. The holdout image bakes
+# mysqld and moto in and points the server at a moto on 127.0.0.1; the nuisance mysql backend
+# (evals/mysql_backend.py) runs the engine and the moto stub as separate containers, so this image
+# carries the server alone and points it at MOTO_ENDPOINT. No seeding: the backend seeds moto.
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+
+RUN pip install --no-cache-dir "awslabs.mysql-mcp-server==1.0.23" "mcp<2"
+
+# Dummy credentials, the values the holdout entrypoint and the backend's seed use. The
+# credential and config files are pinned away from $HOME so the server never reads one there.
+ENV AWS_ENDPOINT_URL=http://mcp-auditor-cve-mysql-moto:5000 \
+    AWS_ACCESS_KEY_ID=testing \
+    AWS_SECRET_ACCESS_KEY=testing \
+    AWS_DEFAULT_REGION=us-east-1 \
+    AWS_SHARED_CREDENTIALS_FILE=/dev/null \
+    AWS_CONFIG_FILE=/dev/null
+
+ENTRYPOINT ["python3", "-m", "awslabs.mysql_mcp_server.server"]

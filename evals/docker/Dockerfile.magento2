@@ -1,0 +1,24 @@
+# Nuisance run image of magento2: a copy of Dockerfile.holdout-2026-5603-magento2-patched, instructions unchanged,
+# pinning the admission's patched version, commit aa1ffcc0aea1b212c69787391783af27df15ae9d.
+
+# Patched version of @elgentos/magento2-dev-mcp: the fix commit for CVE-2026-5603
+# (aa1ffcc0aea1b212c69787391783af27df15ae9d, PR #5), which is NOT published on npm, so it is
+# built from the public source at that exact commit. The fix routes local execution through
+# execFile(magerunBin, args) instead of exec(shellString), removing the shell injection.
+FROM node:20.18-bookworm-slim@sha256:ffc11dbf16dd0abcbb7b837410601b4d5592db2d03741e13a4a5336ab74d7ccb
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates php-cli git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://files.magerun.net/n98-magerun2.phar -o /usr/local/bin/magerun2 \
+    && chmod +x /usr/local/bin/magerun2
+
+# Real source at the pinned fix commit, built with the project's own tsc.
+RUN git clone https://github.com/elgentos/magento2-dev-mcp.git /app \
+    && cd /app \
+    && git checkout aa1ffcc0aea1b212c69787391783af27df15ae9d \
+    && npm install \
+    && npm run build
+
+ENTRYPOINT ["node", "/app/dist/index.js"]

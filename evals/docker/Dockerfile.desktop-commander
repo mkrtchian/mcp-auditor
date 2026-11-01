@@ -1,0 +1,19 @@
+# Nuisance run image of desktop-commander: a copy of Dockerfile.holdout-2025-11489-desktop-commander-patched, instructions unchanged,
+# pinning the admission's patched version, @wonderwhy-er/desktop-commander 0.2.33.
+# The baked config keeps the holdout's allowedDirectories, the layout path /srv/app.
+
+# CVE-2025-11489 patched image: @wonderwhy-er/desktop-commander@0.2.33 (first patch; commit
+# a1177ec / PR #321 resolves symlinks with fs.realpath BEFORE isPathAllowed, so an in-scope symlink
+# to an out-of-scope target is rejected). Same base and config as the vulnerable image: only the
+# package version differs, isolating the symlink fix.
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
+
+RUN npm install -g --ignore-scripts @wonderwhy-er/desktop-commander@0.2.33 \
+ && test -f /usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js
+
+RUN mkdir -p /tmp/.claude-server-commander \
+ && printf '%s' '{"allowedDirectories":["/srv/app"],"blockedCommands":[],"telemetryEnabled":false,"pendingWelcomeOnboarding":false,"fileReadLineLimit":100000,"fileWriteLineLimit":50}' \
+      > /tmp/.claude-server-commander/config.json \
+ && chmod -R 0777 /tmp/.claude-server-commander
+
+ENTRYPOINT ["node", "/usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js", "--no-onboarding"]

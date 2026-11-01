@@ -12,6 +12,11 @@
 # The holdout server images are appended after the sentinel, two per transplanted target
 # (vulnerable and patched), named holdout-<year>-<num>-<service>; the same build command builds
 # them. SSRF holdout targets reuse the shared sentinel above, adding no sentinel of their own.
+# The nuisance block closes the file: one patched image per admitted server, tagged
+# mcp-auditor-nuisance-<service>:local. Its services carry the nuisance profile, so the build
+# command above leaves them out, while the nuisance run names its services and Compose enables
+# the profile of a named service. Build the whole block by hand with:
+#   docker compose -f evals/docker/compose.yml --profile nuisance build
 services:
   filesystem:
     build:
@@ -617,3 +622,536 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "b9490fae38084007cdaa99dd76f81c2438d759983c3c6c27e90db1ee4eab3145"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile-patched:local
+
+  # Nuisance suite: one patched image per admitted server (evals/nuisance_admission.json), in its
+  # own mcp-auditor-nuisance- namespace, under the nuisance profile.
+  kanban:
+    build:
+      context: .
+      dockerfile: Dockerfile.kanban
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "b18e23c390498921846c2b8087bbb1dfb2bf14c8ed9ef589b5f100394c6bf3ed"
+    image: mcp-auditor-nuisance-kanban:local
+    profiles: ["nuisance"]
+
+  arcadedb:
+    build:
+      context: .
+      dockerfile: Dockerfile.arcadedb
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "79d4a2990c317649f33b27e40bb35c30d6f430b54f980c37f6ff26b7dd717094"
+    image: mcp-auditor-nuisance-arcadedb:local
+    profiles: ["nuisance"]
+
+  token-optimizer:
+    build:
+      context: .
+      dockerfile: Dockerfile.token-optimizer
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "2f72d29457f88e050f3ea68184ee2aa5a44dfeed3b0e3eb6616a6a795c93d44e"
+    image: mcp-auditor-nuisance-token-optimizer:local
+    profiles: ["nuisance"]
+
+  claude-in-mobile:
+    build:
+      context: .
+      dockerfile: Dockerfile.claude-in-mobile
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "b9490fae38084007cdaa99dd76f81c2438d759983c3c6c27e90db1ee4eab3145"
+    image: mcp-auditor-nuisance-claude-in-mobile:local
+    profiles: ["nuisance"]
+
+  aws-api-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.aws-api-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "c4515490e1b6232d76270441df700e4f2508aa77668a602ab908be67b37eba80"
+    image: mcp-auditor-nuisance-aws-api-mcp:local
+    profiles: ["nuisance"]
+
+  ckan:
+    build:
+      context: .
+      dockerfile: Dockerfile.ckan
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "52d7dfa6479996bf78696cc81ff89d594355c48d421e866763ec03ca1ba703d4"
+    image: mcp-auditor-nuisance-ckan:local
+    profiles: ["nuisance"]
+
+  contextforge:
+    build:
+      context: .
+      dockerfile: Dockerfile.contextforge
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "cf5301597d2b36244972a090a41400f9fc7ed9210bc4ecc767f8220ffee77469"
+    image: mcp-auditor-nuisance-contextforge:local
+    profiles: ["nuisance"]
+
+  doris:
+    build:
+      context: .
+      dockerfile: Dockerfile.doris
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "1f942358216ac69d4bbd33ba4507e5456b3272768c4b02c83665e571e17b9360"
+    image: mcp-auditor-nuisance-doris:local
+    profiles: ["nuisance"]
+
+  flyto:
+    build:
+      context: .
+      dockerfile: Dockerfile.flyto
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "aaed3338f0ded7b1792f46083b1ec55433338535e3dec487a5a6ca8fd9251169"
+    image: mcp-auditor-nuisance-flyto:local
+    profiles: ["nuisance"]
+
+  maigret:
+    build:
+      context: .
+      dockerfile: Dockerfile.maigret
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0dafbc00cef3411ec4a6788013d1a090244e9350d68621557ef6e84bec7bd6fd"
+    image: mcp-auditor-nuisance-maigret:local
+    profiles: ["nuisance"]
+
+  nmap:
+    build:
+      context: .
+      dockerfile: Dockerfile.nmap
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "2bdeead337cced7802e1c39b079b0bdf86c3ee98cef9e6574a619d238376b96b"
+    image: mcp-auditor-nuisance-nmap:local
+    profiles: ["nuisance"]
+
+  android:
+    build:
+      context: .
+      dockerfile: Dockerfile.android
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0215b87d870d8e3e5c7703f34d3e4dd591c24c997bb444916cc7c0a82c441a62"
+    image: mcp-auditor-nuisance-android:local
+    profiles: ["nuisance"]
+
+  markdownify:
+    build:
+      context: .
+      dockerfile: Dockerfile.markdownify
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "55431fd0778839b66f13a11d2a01421d4b29386f028d023ad31db17f48baa384"
+    image: mcp-auditor-nuisance-markdownify:local
+    profiles: ["nuisance"]
+
+  desktop-commander:
+    build:
+      context: .
+      dockerfile: Dockerfile.desktop-commander
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a3c57c5e05acd3bc3bc83d8c8fb170a8a16df05001c8c7f836d2a317856526a9"
+    image: mcp-auditor-nuisance-desktop-commander:local
+    profiles: ["nuisance"]
+
+  taskwarrior:
+    build:
+      context: .
+      dockerfile: Dockerfile.taskwarrior
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "94e140df8369cbd8e8fbc3f52ce2e647544200a32540bb863ebe15ffa507912c"
+    image: mcp-auditor-nuisance-taskwarrior:local
+    profiles: ["nuisance"]
+
+  wireshark:
+    build:
+      context: .
+      dockerfile: Dockerfile.wireshark
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "c71d9809dd8b7c1882e60ffe8ae315abcd8d2853ebd5dd9203d5982a44689e2f"
+    image: mcp-auditor-nuisance-wireshark:local
+    profiles: ["nuisance"]
+
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile.n8n
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "4a27347e10c49e92de34f47011a988129e01f46324ddb0a5517d993c0d778e67"
+    image: mcp-auditor-nuisance-n8n:local
+    profiles: ["nuisance"]
+
+  godot-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.godot-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a5b7e1272250d7f8d0771c1b3aca440586e6e1d36db5ec3bca889c796f21d990"
+    image: mcp-auditor-nuisance-godot-mcp:local
+    profiles: ["nuisance"]
+
+  sf-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.sf-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "cca54d8060329836c84beaa3b382a097a484fd69719d3f68aa921bb6ea890b8f"
+    image: mcp-auditor-nuisance-sf-mcp:local
+    profiles: ["nuisance"]
+
+  biome:
+    build:
+      context: .
+      dockerfile: Dockerfile.biome
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "6037040418a370e9a71d16bc5340f7332fb1b69857e4a94084525bf853c1843f"
+    image: mcp-auditor-nuisance-biome:local
+    profiles: ["nuisance"]
+
+  heim:
+    build:
+      context: .
+      dockerfile: Dockerfile.heim
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "1bb82cba0e0a6868a5545238b3f0268e1cf85a97c74d801fde94c061e790cd00"
+    image: mcp-auditor-nuisance-heim:local
+    profiles: ["nuisance"]
+
+  magento2:
+    build:
+      context: .
+      dockerfile: Dockerfile.magento2
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "7a6f1e67204824889dc42b9ddbf7627059babd04a780d7ee10a252c2b297f241"
+    image: mcp-auditor-nuisance-magento2:local
+    profiles: ["nuisance"]
+
+  mysql:
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "07dee21e9e1abc466d7c322e061af36830c2965bc5f86db6140dfe89d5a430d0"
+    image: mcp-auditor-nuisance-mysql:local
+    profiles: ["nuisance"]
+
+  knowns:
+    build:
+      context: .
+      dockerfile: Dockerfile.knowns
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "37c201af04c0060dda3bfa17cad533dcaea3e131111448523c6c1ac970df55ab"
+    image: mcp-auditor-nuisance-knowns:local
+    profiles: ["nuisance"]
+
+  mcpvault:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcpvault
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "58f4a9adf0201961b39cc3088d60dcfd58cbaf48693b9e939a5f21a73513da7e"
+    image: mcp-auditor-nuisance-mcpvault:local
+    profiles: ["nuisance"]
+
+  vibe-trading:
+    build:
+      context: .
+      dockerfile: Dockerfile.vibe-trading
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0b068d46cb55d5a20a9e22918e84ec914b7c5c9525cb2f58535d5359a4952ad2"
+    image: mcp-auditor-nuisance-vibe-trading:local
+    profiles: ["nuisance"]
+
+  praisonai:
+    build:
+      context: .
+      dockerfile: Dockerfile.praisonai
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "61e92c0fc2febb01f6896cce8dde8495628d174f6d8da8e54ce1720722c39b62"
+    image: mcp-auditor-nuisance-praisonai:local
+    profiles: ["nuisance"]
+
+  atlassian:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlassian
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "4f499a793f1ecf591c4732ebc4aa12d2cf75f6107cb34eb58def2b856393ffbc"
+    image: mcp-auditor-nuisance-atlassian:local
+    profiles: ["nuisance"]
+
+  apify:
+    build:
+      context: .
+      dockerfile: Dockerfile.apify
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ffa18dad31132778482495c110cebe4bf0c6c252d42663f213d1d26819adaef3"
+    image: mcp-auditor-nuisance-apify:local
+    profiles: ["nuisance"]
+
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "451825395d5a8072cfb01b90a316db484088973fdb76d8600664acc5ff41985c"
+    image: mcp-auditor-nuisance-jenkins:local
+    profiles: ["nuisance"]
+
+  neo4j:
+    build:
+      context: .
+      dockerfile: Dockerfile.neo4j
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "57bea6d7a77d35c0a5643f1c873d846b49545d8ab4488e9bdf45776f13c1763b"
+    image: mcp-auditor-nuisance-neo4j:local
+    profiles: ["nuisance"]
+
+  gemini-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.gemini-bridge
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "d7646442d643e2f0524156be1fe093acd68868566485dc6aeb8d590eb20a7f2e"
+    image: mcp-auditor-nuisance-gemini-bridge:local
+    profiles: ["nuisance"]
+
+  sylphxltd-filesystem:
+    build:
+      context: .
+      dockerfile: Dockerfile.sylphxltd-filesystem
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "98b8f67fcb2e8a699fca7157f4bbe8f5037a29cbe74c59d3735983360333424e"
+    image: mcp-auditor-nuisance-sylphxltd-filesystem:local
+    profiles: ["nuisance"]
+
+  calc:
+    build:
+      context: .
+      dockerfile: Dockerfile.calc
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0498cfa3b9e80e21721bb853f6298b6fc7382ac2c618734b5c596025e9184bad"
+    image: mcp-auditor-nuisance-calc:local
+    profiles: ["nuisance"]
+
+  siri-shortcuts:
+    build:
+      context: .
+      dockerfile: Dockerfile.siri-shortcuts
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "9d4bf8c00e60093e096a28d319ecec864bc9b8df099a2296f749d593c918db6b"
+    image: mcp-auditor-nuisance-siri-shortcuts:local
+    profiles: ["nuisance"]
+
+  serverless:
+    build:
+      context: .
+      dockerfile: Dockerfile.serverless
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "09ec2efb7319ae7a016f7e2597566a673f003d596b30478ef020c50ff4f2b0bd"
+    image: mcp-auditor-nuisance-serverless:local
+    profiles: ["nuisance"]
+
+  mcp-rtfm:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-rtfm
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "60b35288fee3d4e1301605475908f8870d3fab1b63939f4a6cae6bd1ff51c55c"
+    image: mcp-auditor-nuisance-mcp-rtfm:local
+    profiles: ["nuisance"]
+
+  claude-faf:
+    build:
+      context: .
+      dockerfile: Dockerfile.claude-faf
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a56e32f5eeabd0fbefee8a94c9884e4fd179065c57209d37b3433408bcf940a8"
+    image: mcp-auditor-nuisance-claude-faf:local
+    profiles: ["nuisance"]
+
+  grok-faf:
+    build:
+      context: .
+      dockerfile: Dockerfile.grok-faf
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "bc593694b23f61ae759fbcc6c790c61fa495df9aff9f6e8b2468465904195acf"
+    image: mcp-auditor-nuisance-grok-faf:local
+    profiles: ["nuisance"]
+
+  googleapis:
+    build:
+      context: .
+      dockerfile: Dockerfile.googleapis
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "4ca12a7f6ed5cd6c68db5c556d64b3c9aaa001b36fd015cf62e7035b5ed225ac"
+    image: mcp-auditor-nuisance-googleapis:local
+    profiles: ["nuisance"]
+
+  gitlab:
+    build:
+      context: .
+      dockerfile: Dockerfile.gitlab
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "b17eee123735a5c745718a951305723e8cd8bd98fa1c946535b3c6991c89674f"
+    image: mcp-auditor-nuisance-gitlab:local
+    profiles: ["nuisance"]
+
+  ios-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.ios-simulator
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "c528fa33259eda83b1eb7c1fe40f2444972c308d379b8d316f706266ce07d99d"
+    image: mcp-auditor-nuisance-ios-simulator:local
+    profiles: ["nuisance"]
+
+  agentic-flow:
+    build:
+      context: .
+      dockerfile: Dockerfile.agentic-flow
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "d049c428ef26d721f22f66608452f07e516d4e5884c75b2f80fc642e22d88497"
+    image: mcp-auditor-nuisance-agentic-flow:local
+    profiles: ["nuisance"]
+
+  rails-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.rails-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "931b094cb253fae832bc18c6277e6f4158c61663ba6f71e7c11445c3dcde48cb"
+    image: mcp-auditor-nuisance-rails-mcp:local
+    profiles: ["nuisance"]
+
+  semgrep:
+    build:
+      context: .
+      dockerfile: Dockerfile.semgrep
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "daf22548955e50a9e2f8d0ab08f08756dd555e1b9917baec25c11c662fbf594b"
+    image: mcp-auditor-nuisance-semgrep:local
+    profiles: ["nuisance"]
+
+  mcp-package-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-package-docs
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "7145cbba04f8c4c7b25e647f3aec8031c65385f81024a4c6600179290548f6d2"
+    image: mcp-auditor-nuisance-mcp-package-docs:local
+    profiles: ["nuisance"]
+
+  auto-commit:
+    build:
+      context: .
+      dockerfile: Dockerfile.auto-commit
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "5a6686642b1ad82d8bbef8fb4a0e283de7e297be2743451e0d2b780db1e3d8e0"
+    image: mcp-auditor-nuisance-auto-commit:local
+    profiles: ["nuisance"]
+
+  adb-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.adb-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ff055bcb40fd65985dd53db1bac3f5aaaf635374c2bfbf1cd67465913e91b426"
+    image: mcp-auditor-nuisance-adb-mcp:local
+    profiles: ["nuisance"]
+
+  node-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.node-sandbox
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0119eb1d750d982e51e4489d8939b33b8a1ca8a87ed24305947038fbcc01ef3b"
+    image: mcp-auditor-nuisance-node-sandbox:local
+    profiles: ["nuisance"]
+
+  codehooks:
+    build:
+      context: .
+      dockerfile: Dockerfile.codehooks
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "c192bc1279b07de9a1e54a0b4f83d30d4acede36d84f42500f90c182aaa4ac4b"
+    image: mcp-auditor-nuisance-codehooks:local
+    profiles: ["nuisance"]
+
+  python-notebook:
+    build:
+      context: .
+      dockerfile: Dockerfile.python-notebook
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "1fc8bb9cd44d7ce708c682c9b05dcf8dc2d594bd53af9c8daf3d37e595b6a56b"
+    image: mcp-auditor-nuisance-python-notebook:local
+    profiles: ["nuisance"]
+
+  scrapling:
+    build:
+      context: .
+      dockerfile: Dockerfile.scrapling
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0edd1d2f55a857e60948d518d7a6c2d0f7dd82894f4e9305c6eab13b91a72b91"
+    image: mcp-auditor-nuisance-scrapling:local
+    profiles: ["nuisance"]
+
+  geekgod-fs:
+    build:
+      context: .
+      dockerfile: Dockerfile.geekgod-fs
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "8e0f3d9337f023d65e8f3d04b2e10803439868635bea861cf1707431db8706aa"
+    image: mcp-auditor-nuisance-geekgod-fs:local
+    profiles: ["nuisance"]
+
+  faf-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.faf-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "d72da46542d5d9b0c7db085cbdc25fdd3a94c0dc06d7180ea5d98d8a4a58652c"
+    image: mcp-auditor-nuisance-faf-mcp:local
+    profiles: ["nuisance"]
+
+  git-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.git-mcp
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "62bef65adf65502be4a8fbf05ca25b6ec0eb6ed97e0286b8d547b511ecafffed"
+    image: mcp-auditor-nuisance-git-mcp:local
+    profiles: ["nuisance"]
+
+  fast-filesystem:
+    build:
+      context: .
+      dockerfile: Dockerfile.fast-filesystem
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "5a825eed1241e05118766fc7654de2343d634ae90550bbac0754f288555a64c6"
+    image: mcp-auditor-nuisance-fast-filesystem:local
+    profiles: ["nuisance"]
+
+  contextforge-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.contextforge-sandbox
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "debf9e060d5d9cad2234490a44e7d6b73df05c741437de202a3c2cafad888897"
+    image: mcp-auditor-nuisance-contextforge-sandbox:local
+    profiles: ["nuisance"]
+
+  facebook-ads:
+    build:
+      context: .
+      dockerfile: Dockerfile.facebook-ads
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ebd1b5768139603e029e0bcbb29f7530ee598de1819863c97cc9a0d85e18d4b7"
+    image: mcp-auditor-nuisance-facebook-ads:local
+    profiles: ["nuisance"]
+
+  figma:
+    build:
+      context: .
+      dockerfile: Dockerfile.figma
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ea43a319e1428dca0126fd3da7eb811f24e5bb2eea2c9bdae0671ccb7bceb07f"
+    image: mcp-auditor-nuisance-figma:local
+    profiles: ["nuisance"]
