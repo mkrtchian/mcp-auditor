@@ -139,9 +139,13 @@ def test_a_calibration_that_cannot_reach_docker_exits_as_a_crash(
 def test_a_calibration_that_raises_exits_as_a_crash(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
 
+    async def no_admission_failure(*_args: object, **_kwargs: object) -> list[str]:
+        return []
+
     async def boom(*_args: object, **_kwargs: object) -> bool:
         raise ValueError("a kept id with no record")
 
+    monkeypatch.setattr(run_cve_benchmark, "confirm_admission", no_admission_failure)
     monkeypatch.setattr(run_cve_benchmark, "calibrate_all", boom)
 
     assert given.exit_code_of(monkeypatch, "--calibrate") == 4
