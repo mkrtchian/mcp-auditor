@@ -58,7 +58,7 @@ from evals.nuisance_run import (
     nuisance_overrides,
     run_nuisance,
 )
-from evals.nuisance_walk import acceptance_servers, nuisance_population
+from evals.nuisance_walk import NuisanceServer, acceptance_servers, nuisance_population
 from evals.nuisance_walk_record import NuisanceCensus
 from evals.provider_errors import ProviderFatal, describe_provider_error
 from evals.run_files import partial_result_kept, refuse_existing_report, write_result
@@ -135,20 +135,24 @@ def _walk(args: argparse.Namespace) -> int:
         outcomes.setdefault(step.identifier, step.outcome)
     print(f"{len(population)} servers reached by the walk:")
     for server in population:
-        how = "addition" if server.in_addition else outcomes[server.reaching_flaw]
-        line = (
-            f"  #{server.reaching_position} {server.server_package}"
-            f"  reached by {server.reaching_flaw} ({how})"
-            f"  sets version: {', '.join(server.version_setting)}"
-        )
-        if server.mark is not None:
-            line += f"  [{server.mark.value}]"
-        print(line)
+        print(_walk_line(server, outcomes))
     if admission is not None:
         admitted = len(addition_entries(admission, population))
         size = nuisance_census.record.addition.size
         print(f"{admitted} of {size} servers of the addition admitted and in the figure")
     return 0
+
+
+def _walk_line(server: NuisanceServer, outcomes: dict[str, str]) -> str:
+    how = "addition" if server.in_addition else outcomes[server.reaching_flaw]
+    line = (
+        f"  #{server.reaching_position} {server.server_package}"
+        f"  reached by {server.reaching_flaw} ({how})"
+        f"  sets version: {', '.join(server.version_setting)}"
+    )
+    if server.mark is not None:
+        line += f"  [{server.mark.value}]"
+    return line
 
 
 def _nuisance_dossier(args: argparse.Namespace) -> int:

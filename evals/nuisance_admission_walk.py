@@ -17,8 +17,23 @@ if TYPE_CHECKING:
 
 def walk_problems(admission: NuisanceAdmission, nuisance_census: NuisanceCensus) -> list[str]:
     population = nuisance_walk.nuisance_population(nuisance_census)
-    walked = {server.server_package: server for server in population}
     acceptance = nuisance_walk.acceptance_servers(nuisance_census)
+    size = nuisance_census.record.addition.size
+    return [
+        *_reach_problems(admission, population, acceptance),
+        *(
+            f"{server.server_package}: enters through the addition past its {size} servers"
+            for server in addition_entries(admission, population)[size:]
+        ),
+    ]
+
+
+def _reach_problems(
+    admission: NuisanceAdmission,
+    population: Sequence[nuisance_walk.NuisanceServer],
+    acceptance: set[str],
+) -> list[str]:
+    walked = {server.server_package: server for server in population}
     problems: list[str] = []
     for server in admission.servers:
         package = server.server_package
@@ -32,11 +47,6 @@ def walk_problems(admission: NuisanceAdmission, nuisance_census: NuisanceCensus)
                 f"{package}: reaching flaw {server.reaching_flaw} is not the walk's "
                 f"{reach.reaching_flaw}"
             )
-    size = nuisance_census.record.addition.size
-    problems += [
-        f"{server.server_package}: enters through the addition past its {size} servers"
-        for server in addition_entries(admission, population)[size:]
-    ]
     return problems
 
 
