@@ -20,6 +20,7 @@ from evals.ckan_backend import CKAN_BRIDGE, CKAN_RESPONDER_IMAGE
 from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
 from evals.cve_environments import Launch
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
+from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
 from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
@@ -32,6 +33,7 @@ from evals.nuisance_provisioners import (
     ckan_provisioner,
     contextforge_provisioner,
     doris_provisioner,
+    facebook_ads_provisioner,
     gitlab_provisioner,
     googleapis_provisioner,
     jenkins_provisioner,
@@ -71,6 +73,9 @@ BACKENDS: dict[str, RegisteredBackend] = {
         googleapis_provisioner, GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
     ),
     "neo4j": RegisteredBackend(neo4j_provisioner, NEO4J_BRIDGE, NEO4J_IMAGE),
+    "facebook_ads": RegisteredBackend(
+        facebook_ads_provisioner, FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
+    ),
 }
 
 

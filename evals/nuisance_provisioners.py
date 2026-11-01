@@ -38,6 +38,12 @@ from evals.contextforge_backend import (
 from evals.cve_environments import Launch
 from evals.cve_planting_base import LABEL
 from evals.doris_backend import DORIS_LAUNCH_LOCK, doris_rm, doris_server_args, ensure_doris
+from evals.facebook_ads_backend import (
+    FACEBOOK_ADS_LAUNCH_LOCK,
+    ensure_facebook_ads_responder,
+    facebook_ads_rm,
+    facebook_ads_server_args,
+)
 from evals.gitlab_backend import (
     GITLAB_LAUNCH_LOCK,
     ensure_gitlab_responder,
@@ -243,3 +249,21 @@ def neo4j_provisioner(server: AdmittedServer) -> Generator[Launch]:
         )
     finally:
         neo4j_rm(name)
+
+
+@contextmanager
+def facebook_ads_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    # The nuisance run stands no witness, so the lock serialises only the responder stand-up,
+    # not the yield: a server's concurrent runs share the one responder that serves them all.
+    with FACEBOOK_ADS_LAUNCH_LOCK:
+        ensure_facebook_ads_responder()
+    name = f"{LABEL}-facebook_ads-server-{uuid4().hex}"
+    try:
+        yield Launch(
+            command="docker",
+            args=facebook_ads_server_args(
+                name, image_tag(server.service), server.host, server.launch
+            ),
+        )
+    finally:
+        facebook_ads_rm(name)
