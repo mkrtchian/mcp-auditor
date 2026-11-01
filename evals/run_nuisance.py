@@ -9,7 +9,9 @@ Docker), copying a backend's kit builder and lifecycle under `--backend <key>`. 
 rebuilds and reproduces each fix-check fixture against the admission (Docker, no LLM). `run`
 audits the admitted servers on their patched images and reports the figure, so it needs Docker and
 an LLM key. `gate` audits the admitted acceptance servers with a current target and compares each
-to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM key.
+to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM key. `vet` rebuilds
+the run's images and makes each audited server's benign calls on the run's launch path (Docker,
+no LLM).
 """
 
 import argparse
@@ -58,6 +60,7 @@ from evals.nuisance_run import (
     nuisance_overrides,
     run_nuisance,
 )
+from evals.nuisance_vet_command import add_vet_arguments
 from evals.nuisance_walk import NuisanceServer, acceptance_servers, nuisance_population
 from evals.nuisance_walk_record import NuisanceCensus
 from evals.provider_errors import ProviderFatal, describe_provider_error
@@ -121,6 +124,11 @@ def _parser() -> argparse.ArgumentParser:
         "gate", help="audit the admitted acceptance servers and compare them to their baselines"
     )
     add_gate_arguments(gate)
+    add_vet_arguments(
+        commands.add_parser(
+            "vet", help="rebuild the run's images and make each audited server's benign calls"
+        )
+    )
     return parser
 
 
