@@ -23,6 +23,19 @@ def a_census_settling(flaw: str, criterion: Criterion, verdict: bool) -> Holdout
     return walk_given.with_a_settlement(a_census(), flaw, criterion, verdict)
 
 
+def a_census_split_on_the_effect_of(flaw: str) -> HoldoutCensus:
+    """The second classifier finds the flaw's effect hidden, the first finds it shown."""
+    return walk_given.with_the_second_classifier_overriding(
+        a_census(), flaw, walk_given.EFFECT_HIDDEN
+    )
+
+
+def a_census_naming_two_packages_for_the_queue() -> HoldoutCensus:
+    return walk_given.with_the_second_classifier_overriding(
+        a_census(), "queued", {"server_package": "https://github.com/acme/srv2"}
+    )
+
+
 an_empty_record = walk_given.an_empty_record
 
 

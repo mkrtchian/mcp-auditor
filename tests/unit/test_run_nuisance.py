@@ -101,7 +101,7 @@ def test_a_missing_walk_record_is_refused_as_not_committed(
 
 
 def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
-    census = given.written(tmp_path, given.a_census())
+    census = given.written(tmp_path, admission.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
@@ -123,7 +123,7 @@ def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.C
 def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = given.written(tmp_path, given.a_census())
+    census = given.written(tmp_path, admission.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
@@ -143,8 +143,10 @@ def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     assert out.exists()
 
 
-def test_nuisance_dossier_with_an_unknown_backend_exits_three(tmp_path: Path):
-    census = given.written(tmp_path, given.a_census())
+def test_nuisance_dossier_with_an_unknown_backend_exits_three(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    census = given.written(tmp_path, admission.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
@@ -162,10 +164,13 @@ def test_nuisance_dossier_with_an_unknown_backend_exits_three(tmp_path: Path):
 
     assert exit_code == 3
     assert not out.exists()
+    assert "no backend named 'ghost'" in capsys.readouterr().out
 
 
-def test_nuisance_dossier_on_an_unknown_server_exits_three(tmp_path: Path):
-    census = given.written(tmp_path, given.a_census())
+def test_nuisance_dossier_on_an_unknown_server_exits_three(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    census = given.written(tmp_path, admission.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
@@ -181,6 +186,7 @@ def test_nuisance_dossier_on_an_unknown_server_exits_three(tmp_path: Path):
 
     assert exit_code == 3
     assert not out.exists()
+    assert "no census flaw names the server npm:ghost" in capsys.readouterr().out
 
 
 def test_run_without_an_admission_exits_zero_and_says_so(

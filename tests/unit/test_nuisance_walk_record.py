@@ -76,11 +76,42 @@ def test_accepts_a_settlement_agreeing_with_the_draw():
     assert walk_record_problems(given.paired(census, record)) == []
 
 
-def test_a_census_without_a_draw_has_no_settlement_to_contradict():
-    census = given.a_census().model_copy(update={"draw": None})
-    record = given.a_record_settling(("queued", Criterion.PINNABLE, True))
+def test_refuses_a_queue_flaw_left_unsettled_on_a_classifier_disagreement():
+    census = given.a_census_split_on_the_effect_of("queued")
+
+    problems = walk_record_problems(given.paired(census, given.an_empty_record()))
+
+    assert len(problems) == 1
+    assert "queued" in problems[0]
+    assert "effect_in_tool_response" in problems[0]
+
+
+def test_accepts_a_queue_disagreement_once_settled():
+    census = given.a_census_split_on_the_effect_of("queued")
+    record = given.a_record_settling(("queued", Criterion.EFFECT_IN_TOOL_RESPONSE, False))
 
     assert walk_record_problems(given.paired(census, record)) == []
+
+
+def test_leaves_a_disagreement_on_a_holdout_walked_flaw_to_the_draw():
+    census = given.a_census_split_on_the_effect_of("walked")
+
+    assert walk_record_problems(given.paired(census, given.an_empty_record())) == []
+
+
+def test_refuses_a_queue_flaw_whose_classifiers_name_two_packages_without_an_identity():
+    census = given.a_census_naming_two_packages_for_the_queue()
+
+    problems = walk_record_problems(given.paired(census, given.an_empty_record()))
+
+    assert len(problems) == 1
+    assert "queued" in problems[0]
+
+
+def test_accepts_two_package_names_once_identified():
+    census = given.a_census_naming_two_packages_for_the_queue()
+
+    assert walk_record_problems(given.paired(census, given.a_record_identifying("queued"))) == []
 
 
 def test_refuses_an_addition_of_size_zero():

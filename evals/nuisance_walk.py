@@ -25,7 +25,12 @@ from evals.cve_targets import CVE_TARGETS
 from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.holdout_draw import draw_order
 from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
-from evals.nuisance_walk_record import NuisanceCensus, normalized_package, reached_identifiers
+from evals.nuisance_walk_record import (
+    NuisanceCensus,
+    classifications_of,
+    normalized_package,
+    reached_identifiers,
+)
 
 
 class ServerMark(StrEnum):
@@ -141,7 +146,7 @@ def _walk(nuisance_census: NuisanceCensus) -> list[_Reach]:
 
 
 def _meets_draw_criteria(flaw: str, nuisance_census: NuisanceCensus) -> bool:
-    seen = _classifications_of(flaw, nuisance_census)
+    seen = classifications_of(nuisance_census.census, flaw)
     return all(
         _met(flaw, nuisance_census, criterion, any(criteria_met(c)[criterion] for c in seen))
         for criterion in DRAW_ORDER_CRITERIA
@@ -157,7 +162,7 @@ def _mark(server: str, acceptance: set[str], excluded: set[str]) -> ServerMark |
 
 
 def _sets_version(flaw: str, nuisance_census: NuisanceCensus) -> bool:
-    seen = _classifications_of(flaw, nuisance_census)
+    seen = classifications_of(nuisance_census.census, flaw)
     return (
         _met(
             flaw,
@@ -206,12 +211,3 @@ def _settlement(
         (s for s in settlements if s.flaw == flaw and s.criterion == criterion),
         None,
     )
-
-
-def _classifications_of(flaw: str, nuisance_census: NuisanceCensus) -> list[Classification]:
-    return [
-        classification
-        for own in nuisance_census.census.classifications.values()
-        for classification in own
-        if classification.flaw == flaw
-    ]

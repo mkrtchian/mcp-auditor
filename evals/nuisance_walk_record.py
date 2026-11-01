@@ -17,7 +17,8 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals.census_draw import Settlement
+from evals.census_classification import Classification, Criterion, criteria_met
+from evals.census_draw import DrawRecord, Settlement
 from evals.holdout_census import HoldoutCensus
 from evals.holdout_draw import draw_order
 
@@ -64,13 +65,16 @@ def walk_record_problems(nuisance_census: NuisanceCensus) -> list[str]:
         *_duplicate_problems(record),
         *_contradiction_problems(census, record),
         *_addition_problems(record.addition),
+        *_completeness_problems(census, record),
     ]
 
 
 def reached_identifiers(census: HoldoutCensus) -> list[str]:
-    if census.draw is None:
-        raise ValueError("the census has no draw walk to follow")
-    return [step.identifier for step in census.draw.walk]
+    return [step.identifier for step in _draw(census).walk]
+
+
+def classifications_of(census: HoldoutCensus, flaw: str) -> list[Classification]:
+    return [each for own in census.classifications.values() for each in own if each.flaw == flaw]
 
 
 def normalized_package(server_package: str) -> str:
@@ -112,9 +116,7 @@ def _duplicate_problems(record: NuisanceWalkRecord) -> list[str]:
 
 
 def _contradiction_problems(census: HoldoutCensus, record: NuisanceWalkRecord) -> list[str]:
-    if census.draw is None:
-        return []
-    drawn = {(s.flaw, s.criterion): s.verdict for s in census.draw.settlements}
+    drawn = {(s.flaw, s.criterion): s.verdict for s in _draw(census).settlements}
     return [
         f"{settlement.flaw}: settled {settlement.verdict} on {settlement.criterion}, "
         f"the draw settles it {not settlement.verdict}"
@@ -128,3 +130,32 @@ def _addition_problems(addition: Addition) -> list[str]:
     if addition.size < 1:
         return [f"addition size {addition.size}: below 1"]
     return []
+
+
+def _completeness_problems(census: HoldoutCensus, record: NuisanceWalkRecord) -> list[str]:
+    reached = set(reached_identifiers(census))
+    settled = {(settlement.flaw, settlement.criterion) for settlement in record.settlements}
+    identified = {identity.flaw for identity in record.identities}
+    problems: list[str] = []
+    for entry in draw_order(census):
+        if entry.identifier in reached:
+            continue
+        seen = classifications_of(census, entry.identifier)
+        problems += [
+            f"{entry.identifier}: the classifiers disagree on {criterion}, and no settlement"
+            for criterion in Criterion
+            if len({criteria_met(each)[criterion] for each in seen}) > 1
+            and (entry.identifier, criterion) not in settled
+        ]
+        packages = {normalized_package(each.server_package) for each in seen}
+        if len(packages) > 1 and entry.identifier not in identified:
+            problems.append(
+                f"{entry.identifier}: the classifiers name {sorted(packages)}, and no identity"
+            )
+    return problems
+
+
+def _draw(census: HoldoutCensus) -> DrawRecord:
+    if census.draw is None:
+        raise ValueError("the census has no draw walk to follow")
+    return census.draw
