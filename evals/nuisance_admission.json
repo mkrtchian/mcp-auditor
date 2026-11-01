@@ -1276,7 +1276,16 @@
         "working_directory": "/",
         "has_network": true
       },
-      "launch": [],
+      "launch": [
+        "--db-host",
+        "mcp-auditor-cve-doris",
+        "--db-port",
+        "9030",
+        "--db-user",
+        "root",
+        "--db-database",
+        "test_db"
+      ],
       "service": "doris",
       "backend": {
         "provisioner": "doris",
@@ -1694,11 +1703,6 @@
               "vulnerable_name": "search_username",
               "patched_name": "search_username",
               "status": "unchanged"
-            },
-            {
-              "vulnerable_name": "parse_url",
-              "patched_name": "parse_url",
-              "status": "unchanged"
             }
           ],
           "effect_class": "command_execution",
@@ -1710,12 +1714,6 @@
               "tool": "search_username",
               "arguments": {
                 "username": "testuser"
-              }
-            },
-            {
-              "tool": "parse_url",
-              "arguments": {
-                "url": "https://github.com/testuser"
               }
             }
           ],
@@ -1738,7 +1736,7 @@
       "runs_under_docker": true,
       "host": {
         "user": "unprivileged",
-        "working_directory": "/",
+        "working_directory": "/tmp",
         "has_network": false
       },
       "launch": [],
@@ -1764,6 +1762,13 @@
           "field": "fix_check.source",
           "value": "holdout_calibration",
           "reason": "the counted flaw is the maigret holdout twin's own calibrated command_execution flaw at the same patched version 1.0.13, so its fix_check recopies the holdout calibration and maigret carries no committed vulnerable fixture or FixCheckTarget, as aws-api does."
+        },
+        {
+          "server_package": "npm:mcp-maigret",
+          "flaw": "CVE-2026-2130",
+          "field": "tools",
+          "value": "search_username",
+          "reason": "parse_url dropped from the counted tools: it fetches the caller-named page before maigret parses it, so its benign call needs a remote third-party site, a backend the fixture cannot provide (the run host has no network, and with one the search_username scan of every site outlasts the tool call timeout); search_username answers offline and stays counted."
         }
       ],
       "patched_version": "1.0.13"
@@ -1813,7 +1818,7 @@
       "runs_under_docker": true,
       "host": {
         "user": "unprivileged",
-        "working_directory": "/",
+        "working_directory": "/app",
         "has_network": false
       },
       "launch": [],
@@ -2152,7 +2157,11 @@
         "working_directory": "/",
         "has_network": false
       },
-      "launch": [],
+      "launch": [
+        "node",
+        "/app/build/index.js",
+        "/usr/local/bin/adb-device-stub"
+      ],
       "service": "android",
       "backend": null,
       "agents": [
@@ -2187,7 +2196,7 @@
           "flaw": "CVE-2026-19978",
           "field": "fix_check.source",
           "value": "holdout_calibration",
-          "reason": "the counted flaw is the android holdout twin's own calibrated command_execution flaw at the same patched commit 14e2bf27, so its fix_check recopies the holdout calibration and android carries no committed vulnerable fixture or FixCheckTarget. No registry release carries the fix, so the patched artifact is the fix commit, as the holdout pins it."
+          "reason": "the counted flaw is the android holdout twin's own calibrated command_execution flaw at the same patched commit 14e2bf27, so its fix_check recopies the holdout calibration and android carries no committed vulnerable fixture or FixCheckTarget. No registry release carries the fix, so the patched artifact is the fix commit, as the holdout pins it. The run image differs from the calibrated one only outside the server's code: it adds /usr/local/bin/adb-device-stub, a device stand-in the launch passes as the adb path, since every counted tool drives a connected device and none runs under the confinement. The recopy still holds because the fix lives in the server's createAdbExecutor (execFile with an argument vector, commit 14e2bf2), which is unchanged, and the injected deviceId reaches adb, real or stub, as one inert argument either way."
         }
       ],
       "patched_version": "14e2bf27c88ba137e35cbb0c2a75f72b595bb98a"
@@ -2369,7 +2378,7 @@
           "flaw": "CVE-2025-58358",
           "field": "fix_check.source",
           "value": "holdout_calibration",
-          "reason": "the counted flaw is the markdownify holdout twin's own calibrated command_execution flaw; its fix_check recopies the holdout calibration and markdownify carries no committed vulnerable fixture or FixCheckTarget. The deferred run image pins the twin's fix commit a31204de058b (not npm 1.0.0, a later build with the same execFile fix), so the recopied booleans describe the run image byte-for-byte."
+          "reason": "the counted flaw is the markdownify holdout twin's own calibrated command_execution flaw; its fix_check recopies the holdout calibration and markdownify carries no committed vulnerable fixture or FixCheckTarget. The deferred run image pins the twin's fix commit a31204de058b (not npm 1.0.0, a later build with the same execFile fix), so the recopied booleans describe the run image's server code. The run image differs from the calibrated one only outside the server's code: it seeds the six converters' benign files under /opt and adds /usr/local/bin/ffmpeg, an exit-0 stub without which this markitdown never defines its audio flag and every audio conversion raises. The recopy still holds because the fix lives in the server's _markitdown (execFile with an argument array), which is unchanged, and the filepath reaches markitdown as one argument whatever ffmpeg is."
         }
       ],
       "patched_version": "a31204de058b"
@@ -2395,7 +2404,7 @@
             {
               "tool": "read_file",
               "arguments": {
-                "path": "/srv/app/.git/HEAD"
+                "path": "/srv/app/README.md"
               }
             }
           ],
@@ -2706,7 +2715,7 @@
       "runs_under_docker": true,
       "host": {
         "user": "unprivileged",
-        "working_directory": "/",
+        "working_directory": "/tmp",
         "has_network": false
       },
       "launch": [],
@@ -3139,54 +3148,54 @@
             {
               "tool": "create_scene",
               "arguments": {
-                "projectPath": "/srv/app",
-                "scenePath": "res://scene.tscn"
+                "projectPath": "/opt/project",
+                "scenePath": "new_scene.tscn"
               }
             },
             {
               "tool": "add_node",
               "arguments": {
-                "projectPath": "/srv/app",
-                "scenePath": "res://scene.tscn",
+                "projectPath": "/opt/project",
+                "scenePath": "scene.tscn",
                 "nodeType": "Node2D",
-                "nodeName": "Root"
+                "nodeName": "Child"
               }
             },
             {
               "tool": "load_sprite",
               "arguments": {
-                "projectPath": "/srv/app",
-                "scenePath": "res://scene.tscn",
-                "nodePath": "Root",
-                "texturePath": "res://sprite.png"
+                "projectPath": "/opt/project",
+                "scenePath": "scene.tscn",
+                "nodePath": "root",
+                "texturePath": "sprite.png"
               }
             },
             {
               "tool": "export_mesh_library",
               "arguments": {
-                "projectPath": "/srv/app",
-                "scenePath": "res://scene.tscn",
-                "outputPath": "res://out.meshlib"
+                "projectPath": "/opt/project",
+                "scenePath": "scene.tscn",
+                "outputPath": "out.meshlib"
               }
             },
             {
               "tool": "save_scene",
               "arguments": {
-                "projectPath": "/srv/app",
-                "scenePath": "res://scene.tscn"
+                "projectPath": "/opt/project",
+                "scenePath": "scene.tscn"
               }
             },
             {
               "tool": "get_uid",
               "arguments": {
-                "projectPath": "/srv/app",
-                "filePath": "res://scene.tscn"
+                "projectPath": "/opt/project",
+                "filePath": "scene.tscn"
               }
             },
             {
               "tool": "update_project_uids",
               "arguments": {
-                "projectPath": "/srv/app"
+                "projectPath": "/opt/project"
               }
             }
           ],
@@ -3234,7 +3243,7 @@
           "flaw": "CVE-2026-25546",
           "field": "fix_check.source",
           "value": "holdout_calibration",
-          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe its server code. The run image differs from the calibrated one only outside the server's code: it leaves out the holdout's injection-carrying exploit projects under /p and their list, keeps the godot stub's behaviour (it answers --version and exits 0) without the stub's comments, and seeds a neutral project at /opt/project for the benign calls. The recopy still holds because the fix lives in the server's executeOperation (execFile with an argument array instead of a shell string), which is unchanged."
         }
       ],
       "patched_version": "21c785d923cfdb471ea60323c13807d62dfecc5a"
@@ -3463,22 +3472,22 @@
             {
               "tool": "new_heim_application",
               "arguments": {
-                "path": "/srv/app",
+                "path": "/tmp",
                 "openApiPath": "openapi.yaml",
                 "name": "app",
-                "language": "typescript"
+                "language": "rust"
               }
             },
             {
               "tool": "deploy_heim_application",
               "arguments": {
-                "path": "/srv/app"
+                "path": "/tmp"
               }
             },
             {
               "tool": "deploy_heim_application_to_cloud",
               "arguments": {
-                "path": "/srv/app"
+                "path": "/tmp"
               }
             }
           ],
@@ -3501,7 +3510,7 @@
       "runs_under_docker": true,
       "host": {
         "user": "unprivileged",
-        "working_directory": "/srv/app",
+        "working_directory": "/tmp",
         "has_network": false
       },
       "launch": [],
@@ -3539,7 +3548,7 @@
           "flaw": "CVE-2026-5602",
           "field": "fix_check.source",
           "value": "holdout_calibration",
-          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it. The run image differs from the calibrated one only outside the server's code: it adds /usr/local/bin/cargo, an exit-0 stub like the heim one, since new_heim_application builds the generated Rust application after `heim new`. The recopy still holds because the fix lives in the server's execFile calls, which are unchanged."
         }
       ],
       "patched_version": "c321d8af25f77668781e6ccb43a1336f9185df37"
@@ -3784,7 +3793,8 @@
             {
               "tool": "dev-plugin-list",
               "arguments": {
-                "className": "Magento\\Catalog\\Model\\Product"
+                "className": "Magento\\Catalog\\Model\\Product",
+                "methodName": "getName"
               }
             },
             {
@@ -3863,7 +3873,7 @@
       "runs_under_docker": true,
       "host": {
         "user": "unprivileged",
-        "working_directory": "/tmp",
+        "working_directory": "/opt/magento",
         "has_network": false
       },
       "launch": [],
@@ -3902,7 +3912,7 @@
           "flaw": "CVE-2026-5603",
           "field": "fix_check.source",
           "value": "holdout_calibration",
-          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it. The run image differs from the calibrated one only outside the server's code: it adds /usr/local/bin/magerun2-stub, selected through the server's MAGERUN2_COMMAND, and a PHP skeleton at /opt/magento, the working directory, since every counted tool runs against a Magento installation and none runs here; the real magerun2 stays in the image. The recopy still holds because the fix lives in the server's executeMagerun2Command (execFile(magerunBin, args) instead of a shell string), which is unchanged, and the arguments reach the binary, real or stub, without a shell either way."
         }
       ],
       "patched_version": "aa1ffcc0aea1b212c69787391783af27df15ae9d"
@@ -4218,7 +4228,9 @@
         "working_directory": "/",
         "has_network": false
       },
-      "launch": [],
+      "launch": [
+        "/vault"
+      ],
       "service": "mcpvault",
       "backend": null,
       "agents": [
@@ -7176,7 +7188,7 @@
             {
               "tool": "initialize_workspace",
               "arguments": {
-                "directory": "/srv/app"
+                "directory": "/opt/workspace"
               }
             },
             {
@@ -7625,7 +7637,7 @@
             {
               "tool": "git_diff",
               "arguments": {
-                "path": "/srv/app"
+                "path": "/tmp/benignrepo"
               }
             }
           ],
