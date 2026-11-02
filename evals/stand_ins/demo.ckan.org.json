@@ -1,0 +1,94 @@
+{
+  "host": "demo.ckan.org",
+  "address": "188.114.96.2",
+  "captured_at": "2026-11-02T18:46:06Z",
+  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/demo.ckan.org.json https://demo.ckan.org/api/3/action/status_show",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/api/3/action/status_show",
+      "status": 200,
+      "headers": [
+        [
+          "Date",
+          "Mon, 02 Nov 2026 18:46:06 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json;charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "429"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Cache-Control",
+          "public, max-age=0, must-revalidate"
+        ],
+        [
+          "vary",
+          "Cookie"
+        ],
+        [
+          "strict-transport-security",
+          "max-age=15724800; includeSubDomains"
+        ],
+        [
+          "Server",
+          "cloudflare"
+        ],
+        [
+          "x-content-type-options",
+          "nosniff"
+        ],
+        [
+          "x-frame-options",
+          "SAMEORIGIN"
+        ],
+        [
+          "x-xss-protection",
+          "1"
+        ],
+        [
+          "referrer-policy",
+          "origin"
+        ],
+        [
+          "expect-ct",
+          "max-age=86400, enforce, report-uri='[reportURL]'"
+        ],
+        [
+          "x-permitted-cross-domain-policies",
+          "none"
+        ],
+        [
+          "cf-cache-status",
+          "DYNAMIC"
+        ],
+        [
+          "Nel",
+          "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+        ],
+        [
+          "Report-To",
+          "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=nzX5o1%2F8PggpRY46XiIucK6ZubUdHw3hi%2BaQUfYsiPv5AJhFP2Jj9X2WEgoWZE7ZmfSjMl5UE6GQdcTojxRtVueoENEwDxRTfSCANey2vwriMSwyoc1VP8uFeKsbj02ck4Q3SRqag%2FDyAwa8\"}]}"
+        ],
+        [
+          "CF-RAY",
+          "a5454cd3dafb01f3-CDG"
+        ],
+        [
+          "alt-svc",
+          "h3=\":443\"; ma=86400"
+        ]
+      ],
+      "body": "{\"help\": \"https://demo.ckan.org/api/3/action/help_show?name=status_show\", \"success\": true, \"result\": {\"site_title\": \"CKAN Demo\", \"site_description\": \"\", \"site_url\": \"https://demo.ckan.org\", \"error_emails_to\": \"\", \"locale_default\": \"en\", \"extensions\": [\"envvars\", \"s3filestore\", \"image_view\", \"text_view\", \"datatables_view\", \"datastore\", \"datapusher\", \"pdf_view\", \"geo_view\", \"resource_proxy\", \"stats\"], \"ckan_version\": \"2.11.5\"}}"
+    }
+  ]
+}
