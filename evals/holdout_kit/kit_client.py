@@ -19,7 +19,7 @@ from typing import Any, Protocol, Self
 import anyio
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import get_default_environment, stdio_client
-from mcp.types import TextContent, Tool
+from mcp.types import PaginatedRequestParams, TextContent, Tool
 
 _DEFAULT_TOOL_CALL_TIMEOUT = 30
 _INITIALIZE_TIMEOUT = 120
@@ -103,8 +103,8 @@ class KitMCPClient:
 
     async def list_tools(self) -> list[KitTool]:
         async with asyncio.timeout(self._list_tools_timeout):
-            result = await self._session.list_tools()
-        return [_to_kit_tool(tool) for tool in result.tools]
+            tools = await _list_every_page(self._session)
+        return [_to_kit_tool(tool) for tool in tools]
 
     async def call_tool(self, name: str, args: dict[str, Any]) -> KitResponse:
         try:
@@ -131,6 +131,23 @@ async def _open_session(
         client_kwargs["errlog"] = errlog
     read_stream, write_stream = await stack.enter_async_context(stdio_client(**client_kwargs))
     return await stack.enter_async_context(ClientSession(read_stream, write_stream))
+
+
+# Copied from mcp_auditor.adapters.mcp_client._list_every_page to keep the kit clean.
+async def _list_every_page(session: ClientSession) -> list[Tool]:
+    tools: list[Tool] = []
+    seen: set[str] = set()
+    cursor: str | None = None
+    while True:
+        params = None if cursor is None else PaginatedRequestParams(cursor=cursor)
+        result = await session.list_tools(params=params)
+        tools.extend(result.tools)
+        cursor = result.nextCursor
+        if cursor is None:
+            return tools
+        if cursor in seen:
+            raise RuntimeError(f"tools/list returned a cursor it had already returned: {cursor}")
+        seen.add(cursor)
 
 
 def _to_kit_tool(tool: Tool) -> KitTool:
