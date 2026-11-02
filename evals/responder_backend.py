@@ -26,6 +26,7 @@ class Responder:
     subnet: str
     ip: str
     dockerfile: Path
+    run_args: tuple[str, ...] = ()  # extra arguments of the singleton's own `docker run`
 
     def server_args(
         self,
@@ -62,6 +63,7 @@ class Responder:
                 "--ip", self.ip,
                 *confinement_args(),
                 "--cap-add", "NET_BIND_SERVICE",  # root behind cap-drop ALL still binds 80/443
+                *self.run_args,
                 self.image,
             )  # fmt: skip
 

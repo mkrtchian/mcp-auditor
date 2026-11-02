@@ -32,11 +32,12 @@ from evals import (
     neo4j_backend,
     responder_backend,
 )
-from evals.apify_backend import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE
+from evals.apify_backend import API_HOST, APIFY_BRIDGE, APIFY_RESPONDER_IMAGE
 from evals.atlassian_backend import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
 from evals.ckan_backend import CKAN_BRIDGE, CKAN_RESPONDER_IMAGE
 from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
 from evals.cve_environments import Launch
+from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.cve_targets import image_dockerfile, image_tag
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
@@ -62,6 +63,7 @@ from evals.nuisance_provisioners import (
     n8n_provisioner,
     neo4j_provisioner,
 )
+from evals.public_stand_ins import stand_in_files
 
 if TYPE_CHECKING:
     from evals.nuisance_admission import AdmittedServer
@@ -90,6 +92,8 @@ def _responder(
     return RegisteredBackend(provisioner, network, image, (service,), served)
 
 
+_API_STAND_IN_FILES = stand_in_files(API_HOST)
+
 BACKENDS: dict[str, RegisteredBackend] = {
     "doris": RegisteredBackend(
         doris_provisioner, DORIS_BRIDGE, DORIS_IMAGE, (), _served(doris_backend.__file__)
@@ -117,12 +121,17 @@ BACKENDS: dict[str, RegisteredBackend] = {
         ATLASSIAN_RESPONDER_IMAGE,
         "atlassian-responder",
     ),
-    "apify": _responder(
+    "apify": RegisteredBackend(
         apify_provisioner,
-        apify_backend.__file__,
         APIFY_BRIDGE,
         APIFY_RESPONDER_IMAGE,
-        "apify-responder",
+        ("apify-responder", STAND_IN_SERVICE),
+        (
+            *_served(apify_backend.__file__, "apify-responder", STAND_IN_SERVICE),
+            Path(responder_backend.__file__),
+            _API_STAND_IN_FILES.capture,
+            _API_STAND_IN_FILES.certificate,
+        ),
     ),
     "jenkins": _responder(
         jenkins_provisioner,

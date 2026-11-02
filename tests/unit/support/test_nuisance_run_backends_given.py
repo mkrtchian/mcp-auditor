@@ -11,6 +11,7 @@ from evals.nuisance_run import NuisanceDeps
 SERVER_TAG = nuisance_images.image_tag("filesystem-patched")
 CKAN_TAG = BACKENDS["ckan"].image
 DORIS_TAG = BACKENDS["doris"].image
+APIFY_TAG = BACKENDS["apify"].image
 
 
 def a_server_on(key: str) -> AdmittedServer:

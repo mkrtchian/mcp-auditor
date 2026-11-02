@@ -4,6 +4,7 @@ import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_run_given as run_given
 from evals import cve_targets
 from evals.ckan_backend import CKAN_RESPONDER_IMAGE
+from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.neo4j_backend import NEO4J_IMAGE
 from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_backends import (
@@ -32,6 +33,10 @@ def test_a_backend_built_locally_names_the_compose_service_of_its_image(key: str
 def test_the_pulled_backends_name_no_service():
     assert BACKENDS["doris"].built_services == ()
     assert BACKENDS["mysql"].built_services == ()
+
+
+def test_apify_builds_its_responder_and_the_api_stand_in():
+    assert BACKENDS["apify"].built_services == ("apify-responder", STAND_IN_SERVICE)
 
 
 def _a_server_on(key: str, package: str = admission.SERVER_PACKAGE) -> AdmittedServer:

@@ -5,6 +5,7 @@ import yaml
 
 from evals import nuisance_images
 from evals.cve_images import COMPOSE_FILE
+from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.cve_targets import image_tag
 from evals.holdout_census import load_census
 from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer, load_admission
@@ -42,12 +43,14 @@ BUILT_SERVICES = sorted(
 
 
 @pytest.mark.parametrize("service", BUILT_SERVICES)
-def test_each_built_backend_is_a_nuisance_profiled_compose_service(service: str):
+def test_each_built_backend_is_a_compose_service_profiled_nuisance_but_the_stand_in(service: str):
     compose_service = COMPOSE_SERVICES.get(service)
+    # The CI's bare build, which skips the nuisance profile, builds the stand-in.
+    profiles = None if service == STAND_IN_SERVICE else ["nuisance"]
 
     assert compose_service is not None, f"{service}: no service in {COMPOSE_FILE}"
     assert compose_service["image"] == image_tag(service)
-    assert compose_service.get("profiles") == ["nuisance"]
+    assert compose_service.get("profiles") == profiles
 
 
 @pytest.mark.parametrize("server", ADMITTED, ids=lambda server: server.service)

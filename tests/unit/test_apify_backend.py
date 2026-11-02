@@ -1,4 +1,5 @@
 from evals.apify_backend import (
+    API_HOST,
     APIFY_BENIGN_HOST,
     APIFY_BRIDGE,
     APIFY_RESPONDER_IP,
@@ -9,6 +10,7 @@ from evals.apify_backend import (
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
+API_STAND_IN_PIN = f"{API_HOST}:198.18.1.3"
 LAUNCH = ["--transport", "stdio"]
 
 
@@ -34,11 +36,15 @@ def test_the_server_launch_follows_the_image():
     assert args[-len(LAUNCH) - 1 :] == ["image", *LAUNCH]
 
 
-def test_the_benign_and_the_suffix_hosts_both_resolve_to_the_responder():
+def test_the_documentation_hosts_resolve_to_the_responder_and_the_api_to_its_stand_in():
     aliases = _values_after(apify_server_args("server-name", "image", HOST, LAUNCH), "--add-host")
 
     assert sorted(aliases) == sorted(
-        [f"{APIFY_BENIGN_HOST}:{APIFY_RESPONDER_IP}", f"{APIFY_SUFFIX_HOST}:{APIFY_RESPONDER_IP}"]
+        [
+            f"{APIFY_BENIGN_HOST}:{APIFY_RESPONDER_IP}",
+            f"{APIFY_SUFFIX_HOST}:{APIFY_RESPONDER_IP}",
+            API_STAND_IN_PIN,
+        ]
     )
 
 
@@ -58,9 +64,9 @@ def test_the_server_carries_a_dummy_token_it_needs_to_start():
     assert "APIFY_TOKEN=calib-token" in _values_after(args, "-e")
 
 
-def test_the_hosts_resolve_to_the_responder_address_it_is_given():
+def test_the_documentation_hosts_resolve_to_the_responder_address_it_is_given():
     aliases = _values_after(apify_network_args("198.18.1.77"), "--add-host")
 
     assert sorted(aliases) == sorted(
-        [f"{APIFY_BENIGN_HOST}:198.18.1.77", f"{APIFY_SUFFIX_HOST}:198.18.1.77"]
+        [f"{APIFY_BENIGN_HOST}:198.18.1.77", f"{APIFY_SUFFIX_HOST}:198.18.1.77", API_STAND_IN_PIN]
     )

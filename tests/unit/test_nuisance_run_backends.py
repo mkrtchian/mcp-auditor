@@ -6,6 +6,7 @@ import pytest
 
 import tests.unit.support.test_nuisance_run_backends_given as given
 import tests.unit.support.test_nuisance_run_given as run_given
+from evals.cve_planting_base import STAND_IN_IMAGE
 from evals.eval_session import Refused
 
 
@@ -24,6 +25,15 @@ async def test_the_rebuild_builds_the_backend_service_with_the_server_service():
     assert host.rebuilt == ["filesystem-patched", "ckan-responder"]
 
 
+async def test_every_built_service_of_the_backend_is_rebuilt():
+    server = given.a_server_on("apify")
+    host = given.DockerHost()
+
+    await run_given.run([server], given.deps_on(host, server))
+
+    assert host.rebuilt == ["filesystem-patched", "apify-responder", "stand-in"]
+
+
 async def test_a_backend_container_running_at_start_is_removed_before_the_rebuild():
     server = given.a_server_on("ckan")
     host = given.DockerHost({given.CKAN_TAG: ["stale_responder"]})
@@ -33,6 +43,18 @@ async def test_a_backend_container_running_at_start_is_removed_before_the_rebuil
     assert "stale_responder" in host.removed
     assert "stale_responder" not in host.running_at_rebuild
     assert [entry.server_package for entry in result.servers] == [server.server_package]
+
+
+async def test_the_containers_of_every_built_image_of_the_backend_are_removed_before_the_rebuild():
+    server = given.a_server_on("apify")
+    host = given.DockerHost(
+        {given.APIFY_TAG: ["stale_responder"], STAND_IN_IMAGE: ["stale_stand_in"]}
+    )
+
+    await run_given.run([server], given.deps_on(host, server))
+
+    assert {"stale_responder", "stale_stand_in"} <= set(host.removed)
+    assert host.running_at_rebuild == []
 
 
 async def test_a_server_container_running_at_start_still_refuses_and_nothing_is_removed():
