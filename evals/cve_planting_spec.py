@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from urllib.parse import quote, unquote
 
-from evals.cve_endpoint_address import claim_bind_address, endpoint_bind_address
+from evals.cve_endpoint_address import claim_bind_address, endpoint_bind_address, pin_public_names
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting_base import (
     AccountIntent,
@@ -81,6 +81,8 @@ class _SpecDraft:
 
     def finish(self, to_plant: Sequence[Place]) -> PlantingSpec:
         self._reject_account_mounts()
+        pin_public_names(self.host, self.sentinels, self)
+        bound = any(sentinel.bind_address is not None for sentinel in self.sentinels)
         return PlantingSpec(
             host=self.host,
             places=tuple(place for place in to_plant if place.id in self.nonces),
@@ -93,7 +95,7 @@ class _SpecDraft:
             address_setups=tuple(self.address_setups),
             host_entries=tuple(self.host_entries),
             needs_network=self.host.has_network,
-            needs_holder=any(sentinel.bind_address is not None for sentinel in self.sentinels),
+            needs_holder=bound or bool(self.host.public_names.stand_ins),
             unplaceable=self.unplaceable,
             layout=tuple(self.layout),
         )

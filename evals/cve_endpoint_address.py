@@ -3,15 +3,17 @@
 A localhost name serves on the holder's loopback; an IPv4 literal binds that literal (adding a
 loopback alias unless it already is loopback); a DNS name on a networked launch is a bridge
 alias with no bound address; a DNS name on an isolated launch is served on a private /24 the
-holder adds and the target resolves through an added host entry. The draft these resolvers
-mutate is named structurally (`BindAddressDraft`), so this module stays free of the spec's
-private draft type while `_SpecDraft` satisfies it.
+holder adds and the target resolves through an added host entry. `pin_public_names` adds the
+host entries a planting host's public names give without a capture, and refuses a malformed
+declaration. The draft these resolvers mutate is named structurally (`BindAddressDraft`), so
+this module stays free of the spec's private draft type while `_SpecDraft` satisfies it.
 """
 
+from collections.abc import Sequence
 from ipaddress import AddressValueError, IPv4Address, IPv4Network
 from typing import Protocol
 
-from evals.cve_planting_base import PlantingHost
+from evals.cve_planting_base import PlantingHost, SentinelIntent
 
 # The private /24 a name host without a network is served on: inside 10.0.0.0/8, outside
 # Docker's default pools and outside 169.254.0.0/16.
@@ -50,6 +52,25 @@ def claim_bind_address(entry_id: str, bind_address: str | None, draft: BindAddre
     if bind_address in draft.bind_addresses:  # two hosts can resolve to one holder address
         raise ValueError(f"{entry_id}: a second http_endpoint place on the same bind address")
     draft.bind_addresses.add(bind_address)
+
+
+def pin_public_names(
+    host: PlantingHost, sentinels: Sequence[SentinelIntent], draft: BindAddressDraft
+) -> None:
+    # A stand-in's own address is pinned by `planted`, which loads its capture: the spec reads
+    # no file.
+    names = host.public_names
+    for index, stand_in in enumerate(names.stand_ins):
+        if stand_in in names.stand_ins[:index]:
+            raise ValueError(f"{stand_in}: a second stand-in for the same host")
+    if names.trust and not names.stand_ins:
+        raise ValueError(f"{names.trust[0]}: a trust setting with no stand-in")
+    literals = [_as_ipv4(sentinel.host) for sentinel in sentinels]
+    for domain in names.ip_label_domains:
+        for literal in literals:
+            if literal is not None:
+                dashed = str(literal).replace(".", "-")
+                draft.host_entries.append((f"{dashed}.{domain}", str(literal)))
 
 
 def _literal_bind_address(entry_id: str, literal: IPv4Address, draft: BindAddressDraft) -> str:

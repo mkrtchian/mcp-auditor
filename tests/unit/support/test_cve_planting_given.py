@@ -13,6 +13,7 @@ from evals.cve_planting import (
     SymbolicUser,
     planting_spec,
 )
+from evals.cve_planting_base import PublicNames
 from tests.fakes.planting_docker import FakePlantingDocker as FakePlantingDocker
 from tests.fakes.planting_docker import HostFile as HostFile
 
@@ -24,9 +25,14 @@ def spec_of(
 
 
 def unprivileged_host(
-    *, has_network: bool = False, working_directory: str = "/srv/fictional"
+    *,
+    has_network: bool = False,
+    working_directory: str = "/srv/fictional",
+    public_names: PublicNames | None = None,
 ) -> PlantingHost:
-    return PlantingHost(SymbolicUser.UNPRIVILEGED, working_directory, has_network)
+    return PlantingHost(
+        SymbolicUser.UNPRIVILEGED, working_directory, has_network, public_names or PublicNames()
+    )
 
 
 def host_user_host(*, has_network: bool = False, working_directory: str = "/work") -> PlantingHost:

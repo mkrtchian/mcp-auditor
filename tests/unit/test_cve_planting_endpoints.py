@@ -4,6 +4,7 @@ import tests.unit.support.test_cve_planting_given as given
 import tests.unit.support.test_cve_planting_then as then
 from evals.cve_endpoint_address import RESERVED_NAME_BLOCK
 from evals.cve_planting import PlantingFailed, planted
+from evals.cve_planting_base import PublicNames
 from evals.cve_planting_spec import served_file
 
 
@@ -235,3 +236,30 @@ def test_an_endpoint_path_the_sentinel_can_serve_plants(path: str):
     spec = given.spec_of([given.endpoint_place("endpoint-1", host="198.51.100.5", path=path)])
 
     assert len(spec.sentinels) == 1
+
+
+def test_an_ip_label_domain_pins_the_dashed_name_of_each_ip_literal_endpoint_only():
+    names = PublicNames(ip_label_domains=("ip-label.fict",))
+    spec = given.spec_of(
+        [
+            given.endpoint_place("endpoint-1", host="198.51.100.5"),
+            given.endpoint_place("endpoint-2", host="fictional-service"),
+        ],
+        host=given.unprivileged_host(has_network=True, public_names=names),
+    )
+
+    assert spec.host_entries == (("198-51-100-5.ip-label.fict", "198.51.100.5"),)
+
+
+def test_two_stand_ins_for_one_host_are_refused_naming_the_host():
+    names = PublicNames(stand_ins=("public.fict", "public.fict"))
+
+    with pytest.raises(ValueError, match=r"^public\.fict: "):
+        given.spec_of([], host=given.unprivileged_host(has_network=True, public_names=names))
+
+
+def test_a_trust_setting_without_a_stand_in_is_refused_naming_the_setting():
+    names = PublicNames(trust=("FICTIONAL_CA_FILE",))
+
+    with pytest.raises(ValueError, match=r"^FICTIONAL_CA_FILE: "):
+        given.spec_of([], host=given.unprivileged_host(has_network=True, public_names=names))

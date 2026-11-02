@@ -2,7 +2,8 @@
 
 `PlantingSpec` is what `planting_spec` computes and `planted` carries out: container-side
 intents only (a file and its content, an environment pair, an account entry, a hostname, a
-sentinel serving a nonce), never a host path, a container or network name, or an argv.
+sentinel serving a nonce, a stand-in `planted` loads for the host's `PublicNames`), never a
+host path, a container or network name, or an argv.
 `PlantedArgs` is the `docker run` arguments a planted launch takes. `PlantingDocker` and
 `NonceSource` are the two injected ports. `RANDOM_NONCES` draws the production nonces.
 
@@ -36,10 +37,18 @@ class SymbolicUser(StrEnum):
 
 
 @dataclass(frozen=True)
+class PublicNames:
+    stand_ins: tuple[str, ...] = ()  # hosts served by a stand-in under their real name
+    trust: tuple[str, ...] = ()  # env names pointed at the fixture authority
+    ip_label_domains: tuple[str, ...] = ()  # wildcard-DNS domains answering a dashed IPv4 label
+
+
+@dataclass(frozen=True)
 class PlantingHost:
     user: SymbolicUser
     working_directory: str
     has_network: bool
+    public_names: PublicNames = PublicNames()
 
 
 @dataclass(frozen=True)
@@ -131,6 +140,7 @@ class PlantingSpec:
     needs_holder: bool
     unplaceable: int
     layout: tuple[LayoutNode, ...] = ()
+    stand_ins: tuple[StandIn, ...] = ()  # loaded by `planted`, never by `planting_spec`
 
 
 @dataclass(frozen=True)
@@ -165,6 +175,9 @@ class PlantingDocker(Protocol):
     def remove_sentinel(self, name: str) -> None: ...
     def probe_endpoint(self, target_args: Sequence[str], url: str) -> str | None: ...
     def run_address_setup(self, run_args: Sequence[str]) -> None: ...
+    def start_stand_in(self, run_args: Sequence[str]) -> str: ...
+    def remove_stand_in(self, name: str, host: str) -> None: ...
+    def probe_listener(self, target_args: Sequence[str], host: str, port: int) -> bool: ...
 
 
 def quiet(action: object, *args: object) -> None:

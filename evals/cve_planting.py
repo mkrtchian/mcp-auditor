@@ -1,20 +1,22 @@
 """Generic planting: a nonce dropped into one of the frozen list's locations, by kind.
 
 `planted` carries a `PlantingSpec` out through the injected `PlantingDocker`: it writes the
-host files, creates the network, stands the namespace holder and the sentinels up, probes
-each sentinel from a stand-in started with the target's own arguments, and yields the
-target's `docker run` arguments as `PlantedArgs`. Setup undoes itself and raises
-`PlantingFailed` on any failure (a non-zero Docker call or a host file that cannot be
-written). Teardown is best-effort and never raises. It owns the network of a launch that has
-one, as a plain labelled bridge, so no planting touches the host's routing table.
+host files, creates the network, stands the namespace holder, the sentinels and the stand-ins
+up, probes each sentinel and stand-in from a probe container started with the target's own
+arguments, and yields the target's `docker run` arguments as `PlantedArgs`. Setup undoes
+itself and raises `PlantingFailed` on any failure (a non-zero Docker call or a host file that
+cannot be written). Teardown is best-effort and never raises. It owns the network of a launch
+that has one, as a plain labelled bridge, so no planting touches the host's routing table.
 
 The pure half (`planting_spec`), the vocabulary and the Docker port live in the sibling
-modules. This module re-exports their public names so a consumer reads one name.
+modules, the stand-ins' setup in `cve_planting_stand_ins`. This module re-exports their public
+names so a consumer reads one name.
 """
 
 import subprocess
 from collections.abc import Generator
 from contextlib import ExitStack, contextmanager
+from pathlib import Path
 
 from evals.cve_planting_base import (
     RANDOM_NONCES as RANDOM_NONCES,
@@ -55,6 +57,13 @@ from evals.cve_planting_docker import (
     DockerPlanting as DockerPlanting,
 )
 from evals.cve_planting_spec import planting_spec as planting_spec
+from evals.cve_planting_stand_ins import (
+    probe_stand_ins,
+    serve_stand_ins,
+    trust_args,
+    with_stand_ins,
+)
+from evals.public_stand_ins import STAND_INS_DIRECTORY
 
 # re-exported for a one-name import by the audit, calibration, survey and replay callers.
 # The user and network helpers (host_user_args, no_network_args, unprivileged_user_args) are
@@ -82,7 +91,15 @@ _HOLDER_SLEEP = "2147483647"
 
 
 @contextmanager
-def planted(spec: PlantingSpec, image_tag: str, docker: PlantingDocker) -> Generator[PlantedArgs]:
+def planted(
+    spec: PlantingSpec,
+    image_tag: str,
+    docker: PlantingDocker,
+    stand_ins_directory: Path = STAND_INS_DIRECTORY,
+) -> Generator[PlantedArgs]:
+    # Outside the setup's `try`: a missing or malformed capture is a fixture error, not a
+    # `PlantingFailed` the runner would count as a skipped run.
+    spec = with_stand_ins(spec, stand_ins_directory)
     stack = ExitStack()
     try:
         args = _set_up(spec, image_tag, docker, stack)
@@ -110,12 +127,14 @@ def _set_up(
         network = docker.create_network()
         stack.callback(quiet, docker.remove_network, network)
     holder = _hold_endpoints(spec, network, docker, stack)
+    serve_stand_ins(spec, holder, docker, stack)
+    trust_env, trust_mounts = trust_args(spec, docker, stack)
     hostname = ("--hostname", spec.hostname) if spec.hostname is not None and holder is None else ()
     args = PlantedArgs(
         user=user,
         working_directory=("-w", spec.host.working_directory),
-        env=_env_args(spec),
-        mounts=mounts,
+        env=(*_env_args(spec), *trust_env),
+        mounts=(*mounts, *trust_mounts),
         hostname=hostname,
         network=_network_args(network, holder),
     )
@@ -124,14 +143,15 @@ def _set_up(
 
 
 def _probe_endpoints(spec: PlantingSpec, args: PlantedArgs, docker: PlantingDocker) -> None:
-    # A positive probe by the endpoint's name, from a stand-in started with the target's own
-    # arguments: name resolution reads files and a namespace that are the target's, not the
+    # A positive probe by the endpoint's name, from a probe container started with the target's
+    # own arguments: name resolution reads files and a namespace that are the target's, not the
     # sentinel's, and a running sentinel can still serve a 404 or answer under another name.
-    stand_in = [*confinement_args(), *args.run_args()]
+    probe_args = [*confinement_args(), *args.run_args()]
     for sentinel in spec.sentinels:
         url = f"http://{sentinel.host}:80{sentinel.request_target}"
-        if docker.probe_endpoint(stand_in, url) != sentinel.content:
+        if docker.probe_endpoint(probe_args, url) != sentinel.content:
             raise PlantingFailed(f"sentinel for {sentinel.host} is not serving")
+    probe_stand_ins(spec, probe_args, docker)
 
 
 def _user_and_mounts(

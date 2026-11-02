@@ -31,11 +31,12 @@ logger = logging.getLogger(__name__)
 # paid in full only on a real failure, since a serving sentinel answers on an early retry.
 _SENTINEL_PROBE_BUDGET = 15.0
 _SENTINEL_PROBE_INTERVAL = 0.2
-# Bounds the busybox `wget` inside the stand-in, which otherwise waits 900 s.
+# Bounds the busybox `wget` and `nc` inside the probe container, `wget` otherwise waiting 900 s.
 _SENTINEL_FETCH_TIMEOUT = 5.0
 # Above the fetch bound by a container start-up margin: a shared value would let the subprocess
-# timeout fire before `wget`'s own whenever a stand-in starts slowly.
-_STAND_IN_RUN_TIMEOUT = 10.0
+# timeout fire before `wget`'s own whenever a probe container starts slowly.
+_PROBE_RUN_TIMEOUT = 10.0
+_MISS_PREFIX = "miss "
 
 
 def _best_effort(*command: str) -> None:
@@ -92,12 +93,31 @@ class DockerPlanting(PlantingDocker):
     def remove_sentinel(self, name: str) -> None:
         _best_effort("docker", "rm", "-f", name)
 
+    def start_stand_in(self, run_args: Sequence[str]) -> str:
+        return self._run_detached(run_args)
+
+    def remove_stand_in(self, name: str, host: str) -> None:
+        # Read before the removal: `--rm` drops the logs with the container.
+        for line in _stand_in_stderr(name).splitlines():
+            if line.startswith(_MISS_PREFIX):
+                logger.warning("stand-in for %s had no capture for: %s", host, line)
+        _best_effort("docker", "rm", "-f", name)
+
     def probe_endpoint(self, target_args: Sequence[str], url: str) -> str | None:
         deadline = time.monotonic() + _SENTINEL_PROBE_BUDGET
         while True:
-            body = _stand_in_read(target_args, url)
+            body = _probe_read(target_args, url)
             if body is not None or time.monotonic() >= deadline:
                 return body
+            time.sleep(_SENTINEL_PROBE_INTERVAL)
+
+    def probe_listener(self, target_args: Sequence[str], host: str, port: int) -> bool:
+        deadline = time.monotonic() + _SENTINEL_PROBE_BUDGET
+        while True:
+            if _probe_connect(target_args, host, port):
+                return True
+            if time.monotonic() >= deadline:
+                return False
             time.sleep(_SENTINEL_PROBE_INTERVAL)
 
     def run_address_setup(self, run_args: Sequence[str]) -> None:
@@ -135,7 +155,7 @@ class DockerPlanting(PlantingDocker):
         return name
 
 
-def _stand_in_read(target_args: Sequence[str], url: str) -> str | None:
+def _probe_read(target_args: Sequence[str], url: str) -> str | None:
     # The entrypoint is absolute because an env place named PATH travels in `target_args`, and
     # `-Y off` because a planted `http_proxy` travels too: busybox `wget` would honour it, the
     # target's client does not.
@@ -161,8 +181,31 @@ def _stand_in_read(target_args: Sequence[str], url: str) -> str | None:
             check=False,
             capture_output=True,
             text=True,
-            timeout=_STAND_IN_RUN_TIMEOUT,
+            timeout=_PROBE_RUN_TIMEOUT,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
     return result.stdout if result.returncode == 0 else None
+
+
+def _probe_connect(target_args: Sequence[str], host: str, port: int) -> bool:
+    command = ["docker", "run", "--rm", "--label", LABEL, *target_args, "--entrypoint", "/bin/nc"]
+    command += [SENTINEL_IMAGE, "-z", "-w", f"{_SENTINEL_FETCH_TIMEOUT:g}", host, str(port)]
+    try:
+        result = subprocess.run(
+            command, check=False, capture_output=True, timeout=_PROBE_RUN_TIMEOUT
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def _stand_in_stderr(name: str) -> str:
+    try:
+        result = subprocess.run(
+            ["docker", "logs", name], check=False, capture_output=True, text=True, errors="replace"
+        )
+    except OSError as error:
+        logger.warning("cannot read the logs of stand-in %s: %s", name, error)
+        return ""
+    return result.stderr

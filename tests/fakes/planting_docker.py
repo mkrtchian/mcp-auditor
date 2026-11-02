@@ -1,5 +1,5 @@
-"""`FakePlantingDocker` is stateful: it keeps the networks, holders, sentinels and host files it
-is told to make until they are removed, and refuses, as Docker does, to remove a network a
+"""`FakePlantingDocker` is stateful: it keeps the networks, holders, sentinels, stand-ins and host
+files it is told to make until they are removed, and refuses, as Docker does, to remove a network a
 container is still attached to, so a test reads the state left after setup, teardown or a
 failed setup rather than the order of the calls.
 """
@@ -36,10 +36,12 @@ class FakePlantingDocker:
     fail_errors: Mapping[str, Exception] = field(default_factory=dict[str, Exception])
     fail_teardown: frozenset[str] = frozenset()
     dead_sentinels: frozenset[str] = frozenset()  # keyed by the alias, else the BIND_ADDR
+    dead_stand_ins: frozenset[str] = frozenset()  # keyed by the BIND_ADDR
     host_files: dict[str, HostFile] = field(default_factory=dict[str, HostFile])
     networks: set[str] = field(default_factory=set[str])
     holders: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     sentinels: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
+    stand_ins: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     address_setups: list[list[str]] = field(default_factory=list[list[str]])
 
     def __post_init__(self) -> None:
@@ -89,6 +91,14 @@ class FakePlantingDocker:
         self.sentinels.pop(name, None)
         self._attached.pop(name, None)
 
+    def start_stand_in(self, run_args: Sequence[str]) -> str:
+        return self._start("stand_in", self.stand_ins, run_args)
+
+    def remove_stand_in(self, name: str, host: str) -> None:
+        self._maybe_fail_teardown("remove_stand_in")
+        self.stand_ins.pop(name, None)
+        self._attached.pop(name, None)
+
     def run_address_setup(self, run_args: Sequence[str]) -> None:
         self._maybe_fail("run_address_setup")
         self.address_setups.append(list(run_args))
@@ -99,6 +109,18 @@ class FakePlantingDocker:
             return None
         sentinel = self._reached(target_args, host)
         return None if sentinel is None else _env_value(sentinel, "FLAG")
+
+    def probe_listener(self, target_args: Sequence[str], host: str, port: int) -> bool:
+        # A stand-in serves 80 and 443 alike, so only the address the name resolves to counts.
+        network = _first_after(target_args, "--network") or "none"
+        address = self._address_in(target_args, host.lower())
+        if address is None or address in self.dead_stand_ins:
+            return False
+        return any(
+            _first_after(run_args, "--network") == network
+            and _env_value(run_args, "BIND_ADDR") == address
+            for run_args in self.stand_ins.values()
+        )
 
     def _unresolved(self, target_args: Sequence[str], host: str) -> bool:
         if _is_ipv4(host):
