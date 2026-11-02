@@ -1,8 +1,8 @@
 {
   "host": "api.apify.com",
-  "address": "54.166.61.254",
-  "captured_at": "2026-11-02T18:46:07Z",
-  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/api.apify.com.json --header 'Authorization: Bearer calib-token' 'https://api.apify.com/v2/actors/apify~rag-web-browser'",
+  "address": "184.197.248.173",
+  "captured_at": "2026-11-02T19:07:26Z",
+  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/api.apify.com.json --header 'Authorization: Bearer calib-token' 'https://api.apify.com/v2/actors/apify~rag-web-browser' https://api.apify.com/v2/users/me",
   "request_headers": [
     [
       "Authorization",
@@ -18,7 +18,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 18:46:07 GMT"
+          "Mon, 02 Nov 2026 19:07:26 GMT"
         ],
         [
           "Content-Type",
@@ -59,6 +59,75 @@
         [
           "Access-Control-Allow-Methods",
           "GET, PUT, DELETE"
+        ],
+        [
+          "Access-Control-Expose-Headers",
+          "X-Apify-Pagination-Total, X-Apify-Pagination-Offset, X-Apify-Pagination-Desc, X-Apify-Pagination-Count, X-Apify-Pagination-Limit"
+        ],
+        [
+          "Referrer-Policy",
+          "no-referrer"
+        ],
+        [
+          "X-Robots-Tag",
+          "none"
+        ],
+        [
+          "ETag",
+          "W/\"84-3vD4avsywU4kYCm7Wbs1BaOxvlo\""
+        ]
+      ],
+      "body": "{\n  \"error\": {\n    \"type\": \"user-or-token-not-found\",\n    \"message\": \"User was not found or authentication token is not valid\"\n  }\n}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/v2/users/me",
+      "status": 401,
+      "headers": [
+        [
+          "Date",
+          "Mon, 02 Nov 2026 19:07:26 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json; charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "132"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=300; includeSubDomains"
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate"
+        ],
+        [
+          "Pragma",
+          "no-cache"
+        ],
+        [
+          "Expires",
+          "0"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Access-Control-Allow-Headers",
+          "User-Agent, Content-Type, Authorization, X-Apify-Request-Origin, X-Apify-Github-Actions-Run-Url, openai-conversation-id, openai-ephemeral-user-id, x-apify-integration-platform, x-apify-integration-app-id, x-apify-integration-ai-tool"
+        ],
+        [
+          "Access-Control-Allow-Methods",
+          "GET"
         ],
         [
           "Access-Control-Expose-Headers",

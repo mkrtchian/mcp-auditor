@@ -54,6 +54,9 @@ for host in "$@"; do
     -out "$work/$host.pem"
 done
 
+# openssl writes keys 0600, which a container running with no capabilities cannot read from a
+# bind mount owned by another uid.
+chmod 644 "$work"/*.pem
 mkdir -p "$out"
 rm -f "$out"/*.pem
 mv "$work"/*.pem "$out"/
