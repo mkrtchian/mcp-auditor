@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from evals.closed_network import ClosedNetworkUnsupported
 from evals.cve_images import dockerfile_fingerprint
 from evals.cve_planting import SENTINEL_SERVICE
 from evals.cve_preflight import expected_services, preflight_ok, vulnerable_services
@@ -27,6 +28,14 @@ def _a_docker_answering_only_info(directory: Path) -> Path:
     return directory
 
 
+def _a_daemon_closing_networks() -> None:
+    pass
+
+
+def _a_daemon_that_cannot_close_a_network() -> None:
+    raise ClosedNetworkUnsupported("invalid gateway mode: isolated")
+
+
 def _a_store_with_one_stale(stale: str, *, build_error: str | None = None) -> FakeImageStore:
     labels: dict[str, str | None] = {
         image_tag(service): dockerfile_fingerprint(service)
@@ -43,7 +52,7 @@ def test_the_preflight_rebuilds_a_stale_image_and_names_it(
     stale = CVE_TARGETS[0].patched_image
     store = _a_store_with_one_stale(stale)
 
-    ok = preflight_ok(store)
+    ok = preflight_ok(store, check=_a_daemon_closing_networks)
 
     assert ok
     assert store.label_of(image_tag(stale)) == dockerfile_fingerprint(stale)
@@ -57,10 +66,26 @@ def test_the_preflight_fails_and_names_the_service_whose_rebuild_fails(
     stale = CVE_TARGETS[0].patched_image
     store = _a_store_with_one_stale(stale, build_error="no space left on device")
 
-    ok = preflight_ok(store)
+    ok = preflight_ok(store, check=_a_daemon_closing_networks)
 
     assert not ok
     assert stale in capsys.readouterr().out
+
+
+def test_the_preflight_fails_on_a_daemon_that_cannot_close_a_network_before_any_image(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    monkeypatch.setenv("PATH", str(_a_docker_answering_only_info(tmp_path)))
+    stale = CVE_TARGETS[0].patched_image
+    store = _a_store_with_one_stale(stale)
+
+    ok = preflight_ok(store, check=_a_daemon_that_cannot_close_a_network)
+
+    out = capsys.readouterr().out
+    assert not ok
+    assert store.label_of(image_tag(stale)) == "a-foreign-fingerprint"
+    assert "invalid gateway mode: isolated" in out
+    assert "Docker Engine 28.0 or later is required" in out
 
 
 def test_expected_services_keeps_the_sentinel_with_the_fetch_target_filtered_out():

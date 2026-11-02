@@ -34,6 +34,7 @@ class NuisanceGateHarness:
     read_tree: Callable[[], TreeState]
     clock: Callable[[], str]  # ISO timestamp for recorded_at
     baselines: Path
+    check_networks: Callable[[], None]
 
 
 @dataclass(frozen=True)

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from evals import nuisance_fixtures
+from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
 from evals.cve_targets import DOCKER_DIRECTORY
 from evals.holdout_kit import kit_launch
@@ -22,6 +23,7 @@ from evals.nuisance_commands import (
     malformed_input_refused,
 )
 from evals.nuisance_run import NUISANCE_CONCURRENCY
+from evals.run_images import refuse_without_closed_networks
 
 
 def add_calibrate_arguments(parser: argparse.ArgumentParser) -> None:
@@ -49,6 +51,7 @@ def calibrate(args: argparse.Namespace) -> int:
         print(f"unknown flaw: {args.cve} matches no fix-check target", file=sys.stderr)
         return UNKNOWN_SERVER_EXIT
     records = {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
+    refuse_without_closed_networks(check_closed_network_support)
     kit_launch.build_images(DOCKER_DIRECTORY, _services(targets))
     return asyncio.run(_calibrate_targets(targets, records, args.concurrency))
 

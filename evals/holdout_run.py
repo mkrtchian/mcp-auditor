@@ -12,6 +12,7 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 
+from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
 from evals.cve_audit import RunOverrides, attempt_once, build_auditor
 from evals.cve_baseline import (
@@ -44,6 +45,7 @@ from evals.metrics import SessionThrottles
 from evals.run_images import (
     rebuild_images,
     refuse_running_containers,
+    refuse_without_closed_networks,
     remove_containers,
     running_containers,
     sweep_containers,
@@ -74,6 +76,7 @@ class HoldoutDeps:
     throttled_requests: Callable[[], int]
     running_containers: Callable[[Sequence[str]], list[str]]
     remove_containers: Callable[[Sequence[str]], None]
+    check_networks: Callable[[], None]
 
 
 @dataclass(frozen=True)
@@ -112,6 +115,7 @@ async def run_holdout(
     deps = deps or default_deps(places, holdout_overrides(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
+    refuse_without_closed_networks(deps.check_networks)
     services = target_services(list(targets))
     tags = [image_tag(service) for service in services]
     _refuse_running_containers(deps, tags)
@@ -224,6 +228,7 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
         lambda: throttles.requests,
         running_containers,
         remove_containers,
+        check_closed_network_support,
     )
 
 

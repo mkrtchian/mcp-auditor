@@ -226,7 +226,8 @@ _README = """\
 
 A self-contained workshop for calibrating one holdout candidate, free of any `mcp_auditor`
 import. Run it from this directory with this directory on the Python path (its `evals/` package
-resolves the copied clean modules). It needs Docker but no LLM and no repository checkout.
+resolves the copied clean modules). It needs Docker Engine 28.0 or later but no LLM and no
+repository checkout.
 
 ## Procedure
 

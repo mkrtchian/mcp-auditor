@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from evals import nuisance_vetting
+from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
 from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import image_ids
@@ -53,7 +54,7 @@ from evals.nuisance_gate_session_recording import load_checked, record, recordin
 from evals.nuisance_images import backend_image_ids, image_tag, nuisance_fixture_fingerprint
 from evals.nuisance_results import FigureExit
 from evals.recording import RecordingRefused
-from evals.run_images import rebuild_images
+from evals.run_images import rebuild_images, refuse_without_closed_networks
 
 
 def gate_servers(admission: NuisanceAdmission, current: set[str]) -> list[AdmittedServer]:
@@ -104,6 +105,7 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
         read_tree=read_tree,
         clock=lambda: datetime.now(UTC).isoformat(),
         baselines=NUISANCE_GATE_BASELINE_DIRECTORY,
+        check_networks=check_closed_network_support,
     )
 
 
@@ -111,6 +113,7 @@ async def run_gate(
     options: NuisanceGateOptions, harness: NuisanceGateHarness
 ) -> NuisanceGateSession:
     """Raises Refused on a run that cannot be compared or recorded before it starts."""
+    refuse_without_closed_networks(harness.check_networks)
     opened = _open(options, harness)
     not_run = await _vetted(opened)
     runs = await _run_servers(opened, not_run)

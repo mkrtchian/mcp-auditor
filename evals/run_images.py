@@ -4,11 +4,13 @@ containers of the run's images: refused when running before a run, swept at its 
 import subprocess
 from collections.abc import Callable, Sequence
 
+from evals.closed_network import ClosedNetworkUnsupported, check_closed_network_support
 from evals.cve_images import compose_build
 from evals.cve_targets import CVETarget
 from evals.eval_session import Refused
 
 _BUILD_TAIL_LINES = 40
+DOCKER_REQUIREMENT = "Docker Engine 28.0 or later is required"
 
 
 def rebuild_images(services: Sequence[str]) -> None:
@@ -32,6 +34,18 @@ def target_services(targets: Sequence[CVETarget]) -> list[str]:
             if service not in services:
                 services.append(service)
     return services
+
+
+def refuse_without_closed_networks(
+    check: Callable[[], None] = check_closed_network_support,
+) -> None:
+    try:
+        check()
+    except ClosedNetworkUnsupported as error:
+        raise Refused(
+            "the Docker daemon cannot create a closed network",
+            [str(error), DOCKER_REQUIREMENT],
+        ) from error
 
 
 def running_containers(tags: Sequence[str]) -> list[str]:

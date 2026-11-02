@@ -4,13 +4,15 @@ image whose Dockerfile fingerprint label does not match is rebuilt, so the bench
 audits whatever a tag happens to hold."""
 
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from rich.console import Console
 
+from evals.closed_network import ClosedNetworkUnsupported, check_closed_network_support
 from evals.cve_images import ComposeImageStore, ImageBuildFailed, ImageStore, ensure_images
 from evals.cve_planting import SENTINEL_SERVICE
 from evals.cve_targets import CVE_TARGETS, CVETarget
+from evals.run_images import DOCKER_REQUIREMENT
 
 
 def vulnerable_services(targets: Sequence[CVETarget]) -> tuple[str, ...]:
@@ -36,9 +38,17 @@ VULNERABLE_SERVICES = vulnerable_services(CVE_TARGETS)
 console = Console()
 
 
-def preflight_ok(store: ImageStore | None = None) -> bool:
+def preflight_ok(
+    store: ImageStore | None = None, check: Callable[[], None] = check_closed_network_support
+) -> bool:
     if not _docker_ready():
         console.print("[red]Docker daemon unreachable.[/red] Start Docker, then run again.")
+        return False
+    try:
+        check()
+    except ClosedNetworkUnsupported as error:
+        console.print("[red]The Docker daemon cannot create a closed network.[/red]")
+        console.print(f"{error}\n{DOCKER_REQUIREMENT}", markup=False, highlight=False)
         return False
     try:
         rebuilt = ensure_images(expected_services(CVE_TARGETS), store or ComposeImageStore())

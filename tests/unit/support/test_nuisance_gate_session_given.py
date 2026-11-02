@@ -87,6 +87,7 @@ def a_harness(
         read_tree=read_tree,
         clock=lambda: RECORDED_AT,
         baselines=directory,
+        check_networks=lambda: None,
     )
 
 

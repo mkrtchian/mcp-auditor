@@ -31,6 +31,7 @@ def deps_on(host: DockerHost, failures: Mapping[str, str] | None = None) -> VetD
         running_containers=host.running,
         remove_containers=host.remove,
         benign_call=benign_call,
+        check_networks=lambda: None,
     )
 
 

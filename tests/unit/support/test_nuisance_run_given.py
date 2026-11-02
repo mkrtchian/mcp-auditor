@@ -201,6 +201,7 @@ def deps_auditing(
         throttled_requests=lambda: throttled,
         running_containers=docker.running,
         remove_containers=docker.remove,
+        check_networks=lambda: None,
     )
 
 
@@ -250,6 +251,7 @@ def deps_reaching_nothing() -> NuisanceDeps:
         throttled_requests,
         running_containers,
         remove_containers,
+        lambda: None,
     )
 
 

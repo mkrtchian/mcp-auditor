@@ -6,6 +6,7 @@ import pytest
 import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_holdout_census_given as given
 from evals import run_holdout
+from evals.closed_network import ClosedNetworkUnsupported
 from evals.cve_planting_base import SENTINEL_SERVICE
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_draw import draw_order
@@ -84,8 +85,31 @@ def test_calibrate_crashes_to_four_on_a_fixture_config_error(monkeypatch: pytest
     assert run_holdout.main(["calibrate"]) == run_holdout.CRASHED_EXIT
 
 
+def test_calibrate_refuses_with_exit_three_on_a_daemon_that_cannot_close_a_network(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _a_drawn_target(monkeypatch)
+    monkeypatch.setattr(run_holdout, "check_closed_network_support", _cannot_close_a_network)
+    _fake_admission(monkeypatch, failures=["the admission was reached"])
+    monkeypatch.setattr(run_holdout, "calibrate_all", _never_reached)
+
+    exit_code = run_holdout.main(["calibrate"])
+
+    assert exit_code == run_holdout.REFUSED_EXIT
+    assert "Docker Engine 28.0 or later is required" in capsys.readouterr().out
+
+
 def _a_drawn_target(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (object(),))
+    monkeypatch.setattr(run_holdout, "check_closed_network_support", lambda: None)
+
+
+def _cannot_close_a_network() -> None:
+    raise ClosedNetworkUnsupported("invalid gateway mode: isolated")
+
+
+async def _never_reached(*_: object, **__: object) -> bool:
+    raise AssertionError("the calibration was reached")
 
 
 def _fake_admission(monkeypatch: pytest.MonkeyPatch, failures: list[str]) -> None:

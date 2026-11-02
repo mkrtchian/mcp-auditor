@@ -11,6 +11,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
 from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_session import Refused
@@ -36,7 +37,12 @@ from evals.nuisance_run_containers import (
 )
 from evals.nuisance_vetting import benign_call, vet_all
 from evals.nuisance_walk import acceptance_servers, nuisance_population
-from evals.run_images import rebuild_images, remove_containers, running_containers
+from evals.run_images import (
+    rebuild_images,
+    refuse_without_closed_networks,
+    remove_containers,
+    running_containers,
+)
 
 _REFUSAL = "nuisance vet refused"
 
@@ -47,6 +53,7 @@ class VetDeps:
     running_containers: Callable[[Sequence[str]], list[str]]
     remove_containers: Callable[[Sequence[str]], None]
     benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure reason, or None
+    check_networks: Callable[[], None]
 
 
 @dataclass(frozen=True)
@@ -112,11 +119,13 @@ def default_vet_deps(tool_call_timeout: int, concurrency: int) -> VetDeps:
         running_containers=running_containers,
         remove_containers=remove_containers,
         benign_call=bounded(functools.partial(benign_call, timeout=tool_call_timeout), concurrency),
+        check_networks=check_closed_network_support,
     )
 
 
 async def vet_servers(servers: Sequence[AdmittedServer], deps: VetDeps) -> VetResult:
     """In the run's order, so a vet proves the launch a run makes."""
+    refuse_without_closed_networks(deps.check_networks)
     images = run_images(servers)
     refuse_server_containers(deps, images, _REFUSAL)
     remove_backend_containers(deps, images)

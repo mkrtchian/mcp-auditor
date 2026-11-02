@@ -6,7 +6,9 @@ from typing import Any
 import pytest
 
 from evals import nuisance_calibrate_command, nuisance_fixtures, run_nuisance
+from evals.closed_network import ClosedNetworkUnsupported
 from evals.holdout_census import load_census
+from evals.holdout_kit import kit_launch
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget
 from evals.holdout_kit.kit_client import KitResponse, KitTool
 from evals.nuisance_admission import (
@@ -214,3 +216,27 @@ def test_calibrate_with_empty_targets_prints_nothing_is_drawn(
 
     assert code == 0
     assert "nothing is drawn" in capsys.readouterr().out
+
+
+def test_calibrate_refuses_with_exit_three_on_a_daemon_that_cannot_close_a_network(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    if not ADMISSION_PATH.exists():
+        pytest.skip("no admission is committed")
+    monkeypatch.setattr(
+        nuisance_calibrate_command, "check_closed_network_support", _cannot_close_a_network
+    )
+    monkeypatch.setattr(kit_launch, "build_images", _a_build_never_reached)
+
+    code = run_nuisance.main(["calibrate"])
+
+    assert code == run_nuisance.REFUSED_EXIT
+    assert "Docker Engine 28.0 or later is required" in capsys.readouterr().out
+
+
+def _cannot_close_a_network() -> None:
+    raise ClosedNetworkUnsupported("invalid gateway mode: isolated")
+
+
+def _a_build_never_reached(*_: object) -> None:
+    raise AssertionError("the fix-check images were built")

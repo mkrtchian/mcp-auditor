@@ -16,6 +16,7 @@ from rich.progress import Progress
 from evals import calibration_dossier, holdout_targets
 from evals import eval_display as display
 from evals.audit_progress import AuditProgress
+from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
 from evals.cve_calibration import calibrate_all, calibrate_one
 from evals.cve_layout_check import confirm_admission
@@ -40,6 +41,7 @@ from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
 from evals.provider_errors import ProviderFatal, describe_provider_error
 from evals.run_files import partial_result_kept, refuse_existing_report, write_result
+from evals.run_images import refuse_without_closed_networks
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
@@ -182,6 +184,7 @@ def _calibrate(args: argparse.Namespace) -> int:
     if not targets:
         print("no holdout target is drawn")
         return 0
+    refuse_without_closed_networks(check_closed_network_support)
     try:
         return asyncio.run(_calibrate_targets(targets, places, args.concurrency))
     except ValueError as error:

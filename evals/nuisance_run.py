@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from evals import nuisance_images
+from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
 from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import grammar_fingerprint, image_ids
@@ -55,7 +56,12 @@ from evals.nuisance_run_containers import (
 )
 from evals.nuisance_vetting import benign_call, vet_all
 from evals.probe_candidates import Prices
-from evals.run_images import rebuild_images, remove_containers, running_containers
+from evals.run_images import (
+    rebuild_images,
+    refuse_without_closed_networks,
+    remove_containers,
+    running_containers,
+)
 from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
 
@@ -82,6 +88,7 @@ class NuisanceDeps:
     throttled_requests: Callable[[], int]
     running_containers: Callable[[Sequence[str]], list[str]]
     remove_containers: Callable[[Sequence[str]], None]
+    check_networks: Callable[[], None]
 
 
 @dataclass(frozen=True)
@@ -122,6 +129,7 @@ async def run_nuisance(
     deps = deps or default_deps(nuisance_overrides(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
+    refuse_without_closed_networks(deps.check_networks)
     images = run_images(population.audited)
     refuse_server_containers(deps, images, _REFUSAL)
     remove_backend_containers(deps, images)
@@ -197,6 +205,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         lambda: throttles.requests,
         running_containers,
         remove_containers,
+        check_closed_network_support,
     )
 
 
