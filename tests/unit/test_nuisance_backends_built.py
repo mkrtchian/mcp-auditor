@@ -21,17 +21,17 @@ def _is_built(entry: RegisteredBackend) -> bool:
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_a_backend_built_locally_names_the_compose_service_of_its_image(key: str):
     entry = BACKENDS[key]
+    tags = [cve_targets.image_tag(service) for service in entry.built_services]
 
     if _is_built(entry):
-        assert entry.built_service is not None
-        assert cve_targets.image_tag(entry.built_service) == entry.image
+        assert entry.image in tags
     else:
-        assert entry.built_service is None
+        assert tags == []
 
 
 def test_the_pulled_backends_name_no_service():
-    assert BACKENDS["doris"].built_service is None
-    assert BACKENDS["mysql"].built_service is None
+    assert BACKENDS["doris"].built_services == ()
+    assert BACKENDS["mysql"].built_services == ()
 
 
 def _a_server_on(key: str, package: str = admission.SERVER_PACKAGE) -> AdmittedServer:

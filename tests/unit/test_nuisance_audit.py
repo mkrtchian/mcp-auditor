@@ -201,7 +201,7 @@ async def test_two_concurrent_environments_of_one_backend_server_both_complete()
             yield Launch("docker", ["run", "blocked"])
 
     registry = {
-        "block": RegisteredBackend(blocking_provisioner, "fake-net", "fake/backend:1.0", None)
+        "block": RegisteredBackend(blocking_provisioner, "fake-net", "fake/backend:1.0", (), ())
     }
     server = with_a_backend(
         SERVER, BackendFixture(provisioner="block", image="fake/backend:1.0", network="fake-net")
@@ -475,7 +475,7 @@ def _a_server_whose_provisioner_raises(
         yield Launch("docker", [])
 
     registry = {
-        "fail": RegisteredBackend(failing_provisioner, "fake-net", "fake/backend:1.0", None)
+        "fail": RegisteredBackend(failing_provisioner, "fake-net", "fake/backend:1.0", (), ())
     }
     server = with_a_backend(
         SERVER, BackendFixture(provisioner="fail", image="fake/backend:1.0", network="fake-net")

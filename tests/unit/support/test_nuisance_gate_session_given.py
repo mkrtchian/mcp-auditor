@@ -5,6 +5,7 @@ import tests.unit.support.test_nuisance_run_given as run_given
 from evals.eval_session import TreeState
 from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 from evals.nuisance_audit import GateRun
+from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 from evals.nuisance_gate_baseline import (
     NuisanceGateConditions,
     NuisanceServerBaseline,
@@ -12,7 +13,6 @@ from evals.nuisance_gate_baseline import (
     write_baseline,
 )
 from evals.nuisance_gate_session_model import NuisanceGateHarness, NuisanceGateOptions
-from evals.nuisance_images import nuisance_fixture_fingerprint
 from evals.run_images import ContainerSweep
 from tests.unit.support.test_holdout_run_given import RunningContainers
 from tests.unit.support.test_nuisance_admission_given import an_admission

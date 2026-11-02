@@ -143,7 +143,8 @@ def a_backend_registry() -> dict[str, RegisteredBackend]:
             provisioner=_a_fake_provisioner,
             network="fake-net",
             image="fake/backend:1.0",
-            built_service=None,
+            built_services=(),
+            served=(),
         )
     }
 

@@ -15,7 +15,7 @@ from evals.nuisance_admission import BackendFixture
 from evals.nuisance_assembly import assemble_server, split_flaw_of
 from evals.nuisance_audit import DroppedRun
 from evals.nuisance_counter import counter_fingerprint
-from evals.nuisance_images import nuisance_fixture_fingerprint
+from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 from evals.nuisance_results import FigureExit, NotRunCause, NuisanceRunStatus, RunInterrupted
 from evals.nuisance_vetting import benign_call
 from evals.probe import call_cost

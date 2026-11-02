@@ -26,6 +26,7 @@ from evals.nuisance_audit import (
     gate_run,
     nuisance_audit,
 )
+from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 from evals.nuisance_gate import (
     NuisanceGateResult,
     ServerCandidate,
@@ -51,7 +52,7 @@ from evals.nuisance_gate_session_model import (
     ServerRuns,
 )
 from evals.nuisance_gate_session_recording import load_checked, record, recording_tree
-from evals.nuisance_images import backend_image_ids, image_tag, nuisance_fixture_fingerprint
+from evals.nuisance_images import backend_image_ids, image_tag
 from evals.nuisance_results import FigureExit
 from evals.nuisance_run_containers import run_images, sweep_run_containers
 from evals.recording import RecordingRefused

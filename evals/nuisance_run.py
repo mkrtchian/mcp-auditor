@@ -37,7 +37,7 @@ from evals.nuisance_audit import (
     nuisance_audit,
 )
 from evals.nuisance_counter import counter_fingerprint
-from evals.nuisance_images import nuisance_fixture_fingerprint
+from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 from evals.nuisance_population import RunPopulation
 from evals.nuisance_results import (
     DROPPED_RUN_REASONS,
