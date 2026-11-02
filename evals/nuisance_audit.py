@@ -51,8 +51,8 @@ def nuisance_environment(
 ) -> Generator[Launch]:
     """The launch of one server on its patched image. With no backend fixture it is the current
     single-container launch; with one it delegates to the registered provisioner, which brings
-    the backend up and yields the server launch wired to it. The provisioner owns the network, so
-    a backend server's launch never goes through `_network_args`."""
+    the backend up and yields the server launch wired to it. The provisioner owns the closed network
+    that joins the server to its backend and to nothing else."""
     if server.backend is None:
         yield _single_container_launch(server)
     else:
@@ -62,9 +62,8 @@ def nuisance_environment(
 
 def _single_container_launch(server: AdmittedServer) -> Launch:
     """The patched image under the acceptance confinement, with no mount, no layout and no
-    planting. The user, working directory and network come from `server.host`. A networked host
-    gets the plain default bridge with egress: no sidecar, holder or planted endpoint, since
-    nothing is planted."""
+    planting. The user and working directory come from `server.host`. A server with no backend
+    runs with no network, the admission refusing `has_network` without one."""
     host = server.host
     return Launch(
         command="docker",
@@ -76,15 +75,11 @@ def _single_container_launch(server: AdmittedServer) -> Launch:
             *user_args(host.user),
             "-w",
             host.working_directory,
-            *_network_args(host.has_network),
+            *no_network_args(),
             image_tag(server.service),
             *server.launch,
         ],
     )
-
-
-def _network_args(has_network: bool) -> list[str]:
-    return ["--network", "bridge"] if has_network else no_network_args()
 
 
 async def benign_call_failure(server: AdmittedServer, mcp_client: MCPClientPort) -> str | None:

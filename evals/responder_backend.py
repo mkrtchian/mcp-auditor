@@ -1,7 +1,8 @@
 """The lifecycle shared by the light HTTP responder backends (CKAN, ContextForge).
 
-A responder is a singleton container on a fixed public-range IP of its own labeled bridge, stood
-once and reused across a server's concurrent nuisance runs, reaped by the generic orphan sweep.
+A responder is a singleton container on a fixed public-range IP of its own closed labeled bridge
+(no route to the host or the Internet), stood once and reused across a server's concurrent nuisance
+runs, reaped by the generic orphan sweep.
 """
 
 import subprocess
@@ -10,6 +11,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
+from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, PlantingHost
 from evals.cve_targets import DOCKER_DIRECTORY
@@ -48,7 +50,7 @@ class Responder:
 
     def ensure(self) -> None:
         self._ensure_image()
-        self._ensure_network()
+        ensure_closed_network(self.bridge, "--subnet", self.subnet)
         if not self._running():
             if self._exists():
                 remove(self.container)
@@ -70,12 +72,6 @@ class Responder:
                 "docker", "build", "-t", self.image, "-f", str(self.dockerfile),
                 str(DOCKER_DIRECTORY), timeout=600.0,
             )  # fmt: skip
-
-    def _ensure_network(self) -> None:
-        listed = _run("docker", "network", "ls", "--format", "{{.Name}}", check=False)
-        if self.bridge in listed.stdout.split():
-            return
-        _run("docker", "network", "create", "--label", LABEL, "--subnet", self.subnet, self.bridge)
 
     def _running(self) -> bool:
         return self.container in self._names("docker", "ps")

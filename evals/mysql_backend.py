@@ -1,6 +1,7 @@
 """The MySQL and AWS-stub backend's lifecycle.
 
-Two persistent containers on one labeled bridge, reachable by container name: a MySQL engine and a
+Two persistent containers on one closed labeled bridge (no route to the host or the Internet),
+reachable by container name: a MySQL engine and a
 moto AWS stub. The audited awslabs.mysql-mcp-server reaches its database through the RDS and
 Secrets Manager APIs, so the stub answers `describe_db_clusters` with the master-user secret ARN and
 `get_secret_value` with the credentials, and the engine behind `MYSQL_CONTAINER` is the database
@@ -20,6 +21,7 @@ import threading
 import time
 from collections.abc import Callable, Sequence
 
+from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, PlantingHost
 from evals.doris_backend import MYSQL_CLIENT_IMAGE, user_args
@@ -97,19 +99,13 @@ def mysql_server_args(
 
 
 def ensure_mysql() -> None:
-    _ensure_network()
+    ensure_closed_network(MYSQL_BRIDGE)
     _ensure_engine()
     _ensure_stub()
 
 
 def mysql_rm(name: str) -> None:
     remove(name)
-
-
-def _ensure_network() -> None:
-    listed = _run("docker", "network", "ls", "--format", "{{.Name}}", check=False)
-    if MYSQL_BRIDGE not in listed.stdout.split():
-        _run("docker", "network", "create", "--label", LABEL, MYSQL_BRIDGE)
 
 
 def _ensure_engine() -> None:

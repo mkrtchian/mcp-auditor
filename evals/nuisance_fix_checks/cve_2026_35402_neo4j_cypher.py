@@ -8,12 +8,12 @@ past the gate, and reaches an internal URL from the Neo4j engine itself, not the
 (reach = internal_fetch). 0.6.0 replaces the regex with an EXPLAIN query_type classification
 that rejects anything classified 'rw', so the same query is refused before it runs.
 
-The SSRF originates in the Neo4j engine, so the fix check stands three containers on one
-labeled bridge: a sentinel serving the per-launch nonce under a stable network alias the
-engine resolves regardless of container name, a fresh Neo4j database (APOC unrestricted, file
-import off) under its own stable alias, and the server pointed at that alias by an `-e`
-override of its baked NEO4J_URI. None of the three carries both the flaw and the fix; the
-vulnerable and patched arms differ only in the server image.
+The SSRF originates in the Neo4j engine, so the fix check stands three containers on one closed
+labeled bridge (no route to the host or the Internet): a sentinel serving the per-launch nonce under
+a stable network alias the engine resolves regardless of container name, a fresh Neo4j database
+(APOC unrestricted, file import off) under its own stable alias, and the server pointed at that
+alias by an `-e` override of its baked NEO4J_URI. None of the three carries both the flaw and the
+fix; the vulnerable and patched arms differ only in the server image.
 """
 
 import re
@@ -24,6 +24,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
+from evals.closed_network import ensure_closed_network
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import (
@@ -120,7 +121,7 @@ def neo4j_env(
 ) -> Generator[Launch]:
     _ensure_sentinel_image()
     _ensure_neo4j_image()
-    _ensure_bridge()
+    ensure_closed_network(BRIDGE)
     sentinel = f"mcp-auditor-kit-neo4j-ssrf-sentinel-{secrets.token_hex(4)}"
     database = f"mcp-auditor-kit-neo4j-ssrf-db-{secrets.token_hex(4)}"
     try:
@@ -147,12 +148,6 @@ def _ensure_image(image: str, dockerfile: Path) -> None:
             "docker", "build", "-t", image, "-f", str(dockerfile), str(DOCKER_DIRECTORY),
             timeout=600.0,
         )  # fmt: skip
-
-
-def _ensure_bridge() -> None:
-    listed = _run("docker", "network", "ls", "--format", "{{.Name}}", check=False)
-    if BRIDGE not in listed.stdout.split():
-        _run("docker", "network", "create", "--label", LABEL, BRIDGE)
 
 
 def _wait_until_ready(database: str) -> None:

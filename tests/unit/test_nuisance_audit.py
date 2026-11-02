@@ -84,10 +84,13 @@ def test_the_crafted_server_launches_unprivileged_at_the_root_with_no_network():
     assert _follows(args, "-w", "/")
 
 
-def test_a_networked_host_launches_on_the_default_bridge():
+def test_a_backend_less_server_launches_with_no_network_even_on_a_networked_host():
     server = with_host(SERVER, PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True))
 
-    assert _follows(_launch_args(server), "--network", "bridge")
+    args = _launch_args(server)
+
+    assert _follows(args, "--network", "none")
+    assert "bridge" not in args
 
 
 def test_a_host_user_launches_as_the_invoking_user_in_its_working_directory():

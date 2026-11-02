@@ -1,6 +1,7 @@
 """The Neo4j backend's lifecycle.
 
-One persistent Neo4j container on a labeled bridge, reachable by container name. The audited
+One persistent Neo4j container on a closed labeled bridge (no route to the host or the Internet),
+reachable by container name. The audited
 mcp-neo4j-cypher reaches its database over Bolt, so the container behind `NEO4J_CONTAINER` is the
 database its run image's `NEO4J_URI` names. APOC is installed and its `apoc.load.*` procedures are
 unrestricted while file import is off, so a patched server's read-only gate is what stands between
@@ -17,6 +18,7 @@ import threading
 import time
 from collections.abc import Sequence
 
+from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, PlantingHost
 from evals.cve_targets import DOCKER_DIRECTORY
@@ -61,7 +63,7 @@ def neo4j_server_args(
 
 def ensure_neo4j() -> None:
     _ensure_image()
-    _ensure_network()
+    ensure_closed_network(NEO4J_BRIDGE)
     _ensure_database()
 
 
@@ -76,12 +78,6 @@ def _ensure_image() -> None:
             "docker", "build", "-t", NEO4J_IMAGE, "-f", str(NEO4J_BACKEND_DOCKERFILE),
             str(DOCKER_DIRECTORY), timeout=600.0,
         )  # fmt: skip
-
-
-def _ensure_network() -> None:
-    listed = _run("docker", "network", "ls", "--format", "{{.Name}}", check=False)
-    if NEO4J_BRIDGE not in listed.stdout.split():
-        _run("docker", "network", "create", "--label", LABEL, NEO4J_BRIDGE)
 
 
 def _ensure_database() -> None:

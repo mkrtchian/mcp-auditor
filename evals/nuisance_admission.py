@@ -136,6 +136,7 @@ def admission_problems(
         problems += _counted_tool_problems(server)
         problems += _benign_call_problems(server)
         problems += _patched_version_problems(server)
+        problems += _network_problems(server)
         problems += nuisance_backends.backend_problems(server, backends)
     return problems + walk_problems(admission, nuisance_census)
 
@@ -147,6 +148,15 @@ def _fingerprint_problems(admission: NuisanceAdmission, grammar_fingerprint: str
         f"grammar fingerprint {admission.grammar_fingerprint} is not the current "
         f"{grammar_fingerprint}"
     ]
+
+
+def _network_problems(server: AdmittedServer) -> list[str]:
+    if server.host.has_network and server.backend is None:
+        return [
+            f"{server.server_package}: has_network without a backend: "
+            "a server with no backend runs with no network"
+        ]
+    return []
 
 
 def _unsettled_disagreements(server: AdmittedServer) -> list[str]:

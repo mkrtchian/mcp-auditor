@@ -143,10 +143,10 @@ patched version.
   - `user`: `host` or `unprivileged`, `unprivileged` unless the patched image breaks under uid
     65534 and `HOME=/tmp`, the fix-check driver establishing it.
   - `working_directory`: `/` unless the image needs another.
-  - `has_network`: true only when a benign call reaches a host outside the container, which
-    gives the plain bridge, false otherwise, which runs the server with no network. A server
-    with a `backend` has the egress of its provisioner's network whatever `has_network` says, so
-    `has_network` does not control a backend server's reach.
+  - `has_network`: true only for a server with a `backend`, whose provisioner's closed network
+    joins it to the backend and to nothing else (no route to the host or the Internet). A server
+    with no backend runs with no network, and the admission refuses `has_network` without a
+    backend.
 
 ## FlawRecord backend_need
 

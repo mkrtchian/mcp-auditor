@@ -27,6 +27,7 @@ _MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
     given.with_a_counted_tool_missing_its_benign_call,
     given.with_an_unknown_backend_provisioner,
     given.with_a_backend_fixture_differing_from_its_provisioner,
+    given.with_a_networked_host_and_no_backend,
 ]
 
 
@@ -102,6 +103,22 @@ def test_a_differing_backend_fixture_names_the_expected_one():
     )
 
     assert "fake/backend:1.0" in problem
+
+
+def test_a_networked_host_with_no_backend_is_refused():
+    admission = given.with_a_networked_host_and_no_backend(given.an_admission())
+
+    problems = admission_problems(
+        admission,
+        given.a_nuisance_census(),
+        cve_baseline.grammar_fingerprint(),
+        given.a_backend_registry(),
+    )
+
+    assert problems == [
+        f"{given.SERVER_PACKAGE}: has_network without a backend: "
+        "a server with no backend runs with no network"
+    ]
 
 
 def test_a_fixture_backend_need_with_no_backend_is_allowed():

@@ -169,6 +169,11 @@ def with_a_backend_fixture_differing_from_its_provisioner(
     return _with_server(admission, lambda server: with_a_backend(server, backend))
 
 
+def with_a_networked_host_and_no_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
+    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
+    return _with_server(admission, lambda server: with_host(server, host))
+
+
 def with_every_flaw_needing_the_fixture(admission: NuisanceAdmission) -> NuisanceAdmission:
     def changed(server: AdmittedServer) -> AdmittedServer:
         flaws = [flaw.model_copy(update={"backend_need": "fixture"}) for flaw in server.flaws]

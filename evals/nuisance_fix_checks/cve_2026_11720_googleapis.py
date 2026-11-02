@@ -15,9 +15,10 @@ reaps it when the launch ends. It serves the nonce on both witness routes and on
 
 The patched build only lets a request through to a public-range address, so the benign call needs
 the responder on one, while the redirect has to land on a private one for the patched build to block
-it. The responder and the server therefore both join two bridges, the backend's public one and a
-private one of this fixture, at the same per-launch host number on each. The server's upstream is
-overridden to the public address with a `-e`, which wins over the image's baked `ENV`.
+it. The responder and the server therefore both join two closed bridges (no route to the host or the
+Internet), the backend's public one and a private one of this fixture, at the same per-launch host
+number on each. The server's upstream is overridden to the public address with a `-e`, which wins
+over the image's baked `ENV`.
 """
 
 import re
@@ -27,6 +28,7 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
+from evals.closed_network import ensure_closed_network
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import (
@@ -106,7 +108,7 @@ def googleapis_env(
 ) -> Generator[Launch]:
     with GOOGLEAPIS_LAUNCH_LOCK:
         ensure_googleapis_responder()
-        _ensure_internal_bridge()
+        ensure_closed_network(INTERNAL_BRIDGE, "--subnet", INTERNAL_SUBNET)
     name = f"mcp-auditor-kit-googleapis-r-{secrets.token_hex(4)}"
     launch_host = _per_launch_host()
     try:
@@ -119,22 +121,6 @@ def googleapis_env(
         yield Launch(command="docker", args=server_args(image, launch_host))
     finally:
         googleapis_rm(name)
-
-
-def _ensure_internal_bridge() -> None:
-    listed = subprocess.run(
-        ["docker", "network", "ls", "--format", "{{.Name}}"],
-        capture_output=True,
-        text=True,
-    )
-    if INTERNAL_BRIDGE in listed.stdout.split():
-        return
-    subprocess.run(
-        ["docker", "network", "create", "--label", LABEL, "--subnet", INTERNAL_SUBNET,
-         INTERNAL_BRIDGE],
-        check=True,
-        capture_output=True,
-    )  # fmt: skip
 
 
 def _per_launch_host() -> int:

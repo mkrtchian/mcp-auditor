@@ -6,7 +6,7 @@ sentinels are stood and torn down per run. This module owns that lifecycle, kept
 launch-construction concern of `cve_environments`: ensuring the cluster is up and query-ready (the
 front-end health wait, then the schema provisioning that gates on a live back-end), standing a
 sentinel on the static-IP link-local network the back-end reaches, and the thin `docker` wrappers
-underneath.
+underneath. Both networks are closed: no route to the host or the Internet.
 
 A caller drives this through `ensure_doris`, `start_doris_sentinel`, `doris_rm` and
 `DORIS_LAUNCH_LOCK`, wiring `DORIS_CONTAINER`/`DORIS_BRIDGE`/`DORIS_DB` into the server launch;
@@ -24,6 +24,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from uuid import uuid4
 
+from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
 from evals.cve_planting_base import (
     LABEL,
@@ -93,8 +94,8 @@ def doris_server_args(
 
 
 def ensure_doris() -> None:
-    _doris_network(DORIS_BRIDGE)
-    _doris_network(_DORIS_LLNET, _DORIS_LLSUBNET)
+    ensure_closed_network(DORIS_BRIDGE)
+    ensure_closed_network(_DORIS_LLNET, "--subnet", _DORIS_LLSUBNET)
     if not _doris_running():
         if _doris_exists():
             doris_rm(DORIS_CONTAINER)
@@ -174,16 +175,6 @@ def _doris_names(*ps_command: str) -> list[str]:
         *ps_command, "--filter", f"name=^{DORIS_CONTAINER}$", "--format", "{{.Names}}", check=False
     )
     return result.stdout.split()
-
-
-def _doris_network(name: str, subnet: str | None = None) -> None:
-    listed = _doris_run("docker", "network", "ls", "--format", "{{.Name}}", check=False)
-    if name in listed.stdout.split():
-        return
-    args = ["docker", "network", "create", "--label", LABEL, name]
-    if subnet is not None:
-        args += ["--subnet", subnet]
-    _doris_run(*args)
 
 
 def _doris_sql(sql: str) -> subprocess.CompletedProcess[str]:
