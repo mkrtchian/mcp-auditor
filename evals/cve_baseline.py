@@ -17,9 +17,11 @@ from evals import (
     cve_planting_base,
     cve_planting_docker,
     cve_planting_spec,
+    cve_planting_stand_ins,
     cve_proofs,
     cve_report_units,
     cve_units,
+    public_stand_ins,
 )
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
 from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
@@ -34,6 +36,7 @@ from evals.cve_targets import (
     image_tag,
 )
 from evals.gate import ReplayRule
+from evals.public_stand_ins import STAND_INS_DIRECTORY, stand_in
 from mcp_auditor.config import Settings
 
 CVE_BASELINE_DIRECTORY = Path(__file__).parent / "baselines" / "cve"
@@ -55,6 +58,8 @@ _ENVIRONMENT_PATHS = (
     Path(cve_planting_spec.__file__),
     Path(cve_planting_docker.__file__),
     Path(cve_endpoint_address.__file__),
+    Path(public_stand_ins.__file__),
+    Path(cve_planting_stand_ins.__file__),
 )
 
 
@@ -108,7 +113,10 @@ class CVETargetBaseline(BaseModel):
 
 
 def fixture_fingerprint(
-    target: CVETarget, places: Places, docker_directory: Path = DOCKER_DIRECTORY
+    target: CVETarget,
+    places: Places,
+    docker_directory: Path = DOCKER_DIRECTORY,
+    stand_ins_directory: Path = STAND_INS_DIRECTORY,
 ) -> str:
     """What builds, seeds and launches the target, and what of it reaches the auditor or
     the oracle (ADR 020's principle, read per target by ADR 024).
@@ -117,11 +125,12 @@ def fixture_fingerprint(
     and module docstrings are out), each Dockerfile of the target's images and the patched
     twin's Dockerfile (both without their comment and blank lines, so a patched pin that moves
     moves the fingerprint), the builder's name, the server image, the mechanism, the aim, the
-    tools filter, the flaw's reach, the planting host, the loaded record of each kept place
-    (its id, kind, coordinates and reach, in kept_places order), the launch-mode field (and the
-    fallback scope under the fallback launch-mode, holdout-rule.md:231), the backend images the
-    builder pulls outside the compose build (when any), and the sentinel Dockerfile
-    whenever a kept record is an http_endpoint, since the sentinel image serves it on any
+    tools filter, the flaw's reach, the planting host (with what each declared stand-in serves:
+    its address and its capture, leaf, key and authority by SHA-256), the loaded record of each
+    kept place (its id, kind, coordinates and reach, in kept_places order), the launch-mode
+    field (and the fallback scope under the fallback launch-mode, holdout-rule.md:231), the
+    backend images the builder pulls outside the compose build (when any), and the sentinel
+    Dockerfile whenever a kept record is an http_endpoint, since the sentinel image serves it on any
     target. Out:
     the exploits and benign call (calibration only), the severity, the note, the awaited
     capability (report text), the drawn nonces (random per launch), the CI skip, the kept
@@ -147,7 +156,7 @@ def fixture_fingerprint(
         target.aim.pattern,
         None if target.tools_filter is None else sorted(target.tools_filter),
         sorted(target.reaches),
-        planting_host_parts(target.planting_host),
+        planting_host_parts(target.planting_host, stand_ins_directory),
         [_record_parts(record) for record in records],
         target.launch_mode.value,
     ]
@@ -162,8 +171,23 @@ def fixture_fingerprint(
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
 
 
-def planting_host_parts(host: PlantingHost) -> list[object]:
-    return [host.user.value, host.working_directory, host.has_network]
+def planting_host_parts(
+    host: PlantingHost, stand_ins_directory: Path = STAND_INS_DIRECTORY
+) -> list[object]:
+    parts: list[object] = [host.user.value, host.working_directory, host.has_network]
+    names = host.public_names
+    # Only a declaring host gains parts: a host with none keeps its fingerprint and reads no file.
+    if names.stand_ins or names.trust or names.ip_label_domains:
+        parts.append([_stand_in_parts(name, stand_ins_directory) for name in names.stand_ins])
+        parts.append(list(names.trust))
+        parts.append(list(names.ip_label_domains))
+    return parts
+
+
+def _stand_in_parts(host: str, stand_ins_directory: Path) -> list[str]:
+    loaded = stand_in(host, stand_ins_directory)
+    served = (loaded.capture, loaded.certificate, loaded.key, loaded.authority)
+    return [host, loaded.address, *(hashlib.sha256(text.encode()).hexdigest() for text in served)]
 
 
 def _record_parts(record: Place) -> list[object]:

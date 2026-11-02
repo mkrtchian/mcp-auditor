@@ -1,5 +1,8 @@
+import json
+import shutil
 import subprocess
 from collections.abc import Sequence
+from pathlib import Path
 
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting import (
@@ -12,11 +15,23 @@ from evals.cve_planting import (
     confinement_args,
     planting_spec,
 )
-from evals.cve_planting_base import LABEL, SENTINEL_IMAGE
+from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, STAND_IN_IMAGE, PublicNames
 from evals.cve_planting_spec import request_target
 from mcp_auditor.adapters.docker import DockerRuntime
 
 IP_LITERAL = "198.51.100.5"  # RFC 5737 documentation range: routes nowhere
+STAND_IN_HOST = "public.fict"
+STAND_IN_ADDRESS = "93.184.215.14"  # a global unicast address, as the capture loader requires
+PLAIN_BODY = "the plain stand-in body"
+SECURE_BODY = "the secure stand-in body"
+_GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
+# The stand-in image's Python as the target: urllib verifies TLS against the default paths,
+# which `SSL_CERT_FILE` points at the fixture authority. A 4xx prints its status.
+_FETCH = (
+    "import sys,urllib.error,urllib.request\n"
+    "try:print(urllib.request.urlopen(sys.argv[1],timeout=5).read().decode(),end='')\n"
+    "except urllib.error.HTTPError as error:print(error.code,end='')"
+)
 # wget's own 5 s bound plus the start-up of the fresh container each read runs in.
 _READ_TIMEOUT = 10.0
 
@@ -25,6 +40,10 @@ def missing_prerequisite() -> str | None:
     if not DockerRuntime().available():
         return "CVE planting needs Docker"
     return None
+
+
+def missing_openssl() -> str | None:
+    return None if shutil.which("openssl") else "the planted stand-in needs openssl"
 
 
 def spec_of(
@@ -36,6 +55,65 @@ def spec_of(
     places.append(_place("endpoint-1", Coordinates(PlantKind.HTTP_ENDPOINT, host=host, path=path)))
     planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", has_network)
     return planting_spec(places, planting_host, RANDOM_NONCES)
+
+
+def a_stand_in_spec() -> PlantingSpec:
+    names = PublicNames(stand_ins=(STAND_IN_HOST,), trust=("SSL_CERT_FILE",))
+    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", True, names)
+    return planting_spec([], planting_host, RANDOM_NONCES)
+
+
+def a_stand_ins_directory(directory: Path) -> Path:
+    capture = {
+        "host": STAND_IN_HOST,
+        "address": STAND_IN_ADDRESS,
+        "captured_at": "2026-11-02T10:00:00Z",
+        "command": "uv run python -m evals.capture_stand_in --out x.json http://public.fict/",
+        "request_headers": [],
+        "routes": [_route("http", PLAIN_BODY), _route("https", SECURE_BODY)],
+    }
+    (directory / f"{STAND_IN_HOST}.json").write_text(json.dumps(capture))
+    subprocess.run(
+        [str(_GENERATE_TLS), "--out", str(directory / "tls"), STAND_IN_HOST],
+        check=True,
+        capture_output=True,
+    )
+    return directory
+
+
+def _route(scheme: str, body: str) -> dict[str, object]:
+    return {
+        "scheme": scheme,
+        "method": "GET",
+        "target": "/",
+        "status": 200,
+        "headers": [["Content-Type", "text/plain"]],
+        "body": body,
+    }
+
+
+def fetch_as_target(args: PlantedArgs, url: str) -> str:
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--label",
+            LABEL,
+            *confinement_args(),
+            *args.run_args(),
+            "--entrypoint",
+            "python",
+            STAND_IN_IMAGE,
+            "-c",
+            _FETCH,
+            url,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=_READ_TIMEOUT,
+    )
+    return result.stdout
 
 
 def _place(entry_id: str, coordinates: Coordinates) -> Place:
@@ -82,6 +160,7 @@ class RecordingPlanting(DockerPlanting):
     def __init__(self) -> None:
         self.networks: list[str] = []
         self.containers: list[str] = []
+        self.stand_ins: list[str] = []
 
     def create_network(self) -> str:
         name = super().create_network()
@@ -96,4 +175,10 @@ class RecordingPlanting(DockerPlanting):
     def start_sentinel(self, run_args: Sequence[str]) -> str:
         name = super().start_sentinel(run_args)
         self.containers.append(name)
+        return name
+
+    def start_stand_in(self, run_args: Sequence[str]) -> str:
+        name = super().start_stand_in(run_args)
+        self.containers.append(name)
+        self.stand_ins.append(name)
         return name

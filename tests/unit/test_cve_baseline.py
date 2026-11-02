@@ -14,6 +14,9 @@ from evals.cve_baseline import (
 )
 from evals.cve_grammar import CVEStatus
 from evals.cve_places import LayoutAnchor
+from evals.cve_planting_base import STAND_IN_SERVICE
+from evals.cve_targets import CVE_TARGETS
+from evals.holdout_targets import HOLDOUT_TARGETS
 
 DETECTED = CVEStatus.DETECTED
 MISSED = CVEStatus.MISSED
@@ -47,6 +50,39 @@ def test_the_fixture_fingerprint_ignores_what_neither_builds_nor_reaches_the_tar
     changed_target, changed_places = change(target, places, docker_directory)
 
     assert fixture_fingerprint(changed_target, changed_places, docker_directory) == before
+
+
+@pytest.mark.parametrize(
+    "change", given.STAND_IN_CHANGES.values(), ids=list(given.STAND_IN_CHANGES)
+)
+def test_the_fixture_fingerprint_moves_with_what_a_declared_stand_in_serves(
+    change: given.StandInChange, tmp_path: Path
+):
+    stand_ins = given.a_stand_ins_directory(tmp_path)
+    target, places = given.a_target_declaring_a_stand_in()
+    before = fixture_fingerprint(target, places, stand_ins_directory=stand_ins)
+
+    changed_target = change(target, stand_ins)
+
+    assert fixture_fingerprint(changed_target, places, stand_ins_directory=stand_ins) != before
+
+
+def test_a_target_without_public_names_reads_no_stand_in(tmp_path: Path):
+    target, places = given.a_target_keeping_a_file()
+
+    absent = fixture_fingerprint(target, places, stand_ins_directory=tmp_path / "absent")
+
+    assert absent == fixture_fingerprint(target, places)
+
+
+def test_a_target_declaring_a_stand_in_builds_the_stand_in_image():
+    declaring = [
+        target
+        for target in (*CVE_TARGETS, *HOLDOUT_TARGETS)
+        if target.planting_host.public_names.stand_ins
+    ]
+
+    assert not [target.cve_id for target in declaring if STAND_IN_SERVICE not in target.images]
 
 
 def test_two_targets_sharing_an_image_and_a_builder_but_not_an_aim_differ():

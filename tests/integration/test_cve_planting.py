@@ -7,8 +7,10 @@
 # the CI integration job and the CVE calibration job, turns that skip into a failure: a green
 # step there must mean the planting path ran. A missing or foreign sentinel image is rebuilt
 # through compose before the first case.
+import logging
 import os
 import time
+from pathlib import Path
 
 import pytest
 
@@ -16,7 +18,7 @@ import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
 from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_planting import DockerPlanting, PlantingFailed, planted
-from evals.cve_planting_base import SENTINEL_IMAGE, SENTINEL_SERVICE
+from evals.cve_planting_base import SENTINEL_IMAGE, SENTINEL_SERVICE, STAND_IN_SERVICE
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -27,9 +29,39 @@ def _planting_prerequisites() -> None:
             pytest.fail(missing)
         pytest.skip(missing)
     try:
-        ensure_images([SENTINEL_SERVICE], ComposeImageStore())
+        ensure_images([SENTINEL_SERVICE, STAND_IN_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:
         pytest.fail(str(error))
+
+
+@pytest.fixture
+def stand_ins_directory(tmp_path: Path) -> Path:
+    missing = given.missing_openssl()
+    if missing is not None:
+        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
+            pytest.fail(missing)
+        pytest.skip(missing)
+    return given.a_stand_ins_directory(tmp_path)
+
+
+def test_a_planted_stand_in_serves_its_capture_by_name_and_logs_a_miss(
+    stand_ins_directory: Path, caplog: pytest.LogCaptureFixture
+):
+    docker = given.RecordingPlanting()
+    host = given.STAND_IN_HOST
+
+    with (
+        caplog.at_level(logging.WARNING, logger="evals.cve_planting_docker"),
+        planted(given.a_stand_in_spec(), SENTINEL_IMAGE, docker, stand_ins_directory) as args,
+    ):
+        plain = given.fetch_as_target(args, f"http://{host}/")
+        secure = given.fetch_as_target(args, f"https://{host}/")
+        uncaptured = given.fetch_as_target(args, f"http://{host}/uncaptured")
+
+    assert (plain, secure, uncaptured) == (given.PLAIN_BODY, given.SECURE_BODY, "404")
+    assert f"stand-in for {host} had no capture for: miss http GET /uncaptured" in caplog.text
+    assert docker.stand_ins
+    then.nothing_it_made_outlives(docker)
 
 
 def test_a_planted_ip_literal_endpoint_serves_its_nonce():

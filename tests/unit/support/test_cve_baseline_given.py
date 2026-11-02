@@ -1,4 +1,5 @@
 import dataclasses
+import json
 import re
 import shutil
 from collections.abc import Callable
@@ -9,11 +10,17 @@ from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_grammar import CVEStatus, MechanismClass
 from evals.cve_places import Coordinates, LayoutAnchor, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting_base import PublicNames
 from evals.cve_targets import CVE_TARGETS, DOCKER_DIRECTORY, CVETarget, LaunchMode
 from evals.gate import ReplayRule
 from mcp_auditor.domain.ports import MCPClientPort
+from tests.unit.support.test_cve_planting_stand_ins_given import HOST as STAND_IN_HOST
+from tests.unit.support.test_cve_planting_stand_ins_given import (
+    a_stand_ins_directory as a_stand_ins_directory,
+)
 
 type TargetChange = Callable[[CVETarget, Places, Path], tuple[CVETarget, Places]]
+type StandInChange = Callable[[CVETarget, Path], CVETarget]
 
 KEPT_ENDPOINT_ID = "fict-endpoint"
 KEPT_FILE_ID = "fict-file"
@@ -191,6 +198,47 @@ UNFINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "a record the target does not keep": _adding_a_record_the_target_does_not_keep(),
     "a kept record's family": _changing_the_kept_record_family(),
     "the sentinel Dockerfile (no kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
+}
+
+
+def a_target_declaring_a_stand_in() -> tuple[CVETarget, Places]:
+    target, places = a_target_keeping_a_file()
+    host = dataclasses.replace(
+        target.planting_host, public_names=PublicNames(stand_ins=(STAND_IN_HOST,))
+    )
+    return dataclasses.replace(target, planting_host=host), places
+
+
+def _rewriting_the_capture(**fields: object) -> StandInChange:
+    def change(target: CVETarget, stand_ins: Path) -> CVETarget:
+        capture_file = stand_ins / f"{STAND_IN_HOST}.json"
+        capture = json.loads(capture_file.read_text())
+        capture_file.write_text(json.dumps({**capture, **fields}))
+        return target
+
+    return change
+
+
+def _rewriting_the_leaf(target: CVETarget, stand_ins: Path) -> CVETarget:
+    (stand_ins / "tls" / f"{STAND_IN_HOST}.pem").write_text("another leaf")
+    return target
+
+
+def _trusting(*names: str) -> StandInChange:
+    def change(target: CVETarget, _stand_ins: Path) -> CVETarget:
+        public_names = dataclasses.replace(target.planting_host.public_names, trust=names)
+        host = dataclasses.replace(target.planting_host, public_names=public_names)
+        return dataclasses.replace(target, planting_host=host)
+
+    return change
+
+
+# Applied to a_target_declaring_a_stand_in, on the directory a_stand_ins_directory wrote.
+STAND_IN_CHANGES: dict[str, StandInChange] = {
+    "capture": _rewriting_the_capture(captured_at="2026-11-03T10:00:00Z"),
+    "leaf": _rewriting_the_leaf,
+    "address": _rewriting_the_capture(address="93.184.215.15"),
+    "trust setting": _trusting("SSL_CERT_FILE"),
 }
 
 
