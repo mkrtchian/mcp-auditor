@@ -11,10 +11,11 @@ from evals.cve_targets import CVETarget
 
 
 async def calibrate(args: argparse.Namespace, graded: list[CVETarget], places: Places) -> int:
-    # ADR 031 admission, confirmed before a draw: Docker-dependent, deterministic, run only
-    # under the maintainer paths (calibrate and record-baseline), never on a gated comparison
-    # and not beside the synchronous preflight (no container exists there). The rule runs the
-    # layout check before the exploits (holdout-rule.md:159), so it reports its break first.
+    # ADR 031 admission, confirmed before a draw: Docker-dependent, deterministic, run only under
+    # the maintainer paths (calibrate and record-baseline), never on a gated comparison and not
+    # beside the synchronous preflight (no container exists there). The rule runs the layout check
+    # before the exploits (holdout-rule.md, Deployment layout (A server the layout breaks)), so it
+    # reports its break first.
     admission_failures = await confirm_admission(graded, places, ci=args.ci)
     all_live = await calibrate_all(
         graded, bounded(lambda t: calibrate_one(t, places), args.concurrency), ci=args.ci

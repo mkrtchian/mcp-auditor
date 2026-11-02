@@ -54,8 +54,8 @@ from evals.run_images import (
 from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
 
-HOLDOUT_RUNS = 3  # holdout-rule.md:235, lowerable to 1 and logged
-HOLDOUT_BUDGET = 10  # holdout-rule.md:227, a constant, not a flag
+HOLDOUT_RUNS = 3  # holdout-rule.md, Run conditions and statistic, lowerable to 1 and logged
+HOLDOUT_BUDGET = 10  # holdout-rule.md, Run conditions and statistic, a constant, not a flag
 HOLDOUT_CONCURRENCY = 6
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 

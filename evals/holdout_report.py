@@ -134,7 +134,8 @@ class HoldoutReport(BaseModel):
     commit: str
     census_commit: str
     recorded_at: str  # ISO timestamp: a model can change behind one identifier
-    # The run conditions and provenance, so a reader can tell two runs apart (holdout-rule.md:247).
+    # The run conditions and provenance, so a reader can tell two runs apart (holdout-rule.md, Run
+    # conditions and statistic).
     provider: str
     model: str
     judge_model: str

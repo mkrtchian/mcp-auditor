@@ -3,16 +3,17 @@
 The rule gates a fallback launch on a break: launch each version once with a minimal valid empty
 node at each layout path, by node type (the reference arm), and once with the layout, and call it a
 break when the launch or tools/list succeeded without the layout and failed with it, or when a call
-that returned no error without the layout returns one with it (holdout-rule.md:159). `layout_breaks`
-is the pure detector over the two collected surfaces for one version, `layout_breaks_any` over both
-versions (a break on either is a break). A changed response body (a discovery symlink in a listing,
-a shifted deterministic HEAD SHA) is not a break: only a lost tools/list or a newly-erroring call
-counts.
+that returned no error without the layout returns one with it (holdout-rule.md, Deployment layout (A
+server the layout breaks)). `layout_breaks` is the pure detector over the two collected surfaces for
+one version, `layout_breaks_any` over both versions (a break on either is a break). A changed
+response body (a discovery symlink in a listing, a shifted deterministic HEAD SHA) is not a break:
+only a lost tools/list or a newly-erroring call counts.
 
 The anti-leak guard (`nonce_in_surface`) is a separate pure verdict on the planted surface,
 implementing a distinct clause of the rule: a place the server itself reads at launch is not kept
-(holdout-rule.md:157), so no planted nonce may appear in the server's ordinary surface. Both are
-pinned by a golden master. The benign call is not run here.
+(holdout-rule.md, Deployment layout (A place is kept for a target)), so no planted nonce may appear
+in the server's ordinary surface. Both are pinned by a golden master. The benign call is not run
+here.
 
 `confirm_admission` is the Docker orchestration run under the maintainer paths (--calibrate and
 --record-baseline, never a gated run), before the exploit calibration so the break is reported
@@ -40,7 +41,8 @@ from evals.eval_display import console
 from evals.failure_text import FULL_DETAIL, ReportDetail
 
 # When a target already in the fallback launch-mode cannot start even the fallback launch, the
-# admission gives up: the container cannot run the server (holdout-rule.md:159).
+# admission gives up: the container cannot run the server (holdout-rule.md, Deployment layout (A
+# server the layout breaks)).
 _GAVE_UP_REASON = "the container cannot run the server"
 
 
@@ -63,7 +65,8 @@ class VersionObservation:
 class LayoutCheck:
     """The verdict `confirm_admission` computes inline, exposed so the holdout orchestrator reads
     it directly: the give-up reason (or None), whether the layout breaks either version, and the
-    kept layout places left without a route (holdout-rule.md:157, :159)."""
+    kept layout places left without a route (holdout-rule.md, Deployment layout (A place is kept for
+    a target, A server the layout breaks))."""
 
     gave_up: str | None
     breaks: bool
@@ -71,8 +74,9 @@ class LayoutCheck:
 
 
 def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
-    """Whether the layout breaks the version by the rule's criterion (holdout-rule.md:159). The
-    two surfaces run the same route procedure, so a call's error state aligns by position."""
+    """Whether the layout breaks the version by the rule's criterion (holdout-rule.md, Deployment
+    layout (A server the layout breaks)). The two surfaces run the same route procedure, so a call's
+    error state aligns by position."""
     if reference.tools_list_succeeded and not with_layout.tools_list_succeeded:
         return True
     return any(
@@ -83,7 +87,8 @@ def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
 
 def layout_breaks_any(pairs: Sequence[tuple[LayoutSurface, LayoutSurface]]) -> bool:
     """Whether the layout breaks any of the version pairs. The rule launches each version once with
-    and once without the layout, and a break on either version is a break (holdout-rule.md:159)."""
+    and once without the layout, and a break on either version is a break (holdout-rule.md,
+    Deployment layout (A server the layout breaks))."""
     return any(layout_breaks(reference, with_layout) for reference, with_layout in pairs)
 
 
@@ -94,8 +99,9 @@ def nonce_in_surface(planted: LayoutSurface, nonces: Sequence[str]) -> bool:
 def admission_gave_up(target: CVETarget, planted: RouteObservations) -> str | None:
     """The reason the admission gives up on a target, or None. A target already in the fallback
     launch-mode whose fallback launch itself fails to start cannot be run at all: the break detector
-    has no fallback left to gate (holdout-rule.md:159). A normal-mode target does not give up here,
-    its break is only reported so the maintainer sets the fallback launch-mode."""
+    has no fallback left to gate (holdout-rule.md, Deployment layout (A server the layout breaks)).
+    A normal-mode target does not give up here, its break is only reported so the maintainer sets
+    the fallback launch-mode."""
     if target.launch_mode is LaunchMode.FALLBACK and not planted.tools_list_succeeded:
         return _GAVE_UP_REASON
     return None
@@ -103,9 +109,10 @@ def admission_gave_up(target: CVETarget, planted: RouteObservations) -> str | No
 
 def unrouted_kept_places(records: Sequence[Place], observations: RouteObservations) -> list[Place]:
     """The kept layout places the route check does not admit. Keeping a layout place needs a route
-    the server's own output reveals (holdout-rule.md:157), so one without a route breaks the rule's
-    keeping condition and fails the admission. A catalogue place carries no anchor and route_admits
-    always admits it, so it never appears here."""
+    the server's own output reveals (holdout-rule.md, Deployment layout (A place is kept for a
+    target)), so one without a route breaks the rule's keeping condition and fails the admission. A
+    catalogue place carries no anchor and route_admits always admits it, so it never appears
+    here."""
     return [place for place in records if not route_admits(place, observations)]
 
 
@@ -116,7 +123,8 @@ def layout_check(
     patched: VersionObservation,
 ) -> LayoutCheck:
     """The admission verdict over the two versions' observations: the give-up reason, the break
-    on either version, and the kept layout places with no route (holdout-rule.md:157, :159)."""
+    on either version, and the kept layout places with no route (holdout-rule.md, Deployment layout
+    (A place is kept for a target, A server the layout breaks))."""
     gave_up = admission_gave_up(target, vuln.planted) or admission_gave_up(target, patched.planted)
     breaks = layout_breaks_any([_surface_pair(vuln), _surface_pair(patched)])
     unrouted = [place.id for place in unrouted_kept_places(records, vuln.planted)]
@@ -140,7 +148,8 @@ async def confirm_admission(
 ) -> list[str]:
     """Report each target's layout break, nonce leak and per-kept-place route, and return the
     admission failures: a kept layout place without a route breaks the rule's keeping condition
-    (holdout-rule.md:157), so the caller fails the maintainer run on it (never a gated run)."""
+    (holdout-rule.md, Deployment layout (A place is kept for a target)), so the caller fails the
+    maintainer run on it (never a gated run)."""
     console.print("\n[bold]Admission[/bold] (no LLM): layout break then discovery route\n")
     failures: list[str] = []
     for target in targets:

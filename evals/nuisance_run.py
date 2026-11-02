@@ -70,7 +70,8 @@ NUISANCE_CONCURRENCY = 6
 _REFUSAL = "nuisance run refused"
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 # The budget is the holdout's HOLDOUT_BUDGET: the rule reads the figure beside the holdout run,
-# whose budget is a constant, not a flag (holdout-rule.md:227), so no budget of its own here.
+# whose budget is a constant, not a flag (holdout-rule.md, Run conditions and statistic (A holdout
+# run audits every target)), so no budget of its own here.
 
 type Audit = Callable[[AdmittedServer], Awaitable[NuisanceAudit | DroppedRun]]
 

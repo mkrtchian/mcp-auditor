@@ -120,15 +120,15 @@ _PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]  # the in-scope checkout, /srv/app
 _CHECKOUT = Path(_PROJECT).relative_to(_WORKSPACE)  # the checkout's path under the temp root
 
 # The documented default scope a scope-carrying server falls back to when the layout breaks it
-# (holdout-rule.md:159): the in-scope checkout the deployment documents as the server's scope
-# (ADR 031). Unexercised today, every acceptance target keeps the normal launch-mode and no target
-# breaks (the behaviour smoke-check started all servers in the tree), so the fallback scope equals
-# the normal scope here; a target the layout breaks would carry its own fallback scope on the card.
-# The per-target CVETarget.fallback_scope is read only by fixture_fingerprint today, never by a
-# builder. Wiring an arbitrary fallback scope (its three shapes) into the launch waits for the
-# holdout-run machinery that does not exist yet, so a FALLBACK launch-mode with a scope other than
-# this _PROJECT default would not be honoured yet. It stays inert while every target keeps the
-# normal launch-mode.
+# (holdout-rule.md, Deployment layout (A server the layout breaks)): the in-scope checkout the
+# deployment documents as the server's scope (ADR 031). Unexercised today, every acceptance target
+# keeps the normal launch-mode and no target breaks (the behaviour smoke-check started all servers
+# in the tree), so the fallback scope equals the normal scope here; a target the layout breaks would
+# carry its own fallback scope on the card. The per-target CVETarget.fallback_scope is read only by
+# fixture_fingerprint today, never by a builder. Wiring an arbitrary fallback scope (its three
+# shapes) into the launch waits for the holdout-run machinery that does not exist yet, so a FALLBACK
+# launch-mode with a scope other than this _PROJECT default would not be honoured yet. It stays
+# inert while every target keeps the normal launch-mode.
 FALLBACK_SCOPE = _PROJECT
 
 

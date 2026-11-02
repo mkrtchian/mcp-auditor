@@ -123,22 +123,21 @@ def fixture_fingerprint(
     """What builds, seeds and launches the target, and what of it reaches the auditor or
     the oracle (ADR 020's principle, read per target by ADR 024).
 
-    In: the environment and places modules (AST fingerprint, so comments, formatting
-    and module docstrings are out), each Dockerfile of the target's images and the patched
-    twin's Dockerfile (both without their comment and blank lines, so a patched pin that moves
-    moves the fingerprint), the builder's name, the server image, the mechanism, the aim, the
-    tools filter, the flaw's reach, the planting host (with what each declared stand-in serves:
-    its address and its capture, leaf, key and authority by SHA-256), the loaded record of each
-    kept place (its id, kind, coordinates and reach, in kept_places order), the launch-mode
-    field (and the fallback scope under the fallback launch-mode, holdout-rule.md:231), the
-    backend images the builder pulls outside the compose build (when any), and the sentinel
-    Dockerfile whenever a kept record is an http_endpoint, since the sentinel image serves it on any
-    target. Out:
-    the exploits and benign call (calibration only), the severity, the note, the awaited
-    capability (report text), the drawn nonces (random per launch), the CI skip, the kept
-    places' family (plants nothing), and what each caller chooses to plant and launch (the
-    kept places for a graded run, every candidate for the survey), which live in the callers.
-    A change to the shared environment code moves every target's fingerprint.
+    In: the environment and places modules (AST fingerprint, so comments, formatting and module
+    docstrings are out), each Dockerfile of the target's images and the patched twin's Dockerfile
+    (both without their comment and blank lines, so a patched pin that moves moves the fingerprint),
+    the builder's name, the server image, the mechanism, the aim, the tools filter, the flaw's
+    reach, the planting host (with what each declared stand-in serves: its address and its capture,
+    leaf, key and authority by SHA-256), the loaded record of each kept place (its id, kind,
+    coordinates and reach, in kept_places order), the launch-mode field (and the fallback scope
+    under the fallback launch-mode, holdout-rule.md, Run conditions and statistic (A holdout run
+    audits every target)), the backend images the builder pulls outside the compose build (when
+    any), and the sentinel Dockerfile whenever a kept record is an http_endpoint, since the sentinel
+    image serves it on any target. Out: the exploits and benign call (calibration only), the
+    severity, the note, the awaited capability (report text), the drawn nonces (random per launch),
+    the CI skip, the kept places' family (plants nothing), and what each caller chooses to plant and
+    launch (the kept places for a graded run, every candidate for the survey), which live in the
+    callers. A change to the shared environment code moves every target's fingerprint.
 
     The environment modules are fingerprinted whole, the admission reference arm
     (`build_empty_layout`, inert on the graded run) included, by choice of granularity: a rare
@@ -163,7 +162,8 @@ def fixture_fingerprint(
         target.launch_mode.value,
     ]
     # The fingerprint covers the launch the target runs under with the fallback included
-    # (holdout-rule.md:231): under the fallback launch-mode the fallback scope is part of it.
+    # (holdout-rule.md, Run conditions and statistic (A holdout run audits every target)): under the
+    # fallback launch-mode the fallback scope is part of it.
     if target.launch_mode is LaunchMode.FALLBACK:
         parts.append([target.fallback_scope.kind.value, target.fallback_scope.path])
     if target.backend_images:

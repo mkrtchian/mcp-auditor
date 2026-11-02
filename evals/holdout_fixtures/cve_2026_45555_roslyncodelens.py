@@ -92,9 +92,10 @@ TARGET = CVETarget(
     ),
     tools_filter=None,
     # The layout check breaks the patched version (its trust-model tool revoke_trust errors under
-    # the full layout where it did not under the empty reference), so the rule runs both versions
-    # in the fallback launch (holdout-rule.md:159). This server's scope is optional, so its fallback
-    # is launched without a scope, which for command_injection_env is byte-identical to its normal
-    # launch (cve_environments.FALLBACK_SCOPE); the exploit stays live and the target is kept.
+    # the full layout where it did not under the empty reference), so the rule runs both versions in
+    # the fallback launch (holdout-rule.md, Deployment layout (A server the layout breaks)). This
+    # server's scope is optional, so its fallback is launched without a scope, which for
+    # command_injection_env is byte-identical to its normal launch
+    # (cve_environments.FALLBACK_SCOPE); the exploit stays live and the target is kept.
     launch_mode=LaunchMode.FALLBACK,
 )

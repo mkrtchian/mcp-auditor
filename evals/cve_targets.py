@@ -38,18 +38,20 @@ class TargetVersion(StrEnum):
 
 class LaunchMode(StrEnum):
     """The launch a target runs under, read by `environment()` to pick the launch shape. NORMAL is
-    the frozen layout; FALLBACK is the launch the rule gates on a break (holdout-rule.md:159). The
-    break detector only reports; the maintainer sets this field from calibration like kept_places,
-    and every acceptance target keeps NORMAL (no target breaks)."""
+    the frozen layout; FALLBACK is the launch the rule gates on a break (holdout-rule.md, Deployment
+    layout (A server the layout breaks)). The break detector only reports; the maintainer sets this
+    field from calibration like kept_places, and every acceptance target keeps NORMAL (no target
+    breaks)."""
 
     NORMAL = "normal"
     FALLBACK = "fallback"
 
 
 class FallbackScopeKind(StrEnum):
-    """The three shapes the rule distinguishes for the fallback scope (holdout-rule.md:159): the
-    default the server documents, an empty directory outside the layout when the server requires a
-    scope and documents none, and no scope when the scope is optional."""
+    """The three shapes the rule distinguishes for the fallback scope (holdout-rule.md, Deployment
+    layout (A server the layout breaks)): the default the server documents, an empty directory
+    outside the layout when the server requires a scope and documents none, and no scope when the
+    scope is optional."""
 
     DOCUMENTED_DEFAULT = "documented_default"
     EMPTY_OUTSIDE = "empty_outside"
@@ -283,7 +285,7 @@ CVE_TARGETS: list[CVETarget] = [
         ),
         # mcp-server-git's --repository is optional (each tool carries a per-call repo_path), so the
         # rule's optional-scope branch applies: the fallback launches with no scope
-        # (holdout-rule.md:159).
+        # (holdout-rule.md, Deployment layout (A server the layout breaks)).
         fallback_scope=_NO_FALLBACK_SCOPE,
     ),
     CVETarget(

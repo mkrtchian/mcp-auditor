@@ -7,10 +7,11 @@ the scope. Never by a planted file and never by a path the route procedure itsel
 arguments (rule v5: the scope and a documented default count as route, a path the procedure sent
 does not, since the grammar does not credit a proof copied from the arguments, ADR 029).
 
-`minimal_calls` fixes the route procedure (holdout-rule.md:157): every tool the target exposes,
-in the order `tools/list` returns, called once with the minimal arguments its schema requires,
-the filling policy the same for every target. `route_observations` is the Docker collector that
-runs it, exercised by the maintainer like calibration.
+`minimal_calls` fixes the route procedure (holdout-rule.md, Deployment layout (A place is kept for a
+target)): every tool the target exposes, in the order `tools/list` returns, called once with the
+minimal arguments its schema requires, the filling policy the same for every target.
+`route_observations` is the Docker collector that runs it, exercised by the maintainer like
+calibration.
 
 A catalogue place carries no anchor and is on the route by construction (ADR 029 chose it as a
 place an attacker probes), so `route_admits` admits it unconditionally. A layout place is admitted
@@ -69,10 +70,10 @@ def _revealed_paths(place: Place, observations: RouteObservations) -> set[str]:
 def _documented_default(place: Place, scope: str | None) -> set[str]:
     """A location the place's plant kind documents relative to the scope. Only the dotenv kind
     carries one: find_dotenv searches increasingly higher folders, so the parent of the working
-    directory is the documented default for a workspace .env (holdout-rule.md:171). No other kind
-    documents a relation, so the bare's <project>.git sibling placement, a convention of our
-    layout rather than a location the git documentation fixes relative to a checkout, is never
-    derived."""
+    directory is the documented default for a workspace .env (holdout-rule.md, Deployment layout
+    (The places of the deployment layout)). No other kind documents a relation, so the bare's
+    <project>.git sibling placement, a convention of our layout rather than a location the git
+    documentation fixes relative to a checkout, is never derived."""
     if place.kind is PlantKind.DOTENV and scope:
         parent = posixpath.dirname(_normalise(scope))
         if parent not in ("", "/"):
@@ -110,11 +111,12 @@ def minimal_calls(
     tools_filter: frozenset[str] | None,
     scope: str | None,
 ) -> list[tuple[str, dict[str, Any]]]:
-    """The rule's route procedure (holdout-rule.md:157): every tool the target exposes, in the
-    order tools/list returns, called once with the minimal arguments its schema requires. The
-    exposed tools are those under the target's filter, or all of them when it sets none (the
-    holdout sets no filter, holdout-rule.md:192). Arguments are filled by JSON type and `required`,
-    the same policy for every target, never by tool name."""
+    """The rule's route procedure (holdout-rule.md, Deployment layout (A place is kept for a
+    target)): every tool the target exposes, in the order tools/list returns, called once with the
+    minimal arguments its schema requires. The exposed tools are those under the target's filter, or
+    all of them when it sets none (the holdout sets no filter, holdout-rule.md, Eligibility
+    (Calibration)). Arguments are filled by JSON type and `required`, the same policy for every
+    target, never by tool name."""
     selected = (tool for tool in tools if tools_filter is None or tool.name in tools_filter)
     return [(tool.name, _minimal_arguments(tool, scope)) for tool in selected]
 

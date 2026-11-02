@@ -37,7 +37,8 @@ async def _vet(
 
 def vet_reason(target: CVETarget, conditions: list[str], layout: LayoutCheck) -> str | None:
     """Why a target is dropped from N before any audit, or None to run it. A break keeps a FALLBACK
-    target but drops a NORMAL one calibrated under a launch it lost (holdout-rule.md:159)."""
+    target but drops a NORMAL one calibrated under a launch it lost (holdout-rule.md, Deployment
+    layout (A server the layout breaks))."""
     if conditions:
         return "dead on a version: " + "; ".join(conditions)
     if layout.gave_up is not None:
