@@ -1,8 +1,8 @@
 {
   "host": "example.com",
-  "address": "172.66.147.243",
-  "captured_at": "2026-11-02T18:46:28Z",
-  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/example.com.json https://example.com/ https://example.com/robots.txt https://example.com/s.js http://example.com/ http://example.com/robots.txt http://example.com/s.js",
+  "address": "104.20.23.154",
+  "captured_at": "2026-11-02T20:06:04Z",
+  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/example.com.json https://example.com/ 'HEAD https://example.com/' https://example.com/robots.txt https://example.com/s.js http://example.com/ http://example.com/robots.txt http://example.com/s.js",
   "request_headers": [],
   "routes": [
     {
@@ -13,7 +13,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 18:46:28 GMT"
+          "Mon, 02 Nov 2026 20:06:04 GMT"
         ],
         [
           "Content-Type",
@@ -45,7 +45,7 @@
         ],
         [
           "Age",
-          "0"
+          "5"
         ],
         [
           "cf-cache-status",
@@ -53,7 +53,7 @@
         ],
         [
           "CF-RAY",
-          "a5454d5b8afa709b-CDG"
+          "a545c1f84bdcd093-CDG"
         ],
         [
           "alt-svc",
@@ -64,13 +64,66 @@
     },
     {
       "scheme": "https",
+      "method": "HEAD",
+      "target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Date",
+          "Mon, 02 Nov 2026 20:06:04 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html; charset=utf-8"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Server",
+          "cloudflare"
+        ],
+        [
+          "last-modified",
+          "Sun, 01 Nov 2026 22:45:37 GMT"
+        ],
+        [
+          "allow",
+          "GET, HEAD"
+        ],
+        [
+          "Accept-Ranges",
+          "bytes"
+        ],
+        [
+          "Age",
+          "5"
+        ],
+        [
+          "cf-cache-status",
+          "HIT"
+        ],
+        [
+          "CF-RAY",
+          "a545c1f86c78d093-CDG"
+        ],
+        [
+          "alt-svc",
+          "h3=\":443\"; ma=86400"
+        ]
+      ],
+      "body": ""
+    },
+    {
+      "scheme": "https",
       "method": "GET",
       "target": "/robots.txt",
       "status": 404,
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 18:46:28 GMT"
+          "Mon, 02 Nov 2026 20:06:04 GMT"
         ],
         [
           "Content-Type",
@@ -90,7 +143,7 @@
         ],
         [
           "Age",
-          "13774"
+          "4150"
         ],
         [
           "cf-cache-status",
@@ -98,7 +151,7 @@
         ],
         [
           "CF-RAY",
-          "a5454d5bab8b709b-CDG"
+          "a545c1f89d0ed093-CDG"
         ],
         [
           "alt-svc",
@@ -115,7 +168,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 18:46:28 GMT"
+          "Mon, 02 Nov 2026 20:06:04 GMT"
         ],
         [
           "Content-Type",
@@ -151,7 +204,7 @@
         ],
         [
           "Age",
-          "6307"
+          "11083"
         ],
         [
           "cf-cache-status",
@@ -159,7 +212,7 @@
         ],
         [
           "CF-RAY",
-          "a5454d5bdc02709b-CDG"
+          "a545c1f8bdabd093-CDG"
         ],
         [
           "alt-svc",
@@ -176,7 +229,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 18:46:28 GMT"
+          "Mon, 02 Nov 2026 20:06:04 GMT"
         ],
         [
           "Content-Type",
@@ -208,7 +261,7 @@
         ],
         [
           "Age",
-          "9"
+          "7"
         ],
         [
           "cf-cache-status",
@@ -216,7 +269,7 @@
         ],
         [
           "CF-RAY",
-          "a5454d5c1d483c8f-CDG"
+          "a545c1f8fcef2fb4-CDG"
         ],
         [
           "alt-svc",
@@ -233,7 +286,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 18:46:28 GMT"
+          "Mon, 02 Nov 2026 20:06:04 GMT"
         ],
         [
           "Content-Type",
@@ -253,7 +306,7 @@
         ],
         [
           "Age",
-          "13756"
+          "4132"
         ],
         [
           "cf-cache-status",
@@ -261,7 +314,7 @@
         ],
         [
           "CF-RAY",
-          "a5454d5c3d633c8f-CDG"
+          "a545c1f92d0f2fb4-CDG"
         ],
         [
           "alt-svc",
@@ -278,7 +331,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 18:46:28 GMT"
+          "Mon, 02 Nov 2026 20:06:05 GMT"
         ],
         [
           "Content-Type",
@@ -314,7 +367,7 @@
         ],
         [
           "Age",
-          "3258"
+          "8034"
         ],
         [
           "cf-cache-status",
@@ -322,7 +375,7 @@
         ],
         [
           "CF-RAY",
-          "a5454d5c6d7a3c8f-CDG"
+          "a545c1f94d252fb4-CDG"
         ],
         [
           "alt-svc",
