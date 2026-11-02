@@ -72,6 +72,12 @@ def test_every_committed_capture_loads_with_its_leaf():
     assert all(each.certificate.startswith("-----BEGIN CERTIFICATE-----") for each in loaded)
 
 
+def test_the_committed_captures_are_exactly_the_declared_stand_ins():
+    captured = {path.stem for path in STAND_INS_DIRECTORY.glob("*.json")}
+
+    assert captured == given.declared_stand_in_hosts()
+
+
 def test_the_committed_authority_signs_for_exactly_the_https_stand_in_hosts():
     hosts = given.committed_https_hosts(STAND_INS_DIRECTORY)
 

@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals import (
+    closed_network,
     cve_endpoint_address,
     cve_environments,
     cve_grammar,
@@ -60,6 +61,7 @@ _ENVIRONMENT_PATHS = (
     Path(cve_endpoint_address.__file__),
     Path(public_stand_ins.__file__),
     Path(cve_planting_stand_ins.__file__),
+    Path(closed_network.__file__),
 )
 
 

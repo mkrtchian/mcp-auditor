@@ -12,7 +12,7 @@ from evals.cve_places import (
     load_places,
 )
 from evals.cve_planting import planting_spec
-from evals.cve_planting_base import SENTINEL_SERVICE
+from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget
 from evals.holdout_targets import HOLDOUT_TARGETS
 
@@ -54,10 +54,11 @@ def test_a_holdout_service_reusing_an_acceptance_name_breaks_the_disjointness():
     assert not _services([reusing]).isdisjoint(_services(CVE_TARGETS))
 
 
-# The sentinel is the one image every target shares, so a holdout target may list it.
+# The sentinel and the stand-in are the fixture images targets share, so a holdout target may
+# list them.
 def _services(targets: Iterable[CVETarget]) -> set[str]:
     services = {name for target in targets for name in (*target.images, target.patched_image)}
-    return services - {SENTINEL_SERVICE}
+    return services - {SENTINEL_SERVICE, STAND_IN_SERVICE}
 
 
 def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():

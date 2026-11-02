@@ -6,7 +6,8 @@ up, probes each sentinel and stand-in from a probe container started with the ta
 arguments, and yields the target's `docker run` arguments as `PlantedArgs`. Setup undoes
 itself and raises `PlantingFailed` on any failure (a non-zero Docker call or a host file that
 cannot be written). Teardown is best-effort and never raises. It owns the network of a launch
-that has one, as a plain labelled bridge, so no planting touches the host's routing table.
+that has one, closed (internal, with an isolated gateway), so a launch reaches neither the host
+nor the Internet and no planting touches the host's routing table.
 
 The pure half (`planting_spec`), the vocabulary and the Docker port live in the sibling
 modules, the stand-ins' setup in `cve_planting_stand_ins`. This module re-exports their public

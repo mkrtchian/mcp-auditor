@@ -3,7 +3,8 @@
 Setup calls run with `check=True` so a failure raises before a launch is yielded. Teardown
 calls are best-effort and never raise. Every network and container carries the
 `mcp-auditor-cve` label, so an orphan left by a crashed run is swept by label and never
-blocks a later launch.
+blocks a later launch. Every network is closed (`closed_network`): internal, with an isolated
+gateway, so a launch reaches neither the host nor the Internet.
 """
 
 import logging
@@ -14,6 +15,7 @@ import tempfile
 import time
 from collections.abc import Sequence
 
+from evals.closed_network import create_closed_network
 from evals.cve_planting_base import (
     LABEL,
     ImageAccounts,
@@ -73,9 +75,7 @@ class DockerPlanting(PlantingDocker):
 
     def create_network(self) -> str:
         name = f"{LABEL}-{secrets.token_hex(6)}"
-        subprocess.run(
-            ["docker", "network", "create", "--label", LABEL, name], check=True, capture_output=True
-        )
+        create_closed_network(name)
         return name
 
     def remove_network(self, name: str) -> None:

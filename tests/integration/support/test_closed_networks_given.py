@@ -7,10 +7,15 @@ import time
 from collections.abc import Generator
 
 from evals.closed_network import create_closed_network
+from evals.cve_planting import DockerPlanting, PlantedArgs, confinement_args, planted
 from evals.cve_planting_base import LABEL, SENTINEL_IMAGE
+from tests.integration.support.test_cve_planting_given import (
+    IP_LITERAL as IP_LITERAL,
+)
 from tests.integration.support.test_cve_planting_given import (
     missing_prerequisite as missing_prerequisite,
 )
+from tests.integration.support.test_cve_planting_given import spec_of
 
 PINNED_NAME = "pinned.test"
 UNPINNED_NAME = "example.com"
@@ -82,6 +87,27 @@ def a_container_on(network: str) -> Generator[str]:
     name = start_container_on(network)
     try:
         _wait_serving(name)
+        yield name
+    finally:
+        subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
+
+
+@contextlib.contextmanager
+def a_planted_launch_with_a_network() -> Generator[PlantedArgs]:
+    """An IP-literal sentinel, so the launch joins a holder on the planting's own network."""
+    spec = spec_of(IP_LITERAL, "/fict/secret", has_network=True)
+    with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
+        yield args
+
+
+@contextlib.contextmanager
+def a_container_with(args: PlantedArgs) -> Generator[str]:
+    name = f"{LABEL}-closed-test-{secrets.token_hex(6)}"
+    _docker(
+        "run", "-d", "--rm", "--label", LABEL, "--name", name, *confinement_args(),
+        *args.run_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, "300",
+    )  # fmt: skip
+    try:
         yield name
     finally:
         subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)

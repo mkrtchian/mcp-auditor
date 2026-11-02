@@ -3,7 +3,9 @@
 A localhost name serves on the holder's loopback; an IPv4 literal binds that literal (adding a
 loopback alias unless it already is loopback); a DNS name on a networked launch is a bridge
 alias with no bound address; a DNS name on an isolated launch is served on a private /24 the
-holder adds and the target resolves through an added host entry. `pin_public_names` adds the
+holder adds and the target resolves through an added host entry. A stand-in's address is bound
+like an IPv4 literal, a loopback alias on the holder, its name in the holder's host entries, once
+the planting has loaded its capture. `pin_public_names` adds the
 host entries a planting host's public names give without a capture, and refuses a malformed
 declaration. The draft these resolvers mutate is named structurally (`BindAddressDraft`), so
 this module stays free of the spec's private draft type while `_SpecDraft` satisfies it.

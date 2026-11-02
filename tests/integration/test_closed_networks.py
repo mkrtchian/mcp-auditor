@@ -1,6 +1,7 @@
 # The proof that a closed fixture network reaches neither the host nor the Internet: a listener
 # on the host's every address, the sentinel image as the client. The control on a plain network
-# keeps the closed case from passing on a listener that was unreachable anyway.
+# keeps the closed case from passing on a listener that was unreachable anyway. The planted case
+# checks the path every networked target takes, a container joined to a planting's holder.
 #
 # Skipped without Docker, failed under `CVE_PLANTING_REQUIRED=1`, as `test_cve_planting.py`. A
 # missing or foreign sentinel image is rebuilt through compose before the first case.
@@ -37,6 +38,17 @@ def test_a_closed_network_reaches_neither_the_host_nor_the_internet():
         then.unreachable(container, port)
         then.no_default_route(container)
         then.pinned_name_resolves_and_unpinned_fails_fast(container)
+
+
+def test_a_planted_launch_with_a_network_reaches_neither_the_host_nor_the_internet():
+    with (
+        given.a_host_listener() as port,
+        given.a_planted_launch_with_a_network() as args,
+        given.a_container_with(args) as container,
+    ):
+        assert given.reaches(container, given.IP_LITERAL, 80)
+        then.unreachable(container, port)
+        then.no_default_route(container)
 
 
 def test_a_plain_network_reaches_the_host_listener_through_its_gateway():

@@ -16,6 +16,7 @@ from evals.cve_environments import ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places
 from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting_base import PublicNames
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -51,14 +52,17 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"internal_fetch"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2026-5323-a11y", "sentinel"),
+    images=("holdout-2026-5323-a11y", "sentinel", "stand-in"),
     server_image="holdout-2026-5323-a11y",
     patched_image="holdout-2026-5323-a11y-patched",
     # cwd /tmp, not /srv/app: Puppeteer's cosmiconfig config walk stats the cwd and its parents, and
     # the unprivileged user gets EACCES on the host-owned read-only /srv mount, so node would exit
-    # before tools/list. The SSRF server reads nothing from /srv and only needs network egress.
+    # before tools/list. The SSRF server reads nothing from /srv and only needs its network.
     planting_host=PlantingHost(
-        user=SymbolicUser.UNPRIVILEGED, working_directory="/tmp", has_network=True
+        user=SymbolicUser.UNPRIVILEGED,
+        working_directory="/tmp",
+        has_network=True,
+        public_names=PublicNames(stand_ins=("example.com",)),
     ),
     builder=ssrf_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),

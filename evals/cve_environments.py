@@ -14,8 +14,10 @@ the host that runs the benchmark. The three servers that need no network run
 with none: their images are built with everything they need, the auditor talks
 to them over stdio, and the only use left for egress is an exploit that
 succeeded and wants out. The SSRF target declares a network, which the planting
-layer creates for it, a plain labelled bridge with the host gateway and Internet
-egress, where a planted endpoint is reached (the flaw). A change to the profile is checked by
+layer creates for it closed (internal, with an isolated gateway, so it reaches
+neither the host nor the Internet), where a planted endpoint is reached (the flaw).
+A public name its benign call needs is pinned inside that network and served by a
+stand-in replaying a dated capture. A change to the profile is checked by
 re-running `--calibrate`, which replays each fixture's exploit path under it
 (the CI variant skips one CI-unstable target, so the full check is local). The
 one-shot address-setup container a planted endpoint needs adds `NET_ADMIN` to

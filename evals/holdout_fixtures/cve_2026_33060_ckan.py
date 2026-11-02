@@ -18,6 +18,7 @@ from evals.cve_environments import ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting_base import PublicNames
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -50,8 +51,9 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    # A legitimate CKAN status check against a real public portal: a valid https host with no
-    # internal address, admitted on both versions, surfaces no nonce and is not aimed.
+    # A legitimate CKAN status check against a public portal (its stand-in on the portal's public
+    # address): a valid https host with no internal address, admitted on both versions, surfaces
+    # no nonce and is not aimed.
     await client.call_tool("ckan_status_show", {"server_url": "https://demo.ckan.org"})
 
 
@@ -62,11 +64,14 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"internal_fetch"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2026-33060-ckan", "sentinel"),
+    images=("holdout-2026-33060-ckan", "sentinel", "stand-in"),
     server_image="holdout-2026-33060-ckan",
     patched_image="holdout-2026-33060-ckan-patched",
     planting_host=PlantingHost(
-        user=SymbolicUser.UNPRIVILEGED, working_directory="/srv", has_network=True
+        user=SymbolicUser.UNPRIVILEGED,
+        working_directory="/srv",
+        has_network=True,
+        public_names=PublicNames(stand_ins=("demo.ckan.org",), trust=("NODE_EXTRA_CA_CERTS",)),
     ),
     builder=ssrf_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),

@@ -16,6 +16,7 @@ from evals.cve_environments import ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting_base import PublicNames
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -51,11 +52,14 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"internal_fetch"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2026-104120-fetch", "sentinel"),
+    images=("holdout-2026-104120-fetch", "sentinel", "stand-in"),
     server_image="holdout-2026-104120-fetch",
     patched_image="holdout-2026-104120-fetch-patched",
     planting_host=PlantingHost(
-        user=SymbolicUser.UNPRIVILEGED, working_directory="/srv/app", has_network=True
+        user=SymbolicUser.UNPRIVILEGED,
+        working_directory="/srv/app",
+        has_network=True,
+        public_names=PublicNames(stand_ins=("example.com",), trust=("SSL_CERT_FILE",)),
     ),
     builder=ssrf_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),

@@ -5,6 +5,10 @@ from typing import Any
 
 from cryptography import x509
 
+from evals.apify_backend import API_HOST
+from evals.cve_targets import CVE_TARGETS
+from evals.holdout_targets import HOLDOUT_TARGETS
+
 HOST = "example.com"
 
 
@@ -46,6 +50,12 @@ def a_route(scheme: str) -> dict[str, Any]:
         "headers": [],
         "body": "",
     }
+
+
+def declared_stand_in_hosts() -> set[str]:
+    targets = (*CVE_TARGETS, *HOLDOUT_TARGETS)
+    declared = {host for target in targets for host in target.planting_host.public_names.stand_ins}
+    return declared | {API_HOST}
 
 
 def committed_https_hosts(directory: Path) -> set[str]:
