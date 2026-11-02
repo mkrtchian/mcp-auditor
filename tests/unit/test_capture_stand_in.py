@@ -1,6 +1,11 @@
 import pytest
 
-from evals.capture_stand_in import CapturedResponse, CaptureProvenance, capture_record
+from evals.capture_stand_in import (
+    CapturedResponse,
+    CaptureProvenance,
+    capture_record,
+    parse_request,
+)
 
 _PROVENANCE = CaptureProvenance(
     host="example.com",
@@ -11,10 +16,12 @@ _PROVENANCE = CaptureProvenance(
 )
 
 
-def _response(status: int = 200, body: bytes = b"<html>hi</html>") -> CapturedResponse:
+def _response(
+    status: int = 200, body: bytes = b"<html>hi</html>", method: str = "GET"
+) -> CapturedResponse:
     return CapturedResponse(
         scheme="https",
-        method="GET",
+        method=method,
         target="/robots.txt?a=1",
         status=status,
         headers=(("Content-Type", "text/html; charset=UTF-8"), ("Alt-Svc", 'h3=":443"')),
@@ -57,3 +64,28 @@ def test_each_sent_request_header_is_recorded_with_its_name_and_value():
 def test_a_body_that_is_not_utf8_is_refused():
     with pytest.raises(ValueError, match="UTF-8"):
         capture_record(_PROVENANCE, [_response(body=b"\xff\xfe")])
+
+
+def test_a_head_route_keeps_its_method_status_and_headers_with_an_empty_body():
+    route = capture_record(_PROVENANCE, [_response(method="HEAD", body=b"")])["routes"][0]
+
+    assert route["method"] == "HEAD"
+    assert route["status"] == 200
+    assert route["headers"] == [
+        ["Content-Type", "text/html; charset=UTF-8"],
+        ["Alt-Svc", 'h3=":443"'],
+    ]
+    assert route["body"] == ""
+
+
+def test_a_bare_url_is_a_get():
+    assert parse_request("https://example.com/a?b=1") == ("GET", "https://example.com/a?b=1")
+
+
+def test_a_url_prefixed_head_is_a_head():
+    assert parse_request("HEAD https://example.com/") == ("HEAD", "https://example.com/")
+
+
+def test_another_method_prefix_is_refused():
+    with pytest.raises(SystemExit, match="HEAD"):
+        parse_request("POST https://example.com/")

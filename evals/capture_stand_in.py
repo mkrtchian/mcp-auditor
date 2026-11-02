@@ -2,7 +2,10 @@
 
     uv run python -m evals.capture_stand_in --out PATH URL [URL ...] [--header 'NAME: VALUE']
 
-Every URL shares one host. Each is fetched once with no redirect following and no content
+Every URL shares one host. A URL is fetched with GET, or with HEAD when prefixed `HEAD `
+(one argument, `'HEAD https://example.com/'`), for a server that checks a page before reading
+it: a HEAD route is recorded with the status and headers the service gave and an empty body.
+Each is fetched once with no redirect following and no content
 coding, and its status, every response header and its body are recorded whatever the status,
 so a 401 or a 404 is replayed as the real service gave it. A `--header` is sent and recorded
 verbatim, name and value, in `request_headers` and in `command`: it carries only the dummy
@@ -75,10 +78,20 @@ def _route(response: CapturedResponse) -> dict[str, Any]:
     }
 
 
+def parse_request(text: str) -> tuple[str, str]:
+    method, separator, url = text.partition(" ")
+    if not separator:
+        return "GET", text
+    if method != "HEAD":
+        raise SystemExit(f"{text!r}: a URL is bare (GET) or prefixed 'HEAD '")
+    return method, url.strip()
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     parsed = _parser().parse_args(arguments)
-    urls = [httpx.URL(url) for url in parsed.urls]
+    requests = [(method, httpx.URL(url)) for method, url in map(parse_request, parsed.urls)]
+    urls = [url for _, url in requests]
     hosts = {url.host for url in urls}
     if len(hosts) != 1:
         raise SystemExit(f"every URL must share one host, got {sorted(hosts)}")
@@ -90,7 +103,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         command=f"{_COMMAND} {shlex.join(arguments)}",
         request_headers=headers,
     )
-    responses = _fetch_all(urls, headers)
+    responses = _fetch_all(requests, headers)
     text = json.dumps(capture_record(provenance, responses), indent=2, ensure_ascii=False)
     Path(parsed.out).write_text(text + "\n")
     return 0
@@ -100,7 +113,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=_COMMAND)
     parser.add_argument("--out", required=True)
     parser.add_argument("--header", action="append", default=[], metavar="'NAME: VALUE'")
-    parser.add_argument("urls", nargs="+", metavar="URL")
+    parser.add_argument("urls", nargs="+", metavar="[HEAD ]URL")
     return parser
 
 
@@ -116,18 +129,18 @@ def _first_ipv4(host: str) -> str:
 
 
 def _fetch_all(
-    urls: Sequence[httpx.URL], headers: tuple[tuple[str, str], ...]
+    requests: Sequence[tuple[str, httpx.URL]], headers: tuple[tuple[str, str], ...]
 ) -> list[CapturedResponse]:
     sent = [("Accept-Encoding", "identity"), *headers]
     with httpx.Client(follow_redirects=False, headers=sent) as client:
-        return [_fetch(client, url) for url in urls]
+        return [_fetch(client, method, url) for method, url in requests]
 
 
-def _fetch(client: httpx.Client, url: httpx.URL) -> CapturedResponse:
-    response = client.get(url)
+def _fetch(client: httpx.Client, method: str, url: httpx.URL) -> CapturedResponse:
+    response = client.request(method, url)
     return CapturedResponse(
         scheme=url.scheme,
-        method="GET",
+        method=method,
         target=url.raw_path.decode("ascii"),
         status=response.status_code,
         headers=tuple(
