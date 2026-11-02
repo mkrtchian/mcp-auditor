@@ -91,6 +91,16 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "8e7b9f2e87bd82f06de8a106bddbe4a916720bb72b0889466aaab29e4998dd5e"
     image: mcp-auditor-cve-sentinel:local
 
+  # The public-service stand-in, shared by every fixture that declares one (see
+  # evals/public_stand_ins.py). Outside the nuisance profile, so the bare build builds it.
+  stand-in:
+    build:
+      context: .
+      dockerfile: Dockerfile.stand-in
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "55cda553a09565be4f50cff83e81d57cf2cced378736be1c439599efd9f5a01e"
+    image: mcp-auditor-cve-stand-in:local
+
   # Holdout targets (transplanted; see evals/holdout_targets.py).
   holdout-2026-4270-aws-api-mcp:
     build:

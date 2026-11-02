@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 LABEL = "mcp-auditor-cve"
 SENTINEL_SERVICE = "sentinel"  # the sentinel's compose service, image_tag(SENTINEL_SERVICE)
 SENTINEL_IMAGE = "mcp-auditor-cve-sentinel:local"
+STAND_IN_SERVICE = "stand-in"
+STAND_IN_IMAGE = "mcp-auditor-cve-stand-in:local"
 
 
 class SymbolicUser(StrEnum):
@@ -38,6 +40,16 @@ class PlantingHost:
     user: SymbolicUser
     working_directory: str
     has_network: bool
+
+
+@dataclass(frozen=True)
+class StandIn:
+    host: str
+    address: str  # the IPv4 the real name resolved to at capture
+    capture: str  # the capture file's text, replayed verbatim
+    certificate: str  # the leaf for host, from the fixture authority
+    key: str
+    authority: str  # the fixture authority's certificate
 
 
 class NonceSource(Protocol):

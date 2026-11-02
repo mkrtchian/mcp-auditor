@@ -42,6 +42,7 @@ CLEAN_MODULES = (
     "cve_planting_docker",
     "cve_endpoint_address",
     "closed_network",
+    "public_stand_ins",
 )
 KIT_MODULES = ("__init__", "kit_client", "kit_launch", "kit_target", "kit_driver")
 
