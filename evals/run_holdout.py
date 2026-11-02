@@ -21,7 +21,7 @@ from evals.concurrency import bounded, positive_int
 from evals.cve_calibration import calibrate_all, calibrate_one
 from evals.cve_layout_check import confirm_admission
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
-from evals.cve_targets import CVETarget
+from evals.cve_targets import CVETarget, image_tag
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
 from evals.holdout_census import HoldoutCensus, load_census
@@ -41,7 +41,13 @@ from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
 from evals.provider_errors import ProviderFatal, describe_provider_error
 from evals.run_files import partial_result_kept, refuse_existing_report, write_result
-from evals.run_images import refuse_without_closed_networks
+from evals.run_images import (
+    DOCKER_SWEEP,
+    ContainerSweep,
+    refuse_without_closed_networks,
+    sweep_containers,
+    target_services,
+)
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
@@ -186,7 +192,7 @@ def _calibrate(args: argparse.Namespace) -> int:
         return 0
     refuse_without_closed_networks(check_closed_network_support)
     try:
-        return asyncio.run(_calibrate_targets(targets, places, args.concurrency))
+        return asyncio.run(_calibrate_targets(targets, places, args.concurrency, DOCKER_SWEEP))
     except ValueError as error:
         # A fixture-config error out of check_target (an unknown kept id, a planting_spec refusal)
         # is a crash, not a dead fixture (exit 1) nor the malformed census main reports (exit 3).
@@ -194,11 +200,17 @@ def _calibrate(args: argparse.Namespace) -> int:
         return CRASHED_EXIT
 
 
-async def _calibrate_targets(targets: list[CVETarget], places: Places, concurrency: int) -> int:
-    admission_failures = await confirm_admission(targets, places)
-    all_live = await calibrate_all(
-        targets, bounded(lambda target: calibrate_one(target, places), concurrency)
-    )
+async def _calibrate_targets(
+    targets: list[CVETarget], places: Places, concurrency: int, sweep: ContainerSweep
+) -> int:
+    tags = [image_tag(service) for service in target_services(targets)]
+    try:
+        admission_failures = await confirm_admission(targets, places)
+        all_live = await calibrate_all(
+            targets, bounded(lambda target: calibrate_one(target, places), concurrency)
+        )
+    finally:
+        sweep_containers(tags, sweep.running_containers, sweep.remove_containers)
     return 0 if all_live and not admission_failures else 1
 
 

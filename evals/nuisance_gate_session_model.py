@@ -15,6 +15,7 @@ from evals.nuisance_gate_baseline import (
     NuisanceServerBaseline,
     baseline_file_name,
 )
+from evals.run_images import ContainerSweep
 from mcp_auditor.domain.models import AuditReport
 
 type Baselines = dict[str, NuisanceServerBaseline]
@@ -35,6 +36,7 @@ class NuisanceGateHarness:
     clock: Callable[[], str]  # ISO timestamp for recorded_at
     baselines: Path
     check_networks: Callable[[], None]
+    sweep: ContainerSweep
 
 
 @dataclass(frozen=True)

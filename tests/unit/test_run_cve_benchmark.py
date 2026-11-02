@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -7,7 +8,14 @@ from evals import run_cve_benchmark
 from evals.baseline import BaselineStatus
 from evals.cve_audit import RunOverrides
 from evals.cve_measurement import MEASUREMENT_UNGATED, STEPS_WITHOUT_CHAINS
+from evals.cve_targets import CVE_TARGETS, image_tag
+from evals.run_images import target_services
 from tests.unit.support import test_run_cve_benchmark_given as given
+
+
+@pytest.fixture(autouse=True)
+def _no_docker_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
+    given.a_sweep_finding(monkeypatch)
 
 
 @pytest.mark.parametrize(
@@ -137,29 +145,61 @@ def test_a_calibration_that_cannot_reach_docker_exits_as_a_crash(
 
 
 def test_a_calibration_that_raises_exits_as_a_crash(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
-
-    async def no_admission_failure(*_args: object, **_kwargs: object) -> list[str]:
-        return []
-
-    async def boom(*_args: object, **_kwargs: object) -> bool:
-        raise ValueError("a kept id with no record")
-
-    monkeypatch.setattr(run_cve_benchmark, "confirm_admission", no_admission_failure)
-    monkeypatch.setattr(run_cve_benchmark, "calibrate_all", boom)
+    given.a_calibration(monkeypatch, raises=True)
 
     assert given.exit_code_of(monkeypatch, "--calibrate") == 4
 
 
 def test_a_survey_that_raises_exits_as_a_crash(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
-
-    async def boom(*_args: object, **_kwargs: object) -> None:
-        raise ValueError("a kept id with no record")
-
-    monkeypatch.setattr(run_cve_benchmark, "survey_all", boom)
+    given.a_survey(monkeypatch, raises=True)
 
     assert given.exit_code_of(monkeypatch, "--survey") == 4
+
+
+@pytest.mark.parametrize("mode", [given.a_calibration, given.a_survey])
+@pytest.mark.parametrize("raises", [False, True])
+def test_a_maintainer_mode_removes_the_containers_left_running_even_when_it_raises(
+    monkeypatch: pytest.MonkeyPatch, mode: Callable[..., None], raises: bool
+):
+    containers = given.a_sweep_finding(monkeypatch, "leftover_filesystem")
+    mode(monkeypatch, raises=raises)
+    flag = "--calibrate" if mode is given.a_calibration else "--survey"
+
+    given.exit_code_of(monkeypatch, flag, "--cve", given.RECORDED_CVE)
+
+    assert containers.removed == ["leftover_filesystem"]
+    assert containers.listed_tags == [_tags_of(given.RECORDED_CVE)]
+
+
+def test_a_graded_run_removes_the_containers_of_its_images_left_running(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    containers = given.a_sweep_finding(monkeypatch, "leftover_filesystem")
+    given.a_session_under_priced_models(monkeypatch)
+    report = str(tmp_path / "r.json")
+
+    given.exit_code_of(monkeypatch, "--ungated", "--cve", given.RECORDED_CVE, "--report", report)
+
+    assert containers.removed == ["leftover_filesystem"]
+    assert containers.listed_tags == [_tags_of(given.RECORDED_CVE)]
+
+
+def test_a_graded_run_that_crashes_still_removes_the_containers_left_running(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    containers = given.a_sweep_finding(monkeypatch, "leftover_filesystem")
+    given.a_session_under_priced_models(monkeypatch)
+    monkeypatch.setattr(run_cve_benchmark, "run_gated", given.a_session_that_crashes_if_started)
+
+    code = given.exit_code_of(monkeypatch, "--ungated", "--report", str(tmp_path / "r.json"))
+
+    assert code == 4
+    assert containers.removed == ["leftover_filesystem"]
+
+
+def _tags_of(cve_id: str) -> list[str]:
+    targets = [target for target in CVE_TARGETS if target.cve_id == cve_id]
+    return [image_tag(service) for service in target_services(targets)]
 
 
 def test_a_concurrency_below_one_is_refused_by_the_parser(

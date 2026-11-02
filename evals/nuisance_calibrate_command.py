@@ -13,6 +13,7 @@ from evals.cve_targets import DOCKER_DIRECTORY
 from evals.holdout_kit import kit_launch
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
 from evals.nuisance_admission import ADMISSION_PATH, FixCheckRecord
+from evals.nuisance_backends import built_backend_tags
 from evals.nuisance_commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
@@ -23,7 +24,7 @@ from evals.nuisance_commands import (
     malformed_input_refused,
 )
 from evals.nuisance_run import NUISANCE_CONCURRENCY
-from evals.run_images import refuse_without_closed_networks
+from evals.run_images import DOCKER_SWEEP, refuse_without_closed_networks, sweep_containers
 
 
 def add_calibrate_arguments(parser: argparse.ArgumentParser) -> None:
@@ -52,8 +53,14 @@ def calibrate(args: argparse.Namespace) -> int:
         return UNKNOWN_SERVER_EXIT
     records = {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
     refuse_without_closed_networks(check_closed_network_support)
-    kit_launch.build_images(DOCKER_DIRECTORY, _services(targets))
-    return asyncio.run(_calibrate_targets(targets, records, args.concurrency))
+    services = _services(targets)
+    kit_tags = [kit_launch.image_tag(service) for service in services]
+    tags = [*kit_tags, *built_backend_tags(admission.servers)]
+    try:
+        kit_launch.build_images(DOCKER_DIRECTORY, services)
+        return asyncio.run(_calibrate_targets(targets, records, args.concurrency))
+    finally:
+        sweep_containers(tags, DOCKER_SWEEP.running_containers, DOCKER_SWEEP.remove_containers)
 
 
 async def _calibrate_targets(

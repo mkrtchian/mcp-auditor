@@ -27,6 +27,7 @@ _INSTRUMENTS = (
     "draw_judge_cases",
     "capture_probe_corpus",
     "run_cve_benchmark",
+    "cve_benchmark_modes",
 )
 
 _EVALS = Path(__file__).resolve().parents[2] / "evals"

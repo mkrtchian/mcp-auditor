@@ -8,9 +8,23 @@ import tests.unit.support.test_holdout_census_given as given
 from evals import run_holdout
 from evals.closed_network import ClosedNetworkUnsupported
 from evals.cve_planting_base import SENTINEL_SERVICE
-from evals.cve_targets import CVE_TARGETS
+from evals.cve_targets import CVE_TARGETS, image_tag
 from evals.holdout_draw import draw_order
 from evals.holdout_kit import kit_launch
+from evals.run_images import ContainerSweep, target_services
+from tests.unit.support.test_holdout_run_given import RunningContainers
+
+
+@pytest.fixture(autouse=True)
+def _no_docker_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
+    _leftovers(monkeypatch)
+
+
+def _leftovers(monkeypatch: pytest.MonkeyPatch, *running: str) -> RunningContainers:
+    containers = RunningContainers(list(running))
+    sweep = ContainerSweep(containers.running, containers.remove)
+    monkeypatch.setattr(run_holdout, "DOCKER_SWEEP", sweep)
+    return containers
 
 
 def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -85,6 +99,36 @@ def test_calibrate_crashes_to_four_on_a_fixture_config_error(monkeypatch: pytest
     assert run_holdout.main(["calibrate"]) == run_holdout.CRASHED_EXIT
 
 
+def test_calibrate_removes_the_containers_of_its_images_left_running(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    containers = _leftovers(monkeypatch, "leftover_filesystem")
+    _a_drawn_target(monkeypatch)
+    _fake_admission(monkeypatch, failures=[])
+    _fake_calibration(monkeypatch, all_live=True)
+
+    run_holdout.main(["calibrate"])
+
+    assert containers.removed == ["leftover_filesystem"]
+    assert containers.listed_tags == [_drawn_target_tags()]
+
+
+def test_a_calibration_that_raises_still_removes_the_containers_left_running(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    containers = _leftovers(monkeypatch, "leftover_filesystem")
+    _a_drawn_target(monkeypatch)
+    _fake_admission(monkeypatch, failures=[])
+
+    async def _raises(*_: object) -> bool:
+        raise ValueError("unknown kept place id")
+
+    monkeypatch.setattr(run_holdout, "calibrate_all", _raises)
+
+    assert run_holdout.main(["calibrate"]) == run_holdout.CRASHED_EXIT
+    assert containers.removed == ["leftover_filesystem"]
+
+
 def test_calibrate_refuses_with_exit_three_on_a_daemon_that_cannot_close_a_network(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
@@ -100,8 +144,12 @@ def test_calibrate_refuses_with_exit_three_on_a_daemon_that_cannot_close_a_netwo
 
 
 def _a_drawn_target(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (object(),))
+    monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (CVE_TARGETS[0],))
     monkeypatch.setattr(run_holdout, "check_closed_network_support", lambda: None)
+
+
+def _drawn_target_tags() -> list[str]:
+    return [image_tag(service) for service in target_services([CVE_TARGETS[0]])]
 
 
 def _cannot_close_a_network() -> None:

@@ -3,6 +3,7 @@ containers of the run's images: refused when running before a run, swept at its 
 
 import subprocess
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 from evals.closed_network import ClosedNetworkUnsupported, check_closed_network_support
 from evals.cve_images import compose_build
@@ -66,6 +67,15 @@ def remove_containers(names: Sequence[str]) -> None:
     # Unchecked: a container that exits between the listing and its removal fails `docker rm`,
     # and an error raised from the run's `finally` would replace the run result it guards.
     subprocess.run(["docker", "rm", "-f", *names], capture_output=True, check=False)
+
+
+@dataclass(frozen=True)
+class ContainerSweep:
+    running_containers: Callable[[Sequence[str]], list[str]]
+    remove_containers: Callable[[Sequence[str]], None]
+
+
+DOCKER_SWEEP = ContainerSweep(running_containers, remove_containers)
 
 
 def refuse_running_containers(running: Sequence[str], refusal: str) -> None:

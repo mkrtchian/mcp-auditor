@@ -13,6 +13,8 @@ from evals.nuisance_gate_baseline import (
 )
 from evals.nuisance_gate_session_model import NuisanceGateHarness, NuisanceGateOptions
 from evals.nuisance_images import nuisance_fixture_fingerprint
+from evals.run_images import ContainerSweep
+from tests.unit.support.test_holdout_run_given import RunningContainers
 from tests.unit.support.test_nuisance_admission_given import an_admission
 from tests.unit.support.test_nuisance_gate_baseline_given import (
     a_confirmed_baseline,
@@ -62,10 +64,12 @@ def a_harness(
     tree_after_runs: TreeState | None = None,
     announce: Callable[[int], None] = lambda _: None,
     throttled_requests: int = 0,
+    containers: RunningContainers | None = None,
 ) -> NuisanceGateHarness:
     """`benign_call` maps a package to its failure. `tree_after_runs` is what every read of the
     tree after the first returns, `tree` by default."""
     failures = benign_call or {}
+    docker = containers or RunningContainers()
     reads: list[TreeState] = []
 
     async def call(server: AdmittedServer) -> str | None:
@@ -88,6 +92,7 @@ def a_harness(
         clock=lambda: RECORDED_AT,
         baselines=directory,
         check_networks=lambda: None,
+        sweep=ContainerSweep(docker.running, docker.remove),
     )
 
 

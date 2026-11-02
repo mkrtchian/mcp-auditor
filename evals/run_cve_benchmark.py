@@ -9,6 +9,7 @@ from pathlib import Path
 
 from rich.progress import Progress
 
+from evals import cve_benchmark_modes, cve_targets
 from evals import eval_display as display
 from evals.audit_progress import AuditProgress
 from evals.concurrency import bounded, positive_int
@@ -19,7 +20,7 @@ from evals.cve_baseline import (
     image_ids,
     run_conditions,
 )
-from evals.cve_calibration import calibrate_all, calibrate_one, check_target
+from evals.cve_calibration import check_target
 from evals.cve_console import print_cve_summary
 from evals.cve_costs import CostPricing
 from evals.cve_layout_check import confirm_admission
@@ -44,13 +45,13 @@ from evals.cve_preflight import preflight_ok
 from evals.cve_recording_console import print_recording
 from evals.cve_session import CVESessionResult, run_gated
 from evals.cve_session_model import CVEHarness, CVEOptions
-from evals.cve_survey import survey_all, survey_one
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from evals.eval_display import console
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
 from evals.export import export_cve_judged_cases
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.metrics import SessionThrottles, quiet_throttle_waits
+from evals.run_images import DOCKER_SWEEP, ContainerSweep, sweep_containers, target_services
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import load_settings
 
@@ -79,7 +80,7 @@ def main() -> None:
 
     try:
         with silenced_stdio_logging():
-            code = asyncio.run(_run(args, graded, tracked))
+            code = asyncio.run(_run(args, graded, tracked, DOCKER_SWEEP))
     except Refused as refused:
         display.print_refusal(refused.title, refused.reasons)
         code = NOT_COMPARABLE_EXIT
@@ -90,28 +91,26 @@ def main() -> None:
 
 
 async def _run(
-    args: argparse.Namespace, graded: list[CVETarget], tracked: list[OutOfScopeCVE]
+    args: argparse.Namespace,
+    graded: list[CVETarget],
+    tracked: list[OutOfScopeCVE],
+    sweep: ContainerSweep,
 ) -> int:
     # Calibration and the survey run under the same crash handler as the graded path, so a
     # configuration error out of either exits 4, not Python's exit 1, which reads as a dead fixture.
     places = load_places(HOLDOUT_PLACES)
-    if args.survey:
-        await survey_all(graded, bounded(lambda t: survey_one(t, places), args.concurrency))
-        return 0
-    if args.calibrate:
-        # ADR 031 admission, confirmed before a draw: Docker-dependent, deterministic, run only
-        # under the maintainer paths (calibrate and record-baseline), never on a gated comparison
-        # and not beside the synchronous preflight (no container exists there). The rule runs the
-        # layout check before the exploits (holdout-rule.md:159), so it reports its break first.
-        admission_failures = await confirm_admission(graded, places, ci=args.ci)
-        all_live = await calibrate_all(
-            graded, bounded(lambda t: calibrate_one(t, places), args.concurrency), ci=args.ci
-        )
-        return 0 if all_live and not admission_failures else 1
-    # A kept layout place without a route is a misconfigured fixture: refuse before recording.
-    if args.record_baseline and await confirm_admission(graded, places, ci=args.ci):
-        return 1
-    return await _run_graded(args, graded, tracked, places)
+    tags = [cve_targets.image_tag(service) for service in target_services(graded)]
+    try:
+        if args.survey:
+            return await cve_benchmark_modes.survey(args, graded, places)
+        if args.calibrate:
+            return await cve_benchmark_modes.calibrate(args, graded, places)
+        # A kept layout place without a route is a misconfigured fixture: refuse before recording.
+        if args.record_baseline and await confirm_admission(graded, places, ci=args.ci):
+            return 1
+        return await _run_graded(args, graded, tracked, places)
+    finally:
+        sweep_containers(tags, sweep.running_containers, sweep.remove_containers)
 
 
 def _parse_args() -> argparse.Namespace:

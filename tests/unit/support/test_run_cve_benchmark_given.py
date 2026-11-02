@@ -4,7 +4,13 @@ from io import StringIO
 import pytest
 from rich.console import Console
 
-from evals import cve_console, cve_recording_console, eval_display, run_cve_benchmark
+from evals import (
+    cve_benchmark_modes,
+    cve_console,
+    cve_recording_console,
+    eval_display,
+    run_cve_benchmark,
+)
 from evals.baseline import BaselineStatus
 from evals.cve_gate import CVEGateResult, CVEGateVerdict
 from evals.cve_session import CVESessionResult
@@ -12,7 +18,9 @@ from evals.cve_session_model import AuditTarget, CVEHarness, CVEOptions
 from evals.cve_session_recording import WrittenBaseline
 from evals.eval_session import TreeState
 from evals.metrics import SessionThrottles
+from evals.run_images import ContainerSweep
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
+from tests.unit.support.test_holdout_run_given import RunningContainers
 
 BILLED_CVE = "CVE-billed"
 PRICED_MODEL = "gpt-6-luna"
@@ -24,6 +32,40 @@ def exit_code_of(monkeypatch: pytest.MonkeyPatch, *flags: str) -> object:
     with pytest.raises(SystemExit) as exit_:
         run_cve_benchmark.main()
     return exit_.value.code
+
+
+def a_sweep_finding(monkeypatch: pytest.MonkeyPatch, *running: str) -> RunningContainers:
+    """The containers left running that the final sweep lists, once."""
+    containers = RunningContainers(list(running))
+    sweep = ContainerSweep(containers.running, containers.remove)
+    monkeypatch.setattr(run_cve_benchmark, "DOCKER_SWEEP", sweep)
+    return containers
+
+
+def a_calibration(monkeypatch: pytest.MonkeyPatch, *, raises: bool = False) -> None:
+    """Past the preflight, every fixture admitted and live, or a configuration error."""
+    monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
+
+    async def no_admission_failure(*_args: object, **_kwargs: object) -> list[str]:
+        return []
+
+    async def calibrate_all(*_args: object, **_kwargs: object) -> bool:
+        if raises:
+            raise ValueError("a kept id with no record")
+        return True
+
+    monkeypatch.setattr(cve_benchmark_modes, "confirm_admission", no_admission_failure)
+    monkeypatch.setattr(cve_benchmark_modes, "calibrate_all", calibrate_all)
+
+
+def a_survey(monkeypatch: pytest.MonkeyPatch, *, raises: bool = False) -> None:
+    monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
+
+    async def survey_all(*_args: object, **_kwargs: object) -> None:
+        if raises:
+            raise ValueError("a kept id with no record")
+
+    monkeypatch.setattr(cve_benchmark_modes, "survey_all", survey_all)
 
 
 def a_session_under_priced_models(
