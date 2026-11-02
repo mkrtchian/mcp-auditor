@@ -7,7 +7,14 @@ import anyio
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import get_default_environment, stdio_client
 from mcp.shared.session import RequestResponder
-from mcp.types import ClientResult, ServerNotification, ServerRequest, TextContent, Tool
+from mcp.types import (
+    ClientResult,
+    PaginatedRequestParams,
+    ServerNotification,
+    ServerRequest,
+    TextContent,
+    Tool,
+)
 
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
@@ -65,8 +72,8 @@ class StdioMCPClient:
 
     async def list_tools(self) -> list[ToolDefinition]:
         async with asyncio.timeout(self._list_tools_timeout):
-            result = await self._session.list_tools()
-        return [_to_tool_definition(t) for t in result.tools]
+            tools = await _list_every_page(self._session)
+        return [_to_tool_definition(tool) for tool in tools]
 
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
         try:
@@ -114,6 +121,22 @@ def _server_parameters(launch: ServerLaunch) -> StdioServerParameters:
         args=launch.spawn_args,
         env=get_default_environment() | environment,
     )
+
+
+async def _list_every_page(session: ClientSession) -> list[Tool]:
+    tools: list[Tool] = []
+    seen: set[str] = set()
+    cursor: str | None = None
+    while True:
+        params = None if cursor is None else PaginatedRequestParams(cursor=cursor)
+        result = await session.list_tools(params=params)
+        tools.extend(result.tools)
+        cursor = result.nextCursor
+        if cursor is None:
+            return tools
+        if cursor in seen:
+            raise RuntimeError(f"tools/list returned a cursor it had already returned: {cursor}")
+        seen.add(cursor)
 
 
 def _to_tool_definition(tool: Tool) -> ToolDefinition:
