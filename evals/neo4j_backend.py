@@ -1,11 +1,11 @@
 """The Neo4j backend's lifecycle.
 
 One persistent Neo4j container on a closed labeled bridge (no route to the host or the Internet),
-reachable by container name. The audited
-mcp-neo4j-cypher reaches its database over Bolt, so the container behind `NEO4J_CONTAINER` is the
-database its run image's `NEO4J_URI` names. APOC is installed and its `apoc.load.*` procedures are
-unrestricted while file import is off, so a patched server's read-only gate is what stands between
-the auditor and a server-side request through `apoc.load.*`. Nothing is planted.
+reachable by the alias `NEO4J_HOST`. The audited mcp-neo4j-cypher reaches its database over Bolt,
+and its run image's `NEO4J_URI` names that alias, the value of `NEO4J_URI` here. APOC is installed
+and its `apoc.load.*` procedures are unrestricted while file import is off, so a patched server's
+read-only gate is what stands between the auditor and a server-side request through `apoc.load.*`.
+Nothing is planted.
 
 A caller drives this through `ensure_neo4j`, `neo4j_server_args`, `neo4j_rm` and
 `NEO4J_LAUNCH_LOCK`. The container is stood once and left running, reused across exercises; the
@@ -35,6 +35,7 @@ NEO4J_IMAGE = "mcp-auditor-cve-neo4j-backend:local"
 NEO4J_BACKEND_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.neo4j-backend"
 NEO4J_CONTAINER = "mcp-auditor-cve-neo4j"
 NEO4J_HOST = "neo4j"  # the database's alias on NEO4J_BRIDGE
+NEO4J_URI = f"bolt://{NEO4J_HOST}:7687"
 NEO4J_BRIDGE = "mcp-auditor-cve-neo4j-bridge"  # server <-> database, name resolution
 _PASSWORD = "testpassword"  # Neo4j rejects passwords under 8 characters
 _READY_DEADLINE = 120.0

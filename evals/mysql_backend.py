@@ -1,17 +1,17 @@
 """The MySQL and AWS-stub backend's lifecycle.
 
 Two persistent containers on one closed labeled bridge (no route to the host or the Internet),
-reachable by container name: a MySQL engine and a
-moto AWS stub. The audited awslabs.mysql-mcp-server reaches its database through the RDS and
-Secrets Manager APIs, so the stub answers `describe_db_clusters` with the master-user secret ARN and
-`get_secret_value` with the credentials, and the engine behind `MYSQL_CONTAINER` is the database
-those credentials open. The engine mirrors the holdout image: a user holding the FILE privilege and
-`secure_file_priv` empty, so the patched server's SQL gate is what stands between the auditor and
-`LOAD_FILE`. Nothing is planted.
+reachable by the aliases `mysql` and `moto`: a MySQL engine and a moto AWS stub. The audited
+awslabs.mysql-mcp-server reaches its database through the RDS and Secrets Manager APIs, so the stub
+answers `describe_db_clusters` with the master-user secret ARN and `get_secret_value` with the
+credentials, and the engine behind `MYSQL_HOST` is the database those credentials open. The
+engine mirrors the holdout image: a user holding the FILE privilege and `secure_file_priv` empty,
+so the patched server's SQL gate is what stands between the auditor and `LOAD_FILE`. Nothing is
+planted.
 
 A caller drives this through `ensure_mysql`, `mysql_server_args`, `mysql_rm` and
 `MYSQL_LAUNCH_LOCK`. The server image points `AWS_ENDPOINT_URL` at `MOTO_ENDPOINT` and carries
-dummy credentials, and a tool call passes `MYSQL_CONTAINER` as `db_endpoint`. The pair is stood
+dummy credentials, and a tool call passes `MYSQL_HOST` as `db_endpoint`. The pair is stood
 once and left running, reused across exercises; the generic orphan sweep reaps anything labelled
 `mcp-auditor-cve`.
 """
@@ -42,7 +42,7 @@ MYSQL_CONTAINER = "mcp-auditor-cve-mysql"
 MOTO_CONTAINER = "mcp-auditor-cve-mysql-moto"
 MYSQL_HOST = "mysql"  # the engine's alias on MYSQL_BRIDGE
 MOTO_HOST = "moto"  # the stub's alias on MYSQL_BRIDGE
-MOTO_ENDPOINT = f"http://{MOTO_CONTAINER}:5000"
+MOTO_ENDPOINT = f"http://{MOTO_HOST}:5000"
 MYSQL_BRIDGE = "mcp-auditor-cve-mysql-bridge"  # server <-> engine and stub, name resolution
 _READY_DEADLINE = 120.0
 

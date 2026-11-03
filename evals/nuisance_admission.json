@@ -1278,7 +1278,7 @@
       },
       "launch": [
         "--db-host",
-        "mcp-auditor-cve-doris",
+        "doris",
         "--db-port",
         "9030",
         "--db-user",
@@ -3940,7 +3940,7 @@
               "arguments": {
                 "connection_method": "mysqlwire",
                 "cluster_identifier": "app-cluster",
-                "db_endpoint": "mcp-auditor-cve-mysql",
+                "db_endpoint": "mysql",
                 "database": "app",
                 "sql": "SELECT 1 AS n"
               }

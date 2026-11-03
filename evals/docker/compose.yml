@@ -839,7 +839,7 @@ services:
       context: .
       dockerfile: Dockerfile.mysql
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "07dee21e9e1abc466d7c322e061af36830c2965bc5f86db6140dfe89d5a430d0"
+        org.mcp-auditor.dockerfile-fingerprint: "511aea3f9fcdb2107e9f5bcabcaaf5592191cb0becc6838dc2e1a27e5a46e711"
     image: mcp-auditor-nuisance-mysql:local
     profiles: ["nuisance"]
 
@@ -911,7 +911,7 @@ services:
       context: .
       dockerfile: Dockerfile.neo4j
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "57bea6d7a77d35c0a5643f1c873d846b49545d8ab4488e9bdf45776f13c1763b"
+        org.mcp-auditor.dockerfile-fingerprint: "09ea65e521fcf02e888091941f55805191a4e6e0a07f25e71da863d623fc2fdf"
     image: mcp-auditor-nuisance-neo4j:local
     profiles: ["nuisance"]
 

@@ -75,8 +75,8 @@ from evals.cve_planting import (
 from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, SentinelIntent, own_network_args
 from evals.doris_backend import (
     DORIS_BRIDGE,
-    DORIS_CONTAINER,
     DORIS_DB,
+    DORIS_HOST,
     DORIS_LAUNCH_LOCK,
     doris_rm,
     ensure_doris,
@@ -425,7 +425,7 @@ def doris_db_env(
                     *own_network_args(DORIS_BRIDGE),
                     image,
                     "--db-host",
-                    DORIS_CONTAINER,
+                    DORIS_HOST,
                     "--db-port",
                     "9030",
                     "--db-user",
