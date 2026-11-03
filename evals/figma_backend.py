@@ -26,6 +26,7 @@ A caller drives this through `ensure_figma_responder`, `figma_server_args`, `fig
 import threading
 from collections.abc import Sequence
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.cve_planting_base import PlantingHost
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.responder_backend import Responder, remove
@@ -80,3 +81,8 @@ def ensure_figma_responder() -> None:
 
 def figma_rm(name: str) -> None:
     remove(name)
+
+
+LIFECYCLE = BackendLifecycle(
+    "figma", FIGMA_LAUNCH_LOCK, ensure_figma_responder, figma_server_args, figma_rm
+)

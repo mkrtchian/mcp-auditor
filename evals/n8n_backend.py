@@ -18,6 +18,7 @@ A caller drives this through `ensure_n8n_responder`, `n8n_server_args`, `n8n_rm`
 import threading
 from collections.abc import Sequence
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.cve_planting_base import PlantingHost
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.responder_backend import Responder, remove
@@ -55,3 +56,6 @@ def ensure_n8n_responder() -> None:
 
 def n8n_rm(name: str) -> None:
     remove(name)
+
+
+LIFECYCLE = BackendLifecycle("n8n", N8N_LAUNCH_LOCK, ensure_n8n_responder, n8n_server_args, n8n_rm)

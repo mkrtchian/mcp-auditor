@@ -407,9 +407,10 @@ def doris_db_env(
             for sentinel in spec.sentinels:
                 sentinels.append(start_doris_sentinel(sentinel))
             time.sleep(2)  # let each sentinel's httpd bind before the server can drive a fetch
-            # Twin of doris_backend.doris_server_args (the nuisance suite's server launch): fold
-            # this wiring back into that helper at the next acceptance reset, when this module
-            # (AST-fingerprinted into every acceptance fixture) moves anyway.
+            # Twin of doris_backend.doris_server_args (the nuisance suite's server launch), except
+            # the nuisance memory bound: fold this wiring back into that helper at the next
+            # acceptance reset, when this module (AST-fingerprinted into every acceptance fixture)
+            # moves anyway.
             yield Launch(
                 command="docker",
                 args=[

@@ -31,6 +31,7 @@ A caller drives this through `ensure_apify_responder`, `apify_server_args`, `api
 import threading
 from collections.abc import Sequence
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.cve_planting_base import STAND_IN_IMAGE, STAND_IN_SERVICE, PlantingHost
 from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.public_stand_ins import stand_in_files
@@ -105,3 +106,8 @@ def ensure_apify_responder() -> None:
 
 def apify_rm(name: str) -> None:
     remove(name)
+
+
+LIFECYCLE = BackendLifecycle(
+    "apify", APIFY_LAUNCH_LOCK, ensure_apify_responder, apify_server_args, apify_rm
+)

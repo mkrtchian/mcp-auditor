@@ -23,6 +23,7 @@ A caller drives this through `ensure_gitlab_responder`, `gitlab_server_args`, `g
 import threading
 from collections.abc import Sequence
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.cve_planting_base import PlantingHost
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.responder_backend import Responder, remove
@@ -61,3 +62,8 @@ def ensure_gitlab_responder() -> None:
 
 def gitlab_rm(name: str) -> None:
     remove(name)
+
+
+LIFECYCLE = BackendLifecycle(
+    "gitlab", GITLAB_LAUNCH_LOCK, ensure_gitlab_responder, gitlab_server_args, gitlab_rm
+)

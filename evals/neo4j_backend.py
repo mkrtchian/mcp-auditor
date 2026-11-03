@@ -18,11 +18,16 @@ import threading
 import time
 from collections.abc import Sequence
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.closed_network import ensure_closed_network
-from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, PlantingHost
 from evals.docker_paths import DOCKER_DIRECTORY
-from evals.nuisance_confinement import user_args
+from evals.nuisance_confinement import (
+    memory_bound_args,
+    nuisance_confinement_args,
+    running_with_bound,
+    user_args,
+)
 from evals.responder_backend import remove
 
 NEO4J_IMAGE = "mcp-auditor-cve-neo4j-backend:local"
@@ -50,7 +55,7 @@ def neo4j_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *confinement_args(),
+        *nuisance_confinement_args(),
         "--name", name,
         "--label", LABEL,
         "--network", NEO4J_BRIDGE,
@@ -81,18 +86,22 @@ def _ensure_image() -> None:
 
 
 def _ensure_database() -> None:
-    listed = _run("docker", "ps", "--filter", f"name=^{NEO4J_CONTAINER}$", "--format", "{{.Names}}")
-    if NEO4J_CONTAINER not in listed.stdout.split():
+    if not running_with_bound(NEO4J_CONTAINER):
         remove(NEO4J_CONTAINER)
-        _run(
-            "docker", "run", "-d",
-            "--name", NEO4J_CONTAINER,
-            "--label", LABEL,
-            "--network", NEO4J_BRIDGE,
-            *_DATABASE_ENVIRONMENT,
-            NEO4J_IMAGE,
-        )  # fmt: skip
+        _run("docker", *database_run_args())
     _wait_until_ready()
+
+
+def database_run_args() -> list[str]:
+    return [
+        "run", "-d",
+        "--name", NEO4J_CONTAINER,
+        "--label", LABEL,
+        "--network", NEO4J_BRIDGE,
+        *memory_bound_args(),
+        *_DATABASE_ENVIRONMENT,
+        NEO4J_IMAGE,
+    ]  # fmt: skip
 
 
 def _wait_until_ready() -> None:
@@ -117,3 +126,6 @@ def _run(
     *args: str, check: bool = True, timeout: float = 120.0
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(list(args), check=check, capture_output=True, text=True, timeout=timeout)
+
+
+LIFECYCLE = BackendLifecycle("neo4j", NEO4J_LAUNCH_LOCK, ensure_neo4j, neo4j_server_args, neo4j_rm)

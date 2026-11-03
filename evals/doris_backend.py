@@ -24,10 +24,16 @@ from collections.abc import Sequence
 from contextlib import suppress
 from uuid import uuid4
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, PlantingHost, SentinelIntent
-from evals.nuisance_confinement import user_args
+from evals.nuisance_confinement import (
+    memory_bound_args,
+    nuisance_confinement_args,
+    running_with_bound,
+    user_args,
+)
 
 DORIS_IMAGE = (
     "apache/doris:all-in-one-4.1.3"
@@ -67,7 +73,7 @@ def doris_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *confinement_args(),
+        *nuisance_confinement_args(),
         "--name", name,
         "--label", LABEL,
         "--network", DORIS_BRIDGE,
@@ -81,20 +87,25 @@ def doris_server_args(
 def ensure_doris() -> None:
     ensure_closed_network(DORIS_BRIDGE)
     ensure_closed_network(_DORIS_LLNET, "--subnet", _DORIS_LLSUBNET)
-    if not _doris_running():
+    if not running_with_bound(DORIS_CONTAINER):
         if _doris_exists():
             doris_rm(DORIS_CONTAINER)
-        _doris_run(
-            "docker", "run", "-d",
-            "--name", DORIS_CONTAINER,
-            "--hostname", DORIS_CONTAINER,
-            "--label", LABEL,
-            "--network", DORIS_BRIDGE,
-            DORIS_IMAGE,
-        )  # fmt: skip
+        _doris_run("docker", *doris_cluster_run_args())
     _doris_run("docker", "network", "connect", _DORIS_LLNET, DORIS_CONTAINER, check=False)
     _wait_doris_healthy()
     _provision_doris_schema()
+
+
+def doris_cluster_run_args() -> list[str]:
+    return [
+        "run", "-d",
+        "--name", DORIS_CONTAINER,
+        "--hostname", DORIS_CONTAINER,
+        "--label", LABEL,
+        "--network", DORIS_BRIDGE,
+        *memory_bound_args(),
+        DORIS_IMAGE,
+    ]  # fmt: skip
 
 
 def _wait_doris_healthy() -> None:
@@ -147,10 +158,6 @@ def start_doris_sentinel(sentinel: SentinelIntent) -> str:
     return name
 
 
-def _doris_running() -> bool:
-    return DORIS_CONTAINER in _doris_names("docker", "ps")
-
-
 def _doris_exists() -> bool:
     return DORIS_CONTAINER in _doris_names("docker", "ps", "-a")
 
@@ -179,3 +186,6 @@ def _doris_run(
 def doris_rm(name: str) -> None:
     with suppress(subprocess.SubprocessError, OSError):
         _doris_run("docker", "rm", "-f", name, check=False)
+
+
+LIFECYCLE = BackendLifecycle("doris", DORIS_LAUNCH_LOCK, ensure_doris, doris_server_args, doris_rm)

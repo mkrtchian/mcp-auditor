@@ -3,7 +3,7 @@ import pytest
 import tests.unit.support.test_doris_serialization_given as given
 from evals import cve_environments
 from evals.doris_backend import DORIS_SERVER_LAUNCH, doris_server_args
-from evals.nuisance_confinement import user_args
+from evals.nuisance_confinement import memory_bound_args, user_args
 
 
 def _strip_pair(args: list[str], flag: str) -> list[str]:
@@ -33,6 +33,7 @@ def test_the_helper_and_the_holdout_env_agree_on_the_launch_tail(monkeypatch: py
     helper = _strip_pair(helper, "--name")
     helper = _without(helper, user_args(spec.host.user))
     helper = _strip_pair(helper, "-w")
+    helper = _without(helper, memory_bound_args())
 
     assert helper == _strip_pair(env_args, "--name")
 

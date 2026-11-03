@@ -23,6 +23,7 @@ A caller drives this through `ensure_jenkins_responder`, `jenkins_server_args`, 
 import threading
 from collections.abc import Sequence
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.cve_planting_base import PlantingHost
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.responder_backend import Responder, remove
@@ -61,3 +62,8 @@ def ensure_jenkins_responder() -> None:
 
 def jenkins_rm(name: str) -> None:
     remove(name)
+
+
+LIFECYCLE = BackendLifecycle(
+    "jenkins", JENKINS_LAUNCH_LOCK, ensure_jenkins_responder, jenkins_server_args, jenkins_rm
+)

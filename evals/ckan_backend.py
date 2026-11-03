@@ -20,6 +20,7 @@ A caller drives this through `ensure_ckan_responder`, `ckan_server_args`, `ckan_
 import threading
 from collections.abc import Sequence
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.cve_planting_base import PlantingHost
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.responder_backend import Responder, remove
@@ -68,3 +69,8 @@ def ensure_ckan_responder() -> None:
 
 def ckan_rm(name: str) -> None:
     remove(name)
+
+
+LIFECYCLE = BackendLifecycle(
+    "ckan", CKAN_LAUNCH_LOCK, ensure_ckan_responder, ckan_server_args, ckan_rm
+)

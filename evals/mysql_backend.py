@@ -21,11 +21,16 @@ import threading
 import time
 from collections.abc import Callable, Sequence
 
+from evals.backend_lifecycle import BackendLifecycle
 from evals.closed_network import ensure_closed_network
-from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, PlantingHost
 from evals.doris_backend import MYSQL_CLIENT_IMAGE
-from evals.nuisance_confinement import user_args
+from evals.nuisance_confinement import (
+    memory_bound_args,
+    nuisance_confinement_args,
+    running_with_bound,
+    user_args,
+)
 from evals.responder_backend import remove
 
 MYSQL_IMAGE = MYSQL_CLIENT_IMAGE
@@ -88,7 +93,7 @@ def mysql_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *confinement_args(),
+        *nuisance_confinement_args(),
         "--name", name,
         "--label", LABEL,
         "--network", MYSQL_BRIDGE,
@@ -123,17 +128,21 @@ def _ensure_stub() -> None:
 
 
 def _ensure_container(name: str, run_args: Sequence[str]) -> None:
-    listed = _run("docker", "ps", "--filter", f"name=^{name}$", "--format", "{{.Names}}")
-    if name in listed.stdout.split():
+    if running_with_bound(name):
         return
     remove(name)
-    _run(
-        "docker", "run", "-d",
+    _run("docker", *backend_container_run_args(name, run_args))
+
+
+def backend_container_run_args(name: str, run_args: Sequence[str]) -> list[str]:
+    return [
+        "run", "-d",
         "--name", name,
         "--label", LABEL,
         "--network", MYSQL_BRIDGE,
+        *memory_bound_args(),
         *run_args,
-    )  # fmt: skip
+    ]  # fmt: skip
 
 
 def _provision_engine() -> bool:
@@ -173,3 +182,6 @@ def _run(
     *args: str, check: bool = True, timeout: float = 120.0
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(list(args), check=check, capture_output=True, text=True, timeout=timeout)
+
+
+LIFECYCLE = BackendLifecycle("mysql", MYSQL_LAUNCH_LOCK, ensure_mysql, mysql_server_args, mysql_rm)

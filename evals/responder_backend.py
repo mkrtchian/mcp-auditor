@@ -3,6 +3,10 @@
 A responder is a singleton container on a fixed public-range IP of its own closed labeled bridge
 (no route to the host or the Internet), stood once and reused across a server's concurrent nuisance
 runs, reaped by the generic orphan sweep.
+
+The server argv and the singleton both carry the nuisance confinement, memory bound included (the
+singleton also when a fix check ensures it), while a fix check's own per-launch responder container
+keeps the acceptance confinement.
 """
 
 import subprocess
@@ -12,10 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from evals.closed_network import ensure_closed_network
-from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, PlantingHost
 from evals.docker_paths import DOCKER_DIRECTORY
-from evals.nuisance_confinement import user_args
+from evals.nuisance_confinement import nuisance_confinement_args, running_with_bound, user_args
 
 
 @dataclass(frozen=True)
@@ -38,7 +41,7 @@ class Responder:
     ) -> list[str]:
         return [
             "run", "-i", "--rm",
-            *confinement_args(),
+            *nuisance_confinement_args(),
             "--name", name,
             "--label", LABEL,
             "--network", self.bridge,
@@ -49,23 +52,26 @@ class Responder:
             *server_launch,
         ]  # fmt: skip
 
+    def singleton_run_args(self) -> list[str]:
+        return [
+            "run", "-d",
+            "--name", self.container,
+            "--label", LABEL,
+            "--network", self.bridge,
+            "--ip", self.ip,
+            *nuisance_confinement_args(),
+            "--cap-add", "NET_BIND_SERVICE",  # root behind cap-drop ALL still binds 80/443
+            *self.run_args,
+            self.image,
+        ]  # fmt: skip
+
     def ensure(self) -> None:
         self._ensure_image()
         ensure_closed_network(self.bridge, "--subnet", self.subnet)
-        if not self._running():
+        if not running_with_bound(self.container):
             if self._exists():
                 remove(self.container)
-            _run(
-                "docker", "run", "-d",
-                "--name", self.container,
-                "--label", LABEL,
-                "--network", self.bridge,
-                "--ip", self.ip,
-                *confinement_args(),
-                "--cap-add", "NET_BIND_SERVICE",  # root behind cap-drop ALL still binds 80/443
-                *self.run_args,
-                self.image,
-            )  # fmt: skip
+            _run("docker", *self.singleton_run_args())
 
     def _ensure_image(self) -> None:
         present = _run("docker", "image", "inspect", self.image, check=False)
@@ -74,9 +80,6 @@ class Responder:
                 "docker", "build", "-t", self.image, "-f", str(self.dockerfile),
                 str(DOCKER_DIRECTORY), timeout=600.0,
             )  # fmt: skip
-
-    def _running(self) -> bool:
-        return self.container in self._names("docker", "ps")
 
     def _exists(self) -> bool:
         return self.container in self._names("docker", "ps", "-a")
