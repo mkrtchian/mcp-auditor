@@ -5,7 +5,9 @@ draw position of its reaching flaw and the flaws that set its version, for the m
 admit, and how many of the addition's servers the admission counts in the figure (no LLM, no
 network). `nuisance-dossier` writes
 the isolated admission dossier for one server (no LLM; the fix-check driver it ships needs
-Docker), copying a backend's kit builder and lifecycle under `--backend <key>`. `calibrate`
+Docker), copying a backend's kit builder and lifecycle under `--backend <key>`, or under
+`--readmission` the re-admission dossier of an admitted server, with its record, its run, fix-check
+and backend sources and the benign probe. `calibrate`
 rebuilds and reproduces each fix-check fixture against the admission (Docker, no LLM). `run`
 audits the admitted servers on their patched images and reports the figure, so it needs Docker and
 an LLM key. `gate` audits the admitted acceptance servers with a current target and compares each
@@ -49,6 +51,7 @@ from evals.nuisance_dossier import write_dossier
 from evals.nuisance_gate_command import add_gate_arguments
 from evals.nuisance_markdown import render_markdown
 from evals.nuisance_population import RunPopulation, run_population
+from evals.nuisance_readmission_dossier import write_readmission_dossier
 from evals.nuisance_report import build_report
 from evals.nuisance_results import NuisanceRunResult
 from evals.nuisance_run import (
@@ -108,6 +111,10 @@ def _parser() -> argparse.ArgumentParser:
     dossier.add_argument(
         "--backend", default=None, help="copy the kit builder and lifecycle of this backend (doris)"
     )
+    dossier.add_argument(
+        "--readmission", action="store_true", help="write the re-admission dossier instead"
+    )
+    dossier.add_argument("--admission", type=Path, default=ADMISSION_PATH)
     run = commands.add_parser("run", help="audit the admitted servers and report the figure")
     run.set_defaults(command=_run)
     run.add_argument("--report", type=Path, default=Path(DEFAULT_REPORT_PATH))
@@ -165,10 +172,31 @@ def _walk_line(server: NuisanceServer, outcomes: dict[str, str]) -> str:
 
 
 def _nuisance_dossier(args: argparse.Namespace) -> int:
+    if args.readmission:
+        return _readmission_dossier(args)
     with malformed_input_refused():
         nuisance_census = committed_nuisance_census(args.census, args.walk_record)
     write_dossier(nuisance_census, args.server, args.out, args.backend)
     print(f"Admission dossier for {args.server} written to {args.out}")
+    return 0
+
+
+def _readmission_dossier(args: argparse.Namespace) -> int:
+    if args.backend is not None:
+        raise Refused(
+            "nuisance dossier refused",
+            [
+                "--backend is for a first admission:"
+                " a re-admission takes the backend its record names"
+            ],
+        )
+    with malformed_input_refused():
+        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
+        admission = committed_admission(args.admission, nuisance_census)
+    if admission is None:
+        raise Refused("nuisance dossier refused", [f"no admission at {args.admission}"])
+    write_readmission_dossier(nuisance_census, admission, args.server, args.out)
+    print(f"Re-admission dossier for {args.server} written to {args.out}")
     return 0
 
 

@@ -188,6 +188,66 @@ def test_nuisance_dossier_on_an_unknown_server_exits_three(
     assert "no census flaw names the server npm:ghost" in capsys.readouterr().out
 
 
+def test_a_readmission_dossier_with_a_backend_exits_three(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    out = tmp_path / "dossier"
+
+    exit_code = run_nuisance.main(
+        [
+            "nuisance-dossier",
+            "--server",
+            "PyPI:praisonai",
+            "--readmission",
+            "--backend",
+            "doris",
+            "--out",
+            str(out),
+        ]
+    )
+
+    assert exit_code == 3
+    assert not out.exists()
+    assert "--backend is for a first admission" in capsys.readouterr().out
+
+
+def test_a_readmission_dossier_of_an_admitted_server_exits_zero(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    out = tmp_path / "dossier"
+
+    exit_code = run_nuisance.main(
+        ["nuisance-dossier", "--server", "PyPI:praisonai", "--readmission", "--out", str(out)]
+    )
+
+    assert exit_code == 0
+    assert (out / "admission_record.json").exists()
+    assert f"Re-admission dossier for PyPI:praisonai written to {out}" in capsys.readouterr().out
+
+
+def test_a_readmission_dossier_without_an_admission_exits_three(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    out = tmp_path / "dossier"
+    missing = tmp_path / "absent.json"
+
+    exit_code = run_nuisance.main(
+        [
+            "nuisance-dossier",
+            "--server",
+            "PyPI:praisonai",
+            "--readmission",
+            "--admission",
+            str(missing),
+            "--out",
+            str(out),
+        ]
+    )
+
+    assert exit_code == 3
+    assert not out.exists()
+
+
 def test_run_without_an_admission_exits_zero_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
