@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as given
-from evals import nuisance_fingerprint
+from evals import nuisance_confinement, nuisance_fingerprint
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.fixture_provenance import StandInRecord
@@ -227,6 +227,19 @@ def test_the_fingerprint_is_unchanged_by_a_comment_in_the_confinement(
     confinement.write_text(confinement.read_text() + "\n# a note on the bound\n")
 
     assert _fingerprint(server, tmp_path) == before
+
+
+def test_the_fingerprint_moves_when_the_confinement_options_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_dockerfile(tmp_path)
+    server = given.an_admission().servers[0]
+    before = _fingerprint(server, tmp_path)
+    options = [*nuisance_confinement.nuisance_confinement_args(), "--pids-limit", "512"]
+
+    monkeypatch.setattr(nuisance_confinement, "nuisance_confinement_args", lambda: options)
+
+    assert _fingerprint(server, tmp_path) != before
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))

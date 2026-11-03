@@ -1,5 +1,11 @@
+import os
+import stat
 import subprocess
+import tempfile
+from collections.abc import Callable, Iterator
 from pathlib import Path
+
+import pytest
 
 from evals.cve_layout import ANCHOR_PATHS, NEUTRAL_TOKEN, build_empty_layout, build_layout
 from evals.cve_places import LayoutAnchor
@@ -29,6 +35,55 @@ def test_the_empty_reference_arm_carries_none_of_the_normal_tree(tmp_path: Path)
     assert not (tmp_path / ".env").exists()
     assert not checkout_log.stdout.strip()  # no commit in the checkout
     assert not bare_log.stdout.strip()  # no commit in the bare
+
+
+BUILDERS: dict[str, Callable[[Path], None]] = {
+    "build_layout": lambda root: build_layout(root, []),
+    "build_empty_layout": build_empty_layout,
+}
+
+
+@pytest.fixture
+def strict_umask() -> Iterator[None]:
+    previous = os.umask(0o077)
+    try:
+        yield
+    finally:
+        os.umask(previous)
+
+
+@pytest.mark.parametrize("builder", BUILDERS.values(), ids=BUILDERS.keys())
+def test_a_temp_root_becomes_traversable_by_any_account(builder: Callable[[Path], None]):
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+
+        builder(root)
+
+        assert stat.S_IMODE(root.stat().st_mode) == 0o755
+
+
+@pytest.mark.parametrize("builder", BUILDERS.values(), ids=BUILDERS.keys())
+@pytest.mark.usefixtures("strict_umask")
+def test_the_tree_is_readable_by_any_account_under_a_strict_umask(
+    tmp_path: Path, builder: Callable[[Path], None]
+):
+    root = tmp_path / "srv"
+
+    builder(root)
+
+    assert _unreadable_by_others(root) == []
+
+
+def _unreadable_by_others(root: Path) -> list[str]:
+    unreadable: list[str] = []
+    for directory, subdirectories, files in os.walk(root):
+        for name in subdirectories:
+            if os.lstat(Path(directory, name)).st_mode & 0o005 != 0o005:
+                unreadable.append(str(Path(directory, name).relative_to(root)))
+        for name in files:
+            if os.lstat(Path(directory, name)).st_mode & 0o004 == 0:
+                unreadable.append(str(Path(directory, name).relative_to(root)))
+    return unreadable
 
 
 def _git(args: list[str]) -> subprocess.CompletedProcess[str]:

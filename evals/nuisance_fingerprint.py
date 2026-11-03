@@ -37,7 +37,8 @@ def nuisance_fixture_fingerprint(
 
     In: the patched Dockerfile's instructions (comments and blank lines out), the launch, the
     host's user, working directory and network stance, the confinement module (the bound, the
-    user arguments and the single-container argv, AST fingerprint), the backend fixture
+    user arguments and the single-container argv, AST fingerprint), the confinement's options
+    (`nuisance_confinement_args()`, the acceptance confinement included), the backend fixture
     (provisioner, pinned image, network), what its backend serves (each Dockerfile by its
     instructions, each Python module by its code, any other file by its bytes), the counted tools
     with the valid judge categories of their classes, and the benign calls of those counted tools
@@ -53,6 +54,7 @@ def nuisance_fixture_fingerprint(
         server.launch,
         planting_host_parts(server.host),
         fingerprint_sources([CONFINEMENT_SOURCE.read_text()]),
+        nuisance_confinement.nuisance_confinement_args(),
         None if backend is None else backend.model_dump(),
         None if backend is None else backend_content(backends[backend.provisioner].served),
         sorted((name, sorted(categories)) for name, categories in counted.items()),

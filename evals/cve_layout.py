@@ -8,7 +8,9 @@ the bare as origin, genuinely lacking the history `.env`; `/srv/.env` sits at th
 level. A kept node carries its nonce, every other node neutral content of the same shape.
 
 `build_layout` runs host-side `git` under the host user (the git and filesystem targets launch
-as the host user), so the tree is host-owned and teardown removes it. The commits are fixed in
+as the host user), so the tree is host-owned and teardown removes it. The root is traversable
+and the tree readable by any account, whatever the host's umask, so a server under the
+unprivileged account resolves `/srv` and `..` as a deployed one does. The commits are fixed in
 author, date and message, so the tree is reproducible and the fixture fingerprint stable.
 """
 
@@ -62,14 +64,15 @@ _GIT_IDENTITY = {
 
 
 def build_layout(root: Path, nodes: Sequence[LayoutNode]) -> None:
+    _traversable_root(root)
     kept = {(node.anchor, node.relpath): node.content for node in nodes}
     bare = root / _BARE
     _build_bare_repository(bare, _value(kept, LayoutAnchor.PROJECT_BARE, _HISTORY_ENV))
     _set_remote_url(bare, _value(kept, LayoutAnchor.PROJECT_BARE, _CONFIG))
     _clone_shallow_checkout(bare, root / _CHECKOUT)
-    (root / _WORKSPACE_ENV).write_text(
-        _dotenv_line(_value(kept, LayoutAnchor.WORKSPACE, _WORKSPACE_ENV))
-    )
+    workspace_env = root / _WORKSPACE_ENV
+    workspace_env.write_text(_dotenv_line(_value(kept, LayoutAnchor.WORKSPACE, _WORKSPACE_ENV)))
+    workspace_env.chmod(0o644)
 
 
 def build_empty_layout(root: Path) -> None:
@@ -81,11 +84,16 @@ def build_empty_layout(root: Path) -> None:
     (/srv/app.git) an empty bare repository. None carries the normal tree's content: no remote, no
     history, no workspace dotenv, only a valid empty instance of each node's type. Host-side only,
     the built tree need not be byte-reproducible."""
-    root.mkdir(parents=True, exist_ok=True)
-    checkout = root / _CHECKOUT
-    checkout.mkdir()
-    _git(checkout, "-c", "init.defaultBranch=main", "init", "--quiet")
+    _traversable_root(root)
+    _git(root, "-c", "init.defaultBranch=main", "init", "--quiet", _CHECKOUT)
     _git(root, "init", "--bare", "--quiet", _BARE)
+
+
+def _traversable_root(root: Path) -> None:
+    # A temp root is 0700, which an unprivileged server cannot traverse to the checkout or up
+    # from it.
+    root.mkdir(parents=True, exist_ok=True)
+    root.chmod(0o755)
 
 
 def _value(kept: Mapping[tuple[LayoutAnchor, str], str], anchor: LayoutAnchor, relpath: str) -> str:
@@ -131,4 +139,5 @@ def _git(cwd: Path, *args: str) -> None:
         env={**os.environ, **_GIT_IDENTITY},
         check=True,
         capture_output=True,
+        umask=0o022,
     )
