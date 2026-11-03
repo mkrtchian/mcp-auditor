@@ -71,15 +71,9 @@ _NO_FALLBACK_SCOPE = FallbackScope(FallbackScopeKind.OPTIONAL)
 # generator first needs list_directory to discover the planted symlink.
 FILESYSTEM_READ_TOOLS = frozenset({"read_file", "list_directory"})
 
-DOCKER_DIRECTORY = Path(__file__).parent / "docker"
-
 
 def image_tag(name: str) -> str:
     return f"mcp-auditor-cve-{name}:local"
-
-
-def image_dockerfile(name: str, docker_directory: Path = DOCKER_DIRECTORY) -> Path:
-    return docker_directory / f"Dockerfile.{name}"
 
 
 @dataclass(frozen=True)

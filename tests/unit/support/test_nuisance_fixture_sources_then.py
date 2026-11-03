@@ -4,7 +4,7 @@ from pathlib import Path
 
 from evals.cve_images import dockerfile_instructions
 from evals.cve_planting import PlantingHost
-from evals.cve_targets import image_dockerfile
+from evals.docker_paths import image_dockerfile
 from evals.fixture_provenance import StandInRecord
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS

@@ -29,13 +29,8 @@ from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
 from evals.cve_images import dockerfile_instructions
 from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
 from evals.cve_planting import PlantingHost
-from evals.cve_targets import (
-    DOCKER_DIRECTORY,
-    CVETarget,
-    LaunchMode,
-    image_dockerfile,
-    image_tag,
-)
+from evals.cve_targets import CVETarget, LaunchMode, image_tag
+from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.gate import ReplayRule
 from evals.public_stand_ins import STAND_INS_DIRECTORY, stand_in
 from mcp_auditor.config import Settings

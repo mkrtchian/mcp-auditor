@@ -11,7 +11,8 @@ from evals.cve_grammar import CVEStatus, MechanismClass
 from evals.cve_places import Coordinates, LayoutAnchor, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_base import PublicNames
-from evals.cve_targets import CVE_TARGETS, DOCKER_DIRECTORY, CVETarget, LaunchMode
+from evals.cve_targets import CVE_TARGETS, CVETarget, LaunchMode
+from evals.docker_paths import DOCKER_DIRECTORY
 from evals.gate import ReplayRule
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.unit.support.test_cve_planting_stand_ins_given import HOST as STAND_IN_HOST

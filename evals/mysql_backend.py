@@ -24,7 +24,8 @@ from collections.abc import Callable, Sequence
 from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, PlantingHost
-from evals.doris_backend import MYSQL_CLIENT_IMAGE, user_args
+from evals.doris_backend import MYSQL_CLIENT_IMAGE
+from evals.nuisance_confinement import user_args
 from evals.responder_backend import remove
 
 MYSQL_IMAGE = MYSQL_CLIENT_IMAGE

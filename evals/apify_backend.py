@@ -32,7 +32,7 @@ import threading
 from collections.abc import Sequence
 
 from evals.cve_planting_base import STAND_IN_IMAGE, STAND_IN_SERVICE, PlantingHost
-from evals.cve_targets import DOCKER_DIRECTORY, image_dockerfile
+from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.public_stand_ins import stand_in_files
 from evals.responder_backend import Responder, remove
 

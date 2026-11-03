@@ -3,7 +3,7 @@ import pytest
 import tests.unit.support.test_nuisance_fixture_sources_given as given
 import tests.unit.support.test_nuisance_fixture_sources_then as then
 from evals.cve_images import dockerfile_instructions
-from evals.cve_targets import image_dockerfile
+from evals.docker_paths import image_dockerfile
 from evals.nuisance_admission import AdmittedServer
 
 _SHA256 = "a" * 64

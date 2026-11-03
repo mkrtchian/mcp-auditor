@@ -21,8 +21,8 @@ from collections.abc import Sequence
 from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
 from evals.cve_planting_base import LABEL, PlantingHost
-from evals.cve_targets import DOCKER_DIRECTORY
-from evals.doris_backend import user_args
+from evals.docker_paths import DOCKER_DIRECTORY
+from evals.nuisance_confinement import user_args
 from evals.responder_backend import remove
 
 NEO4J_IMAGE = "mcp-auditor-cve-neo4j-backend:local"

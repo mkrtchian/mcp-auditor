@@ -2,7 +2,8 @@ import pytest
 
 import tests.unit.support.test_doris_serialization_given as given
 from evals import cve_environments
-from evals.doris_backend import DORIS_SERVER_LAUNCH, doris_server_args, user_args
+from evals.doris_backend import DORIS_SERVER_LAUNCH, doris_server_args
+from evals.nuisance_confinement import user_args
 
 
 def _strip_pair(args: list[str], flag: str) -> list[str]:

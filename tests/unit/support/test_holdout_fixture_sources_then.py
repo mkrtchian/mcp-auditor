@@ -2,7 +2,8 @@ from pathlib import Path
 
 from evals.census_draw import CalibrationCard
 from evals.cve_baseline import ENVIRONMENT_PATHS
-from evals.cve_targets import CVETarget, image_dockerfile
+from evals.cve_targets import CVETarget
+from evals.docker_paths import image_dockerfile
 from tests.unit.support.test_nuisance_fixture_sources_then import (
     host_stand_in_files,
     requests_missing_from_the_file,

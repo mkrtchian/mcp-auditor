@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as given
+from evals import nuisance_fingerprint
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.fixture_provenance import StandInRecord
@@ -200,6 +201,34 @@ def test_the_fingerprint_is_unchanged_by_served_files_for_a_server_with_no_backe
     assert nuisance_fixture_fingerprint(server, tmp_path, backends) == before
 
 
+def test_the_fingerprint_moves_when_the_confinement_code_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_dockerfile(tmp_path)
+    confinement = _a_confinement_copy(tmp_path, monkeypatch)
+    server = given.an_admission().servers[0]
+    before = _fingerprint(server, tmp_path)
+
+    confinement.write_text(
+        confinement.read_text().replace('MEMORY_BOUND = "4g"', 'MEMORY_BOUND = "8g"')
+    )
+
+    assert _fingerprint(server, tmp_path) != before
+
+
+def test_the_fingerprint_is_unchanged_by_a_comment_in_the_confinement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_dockerfile(tmp_path)
+    confinement = _a_confinement_copy(tmp_path, monkeypatch)
+    server = given.an_admission().servers[0]
+    before = _fingerprint(server, tmp_path)
+
+    confinement.write_text(confinement.read_text() + "\n# a note on the bound\n")
+
+    assert _fingerprint(server, tmp_path) == before
+
+
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_every_served_path_of_a_registered_backend_exists(key: str):
     missing = [path for path in BACKENDS[key].served if not path.is_file()]
@@ -212,6 +241,13 @@ def _a_registry_serving(directory: Path) -> dict[str, RegisteredBackend]:
         (directory / name).write_text(before)
     served = tuple(directory / name for name, _, _ in SERVED_CHANGES)
     return {"fake": replace(given.a_backend_registry()["fake"], served=served)}
+
+
+def _a_confinement_copy(directory: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    copy = directory / "nuisance_confinement.py"
+    copy.write_text(nuisance_fingerprint.CONFINEMENT_SOURCE.read_text())
+    monkeypatch.setattr(nuisance_fingerprint, "CONFINEMENT_SOURCE", copy)
+    return copy
 
 
 def _one_flaw_server(effect_class: MechanismClass) -> AdmittedServer:

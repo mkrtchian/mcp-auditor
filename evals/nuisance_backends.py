@@ -38,7 +38,8 @@ from evals.ckan_backend import CKAN_BRIDGE, CKAN_RESPONDER_IMAGE
 from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
 from evals.cve_environments import Launch
 from evals.cve_planting_base import STAND_IN_SERVICE
-from evals.cve_targets import image_dockerfile, image_tag
+from evals.cve_targets import image_tag
+from evals.docker_paths import image_dockerfile
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
 from evals.figma_backend import FIGMA_BRIDGE, FIGMA_RESPONDER_IMAGE

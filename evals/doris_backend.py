@@ -26,15 +26,8 @@ from uuid import uuid4
 
 from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
-from evals.cve_planting_base import (
-    LABEL,
-    SENTINEL_IMAGE,
-    PlantingHost,
-    SentinelIntent,
-    SymbolicUser,
-    host_user_args,
-    unprivileged_user_args,
-)
+from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, PlantingHost, SentinelIntent
+from evals.nuisance_confinement import user_args
 
 DORIS_IMAGE = (
     "apache/doris:all-in-one-4.1.3"
@@ -67,14 +60,6 @@ DORIS_SERVER_LAUNCH: list[str] = [
 # submissions, so the acquiring and releasing worker threads may differ, which a plain Lock allows
 # and an owner-bound RLock would reject with RuntimeError out of __exit__.
 DORIS_LAUNCH_LOCK = threading.Lock()
-
-
-def user_args(user: SymbolicUser) -> list[str]:
-    match user:
-        case SymbolicUser.HOST:
-            return host_user_args()
-        case SymbolicUser.UNPRIVILEGED:
-            return unprivileged_user_args()
 
 
 def doris_server_args(

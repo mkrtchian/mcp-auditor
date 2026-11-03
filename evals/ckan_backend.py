@@ -21,7 +21,7 @@ import threading
 from collections.abc import Sequence
 
 from evals.cve_planting_base import PlantingHost
-from evals.cve_targets import DOCKER_DIRECTORY
+from evals.docker_paths import DOCKER_DIRECTORY
 from evals.responder_backend import Responder, remove
 
 CKAN_RESPONDER_IMAGE = "mcp-auditor-cve-ckan-responder:local"

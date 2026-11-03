@@ -34,6 +34,8 @@ from evals.nuisance_audit import (
     nuisance_environment,
 )
 from evals.nuisance_backends import RegisteredBackend
+from evals.nuisance_confinement import single_container_run_args
+from evals.nuisance_images import image_tag
 from evals.nuisance_results import NotRunCause
 from evals.provider_errors import ProviderFatal
 from evals.server_health import NO_INCIDENTS, ServerHealth
@@ -106,6 +108,13 @@ def test_the_launch_runs_the_patched_image_confined_with_no_mount():
         assert _follows(launch.args, "--cap-drop", "ALL")
         assert "-v" not in launch.args
         assert "--mount" not in launch.args
+
+
+def test_a_backend_less_server_launches_under_the_nuisance_confinement_with_the_memory_bound():
+    args = _launch_args(SERVER)
+
+    assert args == single_container_run_args(image_tag(SERVER.service), SERVER.host, SERVER.launch)
+    assert "--memory" in args
 
 
 def test_a_backend_server_launches_through_its_registered_provisioner():

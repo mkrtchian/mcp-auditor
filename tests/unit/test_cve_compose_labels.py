@@ -12,7 +12,8 @@ from evals.cve_images import (
     unpinned_bases,
 )
 from evals.cve_planting_base import SENTINEL_SERVICE
-from evals.cve_targets import CVE_TARGETS, DOCKER_DIRECTORY
+from evals.cve_targets import CVE_TARGETS
+from evals.docker_paths import DOCKER_DIRECTORY
 
 COMPOSE_SERVICES: dict[str, Any] = yaml.safe_load(COMPOSE_FILE.read_text())["services"]
 

@@ -35,7 +35,7 @@ from evals.cve_planting import (
     unprivileged_user_args,
 )
 from evals.cve_planting_base import LABEL, SENTINEL_IMAGE
-from evals.cve_targets import DOCKER_DIRECTORY
+from evals.docker_paths import DOCKER_DIRECTORY
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import Launch, LaunchShape

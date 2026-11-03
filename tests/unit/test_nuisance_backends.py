@@ -10,7 +10,7 @@ from evals.contextforge_backend import (
     CONTEXTFORGE_RESPONDER_IMAGE,
     CONTEXTFORGE_RESPONDER_IP,
 )
-from evals.cve_targets import DOCKER_DIRECTORY
+from evals.docker_paths import DOCKER_DIRECTORY
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.mysql_backend import MYSQL_BRIDGE, MYSQL_IMAGE
 from evals.n8n_backend import N8N_BRIDGE, N8N_RESPONDER_IMAGE

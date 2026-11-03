@@ -13,14 +13,13 @@ from evals.audit_attempts import INCOMPLETE_ATTEMPTS, describe_miss_causes
 from evals.concurrency import entered_in_thread
 from evals.cve_audit import Auditor, RunOverrides
 from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
-from evals.cve_planting_base import confinement_args, no_network_args
 from evals.cve_recording_client import RecordingClient
-from evals.doris_backend import user_args
 from evals.eval_display import console
 from evals.failure_text import ReportDetail
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
+from evals.nuisance_confinement import single_container_run_args
 from evals.nuisance_counter import flagged_tools
 from evals.nuisance_counting import counted_tools
 from evals.nuisance_images import image_tag
@@ -60,24 +59,13 @@ def nuisance_environment(
 
 
 def _single_container_launch(server: AdmittedServer) -> Launch:
-    """The patched image under the acceptance confinement, with no mount, no layout and no
-    planting. The user and working directory come from `server.host`. A server with no backend
-    runs with no network, the admission refusing `has_network` without one."""
-    host = server.host
+    """The patched image under the nuisance confinement (`nuisance_confinement`, the acceptance
+    one plus the memory bound), with no mount, no layout and no planting. The user and working
+    directory come from `server.host`. A server with no backend runs with no network, the
+    admission refusing `has_network` without one."""
     return Launch(
         command="docker",
-        args=[
-            "run",
-            "-i",
-            "--rm",
-            *confinement_args(),
-            *user_args(host.user),
-            "-w",
-            host.working_directory,
-            *no_network_args(),
-            image_tag(server.service),
-            *server.launch,
-        ],
+        args=single_container_run_args(image_tag(server.service), server.host, server.launch),
     )
 
 

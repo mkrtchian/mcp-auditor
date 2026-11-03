@@ -34,7 +34,9 @@ class BackendSources:
 # The lifecycle a dossier copies for a server admitted with a backend. Kept here, not read from
 # the nuisance_backends registry, so the dossier stays free of the auditor-coupled registry.
 _BACKEND_SOURCES: dict[str, BackendSources] = {
-    "doris": BackendSources(evals_modules=("doris_backend",), kit_modules=("kit_backends",))
+    "doris": BackendSources(
+        evals_modules=("doris_backend", "nuisance_confinement"), kit_modules=("kit_backends",)
+    )
 }
 
 

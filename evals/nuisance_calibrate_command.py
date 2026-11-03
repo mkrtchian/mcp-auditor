@@ -9,7 +9,7 @@ from pathlib import Path
 from evals import nuisance_fixtures
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
-from evals.cve_targets import DOCKER_DIRECTORY
+from evals.docker_paths import DOCKER_DIRECTORY
 from evals.holdout_kit import kit_launch
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
 from evals.nuisance_admission import ADMISSION_PATH, FixCheckRecord

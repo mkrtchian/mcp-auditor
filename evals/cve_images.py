@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from evals.cve_targets import DOCKER_DIRECTORY, image_dockerfile, image_tag
+from evals.cve_targets import image_tag
+from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 
 FINGERPRINT_LABEL = "org.mcp-auditor.dockerfile-fingerprint"
 COMPOSE_FILE = DOCKER_DIRECTORY / "compose.yml"
