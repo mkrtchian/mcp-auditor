@@ -36,9 +36,11 @@ def nuisance_fixture_fingerprint(
     host's user, working directory and network stance, the backend fixture (provisioner, pinned
     image, network), what its backend serves (each Dockerfile by its instructions, each Python
     module by its code, any other file by its bytes), the counted tools with the valid judge
-    categories of their classes, and the benign calls of those counted tools in record order.
-    Out: the vulnerable Dockerfile, the exploits, the agents, the agreement, the settlements and
-    the fix-check records.
+    categories of their classes, and the benign calls of those counted tools in record order, with
+    their expected texts and their prerequisite calls.
+    Out: the vulnerable Dockerfile, the exploits, the agents, the agreement, the settlements, the
+    fix-check records, and the provenance records (`stand_ins`, `seeds`), whose content is covered
+    through the Dockerfile and the backend's served files.
     """
     counted = counted_tools(server)
     backend = server.backend
@@ -50,7 +52,14 @@ def nuisance_fixture_fingerprint(
         None if backend is None else backend_content(backends[backend.provisioner].served),
         sorted((name, sorted(categories)) for name, categories in counted.items()),
         [
-            (call.tool, call.arguments)
+            (
+                call.tool,
+                call.arguments,
+                call.expect,
+                None
+                if call.before is None
+                else [(prior.tool, prior.arguments) for prior in call.before],
+            )
             for flaw in counted_flaws(server)
             for call in flaw.benign_calls
             if call.tool in counted

@@ -6,7 +6,9 @@ import pytest
 import tests.unit.support.test_nuisance_admission_given as given
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.nuisance_admission import AdmissionSettlement, AdmittedServer, BenignCall
+from evals.fixture_provenance import StandInRecord
+from evals.nuisance_admission import AdmissionSettlement, AdmittedServer, ToolCall
+from evals.nuisance_admission_records import SeedRecord
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
 from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 
@@ -42,9 +44,45 @@ def test_the_fingerprint_moves_when_a_counted_tools_class_changes(tmp_path: Path
 def test_the_fingerprint_moves_when_a_benign_calls_arguments_change(tmp_path: Path):
     _write_dockerfile(tmp_path)
     server = given.an_admission().servers[0]
-    other = _with_benign_arguments(server, {"path": "/etc/passwd"})
+    other = _with_first_benign_call(server, arguments={"path": "/etc/passwd"})
 
     assert _fingerprint(server, tmp_path) != _fingerprint(other, tmp_path)
+
+
+def test_the_fingerprint_moves_when_a_benign_calls_expected_text_changes(tmp_path: Path):
+    _write_dockerfile(tmp_path)
+    server = given.an_admission().servers[0]
+    other = _with_first_benign_call(server, expect="another answer")
+
+    assert _fingerprint(server, tmp_path) != _fingerprint(other, tmp_path)
+
+
+def test_the_fingerprint_moves_when_a_benign_calls_prerequisite_calls_change(tmp_path: Path):
+    _write_dockerfile(tmp_path)
+    server = given.an_admission().servers[0]
+    connected = _with_first_benign_call(
+        server, before=[ToolCall(tool="connect", arguments={"database": "app"})]
+    )
+    unrecorded = _with_first_benign_call(server, before=None)
+
+    assert _fingerprint(server, tmp_path) != _fingerprint(connected, tmp_path)
+    assert _fingerprint(server, tmp_path) != _fingerprint(unrecorded, tmp_path)
+
+
+def test_the_fingerprint_is_unchanged_by_the_provenance_records(tmp_path: Path):
+    _write_dockerfile(tmp_path)
+    server = given.an_admission().servers[0]
+    seed = SeedRecord(item="/agents.yaml", kind="written")
+    stand_in = StandInRecord(
+        replaces="api.example.com",
+        reason="no network",
+        file="evals/docker/Dockerfile.x",
+        capture="evals/stand_ins/api.example.com.json",
+        outputs=[],
+    )
+    recorded = server.model_copy(update={"seeds": [seed], "stand_ins": [stand_in]})
+
+    assert _fingerprint(server, tmp_path) == _fingerprint(recorded, tmp_path)
 
 
 def test_the_fingerprint_moves_when_the_dockerfile_instructions_change(tmp_path: Path):
@@ -181,11 +219,10 @@ def _one_flaw_server(effect_class: MechanismClass) -> AdmittedServer:
     return given.a_server([flaw])
 
 
-def _with_benign_arguments(server: AdmittedServer, arguments: dict[str, object]) -> AdmittedServer:
+def _with_first_benign_call(server: AdmittedServer, **update: object) -> AdmittedServer:
     first, *rest = server.flaws
-    call = first.benign_calls[0]
     moved = first.model_copy(
-        update={"benign_calls": [BenignCall(tool=call.tool, arguments=arguments)]}
+        update={"benign_calls": [first.benign_calls[0].model_copy(update=update)]}
     )
     return server.model_copy(update={"flaws": [moved, *rest]})
 

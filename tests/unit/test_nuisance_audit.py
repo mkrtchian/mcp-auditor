@@ -28,7 +28,6 @@ from evals.nuisance_audit import (
     NuisanceAuditor,
     ProviderError,
     audit_once,
-    benign_call_failure,
     gate_run,
     is_incomplete,
     nuisance_audit,
@@ -70,9 +69,7 @@ SERVER = a_server(
         a_flaw_record(SECOND_FLAW, MechanismClass.COMMAND_EXECUTION, "1.2.0"),
     ]
 )
-FIRST_TOOL = f"{FIRST_FLAW}_read"
 _PROVIDER_ERROR = ProviderError("ModelAPIError, status 500")
-SECOND_TOOL = f"{SECOND_FLAW}_read"
 
 
 def test_the_crafted_server_launches_unprivileged_at_the_root_with_no_network():
@@ -212,32 +209,6 @@ async def test_two_concurrent_environments_of_one_backend_server_both_complete()
             await asyncio.sleep(0.01)
 
     await asyncio.wait_for(asyncio.gather(enter_once(), enter_once()), timeout=5)
-
-
-async def test_clean_benign_calls_give_no_failure():
-    client = FakeMCPClient([])
-
-    reason = await benign_call_failure(SERVER, client)
-
-    assert reason is None
-    assert sorted(name for name, _ in client.calls) == sorted([FIRST_TOOL, SECOND_TOOL])
-
-
-async def test_a_benign_call_answering_an_error_names_the_tool():
-    client = FakeMCPClient([], {SECOND_TOOL: ToolResponse(content="boom", is_error=True)})
-
-    reason = await benign_call_failure(SERVER, client)
-
-    assert reason is not None
-    assert SECOND_TOOL in reason
-    assert "boom" in reason
-
-
-async def test_a_benign_call_raising_names_the_tool():
-    reason = await benign_call_failure(SERVER, _RaisingClient(FIRST_TOOL))
-
-    assert reason is not None
-    assert FIRST_TOOL in reason
 
 
 async def test_a_clean_report_stands_at_the_first_call(monkeypatch: pytest.MonkeyPatch):
@@ -587,17 +558,6 @@ def _audited(report: AuditReport) -> NuisanceAudit:
 def _missing_a_step(report: AuditReport, cause: MissCause, detail: str = "") -> AuditReport:
     missed = MissedStep(tool_name="read_file", step=AuditStep.JUDGMENT, cause=cause, detail=detail)
     return report.model_copy(update={"missed_steps": [missed]})
-
-
-class _RaisingClient(FakeMCPClient):
-    def __init__(self, failing_tool: str) -> None:
-        super().__init__([])
-        self._failing_tool = failing_tool
-
-    async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
-        if name == self._failing_tool:
-            raise RuntimeError("connection closed")
-        return await super().call_tool(name, args)
 
 
 class _ScriptedAttempts:

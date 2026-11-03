@@ -29,6 +29,7 @@ from mcp_auditor.domain.models import (
     MissCause,
     MissedStep,
     ProviderUsage,
+    ToolDefinition,
     ToolResponse,
 )
 from mcp_auditor.domain.ports import MCPClientPort
@@ -287,8 +288,8 @@ async def run(
 
 class FlakyLaunches:
     """Stands in for the server's launch and connection: the first `failing` connections fail,
-    the last of them on a timeout, and the next ones answer every benign call with `answer`, then
-    fail their teardown when `teardown_fails`."""
+    the last of them on a timeout, and the next ones list the counted tool and answer its benign
+    call with `answer`, then fail their teardown when `teardown_fails`."""
 
     def __init__(self, failing: int, answer: ToolResponse, teardown_fails: bool) -> None:
         self.launches = 0
@@ -309,7 +310,8 @@ class FlakyLaunches:
             raise TimeoutError("initialize timed out")
         if self.launches < self._failing:
             raise ConnectionError("Connection closed")
-        yield FakeMCPClient([], {COUNTED_TOOL: self._answer})
+        listed = [ToolDefinition(name=COUNTED_TOOL, input_schema={})]
+        yield FakeMCPClient(listed, {COUNTED_TOOL: self._answer})
         if self._teardown_fails:
             raise OSError("container removal failed")
 
@@ -320,7 +322,8 @@ def launches_failing(
     answer: ToolResponse | None = None,
     teardown_fails: bool = False,
 ) -> FlakyLaunches:
-    flaky = FlakyLaunches(failing, answer or ToolResponse(content="ok"), teardown_fails)
+    expected = ToolResponse(content=f"{COUNTED_TOOL} answered")
+    flaky = FlakyLaunches(failing, answer or expected, teardown_fails)
     monkeypatch.setattr(nuisance_vetting, "nuisance_environment", flaky.environment)
     monkeypatch.setattr(nuisance_vetting, "connect", flaky.connect)
     return flaky

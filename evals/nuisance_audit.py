@@ -19,10 +19,10 @@ from evals.doris_backend import user_args
 from evals.eval_display import console
 from evals.failure_text import ReportDetail
 from evals.metrics import SessionThrottles
-from evals.nuisance_admission import AdmittedServer, BenignCall
+from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
 from evals.nuisance_counter import flagged_tools
-from evals.nuisance_counting import counted_flaws, counted_tools
+from evals.nuisance_counting import counted_tools
 from evals.nuisance_images import image_tag
 from evals.nuisance_results import NotRunCause
 from evals.provider_errors import (
@@ -37,7 +37,6 @@ from evals.server_health import ServerHealth, health_of
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
-from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.graph.builder import build_graph
 
 NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries
@@ -80,23 +79,6 @@ def _single_container_launch(server: AdmittedServer) -> Launch:
             *server.launch,
         ],
     )
-
-
-async def benign_call_failure(server: AdmittedServer, mcp_client: MCPClientPort) -> str | None:
-    counted = counted_tools(server)
-    calls: dict[str, BenignCall] = {}
-    for flaw in counted_flaws(server):
-        for call in flaw.benign_calls:
-            if call.tool in counted:
-                calls.setdefault(call.tool, call)
-    for tool, call in calls.items():
-        try:
-            response = await mcp_client.call_tool(tool, call.arguments)
-        except Exception as exc:
-            return f"benign call of {tool!r} failed: {exc}"
-        if response.is_error:
-            return f"benign call of {tool!r} returned an error: {response.content}"
-    return None
 
 
 @dataclass(frozen=True)

@@ -10,7 +10,8 @@ from evals.cve_calibration import PRE_RUN_LAUNCH_ATTEMPTS
 from evals.cve_environments import connect
 from evals.failure_text import TYPES_ONLY
 from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_audit import benign_call_failure, nuisance_environment
+from evals.nuisance_audit import nuisance_environment
+from evals.nuisance_benign_call import benign_call_failure
 from evals.nuisance_results import NotRunCause, NotRunServer
 
 
