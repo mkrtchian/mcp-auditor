@@ -10,7 +10,8 @@ kit_driver: one flaw at a time, no event loop, no evals/concurrency.
 The verdict is a pure function of the exchanges each version records (`fix_check_result`), kept
 apart from the launches so the record logic is tested with no Docker, as kit_driver keeps
 dead_conditions apart from its _exercise. FixCheckResult mirrors nuisance_admission.FixCheckRecord
-field for field; it is kit-local because the kit imports nothing from mcp_auditor and the admission
+field for field, except relies_on_relaying_stand_in, a judgment the admission records and the kit
+does not observe; it is kit-local because the kit imports nothing from mcp_auditor and the admission
 module reaches it through cve_baseline. A parity test pins the two field sets equal.
 """
 

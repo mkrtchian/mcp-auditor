@@ -186,6 +186,12 @@ def test_a_source_difference_on_a_fix_check_record_is_a_mismatch():
     assert "source" in mismatches[0]
 
 
+def test_a_record_judging_a_relaying_stand_in_matches_a_result_that_cannot_carry_it():
+    record = _a_record(relies_on_relaying_stand_in=False)
+
+    assert nuisance_calibrate_command.fix_check_mismatches(_a_result(), record) == []
+
+
 def test_a_differing_witness_nonce_is_not_a_mismatch():
     # check_fix plants a fresh random nonce each run, so the result's witness never equals the one
     # the admission recorded; only the reproducible fields are compared.

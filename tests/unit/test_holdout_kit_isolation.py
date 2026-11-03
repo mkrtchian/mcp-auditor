@@ -82,7 +82,10 @@ def test_kit_target_mirrors_the_drawn_cve_target_fields():
 
 
 def test_fix_check_result_mirrors_the_admission_record_fields():
-    assert {field.name for field in fields(FixCheckResult)} == set(FixCheckRecord.model_fields)
+    # relies_on_relaying_stand_in is a judgment the admission records, which the kit does not
+    # observe.
+    recorded = set(FixCheckRecord.model_fields) - {"relies_on_relaying_stand_in"}
+    assert {field.name for field in fields(FixCheckResult)} == recorded
 
 
 def test_fix_check_target_mirrors_the_admission_fields_the_driver_reads():

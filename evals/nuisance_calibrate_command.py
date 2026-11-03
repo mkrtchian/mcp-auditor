@@ -109,12 +109,14 @@ def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list
     field. The witness is a fresh random nonce each run (check_fix plants RANDOM_NONCES), so it
     never equals the recorded nonce and is not compared. A record copied from the holdout
     calibration (source holdout_calibration) carries the calibration's provenance, not a fresh
-    fix-check run, so its source field is not compared either."""
+    fix-check run, so its source field is not compared either. Whether the positive control rests
+    on a relaying stand-in is a judgment the admission records, which the kit does not observe."""
     return list(_field_mismatches(result, record).values())
 
 
 def _field_mismatches(result: FixCheckResult, record: FixCheckRecord) -> dict[str, str]:
-    skip = {"witness"}
+    # relies_on_relaying_stand_in is a judgment the admission records: the kit does not observe it.
+    skip = {"witness", "relies_on_relaying_stand_in"}
     if record.source == "holdout_calibration":
         skip.add("source")
     mismatches: dict[str, str] = {}

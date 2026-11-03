@@ -5,7 +5,8 @@ The schema is filled by the two blind admission agents and the maintainer who se
 disagreements, on the model of the draw record of `evals/census_draw.py`. Every list is empty
 until the admission session. `admission_problems` holds the load validation, raised joined by
 `load_admission`, so a crafted admission can be checked without a file. The file is absent
-until the session, and `load_admission` says so.
+until the session, and `load_admission` says so. The fields defaulting to `None` are those rule
+v3 added and not yet recorded, which `nuisance_unrecorded` refuses at run.
 """
 
 from collections.abc import Mapping
@@ -19,7 +20,9 @@ from evals.census_draw import LaunchOption
 from evals.census_work import AgentRecord
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost
+from evals.fixture_provenance import StandInRecord
 from evals.honeypots import REPO_ROOT
+from evals.nuisance_admission_records import RealSoftwareRecord, SeedRecord, record_problems
 from evals.nuisance_admission_walk import walk_problems
 from evals.nuisance_counting import counted_flaws, counted_tools
 from evals.nuisance_walk_record import NuisanceCensus
@@ -31,11 +34,17 @@ class ToolRecord(BaseModel):
     vulnerable_name: str | None
     patched_name: str | None
     status: Literal["unchanged", "renamed", "removed"]
+    real_software: RealSoftwareRecord | None = None
 
 
-class BenignCall(BaseModel):
+class ToolCall(BaseModel):
     tool: str
     arguments: dict[str, Any]
+
+
+class BenignCall(ToolCall):
+    expect: str | None = None  # a substring the response text must contain
+    before: list[ToolCall] | None = None  # prerequisite calls, each must not error
 
 
 class FixCheckRecord(BaseModel):
@@ -46,6 +55,7 @@ class FixCheckRecord(BaseModel):
     patched_surfaces: bool
     server_patched_surfaces: bool | None
     patched_benign_errored: bool
+    relies_on_relaying_stand_in: bool | None = None
 
 
 class FlawRecord(BaseModel):
@@ -99,6 +109,8 @@ class AdmittedServer(BaseModel):
     agreement: list[FieldAgreement]
     settlements: list[AdmissionSettlement]
     patched_version: str
+    stand_ins: list[StandInRecord] | None = None
+    seeds: list[SeedRecord] | None = None
 
 
 class NuisanceAdmission(BaseModel):
@@ -138,6 +150,7 @@ def admission_problems(
         problems += _patched_version_problems(server)
         problems += _network_problems(server)
         problems += nuisance_backends.backend_problems(server, backends)
+        problems += record_problems(server)
     return problems + walk_problems(admission, nuisance_census)
 
 

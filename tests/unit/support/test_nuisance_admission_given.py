@@ -24,6 +24,7 @@ from evals.nuisance_admission import (
     NuisanceAdmission,
     ToolRecord,
 )
+from evals.nuisance_admission_records import RealSoftwareRecord
 from evals.nuisance_backends import RegisteredBackend
 from evals.nuisance_walk_record import NuisanceCensus
 
@@ -73,6 +74,8 @@ def _a_server() -> AdmittedServer:
         agreement=[FieldAgreement(flaw=FIRST_FLAW, field="effect_class", agreed=True)],
         settlements=[],
         patched_version=PATCHED_VERSION,
+        stand_ins=[],
+        seeds=[],
     )
 
 
@@ -94,8 +97,7 @@ def a_flaw_record(
         patched_source="advisory",
         launch_option=None,
         benign_calls=[
-            BenignCall(tool=tool.patched_name or tool.vulnerable_name or "", arguments={})
-            for tool in the_tools
+            a_benign_call(tool.patched_name or tool.vulnerable_name or "") for tool in the_tools
         ],
         backend_need="none",
         declared_function_is_effect=False,
@@ -112,7 +114,12 @@ def a_passing_fix_check(server_patched_surfaces: bool | None = None) -> FixCheck
         patched_surfaces=False,
         server_patched_surfaces=server_patched_surfaces,
         patched_benign_errored=False,
+        relies_on_relaying_stand_in=False,
     )
+
+
+def a_benign_call(tool: str) -> BenignCall:
+    return BenignCall(tool=tool, arguments={}, expect=f"{tool} answered", before=[])
 
 
 def a_tool(
@@ -120,7 +127,10 @@ def a_tool(
     patched: str | None,
     status: Literal["unchanged", "renamed", "removed"],
 ) -> ToolRecord:
-    return ToolRecord(vulnerable_name=vulnerable, patched_name=patched, status=status)
+    verdict = None if status == "removed" else RealSoftwareRecord(answers=True)
+    return ToolRecord(
+        vulnerable_name=vulnerable, patched_name=patched, status=status, real_software=verdict
+    )
 
 
 def a_server(flaws: list[FlawRecord], patched_version: str = PATCHED_VERSION) -> AdmittedServer:
@@ -265,7 +275,7 @@ def with_an_inconsistent_tool_record(admission: NuisanceAdmission) -> NuisanceAd
         bad = first.model_copy(
             update={
                 "tools": [a_tool("read_file", "write_file", "unchanged")],
-                "benign_calls": [BenignCall(tool="write_file", arguments={})],
+                "benign_calls": [a_benign_call("write_file")],
             }
         )
         return server.model_copy(update={"flaws": [bad, *rest]})
