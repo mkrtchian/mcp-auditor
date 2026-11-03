@@ -256,7 +256,13 @@ repository checkout. Its MCP client needs the `mcp` package 1.18.0 or later.
 
 5. Fill the calibration card (`fixture_format.md` carries its schema): the mechanism, the effect
    class, the siblings, the kept and unkept places, the launch options, the seeded layout files,
+   each item seeded outside the layout (`seeded_outside_layout`) and each stand-in with the
+   source of its outputs (`stand_ins`), both with the tools that return it or use it by default,
    the exploit and benign calls, the patched result and the number of attempts.
+
+   The schema shows `seeded_outside_layout` and `stand_ins` optional with a `null` default
+   because the committed census predates them. They are required on a card: `[]` records that
+   there is nothing to declare.
 
 ## The layout and route checks are NOT in the kit
 

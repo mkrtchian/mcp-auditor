@@ -9,7 +9,7 @@ import pytest
 import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_holdout_census_given as given
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals.calibration_dossier import CLEAN_MODULES, acceptance_services
+from evals.calibration_dossier import CLEAN_MODULES, acceptance_services, write_kit
 from evals.eval_session import Refused
 from evals.nuisance_dossier import write_dossier
 
@@ -102,3 +102,32 @@ def test_an_unknown_server_is_refused(tmp_path: Path):
     with pytest.raises(Refused):
         write_dossier(walk_given.a_nuisance_census(given.a_census()), "npm:nonexistent", out)
     assert not out.exists()
+
+
+def test_the_fixture_format_requires_every_field_rule_v3_adds(tmp_path: Path):
+    out = tmp_path / "dossier"
+    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out)
+
+    fixture_format = (out / "fixture_format.md").read_text()
+    assert "Fields rule v3 adds, required for an admission" in fixture_format
+    for field in (
+        "ToolRecord.real_software",
+        "BenignCall.expect",
+        "BenignCall.before",
+        "FixCheckRecord.relies_on_relaying_stand_in",
+        "AdmittedServer.stand_ins",
+        "AdmittedServer.seeds",
+    ):
+        assert f"`{field}`" in fixture_format, field
+    assert "leaves none of them `null`" in fixture_format
+    assert "none left `null`" in (out / "README.md").read_text()
+
+
+def test_the_calibration_kit_readme_requires_the_card_fields_rule_v9_adds(tmp_path: Path):
+    out = tmp_path / "kit"
+    write_kit(given.a_census(), given.FLAW_WITH_A_CVE, out)
+
+    readme = (out / "README.md").read_text()
+    assert "`seeded_outside_layout`" in readme
+    assert "`stand_ins`" in readme
+    assert "required on a card" in readme

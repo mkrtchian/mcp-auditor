@@ -118,6 +118,8 @@ repository, so the vulnerable Dockerfile and the exploits are committed beside t
   when either surfaces it.
 - `benign_calls`: `async (Places, KitClient) -> None`, one per tool, read from the tool
   description, not aimed at the flaw. The patched version must answer them without error.
+  `check_fix` prints each benign response. The server's patched version must also answer the
+  admission's benign calls with their expected text, which `run_nuisance vet` checks.
 - `vulnerable_service`, `patched_service`: service names, built and launched as
   `mcp-auditor-kit-<service>:local`. Each must differ from every acceptance service (the README
   lists them).
@@ -155,6 +157,35 @@ patched version.
   image); `"external"` when a tool needs one the fixture cannot provide (a remote third-party
   service, a credential or an account the maintainer does not have, a proprietary binary), which
   drops the tool from the count.
+
+## Fields rule v3 adds, required for an admission
+
+The schemas below show these fields optional with a `null` default because the committed
+admission predates them. An admission leaves none of them `null`: `[]` records that there is
+nothing to declare.
+
+- `ToolRecord.real_software`: for every tool of the flaw in the patched version, whether its
+  benign call can return without error on the real software it drives and under the
+  confinement (`answers`). When it cannot, `cause` names one of three cases, `software_error`
+  (an error of the software with every argument the description allows), `not_distributed` (no
+  distribution channel left) or `container_unrepairable` (a container failure the fixture cannot
+  repair), and `evidence` holds the run, the capture or the source line, the missing channel, or
+  why the failure cannot be repaired. A tool listed by several flaws carries the same verdict on
+  each. Its agreement field is named `real_software`.
+- `BenignCall.expect`: a substring of the text the tool answers on success, taken from the
+  seeded content or the software's documented output, never a part of the call's arguments, a
+  stable fragment when the output is dynamic.
+- `BenignCall.before`: the calls made before the benign call, each of which must not error,
+  `[]` when there is none.
+- `FixCheckRecord.relies_on_relaying_stand_in`: whether the witness surfaces on the vulnerable
+  version only because a stand-in relays the flaw's effect, which fails the positive control.
+- `AdmittedServer.stand_ins`: each stand-in with what it replaces, why the real software cannot
+  run under the confinement, its file, and each output with its source, in the source order of
+  Stand-ins (a capture, the software's sources, the server's tests, else invented in the form of
+  a cited source), `[]` when the fixture has none.
+- `AdmittedServer.seeds`: each seeded item with its kind, citation and pin, in the source order
+  of Seeding (a published sample, then what the software generates, then a project document,
+  then values written for the fixture), `[]` when the fixture seeds nothing.
 
 ## FlawRecord JSON schema
 
@@ -219,5 +250,5 @@ checkout. Its MCP client needs the `mcp` package 1.18.0 or later.
 
 5. Paste the printed `FixCheckResult` into the flaw's `fix_check` record of the admission, and
    fill the rest of the `FlawRecord` and `AdmittedServer` fields (`fixture_format.md` carries
-   their schemas).
+   their schemas). Fill the rule v3 fields too, none left `null`.
 """
