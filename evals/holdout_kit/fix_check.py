@@ -78,14 +78,22 @@ class FixCheckResult:
 async def check_fix(target: FixCheckTarget) -> FixCheckResult:
     """Reproduce the flaw on each version and build the record. A launch failure has no verdict,
     so it raises rather than reading as a fixed flaw."""
-    vulnerable = await _exercise(target, target.vulnerable_service)
-    patched = await _exercise(target, target.patched_service)
+    vulnerable = await _exercise_shown(target, target.vulnerable_service)
+    patched = await _exercise_shown(target, target.patched_service)
     server_patched = (
         None
         if target.server_patched_service is None
-        else await _exercise(target, target.server_patched_service)
+        else await _exercise_shown(target, target.server_patched_service)
     )
     return fix_check_result(target, vulnerable, patched, server_patched)
+
+
+def benign_transcript(flaw: str, service: str, exercise: Exercised) -> str:
+    return "\n".join(
+        f"{flaw} {service}: benign {tool} -> {'error' if response.is_error else 'ok'} "
+        f"{response.content!r}"
+        for tool, _, response in exercise.benign
+    )
 
 
 def fix_check_result(
@@ -108,6 +116,14 @@ def fix_check_result(
             or (server_patched is not None and _benign_errored(server_patched))
         ),
     )
+
+
+async def _exercise_shown(target: FixCheckTarget, service: str) -> Exercised:
+    # One print per version, so concurrent calibrations do not interleave within a transcript.
+    exercise = await _exercise(target, service)
+    if exercise.benign:
+        print(benign_transcript(target.flaw, service, exercise))
+    return exercise
 
 
 async def _exercise(target: FixCheckTarget, service: str) -> Exercised:

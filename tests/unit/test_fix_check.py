@@ -1,5 +1,6 @@
 import tests.unit.support.test_fix_check_given as given
-from evals.holdout_kit.fix_check import fix_check_result
+from evals.holdout_kit.fix_check import benign_transcript, fix_check_result
+from evals.holdout_kit.kit_client import KitResponse
 from evals.nuisance_admission import FixCheckRecord
 
 
@@ -110,3 +111,20 @@ def test_to_json_round_trips_to_a_valid_fix_check_record():
     assert record.patched_surfaces is False
     assert record.server_patched_surfaces is False
     assert record.exploit_calls == ["read_file"]
+
+
+def test_the_benign_transcript_shows_each_exchange_on_one_line():
+    exercise = given.an_exercise(
+        [],
+        benign=[
+            ("show", {"file_path": "agents.yaml"}, KitResponse("roles:\n  analyst", False)),
+            ("list", {}, KitResponse("backend unavailable", True)),
+        ],
+    )
+
+    transcript = benign_transcript("CVE-2025-0001", "patched", exercise)
+
+    assert transcript.splitlines() == [
+        "CVE-2025-0001 patched: benign show -> ok 'roles:\\n  analyst'",
+        "CVE-2025-0001 patched: benign list -> error 'backend unavailable'",
+    ]

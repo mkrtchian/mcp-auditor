@@ -17,7 +17,7 @@ from evals.nuisance_admission import (
     load_admission,
 )
 from evals.nuisance_commands import WALK_RECORD_PATH
-from evals.nuisance_counting import counted_flaws, flaw_counted_tools
+from evals.nuisance_counting import counted_flaws, flaw_tools
 from evals.nuisance_walk_record import load_walk_record
 from evals.run_census import CENSUS_PATH
 from tests.unit.support.holdout_kit_isolation import scan_tree
@@ -114,9 +114,9 @@ async def test_each_target_mechanism_and_tools_match_the_admission_flaw():
     records = _flaw_records(admission)
     for target in nuisance_fixtures.FIX_CHECK_TARGETS:
         record = records[target.flaw]
-        counted = flaw_counted_tools(record)
+        tools = flaw_tools(record)
         assert target.mechanism == record.effect_class
-        assert await _exploit_tools(target, counted) == counted
+        assert await _exploit_tools(target, tools) == tools
 
 
 async def test_a_dynamic_tool_exploit_resolves_against_the_seeded_server():
