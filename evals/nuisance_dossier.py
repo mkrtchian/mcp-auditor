@@ -12,33 +12,19 @@ census flaw of the server, never from the raw hand-downloaded exports.
 """
 
 import json
-import shutil
-from dataclasses import dataclass
 from pathlib import Path
 
-from evals import calibration_dossier, nuisance_walk
-from evals.calibration_dossier import EVALS, KIT_MODULES, acceptance_services, copy_clean_sources
+from evals import calibration_dossier, dossier_closure, nuisance_walk
+from evals.calibration_dossier import KIT_MODULES, acceptance_services, copy_clean_sources
 from evals.eval_session import Refused
 from evals.holdout_census import HoldoutCensus
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_walk_record import NuisanceCensus, normalized_package
 from evals.run_census import GRAMMAR_CLASSES
 
-
-@dataclass(frozen=True)
-class BackendSources:
-    evals_modules: tuple[str, ...]
-    kit_modules: tuple[str, ...]
-
-
-# The lifecycle a dossier copies for a server admitted with a backend. Kept here, not read from
-# the nuisance_backends registry, so the dossier stays free of the auditor-coupled registry.
-_BACKEND_SOURCES: dict[str, BackendSources] = {
-    "doris": BackendSources(
-        evals_modules=("doris_backend", "nuisance_confinement", "backend_lifecycle"),
-        kit_modules=("kit_backends",),
-    )
-}
+# Kept here, not read from the nuisance_backends registry, so the dossier stays free of the
+# auditor-coupled registry.
+_BACKENDS = frozenset({"doris"})
 
 
 def write_dossier(
@@ -50,24 +36,21 @@ def write_dossier(
             f"Refused: no census flaw names the server {server_package}.",
             ["The --server argument must be a server package the holdout census records."],
         )
-    sources = _backend_sources(backend)
+    _refuse_unknown_backend(backend)
     out.mkdir(parents=True, exist_ok=True)
     _write_advisories(nuisance_census.census, identifiers, out)
-    copy_clean_sources(out, (*KIT_MODULES, "fix_check", *sources.kit_modules))
-    for module in sources.evals_modules:
-        shutil.copyfile(EVALS / f"{module}.py", out / "evals" / f"{module}.py")
+    copy_clean_sources(out, (*KIT_MODULES, "fix_check"))
+    if backend == "doris":
+        dossier_closure.copy_closure(out, ["evals.holdout_kit.kit_backends"])
     _write_docs(out, backend)
 
 
-def _backend_sources(backend: str | None) -> BackendSources:
-    if backend is None:
-        return BackendSources((), ())
-    if backend not in _BACKEND_SOURCES:
+def _refuse_unknown_backend(backend: str | None) -> None:
+    if backend is not None and backend not in _BACKENDS:
         raise Refused(
             f"Refused: no backend named {backend!r}.",
-            [f"--backend takes one of: {', '.join(sorted(_BACKEND_SOURCES))}"],
+            [f"--backend takes one of: {', '.join(sorted(_BACKENDS))}"],
         )
-    return _BACKEND_SOURCES[backend]
 
 
 def _write_advisories(census: HoldoutCensus, identifiers: list[str], out: Path) -> None:
@@ -222,15 +205,17 @@ _README = """\
 A self-contained workshop for admitting one nuisance server, free of any `mcp_auditor` import.
 Run it from this directory with this directory on the Python path (its `evals/` package resolves
 the copied clean modules). It needs Docker Engine 28.0 or later but no LLM and no repository
-checkout. Its MCP client needs the `mcp` package 1.18.0 or later.
+checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 
 ## Procedure
 
 1. Build the sentinel image first (the planting layer's sidecar for network places and a
-   namespace holder):
+   namespace holder), and the stand-in image beside it (the replay of a public service's
+   capture under its real name, loaded from `evals/stand_ins/`):
 
    ```
    docker build -t mcp-auditor-cve-sentinel:local -f docker/Dockerfile.sentinel docker
+   docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker
    ```
 
 2. Read `advisories/<id>.json` (one per census flaw of the server), `fixture_format.md` and

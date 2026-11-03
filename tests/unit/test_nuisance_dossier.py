@@ -2,6 +2,8 @@
 free of any mcp_auditor import, but with the fix-check driver instead of the holdout list and
 layout. These pins are the twin of test_calibration_dossier_writes_an_isolated_kit."""
 
+import re
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -27,6 +29,9 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
         "evals/holdout_kit/fix_check.py",
         "evals/holdout_kit/kit_driver.py",
         "docker/Dockerfile.sentinel",
+        "docker/Dockerfile.stand-in",
+        "evals/stand_ins/example.com.json",
+        "evals/stand_ins/tls/fixture-authority.pem",
         "README.md",
         "fixture_format.md",
         "grammar_classes.md",
@@ -45,6 +50,7 @@ def test_a_backend_dossier_imports_closed(tmp_path: Path):
 
     assert (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
     assert (out / "evals" / "doris_backend.py").exists()
+    assert (out / "evals" / "nuisance_confinement.py").exists()
     fixture_format = (out / "fixture_format.md").read_text()
     assert "kit_backends.doris_backend_env" in fixture_format
     assert "169.254.0.0/16" in fixture_format
@@ -95,6 +101,32 @@ def test_the_readme_names_the_kit_tag_and_the_acceptance_services(tmp_path: Path
     assert "mcp-auditor-kit-<service>:local" in readme
     for service in acceptance_services():
         assert f"`{service}`" in readme, service
+
+
+def test_both_readmes_state_the_mcp_specifier_of_the_project(tmp_path: Path):
+    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, tmp_path / "dossier")
+    write_kit(given.a_census(), given.FLAW_WITH_A_CVE, tmp_path / "kit")
+
+    specifier = _mcp_specifier()
+    assert f"`{specifier}`" in (tmp_path / "dossier" / "README.md").read_text()
+    assert f"`{specifier}`" in (tmp_path / "kit" / "README.md").read_text()
+
+
+def _mcp_specifier() -> str:
+    pyproject = tomllib.loads((iso.REPO_ROOT / "pyproject.toml").read_text())
+    dependencies: list[str] = pyproject["project"]["dependencies"]
+    return next(each for each in dependencies if re.split(r"[<>=!~\[; ]", each)[0] == "mcp")
+
+
+def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Path):
+    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, tmp_path / "dossier")
+    write_kit(given.a_census(), given.FLAW_WITH_A_CVE, tmp_path / "kit")
+
+    build = "docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker"
+    assert build in (tmp_path / "dossier" / "README.md").read_text()
+    kit_readme = (tmp_path / "kit" / "README.md").read_text()
+    assert build in kit_readme
+    assert "`evals/stand_ins/`" in kit_readme
 
 
 def test_an_unknown_server_is_refused(tmp_path: Path):

@@ -1,4 +1,6 @@
 import importlib.util
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -256,6 +258,9 @@ def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
         "evals/holdout_places.json",
         "evals/holdout_kit/kit_driver.py",
         "docker/Dockerfile.sentinel",
+        "docker/Dockerfile.stand-in",
+        "evals/stand_ins/tls/fixture-authority.pem",
+        *(f"evals/stand_ins/{capture.name}" for capture in _COMMITTED_CAPTURES),
         "README.md",
         "fixture_format.md",
         "layout.md",
@@ -267,6 +272,9 @@ def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
     assert "mcp-auditor-kit-<service>:local" in readme
     for service in _acceptance_services():
         assert f"`{service}`" in readme, service
+
+
+_COMMITTED_CAPTURES = sorted((iso.REPO_ROOT / "evals" / "stand_ins").glob("*.json"))
 
 
 def _acceptance_services() -> set[str]:
@@ -304,3 +312,32 @@ def _load_copied_places(module_path: Path) -> dict[str, object]:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.load_places(module.HOLDOUT_PLACES)
+
+
+def test_calibration_dossier_stand_in_loads_through_the_copied_loader(tmp_path: Path):
+    census = given.written(tmp_path, given.a_census())
+    out = tmp_path / "kit"
+    run_holdout.main(
+        [
+            "calibration-dossier",
+            "--census",
+            str(census),
+            "--cve",
+            given.FLAW_WITH_A_CVE,
+            "--out",
+            str(out),
+        ]
+    )
+    script = (
+        "from evals import public_stand_ins\n"
+        "print(public_stand_ins.STAND_INS_DIRECTORY)\n"
+        "print(public_stand_ins.stand_in('example.com').host)\n"
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", script], cwd=out, capture_output=True, text=True, check=True
+    )
+
+    directory, host = result.stdout.split()
+    assert Path(directory).resolve() == (out / "evals" / "stand_ins").resolve()
+    assert host == "example.com"

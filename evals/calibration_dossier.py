@@ -114,8 +114,9 @@ def advisory_dossier(flaw: CensusFlaw) -> Dossier:
 
 
 def copy_clean_sources(out: Path, kit_modules: Sequence[str]) -> None:
-    """Copy evals/__init__.py, the clean modules, the given kit modules and the sentinel
-    Dockerfile into the exported tree. The holdout kit adds its own holdout_places.json."""
+    """Copy evals/__init__.py, the clean modules, the given kit modules, the stand-in captures
+    (evals/stand_ins/), the sentinel Dockerfile and the stand-in Dockerfile into the exported
+    tree. The holdout kit adds its own holdout_places.json."""
     evals_out = out / "evals"
     (evals_out / "holdout_kit").mkdir(parents=True, exist_ok=True)
     (evals_out / "__init__.py").write_text((EVALS / "__init__.py").read_text())
@@ -123,9 +124,11 @@ def copy_clean_sources(out: Path, kit_modules: Sequence[str]) -> None:
         shutil.copyfile(EVALS / f"{module}.py", evals_out / f"{module}.py")
     for module in kit_modules:
         shutil.copyfile(KIT_DIR / f"{module}.py", evals_out / "holdout_kit" / f"{module}.py")
+    shutil.copytree(EVALS / "stand_ins", evals_out / "stand_ins", dirs_exist_ok=True)
     docker_out = out / "docker"
     docker_out.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(DOCKER / "Dockerfile.sentinel", docker_out / "Dockerfile.sentinel")
+    for dockerfile in ("Dockerfile.sentinel", "Dockerfile.stand-in"):
+        shutil.copyfile(DOCKER / dockerfile, docker_out / dockerfile)
 
 
 def _copy_sources(out: Path) -> None:
@@ -229,20 +232,23 @@ _README = """\
 A self-contained workshop for calibrating one holdout candidate, free of any `mcp_auditor`
 import. Run it from this directory with this directory on the Python path (its `evals/` package
 resolves the copied clean modules). It needs Docker Engine 28.0 or later but no LLM and no
-repository checkout. Its MCP client needs the `mcp` package 1.18.0 or later.
+repository checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 
 ## Procedure
 
 1. Build the sentinel image first (the planting layer's sidecar for network places and a
-   namespace holder):
+   namespace holder), and the stand-in image beside it (the replay of a public service's
+   capture under its real name):
 
    ```
    docker build -t mcp-auditor-cve-sentinel:local -f docker/Dockerfile.sentinel docker
+   docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker
    ```
 
 2. Read `advisories/<id>.json` (the candidate and the advisories of its server's other census
    flaws), `fixture_format.md`, `grammar_classes.md`, `layout.md` and
-   `evals/holdout_places.json`.
+   `evals/holdout_places.json`. A target that declares a stand-in loads its capture from
+   `evals/stand_ins/` (`public_stand_ins.stand_in(host)`).
 
 3. Write the candidate's two Dockerfiles into `docker/`: `Dockerfile.<service>` (the vulnerable
    version) and `Dockerfile.<service>-patched` (the fixed version). `kit_launch.build_images`
