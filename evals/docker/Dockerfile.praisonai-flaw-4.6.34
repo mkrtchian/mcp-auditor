@@ -6,8 +6,38 @@
 FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
 RUN pip install --no-cache-dir "praisonai==4.6.34" "mcp>=1.20.0,<2"
 
+# Seeds, taken whole from the sources the two ARG lines pin: /agents.yaml is the README's first
+# agents.yaml sample (Using YAML (No Code), Example 1), in the working directory where
+# workflow.show resolves it; /tmp/.praison/rules/python.md is the rules page's python.md
+# example, without its Python comment markers, in the rules directory rules.show reads
+# (~/.praison/rules, HOME=/tmp). A build argument stays out of the server's environment.
+ARG AGENTS_SAMPLE=MervinPraison/PraisonAI@a72e156c4d01ef06c64529d302c21381d6485716:README.md#L405-L417
+ARG RULES_DOCUMENT=MervinPraison/PraisonAIDocs@bba9a51a6669db7b12004785539c051b9d3e109e:docs/features/rules.mdx#L386-L392
+RUN printf '%s\n' \
+    'framework: praisonai' \
+    'topic: "Write a blog post about AI"' \
+    '' \
+    'agents:' \
+    '  researcher:' \
+    '    role: Research Analyst' \
+    '    goal: Research AI trends and gather information' \
+    '    instructions: "Find accurate information about AI trends"' \
+    '    ' \
+    '  writer:' \
+    '    role: Content Writer' \
+    '    goal: Write engaging blog posts' \
+    '    instructions: "Write clear, engaging content based on research"' \
+    > /agents.yaml \
+ && chmod a+r /agents.yaml
 RUN mkdir -p /tmp/.praison/rules \
- && printf 'seed rule content\n' > /tmp/.praison/rules/seed.txt \
+ && printf '%s\n' \
+    '---' \
+    'description: Python style' \
+    'globs: ["**/*.py"]' \
+    'activation: glob' \
+    '---' \
+    'Use type hints on every function.' \
+    > /tmp/.praison/rules/python.md \
  && chmod -R a+rX /tmp/.praison
 
 ENTRYPOINT ["python3", "-c", "from praisonai.mcp_server.cli import handle_mcp_command; import sys; sys.exit(handle_mcp_command(['serve', '--transport', 'stdio']))"]

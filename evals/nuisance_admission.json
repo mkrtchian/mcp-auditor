@@ -4425,7 +4425,7 @@
             {
               "tool": "praisonai.rules.show",
               "arguments": {
-                "rule_name": "seed.txt"
+                "rule_name": "python.md"
               }
             }
           ],
@@ -4529,7 +4529,21 @@
           "reason": "only praisonai.workflow.show is counted: it returns yaml_path.read_text() with no containment on the vulnerable version; praisonai.workflow.validate and praisonai.deploy.validate never disclose file content at any version (they are validity oracles: success echoes the caller's own path, missing keys list key names, YAML errors give only filename/line/column), so no nonce witness can surface through them and they fall outside the disclosure grammar (no oracle class is added this batch)"
         }
       ],
-      "patched_version": "4.6.40"
+      "patched_version": "4.6.40",
+      "seeds": [
+        {
+          "item": "/agents.yaml",
+          "kind": "published_sample",
+          "citation": "PraisonAI README.md, section Using YAML (No Code), Example 1: Two Agents Working Together, lines 405-417",
+          "pin": "a72e156c4d01ef06c64529d302c21381d6485716"
+        },
+        {
+          "item": "/tmp/.praison/rules/python.md",
+          "kind": "project_document",
+          "citation": "PraisonAIDocs docs/features/rules.mdx, Path-Scoped Rules in Action, .praisonai/rules/python.md, lines 386-392, comment markers dropped, seeded in the server's default rules directory ~/.praison/rules",
+          "pin": "bba9a51a6669db7b12004785539c051b9d3e109e"
+        }
+      ]
     },
     {
       "server_package": "PyPI:mcp-atlassian",

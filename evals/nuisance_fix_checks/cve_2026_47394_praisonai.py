@@ -9,9 +9,9 @@ working directory before reading it: an absolute path such as the one below is r
 the file is ever touched.
 
 The exploit's file_path is the absolute-path marker itself (the aim); the benign call, a bare
-"agents.yaml" filename with no separator, is accepted by both versions and never raises (a missing
-file and a rejected argument both return as plain text, not an MCP error), so
-patched_benign_errored stays false independent of what exists at the container's root.
+"agents.yaml" filename with no separator, reads the README's first agents.yaml sample, seeded at
+/agents.yaml in the working directory /: 4.6.40 resolves it inside the working directory and
+4.6.33 opens it relative to it, so both versions answer with the sample's text.
 
 praisonai.workflow.validate and praisonai.deploy.validate are settled out of this flaw's tools
 (see evals/nuisance_admission.json): both are validity oracles that never disclose file content
