@@ -84,6 +84,11 @@ def readmission_dockerfiles(server: AdmittedServer) -> list[str]:
     return kept
 
 
+def _fix_check_targets(server: AdmittedServer) -> list[FixCheckTarget]:
+    flaws = {flaw.flaw for flaw in server.flaws}
+    return [target for target in FIX_CHECK_TARGETS if target.flaw in flaws]
+
+
 def fix_check_modules(server: AdmittedServer) -> list[str]:
     flaws = {flaw.flaw for flaw in server.flaws}
     modules: list[str] = []
@@ -129,11 +134,6 @@ def holdout_fixture_file(identifier: str) -> Path:
             [f"evals/holdout_fixtures/{slug}_*.py must match exactly one module"],
         )
     return matches[0]
-
-
-def _fix_check_targets(server: AdmittedServer) -> list[FixCheckTarget]:
-    flaws = {flaw.flaw for flaw in server.flaws}
-    return [target for target in FIX_CHECK_TARGETS if target.flaw in flaws]
 
 
 def _copy_dockerfiles(out: Path, services: list[str]) -> None:

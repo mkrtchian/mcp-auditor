@@ -9,10 +9,6 @@ from evals.nuisance_confinement import MEMORY_BOUND, memory_bound_args
 from evals.nuisance_images import image_tag
 
 
-def _carries(args: list[str], segment: list[str]) -> bool:
-    return any(args[i : i + len(segment)] == segment for i in range(len(args)))
-
-
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_a_backend_key_resolves_to_the_lifecycle_carrying_it(key: str):
     assert lifecycle_of(key).key == key
@@ -99,3 +95,7 @@ def test_every_responder_singleton_argv_carries_the_memory_bound():
 )
 def test_every_built_backend_container_argv_carries_the_memory_bound(args: list[str]):
     assert _carries(args, memory_bound_args())
+
+
+def _carries(args: list[str], segment: list[str]) -> bool:
+    return any(args[i : i + len(segment)] == segment for i in range(len(args)))
