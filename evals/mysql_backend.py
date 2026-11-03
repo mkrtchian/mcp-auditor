@@ -23,12 +23,13 @@ from collections.abc import Callable, Sequence
 
 from evals.backend_lifecycle import BackendLifecycle
 from evals.closed_network import ensure_closed_network
-from evals.cve_planting_base import LABEL, PlantingHost
+from evals.cve_planting_base import LABEL, PlantingHost, own_network_args
 from evals.doris_backend import MYSQL_CLIENT_IMAGE
 from evals.nuisance_confinement import (
+    labelled_run_args,
     memory_bound_args,
     nuisance_confinement_args,
-    running_with_bound,
+    running_with_launch,
     user_args,
 )
 from evals.responder_backend import remove
@@ -39,6 +40,8 @@ _MOTO_IMAGE = (
 )
 MYSQL_CONTAINER = "mcp-auditor-cve-mysql"
 MOTO_CONTAINER = "mcp-auditor-cve-mysql-moto"
+MYSQL_HOST = "mysql"  # the engine's alias on MYSQL_BRIDGE
+MOTO_HOST = "moto"  # the stub's alias on MYSQL_BRIDGE
 MOTO_ENDPOINT = f"http://{MOTO_CONTAINER}:5000"
 MYSQL_BRIDGE = "mcp-auditor-cve-mysql-bridge"  # server <-> engine and stub, name resolution
 _READY_DEADLINE = 120.0
@@ -96,7 +99,7 @@ def mysql_server_args(
         *nuisance_confinement_args(),
         "--name", name,
         "--label", LABEL,
-        "--network", MYSQL_BRIDGE,
+        *own_network_args(MYSQL_BRIDGE),
         *user_args(host.user),
         "-w", host.working_directory,
         image,
@@ -117,29 +120,32 @@ def mysql_rm(name: str) -> None:
 def _ensure_engine() -> None:
     _ensure_container(
         MYSQL_CONTAINER,
+        MYSQL_HOST,
         ["-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", MYSQL_IMAGE, *_ENGINE_FLAGS],
     )
     _wait_until(_provision_engine, "MySQL engine did not become ready")
 
 
 def _ensure_stub() -> None:
-    _ensure_container(MOTO_CONTAINER, [_MOTO_IMAGE])
+    _ensure_container(MOTO_CONTAINER, MOTO_HOST, [_MOTO_IMAGE])
     _wait_until(_seed_stub, "moto stub did not accept its seed")
 
 
-def _ensure_container(name: str, run_args: Sequence[str]) -> None:
-    if running_with_bound(name):
+def _ensure_container(name: str, alias: str, run_args: Sequence[str]) -> None:
+    container_run_args = backend_container_run_args(name, alias, run_args)
+    if running_with_launch(name, container_run_args):
         return
     remove(name)
-    _run("docker", *backend_container_run_args(name, run_args))
+    _run("docker", *labelled_run_args(container_run_args))
 
 
-def backend_container_run_args(name: str, run_args: Sequence[str]) -> list[str]:
+def backend_container_run_args(name: str, alias: str, run_args: Sequence[str]) -> list[str]:
     return [
         "run", "-d",
         "--name", name,
         "--label", LABEL,
-        "--network", MYSQL_BRIDGE,
+        *own_network_args(MYSQL_BRIDGE),
+        "--network-alias", alias,
         *memory_bound_args(),
         *run_args,
     ]  # fmt: skip

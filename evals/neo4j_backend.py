@@ -20,12 +20,13 @@ from collections.abc import Sequence
 
 from evals.backend_lifecycle import BackendLifecycle
 from evals.closed_network import ensure_closed_network
-from evals.cve_planting_base import LABEL, PlantingHost
+from evals.cve_planting_base import LABEL, PlantingHost, own_network_args
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.nuisance_confinement import (
+    labelled_run_args,
     memory_bound_args,
     nuisance_confinement_args,
-    running_with_bound,
+    running_with_launch,
     user_args,
 )
 from evals.responder_backend import remove
@@ -33,6 +34,7 @@ from evals.responder_backend import remove
 NEO4J_IMAGE = "mcp-auditor-cve-neo4j-backend:local"
 NEO4J_BACKEND_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.neo4j-backend"
 NEO4J_CONTAINER = "mcp-auditor-cve-neo4j"
+NEO4J_HOST = "neo4j"  # the database's alias on NEO4J_BRIDGE
 NEO4J_BRIDGE = "mcp-auditor-cve-neo4j-bridge"  # server <-> database, name resolution
 _PASSWORD = "testpassword"  # Neo4j rejects passwords under 8 characters
 _READY_DEADLINE = 120.0
@@ -58,7 +60,7 @@ def neo4j_server_args(
         *nuisance_confinement_args(),
         "--name", name,
         "--label", LABEL,
-        "--network", NEO4J_BRIDGE,
+        *own_network_args(NEO4J_BRIDGE),
         *user_args(host.user),
         "-w", host.working_directory,
         image,
@@ -86,9 +88,9 @@ def _ensure_image() -> None:
 
 
 def _ensure_database() -> None:
-    if not running_with_bound(NEO4J_CONTAINER):
+    if not running_with_launch(NEO4J_CONTAINER, database_run_args()):
         remove(NEO4J_CONTAINER)
-        _run("docker", *database_run_args())
+        _run("docker", *labelled_run_args(database_run_args()))
     _wait_until_ready()
 
 
@@ -97,7 +99,8 @@ def database_run_args() -> list[str]:
         "run", "-d",
         "--name", NEO4J_CONTAINER,
         "--label", LABEL,
-        "--network", NEO4J_BRIDGE,
+        *own_network_args(NEO4J_BRIDGE),
+        "--network-alias", NEO4J_HOST,
         *memory_bound_args(),
         *_DATABASE_ENVIRONMENT,
         NEO4J_IMAGE,

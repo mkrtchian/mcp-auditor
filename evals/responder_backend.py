@@ -16,9 +16,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from evals.closed_network import ensure_closed_network
-from evals.cve_planting_base import LABEL, PlantingHost
+from evals.cve_planting_base import LABEL, PlantingHost, own_network_args
 from evals.docker_paths import DOCKER_DIRECTORY
-from evals.nuisance_confinement import nuisance_confinement_args, running_with_bound, user_args
+from evals.nuisance_confinement import (
+    labelled_run_args,
+    nuisance_confinement_args,
+    running_with_launch,
+    user_args,
+)
 
 
 @dataclass(frozen=True)
@@ -44,7 +49,7 @@ class Responder:
             *nuisance_confinement_args(),
             "--name", name,
             "--label", LABEL,
-            "--network", self.bridge,
+            *own_network_args(self.bridge),
             *extra_args,
             *user_args(host.user),
             "-w", host.working_directory,
@@ -57,7 +62,7 @@ class Responder:
             "run", "-d",
             "--name", self.container,
             "--label", LABEL,
-            "--network", self.bridge,
+            *own_network_args(self.bridge),
             "--ip", self.ip,
             *nuisance_confinement_args(),
             "--cap-add", "NET_BIND_SERVICE",  # root behind cap-drop ALL still binds 80/443
@@ -68,10 +73,10 @@ class Responder:
     def ensure(self) -> None:
         self._ensure_image()
         ensure_closed_network(self.bridge, "--subnet", self.subnet)
-        if not running_with_bound(self.container):
+        if not running_with_launch(self.container, self.singleton_run_args()):
             if self._exists():
                 remove(self.container)
-            _run("docker", *self.singleton_run_args())
+            _run("docker", *labelled_run_args(self.singleton_run_args()))
 
     def _ensure_image(self) -> None:
         present = _run("docker", "image", "inspect", self.image, check=False)

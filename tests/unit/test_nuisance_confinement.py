@@ -9,9 +9,10 @@ from evals.cve_planting_base import (
     no_network_args,
 )
 from evals.nuisance_confinement import (
-    MEMORY_BOUND,
-    MEMORY_BOUND_BYTES,
-    carries_memory_bound,
+    LAUNCH_LABEL,
+    labelled_run_args,
+    launch_digest,
+    launch_matches,
     nuisance_confinement_args,
     single_container_run_args,
     user_args,
@@ -19,6 +20,7 @@ from evals.nuisance_confinement import (
 
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False)
 LAUNCH = ["node", "dist/index.js"]
+BACKEND_RUN = ["run", "-d", "--name", "backend", "--memory", "4g", "backend:image"]
 
 
 def test_the_nuisance_confinement_is_the_acceptance_one_then_the_memory_bound():
@@ -31,16 +33,48 @@ def test_the_nuisance_confinement_is_the_acceptance_one_then_the_memory_bound():
     ]
 
 
-def test_the_bound_in_bytes_is_the_binary_value_of_the_bound():
-    assert MEMORY_BOUND == "4g"
-    assert MEMORY_BOUND_BYTES == 4_294_967_296
+def test_equal_launches_have_the_same_digest():
+    assert launch_digest(list(BACKEND_RUN)) == launch_digest(tuple(BACKEND_RUN))
+
+
+def test_a_launch_differing_by_one_option_has_another_digest():
+    other = [*BACKEND_RUN[:-1], "--dns-search", ".", BACKEND_RUN[-1]]
+
+    assert launch_digest(other) != launch_digest(BACKEND_RUN)
+
+
+def test_the_launch_label_goes_right_after_run_detached_and_the_rest_keeps_its_order():
+    assert labelled_run_args(BACKEND_RUN) == [
+        "run",
+        "-d",
+        "--label",
+        f"mcp-auditor-cve-launch={launch_digest(BACKEND_RUN)}",
+        *BACKEND_RUN[2:],
+    ]
+    assert LAUNCH_LABEL == "mcp-auditor-cve-launch"
+
+
+def test_only_a_detached_run_is_labelled():
+    with pytest.raises(ValueError, match="run -d"):
+        labelled_run_args(["run", "-i", "--rm", "image"])
+
+
+def test_a_running_container_with_the_launch_digest_matches():
+    assert launch_matches(f"true {launch_digest(BACKEND_RUN)}\n", BACKEND_RUN)
 
 
 @pytest.mark.parametrize(
-    ("inspected", "carries"), [("4294967296", True), ("0", False), ("2147483648", False)]
+    "inspected",
+    [
+        f"false {launch_digest(BACKEND_RUN)}",
+        "true",
+        "true <no value>",
+        f"true {launch_digest(['run', '-d', 'other:image'])}",
+    ],
+    ids=["stopped", "unlabelled", "no label map", "another launch"],
 )
-def test_a_container_carries_the_bound_only_at_its_byte_value(inspected: str, carries: bool):
-    assert carries_memory_bound(inspected) is carries
+def test_a_container_not_running_this_launch_does_not_match(inspected: str):
+    assert not launch_matches(inspected, BACKEND_RUN)
 
 
 def test_a_host_user_runs_as_the_invoking_user():

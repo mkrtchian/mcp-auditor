@@ -35,9 +35,10 @@ from evals.cve_planting_base import (
     own_network_args,
 )
 from evals.nuisance_confinement import (
+    labelled_run_args,
     memory_bound_args,
     nuisance_confinement_args,
-    running_with_bound,
+    running_with_launch,
     user_args,
 )
 
@@ -51,6 +52,7 @@ MYSQL_CLIENT_IMAGE = (
     "mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
 )
 DORIS_CONTAINER = "mcp-auditor-cve-doris"
+DORIS_HOST = "doris"  # the cluster's hostname and alias on DORIS_BRIDGE
 DORIS_BRIDGE = "mcp-auditor-cve-doris-bridge"  # server <-> Doris FE, name resolution
 _DORIS_LLNET = "mcp-auditor-cve-doris-llnet"  # Doris <-> sentinels, static link-local IPs
 _DORIS_LLSUBNET = "169.254.0.0/16"
@@ -93,10 +95,10 @@ def doris_server_args(
 def ensure_doris() -> None:
     ensure_closed_network(DORIS_BRIDGE)
     ensure_closed_network(_DORIS_LLNET, "--subnet", _DORIS_LLSUBNET)
-    if not running_with_bound(DORIS_CONTAINER):
+    if not running_with_launch(DORIS_CONTAINER, doris_cluster_run_args()):
         if _doris_exists():
             doris_rm(DORIS_CONTAINER)
-        _doris_run("docker", *doris_cluster_run_args())
+        _doris_run("docker", *labelled_run_args(doris_cluster_run_args()))
     _doris_run("docker", "network", "connect", _DORIS_LLNET, DORIS_CONTAINER, check=False)
     _wait_doris_healthy()
     _provision_doris_schema()
@@ -106,9 +108,10 @@ def doris_cluster_run_args() -> list[str]:
     return [
         "run", "-d",
         "--name", DORIS_CONTAINER,
-        "--hostname", DORIS_CONTAINER,
+        "--hostname", DORIS_HOST,
         "--label", LABEL,
-        "--network", DORIS_BRIDGE,
+        *own_network_args(DORIS_BRIDGE),
+        "--network-alias", DORIS_HOST,
         *memory_bound_args(),
         DORIS_IMAGE,
     ]  # fmt: skip
@@ -154,7 +157,7 @@ def start_doris_sentinel(sentinel: SentinelIntent) -> str:
         "--name", name,
         "--label", LABEL,
         *confinement_args(),
-        "--network", _DORIS_LLNET,
+        *own_network_args(_DORIS_LLNET),
         "--ip", sentinel.host,
         "--cap-add", "NET_BIND_SERVICE",
         "-e", f"FLAG={sentinel.content}",
