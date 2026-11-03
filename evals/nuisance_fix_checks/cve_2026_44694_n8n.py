@@ -33,6 +33,7 @@ from evals.cve_planting import (
     confinement_args,
     unprivileged_user_args,
 )
+from evals.cve_planting_base import no_network_args
 from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import Launch, LaunchShape
@@ -179,7 +180,7 @@ def ssrf_redirect_env(
     stand_in = f"mcp-auditor-kit-n8n-r-{token}"
     try:
         _run_detached(
-            holder, ["--network", "none", "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
+            holder, [*no_network_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
         )
         _add_public_address(holder)
         _run_detached(sentinel, _sentinel_tail(holder, nonce))

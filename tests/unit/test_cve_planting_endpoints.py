@@ -4,7 +4,7 @@ import tests.unit.support.test_cve_planting_given as given
 import tests.unit.support.test_cve_planting_then as then
 from evals.cve_endpoint_address import RESERVED_NAME_BLOCK
 from evals.cve_planting import PlantingFailed, planted
-from evals.cve_planting_base import PublicNames
+from evals.cve_planting_base import PublicNames, own_network_args
 from evals.cve_planting_spec import served_file
 
 
@@ -22,7 +22,7 @@ def test_a_name_host_on_a_launch_with_a_network_is_an_alias_on_the_bridge_with_n
         sentinel = docker.sentinels[given.only(docker.sentinels)]
         assert given.following(sentinel, "--network") == network
         assert given.following(sentinel, "--network-alias") == "fictional-service"
-        assert args.network == ("--network", network)
+        assert args.network == tuple(own_network_args(network))
 
 
 def test_an_ip_literal_host_yields_a_holder_address_setup_sentinel_and_target_network_args():

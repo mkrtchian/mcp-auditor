@@ -39,6 +39,7 @@ from evals.cve_planting_base import (
     confinement_args,
     host_user_args,
     no_network_args,
+    own_network_args,
     quiet,
     unprivileged_user_args,
 )
@@ -67,8 +68,9 @@ from evals.cve_planting_stand_ins import (
 from evals.public_stand_ins import STAND_INS_DIRECTORY
 
 # re-exported for a one-name import by the audit, calibration, survey and replay callers.
-# The user and network helpers (host_user_args, no_network_args, unprivileged_user_args) are
-# imported above for `planted`'s own use only, so they stay off this public surface.
+# The user and network helpers (host_user_args, no_network_args, own_network_args,
+# unprivileged_user_args) are imported above for `planted`'s own use only, so they stay off
+# this public surface.
 __all__ = [
     "RANDOM_NONCES",
     "SENTINEL_IMAGE",
@@ -201,7 +203,7 @@ def _holder_args(spec: PlantingSpec, network: str | None) -> list[str]:
         identity += ["--hostname", spec.hostname]
     for host, address in spec.host_entries:
         identity += ["--add-host", f"{host}:{address}"]
-    network_args = ["--network", network if network is not None else "none"]
+    network_args = no_network_args() if network is None else own_network_args(network)
     tail = ["--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
     return [*confinement_args(), *network_args, *identity, *tail]
 
@@ -232,7 +234,13 @@ def _sentinel_args(sentinel: SentinelIntent, network: str | None, holder: str | 
     served += ["-e", f"SERVE_FILE={sentinel.served_file}"]
     if sentinel.bind_address is None:
         assert network is not None  # a bridge alias exists only on a launch with a network
-        return [*served, "--network", network, "--network-alias", sentinel.host, SENTINEL_IMAGE]
+        return [
+            *served,
+            *own_network_args(network),
+            "--network-alias",
+            sentinel.host,
+            SENTINEL_IMAGE,
+        ]
     served += ["--network", f"container:{holder}", "-e", f"BIND_ADDR={sentinel.bind_address}"]
     return [*served, SENTINEL_IMAGE]
 
@@ -248,7 +256,7 @@ def _network_args(network: str | None, holder: str | None) -> tuple[str, ...]:
     if holder is not None:
         return ("--network", f"container:{holder}")
     if network is not None:
-        return ("--network", network)
+        return tuple(own_network_args(network))
     return tuple(no_network_args())
 
 

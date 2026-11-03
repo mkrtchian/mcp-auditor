@@ -2,7 +2,12 @@ import os
 
 import pytest
 
-from evals.cve_planting_base import PlantingHost, SymbolicUser, confinement_args
+from evals.cve_planting_base import (
+    PlantingHost,
+    SymbolicUser,
+    confinement_args,
+    no_network_args,
+)
 from evals.nuisance_confinement import (
     MEMORY_BOUND,
     MEMORY_BOUND_BYTES,
@@ -62,7 +67,7 @@ def test_the_single_container_run_is_confined_bounded_and_without_network():
     args = single_container_run_args("image:local", HOST, LAUNCH)
 
     assert _holds(args, nuisance_confinement_args())
-    assert _holds(args, ["--network", "none"])
+    assert _holds(args, no_network_args())
     assert _holds(args, user_args(HOST.user))
     assert _holds(args, ["-w", "/srv"])
 

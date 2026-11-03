@@ -13,7 +13,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from evals import nuisance_confinement
+from evals import cve_planting_base, nuisance_confinement
 from evals.baseline import fingerprint_sources
 from evals.cve_baseline import planting_host_parts
 from evals.cve_images import dockerfile_instructions
@@ -38,7 +38,8 @@ def nuisance_fixture_fingerprint(
     In: the patched Dockerfile's instructions (comments and blank lines out), the launch, the
     host's user, working directory and network stance, the confinement module (the bound, the
     user arguments and the single-container argv, AST fingerprint), the confinement's options
-    (`nuisance_confinement_args()`, the acceptance confinement included), the backend fixture
+    (`nuisance_confinement_args()`, the acceptance confinement included), the resolver option
+    (`resolver_args()`), the backend fixture
     (provisioner, pinned image, network), what its backend serves (each Dockerfile by its
     instructions, each Python module by its code, any other file by its bytes), the counted tools
     with the valid judge categories of their classes, and the benign calls of those counted tools
@@ -55,6 +56,7 @@ def nuisance_fixture_fingerprint(
         planting_host_parts(server.host),
         fingerprint_sources([CONFINEMENT_SOURCE.read_text()]),
         nuisance_confinement.nuisance_confinement_args(),
+        cve_planting_base.resolver_args(),
         None if backend is None else backend.model_dump(),
         None if backend is None else backend_content(backends[backend.provisioner].served),
         sorted((name, sorted(categories)) for name, categories in counted.items()),

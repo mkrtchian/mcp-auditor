@@ -5,7 +5,8 @@ import pytest
 import tests.unit.support.test_cve_planting_stand_ins_given as given
 import tests.unit.support.test_cve_planting_stand_ins_then as then
 from evals.cve_planting import PlantingFailed, planted
-from evals.cve_planting_base import STAND_IN_IMAGE
+from evals.cve_planting_base import STAND_IN_IMAGE, own_network_args
+from tests.unit.support.test_cve_planting_then import resolver_options_in
 
 
 def test_a_launch_with_a_stand_in_joins_a_holder_pinning_the_name_to_its_set_up_address(
@@ -20,6 +21,19 @@ def test_a_launch_with_a_stand_in_joins_a_holder_pinning_the_name_to_its_set_up_
         assert args.network == ("--network", f"container:{holder}")
         assert f"{given.HOST}:{given.ADDRESS}" in then.added_hosts(docker.holders[holder])
         assert any(f"{given.ADDRESS}/32" in setup for setup in docker.address_setups)
+
+
+def test_the_stand_in_and_its_address_setup_read_the_holders_resolver_option(tmp_path: Path):
+    directory = given.a_stand_ins_directory(tmp_path)
+    spec = given.a_spec_with_the_stand_in()
+    docker = given.FakePlantingDocker()
+
+    with planted(spec, "image:tag", docker, stand_ins_directory=directory) as args:
+        holder = docker.holders[given.only(docker.holders)]
+        joiners = [list(args.network), *docker.stand_ins.values(), *docker.address_setups]
+        assert docker.stand_ins and docker.address_setups
+        assert [resolver_options_in(joiner) for joiner in joiners] == [0] * len(joiners)
+        assert resolver_options_in(holder) == 1
 
 
 def test_the_stand_in_serves_its_capture_leaf_and_key_inside_the_holder_on_its_address(
@@ -108,4 +122,4 @@ def test_a_launch_with_no_public_names_plants_as_before_and_reads_no_file(tmp_pa
         assert spec.needs_holder is False
         assert docker.holders == {}
         assert docker.stand_ins == {}
-        assert args.network == ("--network", network)
+        assert args.network == tuple(own_network_args(network))

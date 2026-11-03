@@ -195,7 +195,19 @@ def confinement_args() -> list[str]:
 
 
 def no_network_args() -> list[str]:
-    return ["--network", "none"]
+    return own_network_args("none")
+
+
+def own_network_args(network: str) -> list[str]:
+    # For a container with its own network stack. A container that joins a holder
+    # (`--network container:<holder>`) takes no resolver option, it reads the holder's
+    # resolv.conf, and Docker ignores `--dns-search` there and refuses `--dns`.
+    return ["--network", network, *resolver_args()]
+
+
+def resolver_args() -> list[str]:
+    # `.` sets no search domain, so a container does not inherit the host's.
+    return ["--dns-search", "."]
 
 
 def unprivileged_user_args() -> list[str]:

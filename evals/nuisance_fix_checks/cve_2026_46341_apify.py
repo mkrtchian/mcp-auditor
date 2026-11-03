@@ -40,7 +40,7 @@ from evals.cve_planting import (
     confinement_args,
     unprivileged_user_args,
 )
-from evals.cve_planting_base import LABEL
+from evals.cve_planting_base import LABEL, own_network_args
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import Launch, LaunchShape
@@ -70,7 +70,7 @@ def responder_args(name: str, nonce: str, address: str) -> list[str]:
         "run", "-d", "--rm",
         "--name", name,
         "--label", LABEL,
-        "--network", APIFY_BRIDGE,
+        *own_network_args(APIFY_BRIDGE),
         "--ip", address,
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
@@ -83,7 +83,7 @@ def server_args(image: str, responder_address: str) -> list[str]:
     return [
         "run", "-i", "--rm",
         *confinement_args(),
-        "--network", APIFY_BRIDGE,
+        *own_network_args(APIFY_BRIDGE),
         *apify_network_args(responder_address),
         *unprivileged_user_args(),
         "-w", HOST.working_directory,

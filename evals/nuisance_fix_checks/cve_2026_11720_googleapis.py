@@ -38,7 +38,7 @@ from evals.cve_planting import (
     confinement_args,
     unprivileged_user_args,
 )
-from evals.cve_planting_base import LABEL
+from evals.cve_planting_base import LABEL, own_network_args
 from evals.googleapis_backend import (
     GOOGLEAPIS_BRIDGE,
     GOOGLEAPIS_LAUNCH_LOCK,
@@ -74,11 +74,12 @@ _LAST_PER_LAUNCH_HOST = 250
 
 
 def responder_args(name: str, nonce: str, launch_host: int) -> list[str]:
+    public_address = _address(GOOGLEAPIS_SUBNET, launch_host)
     return [
         "run", "-d", "--rm",
         "--name", name,
         "--label", LABEL,
-        "--network", f"name={GOOGLEAPIS_BRIDGE},ip={_address(GOOGLEAPIS_SUBNET, launch_host)}",
+        *own_network_args(f"name={GOOGLEAPIS_BRIDGE},ip={public_address}"),
         "--network", f"name={INTERNAL_BRIDGE},ip={_address(INTERNAL_SUBNET, launch_host)}",
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
@@ -92,7 +93,7 @@ def server_args(image: str, launch_host: int) -> list[str]:
     return [
         "run", "-i", "--rm",
         *confinement_args(),
-        "--network", GOOGLEAPIS_BRIDGE,
+        *own_network_args(GOOGLEAPIS_BRIDGE),
         "--network", INTERNAL_BRIDGE,
         "-e", f"UPSTREAM_URL=http://{_address(GOOGLEAPIS_SUBNET, launch_host)}",
         *unprivileged_user_args(),

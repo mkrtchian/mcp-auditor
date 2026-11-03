@@ -27,7 +27,13 @@ from uuid import uuid4
 from evals.backend_lifecycle import BackendLifecycle
 from evals.closed_network import ensure_closed_network
 from evals.cve_planting import confinement_args
-from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, PlantingHost, SentinelIntent
+from evals.cve_planting_base import (
+    LABEL,
+    SENTINEL_IMAGE,
+    PlantingHost,
+    SentinelIntent,
+    own_network_args,
+)
 from evals.nuisance_confinement import (
     memory_bound_args,
     nuisance_confinement_args,
@@ -76,7 +82,7 @@ def doris_server_args(
         *nuisance_confinement_args(),
         "--name", name,
         "--label", LABEL,
-        "--network", DORIS_BRIDGE,
+        *own_network_args(DORIS_BRIDGE),
         *user_args(host.user),
         "-w", host.working_directory,
         image,

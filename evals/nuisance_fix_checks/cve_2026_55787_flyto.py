@@ -41,6 +41,7 @@ from evals.cve_planting import (
     confinement_args,
     unprivileged_user_args,
 )
+from evals.cve_planting_base import no_network_args
 from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import Launch, LaunchShape, command_injection_env, ssrf_env
@@ -117,7 +118,7 @@ def ipv6_loopback_env(
     sentinel = f"mcp-auditor-kit-flyto530-s-{token}"
     try:
         _run_detached(
-            holder, ["--network", "none", "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
+            holder, [*no_network_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
         )
         _run_detached(
             sentinel,
@@ -200,7 +201,7 @@ def redirect_ssrf_env(
     redirector = f"mcp-auditor-kit-flyto424-r-{token}"
     try:
         _run_detached(
-            holder, ["--network", "none", "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
+            holder, [*no_network_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
         )
         _run_detached(
             sentinel,

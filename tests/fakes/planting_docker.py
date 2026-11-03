@@ -43,6 +43,7 @@ class FakePlantingDocker:
     sentinels: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     stand_ins: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     address_setups: list[list[str]] = field(default_factory=list[list[str]])
+    probes: list[list[str]] = field(default_factory=list[list[str]])
 
     def __post_init__(self) -> None:
         self._fail = dict(self.fail)
@@ -104,6 +105,7 @@ class FakePlantingDocker:
         self.address_setups.append(list(run_args))
 
     def probe_endpoint(self, target_args: Sequence[str], url: str) -> str | None:
+        self.probes.append(list(target_args))
         host = (urlsplit(url).hostname or "").lower()
         if host in _OWN_LOOPBACK_NAMES or self._unresolved(target_args, host):
             return None
@@ -111,6 +113,7 @@ class FakePlantingDocker:
         return None if sentinel is None else _env_value(sentinel, "FLAG")
 
     def probe_listener(self, target_args: Sequence[str], host: str, port: int) -> bool:
+        self.probes.append(list(target_args))
         # A stand-in serves 80 and 443 alike, so only the address the name resolves to counts.
         network = _first_after(target_args, "--network") or "none"
         address = self._address_in(target_args, host.lower())

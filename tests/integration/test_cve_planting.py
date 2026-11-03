@@ -64,6 +64,16 @@ def test_a_planted_stand_in_serves_its_capture_by_name_and_logs_a_miss(
     then.nothing_it_made_outlives(docker)
 
 
+@pytest.mark.parametrize("shape", ["no_network", "holder", "bridge_alias"])
+def test_a_planted_target_reads_no_search_domain_nor_an_audit_name(shape: str):
+    spec = given.a_launch_of_shape(shape)
+
+    with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
+        identity = given.identity_as_target(args)
+
+    then.no_search_domain_nor_audit_name(identity)
+
+
 def test_a_planted_ip_literal_endpoint_serves_its_nonce():
     spec = given.spec_of(given.IP_LITERAL, "/fict/secret")
 

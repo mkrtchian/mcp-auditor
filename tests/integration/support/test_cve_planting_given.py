@@ -63,6 +63,15 @@ def a_stand_in_spec() -> PlantingSpec:
     return planting_spec([], planting_host, RANDOM_NONCES)
 
 
+def a_launch_of_shape(shape: str) -> PlantingSpec:
+    if shape == "no_network":
+        planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", False)
+        return planting_spec([], planting_host, RANDOM_NONCES)
+    if shape == "holder":
+        return spec_of(IP_LITERAL, "/fict/secret", has_network=True)
+    return spec_of("meta.fict", "/fict/secret", has_network=True)
+
+
 def a_stand_ins_directory(directory: Path) -> Path:
     capture = {
         "host": STAND_IN_HOST,
@@ -154,6 +163,45 @@ def read_as_target(args: PlantedArgs, host: str, path: str) -> str:
     except subprocess.TimeoutExpired:
         return ""
     return result.stdout
+
+
+def identity_as_target(args: PlantedArgs) -> dict[str, str]:
+    """What the target reads of its own identity, each file under its name, from one container
+    started with the target's own options."""
+    script = "; ".join(
+        f"echo '{_SECTION}{name}'; {command}" for name, command in _IDENTITY_READS.items()
+    )
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--label",
+            LABEL,
+            *confinement_args(),
+            *args.run_args(),
+            "--entrypoint",
+            "/bin/sh",
+            SENTINEL_IMAGE,
+            "-c",
+            script,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=_READ_TIMEOUT,
+        check=True,
+    )
+    sections = result.stdout.split(_SECTION)[1:]
+    return dict(section.split("\n", 1) for section in sections)
+
+
+_SECTION = "=== "
+_IDENTITY_READS = {
+    "hostname": "hostname",
+    "/etc/hosts": "cat /etc/hosts",
+    "/etc/resolv.conf": "cat /etc/resolv.conf",
+    "env": "env",
+}
 
 
 class RecordingPlanting(DockerPlanting):

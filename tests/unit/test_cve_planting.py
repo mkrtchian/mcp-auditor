@@ -19,6 +19,12 @@ from evals.cve_planting import (
     planted,
     planting_spec,
 )
+from evals.cve_planting_base import (
+    confinement_args,
+    no_network_args,
+    own_network_args,
+    resolver_args,
+)
 
 
 def _args_in(spec: PlantingSpec, docker: given.FakePlantingDocker | None = None) -> PlantedArgs:
@@ -275,7 +281,7 @@ def test_the_user_working_directory_and_network_args_follow_an_unprivileged_host
 
     assert args.user == ("--user", "65534:65534", "-e", "HOME=/tmp")
     assert args.working_directory == ("-w", "/srv/fictional")
-    assert args.network == ("--network", "none")
+    assert args.network == tuple(no_network_args())
 
 
 def test_a_host_user_launch_resolves_the_uid_only_at_planted():
@@ -292,6 +298,62 @@ def test_an_env_place_emits_a_docker_env_argument_with_the_nonce():
     args = _args_in(spec)
 
     assert args.env == ("-e", f"FICTIONAL_TOKEN={spec.nonces['env-1']}")
+
+
+# --- the resolver option ---------------------------------------------------------------
+
+
+def test_the_resolver_option_sets_no_search_domain_on_an_own_network_and_none():
+    assert resolver_args() == ["--dns-search", "."]
+    assert own_network_args("fictional-net") == ["--network", "fictional-net", "--dns-search", "."]
+    assert no_network_args() == own_network_args("none")
+    assert "--dns-search" not in confinement_args()
+
+
+@pytest.mark.parametrize("has_network", [False, True], ids=["no_network", "network"])
+def test_only_the_holder_carries_the_resolver_option_on_a_launch_with_a_holder(has_network: bool):
+    spec = given.spec_of(
+        [given.endpoint_place(host="198.51.100.5")],
+        host=given.unprivileged_host(has_network=has_network),
+    )
+    docker = given.FakePlantingDocker()
+
+    with planted(spec, "image:tag", docker) as args:
+        holder = docker.holders[given.only(docker.holders)]
+        joiners = [
+            list(args.network),
+            *docker.probes,
+            *docker.sentinels.values(),
+            *docker.stand_ins.values(),
+            *docker.address_setups,
+        ]
+        assert docker.probes and docker.sentinels
+        assert [then.resolver_options_in(joiner) for joiner in joiners] == [0] * len(joiners)
+        assert then.resolver_options_in(holder) == 1
+
+
+def test_the_target_its_probe_and_a_bridge_alias_sentinel_each_carry_the_resolver_option():
+    spec = given.spec_of(
+        [given.endpoint_place(host="fictional-service")],
+        host=given.unprivileged_host(has_network=True),
+    )
+    docker = given.FakePlantingDocker()
+
+    with planted(spec, "image:tag", docker) as args:
+        network = next(iter(docker.networks))
+        assert args.network == tuple(own_network_args(network))
+        own_stacks = [*docker.probes, *docker.sentinels.values()]
+        assert docker.probes and docker.sentinels
+        assert [then.resolver_options_in(argv) for argv in own_stacks] == [1] * len(own_stacks)
+
+
+def test_a_launch_with_no_network_and_no_holder_takes_the_no_network_args():
+    spec = given.spec_of([given.file_place()])
+    docker = given.FakePlantingDocker()
+
+    with planted(spec, "image:tag", docker) as args:
+        assert docker.holders == {}
+        assert args.network == tuple(no_network_args())
 
 
 # --- account materialisation and file mode ----------------------------------------------

@@ -34,7 +34,7 @@ from evals.cve_planting import (
     confinement_args,
     unprivileged_user_args,
 )
-from evals.cve_planting_base import LABEL, SENTINEL_IMAGE
+from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, own_network_args
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
@@ -80,7 +80,7 @@ def sentinel_args(name: str, nonce: str) -> list[str]:
         "run", "-d", "--rm",
         "--name", name,
         "--label", LABEL,
-        "--network", BRIDGE,
+        *own_network_args(BRIDGE),
         "--network-alias", _SENTINEL_ALIAS,
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
@@ -95,7 +95,7 @@ def neo4j_container_args(name: str) -> list[str]:
         "run", "-d", "--rm",
         "--name", name,
         "--label", LABEL,
-        "--network", BRIDGE,
+        *own_network_args(BRIDGE),
         "--network-alias", _NEO4J_ALIAS,
         *_NEO4J_ENVIRONMENT,
         NEO4J_IMAGE,
@@ -106,7 +106,7 @@ def server_args(image: str) -> list[str]:
     return [
         "run", "-i", "--rm",
         *confinement_args(),
-        "--network", BRIDGE,
+        *own_network_args(BRIDGE),
         *_SERVER_ENVIRONMENT,
         *unprivileged_user_args(),
         "-w", HOST.working_directory,

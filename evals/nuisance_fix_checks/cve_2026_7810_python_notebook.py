@@ -31,6 +31,7 @@ from evals.cve_planting import (
     confinement_args,
     unprivileged_user_args,
 )
+from evals.cve_planting_base import no_network_args
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import Launch, LaunchShape
@@ -80,8 +81,7 @@ def notebook_env(
                 "--rm",
                 *confinement_args(),
                 *unprivileged_user_args(),
-                "--network",
-                "none",
+                *no_network_args(),
                 "-v",
                 f"{root}:/srv",
                 image,

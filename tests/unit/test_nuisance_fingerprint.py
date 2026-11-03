@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as given
-from evals import nuisance_confinement, nuisance_fingerprint
+from evals import cve_planting_base, nuisance_confinement, nuisance_fingerprint
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.fixture_provenance import StandInRecord
@@ -238,6 +238,18 @@ def test_the_fingerprint_moves_when_the_confinement_options_change(
     options = [*nuisance_confinement.nuisance_confinement_args(), "--pids-limit", "512"]
 
     monkeypatch.setattr(nuisance_confinement, "nuisance_confinement_args", lambda: options)
+
+    assert _fingerprint(server, tmp_path) != before
+
+
+def test_the_fingerprint_moves_when_the_resolver_option_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_dockerfile(tmp_path)
+    server = given.an_admission().servers[0]
+    before = _fingerprint(server, tmp_path)
+
+    monkeypatch.setattr(cve_planting_base, "resolver_args", lambda: ["--dns-search", "fict"])
 
     assert _fingerprint(server, tmp_path) != before
 

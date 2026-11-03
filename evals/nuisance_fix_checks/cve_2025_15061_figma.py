@@ -27,6 +27,7 @@ from evals.cve_planting import (
     confinement_args,
     planted,
 )
+from evals.cve_planting_base import own_network_args
 from evals.cve_planting_docker import DockerPlanting
 from evals.figma_backend import (
     FIGMA_BRIDGE,
@@ -72,7 +73,7 @@ def server_args(image: str, args: PlantedArgs) -> list[str]:
         *args.env,
         *args.mounts,
         *args.hostname,
-        "--network", FIGMA_BRIDGE,
+        *own_network_args(FIGMA_BRIDGE),
         *figma_network_args(FIGMA_RESPONDER_IP),
         image,
         *_STDIO_LAUNCH,
