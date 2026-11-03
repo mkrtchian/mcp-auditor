@@ -51,6 +51,17 @@ def test_probe_calls_refuse_a_call_without_a_tool_naming_it():
         probe_calls([{"arguments": {"name": "orphan"}}])
 
 
+def test_probe_calls_refuse_a_prerequisite_without_a_tool_naming_its_call():
+    call: dict[str, object] = {
+        "tool": "show",
+        "arguments": {"name": "parent"},
+        "before": [{"arguments": {}}],
+    }
+
+    with pytest.raises(ValueError, match="parent"):
+        probe_calls([call])
+
+
 def test_the_single_container_launch_is_the_run_launch():
     server = given.a_server()
     image = image_tag(server.service)

@@ -14,16 +14,30 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def import_closure(modules: Iterable[str], root: Path = REPO_ROOT) -> list[str]:
-    found: set[str] = set()
-    pending = list(modules)
+    importers: dict[str, str | None] = {}
+    pending: list[tuple[str, str | None]] = [(module, None) for module in modules]
     while pending:
-        module = pending.pop()
-        if module in found:
+        module, importer = pending.pop()
+        if module in importers:
             continue
-        found.add(module)
-        pending += _packages_of(module, root)
-        pending += _imported_modules(module, root)
-    return sorted(found)
+        importers[module] = importer
+        if _is_auditor(module):
+            chain = " -> ".join(_import_chain(module, importers))
+            raise ValueError(f"{chain}: a dossier must never carry mcp_auditor")
+        pending += [(package, module) for package in _packages_of(module, root)]
+        pending += [(imported, module) for imported in _imported_modules(module, root)]
+    return sorted(importers)
+
+
+def _is_auditor(module: str) -> bool:
+    return module == "mcp_auditor" or module.startswith("mcp_auditor.")
+
+
+def _import_chain(module: str, importers: dict[str, str | None]) -> list[str]:
+    chain = [module]
+    while (importer := importers[chain[0]]) is not None:
+        chain.insert(0, importer)
+    return chain
 
 
 def copy_closure(out: Path, modules: Iterable[str]) -> None:
@@ -64,7 +78,4 @@ def _imported_modules(module: str, root: Path) -> list[str]:
         elif isinstance(node, ast.ImportFrom) and node.module is not None and node.level == 0:
             names.append(node.module)
             names += [f"{node.module}.{alias.name}" for alias in node.names]
-    for name in names:
-        if name == "mcp_auditor" or name.startswith("mcp_auditor."):
-            raise ValueError(f"{module} imports {name}, which a dossier must never carry")
-    return [name for name in names if _module_file(name, root) is not None]
+    return [name for name in names if _is_auditor(name) or _module_file(name, root) is not None]

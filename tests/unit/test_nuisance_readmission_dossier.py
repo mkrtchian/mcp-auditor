@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import evals.nuisance_readmission_dossier as readmission
 import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_nuisance_readmission_dossier_given as given
 from evals.dossier_closure import import_closure
@@ -137,6 +138,23 @@ def test_a_server_the_admission_does_not_hold_is_refused_before_writing(tmp_path
     with pytest.raises(Refused):
         write_readmission_dossier(
             given.the_committed_census(), given.the_committed_admission(), "npm:ghost", out
+        )
+    assert not out.exists()
+
+
+def test_a_closure_reaching_the_auditor_is_refused_before_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    out = tmp_path / "dossier"
+
+    def roots_reaching_the_auditor(_: AdmittedServer) -> list[str]:
+        return ["evals.cve_baseline"]
+
+    monkeypatch.setattr(readmission, "closure_roots", roots_reaching_the_auditor)
+
+    with pytest.raises(ValueError, match="mcp_auditor"):
+        write_readmission_dossier(
+            given.the_committed_census(), given.the_committed_admission(), given.PRAISONAI, out
         )
     assert not out.exists()
 

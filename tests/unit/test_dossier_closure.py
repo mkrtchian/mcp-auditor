@@ -28,12 +28,12 @@ def test_a_backend_closure_contains_every_module_its_lifecycle_needs():
     assert closure == sorted(closure)
 
 
-def test_a_module_importing_mcp_auditor_is_refused_with_its_importer(tmp_path: Path):
+def test_a_module_importing_mcp_auditor_is_refused_with_its_import_chain(tmp_path: Path):
     _write(tmp_path / "pkg" / "__init__.py", "")
     _write(tmp_path / "pkg" / "entry.py", "import pkg.coupled\n")
     _write(tmp_path / "pkg" / "coupled.py", "from mcp_auditor.domain import models\n")
 
-    with pytest.raises(ValueError, match=r"pkg\.coupled.*mcp_auditor\.domain"):
+    with pytest.raises(ValueError, match=r"pkg\.entry -> pkg\.coupled -> mcp_auditor\.domain\b"):
         import_closure(["pkg.entry"], root=tmp_path)
 
 

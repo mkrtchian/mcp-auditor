@@ -84,9 +84,12 @@ def probe_calls(calls: Sequence[Mapping[str, Any]]) -> list[ProbeCall]:
 
 
 def _probe_call(call: Mapping[str, Any]) -> ProbeCall:
-    if "tool" not in call or "arguments" not in call:
-        raise ValueError(f"a benign call needs a tool and arguments: {dict(call)!r}")
-    before = tuple((step["tool"], dict(step["arguments"])) for step in call.get("before") or ())
+    steps = call.get("before") or ()
+    if any("tool" not in step or "arguments" not in step for step in (call, *steps)):
+        raise ValueError(
+            f"a benign call and its before calls need a tool and arguments: {dict(call)!r}"
+        )
+    before = tuple((step["tool"], dict(step["arguments"])) for step in steps)
     return ProbeCall(call["tool"], dict(call["arguments"]), call.get("expect"), before)
 
 

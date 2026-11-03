@@ -40,11 +40,12 @@ def write_readmission_dossier(
     server = _admitted_server(admission, server_package)
     references = {holdout_fixture_file(t.cve_id): t for t in holdout_references(server)}
     dockerfiles = readmission_dockerfiles(server)
+    closure = dossier_closure.import_closure(closure_roots(server))
     write_dossier(nuisance_census, server_package, out)
     (out / "admission_record.json").write_text(server.model_dump_json(indent=2))
     shutil.copyfile(NUISANCE_RULE, out / "nuisance-rule.md")
     _copy_dockerfiles(out, [*dockerfiles, SENTINEL_SERVICE, STAND_IN_SERVICE])
-    dossier_closure.copy_closure(out, closure_roots(server))
+    dossier_closure.copy_closure(out, closure)
     _write_references(out, references)
     (out / "confinement.md").write_text(nuisance_readmission_docs.confinement_text(server))
     with (out / "README.md").open("a") as readme:
