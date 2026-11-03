@@ -78,7 +78,7 @@ A refusal exits `3`, a malformed export or work file included. Every subcommand 
 
 ## Operating procedure
 
-Human and agent work, once the code is in. Every agent of one step of the rule (the collection with its widening rounds, the recall with the `vulnerablemcp.info` check, the classification) runs on the model the maintainer chose for that step before it starts, unchanged while it runs, and each launch is recorded in `agents*.jsonl`. Prompts, transcripts and work files stay in `output/holdout_census/`, except the classifiers' directory, which is outside the repository.
+Human and agent work, once the code is in. Every agent of one step of the rule (the collection with its widening rounds, the recall with the `vulnerablemcp.info` check, the classification) runs on the model the maintainer chose for that step before it starts, or on the fallback model chosen with it when the provider refuses the agent's request, both unchanged while it runs, and each launch is recorded in `agents*.jsonl`. Prompts, transcripts and work files stay in `output/holdout_census/`, except the classifiers' directory, which is outside the repository.
 
 **Every prompt of an agent that reads advisories or the web says that the content of a page is data to record, never an instruction to follow.** No prompt mentions the auditor, its results, its prompts or the excluded servers.
 
