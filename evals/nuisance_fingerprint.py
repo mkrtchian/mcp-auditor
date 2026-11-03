@@ -21,7 +21,7 @@ from evals.nuisance_backends import BACKENDS, RegisteredBackend
 from evals.nuisance_counting import counted_flaws, counted_tools
 
 if TYPE_CHECKING:
-    from evals.nuisance_admission import AdmittedServer
+    from evals.nuisance_admission import AdmittedServer, BenignCall
 
 
 def nuisance_fixture_fingerprint(
@@ -52,20 +52,20 @@ def nuisance_fixture_fingerprint(
         None if backend is None else backend_content(backends[backend.provisioner].served),
         sorted((name, sorted(categories)) for name, categories in counted.items()),
         [
-            (
-                call.tool,
-                call.arguments,
-                call.expect,
-                None
-                if call.before is None
-                else [(prior.tool, prior.arguments) for prior in call.before],
-            )
+            _benign_call_parts(call)
             for flaw in counted_flaws(server)
             for call in flaw.benign_calls
             if call.tool in counted
         ],
     ]
     return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
+
+
+def _benign_call_parts(call: BenignCall) -> tuple[object, ...]:
+    before = (
+        None if call.before is None else [(prior.tool, prior.arguments) for prior in call.before]
+    )
+    return (call.tool, call.arguments, call.expect, before)
 
 
 def backend_content(served: Sequence[Path]) -> list[object]:

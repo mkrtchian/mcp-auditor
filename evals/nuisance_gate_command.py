@@ -83,15 +83,9 @@ def gate(args: argparse.Namespace) -> int:
     gate_set = [server.server_package for server in servers]
     unknown = [package for package in args.server if package not in gate_set]
     if unknown:
-        print(
-            f"unknown gate server: {', '.join(unknown)} (gate set: {', '.join(gate_set)})",
-            file=sys.stderr,
-        )
+        _print_unknown(unknown, gate_set)
         return UNKNOWN_SERVER_EXIT
-    refuse_unrecorded(
-        [s for s in servers if not args.server or s.server_package in args.server],
-        "nuisance gate refused",
-    )
+    refuse_unrecorded(_selected(servers, args.server), "nuisance gate refused")
     try:
         return _run_gate(args, admission, current)
     except Refused:
@@ -99,6 +93,17 @@ def gate(args: argparse.Namespace) -> int:
     except Exception:
         traceback.print_exc()
         return CRASHED_EXIT
+
+
+def _print_unknown(unknown: list[str], gate_set: list[str]) -> None:
+    print(
+        f"unknown gate server: {', '.join(unknown)} (gate set: {', '.join(gate_set)})",
+        file=sys.stderr,
+    )
+
+
+def _selected(servers: list[AdmittedServer], packages: list[str]) -> list[AdmittedServer]:
+    return [server for server in servers if not packages or server.server_package in packages]
 
 
 def _print_empty_gate(admission: NuisanceAdmission | None, current: set[str]) -> None:
@@ -149,7 +154,7 @@ def _tracked_gate(options: NuisanceGateOptions, concurrency: int) -> NuisanceGat
 
 def _gate_options(args: argparse.Namespace, servers: list[AdmittedServer]) -> NuisanceGateOptions:
     return NuisanceGateOptions(
-        servers=[s for s in servers if not args.server or s.server_package in args.server],
+        servers=_selected(servers, args.server),
         gate_packages=frozenset(server.server_package for server in servers),
         conditions=gate_conditions(load_settings(), load_conditions(CONDITIONS_PATH), args.runs),
         record_baseline=args.record_baseline,
