@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_run_nuisance_run_given as given
 from evals import run_nuisance
 from evals.nuisance_results import RunInterrupted
@@ -26,6 +28,21 @@ def test_run_refuses_an_existing_report_file_before_any_dep(
 
     assert exit_code == run_nuisance.REFUSED_EXIT
     assert "--report" in capsys.readouterr().out
+
+
+def test_run_refuses_a_server_with_an_unrecorded_field_before_its_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.a_run_refused_before_its_settings(monkeypatch)
+    unrecorded = records_given.with_every_new_field_unrecorded(admission_given.an_admission())
+    command = given.a_run_command(tmp_path, unrecorded)
+
+    exit_code = run_nuisance.main(command)
+
+    out = capsys.readouterr().out
+    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert f"{admission_given.SERVER_PACKAGE}: real_software (2 tools)" in out
+    assert not (tmp_path / "nuisance_report.json").with_suffix(".result.json").exists()
 
 
 def test_run_writes_the_report_beside_its_result(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

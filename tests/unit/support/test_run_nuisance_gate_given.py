@@ -4,13 +4,17 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
+import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import eval_display, nuisance_gate_command, nuisance_gate_console
 from evals.baseline import BaselineStatus
 from evals.eval_session import TreeState
 from evals.gate_verdict import GateVerdict
+from evals.holdout_census import HoldoutCensus
+from evals.nuisance_admission import NuisanceAdmission
 from evals.nuisance_gate import NuisanceGateResult
 from evals.nuisance_gate_baseline import NuisanceGateConditions
 from evals.nuisance_gate_session_model import (
@@ -25,11 +29,50 @@ from tests.unit.support.test_nuisance_gate_session_given import KUBERNETES, a_ha
 GATE_SERVER = KUBERNETES.server_package
 
 
-def a_gate_set_of_one_server(tmp_path: Path) -> list[str]:
-    """The census, walk record and admission arguments of a gate whose one server is GATE_SERVER."""
+def a_gate_set_of_one_server(
+    tmp_path: Path, admitted: NuisanceAdmission | None = None
+) -> list[str]:
+    """The census, walk record and admission arguments of a gate whose one server is GATE_SERVER,
+    admitted by `admitted`, by default fully recorded."""
     assert GATE_SERVER == admission_given.ACCEPTANCE_PACKAGE
     census = admission_given.a_census_with_an_acceptance_server()
-    admitted = admission_given.admitting_the_acceptance_server()
+    return _gate_arguments(
+        tmp_path, census, admitted or admission_given.admitting_the_acceptance_server()
+    )
+
+
+OTHER_GATE_FLAW = "CVE-2025-65513"
+OTHER_GATE_SERVER = "npm:other-acceptance"
+
+
+def a_gate_set_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
+    """The arguments of a gate of GATE_SERVER, fully recorded, and OTHER_GATE_SERVER, whose
+    admission predates the fields rule v3 adds."""
+    census = draw_given.with_a_walk_skipping(
+        census_given.with_a_cve_of(
+            census_given.with_a_cve_of(
+                census_given.a_census(),
+                admission_given.ACCEPTANCE_FLAW,
+                admission_given.ACCEPTANCE_PACKAGE,
+            ),
+            OTHER_GATE_FLAW,
+            OTHER_GATE_SERVER,
+        ),
+        admission_given.FIRST_FLAW,
+    )
+    recorded = admission_given.admitting_the_acceptance_server()
+    other = records_given.with_every_new_field_unrecorded(
+        admission_given.admitting_the_server_of(
+            OTHER_GATE_FLAW, OTHER_GATE_SERVER, "other-nuisance"
+        )
+    )
+    both = recorded.model_copy(update={"servers": [*recorded.servers, *other.servers]})
+    return _gate_arguments(tmp_path, census, both)
+
+
+def _gate_arguments(
+    tmp_path: Path, census: HoldoutCensus, admitted: NuisanceAdmission
+) -> list[str]:
     return [
         "--census",
         str(census_given.written(tmp_path, census)),

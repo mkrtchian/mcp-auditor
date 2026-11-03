@@ -60,6 +60,7 @@ from evals.nuisance_run import (
     nuisance_overrides,
     run_nuisance,
 )
+from evals.nuisance_unrecorded import refuse_unrecorded
 from evals.nuisance_vet_command import add_vet_arguments
 from evals.nuisance_walk import NuisanceServer, acceptance_servers, nuisance_population
 from evals.nuisance_walk_record import NuisanceCensus
@@ -184,6 +185,7 @@ def _run(args: argparse.Namespace) -> int:
         population = run_population(
             nuisance_population(nuisance_census), admission, acceptance_servers(nuisance_census)
         )
+    refuse_unrecorded(population.audited, "nuisance run refused")
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)

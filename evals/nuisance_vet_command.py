@@ -35,6 +35,7 @@ from evals.nuisance_run_containers import (
     run_images,
     sweep_run_containers,
 )
+from evals.nuisance_unrecorded import unrecorded_fields
 from evals.nuisance_vetting import benign_call, vet_all
 from evals.nuisance_walk import acceptance_servers, nuisance_population
 from evals.run_images import (
@@ -104,6 +105,7 @@ def vet(args: argparse.Namespace) -> int:
         traceback.print_exc()
         return CRASHED_EXIT
     _print_verdicts(servers, result)
+    _print_unrecorded(servers)
     return 0 if not result.not_run else 1
 
 
@@ -143,3 +145,12 @@ def _print_verdicts(servers: Sequence[AdmittedServer], result: VetResult) -> Non
     for server in servers:
         print(f"{server.server_package}: {reasons.get(server.server_package, 'ok')}")
     print(f"{len(result.surviving)} of {len(servers)} servers answer their benign calls")
+
+
+def _print_unrecorded(servers: Sequence[AdmittedServer]) -> None:
+    gaps = unrecorded_fields(servers)
+    if gaps:
+        print(
+            f"{len(gaps)} of {len(servers)} servers have fields rule v3 adds not yet recorded"
+            " (run and gate refuse them)"
+        )

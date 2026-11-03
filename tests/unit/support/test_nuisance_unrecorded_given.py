@@ -1,0 +1,82 @@
+from collections.abc import Callable
+
+import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_admission_records_given as records_given
+from evals.nuisance_admission import AdmittedServer, FlawRecord
+
+SERVER = admission_given.SERVER_PACKAGE
+
+_FlawChange = Callable[[FlawRecord], FlawRecord]
+
+
+def a_recorded_server() -> AdmittedServer:
+    return admission_given.an_admission().servers[0]
+
+
+def a_server_with_every_field_unrecorded() -> AdmittedServer:
+    return records_given.with_every_new_field_unrecorded(admission_given.an_admission()).servers[0]
+
+
+def without_a_real_software_record(server: AdmittedServer) -> AdmittedServer:
+    return _with_first_flaw(
+        server,
+        lambda flaw: flaw.model_copy(
+            update={
+                "tools": [tool.model_copy(update={"real_software": None}) for tool in flaw.tools]
+            }
+        ),
+    )
+
+
+def without_an_expected_text(server: AdmittedServer) -> AdmittedServer:
+    return _with_first_flaw(server, _benign_calls_without("expect"))
+
+
+def without_prerequisite_calls(server: AdmittedServer) -> AdmittedServer:
+    return _with_first_flaw(server, _benign_calls_without("before"))
+
+
+def without_a_relaying_stand_in_judgment(server: AdmittedServer) -> AdmittedServer:
+    return _with_first_flaw(server, _fix_check_without_a_relaying_judgment)
+
+
+def without_stand_ins(server: AdmittedServer) -> AdmittedServer:
+    return server.model_copy(update={"stand_ins": None})
+
+
+def without_seeds(server: AdmittedServer) -> AdmittedServer:
+    return server.model_copy(update={"seeds": None})
+
+
+def with_the_second_flaw_uncounted_and_unrecorded(server: AdmittedServer) -> AdmittedServer:
+    first, second, *rest = server.flaws
+    check = second.fix_check.model_copy(
+        update={"vulnerable_surfaces": False, "relies_on_relaying_stand_in": None}
+    )
+    unrecorded = _benign_calls_without("expect")(second.model_copy(update={"fix_check": check}))
+    return server.model_copy(update={"flaws": [first, unrecorded, *rest]})
+
+
+def with_a_removed_tool_without_a_real_software_record(server: AdmittedServer) -> AdmittedServer:
+    removed = admission_given.a_tool("gone", None, "removed")
+    return _with_first_flaw(
+        server, lambda flaw: flaw.model_copy(update={"tools": [*flaw.tools, removed]})
+    )
+
+
+def _benign_calls_without(field: str) -> _FlawChange:
+    def changed(flaw: FlawRecord) -> FlawRecord:
+        calls = [call.model_copy(update={field: None}) for call in flaw.benign_calls]
+        return flaw.model_copy(update={"benign_calls": calls})
+
+    return changed
+
+
+def _fix_check_without_a_relaying_judgment(flaw: FlawRecord) -> FlawRecord:
+    check = flaw.fix_check.model_copy(update={"relies_on_relaying_stand_in": None})
+    return flaw.model_copy(update={"fix_check": check})
+
+
+def _with_first_flaw(server: AdmittedServer, change: _FlawChange) -> AdmittedServer:
+    first, *rest = server.flaws
+    return server.model_copy(update={"flaws": [change(first), *rest]})

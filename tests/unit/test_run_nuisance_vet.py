@@ -35,3 +35,30 @@ def test_vet_passes_the_timeout_and_concurrency_it_is_given(
     assert run_nuisance.main(["vet", *arguments, *options]) == 0
 
     assert harness.built_with == (7, 2)
+
+
+def test_vet_counts_the_servers_with_unrecorded_fields_and_keeps_its_exit_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost()))
+    arguments = run_given.a_walk_with_a_queue_server(
+        tmp_path, admitted=True, queue_server_unrecorded=True
+    )
+
+    assert run_nuisance.main(["vet", *arguments]) == 0
+
+    assert (
+        "1 of 2 servers have fields rule v3 adds not yet recorded (run and gate refuse them)"
+        in capsys.readouterr().out
+    )
+
+
+def test_vet_of_recorded_servers_prints_no_unrecorded_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost()))
+    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    assert run_nuisance.main(["vet", *arguments]) == 0
+
+    assert "not yet recorded" not in capsys.readouterr().out

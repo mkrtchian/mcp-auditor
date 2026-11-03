@@ -7,6 +7,7 @@ import pytest
 
 import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission
+import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 import tests.unit.support.test_run_nuisance_gate_given as given
 from evals import run_nuisance
@@ -108,6 +109,40 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
 
     assert exit_code == 2
     assert "unknown gate server: npm:other" in capsys.readouterr().err
+
+
+def test_gate_refuses_a_server_with_an_unrecorded_field_before_any_audit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    unrecorded = records_given.with_every_new_field_unrecorded(
+        admission.admitting_the_acceptance_server()
+    )
+    gate_set = given.a_gate_set_of_one_server(tmp_path, unrecorded)
+
+    exit_code = run_nuisance.main(["gate", *gate_set])
+
+    out = capsys.readouterr().out
+    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert f"{_KUBERNETES}: real_software (1 tool)" in out
+    assert not (tmp_path / "nuisance_gate_report.json").exists()
+
+
+def test_gate_refuses_only_the_selected_servers_with_an_unrecorded_field(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    output = given.a_captured_console(monkeypatch)
+    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    gate_set = given.a_gate_set_beside_an_unrecorded_server(tmp_path)
+
+    selected_recorded = run_nuisance.main(["gate", "--server", given.GATE_SERVER, *gate_set])
+    selected_unrecorded = run_nuisance.main(
+        ["gate", "--server", given.OTHER_GATE_SERVER, *gate_set]
+    )
+
+    assert selected_recorded == 0
+    assert selected_unrecorded == run_nuisance.REFUSED_EXIT
+    assert f"{given.OTHER_GATE_SERVER}: real_software" in output.getvalue()
 
 
 def test_an_exploratory_gate_recording_names_the_command_that_confirms_it(

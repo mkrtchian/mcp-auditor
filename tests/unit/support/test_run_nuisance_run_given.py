@@ -11,6 +11,7 @@ import tests.unit.support.test_nuisance_report_given as report_given
 import tests.unit.support.test_nuisance_run_given as run_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import run_nuisance
+from evals.nuisance_admission import NuisanceAdmission
 from evals.nuisance_results import NuisanceRunResult
 from evals.nuisance_run import NuisanceDeps, RunProvenance
 from tests.unit.support.test_nuisance_statistic_given import a_server_result
@@ -20,11 +21,11 @@ def a_run_result() -> NuisanceRunResult:
     return report_given.a_run([a_server_result()])
 
 
-def a_run_command(tmp_path: Path) -> list[str]:
-    """The `run` arguments of a census with a draw walk, an empty walk record and an admission of
-    one server."""
+def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) -> list[str]:
+    """The `run` arguments of a census with a draw walk, an empty walk record and `admission`, by
+    default the admission of one fully recorded server."""
     census = census_given.written(tmp_path, draw_given.a_census_with_draw(draw_given.a_draw()))
-    admitted = admission_given.written(tmp_path, admission_given.an_admission())
+    admitted = admission_given.written(tmp_path, admission or admission_given.an_admission())
     record = walk_given.a_written_empty_record(tmp_path)
     report = tmp_path / "nuisance_report.json"
     return [
@@ -86,6 +87,17 @@ def a_run_reaching_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
 
     a_ready_run(monkeypatch)
     for name in ("load_conditions", "committed_nuisance_census", "default_deps", "run_nuisance"):
+        monkeypatch.setattr(run_nuisance, name, unreached)
+
+
+def a_run_refused_before_its_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A run that reads its census and admission, and fails the test past them."""
+
+    def unreached(*_: object, **__: object) -> Any:
+        raise AssertionError("the run read its settings")
+
+    a_ready_run(monkeypatch)
+    for name in ("load_settings", "default_deps", "run_nuisance"):
         monkeypatch.setattr(run_nuisance, name, unreached)
 
 

@@ -48,6 +48,7 @@ from evals.nuisance_gate_session import (
 )
 from evals.nuisance_gate_session_model import NuisanceGateOptions, NuisanceGateSession
 from evals.nuisance_run import NUISANCE_CONCURRENCY
+from evals.nuisance_unrecorded import refuse_unrecorded
 from evals.nuisance_walk import current_acceptance_servers
 from mcp_auditor.config import load_settings
 
@@ -87,6 +88,10 @@ def gate(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return UNKNOWN_SERVER_EXIT
+    refuse_unrecorded(
+        [s for s in servers if not args.server or s.server_package in args.server],
+        "nuisance gate refused",
+    )
     try:
         return _run_gate(args, admission, current)
     except Refused:
