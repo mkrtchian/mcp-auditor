@@ -108,6 +108,7 @@ class CVETarget:
     # The raw external image tags the builder pulls outside the compose build, empty when the server
     # needs no separate backend (one baked into the server image is covered by its Dockerfile).
     backend_images: tuple[str, ...] = ()
+    backend_sources: tuple[Path, ...] = ()  # modules through which the builder seeds a backend
 
     def planting_spec(
         self, to_plant: Sequence[Place], nonces: NonceSource = RANDOM_NONCES

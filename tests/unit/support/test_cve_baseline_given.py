@@ -135,6 +135,32 @@ def _replacing(**fields: object) -> TargetChange:
     return change
 
 
+def _declaring_a_backend_source() -> TargetChange:
+    def change(
+        target: CVETarget, places: Places, docker_directory: Path
+    ) -> tuple[CVETarget, Places]:
+        return dataclasses.replace(
+            target, backend_sources=(a_backend_source(docker_directory),)
+        ), places
+
+    return change
+
+
+def a_backend_source(directory: Path) -> Path:
+    source = directory / "fictional_backend.py"
+    source.write_text('SCHEMA = "CREATE TABLE t1 (c1 INT)"\n')
+    return source
+
+
+def a_target_seeding_a_backend(directory: Path) -> tuple[CVETarget, Places]:
+    target, places = a_target_keeping_a_file()
+    return dataclasses.replace(target, backend_sources=(a_backend_source(directory),)), places
+
+
+def rewriting_the_backend_source(target: CVETarget) -> None:
+    target.backend_sources[0].write_text('SCHEMA = "CREATE TABLE t2 (c1 INT)"\n')
+
+
 def _keeping_another_record() -> TargetChange:
     def change(target: CVETarget, places: Places, _docker: Path) -> tuple[CVETarget, Places]:
         extra = _a_file_record("fict-extra")
@@ -185,6 +211,7 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "the sentinel Dockerfile (a kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
     "launch mode": _replacing(launch_mode=LaunchMode.FALLBACK),
     "backend images": _replacing(backend_images=("apache/doris:all-in-one-4.1.3",)),
+    "backend source declared": _declaring_a_backend_source(),
 }
 
 # Applied to a_target_keeping_a_file (so no kept endpoint, the sentinel Dockerfile is out).
@@ -198,6 +225,7 @@ UNFINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "a record the target does not keep": _adding_a_record_the_target_does_not_keep(),
     "a kept record's family": _changing_the_kept_record_family(),
     "the sentinel Dockerfile (no kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),
+    "no backend source declared": _replacing(backend_sources=()),
 }
 
 

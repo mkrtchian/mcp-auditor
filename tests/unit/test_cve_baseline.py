@@ -67,6 +67,15 @@ def test_the_fixture_fingerprint_moves_with_what_a_declared_stand_in_serves(
     assert fixture_fingerprint(changed_target, places, stand_ins_directory=stand_ins) != before
 
 
+def test_the_fixture_fingerprint_moves_when_a_backend_source_changes(tmp_path: Path):
+    target, places = given.a_target_seeding_a_backend(tmp_path)
+    before = fixture_fingerprint(target, places)
+
+    given.rewriting_the_backend_source(target)
+
+    assert fixture_fingerprint(target, places) != before
+
+
 def test_a_target_without_public_names_reads_no_stand_in(tmp_path: Path):
     target, places = given.a_target_keeping_a_file()
 

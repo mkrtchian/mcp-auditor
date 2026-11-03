@@ -4,6 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
+from evals import doris_backend
 from evals.cve_places import (
     HOLDOUT_PLACES,
     REACHABLE_BY,
@@ -65,6 +66,21 @@ def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():
     for target in HOLDOUT_TARGETS:
         assert target.tools_filter is None
         assert target.ci_skip_reason is None
+
+
+def test_the_doris_target_fingerprints_the_module_that_seeds_its_backend():
+    doris = next(target for target in HOLDOUT_TARGETS if target.cve_id == "CVE-2025-66335")
+
+    assert Path(doris_backend.__file__) in doris.backend_sources
+
+
+def test_every_backend_image_is_pinned_by_digest():
+    targets = [*HOLDOUT_TARGETS, *CVE_TARGETS]
+    unpinned = [
+        image for target in targets for image in target.backend_images if "@sha256:" not in image
+    ]
+
+    assert unpinned == []
 
 
 def test_no_instrument_imports_the_holdout_target_module():

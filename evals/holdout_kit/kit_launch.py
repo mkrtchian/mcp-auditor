@@ -8,7 +8,7 @@ connects through kit_client.py instead. It adds
 `mcp-auditor-cve-` one, so a kit build never overwrites an acceptance image. The clean
 planting and layout layers are reused by in-repo import (cve_planting, cve_layout, cve_places),
 never copied, because moving them would move every acceptance fixture fingerprint
-(evals/cve_baseline._ENVIRONMENT_PATHS) and redden the gate.
+(evals/cve_baseline.ENVIRONMENT_PATHS) and redden the gate.
 
 Landmine flags (CLAUDE.md), each named against the failure it guards:
 - The `--user` mapping. The filesystem and git launches run as the host uid/gid so bind-mounted

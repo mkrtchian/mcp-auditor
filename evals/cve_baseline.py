@@ -50,7 +50,7 @@ GRAMMAR_PATHS = (
 )
 # Fingerprinted in this fixed order, as part of every target's fixture. The planting layer
 # decides what reaches the auditor, so a semantic change to it moves every target's fingerprint.
-_ENVIRONMENT_PATHS = (
+ENVIRONMENT_PATHS = (
     Path(cve_environments.__file__),
     Path(cve_layout.__file__),
     Path(cve_places.__file__),
@@ -132,7 +132,8 @@ def fixture_fingerprint(
     coordinates and reach, in kept_places order), the launch-mode field (and the fallback scope
     under the fallback launch-mode, holdout-rule.md, Run conditions and statistic (A holdout run
     audits every target)), the backend images the builder pulls outside the compose build (when
-    any), and the sentinel Dockerfile whenever a kept record is an http_endpoint, since the sentinel
+    any), the modules through which the builder seeds a backend (AST fingerprint, when any), and
+    the sentinel Dockerfile whenever a kept record is an http_endpoint, since the sentinel
     image serves it on any target. Out: the exploits and benign call (calibration only), the
     severity, the note, the awaited capability (report text), the drawn nonces (random per launch),
     the CI skip, the kept places' family (plants nothing), and what each caller chooses to plant and
@@ -145,7 +146,7 @@ def fixture_fingerprint(
     """
     records = kept_records(target.kept_places, places)
     parts: list[object] = [
-        fingerprint_sources([path.read_text() for path in _ENVIRONMENT_PATHS]),
+        fingerprint_sources([path.read_text() for path in ENVIRONMENT_PATHS]),
         [
             dockerfile_instructions(image_dockerfile(name, docker_directory))
             for name in target.images
@@ -168,6 +169,8 @@ def fixture_fingerprint(
         parts.append([target.fallback_scope.kind.value, target.fallback_scope.path])
     if target.backend_images:
         parts.append(sorted(target.backend_images))
+    if target.backend_sources:
+        parts.append(fingerprint_sources([path.read_text() for path in target.backend_sources]))
     if any(record.kind is PlantKind.HTTP_ENDPOINT for record in records):
         parts.append(dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()

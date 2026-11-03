@@ -17,7 +17,9 @@ place is an http_endpoint.
 
 import re
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 
+from evals import doris_backend
 from evals.cve_environments import DORIS_DB, doris_db_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places
@@ -71,4 +73,5 @@ TARGET = CVETarget(
     ),
     tools_filter=None,
     backend_images=(DORIS_IMAGE, MYSQL_CLIENT_IMAGE),
+    backend_sources=(Path(doris_backend.__file__),),
 )
