@@ -33,6 +33,21 @@ def test_run_refuses_an_existing_report_file_before_any_dep(
     assert "--report" in capsys.readouterr().out
 
 
+def test_run_refuses_a_drawn_target_whose_card_is_not_ready(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.a_drawn_run_ending_in(monkeypatch, given.a_run_result())
+    gap = "CVE-2025-0001: card check rule version unset"
+    given.cards_reporting(monkeypatch, [gap])
+    report = tmp_path / "holdout_report.json"
+
+    exit_code = run_holdout.main(["run", "--report", str(report)])
+
+    assert exit_code == run_holdout.REFUSED_EXIT
+    assert gap in capsys.readouterr().out
+    assert not report.with_suffix(".result.json").exists()
+
+
 def test_run_writes_the_report_beside_its_result(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     given.a_drawn_run_ending_in(monkeypatch, given.a_run_result())
     report = tmp_path / "holdout_report.json"

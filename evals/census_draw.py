@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from evals.census_classification import Criterion
 from evals.census_work import AgentRecord, AgentRole
 from evals.cve_places import REACHABLE_BY
+from evals.fixture_provenance import StandInRecord, stand_in_problems
 
 
 class KeptPlace(BaseModel):
@@ -43,6 +44,19 @@ class SeededFile(BaseModel):
     documentation: str
 
 
+class SeededOutsideLayout(BaseModel):
+    item: str
+    reason: str
+    returned_by: list[str]  # tools that return it in a response
+    used_by_default_by: list[str]  # tools that use it by default
+
+
+class CardStandIn(BaseModel):
+    stand_in: StandInRecord
+    returned_by: list[str]
+    used_by_default_by: list[str]
+
+
 class Sibling(BaseModel):
     flaw: str
     mechanism: str
@@ -58,6 +72,10 @@ class CalibrationCard(BaseModel):
     unkept: list[UnkeptPlace]
     launch_options: list[LaunchOption]
     seeded_in_layout: list[SeededFile]
+    # Holdout rule v9 adds these two; None reads "not yet recorded", which `run_holdout run`
+    # refuses through holdout_card_readiness.
+    seeded_outside_layout: list[SeededOutsideLayout] | None = None
+    stand_ins: list[CardStandIn] | None = None
     fallback_scope: str | None
     fallback_documentation: str | None
     exploit_calls: list[str]
@@ -75,6 +93,7 @@ class CardCheck(BaseModel):
     flaw: str
     reported_gaps: list[str]
     confirmed_gaps: list[ConfirmedGap]
+    rule_version: int | None = None  # the holdout rule version the card was checked under
 
 
 class GiveUpReason(StrEnum):
@@ -128,6 +147,7 @@ def draw_problems(
         *_walk_problems(draw, order),
         *_calibration_problems(draw),
         *_place_problems(draw, place_ids),
+        *_stand_in_problems(draw),
         *_agent_problems(draw, agents),
         *_count_problems(draw),
     ]
@@ -210,6 +230,15 @@ def _place_problems(draw: DrawRecord, place_ids: set[str]) -> list[str]:
             if sibling.reach not in REACHABLE_BY
         ]
     return problems
+
+
+def _stand_in_problems(draw: DrawRecord) -> list[str]:
+    return [
+        f"card for flaw {card.flaw}: {problem}"
+        for card in draw.cards
+        for card_stand_in in card.stand_ins or []
+        for problem in stand_in_problems(card_stand_in.stand_in)
+    ]
 
 
 def _agent_problems(draw: DrawRecord, agents: Sequence[AgentRecord]) -> list[str]:

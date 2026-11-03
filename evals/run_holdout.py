@@ -24,6 +24,7 @@ from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_targets import CVETarget, image_tag
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
+from evals.holdout_card_readiness import unready_cards
 from evals.holdout_census import HoldoutCensus, load_census
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
@@ -138,10 +139,12 @@ def _run(args: argparse.Namespace) -> int:
     if not holdout_targets.HOLDOUT_TARGETS:
         print("no holdout target is drawn")
         return 0
+    census = _census(args.census)
+    _refuse_unready_cards(census)
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    run = _audit_drawn_targets(args, conditions, settings)
+    run = _audit_drawn_targets(args, _ReadyHoldoutRun(census, conditions, settings))
     write_result(args.report, run)
     report = build_report(run)
     markdown = render_markdown(report)
@@ -151,20 +154,36 @@ def _run(args: argparse.Namespace) -> int:
     return 0
 
 
-def _audit_drawn_targets(
-    args: argparse.Namespace, conditions: HoldoutConditions, settings: Settings
-) -> HoldoutRunResult:
-    census = _census(args.census)
-    disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
+def _refuse_unready_cards(census: HoldoutCensus) -> None:
+    drawn = [target.cve_id for target in holdout_targets.HOLDOUT_TARGETS]
+    gaps = unready_cards(census.draw, drawn)
+    if gaps:
+        raise Refused(
+            "holdout run refused",
+            ["drawn targets whose card is not ready under holdout rule v9", *gaps],
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class _ReadyHoldoutRun:
+    """What a holdout run reads, once its cards and its conditions are checked ready."""
+
+    census: HoldoutCensus
+    conditions: HoldoutConditions
+    settings: Settings
+
+
+def _audit_drawn_targets(args: argparse.Namespace, ready: _ReadyHoldoutRun) -> HoldoutRunResult:
+    disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in ready.census.flaws}
     places = load_places(HOLDOUT_PLACES)
-    deps = default_deps(places, holdout_overrides(conditions), args.concurrency)
+    deps = default_deps(places, holdout_overrides(ready.conditions), args.concurrency)
     with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(
             run_holdout(
                 holdout_targets.HOLDOUT_TARGETS,
                 disclosure_dates,
-                conditions,
-                settings,
+                ready.conditions,
+                ready.settings,
                 places,
                 last_commit(args.census),
                 runs=args.runs if args.runs is not None else HOLDOUT_RUNS,

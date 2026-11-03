@@ -7,7 +7,8 @@ from pydantic import ValidationError
 
 import tests.unit.support.test_census_draw_given as given
 import tests.unit.support.test_holdout_census_given as census
-from evals.census_draw import GiveUp, GiveUpReason, KeptPlace
+from evals.census_draw import CardStandIn, GiveUp, GiveUpReason, KeptPlace
+from evals.fixture_provenance import StandInOutput, StandInRecord
 from evals.holdout_census import load_census
 from evals.run_census import CENSUS_PATH
 from tests.unit.support.test_census_draw_given import A_DRAWN_FLAW, A_TWICE_GIVEN_UP_FLAW
@@ -101,3 +102,31 @@ def test_a_card_flaw_with_no_calibrator_record_fails(tmp_path: Path):
 
     with pytest.raises(ValueError, match=re.escape(f"flaw {A_DRAWN_FLAW} has no calibrator")):
         load_census(census.written(tmp_path, without_calibrator))
+
+
+def test_a_card_with_the_fields_rule_v9_adds_unset_loads(tmp_path: Path):
+    card = given.a_card(A_DRAWN_FLAW)
+    draw = given.a_draw().model_copy(update={"cards": [card]})
+
+    loaded = load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
+
+    assert loaded.draw is not None
+    assert loaded.draw.cards[0].stand_ins is None
+    assert loaded.draw.cards[0].seeded_outside_layout is None
+
+
+def test_a_card_stand_in_with_an_invented_output_and_no_form_source_fails(tmp_path: Path):
+    output = StandInOutput(request="GET /api/status", source="invented", citation="none")
+    stand_in = StandInRecord(
+        replaces="the vendor API",
+        reason="the vendor API is a public host the closed network cannot reach",
+        file="evals/docker/Dockerfile.vendor-responder",
+        outputs=[output],
+    )
+    card_stand_in = CardStandIn(stand_in=stand_in, returned_by=["status"], used_by_default_by=[])
+    card = given.a_card(A_DRAWN_FLAW).model_copy(update={"stand_ins": [card_stand_in]})
+    draw = given.a_draw().model_copy(update={"cards": [card]})
+
+    refusal = f"card for flaw {A_DRAWN_FLAW}: stand-in for the vendor API"
+    with pytest.raises(ValueError, match=re.escape(refusal)):
+        load_census(census.written(tmp_path, given.a_census_with_draw(draw)))

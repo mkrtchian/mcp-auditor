@@ -5,6 +5,7 @@ import pytest
 
 import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_holdout_census_given as given
+import tests.unit.support.test_run_holdout_run_given as run_given
 from evals import run_holdout
 from evals.closed_network import ClosedNetworkUnsupported
 from evals.cve_planting_base import SENTINEL_SERVICE
@@ -181,6 +182,7 @@ def test_run_refuses_an_acceptance_target_for_its_tools_filter(
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")  # the auditor is built, never called
     monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (CVE_TARGETS[0],))
+    run_given.cards_reporting(monkeypatch, [])
 
     assert run_holdout.main(["run"]) == run_holdout.REFUSED_EXIT
 

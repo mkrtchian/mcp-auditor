@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -32,13 +33,27 @@ def a_drawn_run_ending_in(
         return outcome
 
     a_ready_run(monkeypatch)
-    monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (object(),))
+    a_drawn_target_with_a_ready_card(monkeypatch)
 
     def deps(*_: object) -> HoldoutDeps:
         return run_given.deps_reaching_nothing()
 
     monkeypatch.setattr(run_holdout, "default_deps", deps)
     monkeypatch.setattr(run_holdout, "run_holdout", orchestrator)
+
+
+def a_drawn_target_with_a_ready_card(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "evals.holdout_targets.HOLDOUT_TARGETS", (SimpleNamespace(cve_id="CVE-2025-0001"),)
+    )
+    cards_reporting(monkeypatch, [])
+
+
+def cards_reporting(monkeypatch: pytest.MonkeyPatch, gaps: list[str]) -> None:
+    def unready_cards(*_: object) -> list[str]:
+        return gaps
+
+    monkeypatch.setattr(run_holdout, "unready_cards", unready_cards)
 
 
 def a_ready_run(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -52,7 +67,7 @@ def a_run_reaching_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
         raise AssertionError("the run was reached")
 
     a_ready_run(monkeypatch)
-    monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (object(),))
+    a_drawn_target_with_a_ready_card(monkeypatch)
     monkeypatch.setattr(run_holdout, "load_conditions", unreached)
     monkeypatch.setattr(run_holdout, "default_deps", unreached)
     monkeypatch.setattr(run_holdout, "run_holdout", unreached)
