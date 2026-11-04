@@ -34,6 +34,7 @@ def a_stand_ins_directory(directory: Path) -> Path:
                 "body": "<html></html>",
             }
         ],
+        "defaults": [_default("http"), _default("https")],
     }
     (directory / f"{HOST}.json").write_text(json.dumps(capture))
     tls = directory / "tls"
@@ -42,6 +43,17 @@ def a_stand_ins_directory(directory: Path) -> Path:
     (tls / f"{HOST}-key.pem").write_text(KEY)
     (tls / "fixture-authority.pem").write_text(AUTHORITY)
     return directory
+
+
+def _default(scheme: str) -> dict[str, object]:
+    return {
+        "scheme": scheme,
+        "probed_target": "/0123456789abcdef",
+        "status": 404,
+        "headers": [["Content-Type", "text/html"]],
+        "body": "<html>not found</html>",
+        "path_form": None,
+    }
 
 
 def capture_text(directory: Path) -> str:

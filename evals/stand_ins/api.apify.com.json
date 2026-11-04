@@ -1,7 +1,7 @@
 {
   "host": "api.apify.com",
   "address": "184.197.248.173",
-  "captured_at": "2026-11-02T19:07:26Z",
+  "captured_at": "2026-11-04T07:36:55Z",
   "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/api.apify.com.json --header 'Authorization: Bearer calib-token' 'https://api.apify.com/v2/actors/apify~rag-web-browser' https://api.apify.com/v2/users/me",
   "request_headers": [
     [
@@ -18,7 +18,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 19:07:26 GMT"
+          "Wed, 04 Nov 2026 07:36:55 GMT"
         ],
         [
           "Content-Type",
@@ -87,7 +87,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 19:07:26 GMT"
+          "Wed, 04 Nov 2026 07:36:55 GMT"
         ],
         [
           "Content-Type",
@@ -96,6 +96,109 @@
         [
           "Content-Length",
           "132"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate"
+        ],
+        [
+          "Pragma",
+          "no-cache"
+        ],
+        [
+          "Expires",
+          "0"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Access-Control-Allow-Headers",
+          "User-Agent, Content-Type, Authorization, X-Apify-Request-Origin, X-Apify-Github-Actions-Run-Url, openai-conversation-id, openai-ephemeral-user-id, x-apify-integration-platform, x-apify-integration-app-id, x-apify-integration-ai-tool"
+        ],
+        [
+          "Access-Control-Allow-Methods",
+          "GET"
+        ],
+        [
+          "Access-Control-Expose-Headers",
+          "X-Apify-Pagination-Total, X-Apify-Pagination-Offset, X-Apify-Pagination-Desc, X-Apify-Pagination-Count, X-Apify-Pagination-Limit"
+        ],
+        [
+          "Referrer-Policy",
+          "no-referrer"
+        ],
+        [
+          "X-Robots-Tag",
+          "none"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=300; includeSubDomains"
+        ],
+        [
+          "ETag",
+          "W/\"84-3vD4avsywU4kYCm7Wbs1BaOxvlo\""
+        ]
+      ],
+      "body": "{\n  \"error\": {\n    \"type\": \"user-or-token-not-found\",\n    \"message\": \"User was not found or authentication token is not valid\"\n  }\n}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/5a390deb0e71343c",
+      "status": 301,
+      "headers": [
+        [
+          "Server",
+          "awselb/2.0"
+        ],
+        [
+          "Date",
+          "Wed, 04 Nov 2026 07:36:55 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html"
+        ],
+        [
+          "Content-Length",
+          "134"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Location",
+          "https://api.apify.com:443/5a390deb0e71343c"
+        ]
+      ],
+      "body": "<html>\r\n<head><title>301 Moved Permanently</title></head>\r\n<body>\r\n<center><h1>301 Moved Permanently</h1></center>\r\n</body>\r\n</html>\r\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/5a390deb0e71343c",
+      "status": 404,
+      "headers": [
+        [
+          "Date",
+          "Wed, 04 Nov 2026 07:36:56 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json; charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "153"
         ],
         [
           "Connection",
@@ -143,10 +246,11 @@
         ],
         [
           "ETag",
-          "W/\"84-3vD4avsywU4kYCm7Wbs1BaOxvlo\""
+          "W/\"99-JoTse/A9r2bb6vUL3wSLXgsIY+c\""
         ]
       ],
-      "body": "{\n  \"error\": {\n    \"type\": \"user-or-token-not-found\",\n    \"message\": \"User was not found or authentication token is not valid\"\n  }\n}"
+      "body": "{\n  \"error\": {\n    \"type\": \"page-not-found\",\n    \"message\": \"We have bad news: there is no API endpoint at this URL. Did you specify it correctly?\"\n  }\n}",
+      "path_form": null
     }
   ]
 }

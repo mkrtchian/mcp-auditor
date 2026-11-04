@@ -10,6 +10,7 @@ from evals.cve_targets import CVE_TARGETS
 from evals.holdout_targets import HOLDOUT_TARGETS
 
 HOST = "example.com"
+PROBED_TARGET = "/0123456789abcdef"
 
 
 def a_stand_in_directory(directory: Path, **capture_overrides: Any) -> Path:
@@ -30,6 +31,7 @@ def a_stand_in_directory(directory: Path, **capture_overrides: Any) -> Path:
                 "body": "<html></html>",
             }
         ],
+        "defaults": [a_default("http"), a_default("https")],
     }
     capture.update(capture_overrides)
     (directory / f"{HOST}.json").write_text(json.dumps(capture))
@@ -49,6 +51,24 @@ def a_route(scheme: str) -> dict[str, Any]:
         "status": 200,
         "headers": [],
         "body": "",
+    }
+
+
+def a_default(
+    scheme: str,
+    *,
+    probed_target: str = PROBED_TARGET,
+    headers: list[list[str]] | None = None,
+    body: str = "<html>not found</html>",
+    path_form: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "scheme": scheme,
+        "probed_target": probed_target,
+        "status": 404,
+        "headers": [["Content-Type", "text/html"]] if headers is None else headers,
+        "body": body,
+        "path_form": path_form,
     }
 
 

@@ -24,6 +24,8 @@ STAND_IN_HOST = "public.fict"
 STAND_IN_ADDRESS = "93.184.215.14"  # a global unicast address, as the capture loader requires
 PLAIN_BODY = "the plain stand-in body"
 SECURE_BODY = "the secure stand-in body"
+PROBED_TARGET = "/0123456789abcdef"
+MISSING_BODY = "the secure stand-in's answer to an unknown path"
 _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
 # The stand-in image's Python as the target: urllib verifies TLS against the default paths,
 # which `SSL_CERT_FILE` points at the fixture authority. A 4xx prints its status.
@@ -80,6 +82,7 @@ def a_stand_ins_directory(directory: Path) -> Path:
         "command": "uv run python -m evals.capture_stand_in --out x.json http://public.fict/",
         "request_headers": [],
         "routes": [_route("http", PLAIN_BODY), _route("https", SECURE_BODY)],
+        "defaults": [_redirect_to_https(), _not_found()],
     }
     (directory / f"{STAND_IN_HOST}.json").write_text(json.dumps(capture))
     subprocess.run(
@@ -98,6 +101,28 @@ def _route(scheme: str, body: str) -> dict[str, object]:
         "status": 200,
         "headers": [["Content-Type", "text/plain"]],
         "body": body,
+    }
+
+
+def _redirect_to_https() -> dict[str, object]:
+    return {
+        "scheme": "http",
+        "probed_target": PROBED_TARGET,
+        "status": 301,
+        "headers": [["Location", f"https://{STAND_IN_HOST}{PROBED_TARGET}"]],
+        "body": "",
+        "path_form": None,
+    }
+
+
+def _not_found() -> dict[str, object]:
+    return {
+        "scheme": "https",
+        "probed_target": PROBED_TARGET,
+        "status": 404,
+        "headers": [["Content-Type", "text/plain"]],
+        "body": MISSING_BODY,
+        "path_form": None,
     }
 
 

@@ -1,7 +1,7 @@
 {
   "host": "demo.ckan.org",
   "address": "188.114.96.2",
-  "captured_at": "2026-11-02T18:46:06Z",
+  "captured_at": "2026-11-04T07:36:50Z",
   "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/demo.ckan.org.json https://demo.ckan.org/api/3/action/status_show",
   "request_headers": [],
   "routes": [
@@ -13,7 +13,7 @@
       "headers": [
         [
           "Date",
-          "Mon, 02 Nov 2026 18:46:06 GMT"
+          "Wed, 04 Nov 2026 07:36:50 GMT"
         ],
         [
           "Content-Type",
@@ -77,11 +77,11 @@
         ],
         [
           "Report-To",
-          "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=nzX5o1%2F8PggpRY46XiIucK6ZubUdHw3hi%2BaQUfYsiPv5AJhFP2Jj9X2WEgoWZE7ZmfSjMl5UE6GQdcTojxRtVueoENEwDxRTfSCANey2vwriMSwyoc1VP8uFeKsbj02ck4Q3SRqag%2FDyAwa8\"}]}"
+          "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=gSHlBUSD68%2BA1c7RleWikmh8L9z44QYCvccQgqVukv74Lv3GRk09XksBOfJ7NabdjPkpBn2m83eCmJXcXwA1Vo56WQAcKUIDcGRMNJ65QZeEGQwuMMSfJTx4%2FGvYlzhmE9k3VRUpfffa8DmP\"}]}"
         ],
         [
           "CF-RAY",
-          "a5454cd3dafb01f3-CDG"
+          "a551f3339e949a80-CDG"
         ],
         [
           "alt-svc",
@@ -89,6 +89,146 @@
         ]
       ],
       "body": "{\"help\": \"https://demo.ckan.org/api/3/action/help_show?name=status_show\", \"success\": true, \"result\": {\"site_title\": \"CKAN Demo\", \"site_description\": \"\", \"site_url\": \"https://demo.ckan.org\", \"error_emails_to\": \"\", \"locale_default\": \"en\", \"extensions\": [\"envvars\", \"s3filestore\", \"image_view\", \"text_view\", \"datatables_view\", \"datastore\", \"datapusher\", \"pdf_view\", \"geo_view\", \"resource_proxy\", \"stats\"], \"ckan_version\": \"2.11.5\"}}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/1cba3ef3d0a4378d",
+      "status": 301,
+      "headers": [
+        [
+          "Date",
+          "Wed, 04 Nov 2026 07:36:50 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html; charset=UTF-8"
+        ],
+        [
+          "Transfer-Encoding",
+          "chunked"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Location",
+          "https://demo.ckan.org/1cba3ef3d0a4378d"
+        ],
+        [
+          "Report-To",
+          "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=%2BDNjtM9eDTk5e0ZUuwT57wL8JogRkxFRa1Qxo8JFLjT0hFa5J8zxD55%2Ffl3UFQC41T5YvpkV7i6FGpVHsCGKh4VQyax9V04oTJEtHgPHO3d5vLsTe7derF21qqsQ31VbyXtGRgAMVgItPHXu\"}]}"
+        ],
+        [
+          "Nel",
+          "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+        ],
+        [
+          "Server",
+          "cloudflare"
+        ],
+        [
+          "CF-RAY",
+          "a551f3340e2bd11b-CDG"
+        ],
+        [
+          "alt-svc",
+          "h3=\":443\"; ma=86400"
+        ]
+      ],
+      "body": "<html>\r\n<head><title>301 Moved Permanently</title></head>\r\n<body>\r\n<center><h1>301 Moved Permanently</h1></center>\r\n<hr><center>cloudflare</center>\r\n</body>\r\n</html>\r\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/1cba3ef3d0a4378d",
+      "status": 404,
+      "headers": [
+        [
+          "Date",
+          "Wed, 04 Nov 2026 07:36:50 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html; charset=utf-8"
+        ],
+        [
+          "Transfer-Encoding",
+          "chunked"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Cache-Control",
+          "private"
+        ],
+        [
+          "vary",
+          "Cookie"
+        ],
+        [
+          "Set-Cookie",
+          "ckan=eyJfY3NyZl90b2tlbiI6IjE2ODllYjMxNjgwMGJmMmUwYjNhNGNhODkxNWZjYzVhZDZmODVhYmUifQ.aurgkg.snDPkNAHNJMGix2yT4XTzP_2Lrw; Domain=; HttpOnly; Path=/; SameSite=Lax"
+        ],
+        [
+          "strict-transport-security",
+          "max-age=15724800; includeSubDomains"
+        ],
+        [
+          "Server",
+          "cloudflare"
+        ],
+        [
+          "x-content-type-options",
+          "nosniff"
+        ],
+        [
+          "x-frame-options",
+          "SAMEORIGIN"
+        ],
+        [
+          "x-xss-protection",
+          "1"
+        ],
+        [
+          "referrer-policy",
+          "origin"
+        ],
+        [
+          "expect-ct",
+          "max-age=86400, enforce, report-uri='[reportURL]'"
+        ],
+        [
+          "x-permitted-cross-domain-policies",
+          "none"
+        ],
+        [
+          "cf-cache-status",
+          "DYNAMIC"
+        ],
+        [
+          "Nel",
+          "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+        ],
+        [
+          "Report-To",
+          "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=8D1eMHkU28ZnqEOqdyIx6mfDqtFAPNvG4NyvYPcdqmo0H9C6wjYkUair%2Bmnh1Gw%2B3WssprMVSIbd2%2FgPd4HOpsZc0pawY4G79KVw0gqg85jR1E00KXXHMtMjAX3SJo%2Fh8RTtaZC6TL5YmepG\"}]}"
+        ],
+        [
+          "CF-RAY",
+          "a551f3343f8b9a80-CDG"
+        ],
+        [
+          "alt-svc",
+          "h3=\":443\"; ma=86400"
+        ]
+      ],
+      "body": "<!DOCTYPE html>\n<!--[if IE 9]> <html lang=\"en\" class=\"ie9\"> <![endif]-->\n<!--[if gt IE 8]><!--> <html lang=\"en\"  > <!--<![endif]-->\n  <head>\n    <meta charset=\"utf-8\" />\n      <meta name=\"csrf_field_name\" content=\"_csrf_token\" />\n      <meta name=\"_csrf_token\" content=\"IjE2ODllYjMxNjgwMGJmMmUwYjNhNGNhODkxNWZjYzVhZDZmODVhYmUi.aurgkg.ls8etq55cGoJXHUZV-UKnplL_SU\" />\n\n      <meta name=\"generator\" content=\"ckan 2.11.5\" />\n      <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Error 404 - CKAN Demo</title>\n\n    \n    <link rel=\"shortcut icon\" href=\"/base/images/ckan.ico\" />\n    \n    \n      \n      \n      \n    \n    \n    \n\n\n    \n    <link href=\"/webassets/base/51d427fe_main.css\" rel=\"stylesheet\"/>\n<link href=\"/webassets/ckanext-geoview/f197a782_geo-resource-styles.css\" rel=\"stylesheet\"/>\n    \n    \n\n  </head>\n\n  \n  <body data-site-root=\"https://demo.ckan.org/\" data-locale-root=\"https://demo.ckan.org/\" >\n\n    \n    <div class=\"visually-hidden-focusable\"><a href=\"#content\">Skip to main content</a></div>\n  \n\n  \n    \n\n \n<div class=\"account-masthead\">\n  <div class=\"container\">\n     \n    <nav class=\"account not-authed\" aria-label=\"Account\">\n      <ul class=\"list-unstyled\">\n        \n        <li><a href=\"/user/login\">Log in</a></li>\n         \n      </ul>\n    </nav>\n     \n  </div>\n</div>\n\n<header class=\"masthead\">\n  <div class=\"container\">\n      \n    <nav class=\"navbar navbar-expand-lg navbar-light\">\n      <hgroup class=\"header-image navbar-left\">\n\n      \n      \n      <a class=\"logo\" href=\"/\">\n        <img src=\"/base/images/ckan-logo.png\" alt=\"CKAN Demo\"\n          title=\"CKAN Demo\" />\n      </a>\n      \n      \n\n       </hgroup>\n      <button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#main-navigation-toggle\"\n        aria-controls=\"main-navigation-toggle\" aria-expanded=\"false\" aria-label=\"Toggle navigation\">\n        <span class=\"fa fa-bars text-white\"></span>\n      </button>\n\n      <div class=\"main-navbar collapse navbar-collapse\" id=\"main-navigation-toggle\">\n        <ul class=\"navbar-nav ms-auto mb-2 mb-lg-0\">\n          \n            \n              \n              \n\n              <li><a href=\"/dataset/\">Datasets</a></li><li><a href=\"/organization/\">Organizations</a></li><li><a href=\"/group/\">Groups</a></li><li><a href=\"/about\">About</a></li>\n            \n          </ul>\n\n      \n      \n          <form class=\"d-flex site-search\" action=\"/dataset/\" method=\"get\">\n              <label class=\"d-none\" for=\"field-sitewide-search\">Search Datasets...</label>\n              <input id=\"field-sitewide-search\" class=\"form-control me-2\"  type=\"text\" name=\"q\" placeholder=\"Search\" aria-label=\"Search datasets...\"/>\n              <button class=\"btn\" type=\"submit\" aria-label=\"Submit\"><i class=\"fa fa-search\"></i></button>\n          </form>\n      \n      </div>\n    </nav>\n  </div>\n</header>\n\n  \n    <div class=\"main\">\n      <div id=\"content\" class=\"container\">\n        \n          \n  \n  \n\n\n          \n            <div class=\"toolbar\" role=\"navigation\" aria-label=\"Breadcrumb\">\n              \n\n            </div>\n          \n\n          <div class=\"row wrapper no-nav\">\n            \n            \n            \n\n            \n\n            \n  <article class=\"module\">\n    <div class=\"module-content\">\n      \n      <h1>404 Not Found</h1>\n      \n      The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.\n    </div>\n    \n    \n  \n  </article>\n\n          </div>\n        \n      </div>\n    </div>\n  \n    <footer class=\"site-footer\">\n  <div class=\"container\">\n    \n    <div class=\"row\">\n      <div class=\"col-md-8 footer-links\">\n        \n          <ul class=\"list-unstyled\">\n            \n              <li><a href=\"/about\">About CKAN Demo</a></li>\n            \n          </ul>\n          <ul class=\"list-unstyled\">\n            \n              \n              <li><a href=\"https://docs.ckan.org/en/2.11/api/\">CKAN API</a></li>\n              <li><a href=\"https://www.ckan.org/\">CKAN Association</a></li>\n              <li><a href=\"https://www.opendefinition.org/od/\"><img src=\"/base/images/od_80x15_blue.png\" alt=\"Open Data\"></a></li>\n            \n          </ul>\n        \n      </div>\n      <div class=\"col-md-4 attribution\">\n        \n          <p><strong>Powered by</strong> <a class=\"hide-text ckan-footer-logo\" href=\"http://ckan.org\">CKAN</a></p>\n        \n        \n          \n<form class=\"lang-select\" action=\"/util/redirect\" data-module=\"select-switch\" method=\"POST\">\n  \n<input type=\"hidden\" name=\"_csrf_token\" value=\"IjE2ODllYjMxNjgwMGJmMmUwYjNhNGNhODkxNWZjYzVhZDZmODVhYmUi.aurgkg.ls8etq55cGoJXHUZV-UKnplL_SU\"/> \n  <div class=\"form-group\">\n    <label for=\"field-lang-select\">Language</label>\n    <select id=\"field-lang-select\" name=\"url\" data-module=\"autocomplete\" data-module-dropdown-class=\"lang-dropdown\" data-module-container-class=\"lang-container\">\n      \n        <option value=\"/en/1cba3ef3d0a4378d\" selected=\"selected\">\n          English\n        </option>\n      \n        <option value=\"/nl/1cba3ef3d0a4378d\" >\n          Nederlands\n        </option>\n      \n        <option value=\"/id/1cba3ef3d0a4378d\" >\n          Indonesia\n        </option>\n      \n        <option value=\"/sl/1cba3ef3d0a4378d\" >\n          slovenščina\n        </option>\n      \n        <option value=\"/mn_MN/1cba3ef3d0a4378d\" >\n          монгол (Монгол)\n        </option>\n      \n        <option value=\"/pt_PT/1cba3ef3d0a4378d\" >\n          português (Portugal)\n        </option>\n      \n        <option value=\"/da_DK/1cba3ef3d0a4378d\" >\n          dansk (Danmark)\n        </option>\n      \n        <option value=\"/ar/1cba3ef3d0a4378d\" >\n          العربية\n        </option>\n      \n        <option value=\"/am/1cba3ef3d0a4378d\" >\n          አማርኛ\n        </option>\n      \n        <option value=\"/zh_Hans_CN/1cba3ef3d0a4378d\" >\n          中文 (简体, 中国)\n        </option>\n      \n        <option value=\"/bg/1cba3ef3d0a4378d\" >\n          български\n        </option>\n      \n        <option value=\"/cs_CZ/1cba3ef3d0a4378d\" >\n          čeština (Česko)\n        </option>\n      \n        <option value=\"/gl/1cba3ef3d0a4378d\" >\n          galego\n        </option>\n      \n        <option value=\"/sr_Latn/1cba3ef3d0a4378d\" >\n          srpski (latinica)\n        </option>\n      \n        <option value=\"/it/1cba3ef3d0a4378d\" >\n          italiano\n        </option>\n      \n        <option value=\"/lt/1cba3ef3d0a4378d\" >\n          lietuvių\n        </option>\n      \n        <option value=\"/gl_ES/1cba3ef3d0a4378d\" >\n          galego (España)\n        </option>\n      \n        <option value=\"/ru/1cba3ef3d0a4378d\" >\n          русский\n        </option>\n      \n        <option value=\"/is/1cba3ef3d0a4378d\" >\n          íslenska\n        </option>\n      \n        <option value=\"/tl/1cba3ef3d0a4378d\" >\n          Filipino (Pilipinas)\n        </option>\n      \n        <option value=\"/my_MM/1cba3ef3d0a4378d\" >\n          မြန်မာ (မြန်မာ)\n        </option>\n      \n        <option value=\"/sq/1cba3ef3d0a4378d\" >\n          shqip\n        </option>\n      \n        <option value=\"/ro/1cba3ef3d0a4378d\" >\n          română\n        </option>\n      \n        <option value=\"/fi/1cba3ef3d0a4378d\" >\n          suomi\n        </option>\n      \n        <option value=\"/bs/1cba3ef3d0a4378d\" >\n          bosanski\n        </option>\n      \n        <option value=\"/pl/1cba3ef3d0a4378d\" >\n          polski\n        </option>\n      \n        <option value=\"/mk/1cba3ef3d0a4378d\" >\n          македонски\n        </option>\n      \n        <option value=\"/zh_Hant_TW/1cba3ef3d0a4378d\" >\n          中文 (繁體, 台灣)\n        </option>\n      \n        <option value=\"/uk/1cba3ef3d0a4378d\" >\n          українська\n        </option>\n      \n        <option value=\"/ca/1cba3ef3d0a4378d\" >\n          català\n        </option>\n      \n        <option value=\"/nb_NO/1cba3ef3d0a4378d\" >\n          norsk bokmål (Norge)\n        </option>\n      \n        <option value=\"/sr/1cba3ef3d0a4378d\" >\n          српски\n        </option>\n      \n        <option value=\"/he/1cba3ef3d0a4378d\" >\n          עברית\n        </option>\n      \n        <option value=\"/es_AR/1cba3ef3d0a4378d\" >\n          español (Argentina)\n        </option>\n      \n        <option value=\"/en_GB/1cba3ef3d0a4378d\" >\n          English (United Kingdom)\n        </option>\n      \n        <option value=\"/eu/1cba3ef3d0a4378d\" >\n          euskara\n        </option>\n      \n        <option value=\"/fr/1cba3ef3d0a4378d\" >\n          français\n        </option>\n      \n        <option value=\"/el/1cba3ef3d0a4378d\" >\n          Ελληνικά\n        </option>\n      \n        <option value=\"/sv/1cba3ef3d0a4378d\" >\n          svenska\n        </option>\n      \n        <option value=\"/de/1cba3ef3d0a4378d\" >\n          Deutsch\n        </option>\n      \n        <option value=\"/pt_BR/1cba3ef3d0a4378d\" >\n          português (Brasil)\n        </option>\n      \n        <option value=\"/no/1cba3ef3d0a4378d\" >\n          norsk\n        </option>\n      \n        <option value=\"/fa_IR/1cba3ef3d0a4378d\" >\n          فارسی (ایران)\n        </option>\n      \n        <option value=\"/uk_UA/1cba3ef3d0a4378d\" >\n          українська (Україна)\n        </option>\n      \n        <option value=\"/hr/1cba3ef3d0a4378d\" >\n          hrvatski\n        </option>\n      \n        <option value=\"/vi/1cba3ef3d0a4378d\" >\n          Tiếng Việt\n        </option>\n      \n        <option value=\"/lv/1cba3ef3d0a4378d\" >\n          latviešu\n        </option>\n      \n        <option value=\"/th/1cba3ef3d0a4378d\" >\n          ไทย\n        </option>\n      \n        <option value=\"/tr/1cba3ef3d0a4378d\" >\n          Türkçe\n        </option>\n      \n        <option value=\"/sk/1cba3ef3d0a4378d\" >\n          slovenčina\n        </option>\n      \n        <option value=\"/ko_KR/1cba3ef3d0a4378d\" >\n          한국어 (대한민국)\n        </option>\n      \n        <option value=\"/ne/1cba3ef3d0a4378d\" >\n          नेपाली\n        </option>\n      \n        <option value=\"/es/1cba3ef3d0a4378d\" >\n          español\n        </option>\n      \n        <option value=\"/en_AU/1cba3ef3d0a4378d\" >\n          English (Australia)\n        </option>\n      \n        <option value=\"/km/1cba3ef3d0a4378d\" >\n          ខ្មែរ\n        </option>\n      \n        <option value=\"/hu/1cba3ef3d0a4378d\" >\n          magyar\n        </option>\n      \n        <option value=\"/ja/1cba3ef3d0a4378d\" >\n          日本語\n        </option>\n      \n    </select>\n  </div>\n  <button class=\"btn btn-default d-none \" type=\"submit\">Go</button>\n</form>\n\n\n        \n      </div>\n    </div>\n    \n  </div>\n</footer>\n  \n  \n  \n  \n    \n\n\n    \n    \n    <link href=\"/webassets/vendor/f3b8236b_select2.css\" rel=\"stylesheet\"/>\n<link href=\"/webassets/vendor/53df638c_fontawesome.css\" rel=\"stylesheet\"/>\n    <script src=\"/webassets/vendor/240e5086_jquery.js\" type=\"text/javascript\"></script>\n<script src=\"/webassets/vendor/773d6354_vendor.js\" type=\"text/javascript\"></script>\n<script src=\"/webassets/vendor/6d1ad7e6_bootstrap.js\" type=\"text/javascript\"></script>\n<script src=\"/webassets/vendor/529a0eb7_htmx.js\" type=\"text/javascript\"></script>\n<script src=\"/webassets/base/a65ea3a0_main.js\" type=\"text/javascript\"></script>\n<script src=\"/webassets/base/78ac888d_ckan.js\" type=\"text/javascript\"></script>\n  </body>\n</html>",
+      "path_form": "raw"
     }
   ]
 }
