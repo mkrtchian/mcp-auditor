@@ -100,7 +100,7 @@ class DockerPlanting(PlantingDocker):
         # Read before the removal: `--rm` drops the logs with the container.
         for line in _stand_in_stderr(name).splitlines():
             if line.startswith(_MISS_PREFIX):
-                logger.warning("stand-in for %s had no capture for: %s", host, line)
+                logger.warning("stand-in for %s answered with its default for: %s", host, line)
         _best_effort("docker", "rm", "-f", name)
 
     def probe_endpoint(self, target_args: Sequence[str], url: str) -> str | None:

@@ -35,18 +35,19 @@ def _planting_prerequisites() -> None:
 
 
 @pytest.fixture
-def stand_ins_directory(tmp_path: Path) -> Path:
+def openssl() -> None:
     missing = given.missing_openssl()
     if missing is not None:
         if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
             pytest.fail(missing)
         pytest.skip(missing)
-    return given.a_stand_ins_directory(tmp_path)
 
 
-def test_a_planted_stand_in_serves_its_capture_by_name_and_logs_a_miss(
-    stand_ins_directory: Path, caplog: pytest.LogCaptureFixture
+@pytest.mark.usefixtures("openssl")
+def test_a_planted_stand_in_serves_its_capture_by_name_and_its_default_for_anything_else(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
 ):
+    stand_ins_directory = given.a_stand_ins_directory(tmp_path)
     docker = given.RecordingPlanting()
     host = given.STAND_IN_HOST
 
@@ -56,12 +57,36 @@ def test_a_planted_stand_in_serves_its_capture_by_name_and_logs_a_miss(
     ):
         plain = given.fetch_as_target(args, f"http://{host}/")
         secure = given.fetch_as_target(args, f"https://{host}/")
-        uncaptured = given.fetch_as_target(args, f"http://{host}/uncaptured")
+        head = given.fetch_as_target(args, f"https://{host}/", method="HEAD")
+        unknown = given.fetch_as_target(args, f"https://{host}/uncaptured")
+        redirected = given.fetch_as_target(args, f"http://{host}{given.QUOTED_REQUEST}")
 
-    assert (plain, secure, uncaptured) == (given.PLAIN_BODY, given.SECURE_BODY, "404")
-    assert f"stand-in for {host} had no capture for: miss http GET /uncaptured" in caplog.text
+    assert (plain.body, secure.body) == (given.PLAIN_BODY, given.SECURE_BODY)
+    then.answered_without_its_body(head, 200, given.SECURE_BODY)
+    assert (unknown.status, unknown.body) == (404, given.MISSING_BODY)
+    then.redirects_to(redirected, f"https://{host}{given.QUOTED_REQUEST}")
+    then.logged_its_default_for(
+        caplog.text, host, ["https GET /uncaptured", f"http GET {given.QUOTED_REQUEST}"]
+    )
     assert docker.stand_ins
     then.nothing_it_made_outlives(docker)
+
+
+@pytest.mark.usefixtures("openssl")
+@pytest.mark.parametrize("case", sorted(given.QUOTING_CASES))
+def test_a_planted_stand_in_quotes_the_request_where_its_default_quotes_the_probe(
+    case: str, tmp_path: Path
+):
+    quoting = given.QUOTING_CASES[case]
+    directory = given.a_stand_ins_directory(tmp_path, quoting)
+    host = given.STAND_IN_HOST
+
+    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
+        route = given.fetch_as_target(args, f"https://{host}/")
+        unknown = given.fetch_as_target(args, f"https://{host}{given.QUOTED_REQUEST}")
+
+    assert route.body == given.SECURE_BODY
+    then.answered_with(unknown, 404, quoting.answer(quoting.quoted_request))
 
 
 @pytest.mark.parametrize("shape", ["no_network", "holder", "bridge_alias"])

@@ -2,6 +2,7 @@ import json
 import shutil
 import subprocess
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from evals.cve_places import Coordinates, Place, PlantKind
@@ -22,17 +23,29 @@ from mcp_auditor.adapters.docker import DockerRuntime
 IP_LITERAL = "198.51.100.5"  # RFC 5737 documentation range: routes nowhere
 STAND_IN_HOST = "public.fict"
 STAND_IN_ADDRESS = "93.184.215.14"  # a global unicast address, as the capture loader requires
-PLAIN_BODY = "the plain stand-in body"
-SECURE_BODY = "the secure stand-in body"
 PROBED_TARGET = "/0123456789abcdef"
+PLAIN_BODY = "the plain stand-in body"
+# A captured route is replayed verbatim, so the probed target in it stays as captured.
+SECURE_BODY = f"the secure stand-in body, {PROBED_TARGET} as captured"
 MISSING_BODY = "the secure stand-in's answer to an unknown path"
+# A request target a client sends percent-encoded, every character the escapings rewrite in it.
+QUOTED_REQUEST = "/a%3Cb%3E%22%27"
 _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
-# The stand-in image's Python as the target: urllib verifies TLS against the default paths,
-# which `SSL_CERT_FILE` points at the fixture authority. A 4xx prints its status.
+# The stand-in image's Python as the target: http.client sends the target as given and follows
+# no redirect, and the default context verifies TLS against the default paths, which
+# `SSL_CERT_FILE` points at the fixture authority.
 _FETCH = (
-    "import sys,urllib.error,urllib.request\n"
-    "try:print(urllib.request.urlopen(sys.argv[1],timeout=5).read().decode(),end='')\n"
-    "except urllib.error.HTTPError as error:print(error.code,end='')"
+    "import http.client,json,ssl,sys,urllib.parse\n"
+    "method,url=sys.argv[1],sys.argv[2]\n"
+    "parts=urllib.parse.urlsplit(url)\n"
+    "connection=(http.client.HTTPSConnection(parts.hostname,timeout=5,"
+    "context=ssl.create_default_context()) if parts.scheme=='https'"
+    " else http.client.HTTPConnection(parts.hostname,timeout=5))\n"
+    "connection.request(method,parts.path)\n"
+    "response=connection.getresponse()\n"
+    "headers={name.lower():value for name,value in response.getheaders()}\n"
+    "body=response.read().decode()\n"
+    "print(json.dumps({'status':response.status,'headers':headers,'body':body}),end='')"
 )
 # wget's own 5 s bound plus the start-up of the fresh container each read runs in.
 _READ_TIMEOUT = 10.0
@@ -74,7 +87,41 @@ def a_launch_of_shape(shape: str) -> PlantingSpec:
     return spec_of("meta.fict", "/fict/secret", has_network=True)
 
 
-def a_stand_ins_directory(directory: Path) -> Path:
+@dataclass(frozen=True)
+class QuotingCase:
+    content_type: str
+    path_form: str
+    body: str
+    quoted_request: str
+
+    def answer(self, target: str) -> str:
+        return self.body.replace(PROBED_TARGET, target)
+
+
+QUOTING_CASES = {
+    "decoded_html": QuotingCase(
+        "text/html; charset=utf-8",
+        "decoded",
+        f'<option value="/fr{PROBED_TARGET}">fr</option><p>No page at {PROBED_TARGET}.</p>',
+        "/a&lt;b&gt;&#34;&#39;",
+    ),
+    "decoded_json": QuotingCase(
+        "application/json",
+        "decoded",
+        f'{{"path": "{PROBED_TARGET}", "error": "no route for {PROBED_TARGET}"}}',
+        "/a<b>\\\"'",
+    ),
+    "raw_html": QuotingCase(
+        "text/html",
+        "raw",
+        f'<option value="/fr{PROBED_TARGET}">fr</option><p>No page at {PROBED_TARGET}.</p>',
+        QUOTED_REQUEST,
+    ),
+}
+
+
+def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -> Path:
+    secure_default = _not_found() if quoting is None else _quoting_not_found(quoting)
     capture = {
         "host": STAND_IN_HOST,
         "address": STAND_IN_ADDRESS,
@@ -82,7 +129,7 @@ def a_stand_ins_directory(directory: Path) -> Path:
         "command": "uv run python -m evals.capture_stand_in --out x.json http://public.fict/",
         "request_headers": [],
         "routes": [_route("http", PLAIN_BODY), _route("https", SECURE_BODY)],
-        "defaults": [_redirect_to_https(), _not_found()],
+        "defaults": [_redirect_to_https(), secure_default],
     }
     (directory / f"{STAND_IN_HOST}.json").write_text(json.dumps(capture))
     subprocess.run(
@@ -126,7 +173,25 @@ def _not_found() -> dict[str, object]:
     }
 
 
-def fetch_as_target(args: PlantedArgs, url: str) -> str:
+def _quoting_not_found(case: QuotingCase) -> dict[str, object]:
+    return {
+        "scheme": "https",
+        "probed_target": PROBED_TARGET,
+        "status": 404,
+        "headers": [["Content-Type", case.content_type]],
+        "body": case.body,
+        "path_form": case.path_form,
+    }
+
+
+@dataclass(frozen=True)
+class Fetched:
+    status: int
+    headers: dict[str, str]
+    body: str
+
+
+def fetch_as_target(args: PlantedArgs, url: str, method: str = "GET") -> Fetched:
     result = subprocess.run(
         [
             "docker",
@@ -141,13 +206,15 @@ def fetch_as_target(args: PlantedArgs, url: str) -> str:
             STAND_IN_IMAGE,
             "-c",
             _FETCH,
+            method,
             url,
         ],
         capture_output=True,
         text=True,
         timeout=_READ_TIMEOUT,
+        check=True,
     )
-    return result.stdout
+    return Fetched(**json.loads(result.stdout))
 
 
 def _place(entry_id: str, coordinates: Coordinates) -> Place:
