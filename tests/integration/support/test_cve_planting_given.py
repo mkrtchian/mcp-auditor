@@ -54,12 +54,18 @@ SECURE_REPLAYED = (
     ("strict-transport-security", "max-age=31536000"),
 )
 HEAD_ONLY_TARGET = "/checked"
+# A HEAD route's captured length is the host's length for the body it did not send, kept as is.
 HEAD_ONLY_HEADERS = (
     ("Content-Type", "text/html"),
+    ("Content-Length", "1256"),
     ("keep-alive", "timeout=5"),
     ("Date", CAPTURED_DATE),
 )
-HEAD_ONLY_REPLAYED = (("Content-Type", "text/html"), ("Date", CAPTURED_DATE))
+HEAD_ONLY_REPLAYED = (
+    ("Content-Type", "text/html"),
+    ("Content-Length", "1256"),
+    ("Date", CAPTURED_DATE),
+)
 REDIRECT_SERVER = ("Server", "cloudflare")
 _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
 # The stand-in image's Python as the target: http.client sends the target as given and follows
