@@ -71,6 +71,15 @@ class StandInDefault(BaseModel):
                 "the probed path appears outside path position,"
                 " so a substitution would rewrite an unrelated value"
             )
+        return self
+
+    def _in_path_position(self, text: str) -> bool:
+        # A backslash before the slash makes it half of an escape (JSON's `\/`), not the path's.
+        quoted = len(re.findall(rf"(?<!\\){re.escape(self.probed_target)}", text))
+        return text.count(self.probed_target[1:]) == quoted
+
+    @model_validator(mode="after")
+    def _path_form_says_how_a_known_body_escaping_quotes_its_target(self) -> Self:
         quotes = self.probed_target in self.body
         if quotes and media_type(self.headers) not in QUOTING_MEDIA_TYPES:
             raise ValueError(
@@ -82,11 +91,6 @@ class StandInDefault(BaseModel):
                 "path_form must say how the body quotes the request, and only when it does"
             )
         return self
-
-    def _in_path_position(self, text: str) -> bool:
-        # A backslash before the slash makes it half of an escape (JSON's `\/`), not the path's.
-        quoted = len(re.findall(rf"(?<!\\){re.escape(self.probed_target)}", text))
-        return text.count(self.probed_target[1:]) == quoted
 
 
 class StandInCapture(BaseModel):

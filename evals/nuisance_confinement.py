@@ -34,10 +34,6 @@ def nuisance_confinement_args() -> list[str]:
     return [*confinement_args(), *memory_bound_args()]
 
 
-def launch_digest(run_args: Sequence[str]) -> str:
-    return hashlib.sha256(json.dumps(list(run_args)).encode()).hexdigest()
-
-
 def labelled_run_args(run_args: Sequence[str]) -> list[str]:
     if list(run_args[:2]) != ["run", "-d"]:
         raise ValueError(f"not a `docker run -d` argv: {list(run_args[:2])}")
@@ -61,6 +57,10 @@ def running_with_launch(container: str, run_args: Sequence[str]) -> bool:
 def launch_matches(inspected: str, run_args: Sequence[str]) -> bool:
     # A container started before the launch label prints an empty label: `true` alone.
     return inspected.strip() == f"true {launch_digest(run_args)}"
+
+
+def launch_digest(run_args: Sequence[str]) -> str:
+    return hashlib.sha256(json.dumps(list(run_args)).encode()).hexdigest()
 
 
 def user_args(user: SymbolicUser) -> list[str]:
