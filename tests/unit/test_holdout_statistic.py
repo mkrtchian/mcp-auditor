@@ -41,7 +41,7 @@ def _result(
     return HoldoutTargetResult(
         cve_id=cve_id,
         disclosure_date=disclosure_date,
-        mechanism_label="read_outside_scope",
+        mechanism_labels=("read_outside_scope",),
         tools_count=4,
         ran_in_fallback=False,
         statuses=tuple(

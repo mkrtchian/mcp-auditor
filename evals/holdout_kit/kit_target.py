@@ -55,7 +55,7 @@ KitBuilder = Callable[[str, PlantingSpec, LaunchShape], AbstractContextManager[L
 @dataclass(frozen=True)
 class KitTarget:
     cve_id: str
-    mechanism: MechanismClass | None
+    mechanisms: frozenset[MechanismClass]
     aim: re.Pattern[str]
     reaches: frozenset[str]
     kept_places: tuple[str, ...]

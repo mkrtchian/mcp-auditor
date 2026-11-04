@@ -31,7 +31,7 @@ def assemble_target(
     return HoldoutTargetResult(
         cve_id=target.cve_id,
         disclosure_date=disclosure_date,
-        mechanism_label=None if target.mechanism is None else target.mechanism.value,
+        mechanism_labels=tuple(sorted(m.value for m in target.mechanisms)),
         tools_count=len(reports[0].tool_reports),
         ran_in_fallback=target.launch_mode is LaunchMode.FALLBACK,
         statuses=tuple(_run_status(outcome) for outcome in outcomes),

@@ -146,7 +146,7 @@ async def _exercise(
 
 
 def _graded(target: KitTarget, exercised: _Exercised) -> PlantedTarget:
-    return PlantedTarget(target.mechanism, target.aim, exercised.nonces)
+    return PlantedTarget(target.mechanisms, target.aim, exercised.nonces)
 
 
 def _units(exploits: list[list[Exchange]]) -> list[Unit]:

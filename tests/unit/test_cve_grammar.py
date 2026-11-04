@@ -3,15 +3,18 @@ from typing import Any
 import pytest
 
 import tests.unit.support.test_cve_grammar_given as given
-from evals.cve_grammar import CVEStatus, MissClass, grade_run, resolve
+from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, grade_run, resolve
 from evals.cve_proofs import is_aimed, proofs_in
 from evals.cve_report_units import units_of
 from evals.cve_units import unit_of_exchanges
-from mcp_auditor.domain.models import TestCase
+from mcp_auditor.domain.models import AuditCategory, TestCase
 
 SENTINEL = given.SENTINEL
 PLACE = given.PLACE
 AIMED = {"path": given.AIMED_PATH}
+COMMAND_EXECUTION = MechanismClass.COMMAND_EXECUTION
+READ_OUTSIDE_SCOPE = MechanismClass.READ_OUTSIDE_SCOPE
+INTERNAL_FETCH = MechanismClass.INTERNAL_FETCH
 
 
 @pytest.mark.parametrize(
@@ -147,6 +150,47 @@ def test_fail_without_proof_needs_an_aimed_fail_in_a_valid_category(case: TestCa
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
     assert grade.fail_without_proof is expected
+
+
+@pytest.mark.parametrize(
+    ("mechanisms", "category", "expected"),
+    [
+        ((COMMAND_EXECUTION, READ_OUTSIDE_SCOPE), given.INFO_LEAKAGE, True),
+        ((COMMAND_EXECUTION,), given.INFO_LEAKAGE, False),
+        ((COMMAND_EXECUTION, INTERNAL_FETCH), given.INJECTION, True),
+        ((COMMAND_EXECUTION, INTERNAL_FETCH), given.INFO_LEAKAGE, True),
+        ((COMMAND_EXECUTION, INTERNAL_FETCH), given.INPUT_VALIDATION, False),
+        ((), given.RESOURCE_ABUSE, True),
+        ((), given.INPUT_VALIDATION, True),
+    ],
+    ids=[
+        "union_admits_a_member_category",
+        "one_class_does_not",
+        "union_injection",
+        "union_info_leakage",
+        "union_input_validation",
+        "no_class_resource_abuse",
+        "no_class_input_validation",
+    ],
+)
+def test_fail_without_proof_counts_a_category_any_class_of_the_set_admits(
+    mechanisms: tuple[MechanismClass, ...], category: AuditCategory, expected: bool
+):
+    case = given.a_case(response="denied", arguments=AIMED, category=category)
+
+    grade = grade_run(given.a_target_under(*mechanisms), units_of(given.a_report(cases=[case])))
+
+    assert grade.fail_without_proof is expected
+
+
+def test_resolve_sums_a_union_target_fail_without_proof_runs():
+    target = given.a_target_under(COMMAND_EXECUTION, READ_OUTSIDE_SCOPE)
+    case = given.a_case(response="denied", arguments=AIMED, category=given.INFO_LEAKAGE)
+    report = given.a_report(cases=[case])
+
+    resolution = resolve([grade_run(target, units_of(report)) for _ in range(2)])
+
+    assert resolution.fail_without_proof_runs == 2
 
 
 @pytest.mark.parametrize(

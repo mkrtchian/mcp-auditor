@@ -7,7 +7,7 @@ import dataclasses
 import pytest
 
 import tests.unit.support.test_holdout_run_given as given
-from evals.cve_grammar import CVEStatus
+from evals.cve_grammar import CVEStatus, MechanismClass
 from evals.cve_layout_check import LayoutCheck
 from evals.cve_replay import ReplayAttemptFailure, UncheckedReason
 from evals.cve_session_model import GradedAudit
@@ -59,8 +59,20 @@ async def test_a_target_is_assembled_from_its_runs():
     assert assembled.fail_without_proof_runs == 1
     assert assembled.incomplete_runs == 0
     assert assembled.tools_count == 1
-    assert assembled.mechanism_label == "command_execution"
+    assert assembled.mechanism_labels == ("command_execution",)
     assert assembled.run_cost == pytest.approx(3 * call_cost(provider, given.LUNA_PRICE))
+
+
+async def test_a_union_target_is_assembled_with_its_class_labels_sorted():
+    target = given.a_target(
+        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.COMMAND_EXECUTION})
+    )
+    audit = given.scripted({target.cve_id: given.three_detections()})
+
+    result = await given.run([target], given.deps_auditing(audit))
+
+    (assembled,) = result.targets
+    assert assembled.mechanism_labels == ("command_execution", "read_outside_scope")
 
 
 async def test_a_target_records_its_backend_images_beside_its_services():

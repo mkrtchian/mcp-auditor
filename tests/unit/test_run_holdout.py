@@ -306,6 +306,24 @@ def test_calibration_dossier_places_file_loads_through_the_copied_loader(tmp_pat
     assert places
 
 
+def test_calibration_dossier_fixture_format_names_the_class_set(tmp_path: Path):
+    census = given.written(tmp_path, given.a_census())
+    out = tmp_path / "kit"
+    run_holdout.main(
+        [
+            "calibration-dossier",
+            "--census",
+            str(census),
+            "--cve",
+            given.FLAW_WITH_A_CVE,
+            "--out",
+            str(out),
+        ]
+    )
+
+    assert "- `mechanisms`:" in (out / "fixture_format.md").read_text()
+
+
 def _load_copied_places(module_path: Path) -> dict[str, object]:
     spec = importlib.util.spec_from_file_location("kit_cve_places", module_path)
     assert spec is not None and spec.loader is not None

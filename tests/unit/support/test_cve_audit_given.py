@@ -191,7 +191,7 @@ def a_report_throttled(times: int) -> AuditReport:
 def a_run(report: AuditReport, nonces: dict[str, str] | None = None) -> RunToCheck:
     return RunToCheck(
         target=TARGET,
-        run_target=PlantedTarget(TARGET.mechanism, TARGET.aim, nonces or {}),
+        run_target=PlantedTarget(TARGET.mechanisms, TARGET.aim, nonces or {}),
         report=report,
         recorded_calls=[],
         records=(),

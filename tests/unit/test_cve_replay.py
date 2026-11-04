@@ -55,7 +55,9 @@ async def test_an_argument_mismatch_makes_the_run_unchecked_without_launching():
     # The mismatch short-circuits before any patched launch, so CVE_TARGETS[0] is never launched.
     run = RunToCheck(
         target=CVE_TARGETS[0],
-        run_target=PlantedTarget(MechanismClass.READ_OUTSIDE_SCOPE, AIM, {"planted": "nonce"}),
+        run_target=PlantedTarget(
+            frozenset({MechanismClass.READ_OUTSIDE_SCOPE}), AIM, {"planted": "nonce"}
+        ),
         report=given.a_case_report(),
         recorded_calls=given.calls("/outside/wrong"),
         records=(),

@@ -34,7 +34,7 @@ class HoldoutRunStatus:
 class HoldoutTargetResult:
     cve_id: str
     disclosure_date: date
-    mechanism_label: str | None
+    mechanism_labels: tuple[str, ...]  # sorted, empty for no class
     tools_count: int
     ran_in_fallback: bool
     statuses: tuple[HoldoutRunStatus, ...]

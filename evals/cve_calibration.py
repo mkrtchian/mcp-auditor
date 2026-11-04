@@ -195,7 +195,7 @@ class _Exercise:
 
 
 def _graded(target: CVETarget, exercised: _Exercised) -> PlantedTarget:
-    return PlantedTarget(target.mechanism, target.aim, exercised.nonces)
+    return PlantedTarget(target.mechanisms, target.aim, exercised.nonces)
 
 
 def _units(exploits: list[list[Exchange]]) -> list[Unit]:

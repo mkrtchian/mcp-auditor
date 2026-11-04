@@ -95,7 +95,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = CVETarget(
     cve_id="CVE-2025-11489",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
+    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
     aim=AIM,
     reaches=frozenset({"arbitrary_read"}),
     kept_places=KEPT_PLACES,

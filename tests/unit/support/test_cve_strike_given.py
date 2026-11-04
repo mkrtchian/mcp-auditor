@@ -14,9 +14,10 @@ AIM = re.compile(r"^/outside/")
 
 
 def a_target(
-    nonces: Mapping[str, str], mechanism: MechanismClass | None = MechanismClass.READ_OUTSIDE_SCOPE
+    nonces: Mapping[str, str],
+    mechanisms: frozenset[MechanismClass] = frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
 ) -> PlantedTarget:
-    return PlantedTarget(mechanism, AIM, nonces)
+    return PlantedTarget(mechanisms, AIM, nonces)
 
 
 def leaking_unit(*nonces: str) -> Unit:

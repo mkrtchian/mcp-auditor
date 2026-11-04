@@ -212,7 +212,9 @@ def _run(
     places = a_places_mapping()
     return RunToCheck(
         target=_a_target(serve, kept),
-        run_target=PlantedTarget(MechanismClass.READ_OUTSIDE_SCOPE, OUTSIDE_AIM, nonces),
+        run_target=PlantedTarget(
+            frozenset({MechanismClass.READ_OUTSIDE_SCOPE}), OUTSIDE_AIM, nonces
+        ),
         report=report,
         recorded_calls=calls,
         records=kept_records(kept, places),

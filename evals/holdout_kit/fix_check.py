@@ -158,7 +158,10 @@ async def _exercise(target: FixCheckTarget, service: str) -> Exercised:
 
 
 def _surfaces(target: FixCheckTarget, exercise: Exercised) -> bool:
-    planted = PlantedTarget(target.mechanism, target.aim, exercise.nonces)
+    mechanisms: frozenset[MechanismClass] = (
+        frozenset() if target.mechanism is None else frozenset({target.mechanism})
+    )
+    planted = PlantedTarget(mechanisms, target.aim, exercise.nonces)
     return any(
         is_aimed(unit, target.aim) and bool(proofs_in(unit, planted))
         for unit in (unit_of(exchanges) for exchanges in exercise.exploits)

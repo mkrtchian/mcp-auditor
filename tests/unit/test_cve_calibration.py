@@ -21,13 +21,13 @@ PLAIN = {"command": "version"}
 
 @dataclass(frozen=True)
 class FakeTarget:
-    mechanism: MechanismClass
+    mechanisms: frozenset[MechanismClass]
     nonces: dict[str, str]
     aim: re.Pattern[str]
 
 
 COMMAND_TARGET = FakeTarget(
-    MechanismClass.COMMAND_EXECUTION, {"planted": NONCE}, re.compile(r"[;&|`]|\$\(")
+    frozenset({MechanismClass.COMMAND_EXECUTION}), {"planted": NONCE}, re.compile(r"[;&|`]|\$\(")
 )
 NO_PLACE_TARGET = dataclasses.replace(COMMAND_TARGET, nonces={})
 

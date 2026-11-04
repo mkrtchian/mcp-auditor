@@ -171,7 +171,7 @@ def _render_row(result: CVEResult) -> str:
     cells = [
         result.cve_id,
         result.severity,
-        result.mechanism or "-",
+        ", ".join(result.mechanisms) or "-",
         result.status.value,
         run_fraction(result.detected_runs, result.runs),
         result.miss_class or "-",

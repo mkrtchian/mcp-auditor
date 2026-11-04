@@ -108,7 +108,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = CVETarget(
     cve_id="CVE-2026-2130",
     severity="CVSS 6.3 (v3.1, kit card)",
-    mechanism=MechanismClass.COMMAND_EXECUTION,
+    mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,

@@ -25,7 +25,7 @@ from evals import (
     public_stand_ins,
 )
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
-from evals.cve_grammar import DETECTION_RUNGS, CVEStatus
+from evals.cve_grammar import DETECTION_RUNGS, CVEStatus, MechanismClass
 from evals.cve_images import dockerfile_instructions
 from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
 from evals.cve_planting import PlantingHost
@@ -121,7 +121,7 @@ def fixture_fingerprint(
     In: the environment and places modules (AST fingerprint, so comments, formatting and module
     docstrings are out), each Dockerfile of the target's images and the patched twin's Dockerfile
     (both without their comment and blank lines, so a patched pin that moves moves the fingerprint),
-    the builder's name, the server image, the mechanism, the aim, the tools filter, the flaw's
+    the builder's name, the server image, the classes, the aim, the tools filter, the flaw's
     reach, the planting host (with what each declared stand-in serves: its address and its capture,
     leaf, key and authority by SHA-256), the loaded record of each kept place (its id, kind,
     coordinates and reach, in kept_places order), the launch-mode field (and the fallback scope
@@ -149,7 +149,7 @@ def fixture_fingerprint(
         dockerfile_instructions(image_dockerfile(target.patched_image, docker_directory)),
         target.builder.__name__,
         target.server_image,
-        None if target.mechanism is None else target.mechanism.value,
+        _class_part(target.mechanisms),
         target.aim.pattern,
         None if target.tools_filter is None else sorted(target.tools_filter),
         sorted(target.reaches),
@@ -169,6 +169,15 @@ def fixture_fingerprint(
     if any(record.kind is PlantKind.HTTP_ENDPOINT for record in records):
         parts.append(dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
+
+
+def _class_part(mechanisms: frozenset[MechanismClass]) -> object:
+    # None and one value as before the class set, so a one-class target keeps its fingerprint.
+    if not mechanisms:
+        return None
+    if len(mechanisms) == 1:
+        return next(iter(mechanisms)).value
+    return sorted(m.value for m in mechanisms)
 
 
 def planting_host_parts(

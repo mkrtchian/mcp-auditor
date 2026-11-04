@@ -119,7 +119,7 @@ async def attempt_once(
             # `connect`). The nonces travel per launch, so the graded target is built here.
             run = RunToCheck(
                 target=target,
-                run_target=PlantedTarget(target.mechanism, target.aim, planted.nonces),
+                run_target=PlantedTarget(target.mechanisms, target.aim, planted.nonces),
                 report=report,
                 recorded_calls=calls,
                 records=records,

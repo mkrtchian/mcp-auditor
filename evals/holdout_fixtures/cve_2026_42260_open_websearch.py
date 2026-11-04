@@ -54,7 +54,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = CVETarget(
     cve_id="CVE-2026-42260",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanism=MechanismClass.INTERNAL_FETCH,
+    mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
     aim=AIM,
     reaches=frozenset({"internal_fetch"}),
     kept_places=KEPT_PLACES,

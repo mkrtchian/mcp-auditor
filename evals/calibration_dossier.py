@@ -196,7 +196,8 @@ The authored `KitTarget` then wraps into a `CVETarget` (the shared fields).
 ## KitTarget fields
 
 - `cve_id`: the drawn identifier.
-- `mechanism`: the grammar `MechanismClass`, or `None`.
+- `mechanisms`: the `frozenset` of grammar `MechanismClass` values the target is filed under:
+  one class, the union of its flaws' classes when they differ, or empty for no class.
 - `aim`: a compiled `re.Pattern` the exploit's call arguments must match, so a place that
   surfaces by accident (an exploit not aimed at it) does not count.
 - `reaches`: the `reachable_by` tokens the target claims (`arbitrary_read`,

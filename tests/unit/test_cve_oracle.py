@@ -20,7 +20,7 @@ def test_not_run_keeps_the_target_description():
 
     assert result.status == UngradedStatus.NOT_RUN
     assert result.runs == 0
-    assert result.mechanism == MechanismClass.READ_OUTSIDE_SCOPE
+    assert result.mechanisms == [MechanismClass.READ_OUTSIDE_SCOPE]
     assert result.awaited_capability == "declared-scope awareness"
 
 
@@ -35,7 +35,7 @@ def test_out_of_scope_results_carry_no_class():
     assert results[0].status == UngradedStatus.OUT_OF_SCOPE
     assert results[0].cve_id == "CVE-2025-68144"
     assert results[0].note == "silent write"
-    assert results[0].mechanism is None
+    assert results[0].mechanisms == []
 
 
 def test_result_for_a_detected_resolution():
@@ -45,7 +45,7 @@ def test_result_for_a_detected_resolution():
 
     assert result.status == CVEStatus.DETECTED
     assert result.miss_class is None
-    assert result.mechanism == MechanismClass.READ_OUTSIDE_SCOPE
+    assert result.mechanisms == [MechanismClass.READ_OUTSIDE_SCOPE]
     assert result.awaited_capability == "declared-scope awareness"
     assert (result.runs, result.detected_runs, result.surfaced_runs, result.aimed_runs) == (
         2,
@@ -56,6 +56,25 @@ def test_result_for_a_detected_resolution():
     assert result.budget == 10
     assert result.evidence is not None and given.SENTINEL in result.evidence
     assert result.category == AuditCategory.INJECTION
+
+
+def test_a_result_lists_a_union_target_classes_sorted():
+    target = given.FakeTarget(
+        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.COMMAND_EXECUTION})
+    )
+
+    result = not_run(target)
+
+    assert result.mechanisms == [
+        MechanismClass.COMMAND_EXECUTION,
+        MechanismClass.READ_OUTSIDE_SCOPE,
+    ]
+
+
+def test_a_result_of_a_target_with_no_class_lists_none():
+    result = not_run(given.FakeTarget(mechanisms=frozenset()))
+
+    assert result.mechanisms == []
 
 
 def test_result_for_a_missed_resolution():
@@ -143,6 +162,26 @@ def test_render_counts_runs_as_fractions():
         "| CVE-2025-53355 | 9.1 CRITICAL | command_execution | missed | 0/3 | aimed_no_proof "
         "| 2/3 | 1/3 | cross-tool chains | test note |"
     ) in markdown
+
+
+def test_render_joins_a_union_target_classes_in_its_row():
+    result = given.a_cve_result(
+        "CVE-2025-0002",
+        CVEStatus.MISSED,
+        mechanisms=(MechanismClass.COMMAND_EXECUTION, MechanismClass.READ_OUTSIDE_SCOPE),
+    )
+
+    markdown = render_markdown(given.a_benchmark_report([result]))
+
+    assert "| CVE-2025-0002 | 9.1 CRITICAL | command_execution, read_outside_scope |" in markdown
+
+
+def test_render_shows_a_dash_for_a_target_with_no_class():
+    result = given.a_cve_result("CVE-2025-0002", CVEStatus.MISSED, mechanisms=())
+
+    markdown = render_markdown(given.a_benchmark_report([result]))
+
+    assert "| CVE-2025-0002 | 9.1 CRITICAL | - | missed |" in markdown
 
 
 def test_render_ends_with_the_status_tally():

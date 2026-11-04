@@ -30,25 +30,30 @@ PASS = EvalVerdict.PASS
 INJECTION = AuditCategory.INJECTION
 INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
 RESOURCE_ABUSE = AuditCategory.RESOURCE_ABUSE
+INPUT_VALIDATION = AuditCategory.INPUT_VALIDATION
 
 
 @dataclass(frozen=True)
 class FakeTarget:
-    mechanism: MechanismClass | None
+    mechanisms: frozenset[MechanismClass]
     nonces: Mapping[str, str]
     aim: re.Pattern[str]
 
 
 def a_read_target() -> FakeTarget:
-    return FakeTarget(
-        MechanismClass.READ_OUTSIDE_SCOPE, {PLACE: SENTINEL}, re.compile(r"^/outside/")
-    )
+    return a_target_under(MechanismClass.READ_OUTSIDE_SCOPE)
 
 
 def a_command_target() -> FakeTarget:
     return FakeTarget(
-        MechanismClass.COMMAND_EXECUTION, {PLACE: SENTINEL}, re.compile(r"[;&|`]|\$\(")
+        frozenset({MechanismClass.COMMAND_EXECUTION}),
+        {PLACE: SENTINEL},
+        re.compile(r"[;&|`]|\$\("),
     )
+
+
+def a_target_under(*mechanisms: MechanismClass) -> FakeTarget:
+    return FakeTarget(frozenset(mechanisms), {PLACE: SENTINEL}, re.compile(r"^/outside/"))
 
 
 def a_case(

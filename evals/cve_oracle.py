@@ -31,7 +31,7 @@ class TargetInfo(Protocol):
     @property
     def severity(self) -> str: ...
     @property
-    def mechanism(self) -> MechanismClass | None: ...
+    def mechanisms(self) -> frozenset[MechanismClass]: ...
     @property
     def awaited_capability(self) -> str | None: ...
     @property
@@ -53,7 +53,7 @@ class CVEResult(BaseModel):
     cve_id: str
     severity: str
     note: str
-    mechanism: MechanismClass | None = None
+    mechanisms: list[MechanismClass] = []  # sorted, empty for no class and out of scope
     status: TargetStatus
     miss_class: MissClass | None = None
     awaited_capability: str | None = None
@@ -92,7 +92,7 @@ def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> C
         cve_id=target.cve_id,
         severity=target.severity,
         note=target.note,
-        mechanism=target.mechanism,
+        mechanisms=sorted(target.mechanisms),
         status=resolution.status,
         miss_class=resolution.miss_class,
         awaited_capability=target.awaited_capability,
@@ -115,7 +115,7 @@ def not_run(target: TargetInfo, conditions: list[str] | None = None) -> CVEResul
         cve_id=target.cve_id,
         severity=target.severity,
         note=target.note,
-        mechanism=target.mechanism,
+        mechanisms=sorted(target.mechanisms),
         status=UngradedStatus.NOT_RUN,
         awaited_capability=target.awaited_capability,
         not_run_conditions=conditions or [],

@@ -21,7 +21,7 @@ class FakeTarget:
     cve_id: str = "CVE-2025-0001"
     severity: str = "9.1 CRITICAL"
     sentinel: str = SENTINEL
-    mechanism: MechanismClass = MechanismClass.READ_OUTSIDE_SCOPE
+    mechanisms: frozenset[MechanismClass] = frozenset({MechanismClass.READ_OUTSIDE_SCOPE})
     aim: re.Pattern[str] = field(default=re.compile(r"^/outside/"))
     awaited_capability: str | None = "declared-scope awareness"
     note: str = "test note"
@@ -62,12 +62,13 @@ def a_cve_result(
     miss_class: MissClass | None = None,
     struck_places: list[list[str]] | None = None,
     unchecked_places: list[list[str]] | None = None,
+    mechanisms: tuple[MechanismClass, ...] = (MechanismClass.COMMAND_EXECUTION,),
 ) -> CVEResult:
     return CVEResult(
         cve_id=cve_id,
         severity="9.1 CRITICAL",
         note="test note",
-        mechanism=MechanismClass.COMMAND_EXECUTION,
+        mechanisms=list(mechanisms),
         status=status,
         miss_class=miss_class,
         awaited_capability="cross-tool chains",

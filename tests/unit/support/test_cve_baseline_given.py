@@ -202,7 +202,11 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "dockerfile instruction": _appending_to_its_dockerfile("RUN true"),
     "patched dockerfile instruction": _appending_to_the_patched_dockerfile("RUN true"),
     "aim": _replacing(aim=re.compile(r"[;&]")),
-    "mechanism": _replacing(mechanism=MechanismClass.READ_OUTSIDE_SCOPE),
+    "class": _replacing(mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE})),
+    "a class gained": _replacing(
+        mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION, MechanismClass.READ_OUTSIDE_SCOPE})
+    ),
+    "no class": _replacing(mechanisms=frozenset[MechanismClass]()),
     "tools filter": _replacing(tools_filter=frozenset({"kubectl_generic", "kubectl_get"})),
     "server image": _replacing(server_image="another-service"),
     "reaches": _replacing(reaches=frozenset({"arbitrary_read"})),

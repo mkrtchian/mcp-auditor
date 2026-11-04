@@ -1,6 +1,6 @@
 {
   "rule_commit": "93de2d8",
-  "grammar_fingerprint": "3f5a4925ad36dd6d3a57afa740165ae828506bed10c6a192a3dca7a194ebe2de",
+  "grammar_fingerprint": "4208029a711b929723d0a0460a0fb986e94f15dbb865afa7078dffd54e5ac9b1",
   "servers": [
     {
       "server_package": "npm:@sunwood-ai-labs/github-kanban-mcp-server",

@@ -78,7 +78,7 @@ class TargetRunLine(BaseModel):
 class TargetLine(BaseModel):
     cve_id: str
     disclosure_date: date  # with per_run, lets a stored report recompute the statistic and split
-    mechanism_label: str | None
+    mechanism_labels: list[str]
     detection_share: float
     surfaced_places: list[list[str]]
     struck_places: list[list[str]]
@@ -258,7 +258,7 @@ def _target_line(target: HoldoutTargetResult) -> TargetLine:
     return TargetLine(
         cve_id=target.cve_id,
         disclosure_date=target.disclosure_date,
-        mechanism_label=target.mechanism_label,
+        mechanism_labels=list(target.mechanism_labels),
         detection_share=target.detection_share,
         surfaced_places=target.surfaced_places,
         struck_places=target.struck_places,

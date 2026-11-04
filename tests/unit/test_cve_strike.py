@@ -102,7 +102,7 @@ def test_a_nonce_in_a_pass_judged_unit_is_still_reported_unchecked():
 
 def test_a_target_with_no_class_counts_every_category_in_fail_without_proof():
     case = grammar.a_case(response="denied", arguments=AIMED, category=grammar.RESOURCE_ABUSE)
-    target = given.a_target({given.PLACE_A: given.NONCE_A}, mechanism=None)
+    target = given.a_target({given.PLACE_A: given.NONCE_A}, mechanisms=frozenset())
 
     grade = grade_run(target, units_of(grammar.a_report(cases=[case])))
 

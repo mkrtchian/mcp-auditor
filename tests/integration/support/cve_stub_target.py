@@ -39,7 +39,7 @@ def a_stub_target(
     return CVETarget(
         cve_id=cve_id,
         severity="CVSS 0.0",
-        mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
+        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
         aim=aim,
         reaches=frozenset({"arbitrary_read"}),
         kept_places=kept_places,

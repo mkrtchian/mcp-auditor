@@ -38,7 +38,7 @@ _FIX_CHECK_TARGET_FIELDS = frozenset(
 _DRAWN_TARGET_FIELDS = frozenset(
     {
         "cve_id",
-        "mechanism",
+        "mechanisms",
         "aim",
         "reaches",
         "kept_places",

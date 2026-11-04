@@ -5,12 +5,12 @@ recorded in `cve_grammar_golden.json`.
 The corpus is built by `cve_grammar_golden_corpus`: the reports and units of the grammar unit
 tests, the CVE cases of the judge fixture pinned by id, each judged FAIL and PASS with nonce
 variants and chains of each target's cases, and the credit-check and replay-strike cases. A
-case is graded against its target's mechanism and aim, with the planted nonce as the only
+case is graded against its target's classes and aim, with the planted nonce as the only
 proof.
 
 The file is regenerated only in a commit that changes what the grammar grades, or what
 `dead_conditions` or `patched_dead_conditions` reports, beside its labeling log entry, or in the
-commit of a fixture that changes a target's mechanism or aim. A refactoring never regenerates it.
+commit of a fixture that changes a target's classes or aim. A refactoring never regenerates it.
 """
 
 import json
@@ -126,7 +126,7 @@ _REMOVED_GRADED_UNDER = {"CVE-2025-68145": "CVE-2025-68143"}
 def _graded_target(cve_id: str) -> given.FakeTarget:
     keeper = _REMOVED_GRADED_UNDER.get(cve_id) or _MERGED_SIBLINGS.get(cve_id, cve_id)
     [target] = [target for target in CVE_TARGETS if target.cve_id == keeper]
-    return given.FakeTarget(target.mechanism, {given.PLACE: given.SENTINEL}, target.aim)
+    return given.FakeTarget(target.mechanisms, {given.PLACE: given.SENTINEL}, target.aim)
 
 
 def _resolved(target: GradedTarget, reports: Iterable[AuditReport]) -> dict[str, Any]:

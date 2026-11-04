@@ -127,7 +127,7 @@ def _decides(replayed: Sequence[ReplayedRun]) -> bool:
 def _struck(
     run_target: PlantedTarget, units: Sequence[Unit], replayed: ReplayedRun
 ) -> frozenset[UnitPlace]:
-    replay_target = PlantedTarget(run_target.mechanism, run_target.aim, replayed.nonces)
+    replay_target = PlantedTarget(run_target.mechanisms, run_target.aim, replayed.nonces)
     return struck_by_replay(
         GradedRun(run_target, units),
         GradedRun(replay_target, replayed_units(units, replayed.outputs)),

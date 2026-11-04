@@ -80,7 +80,7 @@ def image_tag(name: str) -> str:
 class CVETarget:
     cve_id: str
     severity: str
-    mechanism: MechanismClass | None
+    mechanisms: frozenset[MechanismClass]
     aim: re.Pattern[str]
     reaches: frozenset[str]  # the flaw's reachable_by tokens, among the three in cve_places
     kept_places: tuple[str, ...]  # location ids the flaw alone reaches, empty until filled
@@ -204,7 +204,7 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-53109",
         severity="CVSS 7.3 (v4.0, CNA)",
-        mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
+        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
         aim=_FILESYSTEM_SCOPE_AIM,
         reaches=frozenset({"arbitrary_read"}),
         # The flaw reaches app.git/config by prefix collision too, but no server output names the
@@ -254,7 +254,7 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-68143",
         severity="CVSS 6.5 (v4.0, CNA)",
-        mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
+        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
         aim=_OUTSIDE_REPO_AIM,
         reaches=frozenset({"arbitrary_read"}),
         # git_init traversal reaches the bare config and the workspace .env, but no git tool names
@@ -286,7 +286,7 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-53355",
         severity="CVSS 7.5 (v3.1, CNA)",
-        mechanism=MechanismClass.COMMAND_EXECUTION,
+        mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
         aim=_SHELL_METACHARACTER_AIM,
         reaches=frozenset({"command_execution"}),
         kept_places=(
@@ -330,7 +330,7 @@ CVE_TARGETS: list[CVETarget] = [
     CVETarget(
         cve_id="CVE-2025-65513",
         severity="CVSS 7.5 (v3.1, CISA-ADP)",
-        mechanism=MechanismClass.INTERNAL_FETCH,
+        mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
         aim=_INTERNAL_HOST_AIM,
         reaches=frozenset({"internal_fetch"}),
         kept_places=("ecs-task-credentials", "eks-pod-identity", "imds"),

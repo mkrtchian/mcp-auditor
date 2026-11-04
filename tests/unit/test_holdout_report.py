@@ -39,7 +39,7 @@ def _target(cve_id: str, *, disclosure_date: date, detected_runs: int, incomplet
     return HoldoutTargetResult(
         cve_id=cve_id,
         disclosure_date=disclosure_date,
-        mechanism_label="command_execution",
+        mechanism_labels=("command_execution", "read_outside_scope"),
         tools_count=5,
         ran_in_fallback=False,
         statuses=tuple(
@@ -180,6 +180,7 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
     line = next(line for line in report.targets if line.cve_id == "CVE-B")
 
     assert line.disclosure_date == date(2026, 12, 1)
+    assert line.mechanism_labels == ["command_execution", "read_outside_scope"]
     assert line.per_run == [
         TargetRunLine(
             detected=True,

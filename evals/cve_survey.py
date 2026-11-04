@@ -146,7 +146,7 @@ async def _exercise(
                 ]
         except Exception:  # a Docker or setup failure, retried per place, never a spec refusal
             return None
-    graded = PlantedTarget(target.mechanism, target.aim, planted.nonces)
+    graded = PlantedTarget(target.mechanisms, target.aim, planted.nonces)
     return _Surfaced(_surfaced(exploit_exchanges, graded), _surfaced([benign_exchanges], graded))
 
 
