@@ -7,8 +7,10 @@ capture at call time, and a test passes its own directory. A capture also record
 scheme, the default answer: what the host answered for a generated path it does not have, which
 the stand-in replays for any request its routes lack. The stand-in quotes the request's target
 wherever the host quoted the probed one, in `Location` as sent and in an HTML or JSON body in
-the measured form (`path_form`), escaped as the body's media type escapes it. The leaf, its key
-and the fixture authority sit beside the captures under `tls/`, made by `tls/generate.sh`.
+the measured form (`path_form`), escaped as the body's media type escapes it. Every answer
+carries its captured headers, the connection and framing ones apart, with a `Content-Length` of
+the stand-in's own. The leaf, its key and the fixture authority sit beside the captures under
+`tls/`, made by `tls/generate.sh`.
 """
 
 import json

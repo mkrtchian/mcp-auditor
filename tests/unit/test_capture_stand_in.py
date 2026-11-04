@@ -106,6 +106,32 @@ def test_a_body_that_is_not_utf8_is_refused():
         capture_record(_PROVENANCE, [_response(body=b"\xff\xfe")], _DEFAULTS)
 
 
+_GZIP = ("Content-Encoding", "gzip")
+
+
+def test_a_route_with_a_content_coding_is_refused():
+    coded = replace(_response(), headers=(_HTML, _GZIP))
+
+    with pytest.raises(ValueError, match="Content-Encoding gzip"):
+        capture_record(_PROVENANCE, [coded], _DEFAULTS)
+
+
+def test_a_default_with_a_content_coding_is_refused():
+    plain = replace(_answer("https", _PROBED_TARGET), headers=(_GZIP,))
+    coded = ProbedDefault(plain=plain, form=_answer("https", _FORM_TARGET))
+
+    with pytest.raises(ValueError, match="Content-Encoding gzip"):
+        capture_record(_PROVENANCE, [], (_not_found("http"), coded))
+
+
+def test_an_identity_content_coding_is_recorded_as_sent():
+    identity = replace(_response(), headers=(_HTML, ("content-encoding", "identity")))
+
+    record = capture_record(_PROVENANCE, [identity], _DEFAULTS)
+
+    assert record["routes"][0]["headers"] == [list(_HTML), ["content-encoding", "identity"]]
+
+
 def test_a_head_route_keeps_its_method_status_and_headers_with_an_empty_body():
     record = capture_record(_PROVENANCE, [_response(method="HEAD", body=b"")], _DEFAULTS)
     route = record["routes"][0]

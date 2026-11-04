@@ -89,6 +89,28 @@ def test_a_planted_stand_in_quotes_the_request_where_its_default_quotes_the_prob
     then.answered_with(unknown, 404, quoting.answer(quoting.quoted_request))
 
 
+@pytest.mark.usefixtures("openssl")
+def test_a_planted_stand_in_replays_the_captured_headers_without_the_connection_ones(
+    tmp_path: Path,
+):
+    directory = given.a_stand_ins_directory(tmp_path)
+    host = given.STAND_IN_HOST
+    secure_length = len(given.SECURE_BODY.encode())
+
+    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
+        route = given.fetch_as_target(args, f"https://{host}/")
+        fallback = given.fetch_as_target(args, f"https://{host}/", method="HEAD")
+        head_route = given.fetch_as_target(
+            args, f"https://{host}{given.HEAD_ONLY_TARGET}", method="HEAD"
+        )
+        default = given.fetch_as_target(args, f"http://{host}/uncaptured")
+
+    then.carries(route, given.SECURE_REPLAYED, secure_length)
+    then.carries(fallback, given.SECURE_REPLAYED, secure_length)
+    then.carries(head_route, given.HEAD_ONLY_REPLAYED, None)
+    then.carries(default, [("Location", f"https://{host}/uncaptured"), given.REDIRECT_SERVER], 0)
+
+
 @pytest.mark.parametrize("shape", ["no_network", "holder", "bridge_alias"])
 def test_a_planted_target_reads_no_search_domain_nor_an_audit_name(shape: str):
     spec = given.a_launch_of_shape(shape)

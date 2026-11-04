@@ -6,10 +6,12 @@ Every URL shares one host. A URL is fetched with GET, or with HEAD when prefixed
 (one argument, `'HEAD https://example.com/'`), for a server that checks a page before reading
 it: a HEAD route is recorded with the status and headers the service gave and an empty body.
 Each is fetched once with no redirect following and no content
-coding, and its status, every response header and its body are recorded whatever the status,
-so a 401 or a 404 is replayed as the real service gave it. A `--header` is sent and recorded
-verbatim, name and value, in `request_headers` and in `command`: it carries only the dummy
-credential the fixture's server itself sends, so nothing here reads the environment. Each
+coding, and its status, every response header (in the order received, duplicates kept, names in
+the host's case) and its body are recorded whatever the status, so a 401 or a 404 is replayed as
+the real service gave it. An answer that carries a content coding anyway is refused, since the
+body is stored decoded and its replayed headers would label it coded. A `--header` is sent and
+recorded verbatim, name and value, in `request_headers` and in `command`: it carries only the
+dummy credential the fixture's server itself sends, so nothing here reads the environment. Each
 capture also records, on both schemes, the host's answer to a generated path that does not
 exist (`/` and 16 random hex digits, fetched with GET and the same headers) and, from a second
 probe of that path followed by percent-encoded `<x>"'`, the form in which its body quotes the
@@ -150,6 +152,12 @@ def _same_answer(probe: ProbedDefault) -> str:
 
 
 def _text(response: CapturedResponse) -> str:
+    for name, value in response.headers:
+        if name.lower() == "content-encoding" and value.strip().lower() != "identity":
+            raise ValueError(
+                f"{response.scheme} {response.target}: the answer carries Content-Encoding"
+                f" {value}, and the capture stores the body decoded"
+            )
     try:
         return response.body.decode("utf-8")
     except UnicodeDecodeError as error:

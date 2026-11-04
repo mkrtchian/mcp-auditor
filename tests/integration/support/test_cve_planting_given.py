@@ -30,6 +30,37 @@ SECURE_BODY = f"the secure stand-in body, {PROBED_TARGET} as captured"
 MISSING_BODY = "the secure stand-in's answer to an unknown path"
 # A request target a client sends percent-encoded, every character the escapings rewrite in it.
 QUOTED_REQUEST = "/a%3Cb%3E%22%27"
+CAPTURED_DATE = "Wed, 04 Nov 2026 07:36:50 GMT"
+# The secure route's headers as a host sends them: duplicates, a lowercase name, and the
+# connection and framing headers of the capture's own connection, with a length that is wrong
+# for the replayed body.
+SECURE_HEADERS = (
+    ("Date", CAPTURED_DATE),
+    ("Content-Type", "text/plain"),
+    ("Transfer-Encoding", "chunked"),
+    ("Connection", "keep-alive"),
+    ("Server", "cloudflare"),
+    ("Set-Cookie", "first=1; Path=/"),
+    ("Set-Cookie", "second=2; Path=/"),
+    ("strict-transport-security", "max-age=31536000"),
+    ("Content-Length", "999"),
+)
+SECURE_REPLAYED = (
+    ("Date", CAPTURED_DATE),
+    ("Content-Type", "text/plain"),
+    ("Server", "cloudflare"),
+    ("Set-Cookie", "first=1; Path=/"),
+    ("Set-Cookie", "second=2; Path=/"),
+    ("strict-transport-security", "max-age=31536000"),
+)
+HEAD_ONLY_TARGET = "/checked"
+HEAD_ONLY_HEADERS = (
+    ("Content-Type", "text/html"),
+    ("keep-alive", "timeout=5"),
+    ("Date", CAPTURED_DATE),
+)
+HEAD_ONLY_REPLAYED = (("Content-Type", "text/html"), ("Date", CAPTURED_DATE))
+REDIRECT_SERVER = ("Server", "cloudflare")
 _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
 # The stand-in image's Python as the target: http.client sends the target as given and follows
 # no redirect, and the default context verifies TLS against the default paths, which
@@ -43,9 +74,11 @@ _FETCH = (
     " else http.client.HTTPConnection(parts.hostname,timeout=5))\n"
     "connection.request(method,parts.path)\n"
     "response=connection.getresponse()\n"
-    "headers={name.lower():value for name,value in response.getheaders()}\n"
+    "header_list=response.getheaders()\n"
+    "headers={name.lower():value for name,value in header_list}\n"
     "body=response.read().decode()\n"
-    "print(json.dumps({'status':response.status,'headers':headers,'body':body}),end='')"
+    "print(json.dumps({'status':response.status,'headers':headers,'header_list':header_list,"
+    "'body':body}),end='')"
 )
 # wget's own 5 s bound plus the start-up of the fresh container each read runs in.
 _READ_TIMEOUT = 10.0
@@ -128,7 +161,11 @@ def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -
         "captured_at": "2026-11-02T10:00:00Z",
         "command": "uv run python -m evals.capture_stand_in --out x.json http://public.fict/",
         "request_headers": [],
-        "routes": [_route("http", PLAIN_BODY), _route("https", SECURE_BODY)],
+        "routes": [
+            _route("http", PLAIN_BODY, [["Content-Type", "text/plain"]]),
+            _route("https", SECURE_BODY, [list(header) for header in SECURE_HEADERS]),
+            _head_only_route(),
+        ],
         "defaults": [_redirect_to_https(), secure_default],
     }
     (directory / f"{STAND_IN_HOST}.json").write_text(json.dumps(capture))
@@ -140,14 +177,25 @@ def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -
     return directory
 
 
-def _route(scheme: str, body: str) -> dict[str, object]:
+def _route(scheme: str, body: str, headers: list[list[str]]) -> dict[str, object]:
     return {
         "scheme": scheme,
         "method": "GET",
         "target": "/",
         "status": 200,
-        "headers": [["Content-Type", "text/plain"]],
+        "headers": headers,
         "body": body,
+    }
+
+
+def _head_only_route() -> dict[str, object]:
+    return {
+        "scheme": "https",
+        "method": "HEAD",
+        "target": HEAD_ONLY_TARGET,
+        "status": 200,
+        "headers": [list(header) for header in HEAD_ONLY_HEADERS],
+        "body": "",
     }
 
 
@@ -156,7 +204,10 @@ def _redirect_to_https() -> dict[str, object]:
         "scheme": "http",
         "probed_target": PROBED_TARGET,
         "status": 301,
-        "headers": [["Location", f"https://{STAND_IN_HOST}{PROBED_TARGET}"]],
+        "headers": [
+            ["Location", f"https://{STAND_IN_HOST}{PROBED_TARGET}"],
+            list(REDIRECT_SERVER),
+        ],
         "body": "",
         "path_form": None,
     }
@@ -188,6 +239,7 @@ def _quoting_not_found(case: QuotingCase) -> dict[str, object]:
 class Fetched:
     status: int
     headers: dict[str, str]
+    header_list: list[tuple[str, str]]
     body: str
 
 
@@ -214,7 +266,9 @@ def fetch_as_target(args: PlantedArgs, url: str, method: str = "GET") -> Fetched
         timeout=_READ_TIMEOUT,
         check=True,
     )
-    return Fetched(**json.loads(result.stdout))
+    fetched = json.loads(result.stdout)
+    header_list = [(name, value) for name, value in fetched.pop("header_list")]
+    return Fetched(**fetched, header_list=header_list)
 
 
 def _place(entry_id: str, coordinates: Coordinates) -> Place:

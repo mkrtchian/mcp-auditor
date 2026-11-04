@@ -1,4 +1,5 @@
 import subprocess
+from collections.abc import Sequence
 
 from tests.integration.support.test_cve_planting_given import Fetched, RecordingPlanting
 
@@ -44,3 +45,8 @@ def logged_its_default_for(log: str, host: str, misses: list[str]) -> None:
 def answered_with(fetched: Fetched, status: int, body: str) -> None:
     assert (fetched.status, fetched.body) == (status, body)
     assert fetched.headers.get("content-length") == str(len(body.encode()))
+
+
+def carries(fetched: Fetched, headers: Sequence[tuple[str, str]], length: int | None) -> None:
+    computed = [] if length is None else [("Content-Length", str(length))]
+    assert fetched.header_list == [*headers, *computed]
