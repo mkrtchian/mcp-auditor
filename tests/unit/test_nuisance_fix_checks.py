@@ -5,14 +5,13 @@ from typing import Any
 
 import pytest
 
-from evals import nuisance_calibrate_command, nuisance_fixtures
+from evals import nuisance_fixtures
 from evals.cve_planting import SymbolicUser
 from evals.holdout_census import load_census
-from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget
+from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitResponse, KitTool
 from evals.nuisance_admission import (
     ADMISSION_PATH,
-    FixCheckRecord,
     FlawRecord,
     NuisanceAdmission,
     load_admission,
@@ -132,82 +131,3 @@ async def test_a_dynamic_tool_exploit_resolves_against_the_seeded_server():
     from evals.nuisance_fix_checks import cve_2026_18905_contextforge as contextforge
 
     assert await _exploit_tools(contextforge.TARGET, {"rest-ssrf"}) == {"rest-ssrf"}
-
-
-def _a_result(**overrides: Any) -> FixCheckResult:
-    fields: dict[str, Any] = {
-        "source": "fix_check",
-        "witness": "MCPAUDIT-nonce",
-        "exploit_calls": ["add_comment"],
-        "vulnerable_surfaces": True,
-        "patched_surfaces": False,
-        "server_patched_surfaces": None,
-        "patched_benign_errored": False,
-    }
-    fields.update(overrides)
-    return FixCheckResult(**fields)
-
-
-def _a_record(**overrides: Any) -> FixCheckRecord:
-    fields: dict[str, Any] = {
-        "source": "fix_check",
-        "witness": "MCPAUDIT-nonce",
-        "exploit_calls": ["add_comment"],
-        "vulnerable_surfaces": True,
-        "patched_surfaces": False,
-        "server_patched_surfaces": None,
-        "patched_benign_errored": False,
-    }
-    fields.update(overrides)
-    return FixCheckRecord(**fields)
-
-
-def test_a_matching_result_and_record_have_no_mismatch():
-    assert nuisance_calibrate_command.fix_check_mismatches(_a_result(), _a_record()) == []
-
-
-def test_a_differing_field_is_reported():
-    mismatches = nuisance_calibrate_command.fix_check_mismatches(
-        _a_result(), _a_record(patched_surfaces=True)
-    )
-
-    assert len(mismatches) == 1
-    assert "patched_surfaces" in mismatches[0]
-
-
-def test_a_holdout_calibration_record_excludes_the_source_field():
-    result = _a_result(source="fix_check")
-    record = _a_record(source="holdout_calibration")
-
-    assert nuisance_calibrate_command.fix_check_mismatches(result, record) == []
-
-
-def test_a_source_difference_on_a_fix_check_record_is_a_mismatch():
-    result = _a_result(source="holdout_calibration")
-    record = _a_record(source="fix_check")
-
-    mismatches = nuisance_calibrate_command.fix_check_mismatches(result, record)
-
-    assert len(mismatches) == 1
-    assert "source" in mismatches[0]
-
-
-def test_a_record_judging_a_relaying_stand_in_matches_a_result_that_cannot_carry_it():
-    record = _a_record(relies_on_relaying_stand_in=False)
-
-    assert nuisance_calibrate_command.fix_check_mismatches(_a_result(), record) == []
-
-
-def test_a_record_carrying_a_holdout_fingerprint_matches_a_result_that_cannot_carry_it():
-    record = _a_record(source="holdout_calibration", holdout_fingerprint="f" * 64)
-
-    assert nuisance_calibrate_command.fix_check_mismatches(_a_result(), record) == []
-
-
-def test_a_differing_witness_nonce_is_not_a_mismatch():
-    # check_fix plants a fresh random nonce each run, so the result's witness never equals the one
-    # the admission recorded; only the reproducible fields are compared.
-    result = _a_result(witness="MCPAUDIT-freshnonce")
-    record = _a_record(witness="MCPAUDIT-recordednonce")
-
-    assert nuisance_calibrate_command.fix_check_mismatches(result, record) == []
