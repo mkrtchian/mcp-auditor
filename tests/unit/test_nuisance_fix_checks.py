@@ -1,26 +1,18 @@
 import ast
-from collections.abc import Collection
 from pathlib import Path
-from typing import Any
 
 import pytest
 
-from evals import nuisance_fixtures
+import tests.unit.support.test_nuisance_fix_checks_given as given
 from evals.cve_planting import SymbolicUser
-from evals.holdout_census import load_census
+from evals.cve_proofs import is_aimed
+from evals.docker_paths import image_dockerfile
 from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.holdout_kit.kit_client import KitResponse, KitTool
-from evals.nuisance_admission import (
-    ADMISSION_PATH,
-    FlawRecord,
-    NuisanceAdmission,
-    load_admission,
-)
-from evals.nuisance_commands import WALK_RECORD_PATH
-from evals.nuisance_counting import counted_flaws, flaw_tools
-from evals.nuisance_walk_record import load_walk_record
-from evals.run_census import CENSUS_PATH
+from evals.holdout_kit.kit_driver import unit_of
+from evals.nuisance_counting import counted_flaws
+from evals.nuisance_fixtures import FIX_CHECK_TARGETS
 from tests.unit.support.holdout_kit_isolation import scan_tree
+from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 _FIX_CHECK_DIR = Path(__file__).resolve().parents[2] / "evals" / "nuisance_fix_checks"
 
@@ -56,56 +48,13 @@ def test_no_fix_check_module_imports_cve_environments():
     assert offenders == {}
 
 
-def _admission_or_skip() -> NuisanceAdmission:
-    if not ADMISSION_PATH.exists():
-        pytest.skip("no admission committed yet")
-    return load_admission(
-        ADMISSION_PATH, load_walk_record(WALK_RECORD_PATH, load_census(CENSUS_PATH))
-    )
-
-
-def _flaw_records(admission: NuisanceAdmission) -> dict[str, FlawRecord]:
-    return {flaw.flaw: flaw for server in admission.servers for flaw in server.flaws}
-
-
-class _RecordingClient:
-    def __init__(self, tools: list[KitTool] | None = None) -> None:
-        self.calls: list[str] = []
-        self._tools = tools or []
-
-    async def list_tools(self) -> list[KitTool]:
-        return self._tools
-
-    async def call_tool(self, name: str, args: dict[str, Any]) -> KitResponse:
-        self.calls.append(name)
-        return KitResponse("", is_error=False)
-
-
-async def _exploit_tools(target: FixCheckTarget, counted_tools: Collection[str]) -> set[str]:
-    # Model a server exposing exactly the admission's counted tools, each discoverable by the
-    # witness-id description an exploit matches on. A static exploit calls its hard-coded name and
-    # ignores the list; a dynamic one (contextforge slugifies the registered name, so it resolves
-    # the name at run time via list_tools) then resolves a counted tool instead of raising.
-    tools = [
-        KitTool(name=tool, description=f"seeded {target.witness.id}", input_schema={})
-        for tool in counted_tools
-    ]
-    client = _RecordingClient(tools)
-    places = {target.witness.id: target.witness}
-    for exploit in target.exploits:
-        await exploit(places, client)
-    return set(client.calls)
-
-
 def test_no_fix_check_runs_as_the_host_user():
-    targets = nuisance_fixtures.FIX_CHECK_TARGETS
-    assert [t.flaw for t in targets if t.planting_host.user is SymbolicUser.HOST] == []
+    assert [t.flaw for t in FIX_CHECK_TARGETS if t.planting_host.user is SymbolicUser.HOST] == []
 
 
 def test_every_counted_flaw_has_a_fix_check_target_unless_holdout_calibrated():
-    admission = _admission_or_skip()
-    target_flaws = {target.flaw for target in nuisance_fixtures.FIX_CHECK_TARGETS}
-    for server in admission.servers:
+    target_flaws = {target.flaw for target in FIX_CHECK_TARGETS}
+    for server in the_committed_admission().servers:
         for flaw in counted_flaws(server):
             if flaw.fix_check.source == "holdout_calibration":
                 continue
@@ -114,20 +63,43 @@ def test_every_counted_flaw_has_a_fix_check_target_unless_holdout_calibrated():
             )
 
 
-async def test_each_target_mechanism_and_tools_match_the_admission_flaw():
-    admission = _admission_or_skip()
-    records = _flaw_records(admission)
-    for target in nuisance_fixtures.FIX_CHECK_TARGETS:
-        record = records[target.flaw]
-        tools = flaw_tools(record)
-        assert target.mechanism == record.effect_class
-        assert await _exploit_tools(target, tools) == tools
+@pytest.mark.parametrize("target", FIX_CHECK_TARGETS, ids=lambda t: t.flaw)
+async def test_every_exploit_reads_as_aimed_and_no_benign_call_does(target: FixCheckTarget):
+    for exploit in target.exploits:
+        assert is_aimed(unit_of(await given.recorded(target, exploit)), target.aim)
+    assert not is_aimed(unit_of(await given.recorded(target, *target.benign_calls)), target.aim)
 
 
-async def test_a_dynamic_tool_exploit_resolves_against_the_seeded_server():
-    # contextforge resolves its tool name at run time from the server's tool list; the seeded fake
-    # must let it find a counted tool rather than raise. Guards the parity test above, which stays
-    # skipped until the admission lands.
-    from evals.nuisance_fix_checks import cve_2026_18905_contextforge as contextforge
+@pytest.mark.parametrize("target", FIX_CHECK_TARGETS, ids=lambda t: t.flaw)
+async def test_the_exploits_call_exactly_the_flaws_counted_tools(target: FixCheckTarget):
+    exchanges = await given.recorded(target, *target.exploits)
 
-    assert await _exploit_tools(contextforge.TARGET, {"rest-ssrf"}) == {"rest-ssrf"}
+    assert {name for name, _, _ in exchanges} == given.counted_tools(target)
+
+
+@pytest.mark.parametrize("target", FIX_CHECK_TARGETS, ids=lambda t: t.flaw)
+def test_the_target_mechanism_is_the_flaws_effect_class(target: FixCheckTarget):
+    assert target.mechanism == given.flaw_record(target).effect_class
+
+
+@pytest.mark.parametrize(
+    "target", [t for t in FIX_CHECK_TARGETS if t.benign_calls], ids=lambda t: t.flaw
+)
+async def test_every_counted_tool_has_a_benign_call(target: FixCheckTarget):
+    exchanges = await given.recorded(target, *target.benign_calls)
+
+    assert given.counted_tools(target) <= {name for name, _, _ in exchanges}
+
+
+@pytest.mark.parametrize("target", FIX_CHECK_TARGETS, ids=lambda t: t.flaw)
+def test_every_version_of_a_fix_check_has_its_dockerfile(target: FixCheckTarget):
+    services = (target.vulnerable_service, target.patched_service, target.server_patched_service)
+
+    assert [s for s in services if s is not None and not image_dockerfile(s).is_file()] == []
+
+
+@pytest.mark.parametrize("target", FIX_CHECK_TARGETS, ids=lambda t: t.flaw)
+def test_the_last_patched_version_is_the_image_the_run_audits(target: FixCheckTarget):
+    last_patched = target.server_patched_service or target.patched_service
+
+    assert last_patched == given.admitted_server(target).service

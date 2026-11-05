@@ -24,16 +24,3 @@ def test_the_server_reaches_its_own_responder_on_the_public_address_unprivileged
     assert f"UPSTREAM_URL=http://198.18.3.{LAUNCH_HOST}" in values_after(args, "-e")
     assert values_after(args, "--user") == ["65534:65534"]
     assert args[-1] == "image"
-
-
-def test_each_aim_matches_its_own_exploit_only():
-    base_path_escape = googleapis.EXPLOIT_BASE_PATH_ESCAPE
-    redirect = googleapis.EXPLOIT_REDIRECT
-    benign = googleapis.BENIGN_ARGUMENTS
-
-    assert googleapis.TARGET_11720.aim.search(str(base_path_escape))
-    assert not googleapis.TARGET_11720.aim.search(str(redirect))
-    assert not googleapis.TARGET_11720.aim.search(str(benign))
-    assert googleapis.TARGET_14540.aim.search(str(redirect))
-    assert not googleapis.TARGET_14540.aim.search(str(base_path_escape))
-    assert not googleapis.TARGET_14540.aim.search(str(benign))
