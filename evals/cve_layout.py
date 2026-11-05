@@ -1,4 +1,4 @@
-"""The frozen `/srv` deployment layout (ADR 031) and its host-side builder.
+"""The frozen `/srv` deployment layout (ADR 031), its host-side builder and its owner.
 
 The tree is built unconditionally at every launch under a temp root mounted at `/srv`, so it
 is byte-for-byte universal apart from which nodes carry a live nonce. A bare `app.git` holds a
@@ -7,21 +7,28 @@ history but not at HEAD); a shallow checkout `app` is cloned from it, its `.git/
 the bare as origin, genuinely lacking the history `.env`; `/srv/.env` sits at the workspace
 level. A kept node carries its nonce, every other node neutral content of the same shape.
 
-`build_layout` runs host-side `git` under the host user (the git and filesystem targets launch
-as the host user), so the tree is host-owned and teardown removes it. The root is traversable
-and the tree readable by any account, whatever the host's umask, so a server under the
-unprivileged account resolves `/srv` and `..` as a deployed one does. The commits are fixed in
-author, date and message, so the tree is reproducible and the fixture fingerprint stable.
+The tree belongs to the unprivileged account, uid and gid 65534, on every target and both
+versions, as version 11 of the holdout rule's Deployment layout asks: a server under that
+account owns the checkout it runs git in and writes to a layout mounted read-write. The host
+user cannot chown, so `owned_layout` builds the tree on the host (`build_layout` runs host-side
+`git` at a fixed umask, author, date and message, so the tree is reproducible and the fixture
+fingerprint stable), then hands it over once complete through the `PlantingDocker` port, a
+short-lived container running `chown -hR`. The host user cannot delete what the account owns
+either, so the root sits under a host-owned outer directory carrying `LAYOUT_PREFIX`, and a
+second container removes the root before the outer directory is cleaned up. The root is
+traversable and the tree readable by any account, whatever the host's umask, so a server under
+any account resolves `/srv` and `..` as a deployed one does.
 """
 
 import os
 import subprocess
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 
 from evals.cve_places import LayoutAnchor
-from evals.cve_planting_base import LayoutNode
+from evals.cve_planting_base import LAYOUT_PREFIX, LAYOUT_ROOT, LayoutNode, PlantingDocker
 
 ANCHOR_PATHS: Mapping[LayoutAnchor, str] = {
     LayoutAnchor.WORKSPACE: "/srv",
@@ -61,6 +68,20 @@ _GIT_IDENTITY = {
     "GIT_COMMITTER_EMAIL": "bench@mcp-auditor.local",
     "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+0000",
 }
+
+
+@contextmanager
+def owned_layout(docker: PlantingDocker, build: Callable[[Path], None]) -> Generator[Path]:
+    with tempfile.TemporaryDirectory(prefix=LAYOUT_PREFIX, ignore_cleanup_errors=True) as name:
+        # The try covers the build and the hand-over: a chown that fails midway leaves entries
+        # the host user cannot remove.
+        try:
+            root = Path(name) / LAYOUT_ROOT
+            build(root)
+            docker.hand_over_layout(str(root))
+            yield root
+        finally:
+            docker.remove_layout(name)
 
 
 def build_layout(root: Path, nodes: Sequence[LayoutNode]) -> None:

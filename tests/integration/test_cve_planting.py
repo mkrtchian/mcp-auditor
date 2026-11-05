@@ -17,8 +17,15 @@ import pytest
 import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
 from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve_layout import owned_layout
 from evals.cve_planting import DockerPlanting, PlantingFailed, planted
-from evals.cve_planting_base import SENTINEL_IMAGE, SENTINEL_SERVICE, STAND_IN_SERVICE
+from evals.cve_planting_base import (
+    SENTINEL_IMAGE,
+    SENTINEL_SERVICE,
+    STAND_IN_SERVICE,
+    UNPRIVILEGED_GID,
+    UNPRIVILEGED_UID,
+)
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -231,3 +238,12 @@ def test_no_labelled_container_or_network_outlives_two_launches():
             assert given.read_as_target(args, given.IP_LITERAL, suffix) == spec.nonces["endpoint-1"]
 
     then.nothing_it_made_outlives(docker)
+
+
+def test_the_adapter_hands_over_and_removes_a_tree_holding_a_dangling_absolute_link():
+    with owned_layout(DockerPlanting(), given.a_tree_holding_a_dangling_absolute_link) as root:
+        link = os.lstat(root / given.DANGLING_LINK)
+        assert (link.st_uid, link.st_gid) == (UNPRIVILEGED_UID, UNPRIVILEGED_GID)
+        assert (root.stat().st_uid, root.stat().st_gid) == (UNPRIVILEGED_UID, UNPRIVILEGED_GID)
+
+    assert not root.parent.exists()

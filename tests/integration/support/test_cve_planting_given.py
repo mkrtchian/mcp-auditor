@@ -90,6 +90,14 @@ _FETCH = (
 _READ_TIMEOUT = 10.0
 
 
+DANGLING_LINK = "leak/report"
+
+
+def a_tree_holding_a_dangling_absolute_link(root: Path) -> None:
+    (root / "leak").mkdir(parents=True)
+    (root / DANGLING_LINK).symlink_to("/nowhere/in/the/helper")
+
+
 def missing_prerequisite() -> str | None:
     if not DockerRuntime().available():
         return "CVE planting needs Docker"

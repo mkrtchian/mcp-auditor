@@ -1,8 +1,11 @@
 # The proof that a server under the unprivileged account resolves the mounted layout by absolute
-# path and from its parent, as a deployed server does, the temp root under it being 0700.
+# path and from its parent, as a deployed server does, the temp root under it being 0700, that
+# the real adapter hands every node over to that account, and that it removes whatever a
+# read-write server left in the tree.
 #
 # Skipped without Docker, failed under `CVE_PLANTING_REQUIRED=1`, as `test_cve_planting.py`. A
-# missing or foreign sentinel image is rebuilt through compose before the first case.
+# missing or foreign sentinel or git image is rebuilt through compose before the first case, and
+# the first case pulls the pinned busybox the hand-over and the removal run.
 import os
 
 import pytest
@@ -21,7 +24,7 @@ def _docker_prerequisites() -> None:
             pytest.fail(missing)
         pytest.skip(missing)
     try:
-        ensure_images([SENTINEL_SERVICE], ComposeImageStore())
+        ensure_images([SENTINEL_SERVICE, given.GIT_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:
         pytest.fail(str(error))
 
@@ -44,3 +47,35 @@ def test_an_unprivileged_server_resolves_the_empty_layout_by_absolute_path():
     assert {command: result.exit_code for command, result in results.items()} == dict.fromkeys(
         commands, 0
     ), results
+
+
+@pytest.mark.parametrize(
+    "builder", [given.the_full_layout, build_empty_layout], ids=["full", "empty"]
+)
+def test_every_node_of_the_layout_belongs_to_the_unprivileged_account(
+    builder: given.LayoutBuilder,
+):
+    command = "find /srv ! -user 65534 -o ! -group 65534"
+
+    results = given.an_unprivileged_server_reads(builder, [command])
+
+    assert results[command] == given.CommandResult(0, ""), results
+
+
+def test_a_server_on_the_read_write_git_launch_writes_to_the_checkout_and_git_accepts_it():
+    run = given.an_unprivileged_server_on_the_git_launch_runs(
+        "touch /srv/app/written && git -C /srv/app status --short"
+    )
+
+    assert run.result.exit_code == 0, run.result.output
+    assert "written" in run.result.output
+    assert not run.root.parent.exists()
+
+
+def test_nothing_a_read_write_server_leaves_in_a_sticky_directory_outlives_the_launch():
+    run = given.an_unprivileged_server_on_the_git_launch_runs(
+        "mkdir /srv/sticky && chmod 1777 /srv/sticky && touch /srv/sticky/owned"
+    )
+
+    assert run.result.exit_code == 0, run.result.output
+    assert not run.root.parent.exists()

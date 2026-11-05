@@ -1,17 +1,19 @@
-"""`FakePlantingDocker` is stateful: it keeps the networks, holders, sentinels, stand-ins and host
-files it is told to make until they are removed, and refuses, as Docker does, to remove a network a
-container is still attached to, so a test reads the state left after setup, teardown or a
-failed setup rather than the order of the calls.
+"""`FakePlantingDocker` is stateful: it keeps the networks, holders, sentinels, stand-ins, host
+files and handed-over layouts it is told to make until they are removed, and refuses, as Docker
+does, to remove a network a container is still attached to, so a test reads the state left after
+setup, teardown or a failed setup rather than the order of the calls.
 """
 
 import itertools
+import os
 import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from ipaddress import AddressValueError, IPv4Address
+from pathlib import Path
 from urllib.parse import urlsplit
 
-from evals.cve_planting_base import ImageAccounts
+from evals.cve_planting_base import ImageAccounts, PlantingFailed, check_layout_outer
 
 IMAGE_PASSWD = (
     "root:x:0:0:root:/root:/bin/sh\nnobody:x:65534:65534:nobody:/nonexistent:/bin/false\n"
@@ -44,6 +46,8 @@ class FakePlantingDocker:
     stand_ins: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     address_setups: list[list[str]] = field(default_factory=list[list[str]])
     probes: list[list[str]] = field(default_factory=list[list[str]])
+    hand_overs: list[str] = field(default_factory=list[str])  # every root asked, failed or not
+    layouts: dict[str, frozenset[str]] = field(default_factory=dict[str, frozenset[str]])
 
     def __post_init__(self) -> None:
         self._fail = dict(self.fail)
@@ -99,6 +103,16 @@ class FakePlantingDocker:
         self._maybe_fail_teardown("remove_stand_in")
         self.stand_ins.pop(name, None)
         self._attached.pop(name, None)
+
+    def hand_over_layout(self, root: str) -> None:
+        self.hand_overs.append(root)
+        self._maybe_fail("hand_over_layout", PlantingFailed("cannot hand the layout over"))
+        self.layouts[root] = _relative_paths(Path(root))
+
+    def remove_layout(self, outer: str) -> None:
+        check_layout_outer(outer)
+        for root in [root for root in self.layouts if Path(root).parent == Path(outer)]:
+            del self.layouts[root]
 
     def run_address_setup(self, run_args: Sequence[str]) -> None:
         self._maybe_fail("run_address_setup")
@@ -227,6 +241,15 @@ class FakePlantingDocker:
     def _maybe_fail_teardown(self, operation: str) -> None:
         if operation in self.fail_teardown:
             raise RuntimeError(f"teardown {operation} failed")
+
+
+def _relative_paths(root: Path) -> frozenset[str]:
+    # Links are listed, never followed, as `chown -h` treats them.
+    paths: set[str] = set()
+    for directory, subdirectories, files in os.walk(root):
+        for name in (*subdirectories, *files):
+            paths.add(str((Path(directory) / name).relative_to(root)))
+    return frozenset(paths)
 
 
 def _attached_network(run_args: Sequence[str]) -> str | None:

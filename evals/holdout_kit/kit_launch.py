@@ -11,11 +11,12 @@ never copied, because moving them would move every acceptance fixture fingerprin
 (evals/cve_baseline.ENVIRONMENT_PATHS) and redden the gate.
 
 Landmine flags (CLAUDE.md), each named against the failure it guards:
-- The `--user` mapping. The filesystem and git launches run as the host uid/gid so bind-mounted
-  files the server writes into /srv (git_init's .git) are host-owned and teardown can remove them;
-  drop the uid/gid and those files are root-owned and teardown or git fails. It is emitted by
-  cve_planting.host_user_args / unprivileged_user_args through PlantedArgs.run_args(), exactly as
-  the acceptance launch emits it, so it is reused here rather than rewritten.
+- The `--user` mapping and the layout's owner. The tree is owned by the unprivileged account,
+  65534:65534, handed over by `cve_layout.owned_layout` once built and removed by a container
+  after the launch, so a server under that account owns the checkout git runs in and writes to
+  the layout only where the launch mounts it read-write. The `--user` is emitted by
+  cve_planting.unprivileged_user_args (or the planted account's) through PlantedArgs.run_args(),
+  exactly as the acceptance launch emits it, so it is reused here rather than rewritten.
 - `--tmpfs /home/audit:exec,uid=,gid=` and `--memory-swap` are the auditor's OWN confined-run
   container flags (mcp_auditor.adapters.server_launch.container_argv), not this declared-container
   launch. The CVE/kit launch sets HOME=/tmp and no memory bound (cve_planting.confinement_args), so
@@ -24,22 +25,22 @@ Landmine flags (CLAUDE.md), each named against the failure it guards:
 
 import os
 import subprocess
-import tempfile
 from collections.abc import Generator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from evals.cve_layout import ANCHOR_PATHS, build_empty_layout, build_layout
+from evals.cve_layout import ANCHOR_PATHS, build_empty_layout, build_layout, owned_layout
 from evals.cve_places import LayoutAnchor
 from evals.cve_planting import (
-    DockerPlanting,
     PlantedArgs,
+    PlantingDocker,
     PlantingSpec,
     confinement_args,
     planted,
 )
+from evals.cve_planting_docker import DOCKER_PLANTING
 
 
 def image_tag(name: str) -> str:
@@ -88,56 +89,80 @@ class PlantedLaunch:
 
 @contextmanager
 def filesystem_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
-        if shape is not LaunchShape.EMPTY_LAYOUT:
-            checkout = root / _CHECKOUT
-            for index, intent in enumerate(spec.files):
-                leak = checkout / f"leak{index}"
-                leak.mkdir()
-                os.symlink(intent.container_path, leak / "report")
+    with (
+        owned_layout(docker, lambda root: _materialise_with_leak_links(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield _filesystem_launch(root, image, args)
 
 
 @contextmanager
 def git_init_traversal_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield _git_launch(root, image, args, chain_budget=3, max_chain_steps=5)
 
 
 @contextmanager
 def command_injection_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield _read_only_launch(root, image, args)
 
 
 @contextmanager
 def ssrf_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield _read_only_launch(root, image, args)
 
 
 @contextmanager
 def arcadedb_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     # The trimmed twin of cve_environments.arcadedb_mcp_env. The ArcadeDB MCP stdio server takes no
     # scope argument (it is driven over stdio, not pointed at a directory), so its launch is the
     # read-only /srv mount and the planting args with no path appended after the image, identical to
     # the read-only launch the command-injection and SSRF builders use.
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield _read_only_launch(root, image, args)
 
 
@@ -148,10 +173,14 @@ def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
         build_layout(root, spec.layout)
 
 
-@contextmanager
-def _temp_root() -> Generator[Path]:
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
-        yield Path(name)
+def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
+    _materialise(root, spec, shape)
+    if shape is not LaunchShape.EMPTY_LAYOUT:
+        checkout = root / _CHECKOUT
+        for index, intent in enumerate(spec.files):
+            leak = checkout / f"leak{index}"
+            leak.mkdir()
+            os.symlink(intent.container_path, leak / "report")
 
 
 def _read_only_launch(root: Path, image: str, args: PlantedArgs) -> Launch:

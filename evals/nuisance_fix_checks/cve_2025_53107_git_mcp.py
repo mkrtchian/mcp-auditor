@@ -29,7 +29,8 @@ from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import command_injection_env
 
-HOST = PlantingHost(SymbolicUser.HOST, "/", has_network=False)
+# The unprivileged account owns the /srv checkout the git operations run in, so git accepts it.
+HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 
 _SECRET_PATH = "/opt/secret/token"
 

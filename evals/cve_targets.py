@@ -152,7 +152,6 @@ class OutOfScopeCVE:
 
 
 # The user, working directory and network each target's launch runs with (planting emits them).
-_HOST_NO_NETWORK = PlantingHost(SymbolicUser.HOST, "/", has_network=False)
 _UNPRIVILEGED_NO_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 # The fetch target's benign call reads http://example.com/, served inside the closed network.
 _UNPRIVILEGED_WITH_EXAMPLE_COM = PlantingHost(
@@ -234,7 +233,7 @@ CVE_TARGETS: list[CVETarget] = [
         images=("filesystem",),
         server_image="filesystem",
         patched_image="filesystem-patched",
-        planting_host=_HOST_NO_NETWORK,
+        planting_host=_UNPRIVILEGED_NO_NETWORK,
         builder=filesystem_env,
         exploits=(
             cve_exploits.exploit_symlink_traversal,
@@ -264,7 +263,8 @@ CVE_TARGETS: list[CVETarget] = [
         images=("git",),
         server_image="git",
         patched_image="git-patched-68143",
-        planting_host=_HOST_NO_NETWORK,
+        # Its own host: the git_init exploit writes a .git into the layout, which its account owns.
+        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
         builder=git_init_traversal_env,
         exploits=(cve_exploits.exploit_git_init_traversal,),
         benign=cve_exploits.benign_git_init_traversal,

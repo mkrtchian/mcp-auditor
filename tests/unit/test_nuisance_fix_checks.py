@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from evals import nuisance_calibrate_command, nuisance_fixtures
+from evals.cve_planting import SymbolicUser
 from evals.holdout_census import load_census
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget
 from evals.holdout_kit.kit_client import KitResponse, KitTool
@@ -95,6 +96,11 @@ async def _exploit_tools(target: FixCheckTarget, counted_tools: Collection[str])
     for exploit in target.exploits:
         await exploit(places, client)
     return set(client.calls)
+
+
+def test_no_fix_check_runs_as_the_host_user():
+    targets = nuisance_fixtures.FIX_CHECK_TARGETS
+    assert [t.flaw for t in targets if t.planting_host.user is SymbolicUser.HOST] == []
 
 
 def test_every_counted_flaw_has_a_fix_check_target_unless_holdout_calibrated():

@@ -166,6 +166,11 @@ Every launch builds the frozen `/srv` deployment layout (ADR 031) under a temp r
 `/srv`, byte-for-byte universal apart from which nodes carry a live nonce. Plant a kept layout
 place into its node; every other node carries neutral content of the same shape.
 
+The tree is owned by the unprivileged account, `65534:65534`, on every target and both versions:
+`cve_layout.owned_layout` builds it on the host, hands it over with a short-lived container of
+the pinned busybox running `chown -hR 65534:65534`, and removes it with another after the
+launch. A layout builder enters `owned_layout` before `planted`.
+
 Nodes (the `anchor` of a layout place in `holdout_places.json`):
 
 - `workspace` -> `/srv`: the workspace directory. `/srv/.env` sits here, a dotenv at the
@@ -232,8 +237,10 @@ _README = """\
 
 A self-contained workshop for calibrating one holdout candidate, free of any `mcp_auditor`
 import. Run it from this directory with this directory on the Python path (its `evals/` package
-resolves the copied clean modules). It needs Docker Engine 28.0 or later but no LLM and no
-repository checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
+resolves the copied clean modules). It needs rootful Docker Engine 28.0 or later on Linux but
+no LLM and no repository checkout: the layout's hand-over chowns a bind mount, which fails under
+rootless Docker, `userns-remap` or Docker Desktop, and every layout target is then skipped. Its
+MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 
 ## Procedure
 
@@ -245,6 +252,10 @@ repository checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    docker build -t mcp-auditor-cve-sentinel:local -f docker/Dockerfile.sentinel docker
    docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker
    ```
+
+   The first launch also pulls the busybox pinned by digest in
+   `evals/cve_planting_docker.py` (`LAYOUT_HELPER_IMAGE`), which hands the layout over and
+   removes it, so it needs network once.
 
 2. Read `advisories/<id>.json` (the candidate and the advisories of its server's other census
    flaws), `fixture_format.md`, `grammar_classes.md`, `layout.md` and

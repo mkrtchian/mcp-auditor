@@ -6,6 +6,8 @@ sentinel serving a nonce, a stand-in `planted` loads for the host's `PublicNames
 host path, a container or network name, or an argv.
 `PlantedArgs` is the `docker run` arguments a planted launch takes. `PlantingDocker` and
 `NonceSource` are the two injected ports. `RANDOM_NONCES` draws the production nonces.
+`PlantingDocker` also hands the `/srv` layout over to the unprivileged account and removes it,
+under `check_layout_outer`, the guard that keeps the removal on a layout's own directory.
 
 `confinement_args` stays public so each builder carries the same container profile. The user
 and network helpers stay public for `planted` to resolve the launch's host into arguments. A
@@ -15,9 +17,11 @@ builder no longer emits them itself, it takes them from the `PlantedArgs` planti
 import logging
 import os
 import secrets
+import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 from typing import Protocol
 
 from evals.cve_places import LayoutAnchor, Place
@@ -29,6 +33,10 @@ SENTINEL_SERVICE = "sentinel"  # the sentinel's compose service, image_tag(SENTI
 SENTINEL_IMAGE = "mcp-auditor-cve-sentinel:local"
 STAND_IN_SERVICE = "stand-in"
 STAND_IN_IMAGE = "mcp-auditor-cve-stand-in:local"
+UNPRIVILEGED_UID = 65534
+UNPRIVILEGED_GID = 65534
+LAYOUT_PREFIX = "mcp-auditor-layout-"  # the outer directory holding a layout, in the temp dir
+LAYOUT_ROOT = "srv"  # the layout root's name inside its outer directory
 
 
 class SymbolicUser(StrEnum):
@@ -178,6 +186,21 @@ class PlantingDocker(Protocol):
     def start_stand_in(self, run_args: Sequence[str]) -> str: ...
     def remove_stand_in(self, name: str, host: str) -> None: ...
     def probe_listener(self, target_args: Sequence[str], host: str, port: int) -> bool: ...
+    def hand_over_layout(self, root: str) -> None: ...
+    def remove_layout(self, outer: str) -> None: ...
+
+
+def check_layout_outer(outer: str) -> None:
+    # The removal runs as a root able to delete anything it is pointed at, so it is pointed only
+    # at a layout's own outer directory, never at a broader host directory.
+    path = Path(outer).resolve()
+    if not (
+        outer
+        and path.is_dir()
+        and path.parent == Path(tempfile.gettempdir()).resolve()
+        and path.name.startswith(LAYOUT_PREFIX)
+    ):
+        raise PlantingFailed(f"refusing to remove {outer!r}: not a layout's outer directory")
 
 
 def quiet(action: object, *args: object) -> None:
@@ -214,13 +237,11 @@ def unprivileged_user_args() -> list[str]:
     # An image without a USER runs as root inside the container. Behind an empty capability
     # bounding set that root is disarmed, but an escape that lands as nobody on the host is
     # still better than one that lands as root.
-    return ["--user", "65534:65534", "-e", "HOME=/tmp"]
+    return ["--user", f"{UNPRIVILEGED_UID}:{UNPRIVILEGED_GID}", "-e", "HOME=/tmp"]
 
 
 def host_user_args() -> list[str]:
-    # Run the bind-mount containers as the host user so files the server writes into /srv
-    # (e.g. git_init's .git) are host-owned. The CVE is a scope/path bug, independent of the
-    # container uid, so this preserves the exploit while letting teardown remove the files and
-    # git operate on a repo it owns. HOME is set because git needs a writable home for a uid
+    # The host user, kept for the holdout fixtures and nuisance hosts that still run as it until
+    # their campaign rewrites them. HOME is set because git needs a writable home for a uid
     # absent from the image's passwd file.
     return ["--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp"]

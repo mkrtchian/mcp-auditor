@@ -5,6 +5,10 @@ calls are best-effort and never raise. Every network and container carries the
 `mcp-auditor-cve` label, so an orphan left by a crashed run is swept by label and never
 blocks a later launch. Every network is closed (`closed_network`): internal, with an isolated
 gateway, so a launch reaches neither the host nor the Internet.
+
+The `/srv` layout is handed over to the unprivileged account and removed by two short-lived
+containers of `LAYOUT_HELPER_IMAGE`, since the host user can neither chown it nor delete what
+the account owns. Docker pulls the helper on first use, so the first launch needs network once.
 """
 
 import logging
@@ -18,9 +22,15 @@ from collections.abc import Sequence
 from evals.closed_network import create_closed_network
 from evals.cve_planting_base import (
     LABEL,
+    LAYOUT_ROOT,
+    UNPRIVILEGED_GID,
+    UNPRIVILEGED_UID,
     ImageAccounts,
     PlantingDocker,
+    PlantingFailed,
+    check_layout_outer,
     confinement_args,
+    no_network_args,
     quiet,
 )
 from evals.cve_planting_base import (
@@ -29,6 +39,10 @@ from evals.cve_planting_base import (
 
 logger = logging.getLogger(__name__)
 
+# The sentinel's base, pinned by digest: it needs no compose build and the kit carries it.
+LAYOUT_HELPER_IMAGE = (
+    "busybox:latest@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d"
+)
 # Generous enough for a healthy sentinel under concurrency, and to wait out httpd start-up:
 # paid in full only on a real failure, since a serving sentinel answers on an early retry.
 _SENTINEL_PROBE_BUDGET = 15.0
@@ -120,6 +134,32 @@ class DockerPlanting(PlantingDocker):
                 return False
             time.sleep(_SENTINEL_PROBE_INTERVAL)
 
+    def hand_over_layout(self, root: str) -> None:
+        # `-h`: a leak link points at a container path absent from the helper, never followed.
+        owner = f"{UNPRIVILEGED_UID}:{UNPRIVILEGED_GID}"
+        command = [*_layout_helper("CHOWN"), "-v", f"{root}:/srv", LAYOUT_HELPER_IMAGE]
+        command += ["chown", "-hR", owner, "/srv"]
+        try:
+            result = subprocess.run(command, check=False, capture_output=True, text=True)
+        except OSError as error:
+            raise PlantingFailed(f"cannot hand the layout over: {error}") from error
+        if result.returncode != 0:
+            raise PlantingFailed(f"cannot hand the layout over: {result.stderr.strip()}")
+
+    def remove_layout(self, outer: str) -> None:
+        # FOWNER beside DAC_OVERRIDE: a sticky directory a read-write server made keeps its
+        # entries from any other uid that does not own them.
+        check_layout_outer(outer)
+        _best_effort(
+            *_layout_helper("DAC_OVERRIDE", "FOWNER"),
+            "-v",
+            f"{outer}:/x",
+            LAYOUT_HELPER_IMAGE,
+            "rm",
+            "-rf",
+            f"/x/{LAYOUT_ROOT}",
+        )
+
     def run_address_setup(self, run_args: Sequence[str]) -> None:
         subprocess.run(
             ["docker", "run", "--rm", "--label", LABEL, *run_args], check=True, capture_output=True
@@ -153,6 +193,17 @@ class DockerPlanting(PlantingDocker):
             capture_output=True,
         )
         return name
+
+
+def _layout_helper(*capabilities: str) -> list[str]:
+    added = [option for capability in capabilities for option in ("--cap-add", capability)]
+    return [
+        "docker", "run", "--rm", "--label", LABEL, "--user", "0:0", "--cap-drop", "ALL", *added,
+        "--security-opt", "no-new-privileges", *no_network_args(),
+    ]  # fmt: skip
+
+
+DOCKER_PLANTING = DockerPlanting()
 
 
 def _probe_read(target_args: Sequence[str], url: str) -> str | None:

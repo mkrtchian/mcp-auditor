@@ -1,15 +1,16 @@
 import dataclasses
 from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
+from functools import partial
 from pathlib import Path
 
 import pytest
 import yaml
 
 from evals import cve_exploits
-from evals.cve_environments import Launch, LaunchShape
+from evals.cve_environments import Launch, LaunchShape, command_injection_env
 from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import PlantingSpec
+from evals.cve_planting import PlantingSpec, SymbolicUser
 from evals.cve_proofs import is_aimed
 from evals.cve_recording_client import RecordingClient
 from evals.cve_targets import (
@@ -28,9 +29,14 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
+from tests.fakes.planting_docker import FakePlantingDocker
 
 SSRF_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-65513")
 KUBERNETES_TARGET = next(target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53355")
+# The kubernetes target's builder on the fake port, so its layout hand-over makes no Docker call.
+KUBERNETES_WITHOUT_DOCKER = dataclasses.replace(
+    KUBERNETES_TARGET, builder=partial(command_injection_env, docker=FakePlantingDocker())
+)
 COMPOSE_PATH = Path(__file__).resolve().parents[2] / "evals" / "docker" / "compose.yml"
 
 ExploitCall = Callable[[Places, MCPClientPort], Awaitable[None]]
@@ -245,8 +251,12 @@ def test_the_patched_version_launches_the_patched_image_tag():
     assert calls == [image_tag(SSRF_TARGET.patched_image)]
 
 
+def test_no_acceptance_target_runs_as_the_host_user():
+    assert [t.cve_id for t in CVE_TARGETS if t.planting_host.user is SymbolicUser.HOST] == []
+
+
 def test_an_empty_spec_plants_no_nonce():
-    with KUBERNETES_TARGET.environment(KUBERNETES_TARGET.planting_spec(())) as planted:
+    with KUBERNETES_WITHOUT_DOCKER.environment(KUBERNETES_TARGET.planting_spec(())) as planted:
         assert planted.nonces == {}
         assert "FICT=MCPAUDIT-fakenonce" not in planted.launch.args
 
@@ -254,7 +264,7 @@ def test_an_empty_spec_plants_no_nonce():
 def test_an_env_place_is_planted_through_arguments_with_no_docker():
     spec = KUBERNETES_TARGET.planting_spec([_an_env_place()], nonces=_FakeNonces())
 
-    with KUBERNETES_TARGET.environment(spec) as planted:
+    with KUBERNETES_WITHOUT_DOCKER.environment(spec) as planted:
         args = planted.launch.args
         assert planted.nonces == {"fict-env": "MCPAUDIT-fakenonce"}
         assert "FICT=MCPAUDIT-fakenonce" in args

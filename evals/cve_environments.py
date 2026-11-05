@@ -2,7 +2,8 @@
 
 Each builder materialises the frozen `/srv` deployment layout (ADR 031) under a temp root
 mounted into the container, adds whatever target-specific vulnerable structure its flaw needs,
-enters the generic planting layer for the per-launch nonces and the network and sidecars a
+hands the tree over to the unprivileged account (`owned_layout`), enters the generic planting
+layer for the per-launch nonces and the network and sidecars a
 kept place needs, yields the Docker `Launch` that stands the vulnerable server up, and tears
 everything down on exit, even on failure.
 
@@ -48,12 +49,22 @@ networks, since a network with a container attached cannot be removed:
 
     docker rm -f $(docker ps -aq --filter label=mcp-auditor-cve)
     docker network rm $(docker network ls -q --filter label=mcp-auditor-cve)
+
+A layout left by a failed removal, or by a launch cancelled while it was being entered, stays
+in the host's temp directory as an `mcp-auditor-layout-*` directory holding a tree the host
+user cannot delete. Sweep it with the pinned busybox the removal runs (`LAYOUT_HELPER_IMAGE`),
+then remove the emptied directories (the `docker run` is one command, wrapped here):
+
+    docker run --rm --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE --cap-add FOWNER
+      --security-opt no-new-privileges --network none -v "${TMPDIR:-/tmp}":/x
+      busybox:latest@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+      sh -c 'rm -rf /x/mcp-auditor-layout-*/srv'
+    rmdir "${TMPDIR:-/tmp}"/mcp-auditor-layout-*
 """
 
 import json
 import os
 import subprocess
-import tempfile
 import time
 from collections.abc import AsyncGenerator, Generator, Mapping
 from contextlib import asynccontextmanager, contextmanager
@@ -63,16 +74,18 @@ from pathlib import Path
 from typing import IO
 from uuid import uuid4
 
-from evals.cve_layout import ANCHOR_PATHS, build_empty_layout, build_layout
+from evals.cve_layout import ANCHOR_PATHS, build_empty_layout, build_layout, owned_layout
 from evals.cve_places import LayoutAnchor
 from evals.cve_planting import (
     DockerPlanting,
     PlantedArgs,
+    PlantingDocker,
     PlantingSpec,
     confinement_args,
     planted,
 )
 from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, SentinelIntent, own_network_args
+from evals.cve_planting_docker import DOCKER_PLANTING
 from evals.doris_backend import (
     DORIS_BRIDGE,
     DORIS_DB,
@@ -161,40 +174,63 @@ async def connect(
 
 @contextmanager
 def filesystem_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
-        # One leak<N>/report symlink inside the in-scope checkout per planted file place,
-        # pointing (absolute) at the coordinate where the nonce is mounted. The flaw follows it
-        # out of scope; the patched server does not. The exploit discovers them by listing the
-        # checkout. The prefix-collision sibling needs no extra structure: app.git is in the tree.
-        # The reference arm (EMPTY_LAYOUT) plants nothing and has no checkout to hang a symlink off;
-        # the fallback keeps the full tree, so it plants them like the normal launch.
-        if shape is not LaunchShape.EMPTY_LAYOUT:
-            checkout = root / _CHECKOUT
-            for index, intent in enumerate(spec.files):
-                leak = checkout / f"leak{index}"
-                leak.mkdir()
-                os.symlink(intent.container_path, leak / "report")
+    with (
+        owned_layout(docker, lambda root: _materialise_with_leak_links(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield _filesystem_launch(root, image, args)
+
+
+def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
+    # One leak<N>/report symlink inside the in-scope checkout per planted file place, pointing
+    # (absolute) at the coordinate where the nonce is mounted. The flaw follows it out of scope;
+    # the patched server does not. The exploit discovers them by listing the checkout. The
+    # prefix-collision sibling needs no extra structure: app.git is in the tree. The reference arm
+    # (EMPTY_LAYOUT) plants nothing and has no checkout to hang a symlink off; the fallback keeps
+    # the full tree, so it plants them like the normal launch. Built before the hand-over, so the
+    # links are the account's too.
+    _materialise(root, spec, shape)
+    if shape is not LaunchShape.EMPTY_LAYOUT:
+        checkout = root / _CHECKOUT
+        for index, intent in enumerate(spec.files):
+            leak = checkout / f"leak{index}"
+            leak.mkdir()
+            os.symlink(intent.container_path, leak / "report")
 
 
 @contextmanager
 def git_init_traversal_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield _git_launch(root, image, args, chain_budget=3, max_chain_steps=5)
 
 
 @contextmanager
 def command_injection_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield Launch(
             command="docker",
             args=[
@@ -212,10 +248,16 @@ def command_injection_env(
 
 @contextmanager
 def ssrf_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield Launch(
             command="docker",
             args=[
@@ -233,15 +275,21 @@ def ssrf_env(
 
 @contextmanager
 def arcadedb_mcp_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     # The ArcadeDB MCP stdio server reads files and fetches endpoints through the same polyglot-JS
     # sandbox escape, so its kept places span planted files, the hostname, the process environment
     # and the holder-bound metadata sentinels. It takes no scope argument (it is driven over stdio,
     # not pointed at a directory), so the launch is the read-only /srv mount and the planting
     # layer's args, with no path appended after the image.
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield Launch(
             command="docker",
             args=[
@@ -263,7 +311,11 @@ _N8N_STUB_IP = "203.0.113.10"  # TEST-NET-3: the SSRF guard treats it as an ordi
 
 @contextmanager
 def ssrf_redirect_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     # ssrf_env plus a redirecting stand-in co-located in the sentinels' namespace holder. The
     # shared sentinels serve the per-launch nonce; the stand-in serves the workflow API and the 302
@@ -272,8 +324,10 @@ def ssrf_redirect_env(
     # stand-in joins it too and binds a public-looking address the SSRF guard passes. The reference
     # arm plants no sentinel, so it joins no holder and needs no stand-in: launch the server plainly
     # then, exactly as ssrf_env's reference arm runs without its sentinel sidecar.
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         holder_ref = args.network[1] if _joins_holder(args.network) else None
         stub = _start_n8n_stub(holder_ref) if holder_ref is not None else None
         try:
@@ -362,15 +416,21 @@ def _gw_tools(spec: PlantingSpec) -> list[dict[str, str | None]]:
 
 @contextmanager
 def mysql_db_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     # The self-contained MySQL-MCP image carries its own engine and an AWS credential stub, both
     # started by the entrypoint, so the launch adds nothing but the frozen /srv layout, mounted
     # read-only (ADR 031). The server takes no scope argument, so none is appended after the image;
     # the network isolation, the planted file mounts, the planted env and the hostname all come
     # from the planting layer's PlantedArgs.
-    with _temp_root() as root, planted(spec, image, DockerPlanting()) as args:
-        _materialise(root, spec, shape)
+    with (
+        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
         yield Launch(
             command="docker",
             args=[
@@ -438,15 +498,6 @@ def doris_db_env(
             doris_rm(server)
             for name in sentinels:
                 doris_rm(name)
-
-
-@contextmanager
-def _temp_root() -> Generator[Path]:
-    # The filesystem and git launches run as the host user, so bind-mount files are host-owned
-    # and rmtree normally succeeds. ignore_cleanup_errors stays as a fallback so a stray
-    # un-removable file never crashes a run at __exit__.
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
-        yield Path(name)
 
 
 def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
