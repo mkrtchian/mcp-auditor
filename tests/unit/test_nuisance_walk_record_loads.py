@@ -29,21 +29,26 @@ def test_the_committed_walk_record_loads(nuisance_census: NuisanceCensus):
     assert nuisance_census.record.addition.size == 43
 
 
-def test_the_record_takes_only_dynatrace_out_of_the_holdout_walk_part(
+def test_the_record_takes_no_server_out_of_the_holdout_walk_part(
     census: HoldoutCensus, nuisance_census: NuisanceCensus, population: list[NuisanceServer]
 ):
     bare = NuisanceCensus(
         census=census,
         record=nuisance_census.record.model_copy(update={"settlements": [], "identities": []}),
     )
-    unsettled = {s.server_package: s for s in nuisance_population(bare) if not s.in_addition}
-    before = list(unsettled)
-    after = [s.server_package for s in population if not s.in_addition]
+    before = [s.server_package for s in nuisance_population(bare) if not s.in_addition]
+    after = {s.server_package: s for s in population if not s.in_addition}
 
-    assert len(before) == 52
-    # The record settles GHSA-pqh8-p93p-2rx7 out of the grammar.
-    assert unsettled[DYNATRACE].version_setting == ("GHSA-pqh8-p93p-2rx7",)
-    assert after == [package for package in before if package != DYNATRACE]
+    assert len(before) == 68
+    assert list(after) == before
+    # The record settles GHSA-pqh8-p93p-2rx7 out of the grammar, a class the admission settles.
+    assert after[DYNATRACE].version_setting == ("GHSA-pc2w-4mq8-32qw", "GHSA-pqh8-p93p-2rx7")
+
+
+def test_the_addition_part_lists_the_servers_outside_the_grammar_too(
+    population: list[NuisanceServer],
+):
+    assert len([s for s in population if s.in_addition]) == 53
 
 
 def test_the_identities_merge_the_duplicate_spellings(population: list[NuisanceServer]):

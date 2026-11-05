@@ -87,7 +87,7 @@ def test_server_of_raises_when_the_flaw_has_no_classification():
         server_of("unknown", given.a_nuisance_census(census))
 
 
-def test_version_setting_keeps_only_the_four_criteria():
+def test_version_setting_leaves_the_class_to_the_admission():
     census = given.a_census_walking(
         [
             ("good", "drawn", "npm:srv"),
@@ -107,14 +107,15 @@ def test_version_setting_keeps_only_the_four_criteria():
     assert version_setting_flaws("npm:srv", given.a_nuisance_census(census)) == [
         "good",
         "good_http",
+        "no_grammar",
     ]
 
 
 def test_settlements_override_the_classifiers_per_criterion():
-    census = given.a_census_walking([("g", "drawn", "npm:srv")], g=given.OUTSIDE_THE_GRAMMAR)
+    census = given.a_census_walking([("u", "drawn", "npm:srv")], u=given.NOT_PINNABLE)
     assert version_setting_flaws("npm:srv", given.a_nuisance_census(census)) == []
-    brought_in = given.with_a_settlement(census, "g", Criterion.GRAMMAR_CLASS, True)
-    assert version_setting_flaws("npm:srv", given.a_nuisance_census(brought_in)) == ["g"]
+    brought_in = given.with_a_settlement(census, "u", Criterion.PINNABLE, True)
+    assert version_setting_flaws("npm:srv", given.a_nuisance_census(brought_in)) == ["u"]
 
     census = given.a_census_walking([("p", "drawn", "npm:srv")])
     taken_out = given.with_a_settlement(census, "p", Criterion.PINNABLE, False)
@@ -125,26 +126,24 @@ def test_settlements_override_the_classifiers_per_criterion():
     assert version_setting_flaws("npm:srv", given.a_nuisance_census(left_in)) == ["t"]
 
 
-def test_a_flaw_only_the_second_classifier_places_in_grammar_still_sets_version():
-    census = given.a_census_walking([("g", "drawn", "npm:srv")], g=given.OUTSIDE_THE_GRAMMAR)
-    assert version_setting_flaws("npm:srv", given.a_nuisance_census(census)) == []
-
-    brought_in = given.with_the_second_classifier_overriding(
-        census, "g", {"effect_class": "read_outside_scope"}
-    )
-
-    assert version_setting_flaws("npm:srv", given.a_nuisance_census(brought_in)) == ["g"]
-
-
-def test_a_server_whose_every_flaw_fails_leaves_the_population():
+def test_a_server_whose_only_flaw_both_classifiers_file_outside_the_grammar_stays():
     census = given.a_census_walking(
-        [("bad", "drawn", "npm:bad"), ("ok", "drawn", "npm:ok")],
-        bad=given.OUTSIDE_THE_GRAMMAR,
+        [("ok", "drawn", "npm:ok"), ("outside", "drawn", "npm:outside")],
+        outside=given.OUTSIDE_THE_GRAMMAR,
     )
 
     assert [
         server.server_package for server in nuisance_population(given.a_nuisance_census(census))
-    ] == ["npm:ok"]
+    ] == ["npm:ok", "npm:outside"]
+
+
+def test_a_server_whose_every_flaw_fails_leaves_the_population():
+    census = given.a_census_walking([("bad", "drawn", "npm:bad"), ("ok", "drawn", "npm:ok")])
+    settled = given.with_a_record_settlement(
+        given.a_nuisance_census(census), "bad", Criterion.PINNABLE, False
+    )
+
+    assert [server.server_package for server in nuisance_population(settled)] == ["npm:ok"]
 
 
 def test_a_benchmark_flaw_marks_its_server_acceptance():
@@ -264,12 +263,23 @@ def test_an_identity_package_is_normalized():
 
 
 def test_a_record_settlement_takes_a_flaw_out_of_the_version_setting_flaws():
-    census = given.a_census_walking([("g", "drawn", "npm:srv")])
+    census = given.a_census_walking([("p", "drawn", "npm:srv")])
     settled = given.with_a_record_settlement(
-        given.a_nuisance_census(census), "g", Criterion.GRAMMAR_CLASS, False
+        given.a_nuisance_census(census), "p", Criterion.PINNABLE, False
     )
 
     assert version_setting_flaws("npm:srv", settled) == []
+
+
+def test_a_grammar_class_settlement_false_does_not_take_a_server_out():
+    census = given.a_census_walking([("g", "drawn", "npm:srv")])
+    in_the_census = given.with_a_settlement(census, "g", Criterion.GRAMMAR_CLASS, False)
+    in_the_record = given.with_a_record_settlement(
+        given.a_nuisance_census(census), "g", Criterion.GRAMMAR_CLASS, False
+    )
+
+    for settled in (given.a_nuisance_census(in_the_census), in_the_record):
+        assert [server.server_package for server in nuisance_population(settled)] == ["npm:srv"]
 
 
 def test_a_holdout_walk_flaw_outside_the_draw_order_is_refused():

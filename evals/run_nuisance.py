@@ -168,7 +168,7 @@ def _walk_line(server: NuisanceServer, outcomes: dict[str, str]) -> str:
     line = (
         f"  #{server.reaching_position} {server.server_package}"
         f"  reached by {server.reaching_flaw} ({how})"
-        f"  sets version: {', '.join(server.version_setting)}"
+        f"  may set version, pending the admission's class: {', '.join(server.version_setting)}"
     )
     if server.mark is not None:
         line += f"  [{server.mark.value}]"

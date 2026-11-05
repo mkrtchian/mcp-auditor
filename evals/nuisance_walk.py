@@ -4,9 +4,11 @@ The nuisance suite reaches every flaw the holdout walk reached, whatever its out
 in draw order over the draw-order flaws the holdout walk has not reached, skipping one that fails
 a draw-order criterion once its settlements apply. It groups the flaws by server (the rule's
 unit), an identity settlement of the walk record naming a flaw's server, and keeps a server when
-at least one of its census flaws sets the version: in a graded class, reached through tools, its
-effect visible in a tool response, and pinnable. Pure reads of the census, its draw settlements
-and the walk record, no LLM, no network.
+at least one of its census flaws may set the version: reached through tools, its effect visible
+in a tool response, and pinnable. The class is the admission's: no classifier's class nor any
+class settlement takes a flaw out here, so a flaw outside the grammar is listed pending the
+admission's class. Pure reads of the census, its draw settlements and the walk record, no LLM,
+no network.
 """
 
 from dataclasses import dataclass
@@ -17,7 +19,6 @@ from evals.census_classification import (
     Criterion,
     Primitive,
     criteria_met,
-    in_grammar,
 )
 from evals.census_draw import Settlement
 from evals.census_grouping import DRAW_ORDER_CRITERIA
@@ -161,12 +162,6 @@ def _sets_version(flaw: str, nuisance_census: NuisanceCensus) -> bool:
     seen = nuisance_census.classifications_by_flaw.get(flaw, [])
     return (
         _met(
-            flaw,
-            nuisance_census,
-            Criterion.GRAMMAR_CLASS,
-            any(in_grammar(c.effect_class) for c in seen),
-        )
-        and _met(
             flaw,
             nuisance_census,
             Criterion.EFFECT_IN_TOOL_RESPONSE,
