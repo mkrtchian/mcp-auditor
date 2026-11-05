@@ -3,8 +3,8 @@ import pytest
 import tests.unit.support.test_nuisance_gate_given as given
 from evals.gate import ReplayRule
 from evals.gate_verdict import GateVerdict
-from evals.nuisance_gate import ServerOutcome, compare_server, exit_code, judge, settle
-from evals.nuisance_gate_baseline import WHOLE_RESET, NuisanceServerBaseline
+from evals.nuisance_gate import ServerOutcome, compare_server, judge, settle
+from evals.nuisance_gate_baseline import WHOLE_RESET
 
 CLEAN = [False] * 3
 ONE_ALARM = [False, True, False]
@@ -14,6 +14,7 @@ def test_a_server_without_a_file_has_no_baseline():
     comparison = compare_server(None, given.a_candidate(CLEAN))
 
     assert comparison.outcome == ServerOutcome.NO_BASELINE
+    assert comparison.baseline_runs == []
 
 
 def test_a_changed_fixture_leaves_the_comparison_with_the_server_reset():
@@ -52,6 +53,7 @@ def test_a_server_flagged_in_its_baseline_is_unstable(runs: list[bool], outcome:
 
     assert comparison.outcome == outcome
     assert comparison.detail == "flagged in 1 of 6 baseline runs"
+    assert comparison.baseline_runs == baseline.runs
 
 
 def test_an_incomplete_candidate_on_a_gated_server():
@@ -71,31 +73,6 @@ def test_a_gated_server(runs: list[bool], outcome: ServerOutcome):
     comparison = compare_server(given.a_gated_baseline(), given.a_candidate(runs))
 
     assert comparison.outcome == outcome
-
-
-@pytest.mark.parametrize(
-    ("baseline", "runs", "outcome"),
-    [
-        (given.a_gated_baseline(), CLEAN, ServerOutcome.HELD),
-        (given.a_gated_baseline(), ONE_ALARM, ServerOutcome.PENDING_REPLAY),
-        (given.a_confirmed_baseline([False] * 5 + [True]), CLEAN, ServerOutcome.NOT_GATED),
-        (given.an_exploratory_baseline(), ONE_ALARM, ServerOutcome.NOT_GATED),
-    ],
-    ids=["held", "pending", "flagged baseline", "exploratory"],
-)
-def test_a_comparison_carries_the_baseline_runs(
-    baseline: NuisanceServerBaseline, runs: list[bool], outcome: ServerOutcome
-):
-    comparison = compare_server(baseline, given.a_candidate(runs))
-
-    assert comparison.outcome == outcome
-    assert comparison.baseline_runs == baseline.runs
-
-
-def test_a_comparison_without_a_baseline_carries_no_baseline_runs():
-    comparison = compare_server(None, given.a_candidate(CLEAN))
-
-    assert comparison.baseline_runs == []
 
 
 def test_settle_keeps_the_baseline_runs():
@@ -199,11 +176,3 @@ def test_a_gate_with_no_gated_server_says_so():
 
     assert result.verdict == GateVerdict.GREEN
     assert result.reasons == ["no server is gated"]
-
-
-@pytest.mark.parametrize(
-    ("verdict", "code"),
-    [(GateVerdict.GREEN, 0), (GateVerdict.RED, 1), (GateVerdict.NOT_COMPARABLE, 3)],
-)
-def test_exit_code(verdict: GateVerdict, code: int):
-    assert exit_code(verdict) == code

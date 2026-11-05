@@ -120,6 +120,12 @@ def test_a_confirmed_file_is_not_recorded_over_an_unsettled_comparison(
     decision = decide_recording(given.a_gated_baseline(), given.a_recording(), comparison)
 
     assert isinstance(decision, RecordingRefused)
+    [reason] = decision.reasons
+    named = "no comparison" if outcome is None else outcome.value
+    assert (
+        f"this server's comparison is {named}: a confirmed baseline is recorded over only when"
+        in reason
+    )
 
 
 @pytest.mark.parametrize(

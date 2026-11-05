@@ -92,10 +92,16 @@ def test_the_gate_conditions_refuse_an_unset_chain_setting():
     assert any("chain settings" in reason for reason in excinfo.value.reasons)
 
 
-def test_the_gate_conditions_read_the_settings_and_the_holdout_budget():
-    conditions = gate_conditions(run_given.SETTINGS, run_given.conditions(), 2)
+def test_the_gate_conditions_read_the_settings_the_chain_settings_and_the_holdout_budget():
+    holdout = run_given.conditions()
+
+    conditions = gate_conditions(run_given.SETTINGS, holdout, 2)
 
     assert conditions.model == "gpt-6-luna"
+    assert conditions.judge_model == run_given.SETTINGS.resolve_judge_model()
+    assert conditions.chain_budget == holdout.chain_budget
+    assert conditions.max_chain_steps == holdout.max_chain_steps
+    assert conditions.tool_call_timeout == holdout.tool_call_timeout
     assert conditions.budget == HOLDOUT_BUDGET
     assert conditions.runs == 2
     assert not conditions.tools_filtered

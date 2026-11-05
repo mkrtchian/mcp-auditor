@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
 
@@ -28,15 +29,34 @@ from tests.unit.support.test_nuisance_gate_session_given import KUBERNETES, a_ha
 GATE_SERVER = KUBERNETES.server_package
 
 
+def a_census_with_the_gate_server() -> HoldoutCensus:
+    assert GATE_SERVER == admission_given.ACCEPTANCE_PACKAGE
+    return admission_given.a_census_with_an_acceptance_server()
+
+
+def gate_arguments(tmp_path: Path, census: HoldoutCensus, admission_path: Path) -> list[str]:
+    return [
+        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
+        "--admission",
+        str(admission_path),
+    ]
+
+
+def without_any_llm_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A safety net that keeps a regression past an early return from reaching a provider."""
+    for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+
+
 def a_gate_set_of_one_server(
     tmp_path: Path, admitted: NuisanceAdmission | None = None
 ) -> list[str]:
     """The census, walk record and admission arguments of a gate whose one server is GATE_SERVER,
     admitted by `admitted`, by default fully recorded."""
-    assert GATE_SERVER == admission_given.ACCEPTANCE_PACKAGE
-    census = admission_given.a_census_with_an_acceptance_server()
     return _gate_arguments(
-        tmp_path, census, admitted or admission_given.admitting_the_acceptance_server()
+        tmp_path,
+        a_census_with_the_gate_server(),
+        admitted or admission_given.admitting_the_acceptance_server(),
     )
 
 
@@ -73,9 +93,7 @@ def _gate_arguments(
     tmp_path: Path, census: HoldoutCensus, admitted: NuisanceAdmission
 ) -> list[str]:
     return [
-        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
-        "--admission",
-        str(admission_given.written(tmp_path, admitted)),
+        *gate_arguments(tmp_path, census, admission_given.written(tmp_path, admitted)),
         "--report",
         str(tmp_path / "nuisance_gate_report.json"),
     ]
@@ -87,15 +105,27 @@ def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
     )
 
 
+@dataclass
+class SeenSession:
+    received: list[NuisanceGateOptions] = field(default_factory=list[NuisanceGateOptions])
+
+    @property
+    def options(self) -> NuisanceGateOptions:
+        [options] = self.received
+        return options
+
+
 def a_green_recording_writing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, status: BaselineStatus
-) -> None:
+) -> SeenSession:
     """A gate run that audits nothing and records one baseline file with this status, reaching
-    no Docker and no LLM."""
+    no Docker and no LLM. What it returns holds the options the session received."""
+    seen = SeenSession()
 
     async def session(
         options: NuisanceGateOptions, harness: NuisanceGateHarness
     ) -> NuisanceGateSession:
+        seen.received.append(options)
         return NuisanceGateSession(
             audits=[],
             gate=NuisanceGateResult(verdict=GateVerdict.GREEN, reasons=[], servers=[]),
@@ -118,3 +148,4 @@ def a_green_recording_writing(
     monkeypatch.setattr(nuisance_gate_command, "gate_conditions", gate_conditions)
     monkeypatch.setattr(nuisance_gate_command, "default_harness", default_harness)
     monkeypatch.setattr(nuisance_gate_command, "run_gate", session)
+    return seen

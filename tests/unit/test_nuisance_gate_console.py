@@ -43,7 +43,9 @@ def test_the_table_shows_each_server_with_its_baseline_runs_and_replays(
     assert GATE_LEGEND in output.getvalue()
 
 
-def test_the_detail_reads_as_in_the_markdown(monkeypatch: pytest.MonkeyPatch):
+def test_a_not_gated_server_shows_its_detail_before_its_flagged_tools(
+    monkeypatch: pytest.MonkeyPatch,
+):
     output = given.a_captured_console(monkeypatch)
 
     print_nuisance_gate_summary(given.a_not_gated_report(), REPORT_PATH)

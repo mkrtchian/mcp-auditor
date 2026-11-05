@@ -3,7 +3,7 @@ from pathlib import Path
 
 import tests.unit.support.test_nuisance_run_given as run_given
 from evals.eval_session import TreeState
-from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
+from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_audit import GateRun
 from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 from evals.nuisance_gate_baseline import (
@@ -14,7 +14,6 @@ from evals.nuisance_gate_baseline import (
 )
 from evals.nuisance_gate_session_model import NuisanceGateHarness, NuisanceGateOptions
 from tests.fakes import FakeContainerSweep
-from tests.unit.support.test_nuisance_admission_given import an_admission
 from tests.unit.support.test_nuisance_gate_baseline_given import (
     a_confirmed_baseline,
     a_gated_baseline,
@@ -122,10 +121,6 @@ def a_gated_file(
 def a_flagged_file(directory: Path, server: AdmittedServer) -> None:
     flagged_once = a_confirmed_baseline([True, *[False] * 5], server.server_package)
     _write(directory, server, flagged_once, None)
-
-
-def admitting(*servers: AdmittedServer) -> NuisanceAdmission:
-    return an_admission().model_copy(update={"servers": list(servers)})
 
 
 def other_conditions() -> NuisanceGateConditions:

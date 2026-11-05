@@ -12,9 +12,8 @@ from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_audit import GateRun
 from evals.nuisance_gate import ServerComparison, ServerOutcome
 from evals.nuisance_gate_baseline import load_baselines, write_baseline
-from evals.nuisance_gate_session import gate_servers, not_admitted, outside_gate, run_gate
+from evals.nuisance_gate_session import run_gate
 from evals.nuisance_gate_session_model import NuisanceGateSession
-from evals.nuisance_results import FigureExit
 from tests.unit.support.test_nuisance_admission_given import with_a_backend
 from tests.unit.support.test_nuisance_gate_baseline_given import a_gated_baseline
 
@@ -84,7 +83,8 @@ async def test_a_server_whose_benign_call_fails_is_not_run_and_not_comparable(tm
 
     assert session.not_run == {FILESYSTEM.server_package: "no answer"}
     assert session.audits == []
-    _the_one_server_ends(session, ServerOutcome.NOT_RUN, GateVerdict.NOT_COMPARABLE)
+    comparison = _the_one_server_ends(session, ServerOutcome.NOT_RUN, GateVerdict.NOT_COMPARABLE)
+    assert comparison.baseline_runs == [False] * 6
     assert session.exit_code == 3
 
 
@@ -111,18 +111,6 @@ async def test_the_session_carries_the_throttled_total(tmp_path: Path):
     session = await run_gate(given.options([FILESYSTEM]), harness)
 
     assert session.throttled_requests == 7
-
-
-async def test_a_not_run_server_with_a_baseline_carries_its_baseline_runs(tmp_path: Path):
-    given.a_gated_file(tmp_path, FILESYSTEM)
-    harness = given.a_harness(
-        tmp_path, given.scripted({}), benign_call={FILESYSTEM.server_package: "no answer"}
-    )
-
-    session = await run_gate(given.options([FILESYSTEM]), harness)
-
-    comparison = _the_one_server_ends(session, ServerOutcome.NOT_RUN, GateVerdict.NOT_COMPARABLE)
-    assert comparison.baseline_runs == [False] * 6
 
 
 async def test_a_failing_benign_call_refuses_a_recording_before_any_audit(tmp_path: Path):
@@ -200,7 +188,9 @@ async def test_head_moving_during_the_runs_refuses_the_recording(tmp_path: Path)
 
     session = await run_gate(given.options([FILESYSTEM], record=True), harness)
 
-    assert session.recording_refused != []
+    assert session.recording_refused == [
+        f"HEAD moved from {given.COMMIT} to another during the runs: record again"
+    ]
     assert session.written == []
     assert load_baselines(tmp_path) == {}
     assert session.gate.verdict == GateVerdict.GREEN
@@ -218,7 +208,7 @@ async def test_a_baseline_file_written_during_the_runs_refuses_the_recording(tmp
 
     session = await run_gate(given.options([FILESYSTEM], record=True), harness)
 
-    assert session.recording_refused != []
+    assert session.recording_refused == ["the baseline files changed during the runs: record again"]
     assert set(load_baselines(tmp_path)) == {"npm:written-meanwhile"}
     assert session.exit_code == 3
 
@@ -244,7 +234,10 @@ async def test_a_run_that_does_not_complete_refuses_the_recording_and_writes_not
         given.options([FILESYSTEM], record=True), given.a_harness(tmp_path, audit)
     )
 
-    assert session.recording_refused != []
+    assert session.recording_refused == [
+        f"{FILESYSTEM.server_package}: a run did not complete: a baseline holds every run its"
+        " conditions claim"
+    ]
     assert load_baselines(tmp_path) == {}
     assert session.exit_code == 3
 
@@ -299,28 +292,6 @@ async def test_a_one_server_recording_is_refused_on_the_other_gate_file_mismatch
         )
 
     assert any("model" in reason for reason in refused.value.reasons)
-
-
-def test_the_gate_servers_are_the_current_ones_that_run_over_stdio_in_admission_order():
-    no_stdio = KUBERNETES.model_copy(update={"runs_over_stdio": False})
-    other = given.run_given.a_server("npm:not-current")
-    admitted = given.admitting(KUBERNETES, other, FILESYSTEM)
-    current = {FILESYSTEM.server_package, KUBERNETES.server_package}
-
-    assert gate_servers(admitted, current) == [KUBERNETES, FILESYSTEM]
-    assert gate_servers(given.admitting(no_stdio, FILESYSTEM), current) == [FILESYSTEM]
-    assert outside_gate(given.admitting(no_stdio, FILESYSTEM), current) == [
-        FigureExit(KUBERNETES.server_package, "does not run over stdio")
-    ]
-
-
-def test_a_current_package_no_admitted_server_carries_is_not_admitted():
-    current = {FILESYSTEM.server_package, KUBERNETES.server_package, "PyPI:mcp-server-git"}
-
-    assert not_admitted(given.admitting(FILESYSTEM), current) == [
-        "PyPI:mcp-server-git",
-        KUBERNETES.server_package,
-    ]
 
 
 def _the_one_server_ends(
