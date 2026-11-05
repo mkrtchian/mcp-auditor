@@ -44,7 +44,9 @@ def test_run_refuses_a_drawn_target_whose_card_is_not_ready(
     exit_code = run_holdout.main(["run", "--report", str(report)])
 
     assert exit_code == run_holdout.REFUSED_EXIT
-    assert gap in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert gap in out
+    assert "not ready under holdout rule v11" in out
     assert not report.with_suffix(".result.json").exists()
 
 

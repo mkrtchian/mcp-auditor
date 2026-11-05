@@ -15,6 +15,7 @@ from evals.census_figures import compute_figures
 from evals.census_grouping import READERS, ProofJudgment, gap_population, known_gap
 from evals.census_sources import SourceName, SourceRecord
 from evals.census_work import AgentRecord, AgentRole
+from evals.fixture_provenance import SoftwareRelease
 from evals.holdout_census import CLASSIFIERS, CensusFlaw, Discovery, HoldoutCensus, draw_candidates
 
 A_DRAWN_FLAW = "CVE-2025-0001"
@@ -111,6 +112,11 @@ def a_card(flaw: str) -> CalibrationCard:
         patched_result="the patched server refuses the traversal",
         attempts=3,
     )
+
+
+def a_draw_whose_card_records(release: SoftwareRelease) -> DrawRecord:
+    card = a_card(A_DRAWN_FLAW).model_copy(update={"software_releases": [release]})
+    return a_draw().model_copy(update={"cards": [card]})
 
 
 def a_census_with_draw(draw: DrawRecord) -> HoldoutCensus:

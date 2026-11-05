@@ -1,11 +1,11 @@
 """Whether each drawn target's calibration card is ready for a holdout run: the card carries the
-fields holdout rule v9 adds, and its second-agent check ran under rule v9 or later."""
+fields holdout rules v9 and v11 add, and its second-agent check ran under rule v11 or later."""
 
 from collections.abc import Sequence
 
 from evals.census_draw import CalibrationCard, CardCheck, DrawRecord
 
-CARD_CHECK_RULE_VERSION = 9
+CARD_CHECK_RULE_VERSION = 11
 
 
 def unready_cards(draw: DrawRecord | None, drawn: Sequence[str]) -> list[str]:
@@ -30,6 +30,7 @@ def _card_gaps(card: CalibrationCard | None) -> list[str]:
     unset = {
         "seeded_outside_layout": card.seeded_outside_layout,
         "stand_ins": card.stand_ins,
+        "software_releases": card.software_releases,
     }
     return [f"{field} unset" for field, value in unset.items() if value is None]
 

@@ -344,6 +344,24 @@ def test_calibration_dossier_fixture_format_names_the_layout_mount_and_work(tmp_
     assert "`/work`" in fixture_format
 
 
+def test_calibration_dossier_fixture_format_names_the_software_releases(tmp_path: Path):
+    census = given.written(tmp_path, given.a_census())
+    out = tmp_path / "kit"
+    run_holdout.main(
+        [
+            "calibration-dossier",
+            "--census",
+            str(census),
+            "--cve",
+            given.FLAW_WITH_A_CVE,
+            "--out",
+            str(out),
+        ]
+    )
+
+    assert "software_releases" in (out / "fixture_format.md").read_text()
+
+
 def _load_copied_places(module_path: Path) -> dict[str, object]:
     spec = importlib.util.spec_from_file_location("kit_cve_places", module_path)
     assert spec is not None and spec.loader is not None

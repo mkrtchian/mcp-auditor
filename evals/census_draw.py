@@ -17,7 +17,12 @@ from pydantic import BaseModel
 from evals.census_classification import Criterion
 from evals.census_work import AgentRecord, AgentRole
 from evals.cve_places import REACHABLE_BY
-from evals.fixture_provenance import StandInRecord, stand_in_problems
+from evals.fixture_provenance import (
+    SoftwareRelease,
+    StandInRecord,
+    software_release_problems,
+    stand_in_problems,
+)
 
 
 class KeptPlace(BaseModel):
@@ -76,6 +81,8 @@ class CalibrationCard(BaseModel):
     # refuses through holdout_card_readiness.
     seeded_outside_layout: list[SeededOutsideLayout] | None = None
     stand_ins: list[CardStandIn] | None = None
+    # Holdout rule v11 adds it, with the same None reading; [] records no real software.
+    software_releases: list[SoftwareRelease] | None = None
     fallback_scope: str | None
     fallback_documentation: str | None
     exploit_calls: list[str]
@@ -150,6 +157,7 @@ def draw_problems(
         *_calibration_problems(draw),
         *_place_problems(draw, place_ids),
         *_stand_in_problems(draw),
+        *_software_release_problems(draw),
         *_agent_problems(draw, agents),
     ]
 
@@ -267,6 +275,15 @@ def _stand_in_problems(draw: DrawRecord) -> list[str]:
         for card in draw.cards
         for card_stand_in in card.stand_ins or []
         for problem in stand_in_problems(card_stand_in.stand_in)
+    ]
+
+
+def _software_release_problems(draw: DrawRecord) -> list[str]:
+    return [
+        f"card for flaw {card.flaw}: {problem}"
+        for card in draw.cards
+        for release in card.software_releases or []
+        for problem in software_release_problems(release)
     ]
 
 

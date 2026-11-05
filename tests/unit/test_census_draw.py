@@ -9,7 +9,7 @@ import tests.unit.support.test_census_draw_given as given
 import tests.unit.support.test_holdout_census_given as census
 from evals.census_draw import CardStandIn, GiveUp, GiveUpReason, KeptPlace
 from evals.census_work import AgentRole
-from evals.fixture_provenance import StandInOutput, StandInRecord
+from evals.fixture_provenance import SoftwareRelease, StandInOutput, StandInRecord
 from evals.holdout_census import load_census
 from evals.run_census import CENSUS_PATH
 from tests.unit.support.test_census_draw_given import A_DRAWN_FLAW, A_TWICE_GIVEN_UP_FLAW
@@ -180,3 +180,26 @@ def test_a_card_stand_in_with_an_invented_output_and_no_form_source_fails(tmp_pa
     refusal = f"card for flaw {A_DRAWN_FLAW}: stand-in for the vendor API"
     with pytest.raises(ValueError, match=re.escape(refusal)):
         load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
+
+
+def test_a_software_release_with_a_blank_source_fails(tmp_path: Path):
+    release = SoftwareRelease(software="Neo4j", release="5.26.0", day=None, source=" ")
+    draw = given.a_draw_whose_card_records(release)
+
+    refusal = f"card for flaw {A_DRAWN_FLAW}: software release of Neo4j records no source"
+    with pytest.raises(ValueError, match=re.escape(refusal)):
+        load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
+
+
+def test_a_software_release_with_no_day_loads(tmp_path: Path):
+    release = SoftwareRelease(
+        software="Neo4j",
+        release="5.26.0",
+        day=None,
+        source="the README: requires Neo4j 5.26",
+    )
+    draw = given.a_draw_whose_card_records(release)
+
+    loaded = load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
+
+    assert loaded.draw == draw

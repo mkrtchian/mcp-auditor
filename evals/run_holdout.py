@@ -160,7 +160,7 @@ def _refuse_unready_cards(census: HoldoutCensus) -> None:
     if gaps:
         raise Refused(
             "holdout run refused",
-            ["drawn targets whose card is not ready under holdout rule v9", *gaps],
+            ["drawn targets whose card is not ready under holdout rule v11", *gaps],
         )
 
 

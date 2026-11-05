@@ -8,9 +8,9 @@ from tests.unit.support.test_census_draw_given import A_DRAWN_FLAW
 
 def _ready_draw() -> DrawRecord:
     card = given.a_card(A_DRAWN_FLAW).model_copy(
-        update={"seeded_outside_layout": [], "stand_ins": []}
+        update={"seeded_outside_layout": [], "stand_ins": [], "software_releases": []}
     )
-    check = CardCheck(flaw=A_DRAWN_FLAW, reported_gaps=[], confirmed_gaps=[], rule_version=9)
+    check = CardCheck(flaw=A_DRAWN_FLAW, reported_gaps=[], confirmed_gaps=[], rule_version=11)
     return given.a_draw().model_copy(update={"cards": [card], "card_checks": [check]})
 
 
@@ -29,7 +29,7 @@ def test_a_ready_card_and_check_give_no_gap():
 
 
 def test_a_check_at_a_later_rule_version_passes():
-    assert unready_cards(_with_check_version(_ready_draw(), 10), [A_DRAWN_FLAW]) == []
+    assert unready_cards(_with_check_version(_ready_draw(), 12), [A_DRAWN_FLAW]) == []
 
 
 @pytest.mark.parametrize(
@@ -37,18 +37,20 @@ def test_a_check_at_a_later_rule_version_passes():
     [
         (_with_card(_ready_draw(), seeded_outside_layout=None), "seeded_outside_layout"),
         (_with_card(_ready_draw(), stand_ins=None), "stand_ins"),
+        (_with_card(_ready_draw(), software_releases=None), "software_releases"),
         (_ready_draw().model_copy(update={"cards": []}), "no card"),
         (_ready_draw().model_copy(update={"card_checks": []}), "no card check"),
         (_with_check_version(_ready_draw(), None), "rule version"),
-        (_with_check_version(_ready_draw(), 8), "rule version 8"),
+        (_with_check_version(_ready_draw(), 10), "rule version 10, below 11"),
     ],
     ids=[
         "seeded outside layout unset",
         "stand-ins unset",
+        "software releases unset",
         "no card",
         "no check",
         "check with no version",
-        "check at version 8",
+        "check at version 10",
     ],
 )
 def test_each_gap_is_named_for_its_target(draw: DrawRecord, named: str):

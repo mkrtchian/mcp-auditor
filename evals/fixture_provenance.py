@@ -1,8 +1,10 @@
 """Where a fixture's stand-in outputs come from, shared by the nuisance admission and the holdout
 calibration card: what the stand-in replaces, why the real software cannot run under the
 confinement, the repository file that implements it, and the source of each output it serves.
+Beside it, the release of each real software a fixture runs.
 """
 
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel
@@ -32,6 +34,26 @@ class StandInRecord(BaseModel):
     file: str
     capture: str | None = None  # an evals/stand_ins/ capture that sources every route
     outputs: list[StandInOutput]
+
+
+class SoftwareRelease(BaseModel):
+    software: str  # as its documentation names it
+    release: str
+    day: date | None  # the day the release was the current stable one, None when the docs name it
+    source: str  # the line of documentation or the release page that gives it
+
+
+def software_release_problems(release: SoftwareRelease) -> list[str]:
+    blank = [
+        field
+        for field, value in (
+            ("software", release.software),
+            ("release", release.release),
+            ("source", release.source),
+        )
+        if not value.strip()
+    ]
+    return [f"software release of {release.software} records no {field}" for field in blank]
 
 
 def stand_in_problems(stand_in: StandInRecord) -> list[str]:
