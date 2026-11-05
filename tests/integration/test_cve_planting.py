@@ -118,6 +118,21 @@ def test_a_planted_stand_in_replays_the_captured_headers_without_the_connection_
     then.carries(default, [("Location", f"https://{host}/uncaptured"), given.REDIRECT_SERVER], 0)
 
 
+@pytest.mark.usefixtures("openssl")
+def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
+    directory = given.a_stand_ins_directory(tmp_path)
+    url = f"https://{given.STAND_IN_HOST}/"
+
+    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
+        json_protocol = given.fetch_as_target(args, url, "POST", given.JSON_PROTOCOL_REQUEST)
+        query_protocol = given.fetch_as_target(args, url, "POST", given.QUERY_PROTOCOL_REQUEST)
+        unknown = given.fetch_as_target(args, url, "POST", given.UNKNOWN_ACTION_REQUEST)
+
+    then.answered_by_its_route(json_protocol, given.SECRET_HEADERS, given.SECRET_BODY)
+    then.answered_by_its_route(query_protocol, given.INSTANCES_HEADERS, given.INSTANCES_BODY)
+    then.answered_with(unknown, 404, given.MISSING_BODY)
+
+
 @pytest.mark.parametrize("shape", ["no_network", "holder", "bridge_alias"])
 def test_a_planted_target_reads_no_search_domain_nor_an_audit_name(shape: str):
     spec = given.a_launch_of_shape(shape)

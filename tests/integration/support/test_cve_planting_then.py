@@ -50,3 +50,8 @@ def answered_with(fetched: Fetched, status: int, body: str) -> None:
 def carries(fetched: Fetched, headers: Sequence[tuple[str, str]], length: int | None) -> None:
     computed = [] if length is None else [("Content-Length", str(length))]
     assert fetched.header_list == [*headers, *computed]
+
+
+def answered_by_its_route(fetched: Fetched, headers: Sequence[tuple[str, str]], body: str) -> None:
+    assert (fetched.status, fetched.body) == (200, body)
+    carries(fetched, headers, len(body.encode()))

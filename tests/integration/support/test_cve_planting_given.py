@@ -67,6 +67,37 @@ HEAD_ONLY_REPLAYED = (
     ("Date", CAPTURED_DATE),
 )
 REDIRECT_SERVER = ("Server", "cloudflare")
+# Two AWS routes on one `POST /`, written as the services' published examples are: the JSON
+# protocol keys on the full `X-Amz-Target` value, the query protocol on the bare `Action` value.
+SECRET_ACTION = "secretsmanager.GetSecretValue"
+SECRET_BODY = '{"Name": "fict", "SecretString": "the secret"}'
+SECRET_HEADERS = (("Content-Type", "application/x-amz-json-1.1"),)
+INSTANCES_ACTION = "DescribeDBInstances"
+INSTANCES_BODY = "<DescribeDBInstancesResponse></DescribeDBInstancesResponse>"
+INSTANCES_HEADERS = (("Content-Type", "text/xml"),)
+
+
+@dataclass(frozen=True)
+class Sent:
+    headers: tuple[tuple[str, str], ...]
+    body: str
+
+
+JSON_PROTOCOL_REQUEST = Sent(
+    (("X-Amz-Target", SECRET_ACTION), ("Content-Type", "application/x-amz-json-1.1")),
+    '{"SecretId": "fict"}',
+)
+QUERY_PROTOCOL_REQUEST = Sent(
+    (("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),),
+    f"Action={INSTANCES_ACTION}&Version=2014-10-31",
+)
+UNKNOWN_ACTION_REQUEST = Sent(
+    (
+        ("X-Amz-Target", "secretsmanager.ListSecrets"),
+        ("Content-Type", "application/x-amz-json-1.1"),
+    ),
+    "{}",
+)
 _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
 # The stand-in image's Python as the target: http.client sends the target as given and follows
 # no redirect, and the default context verifies TLS against the default paths, which
@@ -78,7 +109,8 @@ _FETCH = (
     "connection=(http.client.HTTPSConnection(parts.hostname,timeout=5,"
     "context=ssl.create_default_context()) if parts.scheme=='https'"
     " else http.client.HTTPConnection(parts.hostname,timeout=5))\n"
-    "connection.request(method,parts.path)\n"
+    "sent=json.loads(sys.argv[3]) if len(sys.argv)>3 else {'headers':[],'body':None}\n"
+    "connection.request(method,parts.path,body=sent['body'],headers=dict(sent['headers']))\n"
     "response=connection.getresponse()\n"
     "header_list=response.getheaders()\n"
     "headers={name.lower():value for name,value in header_list}\n"
@@ -185,6 +217,8 @@ def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -
             _route("http", PLAIN_BODY, [["Content-Type", "text/plain"]]),
             _route("https", SECURE_BODY, [list(header) for header in SECURE_HEADERS]),
             _head_only_route(),
+            _post_route(SECRET_ACTION, SECRET_BODY, SECRET_HEADERS),
+            _post_route(INSTANCES_ACTION, INSTANCES_BODY, INSTANCES_HEADERS),
         ],
         "defaults": [_redirect_to_https(), secure_default],
     }
@@ -216,6 +250,18 @@ def _head_only_route() -> dict[str, object]:
         "status": 200,
         "headers": [list(header) for header in HEAD_ONLY_HEADERS],
         "body": "",
+    }
+
+
+def _post_route(action: str, body: str, headers: Sequence[tuple[str, str]]) -> dict[str, object]:
+    return {
+        "scheme": "https",
+        "method": "POST",
+        "target": "/",
+        "action": action,
+        "status": 200,
+        "headers": [list(header) for header in headers],
+        "body": body,
     }
 
 
@@ -263,7 +309,10 @@ class Fetched:
     body: str
 
 
-def fetch_as_target(args: PlantedArgs, url: str, method: str = "GET") -> Fetched:
+def fetch_as_target(
+    args: PlantedArgs, url: str, method: str = "GET", sent: Sent | None = None
+) -> Fetched:
+    request = [] if sent is None else [json.dumps({"headers": sent.headers, "body": sent.body})]
     result = subprocess.run(
         [
             "docker",
@@ -280,6 +329,7 @@ def fetch_as_target(args: PlantedArgs, url: str, method: str = "GET") -> Fetched
             _FETCH,
             method,
             url,
+            *request,
         ],
         capture_output=True,
         text=True,

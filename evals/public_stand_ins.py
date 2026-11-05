@@ -9,8 +9,18 @@ the stand-in replays for any request its routes lack. The stand-in quotes the re
 wherever the host quoted the probed one, in `Location` as sent and in an HTML or JSON body in
 the measured form (`path_form`), escaped as the body's media type escapes it. Every answer
 carries its captured headers, the connection and framing ones apart, with a `Content-Length` of
-the stand-in's own. The leaf, its key and the fixture authority sit beside the captures under
-`tls/`, made by `tls/generate.sh`.
+the stand-in's own, every route but a captured `HEAD` framed by the body it serves.
+
+A `POST` route written for an AWS service may carry the action it answers, which the stand-in
+reads from the request: the full `X-Amz-Target` value for the JSON protocol (for example
+`secretsmanager.GetSecretValue`), the bare `Action` field of a form body for the query protocol
+(for example `DescribeDBInstances`). A request whose action no route names gets the action-less
+route of its target, else the default, as the real service answers an action it does not know
+with an error. The capture command records no action: those routes are written by hand from
+the services' published examples, since a real capture would need signed requests.
+
+The leaf, its key and the fixture authority sit beside the captures under `tls/`, made by
+`tls/generate.sh`.
 """
 
 import json
@@ -47,6 +57,13 @@ class StandInRoute(BaseModel):
     status: int
     headers: list[tuple[str, str]]
     body: str
+    action: str | None = None
+
+    @model_validator(mode="after")
+    def _an_action_keys_a_post_only(self) -> Self:
+        if self.action is not None and self.method != "POST":
+            raise ValueError("only a POST route carries an AWS action")
+        return self
 
 
 class StandInDefault(BaseModel):
@@ -112,6 +129,16 @@ class StandInCapture(BaseModel):
             raise ValueError(
                 "the stand-in serves both schemes,"
                 " so a capture records the answer to an unknown path on each"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _one_route_per_key(self) -> Self:
+        keys = [(each.scheme, each.method, each.target, each.action) for each in self.routes]
+        if len(set(keys)) != len(keys):
+            raise ValueError(
+                "two routes answer one (scheme, method, target, action),"
+                " so the stand-in could replay only one of them"
             )
         return self
 

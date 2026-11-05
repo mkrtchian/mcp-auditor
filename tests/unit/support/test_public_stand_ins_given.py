@@ -43,15 +43,18 @@ def a_stand_in_directory(directory: Path, **capture_overrides: Any) -> Path:
     return directory
 
 
-def a_route(scheme: str) -> dict[str, Any]:
-    return {
+def a_route(scheme: str, method: str = "GET", action: str | None = None) -> dict[str, Any]:
+    route: dict[str, Any] = {
         "scheme": scheme,
-        "method": "GET",
+        "method": method,
         "target": "/",
         "status": 200,
         "headers": [],
         "body": "",
     }
+    if action is not None:
+        route["action"] = action
+    return route
 
 
 def a_default(

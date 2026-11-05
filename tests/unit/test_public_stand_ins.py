@@ -53,6 +53,48 @@ def test_a_route_scheme_other_than_http_or_https_is_refused(tmp_path: Path):
         stand_in(given.HOST, directory)
 
 
+@pytest.mark.parametrize(
+    "routes",
+    [
+        [given.a_route("https"), given.a_route("https")],
+        [given.a_route("https", "POST", "Describe"), given.a_route("https", "POST", "Describe")],
+    ],
+    ids=["action_less", "one_action"],
+)
+def test_two_routes_with_one_key_are_refused(tmp_path: Path, routes: list[dict[str, object]]):
+    directory = given.a_stand_in_directory(tmp_path, routes=routes)
+
+    with pytest.raises(ValidationError, match="two routes answer"):
+        stand_in(given.HOST, directory)
+
+
+@pytest.mark.parametrize(
+    "actions",
+    [
+        ["secretsmanager.GetSecretValue", "GetSecretValue"],
+        ["secretsmanager.GetSecretValue", "secretsmanager.ListSecrets"],
+        [None, "DescribeDBInstances"],
+    ],
+    ids=["json_and_query_spellings", "two_actions", "action_less_beside_an_action"],
+)
+def test_one_post_target_answering_distinct_actions_loads(
+    tmp_path: Path, actions: list[str | None]
+):
+    routes = [given.a_route("https", "POST", action) for action in actions]
+    directory = given.a_stand_in_directory(tmp_path, routes=routes)
+
+    assert stand_in(given.HOST, directory).host == given.HOST
+
+
+@pytest.mark.parametrize("method", ["GET", "HEAD", "PUT"])
+def test_an_action_on_a_route_other_than_post_is_refused(tmp_path: Path, method: str):
+    routes = [given.a_route("https", method, "GetSecretValue")]
+    directory = given.a_stand_in_directory(tmp_path, routes=routes)
+
+    with pytest.raises(ValidationError, match="only a POST route"):
+        stand_in(given.HOST, directory)
+
+
 @pytest.mark.parametrize("field", ["command", "captured_at"])
 def test_an_empty_provenance_field_is_refused(tmp_path: Path, field: str):
     directory = given.a_stand_in_directory(tmp_path, **{field: ""})
