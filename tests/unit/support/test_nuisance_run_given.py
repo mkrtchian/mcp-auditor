@@ -1,15 +1,9 @@
 import asyncio
-from collections.abc import AsyncGenerator, Awaitable, Callable, Generator, Mapping, Sequence
-from contextlib import asynccontextmanager, contextmanager
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from datetime import date
-from typing import IO
-
-import pytest
 
 import tests.unit.support.test_cve_grammar_given as grammar
 import tests.unit.support.test_nuisance_admission_given as admission
-from evals import nuisance_vetting
-from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.eval_session import TreeState
 from evals.holdout_conditions import Cutoff, HoldoutConditions
@@ -28,12 +22,8 @@ from mcp_auditor.domain.models import (
     MissCause,
     MissedStep,
     ProviderUsage,
-    ToolDefinition,
-    ToolResponse,
 )
-from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes import FakeContainerSweep
-from tests.fakes.mcp_client import FakeMCPClient
 
 FIRST_FLAW = admission.FIRST_FLAW
 SECOND_FLAW = admission.SECOND_FLAW
@@ -79,26 +69,6 @@ def a_server(
     )
     server = admission.a_server(the_flaws)
     return server.model_copy(update={"server_package": package, "service": service})
-
-
-def a_server_whose_declared_function_is_its_effect() -> AdmittedServer:
-    flaw = admission.a_flaw_record(
-        FIRST_FLAW, MechanismClass.READ_OUTSIDE_SCOPE, admission.PATCHED_VERSION
-    )
-    return a_server(flaws=[flaw.model_copy(update={"declared_function_is_effect": True})])
-
-
-def a_two_flaw_server() -> AdmittedServer:
-    return a_server(
-        flaws=[
-            admission.a_flaw_record(
-                FIRST_FLAW, MechanismClass.READ_OUTSIDE_SCOPE, admission.PATCHED_VERSION
-            ),
-            admission.a_flaw_record(
-                SECOND_FLAW, MechanismClass.COMMAND_EXECUTION, admission.PATCHED_VERSION
-            ),
-        ]
-    )
 
 
 def a_report(
@@ -290,46 +260,3 @@ async def run(
         concurrency=concurrency,
         deps=deps,
     )
-
-
-class FlakyLaunches:
-    """Stands in for the server's launch and connection: the first `failing` connections fail,
-    the last of them on a timeout, and the next ones list the counted tool and answer its benign
-    call with `answer`, then fail their teardown when `teardown_fails`."""
-
-    def __init__(self, failing: int, answer: ToolResponse, teardown_fails: bool) -> None:
-        self.launches = 0
-        self._failing = failing
-        self._answer = answer
-        self._teardown_fails = teardown_fails
-
-    @contextmanager
-    def environment(self, _server: AdmittedServer) -> Generator[Launch]:
-        self.launches += 1
-        yield Launch("docker", [])
-
-    @asynccontextmanager
-    async def connect(
-        self, _launch: Launch, _stderr: IO[str], *, tool_call_timeout: int
-    ) -> AsyncGenerator[MCPClientPort]:
-        if self.launches == self._failing:
-            raise TimeoutError("initialize timed out")
-        if self.launches < self._failing:
-            raise ConnectionError("Connection closed")
-        listed = [ToolDefinition(name=COUNTED_TOOL, input_schema={})]
-        yield FakeMCPClient(listed, {COUNTED_TOOL: self._answer})
-        if self._teardown_fails:
-            raise OSError("container removal failed")
-
-
-def launches_failing(
-    monkeypatch: pytest.MonkeyPatch,
-    failing: int,
-    answer: ToolResponse | None = None,
-    teardown_fails: bool = False,
-) -> FlakyLaunches:
-    expected = ToolResponse(content=f"{COUNTED_TOOL} answered")
-    flaky = FlakyLaunches(failing, answer or expected, teardown_fails)
-    monkeypatch.setattr(nuisance_vetting, "nuisance_environment", flaky.environment)
-    monkeypatch.setattr(nuisance_vetting, "connect", flaky.connect)
-    return flaky

@@ -5,6 +5,7 @@ import pytest
 import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_holdout_census_given as given
 import tests.unit.support.test_nuisance_admission_given as admission
+import tests.unit.support.test_nuisance_readmission_dossier_given as readmission
 import tests.unit.support.test_nuisance_walk_given as walk_given
 import tests.unit.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
@@ -139,7 +140,7 @@ def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     )
 
     assert exit_code == 0
-    assert out.exists()
+    assert (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
 
 
 def test_nuisance_dossier_with_an_unknown_backend_exits_three(
@@ -197,7 +198,7 @@ def test_a_readmission_dossier_with_a_backend_exits_three(
         [
             "nuisance-dossier",
             "--server",
-            "PyPI:praisonai",
+            readmission.PRAISONAI,
             "--readmission",
             "--backend",
             "doris",
@@ -217,12 +218,15 @@ def test_a_readmission_dossier_of_an_admitted_server_exits_zero(
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
-        ["nuisance-dossier", "--server", "PyPI:praisonai", "--readmission", "--out", str(out)]
+        ["nuisance-dossier", "--server", readmission.PRAISONAI, "--readmission", "--out", str(out)]
     )
 
     assert exit_code == 0
     assert (out / "admission_record.json").exists()
-    assert f"Re-admission dossier for PyPI:praisonai written to {out}" in capsys.readouterr().out
+    assert (
+        f"Re-admission dossier for {readmission.PRAISONAI} written to {out}"
+        in capsys.readouterr().out
+    )
 
 
 def test_a_readmission_dossier_without_an_admission_exits_three(
@@ -235,7 +239,7 @@ def test_a_readmission_dossier_without_an_admission_exits_three(
         [
             "nuisance-dossier",
             "--server",
-            "PyPI:praisonai",
+            readmission.PRAISONAI,
             "--readmission",
             "--admission",
             str(missing),
@@ -316,5 +320,7 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
         ["run", *walk_given.committed_census_arguments(tmp_path, census), "--admission", str(path)]
     )
 
+    out = capsys.readouterr().out
     assert exit_code == run_nuisance.REFUSED_EXIT
-    assert "the census, the walk record or the admission is malformed" in capsys.readouterr().out
+    assert "the census, the walk record or the admission is malformed" in out
+    assert f"grammar fingerprint {stale.grammar_fingerprint} is not the current" in out
