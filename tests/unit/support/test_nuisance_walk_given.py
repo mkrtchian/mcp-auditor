@@ -127,10 +127,6 @@ def with_an_identity(
     return NuisanceCensus(census=nuisance_census.census, record=identified)
 
 
-def written(tmp_path: Path, census: HoldoutCensus) -> Path:
-    return census_given.written(tmp_path, census)
-
-
 def a_nuisance_census(census: HoldoutCensus) -> NuisanceCensus:
     return NuisanceCensus(census=census, record=an_empty_record())
 
@@ -142,6 +138,10 @@ def an_empty_record(size: int = 1) -> NuisanceWalkRecord:
         settlements=[],
         identities=[],
     )
+
+
+def committed_census_arguments(tmp_path: Path, census: Path) -> list[str]:
+    return ["--census", str(census), "--walk-record", str(a_written_empty_record(tmp_path))]
 
 
 def a_written_empty_record(tmp_path: Path) -> Path:

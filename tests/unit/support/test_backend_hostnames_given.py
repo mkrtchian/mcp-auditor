@@ -5,16 +5,12 @@ from typing import Any, cast
 
 from evals.cve_images import dockerfile_instructions
 from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.holdout_census import load_census
-from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer, load_admission
-from evals.nuisance_commands import WALK_RECORD_PATH
-from evals.nuisance_walk_record import load_walk_record
-from evals.run_census import CENSUS_PATH
+from evals.nuisance_admission import AdmittedServer
+from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 
 def admitted_servers() -> list[AdmittedServer]:
-    census = load_census(CENSUS_PATH)
-    return list(load_admission(ADMISSION_PATH, load_walk_record(WALK_RECORD_PATH, census)).servers)
+    return list(the_committed_admission().servers)
 
 
 def the_admitted_server(service: str) -> AdmittedServer:

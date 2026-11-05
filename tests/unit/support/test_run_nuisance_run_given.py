@@ -26,14 +26,10 @@ def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) ->
     default the admission of one fully recorded server."""
     census = census_given.written(tmp_path, draw_given.a_census_with_draw(draw_given.a_draw()))
     admitted = admission_given.written(tmp_path, admission or admission_given.an_admission())
-    record = walk_given.a_written_empty_record(tmp_path)
     report = tmp_path / "nuisance_report.json"
     return [
         "run",
-        "--census",
-        str(census),
-        "--walk-record",
-        str(record),
+        *walk_given.committed_census_arguments(tmp_path, census),
         "--admission",
         str(admitted),
         "--report",

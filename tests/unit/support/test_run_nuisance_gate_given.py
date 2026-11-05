@@ -74,10 +74,7 @@ def _gate_arguments(
     tmp_path: Path, census: HoldoutCensus, admitted: NuisanceAdmission
 ) -> list[str]:
     return [
-        "--census",
-        str(census_given.written(tmp_path, census)),
-        "--walk-record",
-        str(walk_given.a_written_empty_record(tmp_path)),
+        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
         "--admission",
         str(admission_given.written(tmp_path, admitted)),
         "--report",

@@ -97,7 +97,7 @@ def test_a_stand_in_file_the_fingerprint_does_not_cover_is_refused():
 
 
 def test_a_stand_in_request_its_file_does_not_hold_is_refused():
-    dockerfile = image_dockerfile(ADMITTED[0].service).relative_to(then.REPOSITORY)
+    dockerfile = image_dockerfile(ADMITTED[0].service).relative_to(then.REPO_ROOT)
     server = given.a_server_with_a_stand_in(ADMITTED[0], str(dockerfile), "GET /never/served")
 
     with pytest.raises(AssertionError):
@@ -105,7 +105,7 @@ def test_a_stand_in_request_its_file_does_not_hold_is_refused():
 
 
 def test_a_stand_in_in_the_run_dockerfile_holding_its_request_passes():
-    dockerfile = image_dockerfile(ADMITTED[0].service).relative_to(then.REPOSITORY)
+    dockerfile = image_dockerfile(ADMITTED[0].service).relative_to(then.REPO_ROOT)
     server = given.a_server_with_a_stand_in(ADMITTED[0], str(dockerfile), "FROM ")
 
     then.every_stand_in_is_a_fingerprinted_file(server)

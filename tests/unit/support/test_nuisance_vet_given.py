@@ -61,10 +61,7 @@ def a_vet_of_one_server_beside_the_acceptance_one(tmp_path: Path) -> list[str]:
     both = one.model_copy(update={"servers": [*one.servers, *acceptance.servers]})
     return [
         "vet",
-        "--census",
-        str(census_given.written(tmp_path, census)),
-        "--walk-record",
-        str(walk_given.a_written_empty_record(tmp_path)),
+        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
         "--admission",
         str(admission_given.written(tmp_path, both)),
     ]

@@ -32,10 +32,7 @@ def a_walk_with_a_queue_server(
         both = admission.model_copy(update={"servers": [*admission.servers, *queued.servers]})
         admission_path = admission_given.written(tmp_path, both)
     return [
-        "--census",
-        str(census_given.written(tmp_path, census)),
-        "--walk-record",
-        str(walk_given.a_written_empty_record(tmp_path)),
+        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
         "--admission",
         str(admission_path),
     ]

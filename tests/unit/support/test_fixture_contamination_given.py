@@ -3,11 +3,11 @@ import re
 from pathlib import Path
 
 from evals import holdout_census, holdout_exclusions
+from evals.honeypots import REPO_ROOT
 from evals.judge_fixture import CaseLabel, CaseSource, JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AuditCategory
 
 _TESTS_DIR = Path(__file__).resolve().parents[2]
-_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 HONEYPOT_SERVERS = (
     _TESTS_DIR / "honeypot_server.py",
@@ -15,8 +15,8 @@ HONEYPOT_SERVERS = (
     _TESTS_DIR / "chain_honeypot_server.py",
 )
 
-_JUDGE_CASES = _REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"
-_HOLDOUT_CENSUS = _REPO_ROOT / "evals" / "holdout_census.json"
+_JUDGE_CASES = REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"
+_HOLDOUT_CENSUS = REPO_ROOT / "evals" / "holdout_census.json"
 
 # The auditor's own tool name heads every payload marker it plants (`mcp-auditor-probe`, the
 # `mcp-auditor-no-such-…` probe paths). A server never emits that name except by echoing our
@@ -43,7 +43,7 @@ def layout_literals() -> set[str]:
 def shipped_constants() -> list[tuple[Path, str]]:
     return [
         (path, text)
-        for path in sorted((_REPO_ROOT / "src").rglob("*.py"))
+        for path in sorted((REPO_ROOT / "src").rglob("*.py"))
         for text in _string_constants_of(_parse(path))
     ]
 

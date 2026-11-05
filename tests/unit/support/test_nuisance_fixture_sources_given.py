@@ -1,17 +1,11 @@
 from evals.fixture_provenance import StandInOutput, StandInRecord
-from evals.holdout_census import load_census
-from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer, load_admission
+from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_admission_records import SeedRecord
-from evals.nuisance_commands import WALK_RECORD_PATH
-from evals.nuisance_walk_record import load_walk_record
-from evals.run_census import CENSUS_PATH
+from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 
 def admitted_servers() -> list[AdmittedServer]:
-    if not ADMISSION_PATH.exists():
-        return []
-    census = load_census(CENSUS_PATH)
-    return list(load_admission(ADMISSION_PATH, load_walk_record(WALK_RECORD_PATH, census)).servers)
+    return list(the_committed_admission().servers)
 
 
 def a_server_seeding_with_the_pin(server: AdmittedServer, pin: str) -> AdmittedServer:

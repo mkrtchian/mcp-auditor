@@ -13,12 +13,6 @@ import tests.unit.support.test_run_nuisance_gate_given as given
 from evals import run_nuisance
 from evals.baseline import BaselineStatus
 
-
-def _census_arguments(tmp_path: Path, census: Path) -> list[str]:
-    record = walk_given.a_written_empty_record(tmp_path)
-    return ["--census", str(census), "--walk-record", str(record)]
-
-
 _KUBERNETES = admission.ACCEPTANCE_PACKAGE
 
 
@@ -39,7 +33,12 @@ def test_gate_without_an_admission_exits_zero_and_says_so(
     missing = tmp_path / "absent.json"
 
     exit_code = run_nuisance.main(
-        ["gate", *_census_arguments(tmp_path, census), "--admission", str(missing)]
+        [
+            "gate",
+            *walk_given.committed_census_arguments(tmp_path, census),
+            "--admission",
+            str(missing),
+        ]
     )
 
     assert exit_code == 0
@@ -54,7 +53,7 @@ def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
     path = admission.written(tmp_path, admission.an_admission())
 
     exit_code = run_nuisance.main(
-        ["gate", *_census_arguments(tmp_path, census), "--admission", str(path)]
+        ["gate", *walk_given.committed_census_arguments(tmp_path, census), "--admission", str(path)]
     )
 
     assert exit_code == 0
@@ -76,7 +75,7 @@ def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
     path = admission.written(tmp_path, no_stdio)
 
     exit_code = run_nuisance.main(
-        ["gate", *_census_arguments(tmp_path, census), "--admission", str(path)]
+        ["gate", *walk_given.committed_census_arguments(tmp_path, census), "--admission", str(path)]
     )
 
     out = capsys.readouterr().out
@@ -99,7 +98,7 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
     exit_code = run_nuisance.main(
         [
             "gate",
-            *_census_arguments(tmp_path, census),
+            *walk_given.committed_census_arguments(tmp_path, census),
             "--admission",
             str(path),
             "--server",

@@ -1,34 +1,18 @@
 import hashlib
-from functools import cache
 from pathlib import Path
 
-from evals.holdout_census import load_census
-from evals.nuisance_admission import (
-    ADMISSION_PATH,
-    AdmittedServer,
-    NuisanceAdmission,
-    load_admission,
-)
-from evals.nuisance_commands import CENSUS_PATH, WALK_RECORD_PATH
+from evals.honeypots import REPO_ROOT
+from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_readmission_dossier import write_readmission_dossier
-from evals.nuisance_walk_record import NuisanceCensus, load_walk_record
-
-REPO_ROOT = Path(__file__).resolve().parents[3]
+from tests.unit.support.test_nuisance_committed_admission_given import (
+    the_committed_admission,
+    the_committed_census,
+)
 
 PRAISONAI = "PyPI:praisonai"
 APIFY = "npm:@apify/actors-mcp-server"
 NEO4J = "PyPI:mcp-neo4j-cypher"
 MYSQL = "PyPI:awslabs-mysql-mcp-server"
-
-
-@cache
-def the_committed_census() -> NuisanceCensus:
-    return load_walk_record(WALK_RECORD_PATH, load_census(CENSUS_PATH))
-
-
-@cache
-def the_committed_admission() -> NuisanceAdmission:
-    return load_admission(ADMISSION_PATH, the_committed_census())
 
 
 def the_committed_server(server_package: str) -> AdmittedServer:

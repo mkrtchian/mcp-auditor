@@ -10,7 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+from evals.honeypots import REPO_ROOT as REPO_ROOT
 
 
 def mcp_auditor_imports(source: str, filename: str = "<string>") -> list[str]:

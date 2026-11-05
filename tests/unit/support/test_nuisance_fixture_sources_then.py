@@ -6,11 +6,10 @@ from evals.cve_images import dockerfile_instructions
 from evals.cve_planting import PlantingHost
 from evals.docker_paths import image_dockerfile
 from evals.fixture_provenance import StandInRecord
+from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS
 from evals.public_stand_ins import stand_in_files
-
-REPOSITORY = Path(__file__).resolve().parents[3]
 
 _HTTP_CHECKSUM = re.compile(r"--checksum=sha256:[0-9a-f]{64}")
 _GIT_CHECKSUM = re.compile(r"--checksum=[0-9a-f]{40}")
@@ -106,9 +105,9 @@ def host_stand_in_files(host: PlantingHost) -> list[Path]:
 
 def stand_in_paths_outside(stand_in: StandInRecord, covered: set[Path]) -> list[str]:
     recorded = [stand_in.file] if stand_in.capture is None else [stand_in.file, stand_in.capture]
-    return [path for path in recorded if (REPOSITORY / path).resolve() not in covered]
+    return [path for path in recorded if (REPO_ROOT / path).resolve() not in covered]
 
 
 def requests_missing_from_the_file(stand_in: StandInRecord) -> list[str]:
-    text = (REPOSITORY / stand_in.file).read_text()
+    text = (REPO_ROOT / stand_in.file).read_text()
     return [output.request for output in stand_in.outputs if output.request not in text]

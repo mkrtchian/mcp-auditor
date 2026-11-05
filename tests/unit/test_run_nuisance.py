@@ -10,11 +10,6 @@ import tests.unit.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
 
 
-def _census_arguments(tmp_path: Path, census: Path) -> list[str]:
-    record = walk_given.a_written_empty_record(tmp_path)
-    return ["--census", str(census), "--walk-record", str(record)]
-
-
 def test_walk_prints_the_population_and_exits_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
@@ -23,7 +18,12 @@ def test_walk_prints_the_population_and_exits_zero(
     missing = tmp_path / "absent.json"
 
     exit_code = run_nuisance.main(
-        ["walk", *_census_arguments(tmp_path, path), "--admission", str(missing)]
+        [
+            "walk",
+            *walk_given.committed_census_arguments(tmp_path, path),
+            "--admission",
+            str(missing),
+        ]
     )
 
     out = capsys.readouterr().out
@@ -66,7 +66,12 @@ def test_a_malformed_census_exits_three(tmp_path: Path):
     missing = tmp_path / "absent.json"
 
     exit_code = run_nuisance.main(
-        ["walk", *_census_arguments(tmp_path, path), "--admission", str(missing)]
+        [
+            "walk",
+            *walk_given.committed_census_arguments(tmp_path, path),
+            "--admission",
+            str(missing),
+        ]
     )
 
     assert exit_code == 3
@@ -101,7 +106,7 @@ def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.C
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *_census_arguments(tmp_path, census),
+            *walk_given.committed_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -123,7 +128,7 @@ def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *_census_arguments(tmp_path, census),
+            *walk_given.committed_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -146,7 +151,7 @@ def test_nuisance_dossier_with_an_unknown_backend_exits_three(
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *_census_arguments(tmp_path, census),
+            *walk_given.committed_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -170,7 +175,7 @@ def test_nuisance_dossier_on_an_unknown_server_exits_three(
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *_census_arguments(tmp_path, census),
+            *walk_given.committed_census_arguments(tmp_path, census),
             "--server",
             "npm:ghost",
             "--out",
@@ -250,7 +255,12 @@ def test_run_without_an_admission_exits_zero_and_says_so(
     missing = tmp_path / "absent.json"
 
     exit_code = run_nuisance.main(
-        ["run", *_census_arguments(tmp_path, census), "--admission", str(missing)]
+        [
+            "run",
+            *walk_given.committed_census_arguments(tmp_path, census),
+            "--admission",
+            str(missing),
+        ]
     )
 
     assert exit_code == 0
@@ -265,7 +275,7 @@ def test_run_on_an_admission_with_no_server_exits_zero_and_says_so(
     path = admission.written(tmp_path, empty)
 
     exit_code = run_nuisance.main(
-        ["run", *_census_arguments(tmp_path, census), "--admission", str(path)]
+        ["run", *walk_given.committed_census_arguments(tmp_path, census), "--admission", str(path)]
     )
 
     assert exit_code == 0
@@ -281,7 +291,12 @@ def test_run_refuses_tracing_before_reading_the_admission(
     malformed.write_text("{ not json")
 
     exit_code = run_nuisance.main(
-        ["run", *_census_arguments(tmp_path, census), "--admission", str(malformed)]
+        [
+            "run",
+            *walk_given.committed_census_arguments(tmp_path, census),
+            "--admission",
+            str(malformed),
+        ]
     )
 
     out = capsys.readouterr().out
@@ -298,7 +313,7 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
     path = admission.written(tmp_path, stale)
 
     exit_code = run_nuisance.main(
-        ["run", *_census_arguments(tmp_path, census), "--admission", str(path)]
+        ["run", *walk_given.committed_census_arguments(tmp_path, census), "--admission", str(path)]
     )
 
     assert exit_code == run_nuisance.REFUSED_EXIT
