@@ -148,7 +148,8 @@ def test_a_server_whose_every_flaw_fails_leaves_the_population():
 
 def test_a_benchmark_flaw_marks_its_server_acceptance():
     census = given.a_census_walking(
-        [("a1", "drawn", "npm:accsrv")], **{"CVE-2025-53109": {"server_package": "npm:accsrv"}}
+        [("a1", "drawn", "npm:accsrv")],
+        **{given.A_CURRENT_TARGET_FLAW: {"server_package": "npm:accsrv"}},
     )
 
     [server] = nuisance_population(given.a_nuisance_census(census))
@@ -157,9 +158,7 @@ def test_a_benchmark_flaw_marks_its_server_acceptance():
 
 
 def test_an_excluded_server_is_marked_excluded():
-    census = given.a_census_walking(
-        [("exc1", "drawn", "npm:@modelcontextprotocol/server-filesystem")]
-    )
+    census = given.a_census_walking([("exc1", "drawn", given.AN_EXCLUDED_SERVER)])
     census = given.with_the_second_classifier_overriding(
         census, "exc1", {"server_package": "npm:another-label"}
     )
@@ -170,9 +169,9 @@ def test_an_excluded_server_is_marked_excluded():
 
 
 def test_acceptance_wins_over_excluded():
-    filesystem = "npm:@modelcontextprotocol/server-filesystem"
     census = given.a_census_walking(
-        [("exc1", "drawn", filesystem)], **{"CVE-2025-53110": {"server_package": filesystem}}
+        [("exc1", "drawn", given.AN_EXCLUDED_SERVER)],
+        **{given.A_CURRENT_TARGET_FLAW: {"server_package": given.AN_EXCLUDED_SERVER}},
     )
     census = given.with_the_second_classifier_overriding(
         census, "exc1", {"server_package": "npm:another-label"}
@@ -186,18 +185,13 @@ def test_acceptance_wins_over_excluded():
 def test_only_a_current_target_makes_its_server_a_current_acceptance_server():
     census = given.a_census_walking(
         [
-            ("CVE-2025-53355", "excluded", "npm:mcp-server-kubernetes"),
-            ("CVE-2026-0755", "excluded", "npm:gemini-mcp-tool"),
+            (given.A_CURRENT_TARGET_FLAW, "excluded", "npm:current"),
+            (given.A_DROPPED_BENCHMARK_FLAW, "excluded", "npm:dropped"),
         ]
     )
 
-    assert current_acceptance_servers(given.a_nuisance_census(census)) == {
-        "npm:mcp-server-kubernetes"
-    }
-    assert acceptance_servers(given.a_nuisance_census(census)) == {
-        "npm:mcp-server-kubernetes",
-        "npm:gemini-mcp-tool",
-    }
+    assert current_acceptance_servers(given.a_nuisance_census(census)) == {"npm:current"}
+    assert acceptance_servers(given.a_nuisance_census(census)) == {"npm:current", "npm:dropped"}
 
 
 def test_the_walk_resumes_past_the_holdout_walk_in_draw_order():
@@ -280,6 +274,7 @@ def test_a_grammar_class_settlement_false_does_not_take_a_server_out():
 
     for settled in (given.a_nuisance_census(in_the_census), in_the_record):
         assert [server.server_package for server in nuisance_population(settled)] == ["npm:srv"]
+    assert version_setting_flaws("npm:srv", in_the_record) == ["g"]
 
 
 def test_a_holdout_walk_flaw_outside_the_draw_order_is_refused():

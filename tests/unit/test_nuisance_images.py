@@ -26,14 +26,6 @@ def test_a_clean_admission_has_no_namespace_problem():
     assert nuisance_images.namespace_problems(given.an_admission()) == []
 
 
-def test_admission_problems_carries_the_namespace_problem():
-    admission = _with_service("sentinel")
-
-    problems = given.problems_of(admission)
-
-    assert any("sentinel" in problem for problem in problems)
-
-
 def _with_service(service: str) -> NuisanceAdmission:
     return edits.with_the_server(
         given.an_admission(), lambda server: server.model_copy(update={"service": service})

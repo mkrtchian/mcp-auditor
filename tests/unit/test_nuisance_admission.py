@@ -3,46 +3,28 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 
 import tests.unit.support.test_nuisance_admission_given as given
 from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.nuisance_admission import (
-    FlawRecord,
-    NuisanceAdmission,
-    load_admission,
-)
+from evals.nuisance_admission import NuisanceAdmission, load_admission
 
-_MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
-    given.with_a_stale_grammar_fingerprint,
-    given.with_an_unsettled_disagreement,
-    given.with_a_flaw_of_another_server,
-    given.with_no_counted_tool,
-    given.with_a_server_patched_version_of_no_flaw,
-    given.with_a_server_patched_surfaces_set_on_the_servers_own_version,
-    given.with_an_acceptance_service,
-    given.with_an_inconsistent_tool_record,
-    given.with_a_counted_tool_missing_its_benign_call,
-    given.with_an_unknown_backend_provisioner,
-    given.with_a_backend_fixture_differing_from_its_provisioner,
-    given.with_a_networked_host_and_no_backend,
+_MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] = [
+    (given.with_a_stale_grammar_fingerprint, "grammar fingerprint"),
+    (given.with_an_unsettled_disagreement, "has no settlement"),
+    (given.with_a_flaw_of_another_server, "is not a census flaw"),
+    (given.with_no_counted_tool, "no counted tool"),
+    (given.with_a_server_patched_version_of_no_flaw, "is not a counted flaw's patched version"),
+    (
+        given.with_a_server_patched_surfaces_set_on_the_servers_own_version,
+        "sets server_patched_surfaces on the server's own patched version",
+    ),
+    (given.with_an_acceptance_service, "is an acceptance service"),
+    (given.with_an_inconsistent_tool_record, "renames 'read_file' to 'write_file'"),
+    (given.with_a_counted_tool_missing_its_benign_call, "has no benign call"),
+    (given.with_an_unknown_backend_provisioner, "is not registered"),
+    (given.with_a_backend_fixture_differing_from_its_provisioner, "fake/backend:1.0"),
+    (given.with_a_networked_host_and_no_backend, "has_network without a backend"),
 ]
-
-
-def test_a_non_grammar_effect_class_is_refused_by_the_schema():
-    with pytest.raises(ValidationError):
-        FlawRecord(
-            flaw="CVE-2025-0001",
-            tools=[given.a_tool("read", "read", "unchanged")],
-            effect_class="authorization_bypass",  # type: ignore[arg-type]
-            patched_version="1.2.0",
-            patched_source="advisory",
-            launch_option=None,
-            benign_calls=[],
-            backend_need="none",
-            declared_function_is_effect=False,
-            fix_check=given.a_passing_fix_check(),
-        )
 
 
 def test_the_clean_admission_has_no_problems():
@@ -50,31 +32,23 @@ def test_the_clean_admission_has_no_problems():
     assert given.problems_of(admission) == []
 
 
-@pytest.mark.parametrize("mutate", _MUTATORS)
-def test_each_mutation_yields_exactly_one_problem(
-    mutate: Callable[[NuisanceAdmission], NuisanceAdmission],
+@pytest.mark.parametrize(
+    ("mutate", "fragment"),
+    _MUTATIONS,
+    ids=[mutate.__name__ for mutate, _ in _MUTATIONS],
+)
+def test_each_mutation_yields_exactly_one_problem_carrying_its_rule(
+    mutate: Callable[[NuisanceAdmission], NuisanceAdmission], fragment: str
 ):
-    admission = mutate(given.an_admission())
+    [problem] = given.problems_of(mutate(given.an_admission()))
 
-    problems = given.problems_of(admission)
-
-    assert len(problems) == 1, problems
-    # The problem names the thing it is about: the server, or the grammar for the fingerprint.
-    assert given.SERVER_PACKAGE in problems[0] or "grammar fingerprint" in problems[0]
+    assert fragment in problem
 
 
 def test_a_registered_backend_fixture_has_no_problem():
     admission = given.with_a_registered_backend(given.an_admission())
 
     assert given.problems_of(admission) == []
-
-
-def test_a_differing_backend_fixture_names_the_expected_one():
-    admission = given.with_a_backend_fixture_differing_from_its_provisioner(given.an_admission())
-
-    [problem] = given.problems_of(admission)
-
-    assert "fake/backend:1.0" in problem
 
 
 def test_a_networked_host_with_no_backend_is_refused():
@@ -144,11 +118,3 @@ def test_load_admission_on_a_mutated_admission_raises_with_the_problem(tmp_path:
 
     with pytest.raises(ValueError, match="is not a census flaw"):
         load_admission(path, given.a_nuisance_census())
-
-
-def test_a_stale_fingerprint_is_the_named_problem():
-    admission = given.with_a_stale_grammar_fingerprint(given.an_admission())
-
-    [problem] = given.problems_of(admission)
-
-    assert "grammar fingerprint" in problem

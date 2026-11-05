@@ -8,8 +8,10 @@ import tests.unit.support.test_holdout_census_given as census_given
 from evals.census_classification import Criterion, Primitive, Transport
 from evals.census_draw import DrawRecord, DrawWalkStep, Settlement
 from evals.census_sources import SourceName, SourceRecord
+from evals.cve_targets import CVE_TARGETS
 from evals.holdout_census import CLASSIFIERS, CensusFlaw, Discovery, HoldoutCensus
 from evals.holdout_draw import draw_digest
+from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
 from evals.nuisance_walk_record import (
     Addition,
     IdentitySettlement,
@@ -24,6 +26,11 @@ NOT_PINNABLE: dict[str, Any] = grouping.NOT_PINNABLE
 EFFECT_HIDDEN: dict[str, Any] = {"effect_in_tool_response": False}
 ON_RESOURCES: dict[str, Any] = {"primitive": Primitive.RESOURCES}
 OVER_HTTP: dict[str, Any] = {"transport": Transport.HTTP}
+
+# `min`, since a frozenset's order varies between processes.
+A_CURRENT_TARGET_FLAW = CVE_TARGETS[0].cve_id
+A_DROPPED_BENCHMARK_FLAW = min(BENCHMARK_FLAWS - {target.cve_id for target in CVE_TARGETS})
+AN_EXCLUDED_SERVER = min(EXCLUDED_SERVERS)
 
 
 def a_census_walking(

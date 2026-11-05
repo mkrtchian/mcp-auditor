@@ -48,12 +48,17 @@ def test_a_capture_backed_stand_in_without_outputs_has_no_problem():
 
 
 def test_an_invented_output_without_its_form_source_is_one_problem():
-    _assert_one_problem_naming_the_stand_in(_a_stand_in(_an_output("invented")))
+    _assert_one_problem_naming_the_stand_in(
+        _a_stand_in(_an_output("invented")),
+        "invented output for 'GET /api/json' names no form source",
+    )
 
 
 def test_a_copied_output_with_a_form_source_is_one_problem():
     output = _an_output("server_tests", form_source="the Jenkins job JSON")
-    _assert_one_problem_naming_the_stand_in(_a_stand_in(output))
+    _assert_one_problem_naming_the_stand_in(
+        _a_stand_in(output), "server_tests output for 'GET /api/json' names a form source"
+    )
 
 
 def test_an_invented_output_with_a_replacement_is_one_problem():
@@ -62,19 +67,21 @@ def test_an_invented_output_with_a_replacement_is_one_problem():
         form_source="the Jenkins job JSON",
         replacements=[IdentifierReplacement(original="ci.example.org", replacement="ci.local")],
     )
-    _assert_one_problem_naming_the_stand_in(_a_stand_in(output))
+    _assert_one_problem_naming_the_stand_in(_a_stand_in(output), "records identifier replacements")
 
 
 def test_a_stand_in_with_neither_output_nor_capture_is_one_problem():
-    _assert_one_problem_naming_the_stand_in(_a_stand_in())
+    _assert_one_problem_naming_the_stand_in(
+        _a_stand_in(), "records neither an output nor a capture"
+    )
 
 
 def test_a_stand_in_without_a_reason_is_one_problem():
     stand_in = _a_stand_in(_an_output("capture")).model_copy(update={"reason": " "})
-    _assert_one_problem_naming_the_stand_in(stand_in)
+    _assert_one_problem_naming_the_stand_in(stand_in, "records no reason")
 
 
-def _assert_one_problem_naming_the_stand_in(stand_in: StandInRecord) -> None:
-    problems = stand_in_problems(stand_in)
-    assert len(problems) == 1, problems
-    assert _REPLACES in problems[0]
+def _assert_one_problem_naming_the_stand_in(stand_in: StandInRecord, fragment: str) -> None:
+    [problem] = stand_in_problems(stand_in)
+    assert problem.startswith(f"stand-in for {_REPLACES}: ")
+    assert fragment in problem

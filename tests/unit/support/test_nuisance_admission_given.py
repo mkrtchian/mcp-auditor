@@ -373,7 +373,7 @@ def admitting_the_server_of(flaw: str, server_package: str, service: str) -> Nui
     )
 
 
-ACCEPTANCE_FLAW = "CVE-2025-53355"
+ACCEPTANCE_FLAW = walk_given.A_CURRENT_TARGET_FLAW
 ACCEPTANCE_PACKAGE = "npm:mcp-server-kubernetes"
 
 
