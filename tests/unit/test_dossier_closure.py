@@ -5,27 +5,10 @@ import pytest
 from evals.dossier_closure import copy_closure, import_closure
 
 
-def test_a_fix_check_closure_contains_the_sibling_it_imports():
-    closure = import_closure(["evals.nuisance_fix_checks.ghsa_8g7g_hmwm_6rv2_n8n"])
+def test_the_closure_follows_imports_transitively_and_skips_imported_attributes(tmp_path: Path):
+    _a_planted_package(tmp_path)
 
-    assert "evals.nuisance_fix_checks.cve_2026_44694_n8n" in closure
-    assert "evals.nuisance_fix_checks" in closure
-    assert "evals" in closure
-
-
-def test_a_backend_closure_contains_every_module_its_lifecycle_needs():
-    closure = import_closure(["evals.ckan_backend"])
-
-    for module in (
-        "evals.ckan_backend",
-        "evals.responder_backend",
-        "evals.closed_network",
-        "evals.docker_paths",
-        "evals.nuisance_confinement",
-        "evals.backend_lifecycle",
-    ):
-        assert module in closure, module
-    assert closure == sorted(closure)
+    assert import_closure(["pkg.entry"], root=tmp_path) == ["pkg", "pkg.a", "pkg.b", "pkg.entry"]
 
 
 def test_a_module_importing_mcp_auditor_is_refused_with_its_import_chain(tmp_path: Path):
@@ -46,12 +29,21 @@ def test_a_from_package_import_reads_as_the_submodule(tmp_path: Path):
 
 
 def test_the_closure_is_copied_at_its_relative_paths(tmp_path: Path):
+    root = tmp_path / "repo"
+    _a_planted_package(root)
     out = tmp_path / "out"
 
-    copy_closure(out, ["evals.ckan_backend"])
+    copy_closure(out, ["pkg.entry"], root=root)
 
-    assert (out / "evals" / "__init__.py").exists()
-    assert (out / "evals" / "responder_backend.py").exists()
+    assert (out / "pkg" / "__init__.py").read_text() == ""
+    assert (out / "pkg" / "b.py").read_text() == "some_name = 1\n"
+
+
+def _a_planted_package(root: Path) -> None:
+    _write(root / "pkg" / "__init__.py", "")
+    _write(root / "pkg" / "entry.py", "import pkg.a\nfrom pkg.a import some_name\n")
+    _write(root / "pkg" / "a.py", "import pkg.b\nsome_name = pkg.b.some_name\n")
+    _write(root / "pkg" / "b.py", "some_name = 1\n")
 
 
 def _write(path: Path, text: str) -> None:

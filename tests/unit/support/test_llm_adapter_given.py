@@ -17,8 +17,8 @@ from openai.types.completion_usage import (
 from pydantic import BaseModel
 
 from mcp_auditor.adapters.llm import (
-    _STRUCTURED_OUTPUT,  # pyright: ignore[reportPrivateUsage]
     LLM,
+    STRUCTURED_OUTPUTS,
     StructuredOutput,
 )
 from tests.fakes.chat_model import FakeChatModel, ScriptedResponse
@@ -96,8 +96,9 @@ async def the_openai_request_body(schema: type[BaseModel]) -> dict[str, Any]:
         max_retries=3,
         http_async_client=httpx2.AsyncClient(transport=httpx2.MockTransport(record)),
     )
-    llm = LLM(chat_model, _STRUCTURED_OUTPUT["openai"], max_parse_attempts=3)
+    llm = LLM(chat_model, STRUCTURED_OUTPUTS["openai"], max_parse_attempts=3)
     with pytest.raises(openai.BadRequestError):
         await llm.generate_structured("prompt", schema)
-    assert len(bodies) == 1
+    if len(bodies) != 1:
+        raise AssertionError("expected one request")
     return bodies[0]

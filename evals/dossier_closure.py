@@ -40,10 +40,10 @@ def _import_chain(module: str, importers: dict[str, str | None]) -> list[str]:
     return chain
 
 
-def copy_closure(out: Path, modules: Iterable[str]) -> None:
-    for module in import_closure(modules):
-        source = _source_file(module, REPO_ROOT)
-        target = out / source.relative_to(REPO_ROOT)
+def copy_closure(out: Path, modules: Iterable[str], root: Path = REPO_ROOT) -> None:
+    for module in import_closure(modules, root):
+        source = _source_file(module, root)
+        target = out / source.relative_to(root)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
 

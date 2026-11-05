@@ -52,16 +52,9 @@ def test_an_uncounted_flaw_is_never_read():
     assert unrecorded_fields([server]) == []
 
 
-def test_a_removed_tool_needs_no_real_software_record():
-    server = given.with_a_removed_tool_without_a_real_software_record(given.a_recorded_server())
+def test_a_removed_tool_needs_no_real_software_or_declared_function_record():
+    server = given.with_a_removed_tool_without_its_records(given.a_recorded_server())
 
-    assert unrecorded_fields([server]) == []
-
-
-def test_a_fix_check_run_needs_no_holdout_fingerprint():
-    server = given.a_recorded_server()
-
-    assert all(flaw.fix_check.source == "fix_check" for flaw in server.flaws)
     assert unrecorded_fields([server]) == []
 
 

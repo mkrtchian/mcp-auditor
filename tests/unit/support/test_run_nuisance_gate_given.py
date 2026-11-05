@@ -11,7 +11,6 @@ import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import nuisance_gate_command, nuisance_gate_console
 from evals.baseline import BaselineStatus
-from evals.eval_session import TreeState
 from evals.gate_verdict import GateVerdict
 from evals.holdout_census import HoldoutCensus
 from evals.nuisance_admission import NuisanceAdmission
@@ -116,7 +115,6 @@ def a_green_recording_writing(
     def default_harness(*_: object) -> NuisanceGateHarness:
         return a_harness(tmp_path, scripted({}))
 
-    monkeypatch.setattr(nuisance_gate_command, "read_tree", lambda: TreeState("c0ffee", False))
     monkeypatch.setattr(nuisance_gate_command, "gate_conditions", gate_conditions)
     monkeypatch.setattr(nuisance_gate_command, "default_harness", default_harness)
     monkeypatch.setattr(nuisance_gate_command, "run_gate", session)

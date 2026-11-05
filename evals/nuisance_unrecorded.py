@@ -53,7 +53,7 @@ def _unverdicted_tools(server: AdmittedServer) -> set[str | None]:
         tool.patched_name
         for flaw in counted_flaws(server)
         for tool in flaw.tools
-        if tool.status != "removed" and tool.patched_name in counted and tool.real_software is None
+        if tool.patched_name in counted and tool.real_software is None
     }
 
 

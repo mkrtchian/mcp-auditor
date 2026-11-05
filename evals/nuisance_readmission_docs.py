@@ -109,8 +109,6 @@ workshop above.
 
 {backend_line}
 
-The kit's MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
-
 ### Build the run image under a prefixed tag
 
 Pick a prefix of your own, so two agents on one machine never share an image. Copy

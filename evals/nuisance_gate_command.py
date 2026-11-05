@@ -17,7 +17,7 @@ from evals.audit_progress import AuditProgress
 from evals.baseline import BaselineStatus
 from evals.concurrency import positive_int
 from evals.eval_display import console
-from evals.eval_session import Refused, read_tree
+from evals.eval_session import Refused
 from evals.export import export_nuisance_gate_judged_cases
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer, NuisanceAdmission
@@ -46,7 +46,11 @@ from evals.nuisance_gate_session import (
     outside_gate,
     run_gate,
 )
-from evals.nuisance_gate_session_model import NuisanceGateOptions, NuisanceGateSession
+from evals.nuisance_gate_session_model import (
+    NuisanceGateHarness,
+    NuisanceGateOptions,
+    NuisanceGateSession,
+)
 from evals.nuisance_run import NUISANCE_CONCURRENCY
 from evals.nuisance_unrecorded import refuse_unrecorded
 from evals.nuisance_walk import current_acceptance_servers
@@ -117,9 +121,10 @@ def _print_empty_gate(admission: NuisanceAdmission | None, current: set[str]) ->
 
 
 def _run_gate(args: argparse.Namespace, admission: NuisanceAdmission, current: set[str]) -> int:
-    tree = read_tree()
     options = _gate_options(args, gate_servers(admission, current))
-    session = _tracked_gate(options, args.concurrency)
+    harness = default_harness(options.conditions, args.concurrency)
+    tree = harness.read_tree()
+    session = _tracked_gate(options, harness)
     report = NuisanceGateReport(
         conditions=options.conditions,
         commit=tree.commit,
@@ -142,10 +147,11 @@ def _run_gate(args: argparse.Namespace, admission: NuisanceAdmission, current: s
     return session.exit_code
 
 
-def _tracked_gate(options: NuisanceGateOptions, concurrency: int) -> NuisanceGateSession:
+def _tracked_gate(
+    options: NuisanceGateOptions, harness: NuisanceGateHarness
+) -> NuisanceGateSession:
     with Progress(console=console) as bar:
         progress = AuditProgress(bar)
-        harness = default_harness(options.conditions, concurrency)
         tracked = dataclasses.replace(
             harness, audit=progress.tracked(harness.audit), announce_audits=progress.announce
         )

@@ -57,7 +57,7 @@ def _create_for_provider(
 ) -> "LLM":
     install_throttle_log_handler()
     chat_model = make_chat_model(settings, choice.model, efforts)
-    structured_output = _STRUCTURED_OUTPUT[settings.provider]
+    structured_output = STRUCTURED_OUTPUTS[settings.provider]
     return LLM(chat_model, structured_output, max_parse_attempts=3, patience=choice.patience)
 
 
@@ -78,7 +78,7 @@ class StructuredOutput:
 # arguments object is carried as a JSON string on that path and decoded back in the adapter
 # (anthropic_structured_output); an answer with no valid structured output (a refusal, a cut
 # during thinking, a non-JSON arguments string) still reaches the refusal and truncation checks.
-_STRUCTURED_OUTPUT = {
+STRUCTURED_OUTPUTS = {
     "google": StructuredOutput(method="json_schema"),
     "anthropic": StructuredOutput(method="anthropic_json_schema"),
     "openai": StructuredOutput(

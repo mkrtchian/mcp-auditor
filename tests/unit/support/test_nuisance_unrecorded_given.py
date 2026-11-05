@@ -80,7 +80,7 @@ def with_the_second_flaw_uncounted_and_unrecorded(server: AdmittedServer) -> Adm
     return server.model_copy(update={"flaws": [first, unrecorded, *rest]})
 
 
-def with_a_removed_tool_without_a_real_software_record(server: AdmittedServer) -> AdmittedServer:
+def with_a_removed_tool_without_its_records(server: AdmittedServer) -> AdmittedServer:
     removed = admission_given.a_tool("gone", None, "removed")
     return edits.with_the_first_flaw(
         server, lambda flaw: flaw.model_copy(update={"tools": [*flaw.tools, removed]})
