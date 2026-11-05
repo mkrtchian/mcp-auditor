@@ -4,8 +4,7 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_admission_records_given as given
-from evals import cve_baseline
-from evals.nuisance_admission import NuisanceAdmission, admission_problems
+from evals.nuisance_admission import NuisanceAdmission
 
 _MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
     given.with_a_removed_tool_carrying_a_real_software_record,
@@ -31,7 +30,7 @@ _MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
 def test_each_mutation_yields_exactly_one_problem_naming_the_server(
     mutate: Callable[[NuisanceAdmission], NuisanceAdmission],
 ):
-    problems = _problems(mutate(admission_given.an_admission()))
+    problems = admission_given.problems_of(mutate(admission_given.an_admission()))
 
     assert len(problems) == 1, problems
     assert admission_given.SERVER_PACKAGE in problems[0]
@@ -42,19 +41,10 @@ def test_two_benign_calls_for_one_tool_load_clean_when_only_one_flaw_counts():
         given.with_two_benign_calls_for_one_tool(admission_given.an_admission())
     )
 
-    assert _problems(admission) == []
+    assert admission_given.problems_of(admission) == []
 
 
 def test_an_admission_predating_the_new_fields_loads_clean():
     admission = given.with_every_new_field_unrecorded(admission_given.an_admission())
 
-    assert _problems(admission) == []
-
-
-def _problems(admission: NuisanceAdmission) -> list[str]:
-    return admission_problems(
-        admission,
-        admission_given.a_nuisance_census(),
-        cve_baseline.grammar_fingerprint(),
-        admission_given.a_backend_registry(),
-    )
+    assert admission_given.problems_of(admission) == []

@@ -1,29 +1,14 @@
 from typing import Any
 
-from evals.cve_grammar import MechanismClass
 from evals.nuisance_admission import AdmittedServer, ToolCall
 from mcp_auditor.domain import ToolDefinition, ToolResponse
 from tests.fakes.mcp_client import FakeMCPClient
-from tests.unit.support.test_nuisance_admission_given import (
-    FIRST_FLAW,
-    SECOND_FLAW,
-    a_flaw_record,
-    a_server,
-)
+from tests.unit.support.test_nuisance_admission_edits_given import with_the_first_benign_call
+from tests.unit.support.test_nuisance_admission_given import an_admitted_server, expected_text
 
-SERVER = a_server(
-    [
-        a_flaw_record(FIRST_FLAW, MechanismClass.READ_OUTSIDE_SCOPE, "1.2.0"),
-        a_flaw_record(SECOND_FLAW, MechanismClass.COMMAND_EXECUTION, "1.2.0"),
-    ]
-)
-FIRST_TOOL = f"{FIRST_FLAW}_read"
-SECOND_TOOL = f"{SECOND_FLAW}_read"
+SERVER = an_admitted_server()
+FIRST_TOOL, SECOND_TOOL = (flaw.benign_calls[0].tool for flaw in SERVER.flaws)
 PREREQUISITE_TOOL = "connect_to_database"
-
-
-def expected_text(tool: str) -> str:
-    return f"{tool} answered"
 
 
 def a_listing_client(
@@ -36,15 +21,10 @@ def a_listing_client(
     return FakeMCPClient(_definitions(listed), answers | (responses or {}))
 
 
-def with_first_call(server: AdmittedServer, **update: Any) -> AdmittedServer:
-    first, *rest = server.flaws
-    call = first.benign_calls[0].model_copy(update=update)
-    moved = first.model_copy(update={"benign_calls": [call]})
-    return server.model_copy(update={"flaws": [moved, *rest]})
-
-
 def with_a_prerequisite(server: AdmittedServer) -> AdmittedServer:
-    return with_first_call(server, before=[ToolCall(tool=PREREQUISITE_TOOL, arguments={})])
+    return with_the_first_benign_call(
+        server, before=[ToolCall(tool=PREREQUISITE_TOOL, arguments={})]
+    )
 
 
 class RaisingClient(FakeMCPClient):

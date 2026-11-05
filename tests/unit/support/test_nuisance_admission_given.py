@@ -1,10 +1,11 @@
 import threading
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
 import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import cve_baseline
 from evals.backend_lifecycle import BackendLifecycle
@@ -23,6 +24,7 @@ from evals.nuisance_admission import (
     FlawRecord,
     NuisanceAdmission,
     ToolRecord,
+    admission_problems,
 )
 from evals.nuisance_admission_records import RealSoftwareRecord
 from evals.nuisance_backends import RegisteredBackend
@@ -50,11 +52,11 @@ def an_admission() -> NuisanceAdmission:
     return NuisanceAdmission(
         rule_commit="0" * 40,
         grammar_fingerprint=cve_baseline.grammar_fingerprint(),
-        servers=[_a_server()],
+        servers=[an_admitted_server()],
     )
 
 
-def _a_server() -> AdmittedServer:
+def an_admitted_server() -> AdmittedServer:
     return AdmittedServer(
         server_package=SERVER_PACKAGE,
         reaching_flaw=FIRST_FLAW,
@@ -120,7 +122,11 @@ def a_passing_fix_check(server_patched_surfaces: bool | None = None) -> FixCheck
 
 
 def a_benign_call(tool: str) -> BenignCall:
-    return BenignCall(tool=tool, arguments={}, expect=f"{tool} answered", before=[])
+    return BenignCall(tool=tool, arguments={}, expect=expected_text(tool), before=[])
+
+
+def expected_text(tool: str) -> str:
+    return f"{tool} answered"
 
 
 def a_tool(
@@ -139,7 +145,7 @@ def a_tool(
 
 
 def a_server(flaws: list[FlawRecord], patched_version: str = PATCHED_VERSION) -> AdmittedServer:
-    server = _a_server()
+    server = an_admitted_server()
     return server.model_copy(update={"flaws": flaws, "patched_version": patched_version})
 
 
@@ -165,10 +171,12 @@ def _no_remove(name: str) -> None:
     pass
 
 
-def a_backend_registry() -> dict[str, RegisteredBackend]:
+def a_backend_registry(lifecycle: BackendLifecycle | None = None) -> dict[str, RegisteredBackend]:
+    """One backend, `fake-net` and `fake/backend:1.0`, under the lifecycle's key."""
+    registered = lifecycle if lifecycle is not None else a_fake_lifecycle()
     return {
-        "fake": RegisteredBackend(
-            lifecycle=a_fake_lifecycle(),
+        registered.key: RegisteredBackend(
+            lifecycle=registered,
             network="fake-net",
             image="fake/backend:1.0",
             built_services=(),
@@ -177,30 +185,39 @@ def a_backend_registry() -> dict[str, RegisteredBackend]:
     }
 
 
+def problems_of(admission: NuisanceAdmission, census: NuisanceCensus | None = None) -> list[str]:
+    return admission_problems(
+        admission,
+        census if census is not None else a_nuisance_census(),
+        cve_baseline.grammar_fingerprint(),
+        a_backend_registry(),
+    )
+
+
 def with_a_backend(server: AdmittedServer, backend: BackendFixture) -> AdmittedServer:
     return server.model_copy(update={"backend": backend})
 
 
 def with_a_registered_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
     backend = BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
-    return _with_server(admission, lambda server: with_a_backend(server, backend))
+    return edits.with_the_server(admission, lambda server: with_a_backend(server, backend))
 
 
 def with_an_unknown_backend_provisioner(admission: NuisanceAdmission) -> NuisanceAdmission:
     backend = BackendFixture(provisioner="ghost", image="fake/backend:1.0", network="fake-net")
-    return _with_server(admission, lambda server: with_a_backend(server, backend))
+    return edits.with_the_server(admission, lambda server: with_a_backend(server, backend))
 
 
 def with_a_backend_fixture_differing_from_its_provisioner(
     admission: NuisanceAdmission,
 ) -> NuisanceAdmission:
     backend = BackendFixture(provisioner="fake", image="fake/backend:2.0", network="fake-net")
-    return _with_server(admission, lambda server: with_a_backend(server, backend))
+    return edits.with_the_server(admission, lambda server: with_a_backend(server, backend))
 
 
 def with_a_networked_host_and_no_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
     host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
-    return _with_server(admission, lambda server: with_host(server, host))
+    return edits.with_the_server(admission, lambda server: with_host(server, host))
 
 
 def with_every_flaw_needing_the_fixture(admission: NuisanceAdmission) -> NuisanceAdmission:
@@ -208,7 +225,7 @@ def with_every_flaw_needing_the_fixture(admission: NuisanceAdmission) -> Nuisanc
         flaws = [flaw.model_copy(update={"backend_need": "fixture"}) for flaw in server.flaws]
         return server.model_copy(update={"flaws": flaws})
 
-    return _with_server(admission, changed)
+    return edits.with_the_server(admission, changed)
 
 
 def written(tmp_path: Path, admission: NuisanceAdmission) -> Path:
@@ -223,7 +240,7 @@ def with_a_stale_grammar_fingerprint(admission: NuisanceAdmission) -> NuisanceAd
 
 def with_an_unsettled_disagreement(admission: NuisanceAdmission) -> NuisanceAdmission:
     disagreement = FieldAgreement(flaw=None, field="runs_under_docker", agreed=False)
-    return _with_server(
+    return edits.with_the_server(
         admission,
         lambda server: server.model_copy(update={"agreement": [*server.agreement, disagreement]}),
     )
@@ -231,13 +248,13 @@ def with_an_unsettled_disagreement(admission: NuisanceAdmission) -> NuisanceAdmi
 
 def with_a_flaw_of_another_server(admission: NuisanceAdmission) -> NuisanceAdmission:
     foreign = a_flaw_record("CVE-2099-9999", None, None)
-    return _with_server(
+    return edits.with_the_server(
         admission, lambda server: server.model_copy(update={"flaws": [*server.flaws, foreign]})
     )
 
 
 def with_no_counted_tool(admission: NuisanceAdmission) -> NuisanceAdmission:
-    return _with_server(
+    return edits.with_the_server(
         admission,
         lambda server: server.model_copy(
             update={
@@ -263,52 +280,48 @@ def with_a_server_patched_version_of_no_flaw(admission: NuisanceAdmission) -> Nu
         ]
         return server.model_copy(update={"flaws": flaws, "patched_version": "2.0.0"})
 
-    return _with_server(admission, changed)
+    return edits.with_the_server(admission, changed)
 
 
 def with_a_server_patched_surfaces_set_on_the_servers_own_version(
     admission: NuisanceAdmission,
 ) -> NuisanceAdmission:
-    def changed(server: AdmittedServer) -> AdmittedServer:
-        first, *rest = server.flaws
-        surfacing = first.model_copy(
-            update={
-                "fix_check": first.fix_check.model_copy(update={"server_patched_surfaces": False})
-            }
-        )
-        return server.model_copy(update={"flaws": [surfacing, *rest]})
+    def changed(flaw: FlawRecord) -> FlawRecord:
+        check = flaw.fix_check.model_copy(update={"server_patched_surfaces": False})
+        return flaw.model_copy(update={"fix_check": check})
 
-    return _with_server(admission, changed)
+    return edits.with_the_server(
+        admission, lambda server: edits.with_the_first_flaw(server, changed)
+    )
 
 
 def with_an_acceptance_service(admission: NuisanceAdmission) -> NuisanceAdmission:
-    return _with_server(
+    return edits.with_the_server(
         admission, lambda server: server.model_copy(update={"service": "filesystem-patched"})
     )
 
 
 def with_an_inconsistent_tool_record(admission: NuisanceAdmission) -> NuisanceAdmission:
-    def changed(server: AdmittedServer) -> AdmittedServer:
-        first, *rest = server.flaws
-        bad = first.model_copy(
+    def changed(flaw: FlawRecord) -> FlawRecord:
+        return flaw.model_copy(
             update={
                 "tools": [a_tool("read_file", "write_file", "unchanged")],
                 "benign_calls": [a_benign_call("write_file")],
             }
         )
-        return server.model_copy(update={"flaws": [bad, *rest]})
 
-    return _with_server(admission, changed)
+    return edits.with_the_server(
+        admission, lambda server: edits.with_the_first_flaw(server, changed)
+    )
 
 
 def with_a_counted_tool_missing_its_benign_call(admission: NuisanceAdmission) -> NuisanceAdmission:
-    def changed(server: AdmittedServer) -> AdmittedServer:
-        first, *rest = server.flaws
-        return server.model_copy(
-            update={"flaws": [first.model_copy(update={"benign_calls": []}), *rest]}
-        )
-
-    return _with_server(admission, changed)
+    return edits.with_the_server(
+        admission,
+        lambda server: edits.with_the_first_flaw(
+            server, lambda flaw: flaw.model_copy(update={"benign_calls": []})
+        ),
+    )
 
 
 def a_nuisance_census_with_the_second_flaw_under_another_package() -> NuisanceCensus:
@@ -337,16 +350,10 @@ def with_the_second_flaw_settled_here(admission: NuisanceAdmission) -> NuisanceA
         value=SERVER_PACKAGE,
         reason="the advisory names the same package under another spelling",
     )
-    return _with_server(
+    return edits.with_the_server(
         admission,
         lambda server: server.model_copy(update={"settlements": [*server.settlements, settlement]}),
     )
-
-
-def _with_server(
-    admission: NuisanceAdmission, change: Callable[[AdmittedServer], AdmittedServer]
-) -> NuisanceAdmission:
-    return admission.model_copy(update={"servers": [change(admission.servers[0])]})
 
 
 def admitting_the_server_of(flaw: str, server_package: str, service: str) -> NuisanceAdmission:

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_run_backends_given as backends
 import tests.unit.support.test_nuisance_run_given as run_given
 import tests.unit.support.test_nuisance_vet_given as given
@@ -78,7 +79,7 @@ async def test_a_server_container_seen_only_after_the_rebuild_refuses_and_is_lef
 
 
 async def test_a_running_responder_container_is_removed_and_the_vet_goes_on():
-    server = backends.a_server_on("ckan")
+    server = edits.on_the_ckan_backend(run_given.a_server())
     host = backends.DockerHost({backends.CKAN_TAG: ["stale_responder"]})
 
     result = await vet_servers([server], given.deps_on(host))
@@ -90,7 +91,7 @@ async def test_a_running_responder_container_is_removed_and_the_vet_goes_on():
 
 
 async def test_the_server_and_backend_containers_left_at_the_end_are_removed():
-    server = backends.a_server_on("ckan")
+    server = edits.on_the_ckan_backend(run_given.a_server())
     host = backends.DockerHost()
 
     await vet_servers([server], given.deps_on(host))

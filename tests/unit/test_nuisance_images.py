@@ -1,9 +1,10 @@
 import pytest
 
+import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as given
-from evals import cve_baseline, cve_targets, nuisance_images
+from evals import cve_targets, nuisance_images
 from evals.holdout_kit import kit_launch
-from evals.nuisance_admission import NuisanceAdmission, admission_problems
+from evals.nuisance_admission import NuisanceAdmission
 
 
 def test_the_three_image_namespaces_are_pairwise_distinct():
@@ -28,17 +29,12 @@ def test_a_clean_admission_has_no_namespace_problem():
 def test_admission_problems_carries_the_namespace_problem():
     admission = _with_service("sentinel")
 
-    problems = admission_problems(
-        admission,
-        given.a_nuisance_census(),
-        cve_baseline.grammar_fingerprint(),
-        given.a_backend_registry(),
-    )
+    problems = given.problems_of(admission)
 
     assert any("sentinel" in problem for problem in problems)
 
 
 def _with_service(service: str) -> NuisanceAdmission:
-    admission = given.an_admission()
-    server = admission.servers[0].model_copy(update={"service": service})
-    return admission.model_copy(update={"servers": [server]})
+    return edits.with_the_server(
+        given.an_admission(), lambda server: server.model_copy(update={"service": service})
+    )

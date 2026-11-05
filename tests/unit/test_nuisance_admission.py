@@ -6,12 +6,10 @@ import pytest
 from pydantic import ValidationError
 
 import tests.unit.support.test_nuisance_admission_given as given
-from evals import cve_baseline
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.nuisance_admission import (
     FlawRecord,
     NuisanceAdmission,
-    admission_problems,
     load_admission,
 )
 
@@ -49,15 +47,7 @@ def test_a_non_grammar_effect_class_is_refused_by_the_schema():
 
 def test_the_clean_admission_has_no_problems():
     admission = given.an_admission()
-    assert (
-        admission_problems(
-            admission,
-            given.a_nuisance_census(),
-            cve_baseline.grammar_fingerprint(),
-            given.a_backend_registry(),
-        )
-        == []
-    )
+    assert given.problems_of(admission) == []
 
 
 @pytest.mark.parametrize("mutate", _MUTATORS)
@@ -66,12 +56,7 @@ def test_each_mutation_yields_exactly_one_problem(
 ):
     admission = mutate(given.an_admission())
 
-    problems = admission_problems(
-        admission,
-        given.a_nuisance_census(),
-        cve_baseline.grammar_fingerprint(),
-        given.a_backend_registry(),
-    )
+    problems = given.problems_of(admission)
 
     assert len(problems) == 1, problems
     # The problem names the thing it is about: the server, or the grammar for the fingerprint.
@@ -81,26 +66,13 @@ def test_each_mutation_yields_exactly_one_problem(
 def test_a_registered_backend_fixture_has_no_problem():
     admission = given.with_a_registered_backend(given.an_admission())
 
-    assert (
-        admission_problems(
-            admission,
-            given.a_nuisance_census(),
-            cve_baseline.grammar_fingerprint(),
-            given.a_backend_registry(),
-        )
-        == []
-    )
+    assert given.problems_of(admission) == []
 
 
 def test_a_differing_backend_fixture_names_the_expected_one():
     admission = given.with_a_backend_fixture_differing_from_its_provisioner(given.an_admission())
 
-    [problem] = admission_problems(
-        admission,
-        given.a_nuisance_census(),
-        cve_baseline.grammar_fingerprint(),
-        given.a_backend_registry(),
-    )
+    [problem] = given.problems_of(admission)
 
     assert "fake/backend:1.0" in problem
 
@@ -108,12 +80,7 @@ def test_a_differing_backend_fixture_names_the_expected_one():
 def test_a_networked_host_with_no_backend_is_refused():
     admission = given.with_a_networked_host_and_no_backend(given.an_admission())
 
-    problems = admission_problems(
-        admission,
-        given.a_nuisance_census(),
-        cve_baseline.grammar_fingerprint(),
-        given.a_backend_registry(),
-    )
+    problems = given.problems_of(admission)
 
     assert problems == [
         f"{given.SERVER_PACKAGE}: has_network without a backend: "
@@ -124,23 +91,13 @@ def test_a_networked_host_with_no_backend_is_refused():
 def test_a_fixture_backend_need_with_no_backend_is_allowed():
     admission = given.with_every_flaw_needing_the_fixture(given.an_admission())
 
-    assert (
-        admission_problems(
-            admission,
-            given.a_nuisance_census(),
-            cve_baseline.grammar_fingerprint(),
-            given.a_backend_registry(),
-        )
-        == []
-    )
+    assert given.problems_of(admission) == []
 
 
 def test_a_flaw_recorded_under_another_package_is_foreign_without_a_settlement():
     census = given.a_nuisance_census_with_the_second_flaw_under_another_package()
 
-    problems = admission_problems(
-        given.an_admission(), census, cve_baseline.grammar_fingerprint(), given.a_backend_registry()
-    )
+    problems = given.problems_of(given.an_admission(), census)
 
     assert any(given.SECOND_FLAW in problem and "census flaw" in problem for problem in problems)
 
@@ -149,12 +106,7 @@ def test_a_server_package_settlement_unifies_the_foreign_flaw():
     census = given.a_nuisance_census_with_the_second_flaw_under_another_package()
     admission = given.with_the_second_flaw_settled_here(given.an_admission())
 
-    assert (
-        admission_problems(
-            admission, census, cve_baseline.grammar_fingerprint(), given.a_backend_registry()
-        )
-        == []
-    )
+    assert given.problems_of(admission, census) == []
 
 
 def test_load_admission_returns_the_written_clean_admission(tmp_path: Path):
@@ -197,11 +149,6 @@ def test_load_admission_on_a_mutated_admission_raises_with_the_problem(tmp_path:
 def test_a_stale_fingerprint_is_the_named_problem():
     admission = given.with_a_stale_grammar_fingerprint(given.an_admission())
 
-    [problem] = admission_problems(
-        admission,
-        given.a_nuisance_census(),
-        cve_baseline.grammar_fingerprint(),
-        given.a_backend_registry(),
-    )
+    [problem] = given.problems_of(admission)
 
     assert "grammar fingerprint" in problem

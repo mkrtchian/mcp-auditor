@@ -42,13 +42,3 @@ def admitting_the_queue_servers() -> NuisanceAdmission:
         for package in reversed(the_queue_packages())
     ]
     return admission_given.an_admission().model_copy(update={"servers": servers})
-
-
-def without_stdio(admission: NuisanceAdmission, server_package: str) -> NuisanceAdmission:
-    servers = [
-        server.model_copy(update={"runs_over_stdio": False})
-        if server.server_package == server_package
-        else server
-        for server in admission.servers
-    ]
-    return admission.model_copy(update={"servers": servers})

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as given
 from evals import cve_planting_base, nuisance_confinement, nuisance_fingerprint
 from evals.cve_grammar import MechanismClass
@@ -45,7 +46,7 @@ def test_the_fingerprint_moves_when_a_counted_tools_class_changes(tmp_path: Path
 def test_the_fingerprint_moves_when_a_benign_calls_arguments_change(tmp_path: Path):
     _write_dockerfile(tmp_path)
     server = given.an_admission().servers[0]
-    other = _with_first_benign_call(server, arguments={"path": "/etc/passwd"})
+    other = edits.with_the_first_benign_call(server, arguments={"path": "/etc/passwd"})
 
     assert _fingerprint(server, tmp_path) != _fingerprint(other, tmp_path)
 
@@ -53,7 +54,7 @@ def test_the_fingerprint_moves_when_a_benign_calls_arguments_change(tmp_path: Pa
 def test_the_fingerprint_moves_when_a_benign_calls_expected_text_changes(tmp_path: Path):
     _write_dockerfile(tmp_path)
     server = given.an_admission().servers[0]
-    other = _with_first_benign_call(server, expect="another answer")
+    other = edits.with_the_first_benign_call(server, expect="another answer")
 
     assert _fingerprint(server, tmp_path) != _fingerprint(other, tmp_path)
 
@@ -61,10 +62,10 @@ def test_the_fingerprint_moves_when_a_benign_calls_expected_text_changes(tmp_pat
 def test_the_fingerprint_moves_when_a_benign_calls_prerequisite_calls_change(tmp_path: Path):
     _write_dockerfile(tmp_path)
     server = given.an_admission().servers[0]
-    connected = _with_first_benign_call(
+    connected = edits.with_the_first_benign_call(
         server, before=[ToolCall(tool="connect", arguments={"database": "app"})]
     )
-    unrecorded = _with_first_benign_call(server, before=None)
+    unrecorded = edits.with_the_first_benign_call(server, before=None)
 
     assert _fingerprint(server, tmp_path) != _fingerprint(connected, tmp_path)
     assert _fingerprint(server, tmp_path) != _fingerprint(unrecorded, tmp_path)
@@ -157,9 +158,13 @@ def test_the_fingerprint_is_unchanged_by_an_exploit_or_a_settlement_change(tmp_p
     server = given.an_admission().servers[0]
     before = _fingerprint(server, tmp_path)
 
-    first, *rest = server.flaws
-    moved_exploit = first.model_copy(
-        update={"fix_check": first.fix_check.model_copy(update={"exploit_calls": ["other_tool"]})}
+    moved_exploit = edits.with_the_first_flaw(
+        server,
+        lambda flaw: flaw.model_copy(
+            update={
+                "fix_check": flaw.fix_check.model_copy(update={"exploit_calls": ["other_tool"]})
+            }
+        ),
     )
     settled = AdmissionSettlement(
         server_package=server.server_package,
@@ -168,7 +173,7 @@ def test_the_fingerprint_is_unchanged_by_an_exploit_or_a_settlement_change(tmp_p
         value="true",
         reason="a different reason",
     )
-    changed = server.model_copy(update={"flaws": [moved_exploit, *rest], "settlements": [settled]})
+    changed = moved_exploit.model_copy(update={"settlements": [settled]})
 
     assert _fingerprint(changed, tmp_path) == before
 
@@ -278,14 +283,6 @@ def _a_confinement_copy(directory: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
 def _one_flaw_server(effect_class: MechanismClass) -> AdmittedServer:
     flaw = given.a_flaw_record(given.FIRST_FLAW, effect_class, given.PATCHED_VERSION)
     return given.a_server([flaw])
-
-
-def _with_first_benign_call(server: AdmittedServer, **update: object) -> AdmittedServer:
-    first, *rest = server.flaws
-    moved = first.model_copy(
-        update={"benign_calls": [first.benign_calls[0].model_copy(update=update)]}
-    )
-    return server.model_copy(update={"flaws": [moved, *rest]})
 
 
 def _write_dockerfile(tmp_path: Path, text: str = "FROM node:22\nRUN npm install demo\n") -> None:

@@ -10,7 +10,6 @@ from evals.backend_lifecycle import BackendLifecycle
 from evals.cve_environments import Launch
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.holdout_kit.kit_backend_launch import lifecycle_of
-from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_provisioners import provisioner_of
 from evals.responder_backend import Responder
@@ -32,12 +31,6 @@ def every_responder() -> list[Responder]:
     ]
 
 
-def a_server_with_backend(key: str) -> AdmittedServer:
-    registered = BACKENDS[key]
-    backend = BackendFixture(provisioner=key, image=registered.image, network=registered.network)
-    return admission_given.with_a_backend(admission_given.an_admission().servers[0], backend)
-
-
 def a_lifecycle_without_side_effects(key: str) -> BackendLifecycle:
     return replace(lifecycle_of(key), ensure=_noop_ensure, remove=_noop_remove)
 
@@ -51,7 +44,7 @@ def _noop_remove(name: str) -> None:
 
 
 def through_the_provisioner(lifecycle: BackendLifecycle) -> AbstractContextManager[Launch]:
-    return provisioner_of(lifecycle)(admission_given.an_admission().servers[0])
+    return provisioner_of(lifecycle)(admission_given.an_admitted_server())
 
 
 def with_the_name_masked(args: Sequence[str]) -> list[str]:

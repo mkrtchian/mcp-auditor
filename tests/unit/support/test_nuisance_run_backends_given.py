@@ -1,10 +1,9 @@
 import dataclasses
 from collections.abc import Sequence
 
-import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_run_given as given
 from evals import nuisance_images
-from evals.nuisance_admission import AdmittedServer, BackendFixture
+from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_run import NuisanceDeps
 
@@ -12,12 +11,6 @@ SERVER_TAG = nuisance_images.image_tag("filesystem-patched")
 CKAN_TAG = BACKENDS["ckan"].image
 DORIS_TAG = BACKENDS["doris"].image
 APIFY_TAG = BACKENDS["apify"].image
-
-
-def a_server_on(key: str) -> AdmittedServer:
-    entry = BACKENDS[key]
-    backend = BackendFixture(provisioner=key, image=entry.image, network=entry.network)
-    return admission.with_a_backend(given.a_server(), backend)
 
 
 class DockerHost:
