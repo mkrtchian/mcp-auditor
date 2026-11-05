@@ -5,8 +5,9 @@ on the crafted counts; nothing is fetched."""
 import math
 from datetime import date
 
-from evals.holdout_intervals import newcombe, wilson
-from evals.holdout_statistic import Side
+from evals.holdout_hierarchical import GammaPrior, hierarchical_interval
+from evals.holdout_intervals import clopper_pearson, jeffreys, newcombe, wilson
+from evals.holdout_statistic import Placement, Side
 from evals.nuisance_statistic import (
     check_conclusion,
     cited_interval,
@@ -17,11 +18,8 @@ from evals.nuisance_statistic import (
     primary_controls,
     split_by_side,
 )
-from tests.unit.support.test_nuisance_statistic_given import a_server_result
+from tests.unit.support.test_nuisance_statistic_given import RUN_CUTOFF, a_server_result, sides_of
 
-RUN_CUTOFF = date(2026, 5, 18)
-PRE_DATE = date(2026, 1, 1)
-POST_DATE = date(2026, 12, 1)
 RUNS = 3
 
 
@@ -63,33 +61,13 @@ def test_split_share_sum_counts_only_the_runs_flagged_through_the_split_flaw():
     assert side.interval == wilson(2 / 3, 2)
 
 
-def _sides(
-    count: int, *, pre_flagged: int, post_flagged: int = 0, post_incomplete_unflagged: int = 0
-):
-    pre = [
-        a_server_result(f"PRE{i}", split_disclosure_date=PRE_DATE, flagged_runs=pre_flagged)
-        for i in range(count)
-    ]
-    post = [
-        a_server_result(
-            f"POST{i}",
-            split_disclosure_date=POST_DATE,
-            flagged_runs=post_flagged,
-            incomplete_unflagged_runs=post_incomplete_unflagged,
-        )
-        for i in range(count)
-    ]
-    split = split_by_side(pre + post, RUN_CUTOFF)
-    return split[Side.PRE_CUTOFF], split[Side.POST_CUTOFF]
-
-
 def test_contrast_is_none_below_five_servers_a_side():
-    pre, post = _sides(4, pre_flagged=3)
+    pre, post = sides_of(4, pre_flagged=3)
     assert contrast(pre, post) is None
 
 
 def test_contrast_is_the_newcombe_interval_over_the_split_sums_at_five_a_side():
-    pre, post = _sides(5, pre_flagged=3, post_flagged=1)
+    pre, post = sides_of(5, pre_flagged=3, post_flagged=1)
     result = contrast(pre, post)
     assert result is not None
     assert math.isclose(pre.split_share_sum, 5.0)
@@ -98,12 +76,28 @@ def test_contrast_is_the_newcombe_interval_over_the_split_sums_at_five_a_side():
 
 
 def test_check_conclusion_is_none_below_five_servers_a_side():
-    pre, post = _sides(4, pre_flagged=3)
+    pre, post = sides_of(4, pre_flagged=3)
     assert check_conclusion(pre, post, RUNS) is None
 
 
+def test_check_conclusion_is_inconclusive_when_counting_incomplete_runs_as_flagged_moves_the_gap():
+    pre, post = sides_of(5, pre_flagged=3, post_incomplete_unflagged=3)
+
+    verdict = check_conclusion(pre, post, RUNS)
+
+    assert verdict is not None
+    assert (verdict.cited.method, verdict.cited.placement) == ("newcombe", Placement.ABOVE)
+    assert verdict.inconclusive
+    assert [method.method for method in verdict.disagreeing] == [
+        "newcombe_incomplete_as_flagged",
+        "agresti_caffo_incomplete_as_flagged",
+        "hierarchical_gamma_1_1_incomplete_as_flagged",
+        "hierarchical_gamma_2_2_incomplete_as_flagged",
+    ]
+
+
 def test_observed_reads_only_the_runs_flagged_through_the_split_flaw():
-    pre, _ = _sides(5, pre_flagged=3)
+    pre, _ = sides_of(5, pre_flagged=3)
     elsewhere = a_server_result("A", flagged_runs=3, split_flagged_runs=1)
     side = split_by_side([elsewhere, *pre.results], RUN_CUTOFF)[Side.PRE_CUTOFF]
     reading = observed(side)
@@ -112,20 +106,20 @@ def test_observed_reads_only_the_runs_flagged_through_the_split_flaw():
 
 
 def test_incomplete_as_flagged_adds_the_incomplete_unflagged_runs_to_the_split_flagged_ones():
-    _, post = _sides(5, pre_flagged=3, post_flagged=1, post_incomplete_unflagged=2)
+    _, post = sides_of(5, pre_flagged=3, post_flagged=1, post_incomplete_unflagged=2)
     reading = incomplete_as_flagged(post, RUNS)
     assert math.isclose(reading.share_sum, 5 * (1 + 2) / RUNS)
     assert reading.counted_runs == (3,) * 5
 
 
-def test_primary_controls_returns_the_five_named_controls():
+def test_primary_controls_are_the_five_intervals_on_the_flagged_shares():
     results = [a_server_result("A", flagged_runs=3), a_server_result("B", flagged_runs=1)]
-    assert set(primary_controls(results, RUNS)) == {
-        "jeffreys",
-        "clopper_pearson",
-        "hierarchical_gamma_1_1",
-        "hierarchical_gamma_2_2",
-        "incomplete_as_flagged_wilson",
+    assert primary_controls(results, RUNS) == {
+        "jeffreys": jeffreys(4 / 3, 2),
+        "clopper_pearson": clopper_pearson(4 / 3, 2),
+        "hierarchical_gamma_1_1": hierarchical_interval([3, 1], RUNS, GammaPrior(1.0, 1.0)),
+        "hierarchical_gamma_2_2": hierarchical_interval([3, 1], RUNS, GammaPrior(2.0, 2.0)),
+        "incomplete_as_flagged_wilson": wilson(4 / 3, 2),
     }
 
 

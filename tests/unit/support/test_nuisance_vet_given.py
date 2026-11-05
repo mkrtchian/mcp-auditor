@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
@@ -5,8 +6,10 @@ import pytest
 
 import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_run_given as nuisance_run_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import nuisance_images, nuisance_vet_command
+from evals.holdout_conditions import HoldoutConditions
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_vet_command import VetDeps
 from tests.unit.support.test_nuisance_run_backends_given import DockerHost
@@ -36,16 +39,29 @@ def deps_on(host: DockerHost, failures: Mapping[str, str] | None = None) -> VetD
 
 
 class VetHarness:
-    """Hands the vet command `deps` in place of the live ones, recording the tool-call timeout
-    and the concurrency it built them with."""
+    """Hands the vet command `deps` in place of the live ones and run conditions whose tool-call
+    timeout is `run_conditions_timeout`, recording the tool-call timeout and the concurrency it
+    built the deps with."""
 
-    def __init__(self, monkeypatch: pytest.MonkeyPatch, deps: VetDeps) -> None:
+    def __init__(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        deps: VetDeps,
+        run_conditions_timeout: int | None = None,
+    ) -> None:
         self.built_with: tuple[int, int] | None = None
+        conditions = dataclasses.replace(
+            nuisance_run_given.conditions(), tool_call_timeout=run_conditions_timeout
+        )
+
+        def load_conditions(_path: Path) -> HoldoutConditions:
+            return conditions
 
         def default_vet_deps(tool_call_timeout: int, concurrency: int) -> VetDeps:
             self.built_with = (tool_call_timeout, concurrency)
             return deps
 
+        monkeypatch.setattr(nuisance_vet_command, "load_conditions", load_conditions)
         monkeypatch.setattr(nuisance_vet_command, "default_vet_deps", default_vet_deps)
 
 

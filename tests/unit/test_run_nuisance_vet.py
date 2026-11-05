@@ -9,20 +9,33 @@ import tests.unit.support.test_nuisance_vet_given as given
 import tests.unit.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
 from evals.cve_environments import TOOL_CALL_TIMEOUT
-from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.nuisance_run import NUISANCE_CONCURRENCY
 
 
 def test_vet_builds_its_deps_with_the_run_conditions_timeout_and_concurrency(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    harness = given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost()))
+    harness = given.VetHarness(
+        monkeypatch, given.deps_on(backends.DockerHost()), run_conditions_timeout=11
+    )
     arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
     assert run_nuisance.main(["vet", *arguments]) == 0
 
-    timeout = load_conditions(CONDITIONS_PATH).tool_call_timeout or TOOL_CALL_TIMEOUT
-    assert harness.built_with == (timeout, NUISANCE_CONCURRENCY)
+    assert harness.built_with == (11, NUISANCE_CONCURRENCY)
+
+
+def test_vet_without_a_run_conditions_timeout_builds_its_deps_with_the_default_timeout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    harness = given.VetHarness(
+        monkeypatch, given.deps_on(backends.DockerHost()), run_conditions_timeout=None
+    )
+    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    assert run_nuisance.main(["vet", *arguments]) == 0
+
+    assert harness.built_with == (TOOL_CALL_TIMEOUT, NUISANCE_CONCURRENCY)
 
 
 def test_vet_passes_the_timeout_and_concurrency_it_is_given(

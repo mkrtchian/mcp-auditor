@@ -5,7 +5,8 @@ crafted counts; nothing is fetched."""
 import math
 from datetime import date
 
-from evals.holdout_intervals import Interval, newcombe, wilson
+from evals.holdout_hierarchical import GammaPrior, hierarchical_interval
+from evals.holdout_intervals import Interval, clopper_pearson, jeffreys, newcombe, wilson
 from evals.holdout_results import HoldoutRunStatus, HoldoutTargetResult
 from evals.holdout_statistic import (
     ConclusionVerdict,
@@ -134,6 +135,24 @@ def test_check_conclusion_is_none_below_five_targets_a_side():
     assert check_conclusion(pre, post, RUNS) is None
 
 
+def test_check_conclusion_is_inconclusive_when_counting_unchecked_runs_as_misses_moves_the_gap():
+    pre = [_result(f"PRE{i}", disclosure_date=date(2026, 1, 1), detected_runs=3) for i in range(5)]
+    post = [_result(f"POST{i}", disclosure_date=date(2026, 12, 1)) for i in range(5)]
+    split = split_by_side(pre + post, RUN_CUTOFF)
+
+    verdict = check_conclusion(split[Side.PRE_CUTOFF], split[Side.POST_CUTOFF], RUNS)
+
+    assert verdict is not None
+    assert verdict.cited.method == "newcombe"
+    assert verdict.inconclusive
+    assert [method.method for method in verdict.disagreeing] == [
+        "newcombe_unchecked",
+        "agresti_caffo_unchecked",
+        "hierarchical_gamma_1_1_unchecked",
+        "hierarchical_gamma_2_2_unchecked",
+    ]
+
+
 ABOVE_ZERO = Interval(0.10, 0.60)
 BELOW_ZERO = Interval(-0.60, -0.10)
 ACROSS_ZERO = Interval(-0.20, 0.30)
@@ -178,8 +197,12 @@ def test_observed_reads_the_share_sum_and_the_detected_runs_per_target():
         _result("B", detected_runs=1, detected_runs_if_unchecked_missed=0),
     ]
     side = split_by_side(results, RUN_CUTOFF)[Side.PRE_CUTOFF]
-    assert observed(side) == Reading(side.share_sum, (3, 1))
-    assert observed(side).members == 2
+
+    reading = observed(side)
+
+    assert math.isclose(reading.share_sum, 4 / RUNS)
+    assert reading.counted_runs == (3, 1)
+    assert reading.members == 2
 
 
 def test_unchecked_as_misses_reads_the_runs_detected_with_every_unchecked_run_missed():
@@ -204,15 +227,17 @@ def test_read_contrast_places_a_lopsided_gap_above_zero_under_the_four_suffixed_
     assert all(placement.placement is Placement.ABOVE for placement in placements)
 
 
-def test_primary_controls_returns_the_five_named_controls():
-    results = [_result("A", detected_runs=3), _result("B", detected_runs=1)]
-    controls = primary_controls(results, RUNS)
-    assert set(controls) == {
-        "jeffreys",
-        "clopper_pearson",
-        "hierarchical_gamma_1_1",
-        "hierarchical_gamma_2_2",
-        "unchecked_as_misses_wilson",
+def test_primary_controls_are_the_five_intervals_on_the_detection_shares():
+    results = [
+        _result("A", detected_runs=3, detected_runs_if_unchecked_missed=2),
+        _result("B", detected_runs=1, detected_runs_if_unchecked_missed=1),
+    ]
+    assert primary_controls(results, RUNS) == {
+        "jeffreys": jeffreys(4 / 3, 2),
+        "clopper_pearson": clopper_pearson(4 / 3, 2),
+        "hierarchical_gamma_1_1": hierarchical_interval([3, 1], RUNS, GammaPrior(1.0, 1.0)),
+        "hierarchical_gamma_2_2": hierarchical_interval([3, 1], RUNS, GammaPrior(2.0, 2.0)),
+        "unchecked_as_misses_wilson": wilson(3 / 3, 2),
     }
 
 
