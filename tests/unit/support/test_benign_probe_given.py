@@ -100,14 +100,24 @@ def error(content: str) -> KitResponse:
     return KitResponse(content, True)
 
 
-def a_probe_answering(monkeypatch: pytest.MonkeyPatch, report: ProbeReport) -> None:
-    async def probe(launch: object, calls: object, tool_call_timeout: int) -> ProbeReport:
+def a_probe_answering(
+    monkeypatch: pytest.MonkeyPatch, report: ProbeReport
+) -> list[list[ProbeCall]]:
+    """Returns the calls each probe received."""
+    probed: list[list[ProbeCall]] = []
+
+    async def probe(launch: object, calls: list[ProbeCall], tool_call_timeout: int) -> ProbeReport:
+        probed.append(calls)
         return report
 
     monkeypatch.setattr(benign_probe, "probe", probe)
+    return probed
 
 
-def a_written_record(tmp_path: Path) -> Path:
-    path = tmp_path / "admission_record.json"
-    path.write_text(json.dumps(a_record_with_benign_calls([a_call("read")])))
+def a_record_with_one_benign_call() -> dict[str, Any]:
+    return a_record_with_benign_calls([a_call("read")])
+
+
+def written(path: Path, content: object) -> Path:
+    path.write_text(json.dumps(content))
     return path

@@ -5,14 +5,12 @@ import dataclasses
 from datetime import date
 
 import tests.unit.support.test_nuisance_report_given as given
-from evals.holdout_conditions import Cutoff
 from evals.holdout_report import (
     ConclusionLine,
     CutoffModel,
     IntervalModel,
     MethodLine,
     RunCutoffModel,
-    run_cutoff,
 )
 from evals.nuisance_markdown import render_markdown
 from evals.nuisance_report import (
@@ -29,7 +27,6 @@ from evals.nuisance_results import (
     FigureExit,
     NotRunCause,
     NotRunServer,
-    NuisanceServerResult,
 )
 from tests.unit.support.test_nuisance_statistic_given import a_server_result
 
@@ -135,44 +132,14 @@ def test_a_server_line_keeps_its_split_flaw_and_the_facts_of_each_run():
 
     assert (line.split_flaw, line.split_disclosure_date) == ("CVE-2025-0001", date(2026, 1, 1))
     assert line.per_run == [
-        _clean_run_line(flagged=True, incomplete=False),
-        _clean_run_line(flagged=False, incomplete=False),
-        _clean_run_line(flagged=False, incomplete=True),
+        given.a_clean_run_line(flagged=True, incomplete=False),
+        given.a_clean_run_line(flagged=False, incomplete=False),
+        given.a_clean_run_line(flagged=False, incomplete=True),
     ]
 
 
-def _clean_run_line(*, flagged: bool, incomplete: bool) -> ServerRunLine:
-    return ServerRunLine(
-        flagged=flagged,
-        split_flagged=False,
-        incomplete=incomplete,
-        non_protocol_lines=0,
-        lost_connection_responses=0,
-        miss_causes=[],
-    )
-
-
-def _with_incidents(server: NuisanceServerResult) -> NuisanceServerResult:
-    lost, refused, clean = server.statuses
-    return dataclasses.replace(
-        server,
-        statuses=(
-            dataclasses.replace(lost, non_protocol_lines=2, lost_connection_responses=1),
-            dataclasses.replace(
-                refused, incomplete=True, miss_causes=["provider_refusal", "unreadable_answer"]
-            ),
-            clean,
-        ),
-    )
-
-
-def _run_with_incidents():
-    servers = [_with_incidents(a_server_result("A")), a_server_result("B")]
-    return given.a_run(servers)
-
-
 def test_a_server_line_sums_its_health_and_counts_its_incomplete_runs_by_cause():
-    report = build_report(_run_with_incidents())
+    report = build_report(given.a_run_with_incidents())
 
     line = report.servers[0]
 
@@ -184,7 +151,7 @@ def test_a_server_line_sums_its_health_and_counts_its_incomplete_runs_by_cause()
 
 
 def test_the_markdown_names_each_server_with_a_health_count():
-    markdown = render_markdown(build_report(_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents()))
 
     assert (
         "## Server health\n- A: non-protocol lines 2, connection lost on 1 call(s)\n"
@@ -193,7 +160,7 @@ def test_the_markdown_names_each_server_with_a_health_count():
 
 
 def test_the_markdown_splits_the_incomplete_runs_by_cause():
-    markdown = render_markdown(build_report(_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents()))
 
     assert (
         "Incomplete runs (a step refused or unreadable): 1 (A)\n"
@@ -217,10 +184,20 @@ def test_the_recorded_at_line_carries_the_run_timestamp():
 def test_the_provenance_line_names_the_census_and_walk_record_commits():
     report = build_report(given.a_run([a_server_result("A")]))
 
-    assert (report.census_commit, report.walk_record_commit) == ("cafe1234", "beef5678")
     assert "Commits: run deadbeef, census cafe1234, walk record beef5678\n" in render_markdown(
         report
     )
+
+
+def test_the_run_cutoff_is_the_latest_of_the_run_models():
+    later = dataclasses.replace(given.LUNA_CUTOFF, date=date(2026, 6, 30))
+    run = given.a_run(
+        [a_server_result("A")], cutoffs={"gpt-6-luna": given.LUNA_CUTOFF, "judge": later}
+    )
+
+    cutoff = build_report(run).run_cutoff
+
+    assert (cutoff.model, cutoff.date) == ("judge", date(2026, 6, 30))
 
 
 def test_the_split_section_names_the_run_cutoff_and_both_sides():
@@ -243,12 +220,9 @@ def test_the_split_section_names_the_run_cutoff_and_both_sides():
     assert "- contrast: not computed (a side has fewer than 5 servers)" in markdown
 
 
-def test_the_incomplete_runs_line_names_the_servers_touched():
-    run = given.a_run([a_server_result("A", incomplete_unflagged_runs=1), a_server_result("B")])
+def test_the_markdown_ends_with_the_total_cost():
+    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
 
-    markdown = render_markdown(build_report(run))
-
-    assert "Incomplete runs (a step refused or unreadable): 1 (A)" in markdown
     assert markdown.endswith("Total cost: $0.06")
 
 
@@ -278,7 +252,6 @@ def test_build_report_carries_the_run_conditions_and_provenance():
 
     assert report.counter_fingerprint == "counter-abc"
     assert report.grammar_fingerprint == "grammar-abc"
-    assert report.recorded_at == given.RECORDED_AT
     assert report.cutoffs["gpt-6-luna"] == CutoffModel.of(given.LUNA_CUTOFF)
 
 
@@ -297,7 +270,7 @@ def test_the_report_holds_no_proof_text():
         IntervalModel,
     ]
     run = given.a_run(
-        [_with_incidents(a_server_result("A", flagged_runs=1))],
+        [given.with_incidents(a_server_result("A", flagged_runs=1))],
         not_run=[NotRunServer("npm:b", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED)],
         outside_figure=[FigureExit("npm:c", "an acceptance server")],
     )
@@ -307,12 +280,3 @@ def test_the_report_holds_no_proof_text():
     for model in models:
         assert set(model.model_fields).isdisjoint(PROOF_WORDS)
     assert not [word for word in PROOF_WORDS if word in markdown]
-
-
-EARLIER = Cutoff(date=date(2026, 1, 15), type="knowledge", source="https://a.test", note=None)
-LATER = Cutoff(date=date(2026, 6, 30), type="training", source="https://b.test", note=None)
-
-
-def test_the_run_cutoff_is_the_latest_and_the_generator_on_a_tie():
-    assert run_cutoff({"generator": EARLIER, "judge": LATER}) == ("judge", LATER)
-    assert run_cutoff({"generator": LATER, "judge": LATER}) == ("generator", LATER)

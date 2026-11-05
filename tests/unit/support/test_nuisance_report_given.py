@@ -1,13 +1,16 @@
+import dataclasses
 from collections.abc import Sequence
 from datetime import date
 
 from evals.holdout_conditions import Cutoff
+from evals.nuisance_report import ServerRunLine
 from evals.nuisance_results import (
     FigureExit,
     NotRunServer,
     NuisanceRunResult,
     NuisanceServerResult,
 )
+from tests.unit.support.test_nuisance_statistic_given import a_server_result
 
 LUNA_CUTOFF = Cutoff(
     date=date(2026, 5, 18), type="training", source="https://example.test/luna", note=None
@@ -54,3 +57,32 @@ def a_run(
         concurrency=concurrency,
         throttled_requests=throttled_requests,
     )
+
+
+def a_clean_run_line(*, flagged: bool, incomplete: bool) -> ServerRunLine:
+    return ServerRunLine(
+        flagged=flagged,
+        split_flagged=False,
+        incomplete=incomplete,
+        non_protocol_lines=0,
+        lost_connection_responses=0,
+        miss_causes=[],
+    )
+
+
+def with_incidents(server: NuisanceServerResult) -> NuisanceServerResult:
+    lost, refused, clean = server.statuses
+    return dataclasses.replace(
+        server,
+        statuses=(
+            dataclasses.replace(lost, non_protocol_lines=2, lost_connection_responses=1),
+            dataclasses.replace(
+                refused, incomplete=True, miss_causes=["provider_refusal", "unreadable_answer"]
+            ),
+            clean,
+        ),
+    )
+
+
+def a_run_with_incidents() -> NuisanceRunResult:
+    return a_run([with_incidents(a_server_result("A")), a_server_result("B")])

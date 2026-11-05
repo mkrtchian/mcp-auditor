@@ -1,5 +1,8 @@
+from pathlib import Path
+
 import tests.unit.support.test_cve_grammar_given as grammar_given
-from evals import cve_baseline
+from evals import nuisance_counter, nuisance_counting
+from evals.baseline import fingerprint_sources
 from evals.cve_grammar import VALID_CATEGORIES, MechanismClass
 from evals.cve_units import JudgeCategory, Verdict
 from evals.nuisance_counter import (
@@ -115,10 +118,10 @@ def test_the_count_on_listed_tools_takes_each_fail_on_a_listed_tool_in_its_categ
     assert fail_count_on(report, {"read_file": _READ_CATEGORIES}) == 2
 
 
-def test_the_counter_fingerprint_is_a_stable_digest_apart_from_the_grammars():
-    fingerprint = counter_fingerprint()
+def test_the_counter_fingerprint_covers_the_verdict_predicate_and_the_counted_tool_derivation():
+    sources = [
+        Path(nuisance_counter.__file__).read_text(),
+        Path(nuisance_counting.__file__).read_text(),
+    ]
 
-    assert fingerprint == counter_fingerprint()
-    assert len(fingerprint) == 64
-    assert set(fingerprint) <= set("0123456789abcdef")
-    assert fingerprint != cve_baseline.grammar_fingerprint()
+    assert counter_fingerprint() == fingerprint_sources(sources)

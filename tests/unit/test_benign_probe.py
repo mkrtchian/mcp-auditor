@@ -86,7 +86,7 @@ def test_the_probe_launch_of_a_record_with_a_backend_is_its_lifecycle_launch(
     assert asked == ["fake"]
     assert launch.command == "docker"
     assert args[:2] == ["run", "--name"]
-    assert args[3:] == ["the-image", "/", "node", "server.js"]
+    assert args[3:] == ["the-image", record["host"]["working_directory"], *record["launch"]]
 
 
 async def test_probe_client_answers_each_call_in_order():
@@ -136,15 +136,33 @@ def test_main_passes_when_every_call_is_listed_and_answers_its_expected_text(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     call = given.a_probe_call("read", expect="note", before=["create"])
-    given.a_probe_answering(
+    probed = given.a_probe_answering(
         monkeypatch,
         given.a_report(
             ["read", "create"],
             given.an_outcome(call, given.ok("a note"), before=[given.ok("created")]),
         ),
     )
+    record = given.a_record_with_one_benign_call()
+    record_path = given.written(tmp_path / "admission_record.json", record)
 
-    assert main(["--record", str(given.a_written_record(tmp_path)), "--image", "img"]) == 0
+    assert main(["--record", str(record_path), "--image", "img"]) == 0
+    assert probed == [probe_calls(record_calls(record))]
+
+
+def test_main_probes_the_calls_given_in_place_of_the_records(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    probed = given.a_probe_answering(monkeypatch, given.a_report([]))
+    record_path = given.written(
+        tmp_path / "admission_record.json", given.a_record_with_one_benign_call()
+    )
+    calls = [given.a_call("list", path="docs")]
+    calls_path = given.written(tmp_path / "calls.json", calls)
+
+    main(["--record", str(record_path), "--image", "img", "--calls", str(calls_path)])
+
+    assert probed == [probe_calls(calls)]
 
 
 @pytest.mark.parametrize(
@@ -176,5 +194,8 @@ def test_main_fails_on_any_call_that_does_not_pass(
     outcome: ProbeOutcome, listed: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     given.a_probe_answering(monkeypatch, given.a_report(listed, outcome))
+    record_path = given.written(
+        tmp_path / "admission_record.json", given.a_record_with_one_benign_call()
+    )
 
-    assert main(["--record", str(given.a_written_record(tmp_path)), "--image", "img"]) == 1
+    assert main(["--record", str(record_path), "--image", "img"]) == 1
