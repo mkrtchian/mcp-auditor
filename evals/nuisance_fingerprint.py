@@ -45,8 +45,8 @@ def nuisance_fixture_fingerprint(
     with the valid judge categories of their classes, and the benign calls of those counted tools
     in record order, with their expected texts and their prerequisite calls.
     Out: the vulnerable Dockerfile, the exploits, the agents, the agreement, the settlements, the
-    fix-check records, and the provenance records (`stand_ins`, `seeds`), whose content is covered
-    through the Dockerfile and the backend's served files.
+    fix-check records, the provenance records (`stand_ins`, `seeds`), whose content is covered
+    through the Dockerfile and the backend's served files, and the recorded `software_releases`.
     """
     counted = counted_tools(server)
     backend = server.backend

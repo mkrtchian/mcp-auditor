@@ -82,6 +82,11 @@ class NuisanceCensus:
         return indexed | identified
 
 
+# The walk leaves a flaw's grammar class to the admission, so a disagreement on it needs no
+# settlement here.
+_WALKED_CRITERIA = tuple(c for c in Criterion if c is not Criterion.GRAMMAR_CLASS)
+
+
 def load_walk_record(path: Path, census: HoldoutCensus) -> NuisanceCensus:
     if not path.exists():
         raise FileNotFoundError(f"no nuisance walk record at {path}: it has not been committed")
@@ -175,7 +180,7 @@ def _completeness_problems(nuisance_census: NuisanceCensus) -> list[str]:
         seen = nuisance_census.classifications_by_flaw.get(entry.identifier, [])
         problems += [
             f"{entry.identifier}: the classifiers disagree on {criterion}, and no settlement"
-            for criterion in Criterion
+            for criterion in _WALKED_CRITERIA
             if len({criteria_met(each)[criterion] for each in seen}) > 1
             and (entry.identifier, criterion) not in settled
         ]

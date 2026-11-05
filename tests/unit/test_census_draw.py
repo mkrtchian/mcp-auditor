@@ -81,6 +81,14 @@ def test_two_give_ups_and_a_card_under_one_version_fail(tmp_path: Path):
         load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
 
 
+def test_give_ups_under_a_version_with_no_walk_step_of_their_flaw_fail(tmp_path: Path):
+    draw = given.with_give_ups_under(given.a_draw(), A_TWICE_GIVEN_UP_FLAW, version=10)
+
+    refusal = f"flaw {A_TWICE_GIVEN_UP_FLAW} gave up under rule version 10, which has no walk step"
+    with pytest.raises(ValueError, match=re.escape(refusal)):
+        load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
+
+
 def test_thirty_drawn_flaws_disclosed_after_one_date_load(tmp_path: Path):
     identifiers = [f"CVE-2026-{i:04d}" for i in range(1, 31)]
     census_of_thirty = given.a_census_drawing(identifiers)

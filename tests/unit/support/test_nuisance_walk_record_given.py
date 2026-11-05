@@ -30,6 +30,13 @@ def a_census_split_on_the_effect_of(flaw: str) -> HoldoutCensus:
     )
 
 
+def a_census_split_on_the_grammar_class_of(flaw: str) -> HoldoutCensus:
+    """The second classifier files the flaw outside the grammar, the first inside."""
+    return walk_given.with_the_second_classifier_overriding(
+        a_census(), flaw, walk_given.OUTSIDE_THE_GRAMMAR
+    )
+
+
 def a_census_naming_two_packages_for_the_queue() -> HoldoutCensus:
     return walk_given.with_the_second_classifier_overriding(
         a_census(), "queued", {"server_package": "https://github.com/acme/srv2"}

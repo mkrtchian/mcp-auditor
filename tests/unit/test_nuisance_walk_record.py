@@ -93,6 +93,12 @@ def test_accepts_a_queue_disagreement_once_settled():
     assert walk_record_problems(given.paired(census, record)) == []
 
 
+def test_leaves_a_queue_disagreement_on_the_grammar_class_to_the_admission():
+    census = given.a_census_split_on_the_grammar_class_of("queued")
+
+    assert walk_record_problems(given.paired(census, given.an_empty_record())) == []
+
+
 def test_leaves_a_disagreement_on_a_holdout_walked_flaw_to_the_draw():
     census = given.a_census_split_on_the_effect_of("walked")
 
