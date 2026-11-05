@@ -193,7 +193,6 @@ def _referenced_flaws(draw: DrawRecord) -> list[tuple[str, str]]:
 
 def _walk_problems(draw: DrawRecord, order: set[str]) -> list[str]:
     outcomes = _walk_outcomes(draw)
-    governing = governing_steps(draw)
     listed = Counter((step.identifier, step.rule_version) for step in draw.walk)
     problems = [
         f"walk lists flaw {identifier} {count} times under rule version {version}"
@@ -210,6 +209,12 @@ def _walk_problems(draw: DrawRecord, order: set[str]) -> list[str]:
         for card in draw.cards
         if "drawn" not in outcomes.get(card.flaw, [])
     ]
+    return problems + _drawn_problems(draw)
+
+
+def _drawn_problems(draw: DrawRecord) -> list[str]:
+    governing = governing_steps(draw)
+    problems: list[str] = []
     for identifier in draw.drawn:
         if identifier not in {card.flaw for card in draw.cards}:
             problems.append(f"drawn flaw {identifier} has no calibration card")
@@ -238,20 +243,26 @@ def _calibration_problems(draw: DrawRecord) -> list[str]:
                 f" under rule version {version}"
             )
         step = governing.get(flaw)
-        if (step.rule_version if step else None) != version:
-            continue
-        if len(give_ups) == 1 and flaw not in card_flaws:
-            problems.append(f"flaw {flaw} gave up once but has no calibration card")
-        if len(give_ups) == 2:
-            if flaw in card_flaws:
-                problems.append(
-                    f"flaw {flaw} has two give-ups and a card under rule version {version}"
-                )
-            if step is None or step.outcome != "given_up":
-                problems.append(
-                    f"flaw {flaw} gave up twice under rule version {version} but its governing"
-                    ' walk step is not "given_up"'
-                )
+        if (step.rule_version if step else None) == version:
+            problems += _governing_give_up_problems(give_ups, step, card_flaws)
+    return problems
+
+
+def _governing_give_up_problems(
+    give_ups: list[GiveUp], step: DrawWalkStep | None, card_flaws: set[str]
+) -> list[str]:
+    flaw, version = give_ups[0].flaw, give_ups[0].rule_version
+    problems: list[str] = []
+    if len(give_ups) == 1 and flaw not in card_flaws:
+        problems.append(f"flaw {flaw} gave up once but has no calibration card")
+    if len(give_ups) == 2:
+        if flaw in card_flaws:
+            problems.append(f"flaw {flaw} has two give-ups and a card under rule version {version}")
+        if step is None or step.outcome != "given_up":
+            problems.append(
+                f"flaw {flaw} gave up twice under rule version {version} but its governing"
+                ' walk step is not "given_up"'
+            )
     return problems
 
 
