@@ -24,10 +24,7 @@ from evals.nuisance_provisioners import (
     mysql_provisioner,
     n8n_provisioner,
 )
-
-
-def _value_after(args: list[str], flag: str) -> str:
-    return args[args.index(flag) + 1]
+from tests.unit.support.docker_argv import value_after, values_after
 
 
 def _a_server() -> AdmittedServer:
@@ -55,14 +52,14 @@ def test_doris_provisioner_wires_the_cluster_and_reaps_the_server(monkeypatch: p
     server = _a_server()
 
     with doris_provisioner(server) as launch:
-        assert _value_after(launch.args, "--network") == DORIS_BRIDGE
-        assert _value_after(launch.args, "--user") == "65534:65534"
-        assert _value_after(launch.args, "-w") == "/"
+        assert value_after(launch.args, "--network") == DORIS_BRIDGE
+        assert value_after(launch.args, "--user") == "65534:65534"
+        assert value_after(launch.args, "-w") == "/"
         tail = [image_tag(server.service), *server.launch]
         assert launch.args[-len(tail) :] == tail
         assert len(ensured) == 1
         assert removed == []
-        name = _value_after(launch.args, "--name")
+        name = value_after(launch.args, "--name")
 
     assert removed == [name]
 
@@ -80,10 +77,6 @@ def test_two_doris_provisioners_of_one_server_are_open_at_once(monkeypatch: pyte
 
     with doris_provisioner(server), doris_provisioner(server):
         pass
-
-
-def _values_after(args: list[str], flag: str) -> list[str]:
-    return [args[index + 1] for index, arg in enumerate(args) if arg == flag]
 
 
 def test_the_ckan_fixture_is_accepted_by_the_registry():
@@ -109,17 +102,17 @@ def test_ckan_provisioner_wires_the_responder_and_reaps_the_server(
     server = _a_server()
 
     with ckan_provisioner(server) as launch:
-        assert _value_after(launch.args, "--network") == CKAN_BRIDGE
-        assert _value_after(launch.args, "--user") == "65534:65534"
-        assert _value_after(launch.args, "-w") == "/"
-        assert _value_after(launch.args, "-e") == "NODE_TLS_REJECT_UNAUTHORIZED=0"
-        aliases = _values_after(launch.args, "--add-host")
+        assert value_after(launch.args, "--network") == CKAN_BRIDGE
+        assert value_after(launch.args, "--user") == "65534:65534"
+        assert value_after(launch.args, "-w") == "/"
+        assert value_after(launch.args, "-e") == "NODE_TLS_REJECT_UNAUTHORIZED=0"
+        aliases = values_after(launch.args, "--add-host")
         assert aliases == [f"{host}:{CKAN_RESPONDER_IP}" for host in CKAN_ALIASES]
         tail = [image_tag(server.service), *server.launch]
         assert launch.args[-len(tail) :] == tail
         assert len(ensured) == 1
         assert removed == []
-        name = _value_after(launch.args, "--name")
+        name = value_after(launch.args, "--name")
 
     assert removed == [name]
 
@@ -179,14 +172,14 @@ def test_contextforge_provisioner_wires_the_responder_and_reaps_the_server(
     server = _a_server()
 
     with contextforge_provisioner(server) as launch:
-        assert _value_after(launch.args, "--network") == CONTEXTFORGE_BRIDGE
-        assert _value_after(launch.args, "--user") == "65534:65534"
-        assert _value_after(launch.args, "-w") == "/"
+        assert value_after(launch.args, "--network") == CONTEXTFORGE_BRIDGE
+        assert value_after(launch.args, "--user") == "65534:65534"
+        assert value_after(launch.args, "-w") == "/"
         tail = [image_tag(server.service), *server.launch]
         assert launch.args[-len(tail) :] == tail
         assert len(ensured) == 1
         assert removed == []
-        name = _value_after(launch.args, "--name")
+        name = value_after(launch.args, "--name")
 
     assert removed == [name]
 
@@ -229,14 +222,14 @@ def test_mysql_provisioner_wires_the_pair_and_reaps_the_server(monkeypatch: pyte
     server = _a_server()
 
     with mysql_provisioner(server) as launch:
-        assert _value_after(launch.args, "--network") == MYSQL_BRIDGE
-        assert _value_after(launch.args, "--user") == "65534:65534"
-        assert _value_after(launch.args, "-w") == "/"
+        assert value_after(launch.args, "--network") == MYSQL_BRIDGE
+        assert value_after(launch.args, "--user") == "65534:65534"
+        assert value_after(launch.args, "-w") == "/"
         tail = [image_tag(server.service), *server.launch]
         assert launch.args[-len(tail) :] == tail
         assert len(ensured) == 1
         assert removed == []
-        name = _value_after(launch.args, "--name")
+        name = value_after(launch.args, "--name")
 
     assert removed == [name]
 
@@ -277,14 +270,14 @@ def test_n8n_provisioner_wires_the_responder_and_reaps_the_server(monkeypatch: p
     server = _a_server()
 
     with n8n_provisioner(server) as launch:
-        assert _value_after(launch.args, "--network") == N8N_BRIDGE
-        assert _value_after(launch.args, "--user") == "65534:65534"
-        assert _value_after(launch.args, "-w") == "/"
+        assert value_after(launch.args, "--network") == N8N_BRIDGE
+        assert value_after(launch.args, "--user") == "65534:65534"
+        assert value_after(launch.args, "-w") == "/"
         tail = [image_tag(server.service), *server.launch]
         assert launch.args[-len(tail) :] == tail
         assert len(ensured) == 1
         assert removed == []
-        name = _value_after(launch.args, "--name")
+        name = value_after(launch.args, "--name")
 
     assert removed == [name]
 

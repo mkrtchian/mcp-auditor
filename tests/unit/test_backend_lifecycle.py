@@ -7,6 +7,7 @@ from evals.holdout_kit.kit_backend_launch import backend_launch, lifecycle_of
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import MEMORY_BOUND, memory_bound_args
 from evals.nuisance_images import image_tag
+from tests.unit.support.docker_argv import carries, count
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
@@ -70,8 +71,8 @@ def test_the_kit_backend_launch_removes_its_server_when_the_body_raises():
 def test_every_backend_server_argv_carries_the_memory_bound_and_the_resolver_option(key: str):
     args = lifecycle_of(key).server_args("name", "image", given.a_host(), ["serve"])
 
-    assert _carries(args, ["--memory", MEMORY_BOUND, "--memory-swap", MEMORY_BOUND])
-    assert _count(args, resolver_args()) == 1
+    assert carries(args, ["--memory", MEMORY_BOUND, "--memory-swap", MEMORY_BOUND])
+    assert count(args, resolver_args()) == 1
 
 
 def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolver_option():
@@ -80,8 +81,8 @@ def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolve
     assert len(responders) == 11
     for responder in responders:
         args = responder.singleton_run_args()
-        assert _carries(args, memory_bound_args()), responder.container
-        assert _count(args, resolver_args()) == 1, responder.container
+        assert carries(args, memory_bound_args()), responder.container
+        assert count(args, resolver_args()) == 1, responder.container
 
 
 MYSQL_ENGINE_ARGS = mysql_backend.backend_container_run_args(
@@ -105,8 +106,8 @@ MOTO_STUB_ARGS = mysql_backend.backend_container_run_args(
 def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_resolver_option(
     args: list[str],
 ):
-    assert _carries(args, memory_bound_args())
-    assert _count(args, resolver_args()) == 1
+    assert carries(args, memory_bound_args())
+    assert count(args, resolver_args()) == 1
 
 
 @pytest.mark.parametrize(
@@ -120,16 +121,8 @@ def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_res
     ids=["doris cluster", "mysql engine", "moto stub", "neo4j database"],
 )
 def test_every_built_backend_container_answers_on_its_alias(args: list[str], alias: str):
-    assert _carries(args, ["--network-alias", alias])
+    assert carries(args, ["--network-alias", alias])
 
 
 def test_the_doris_cluster_is_named_after_its_alias():
-    assert _carries(doris_backend.doris_cluster_run_args(), ["--hostname", "doris"])
-
-
-def _carries(args: list[str], segment: list[str]) -> bool:
-    return _count(args, segment) > 0
-
-
-def _count(args: list[str], segment: list[str]) -> int:
-    return sum(args[i : i + len(segment)] == segment for i in range(len(args)))
+    assert carries(doris_backend.doris_cluster_run_args(), ["--hostname", "doris"])

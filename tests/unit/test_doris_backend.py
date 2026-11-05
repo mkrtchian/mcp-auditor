@@ -4,6 +4,7 @@ import tests.unit.support.test_doris_serialization_given as given
 from evals import cve_environments
 from evals.doris_backend import DORIS_SERVER_LAUNCH, doris_server_args
 from evals.nuisance_confinement import memory_bound_args, user_args
+from tests.unit.support.docker_argv import value_after
 
 
 def _strip_pair(args: list[str], flag: str) -> list[str]:
@@ -16,10 +17,6 @@ def _without(args: list[str], segment: list[str]) -> list[str]:
         if args[i : i + len(segment)] == segment:
             return args[:i] + args[i + len(segment) :]
     raise AssertionError(f"{segment} not found in {args}")
-
-
-def _follows(args: list[str], flag: str, value: str) -> bool:
-    return args[args.index(flag) + 1] == value
 
 
 def test_the_helper_and_the_holdout_env_agree_on_the_launch_tail(monkeypatch: pytest.MonkeyPatch):
@@ -43,6 +40,6 @@ def test_the_helper_adds_the_hosts_user_and_working_directory():
 
     args = doris_server_args("server-name", "image", spec.host, DORIS_SERVER_LAUNCH)
 
-    assert _follows(args, "--user", "65534:65534")
-    assert _follows(args, "-w", "/srv")
+    assert value_after(args, "--user") == "65534:65534"
+    assert value_after(args, "-w") == "/srv"
     assert args[-len(DORIS_SERVER_LAUNCH) - 1 :] == ["image", *DORIS_SERVER_LAUNCH]

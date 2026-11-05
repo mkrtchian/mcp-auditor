@@ -55,6 +55,7 @@ from tests.fakes.llm import FakeLLM
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support import test_nuisance_run_given as run_given
+from tests.unit.support.docker_argv import value_after
 from tests.unit.support.test_nuisance_admission_given import (
     FIRST_FLAW,
     SECOND_FLAW,
@@ -77,10 +78,10 @@ _PROVIDER_ERROR = ProviderError("ModelAPIError, status 500")
 def test_the_crafted_server_launches_unprivileged_at_the_root_with_no_network():
     args = _launch_args(SERVER)
 
-    assert _follows(args, "--network", "none")
+    assert value_after(args, "--network") == "none"
     assert "bridge" not in args
-    assert _follows(args, "--user", "65534:65534")
-    assert _follows(args, "-w", "/")
+    assert value_after(args, "--user") == "65534:65534"
+    assert value_after(args, "-w") == "/"
 
 
 def test_a_backend_less_server_launches_with_no_network_even_on_a_networked_host():
@@ -88,7 +89,7 @@ def test_a_backend_less_server_launches_with_no_network_even_on_a_networked_host
 
     args = _launch_args(server)
 
-    assert _follows(args, "--network", "none")
+    assert value_after(args, "--network") == "none"
     assert "bridge" not in args
 
 
@@ -97,15 +98,15 @@ def test_a_host_user_launches_as_the_invoking_user_in_its_working_directory():
 
     args = _launch_args(server)
 
-    assert _follows(args, "--user", f"{os.getuid()}:{os.getgid()}")
-    assert _follows(args, "-w", "/srv")
+    assert value_after(args, "--user") == f"{os.getuid()}:{os.getgid()}"
+    assert value_after(args, "-w") == "/srv"
 
 
 def test_the_launch_runs_the_patched_image_confined_with_no_mount():
     with nuisance_environment(SERVER) as launch:
         assert launch.command == "docker"
         assert launch.args[-3:] == [f"mcp-auditor-nuisance-{SERVER.service}:local", *SERVER.launch]
-        assert _follows(launch.args, "--cap-drop", "ALL")
+        assert value_after(launch.args, "--cap-drop") == "ALL"
         assert "-v" not in launch.args
         assert "--mount" not in launch.args
 
@@ -554,10 +555,6 @@ def _a_fake_connect(
 def _launch_args(server: AdmittedServer, backends: Any = BACKENDS) -> list[str]:
     with nuisance_environment(server, backends=backends) as launch:
         return launch.args
-
-
-def _follows(args: list[str], flag: str, value: str) -> bool:
-    return any(args[i : i + 2] == [flag, value] for i in range(len(args) - 1))
 
 
 def _audited(report: AuditReport) -> NuisanceAudit:

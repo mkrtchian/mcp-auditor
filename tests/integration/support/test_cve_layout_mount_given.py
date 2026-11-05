@@ -19,6 +19,7 @@ from evals.cve_targets import image_tag
 from tests.integration.support.test_cve_planting_given import (
     missing_prerequisite as missing_prerequisite,
 )
+from tests.unit.support.docker_argv import mount_of
 
 LayoutBuilder = Callable[[Path], None]
 GIT_SERVICE = "git"  # the read-write git launch's image, which carries git, unlike the sentinel
@@ -63,15 +64,10 @@ def an_unprivileged_server_on_the_git_launch_runs(command: str) -> GitLaunchRun:
         completed = subprocess.run(
             argv, check=False, capture_output=True, text=True, timeout=60, stdin=subprocess.DEVNULL
         )
-        root = _layout_root(options)
+        root = Path(mount_of(options, "/srv").split(":")[0])
     return GitLaunchRun(
         CommandResult(completed.returncode, completed.stdout + completed.stderr), root
     )
-
-
-def _layout_root(options: Sequence[str]) -> Path:
-    mounts = [options[index + 1] for index, option in enumerate(options) if option == "-v"]
-    return Path(next(mount for mount in mounts if mount.split(":")[1] == "/srv").split(":")[0])
 
 
 def _run_in_layout(root: Path, command: str) -> CommandResult:
