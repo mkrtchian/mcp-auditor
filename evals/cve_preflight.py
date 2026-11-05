@@ -5,6 +5,7 @@ audits whatever a tag happens to hold."""
 
 import subprocess
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 from rich.console import Console
 
@@ -38,31 +39,22 @@ VULNERABLE_SERVICES = vulnerable_services(CVE_TARGETS)
 console = Console()
 
 
-def preflight_ok(
-    store: ImageStore | None = None, check: Callable[[], None] = check_closed_network_support
-) -> bool:
-    if not _docker_ready():
-        console.print("[red]Docker daemon unreachable.[/red] Start Docker, then run again.")
-        return False
-    try:
-        check()
-    except ClosedNetworkUnsupported as error:
-        console.print("[red]The Docker daemon cannot create a closed network.[/red]")
-        console.print(f"{error}\n{DOCKER_REQUIREMENT}", markup=False, highlight=False)
-        return False
-    try:
-        rebuilt = ensure_images(expected_services(CVE_TARGETS), store or ComposeImageStore())
-    except ImageBuildFailed as error:
-        console.print(f"[red]Image build failed:[/red] {', '.join(error.services)}")
-        console.print(error.stderr_tail, markup=False, highlight=False)
-        return False
-    if rebuilt:
-        console.print(f"[yellow]Rebuilt stale images:[/yellow] {', '.join(rebuilt)}")
-    _warn_if_pids_limit_discarded()
-    return True
+@dataclass(frozen=True)
+class PreflightDocker:
+    ready: Callable[[], bool]
+    enforces_pids_limit: Callable[[], bool]
+    check_closed_networks: Callable[[], None]  # raises ClosedNetworkUnsupported
+    images: ImageStore
 
 
-def _warn_if_pids_limit_discarded() -> None:
+def _docker_ready() -> bool:
+    try:
+        return subprocess.run(["docker", "info"], capture_output=True).returncode == 0
+    except OSError:
+        return False
+
+
+def _enforces_pids_limit() -> bool:
     # Docker does not fail on a limit its host cannot enforce, it warns on
     # stderr and runs without it, and the launchers discard stderr.
     result = subprocess.run(
@@ -71,14 +63,34 @@ def _warn_if_pids_limit_discarded() -> None:
         capture_output=True,
         text=True,
     )
-    if result.stdout.strip() == "false":
+    return result.stdout.strip() != "false"
+
+
+HOST_DOCKER = PreflightDocker(
+    _docker_ready, _enforces_pids_limit, check_closed_network_support, ComposeImageStore()
+)
+
+
+def preflight_ok(docker: PreflightDocker = HOST_DOCKER) -> bool:
+    if not docker.ready():
+        console.print("[red]Docker daemon unreachable.[/red] Start Docker, then run again.")
+        return False
+    try:
+        docker.check_closed_networks()
+    except ClosedNetworkUnsupported as error:
+        console.print("[red]The Docker daemon cannot create a closed network.[/red]")
+        console.print(f"{error}\n{DOCKER_REQUIREMENT}", markup=False, highlight=False)
+        return False
+    try:
+        rebuilt = ensure_images(expected_services(CVE_TARGETS), docker.images)
+    except ImageBuildFailed as error:
+        console.print(f"[red]Image build failed:[/red] {', '.join(error.services)}")
+        console.print(error.stderr_tail, markup=False, highlight=False)
+        return False
+    if rebuilt:
+        console.print(f"[yellow]Rebuilt stale images:[/yellow] {', '.join(rebuilt)}")
+    if not docker.enforces_pids_limit():
         console.print(
             "[yellow]This Docker host cannot enforce --pids-limit, targets run without it.[/yellow]"
         )
-
-
-def _docker_ready() -> bool:
-    try:
-        return subprocess.run(["docker", "info"], capture_output=True).returncode == 0
-    except OSError:
-        return False
+    return True

@@ -1,31 +1,20 @@
-from pathlib import Path
+from collections.abc import Callable
 
 import pytest
 
 from evals.closed_network import ClosedNetworkUnsupported
 from evals.cve_images import dockerfile_fingerprint
 from evals.cve_planting import SENTINEL_SERVICE
-from evals.cve_preflight import expected_services, preflight_ok, vulnerable_services
+from evals.cve_preflight import (
+    PreflightDocker,
+    expected_services,
+    preflight_ok,
+    vulnerable_services,
+)
 from evals.cve_targets import CVE_TARGETS, image_tag
 from tests.fakes.image_store import FakeImageStore
 
 FETCH_ID = "CVE-2025-65513"
-
-
-def _a_docker_answering_only_info(directory: Path) -> Path:
-    """A `docker` shim first on PATH, answering `info` and `info --format`, so the daemon and
-    pids-limit probes run their real subprocess calls without reaching the host's Docker."""
-    docker = directory / "docker"
-    docker.write_text(
-        "#!/bin/sh\n"
-        'if [ "$1" = "info" ]; then\n'
-        '  [ "$2" = "--format" ] && echo 256\n'
-        "  exit 0\n"
-        "fi\n"
-        "exit 1\n"
-    )
-    docker.chmod(0o755)
-    return directory
 
 
 def _a_daemon_closing_networks() -> None:
@@ -45,47 +34,79 @@ def _a_store_with_one_stale(stale: str, *, build_error: str | None = None) -> Fa
     return FakeImageStore(labels, build_error=build_error)
 
 
-def test_the_preflight_rebuilds_a_stale_image_and_names_it(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-):
-    monkeypatch.setenv("PATH", str(_a_docker_answering_only_info(tmp_path)))
+def _a_docker(
+    store: FakeImageStore,
+    *,
+    ready: bool = True,
+    enforces_pids_limit: bool = True,
+    check_closed_networks: Callable[[], None] = _a_daemon_closing_networks,
+) -> PreflightDocker:
+    return PreflightDocker(
+        ready=lambda: ready,
+        enforces_pids_limit=lambda: enforces_pids_limit,
+        check_closed_networks=check_closed_networks,
+        images=store,
+    )
+
+
+def test_the_preflight_rebuilds_a_stale_image_and_names_it(capsys: pytest.CaptureFixture[str]):
     stale = CVE_TARGETS[0].patched_image
     store = _a_store_with_one_stale(stale)
 
-    ok = preflight_ok(store, check=_a_daemon_closing_networks)
+    ok = preflight_ok(_a_docker(store))
 
     assert ok
-    assert store.label_of(image_tag(stale)) == dockerfile_fingerprint(stale)
+    assert store.builds == [[stale]]
     assert stale in capsys.readouterr().out
 
 
 def test_the_preflight_fails_and_names_the_service_whose_rebuild_fails(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    capsys: pytest.CaptureFixture[str],
 ):
-    monkeypatch.setenv("PATH", str(_a_docker_answering_only_info(tmp_path)))
     stale = CVE_TARGETS[0].patched_image
     store = _a_store_with_one_stale(stale, build_error="no space left on device")
 
-    ok = preflight_ok(store, check=_a_daemon_closing_networks)
+    ok = preflight_ok(_a_docker(store))
 
     assert not ok
     assert stale in capsys.readouterr().out
 
 
 def test_the_preflight_fails_on_a_daemon_that_cannot_close_a_network_before_any_image(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    capsys: pytest.CaptureFixture[str],
 ):
-    monkeypatch.setenv("PATH", str(_a_docker_answering_only_info(tmp_path)))
-    stale = CVE_TARGETS[0].patched_image
-    store = _a_store_with_one_stale(stale)
+    store = _a_store_with_one_stale(CVE_TARGETS[0].patched_image)
 
-    ok = preflight_ok(store, check=_a_daemon_that_cannot_close_a_network)
+    ok = preflight_ok(_a_docker(store, check_closed_networks=_a_daemon_that_cannot_close_a_network))
 
     out = capsys.readouterr().out
     assert not ok
-    assert store.label_of(image_tag(stale)) == "a-foreign-fingerprint"
+    assert store.builds == []
     assert "invalid gateway mode: isolated" in out
     assert "Docker Engine 28.0 or later is required" in out
+
+
+def test_the_preflight_fails_on_an_unreachable_daemon_before_any_image(
+    capsys: pytest.CaptureFixture[str],
+):
+    store = _a_store_with_one_stale(CVE_TARGETS[0].patched_image)
+
+    ok = preflight_ok(_a_docker(store, ready=False))
+
+    assert not ok
+    assert store.builds == []
+    assert "Docker daemon unreachable" in capsys.readouterr().out
+
+
+def test_the_preflight_warns_and_still_passes_on_a_daemon_that_does_not_enforce_the_pids_limit(
+    capsys: pytest.CaptureFixture[str],
+):
+    store = _a_store_with_one_stale(CVE_TARGETS[0].patched_image)
+
+    ok = preflight_ok(_a_docker(store, enforces_pids_limit=False))
+
+    assert ok
+    assert "cannot enforce --pids-limit" in capsys.readouterr().out
 
 
 def test_expected_services_keeps_the_sentinel_with_the_fetch_target_filtered_out():

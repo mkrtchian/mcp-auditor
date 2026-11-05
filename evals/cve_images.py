@@ -87,7 +87,39 @@ def _base_and_stage(arguments: list[str]) -> tuple[str, str | None]:
     return words[0], words[2] if has_stage else None
 
 
+@dataclass(frozen=True)
+class FailedBuild:
+    services: list[str]
+    stdout: str
+    stderr: str
+
+
+RunBatch = Callable[[Sequence[str]], subprocess.CompletedProcess[str]]
+
+
+def compose_build_batch(batch: Sequence[str]) -> subprocess.CompletedProcess[str]:
+    command = ["docker", "compose", "-f", str(COMPOSE_FILE), "build", *batch]
+    return subprocess.run(command, capture_output=True, text=True)
+
+
+def compose_build(
+    services: Sequence[str], run_batch: RunBatch = compose_build_batch
+) -> FailedBuild | None:
+    """Builds the deduplicated services batch after batch, in order, and stops at the first
+    batch that fails."""
+    unique = list(dict.fromkeys(services))
+    for start in range(0, len(unique), COMPOSE_BUILD_BATCH_SIZE):
+        batch = unique[start : start + COMPOSE_BUILD_BATCH_SIZE]
+        result = run_batch(batch)
+        if result.returncode != 0:
+            return FailedBuild(batch, result.stdout, result.stderr)
+    return None
+
+
+@dataclass(frozen=True)
 class ComposeImageStore:
+    run_batch: RunBatch = compose_build_batch
+
     def label(self, tag: str, key: str) -> str | None:
         command = [
             "docker",
@@ -104,27 +136,7 @@ class ComposeImageStore:
         return value if result.returncode == 0 and value else None
 
     def build(self, services: Sequence[str]) -> None:
-        failed = compose_build(services)
+        failed = compose_build(services, self.run_batch)
         if failed:
             tail = "\n".join(failed.stderr.splitlines()[-_STDERR_TAIL_LINES:])
             raise ImageBuildFailed(failed.services, tail)
-
-
-@dataclass(frozen=True)
-class FailedBuild:
-    services: list[str]
-    stdout: str
-    stderr: str
-
-
-def compose_build(services: Sequence[str]) -> FailedBuild | None:
-    """Builds the deduplicated services batch after batch, in order, and stops at the first
-    batch that fails."""
-    unique = list(dict.fromkeys(services))
-    for start in range(0, len(unique), COMPOSE_BUILD_BATCH_SIZE):
-        batch = unique[start : start + COMPOSE_BUILD_BATCH_SIZE]
-        command = ["docker", "compose", "-f", str(COMPOSE_FILE), "build", *batch]
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            return FailedBuild(batch, result.stdout, result.stderr)
-    return None

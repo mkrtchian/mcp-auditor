@@ -6,7 +6,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from evals.closed_network import ClosedNetworkUnsupported, check_closed_network_support
-from evals.cve_images import compose_build
+from evals.cve_images import RunBatch, compose_build, compose_build_batch
 from evals.cve_targets import CVETarget
 from evals.eval_session import Refused
 
@@ -14,8 +14,8 @@ _BUILD_TAIL_LINES = 40
 DOCKER_REQUIREMENT = "Docker Engine 28.0 or later is required"
 
 
-def rebuild_images(services: Sequence[str]) -> None:
-    failed = compose_build(services)
+def rebuild_images(services: Sequence[str], run_batch: RunBatch = compose_build_batch) -> None:
+    failed = compose_build(services, run_batch)
     if failed:
         raise RuntimeError(
             f"docker compose build failed for {', '.join(failed.services)}:\n"

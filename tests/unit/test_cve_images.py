@@ -2,11 +2,13 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.support.test_cve_images_given as given
 from evals import nuisance_images
 from evals.cve_images import (
     COMPOSE_BUILD_BATCH_SIZE,
     ComposeImageStore,
     ImageBuildFailed,
+    compose_build,
     dockerfile_fingerprint,
     ensure_images,
     stale_services,
@@ -14,7 +16,6 @@ from evals.cve_images import (
 )
 from evals.cve_targets import image_tag
 from tests.fakes.image_store import FakeImageStore
-from tests.unit.support.test_run_images_given import builds_recorded
 
 FILESYSTEM_TAG = image_tag("filesystem")
 SENTINEL_TAG = image_tag("sentinel")
@@ -28,7 +29,7 @@ def test_a_tag_carrying_its_dockerfile_fingerprint_is_not_rebuilt():
     rebuilt = ensure_images(["filesystem"], store)
 
     assert rebuilt == []
-    assert store.label_of(FILESYSTEM_TAG) == current
+    assert store.builds == []
 
 
 @pytest.mark.parametrize(
@@ -36,13 +37,13 @@ def test_a_tag_carrying_its_dockerfile_fingerprint_is_not_rebuilt():
     [{}, {FILESYSTEM_TAG: None}, {FILESYSTEM_TAG: dockerfile_fingerprint("fetch")}],
     ids=["absent", "unlabeled", "another-fingerprint"],
 )
-def test_a_stale_tag_is_rebuilt_with_its_current_fingerprint(labels: dict[str, str | None]):
+def test_a_stale_tag_is_rebuilt(labels: dict[str, str | None]):
     store = FakeImageStore(labels)
 
     rebuilt = ensure_images(["filesystem"], store)
 
     assert rebuilt == ["filesystem"]
-    assert store.label_of(FILESYSTEM_TAG) == dockerfile_fingerprint("filesystem")
+    assert store.builds == [["filesystem"]]
 
 
 def test_only_the_stale_services_are_rebuilt_in_input_order_once_each():
@@ -51,8 +52,7 @@ def test_only_the_stale_services_are_rebuilt_in_input_order_once_each():
     rebuilt = ensure_images(["sentinel", "filesystem", "fetch", "sentinel"], store)
 
     assert rebuilt == ["sentinel", "fetch"]
-    for service in ("sentinel", "filesystem", "fetch"):
-        assert store.label_of(image_tag(service)) == dockerfile_fingerprint(service)
+    assert store.builds == [["sentinel", "fetch"]]
 
 
 def test_nothing_is_rebuilt_when_every_tag_is_current():
@@ -73,18 +73,56 @@ def test_a_build_failure_propagates():
         ensure_images(["filesystem"], store)
 
 
-def test_a_compose_build_fails_on_its_failing_batch_after_the_earlier_ones_built(
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_a_compose_build_stops_at_its_failing_batch_after_the_earlier_ones_built():
     services = [f"server-{index}" for index in range(3 * COMPOSE_BUILD_BATCH_SIZE)]
     failing_batch = services[COMPOSE_BUILD_BATCH_SIZE : 2 * COMPOSE_BUILD_BATCH_SIZE]
-    builds = builds_recorded(monkeypatch, failing=failing_batch[0])
+    build = given.ScriptedComposeBuild(failing=failing_batch[0])
+
+    failed = compose_build(services, run_batch=build)
+
+    assert build.batches == [services[:COMPOSE_BUILD_BATCH_SIZE], failing_batch]
+    assert failed is not None
+    assert failed.services == failing_batch
+
+
+def test_a_compose_build_builds_every_service_in_bounded_batches():
+    build = given.ScriptedComposeBuild()
+    services = [f"server-{index}" for index in range(3 * COMPOSE_BUILD_BATCH_SIZE + 1)]
+
+    failed = compose_build(services, run_batch=build)
+
+    assert failed is None
+    assert sorted(service for batch in build.batches for service in batch) == sorted(services)
+    assert all(len(batch) <= COMPOSE_BUILD_BATCH_SIZE for batch in build.batches)
+
+
+def test_a_service_named_twice_is_built_once():
+    build = given.ScriptedComposeBuild()
+
+    compose_build(["app", "app-patched", "app"], run_batch=build)
+
+    assert [service for batch in build.batches for service in batch] == ["app", "app-patched"]
+
+
+def test_no_service_builds_nothing():
+    build = given.ScriptedComposeBuild()
+
+    compose_build([], run_batch=build)
+
+    assert build.batches == []
+
+
+def test_a_compose_store_build_failure_raises_with_its_services_and_stderr_tail():
+    services = [f"server-{index}" for index in range(2 * COMPOSE_BUILD_BATCH_SIZE)]
+    failing_batch = services[COMPOSE_BUILD_BATCH_SIZE:]
+    build = given.ScriptedComposeBuild(failing=failing_batch[0])
 
     with pytest.raises(ImageBuildFailed) as raised:
-        ComposeImageStore().build(services)
+        ComposeImageStore(run_batch=build).build(services)
 
-    assert builds == [services[:COMPOSE_BUILD_BATCH_SIZE], failing_batch]
     assert raised.value.services == tuple(failing_batch)
+    assert raised.value.stderr_tail.splitlines()[-1] == build.failure_line()
+    assert "step 0\n" not in raised.value.stderr_tail
 
 
 def test_the_injected_tag_selects_which_namespace_is_read():
