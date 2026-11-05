@@ -252,7 +252,7 @@ def _unwalked_give_up_problems(draw: DrawRecord) -> list[str]:
     stepped = {(step.identifier, step.rule_version) for step in draw.walk}
     return [
         f"flaw {flaw} gave up under rule version {version}, which has no walk step of it"
-        for flaw, version in {(give_up.flaw, give_up.rule_version) for give_up in draw.give_ups}
+        for flaw, version in _give_ups_by_flaw_and_version(draw)
         if (flaw, version) not in stepped
     ]
 
