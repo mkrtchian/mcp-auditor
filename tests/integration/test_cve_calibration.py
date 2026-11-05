@@ -188,7 +188,7 @@ async def test_the_types_only_check_prints_the_dead_conditions_and_no_server_tex
 
 @pytest.mark.usefixtures("docker_on_the_host")
 async def test_a_layout_launch_that_fails_twice_then_serves_is_observed(tmp_path: pathlib.Path):
-    target = given.a_target_whose_vulnerable_launch_fails("CVE-FLAKY", tmp_path, times=2)
+    target = given.a_target_whose_reference_launch_fails("CVE-FLAKY", tmp_path, times=2)
 
     vulnerable, _ = await observe_versions(target, given.a_places_mapping())
 
@@ -200,7 +200,7 @@ async def test_a_layout_launch_that_fails_twice_then_serves_is_observed(tmp_path
 async def test_a_layout_launch_that_fails_three_times_is_a_failed_observation(
     tmp_path: pathlib.Path,
 ):
-    target = given.a_target_whose_vulnerable_launch_fails("CVE-FLAKY", tmp_path, times=3)
+    target = given.a_target_whose_reference_launch_fails("CVE-FLAKY", tmp_path, times=3)
 
     vulnerable, _ = await observe_versions(target, given.a_places_mapping())
 

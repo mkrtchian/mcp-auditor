@@ -84,12 +84,9 @@ def _removed_at_exit(network: str) -> Generator[None]:
 @contextlib.contextmanager
 def a_container_on(network: str) -> Generator[str]:
     """A sentinel serving on its own port 80, the pinned name resolving to its loopback."""
-    name = start_container_on(network)
-    try:
+    with a_started_container_on(network) as name:
         _wait_serving(name)
         yield name
-    finally:
-        subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
 
 
 @contextlib.contextmanager
@@ -113,14 +110,18 @@ def a_container_with(args: PlantedArgs) -> Generator[str]:
         subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
 
 
-def start_container_on(network: str) -> str:
+@contextlib.contextmanager
+def a_started_container_on(network: str) -> Generator[str]:
     name = f"{LABEL}-closed-test-{secrets.token_hex(6)}"
-    _docker(
-        "run", "-d", "--rm", "--label", LABEL, "--name", name, "--network", network,
-        "--add-host", f"{PINNED_NAME}:127.0.0.1", "-e", "FLAG=closed-network-test",
-        SENTINEL_IMAGE,
-    )  # fmt: skip
-    return name
+    try:
+        _docker(
+            "run", "-d", "--rm", "--label", LABEL, "--name", name, "--network", network,
+            "--add-host", f"{PINNED_NAME}:127.0.0.1", "-e", "FLAG=closed-network-test",
+            SENTINEL_IMAGE,
+        )  # fmt: skip
+        yield name
+    finally:
+        subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
 
 
 def _wait_serving(container: str) -> None:

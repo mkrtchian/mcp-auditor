@@ -1,5 +1,6 @@
 # The proof that a server under the unprivileged account resolves the mounted layout by absolute
-# path and from its parent, as a deployed server does, the temp root under it being 0700, that
+# path and from its parent, as a deployed server does, the temp root under it being 0700, that a
+# server under the planted account, which owns none of the tree, resolves it too, that
 # the real adapter hands every node over to that account, and that it removes whatever a
 # read-write server left in the tree.
 #
@@ -33,6 +34,18 @@ def test_an_unprivileged_server_resolves_the_layout_by_absolute_path_and_from_it
     commands = ["cat /srv/.env", "cat ../.env", "ls /srv/app.git", "cat /srv/app/.git/config"]
 
     results = given.an_unprivileged_server_reads(given.the_full_layout, commands)
+
+    assert {command: result.exit_code for command, result in results.items()} == dict.fromkeys(
+        commands, 0
+    ), results
+
+
+def test_a_server_under_the_planted_account_resolves_the_layout_it_does_not_own():
+    commands = ["cat /srv/.env", "ls /srv/app.git", "cat /srv/app/.git/config"]
+
+    results = given.an_unprivileged_server_reads(
+        given.the_full_layout, commands, user=given.the_planted_account()
+    )
 
     assert {command: result.exit_code for command, result in results.items()} == dict.fromkeys(
         commands, 0

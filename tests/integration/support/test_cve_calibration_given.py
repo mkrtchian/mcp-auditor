@@ -108,6 +108,20 @@ def a_target_whose_vulnerable_launch_fails(
     return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
 
 
+def a_target_whose_reference_launch_fails(
+    cve_id: str, tmp_path: pathlib.Path, times: int
+) -> CVETarget:
+    """Live once launched. Its vulnerable server exits at startup on the first `times` launches of
+    the empty-layout reference arm. Its planted arm never fails, whichever arm launches first."""
+    counter = _LaunchCounter(
+        _launches_directory(tmp_path),
+        vulnerable_failures=times,
+        failing_shape=LaunchShape.EMPTY_LAYOUT,
+    )
+    builder = _serving_builder(counter=counter)
+    return a_stub_target(cve_id, builder, reading("/inside/file"), kept_places=KEPT)
+
+
 def a_counted_target_whose_exploit_misses(cve_id: str, tmp_path: pathlib.Path) -> CVETarget:
     counter = _LaunchCounter(_launches_directory(tmp_path))
     builder = _serving_builder(vulnerable=False, counter=counter)
@@ -133,10 +147,16 @@ def _launches_directory(tmp_path: pathlib.Path) -> pathlib.Path:
 
 @dataclass(frozen=True)
 class _LaunchCounter:
+    """Counts each version's launches in one file. With a `failing_shape`, only the launches of
+    that shape count and fail, so a launch of another shape leaves the count untouched."""
+
     directory: pathlib.Path
     vulnerable_failures: int = 0
+    failing_shape: LaunchShape | None = None
 
-    def args(self, is_patched: bool) -> list[str]:
+    def args(self, is_patched: bool, shape: LaunchShape) -> list[str]:
+        if self.failing_shape not in (None, shape):
+            return []
         version = TargetVersion.PATCHED if is_patched else TargetVersion.VULNERABLE
         failures = 0 if is_patched else self.vulnerable_failures
         return [f"launches={self.directory / version.value}:{failures}"]
@@ -158,13 +178,13 @@ def _serving_builder(
     broken_tools_list: bool = False,
 ) -> Builder:
     @contextmanager
-    def builder(image: str, spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
+    def builder(image: str, spec: PlantingSpec, shape: LaunchShape) -> Generator[Launch]:
         is_patched = "patched" in image
         args = _serve_args(spec) if (patched if is_patched else vulnerable) else []
         if is_patched:
             args += [f"error={path}" for path in patched_error_paths]
         if counter is not None:
-            args += counter.args(is_patched)
+            args += counter.args(is_patched, shape)
         if broken_tools_list:
             args.append("broken-tools-list")
         yield Launch("docker", ["run", sys.executable, str(STUB_PATH), *args])

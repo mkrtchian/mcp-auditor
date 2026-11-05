@@ -61,9 +61,7 @@ def test_a_plain_network_reaches_the_host_listener_through_its_gateway():
 
 
 def test_an_open_labelled_network_with_a_running_container_is_recreated_closed():
-    with given.an_open_network() as network:
-        container = given.start_container_on(network)
-
+    with given.an_open_network() as network, given.a_started_container_on(network) as container:
         ensure_closed_network(network)
 
         then.closed_without(network, container)
