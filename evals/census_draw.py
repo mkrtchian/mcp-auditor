@@ -6,7 +6,7 @@ is the load validation `holdout_census.load_census` runs when a `draw` is presen
 imports nothing from holdout_census, so holdout_census can import from it with no cycle.
 """
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from datetime import date
 from enum import StrEnum
@@ -109,6 +109,7 @@ class GiveUp(BaseModel):
     reason: GiveUpReason
     detail: str
     attempts: int
+    rule_version: int | None = None  # the walk's version, None before the first re-walk
 
 
 class Settlement(BaseModel):
@@ -122,6 +123,7 @@ class DrawWalkStep(BaseModel):
     identifier: str
     outcome: Literal["drawn", "skipped", "given_up", "excluded"]
     reason: str
+    rule_version: int | None = None  # the deciding version, None before the first re-walk
 
 
 class DrawRecord(BaseModel):
@@ -149,8 +151,17 @@ def draw_problems(
         *_place_problems(draw, place_ids),
         *_stand_in_problems(draw),
         *_agent_problems(draw, agents),
-        *_count_problems(draw),
     ]
+
+
+def governing_steps(draw: DrawRecord) -> dict[str, DrawWalkStep]:
+    """Each reached flaw's step under the latest version that decided it, in order of first
+    reach."""
+    governing: dict[str, DrawWalkStep] = {}
+    for step in draw.walk:
+        current = governing.get(step.identifier, step)
+        governing[step.identifier] = max(current, step, key=_version_order)
+    return governing
 
 
 def _membership_problems(draw: DrawRecord, in_census: set[str], order: set[str]) -> list[str]:
@@ -174,10 +185,12 @@ def _referenced_flaws(draw: DrawRecord) -> list[tuple[str, str]]:
 
 def _walk_problems(draw: DrawRecord, order: set[str]) -> list[str]:
     outcomes = _walk_outcomes(draw)
+    governing = governing_steps(draw)
+    listed = Counter((step.identifier, step.rule_version) for step in draw.walk)
     problems = [
-        f"walk lists flaw {identifier} {len(steps)} times"
-        for identifier, steps in outcomes.items()
-        if len(steps) > 1
+        f"walk lists flaw {identifier} {count} times under rule version {version}"
+        for (identifier, version), count in listed.items()
+        if count > 1
     ]
     problems += [
         f"walk names flaw {identifier}, which is not a draw-order candidate"
@@ -190,31 +203,47 @@ def _walk_problems(draw: DrawRecord, order: set[str]) -> list[str]:
         if "drawn" not in outcomes.get(card.flaw, [])
     ]
     for identifier in draw.drawn:
-        steps = outcomes.get(identifier, [])
         if identifier not in {card.flaw for card in draw.cards}:
             problems.append(f"drawn flaw {identifier} has no calibration card")
         if identifier not in {check.flaw for check in draw.card_checks}:
             problems.append(f"drawn flaw {identifier} has no card check")
-        if "drawn" not in steps:
+        if identifier not in governing:
             problems.append(f'drawn flaw {identifier} has no "drawn" walk step')
+        elif (outcome := governing[identifier].outcome) != "drawn":
+            problems.append(
+                f'drawn flaw {identifier}: its governing walk step is "{outcome}", not "drawn"'
+            )
     return problems
 
 
 def _calibration_problems(draw: DrawRecord) -> list[str]:
+    """Give-ups count within the version that made them: only the governing version's are read
+    against the card and the walk."""
     card_flaws = {card.flaw for card in draw.cards}
-    outcomes = _walk_outcomes(draw)
+    governing = governing_steps(draw)
     problems: list[str] = []
-    for flaw, give_ups in _give_ups_by_flaw(draw).items():
+    for (flaw, version), give_ups in _give_ups_by_flaw_and_version(draw).items():
         calibrations = {give_up.calibration for give_up in give_ups}
         if 2 in calibrations and 1 not in calibrations:
-            problems.append(f"flaw {flaw} has a second-calibration give-up with no first")
+            problems.append(
+                f"flaw {flaw} has a second-calibration give-up with no first"
+                f" under rule version {version}"
+            )
+        step = governing.get(flaw)
+        if (step.rule_version if step else None) != version:
+            continue
         if len(give_ups) == 1 and flaw not in card_flaws:
             problems.append(f"flaw {flaw} gave up once but has no calibration card")
         if len(give_ups) == 2:
             if flaw in card_flaws:
-                problems.append(f"flaw {flaw} has two give-ups and a card")
-            if "given_up" not in outcomes.get(flaw, []):
-                problems.append(f'flaw {flaw} gave up twice but has no "given_up" walk step')
+                problems.append(
+                    f"flaw {flaw} has two give-ups and a card under rule version {version}"
+                )
+            if step is None or step.outcome != "given_up":
+                problems.append(
+                    f"flaw {flaw} gave up twice under rule version {version} but its governing"
+                    ' walk step is not "given_up"'
+                )
     return problems
 
 
@@ -242,8 +271,9 @@ def _stand_in_problems(draw: DrawRecord) -> list[str]:
 
 
 def _agent_problems(draw: DrawRecord, agents: Sequence[AgentRecord]) -> list[str]:
-    calibrators = {agent.scope for agent in agents if agent.role == AgentRole.CALIBRATOR}
-    card_checkers = {agent.scope for agent in agents if agent.role == AgentRole.CARD_CHECKER}
+    counted = [agent for agent in agents if agent.set_aside is None]
+    calibrators = {agent.scope for agent in counted if agent.role == AgentRole.CALIBRATOR}
+    card_checkers = {agent.scope for agent in counted if agent.role == AgentRole.CARD_CHECKER}
     calibrated = {card.flaw for card in draw.cards} | {give_up.flaw for give_up in draw.give_ups}
     problems = [
         f"flaw {flaw} has no calibrator agent record"
@@ -258,12 +288,6 @@ def _agent_problems(draw: DrawRecord, agents: Sequence[AgentRecord]) -> list[str
     return problems
 
 
-def _count_problems(draw: DrawRecord) -> list[str]:
-    if len(draw.drawn) > 30:
-        return [f"the draw has {len(draw.drawn)} drawn targets, more than 30"]
-    return []
-
-
 def _walk_outcomes(draw: DrawRecord) -> dict[str, list[str]]:
     outcomes: defaultdict[str, list[str]] = defaultdict(list)
     for step in draw.walk:
@@ -271,8 +295,12 @@ def _walk_outcomes(draw: DrawRecord) -> dict[str, list[str]]:
     return outcomes
 
 
-def _give_ups_by_flaw(draw: DrawRecord) -> dict[str, list[GiveUp]]:
-    by_flaw: defaultdict[str, list[GiveUp]] = defaultdict(list)
+def _give_ups_by_flaw_and_version(draw: DrawRecord) -> dict[tuple[str, int | None], list[GiveUp]]:
+    grouped: defaultdict[tuple[str, int | None], list[GiveUp]] = defaultdict(list)
     for give_up in draw.give_ups:
-        by_flaw[give_up.flaw].append(give_up)
-    return by_flaw
+        grouped[(give_up.flaw, give_up.rule_version)].append(give_up)
+    return grouped
+
+
+def _version_order(step: DrawWalkStep) -> int:
+    return -1 if step.rule_version is None else step.rule_version

@@ -105,7 +105,7 @@ def walk_record_problems(nuisance_census: NuisanceCensus) -> list[str]:
 
 
 def reached_identifiers(census: HoldoutCensus) -> list[str]:
-    return [step.identifier for step in _draw(census).walk]
+    return list(dict.fromkeys(step.identifier for step in _draw(census).walk))
 
 
 def normalized_package(server_package: str) -> str:

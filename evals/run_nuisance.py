@@ -28,6 +28,7 @@ from rich.progress import Progress
 
 from evals import eval_display as display
 from evals.audit_progress import AuditProgress
+from evals.census_draw import governing_steps
 from evals.concurrency import positive_int
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
@@ -146,9 +147,8 @@ def _walk(args: argparse.Namespace) -> int:
         population = nuisance_population(nuisance_census)
         admission = committed_admission(args.admission, nuisance_census)
     draw = nuisance_census.census.draw
-    outcomes: dict[str, str] = {}
-    for step in draw.walk if draw else []:
-        outcomes.setdefault(step.identifier, step.outcome)
+    governing = governing_steps(draw) if draw else {}
+    outcomes = {identifier: step.outcome for identifier, step in governing.items()}
     print(f"{len(population)} servers reached by the walk:")
     for server in population:
         print(_walk_line(server, outcomes))

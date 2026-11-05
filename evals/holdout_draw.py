@@ -2,8 +2,9 @@
 
 The order is the rule's: ascending order of the lowercase hex SHA-256 of the UTF-8 string
 `"mcp-auditor-holdout:" + identifier`. It is the backbone of the walk; the skips and where the
-walk stops (20 targets at the draw, more for an addition) depend on draw state the maintainer
-tracks as calibration proceeds and live in the draw record, not here.
+walk stops (20 targets at the draw, more for an addition, and a flaw a new rule version sends
+through the draw again, beside them) depend on draw state the maintainer tracks as calibration
+proceeds and live in the draw record, not here.
 """
 
 import hashlib

@@ -8,6 +8,7 @@ from pydantic import ValidationError
 import tests.unit.support.test_census_draw_given as given
 import tests.unit.support.test_holdout_census_given as census
 from evals.census_draw import CardStandIn, GiveUp, GiveUpReason, KeptPlace
+from evals.census_work import AgentRole
 from evals.fixture_provenance import StandInOutput, StandInRecord
 from evals.holdout_census import load_census
 from evals.run_census import CENSUS_PATH
@@ -38,10 +39,45 @@ def test_a_card_citing_an_unknown_place_id_fails(tmp_path: Path):
         load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
 
 
-def test_a_drawn_list_over_thirty_fails(tmp_path: Path):
-    draw = given.a_draw().model_copy(update={"drawn": [f"CVE-2027-{i:04d}" for i in range(31)]})
+def test_thirty_one_drawn_flaws_load(tmp_path: Path):
+    identifiers = [f"CVE-2026-{i:04d}" for i in range(1, 32)]
+    census_of_thirty_one = given.a_census_drawing(identifiers)
 
-    with pytest.raises(ValueError, match="more than 30"):
+    loaded = load_census(census.written(tmp_path, census_of_thirty_one))
+
+    assert loaded.draw == census_of_thirty_one.draw
+
+
+def test_a_flaw_drawn_on_its_re_walk_after_two_earlier_give_ups_loads(tmp_path: Path):
+    draw = given.a_draw_re_walking(A_TWICE_GIVEN_UP_FLAW, under=11)
+
+    loaded = load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
+
+    assert loaded.draw == draw
+
+
+def test_two_steps_of_one_flaw_under_one_version_fail(tmp_path: Path):
+    draw = given.a_draw_re_walking(A_TWICE_GIVEN_UP_FLAW, under=None)
+
+    refusal = f"walk lists flaw {A_TWICE_GIVEN_UP_FLAW} 2 times under rule version None"
+    with pytest.raises(ValueError, match=re.escape(refusal)):
+        load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
+
+
+def test_a_drawn_flaw_whose_governing_step_is_skipped_fails(tmp_path: Path):
+    draw = given.a_draw_stepping_again(A_DRAWN_FLAW, outcome="skipped", under=11)
+
+    refusal = f'drawn flaw {A_DRAWN_FLAW}: its governing walk step is "skipped", not "drawn"'
+    with pytest.raises(ValueError, match=re.escape(refusal)):
+        load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
+
+
+def test_two_give_ups_and_a_card_under_one_version_fail(tmp_path: Path):
+    draw = given.a_draw_re_walking(A_TWICE_GIVEN_UP_FLAW, under=11)
+    draw = given.with_give_ups_under(draw, A_TWICE_GIVEN_UP_FLAW, version=11)
+
+    refusal = f"flaw {A_TWICE_GIVEN_UP_FLAW} has two give-ups and a card under rule version 11"
+    with pytest.raises(ValueError, match=re.escape(refusal)):
         load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
 
 
@@ -68,7 +104,7 @@ def test_a_flaw_with_two_give_ups_and_a_card_fails(tmp_path: Path):
     cards = [given.a_card(A_DRAWN_FLAW), given.a_card(A_TWICE_GIVEN_UP_FLAW)]
     draw = given.a_draw().model_copy(update={"cards": cards})
 
-    refusal = f"flaw {A_TWICE_GIVEN_UP_FLAW} has two give-ups"
+    refusal = f"flaw {A_TWICE_GIVEN_UP_FLAW} has two give-ups and a card"
     with pytest.raises(ValueError, match=re.escape(refusal)):
         load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
 
@@ -102,6 +138,20 @@ def test_a_card_flaw_with_no_calibrator_record_fails(tmp_path: Path):
 
     with pytest.raises(ValueError, match=re.escape(f"flaw {A_DRAWN_FLAW} has no calibrator")):
         load_census(census.written(tmp_path, without_calibrator))
+
+
+def test_a_flaw_whose_only_calibrator_record_is_set_aside_has_no_calibrator(tmp_path: Path):
+    with_draw = given.a_census_with_draw(given.a_draw())
+    agents = [
+        agent.model_copy(update={"set_aside": "a refusal on the fallback model"})
+        if agent.scope == A_DRAWN_FLAW and agent.role == AgentRole.CALIBRATOR
+        else agent
+        for agent in with_draw.agents
+    ]
+    set_aside = with_draw.model_copy(update={"agents": agents})
+
+    with pytest.raises(ValueError, match=re.escape(f"flaw {A_DRAWN_FLAW} has no calibrator")):
+        load_census(census.written(tmp_path, set_aside))
 
 
 def test_a_card_with_the_fields_rule_v9_adds_unset_loads(tmp_path: Path):

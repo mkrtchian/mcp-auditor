@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 
 import tests.unit.support.test_census_figures_given as figures
 import tests.unit.support.test_holdout_census_given as census_given
@@ -62,6 +63,37 @@ def a_draw() -> DrawRecord:
     )
 
 
+def a_draw_re_walking(flaw: str, under: int | None) -> DrawRecord:
+    """`a_draw` with `flaw`, given up twice under no version, drawn again under `under`."""
+    draw = a_draw_stepping_again(flaw, outcome="drawn", under=under)
+    return draw.model_copy(
+        update={
+            "cards": [*draw.cards, a_card(flaw)],
+            "card_checks": [
+                *draw.card_checks,
+                CardCheck(flaw=flaw, reported_gaps=[], confirmed_gaps=[], rule_version=under),
+            ],
+            "drawn": [*draw.drawn, flaw],
+        }
+    )
+
+
+def a_draw_stepping_again(
+    flaw: str, outcome: Literal["drawn", "skipped", "given_up", "excluded"], under: int | None
+) -> DrawRecord:
+    draw = a_draw()
+    step = DrawWalkStep(identifier=flaw, outcome=outcome, reason="", rule_version=under)
+    return draw.model_copy(update={"walk": [*draw.walk, step]})
+
+
+def with_give_ups_under(draw: DrawRecord, flaw: str, version: int) -> DrawRecord:
+    give_ups = [
+        give_up.model_copy(update={"rule_version": version}) if give_up.flaw == flaw else give_up
+        for give_up in draw.give_ups
+    ]
+    return draw.model_copy(update={"give_ups": give_ups})
+
+
 def a_card(flaw: str) -> CalibrationCard:
     return CalibrationCard(
         flaw=flaw,
@@ -89,6 +121,7 @@ def a_census_with_draw(draw: DrawRecord) -> HoldoutCensus:
         AgentRecord(role=AgentRole.CALIBRATOR, scope=A_DRAWN_FLAW, model=model),
         AgentRecord(role=AgentRole.CALIBRATOR, scope=A_TWICE_GIVEN_UP_FLAW, model=model),
         AgentRecord(role=AgentRole.CARD_CHECKER, scope=A_DRAWN_FLAW, model=model),
+        AgentRecord(role=AgentRole.CARD_CHECKER, scope=A_TWICE_GIVEN_UP_FLAW, model=model),
     ]
     return census.model_copy(update={"agents": agents, "draw": draw})
 

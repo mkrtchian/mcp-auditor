@@ -30,6 +30,14 @@ def test_reached_identifiers_follows_the_walk_order():
     assert reached_identifiers(census) == ["a1", "b1", "a2"]
 
 
+def test_reached_identifiers_lists_a_re_walked_flaw_once_at_its_first_reach():
+    census = given.a_census_walking(
+        [("a1", "given_up", "npm:srv1"), ("b1", "skipped", "npm:srv2"), ("a1", "drawn", "npm:srv1")]
+    )
+
+    assert reached_identifiers(census) == ["a1", "b1"]
+
+
 def test_population_is_one_server_per_package_in_first_reaching_order():
     census = given.a_census_walking(
         [

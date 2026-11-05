@@ -72,6 +72,7 @@ class AgentRecord(BaseModel):
     role: AgentRole
     scope: str
     model: str
+    set_aside: str | None = None  # the cause; a set-aside agent's output counts for nothing
 
 
 def read_jsonl[Record: BaseModel](path: Path, schema: type[Record]) -> list[Record]:
