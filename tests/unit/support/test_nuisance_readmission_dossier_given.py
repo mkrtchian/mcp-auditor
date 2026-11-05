@@ -3,21 +3,31 @@ from pathlib import Path
 
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_readmission_dossier import write_readmission_dossier
+from evals.nuisance_readmission_dossier import (
+    fix_check_modules,
+    holdout_references,
+    write_readmission_dossier,
+)
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
     the_committed_census,
 )
 
-PRAISONAI = "PyPI:praisonai"
-APIFY = "npm:@apify/actors-mcp-server"
-NEO4J = "PyPI:mcp-neo4j-cypher"
-MYSQL = "PyPI:awslabs-mysql-mcp-server"
+
+def a_committed_server_with_fix_checks() -> AdmittedServer:
+    return next(server for server in the_committed_admission().servers if fix_check_modules(server))
 
 
-def the_committed_server(server_package: str) -> AdmittedServer:
-    servers = the_committed_admission().servers
-    return next(server for server in servers if server.server_package == server_package)
+def a_committed_server_with_a_backend() -> AdmittedServer:
+    return next(
+        server for server in the_committed_admission().servers if server.backend is not None
+    )
+
+
+def a_committed_server_with_a_holdout_copy() -> AdmittedServer:
+    return next(
+        server for server in the_committed_admission().servers if holdout_references(server)
+    )
 
 
 def a_written_dossier(tmp_path: Path, server_package: str) -> Path:

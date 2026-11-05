@@ -193,12 +193,13 @@ def test_a_readmission_dossier_with_a_backend_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     out = tmp_path / "dossier"
+    server = readmission.a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
             "--server",
-            readmission.PRAISONAI,
+            server,
             "--readmission",
             "--backend",
             "doris",
@@ -216,17 +217,15 @@ def test_a_readmission_dossier_of_an_admitted_server_exits_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     out = tmp_path / "dossier"
+    server = readmission.a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
-        ["nuisance-dossier", "--server", readmission.PRAISONAI, "--readmission", "--out", str(out)]
+        ["nuisance-dossier", "--server", server, "--readmission", "--out", str(out)]
     )
 
     assert exit_code == 0
     assert (out / "admission_record.json").exists()
-    assert (
-        f"Re-admission dossier for {readmission.PRAISONAI} written to {out}"
-        in capsys.readouterr().out
-    )
+    assert f"Re-admission dossier for {server} written to {out}" in capsys.readouterr().out
 
 
 def test_a_readmission_dossier_without_an_admission_exits_three(
@@ -234,12 +233,13 @@ def test_a_readmission_dossier_without_an_admission_exits_three(
 ):
     out = tmp_path / "dossier"
     missing = tmp_path / "absent.json"
+    server = readmission.a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
             "--server",
-            readmission.PRAISONAI,
+            server,
             "--readmission",
             "--admission",
             str(missing),
