@@ -15,11 +15,6 @@ def _census_arguments(tmp_path: Path, census: Path) -> list[str]:
     return ["--census", str(census), "--walk-record", str(record)]
 
 
-def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
 def test_walk_prints_the_population_and_exits_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
@@ -251,7 +246,6 @@ def test_a_readmission_dossier_without_an_admission_exits_three(
 def test_run_without_an_admission_exits_zero_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
-    _no_tracing(monkeypatch)
     census = given.written(tmp_path, admission.a_census())
     missing = tmp_path / "absent.json"
 
@@ -266,7 +260,6 @@ def test_run_without_an_admission_exits_zero_and_says_so(
 def test_run_on_an_admission_with_no_server_exits_zero_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
-    _no_tracing(monkeypatch)
     census = given.written(tmp_path, admission.a_census())
     empty = admission.an_admission().model_copy(update={"servers": []})
     path = admission.written(tmp_path, empty)
@@ -300,7 +293,6 @@ def test_run_refuses_tracing_before_reading_the_admission(
 def test_run_on_a_stale_admission_exits_three_naming_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
-    _no_tracing(monkeypatch)
     census = given.written(tmp_path, admission.a_census())
     stale = admission.with_a_stale_grammar_fingerprint(admission.an_admission())
     path = admission.written(tmp_path, stale)

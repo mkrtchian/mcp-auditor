@@ -28,12 +28,6 @@ _LATE = date(2026, 4, 1)
 _PRICES = (given.LUNA_PRICE, given.LUNA_PRICE)
 
 
-@pytest.fixture(autouse=True)
-def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
 def test_the_split_flaw_is_the_first_counted_flaw_in_draw_order():
     server = given.a_two_flaw_server()
     draw = given.draw_entries((given.SECOND_FLAW, _LATE), (given.FIRST_FLAW, _EARLY))

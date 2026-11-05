@@ -102,6 +102,4 @@ def a_run_refused_before_its_settings(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def a_ready_run(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")

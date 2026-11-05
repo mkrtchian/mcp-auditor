@@ -57,8 +57,6 @@ def cards_reporting(monkeypatch: pytest.MonkeyPatch, gaps: list[str]) -> None:
 
 
 def a_ready_run(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
 
 

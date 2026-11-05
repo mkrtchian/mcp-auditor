@@ -13,12 +13,6 @@ from evals.holdout_results import RunInterrupted
 from evals.provider_errors import ProviderFatal
 
 
-@pytest.fixture(autouse=True)
-def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
 @pytest.mark.parametrize("suffix", [".json", ".md", ".result.json"])
 def test_run_refuses_an_existing_report_file_before_any_dep(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], suffix: str

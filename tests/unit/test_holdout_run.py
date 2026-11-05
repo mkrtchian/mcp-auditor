@@ -21,12 +21,6 @@ from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage
 
 
-@pytest.fixture(autouse=True)
-def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
 async def test_a_target_is_assembled_from_its_runs():
     target = given.a_target(given.KUBERNETES)  # command_execution, NORMAL
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)

@@ -30,15 +30,9 @@ def _leftovers(monkeypatch: pytest.MonkeyPatch, *running: str) -> RunningContain
     return containers
 
 
-def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
 def test_run_without_a_drawn_target_exits_zero_and_says_so(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
-    _no_tracing(monkeypatch)
     monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", ())
 
     exit_code = run_holdout.main(["run"])
@@ -180,7 +174,6 @@ def _fake_calibration(monkeypatch: pytest.MonkeyPatch, all_live: bool) -> None:
 def test_run_refuses_an_acceptance_target_for_its_tools_filter(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _no_tracing(monkeypatch)
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")  # the auditor is built, never called
     monkeypatch.setattr("evals.holdout_targets.HOLDOUT_TARGETS", (CVE_TARGETS[0],))

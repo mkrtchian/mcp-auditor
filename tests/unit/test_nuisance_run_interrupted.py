@@ -8,12 +8,6 @@ from evals.nuisance_results import RunInterrupted
 from evals.provider_errors import ProviderFatal
 
 
-@pytest.fixture(autouse=True)
-def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
 async def test_a_fatal_provider_error_keeps_the_finished_server_in_a_partial_result():
     servers = [given.a_server(package) for package in ("npm:done", "npm:failing", "npm:pending")]
     fatal = ProviderFatal(PermissionError("the key was revoked"))

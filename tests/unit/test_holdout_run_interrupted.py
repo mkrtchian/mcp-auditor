@@ -8,12 +8,6 @@ from evals.holdout_results import RunInterrupted
 from evals.provider_errors import ProviderFatal
 
 
-@pytest.fixture(autouse=True)
-def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
 async def test_a_fatal_provider_error_keeps_the_finished_target_in_a_partial_result():
     finished, failing, pending = (
         given.a_target(given.FILESYSTEM),

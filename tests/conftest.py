@@ -17,3 +17,11 @@ def _noop_load_dotenv(*_args: object, **_kwargs: object) -> bool:
 @pytest.fixture(autouse=True)
 def _no_dotenv_in_tests(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("mcp_auditor.config.load_dotenv", _noop_load_dotenv)
+
+
+@pytest.fixture(autouse=True)
+def _no_tracing_in_tests(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`load_dotenv` is a no-op already, but a tracing flag exported in the shell still reaches
+    the tests."""
+    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
+    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)

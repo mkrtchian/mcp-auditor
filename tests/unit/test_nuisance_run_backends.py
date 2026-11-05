@@ -10,12 +10,6 @@ from evals.cve_planting_base import STAND_IN_IMAGE
 from evals.eval_session import Refused
 
 
-@pytest.fixture(autouse=True)
-def _no_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-
-
 async def test_the_rebuild_builds_the_backend_service_with_the_server_service():
     server = given.a_server_on("ckan")
     host = given.DockerHost()
