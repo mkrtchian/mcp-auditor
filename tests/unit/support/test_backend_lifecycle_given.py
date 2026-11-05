@@ -6,14 +6,16 @@ from contextlib import AbstractContextManager
 from dataclasses import replace
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
+from evals import cve_environments
 from evals.backend_lifecycle import BackendLifecycle
-from evals.cve_environments import Launch
 from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.holdout_kit.kit_backend_launch import lifecycle_of
+from evals.holdout_kit import kit_launch
+from evals.holdout_kit.kit_backend_launch import backend_launch, lifecycle_of
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_provisioners import provisioner_of
 from evals.responder_backend import Responder
 
+type Launch = cve_environments.Launch | kit_launch.Launch
 type Launcher = Callable[[BackendLifecycle], AbstractContextManager[Launch]]
 
 
@@ -45,6 +47,10 @@ def _noop_remove(name: str) -> None:
 
 def through_the_provisioner(lifecycle: BackendLifecycle) -> AbstractContextManager[Launch]:
     return provisioner_of(lifecycle)(admission_given.an_admitted_server())
+
+
+def through_the_kit(lifecycle: BackendLifecycle) -> AbstractContextManager[Launch]:
+    return backend_launch(lifecycle, "image", a_host(), ["serve"])
 
 
 def with_the_name_masked(args: Sequence[str]) -> list[str]:

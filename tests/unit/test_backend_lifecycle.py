@@ -10,7 +10,8 @@ from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import MEMORY_BOUND, memory_bound_args
 from evals.nuisance_images import image_tag
 from evals.nuisance_provisioners import provisioner_of
-from tests.unit.support.docker_argv import carries, count
+from evals.responder_backend import Responder
+from tests.unit.support.docker_argv import carries, count, value_after
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
@@ -42,7 +43,10 @@ def test_the_registry_and_the_kit_read_one_lifecycle(key: str):
     assert BACKENDS[key].lifecycle is lifecycle_of(key)
 
 
-LAUNCHERS = [pytest.param(given.through_the_provisioner, id="provisioner")]
+LAUNCHERS = [
+    pytest.param(given.through_the_provisioner, id="provisioner"),
+    pytest.param(given.through_the_kit, id="kit"),
+]
 
 
 @pytest.mark.parametrize("launch_through", LAUNCHERS)
@@ -89,35 +93,18 @@ def test_two_launches_of_one_backend_are_open_at_once(launch_through: given.Laun
             assert given.name_of(second.args) != given.name_of(first.args)
 
 
-def test_the_kit_backend_launch_names_its_server_after_the_backend():
-    recording = given.RecordingLifecycle()
+@pytest.mark.parametrize("key", sorted(BACKENDS))
+def test_every_backend_server_joins_its_registered_bridge_confined_as_the_hosts_user(key: str):
+    args = lifecycle_of(key).server_args("server-name", "image", given.a_host(), ["serve"])
 
-    with backend_launch(recording.lifecycle, "image", given.a_host(), ["serve"]) as launch:
-        name = given.name_of(launch.args)
-
-    assert name.startswith(f"{LABEL}-fake-server-")
-
-
-def test_the_kit_backend_launch_ensures_on_entry_and_removes_its_server_on_exit():
-    recording = given.RecordingLifecycle()
-
-    with backend_launch(recording.lifecycle, "image", given.a_host(), ["serve"]) as launch:
-        assert recording.events == ["ensure"]
-
-    assert recording.events == ["ensure", f"remove {given.name_of(launch.args)}"]
-
-
-def test_the_kit_backend_launch_removes_its_server_when_the_body_raises():
-    recording = given.RecordingLifecycle()
-
-    with (
-        pytest.raises(RuntimeError),
-        backend_launch(recording.lifecycle, "image", given.a_host(), ["serve"]),
-    ):
-        raise RuntimeError("the probe failed")
-
-    assert recording.events[0] == "ensure"
-    assert recording.events[1].startswith(f"remove {LABEL}-fake-server-")
+    assert value_after(args, "--network") == BACKENDS[key].network
+    assert value_after(args, "--name") == "server-name"
+    assert value_after(args, "--label") == LABEL
+    assert "--rm" in args
+    assert value_after(args, "--cap-drop") == "ALL"
+    assert value_after(args, "--user") == "65534:65534"
+    assert value_after(args, "-w") == "/srv"
+    assert args[-2:] == ["image", "serve"]
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
@@ -128,14 +115,14 @@ def test_every_backend_server_argv_carries_the_memory_bound_and_the_resolver_opt
     assert count(args, resolver_args()) == 1
 
 
-def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolver_option():
-    responders = given.every_responder()
+@pytest.mark.parametrize("responder", given.every_responder(), ids=lambda r: r.container)
+def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolver_option(
+    responder: Responder,
+):
+    args = responder.singleton_run_args()
 
-    assert len(responders) == 11
-    for responder in responders:
-        args = responder.singleton_run_args()
-        assert carries(args, memory_bound_args()), responder.container
-        assert count(args, resolver_args()) == 1, responder.container
+    assert carries(args, memory_bound_args())
+    assert count(args, resolver_args()) == 1
 
 
 MYSQL_ENGINE_ARGS = mysql_backend.backend_container_run_args(
