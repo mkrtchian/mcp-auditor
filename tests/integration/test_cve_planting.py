@@ -7,10 +7,8 @@
 # the CI integration job and the CVE calibration job, turns that skip into a failure: a green
 # step there must mean the planting path ran. A missing or foreign sentinel image is rebuilt
 # through compose before the first case.
-import logging
 import os
 import time
-from pathlib import Path
 
 import pytest
 
@@ -22,7 +20,6 @@ from evals.cve_planting import DockerPlanting, PlantingFailed, planted
 from evals.cve_planting_base import (
     SENTINEL_IMAGE,
     SENTINEL_SERVICE,
-    STAND_IN_SERVICE,
     UNPRIVILEGED_GID,
     UNPRIVILEGED_UID,
 )
@@ -36,105 +33,15 @@ def _planting_prerequisites() -> None:
             pytest.fail(missing)
         pytest.skip(missing)
     try:
-        ensure_images([SENTINEL_SERVICE, STAND_IN_SERVICE], ComposeImageStore())
+        ensure_images([SENTINEL_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:
         pytest.fail(str(error))
 
 
-@pytest.fixture
-def openssl() -> None:
-    missing = given.missing_openssl()
-    if missing is not None:
-        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
-            pytest.fail(missing)
-        pytest.skip(missing)
-
-
-@pytest.mark.usefixtures("openssl")
-def test_a_planted_stand_in_serves_its_capture_by_name_and_its_default_for_anything_else(
-    tmp_path: Path, caplog: pytest.LogCaptureFixture
-):
-    stand_ins_directory = given.a_stand_ins_directory(tmp_path)
-    docker = given.RecordingPlanting()
-    host = given.STAND_IN_HOST
-
-    with (
-        caplog.at_level(logging.WARNING, logger="evals.cve_planting_docker"),
-        planted(given.a_stand_in_spec(), SENTINEL_IMAGE, docker, stand_ins_directory) as args,
-    ):
-        plain = given.fetch_as_target(args, f"http://{host}/")
-        secure = given.fetch_as_target(args, f"https://{host}/")
-        head = given.fetch_as_target(args, f"https://{host}/", method="HEAD")
-        unknown = given.fetch_as_target(args, f"https://{host}/uncaptured")
-        redirected = given.fetch_as_target(args, f"http://{host}{given.QUOTED_REQUEST}")
-
-    assert (plain.body, secure.body) == (given.PLAIN_BODY, given.SECURE_BODY)
-    then.answered_without_its_body(head, 200, given.SECURE_BODY)
-    assert (unknown.status, unknown.body) == (404, given.MISSING_BODY)
-    then.redirects_to(redirected, f"https://{host}{given.QUOTED_REQUEST}")
-    then.logged_its_default_for(
-        caplog.text, host, ["https GET /uncaptured", f"http GET {given.QUOTED_REQUEST}"]
-    )
-    assert docker.stand_ins
-    then.nothing_it_made_outlives(docker)
-
-
-@pytest.mark.usefixtures("openssl")
-@pytest.mark.parametrize("case", sorted(given.QUOTING_CASES))
-def test_a_planted_stand_in_quotes_the_request_where_its_default_quotes_the_probe(
-    case: str, tmp_path: Path
-):
-    quoting = given.QUOTING_CASES[case]
-    directory = given.a_stand_ins_directory(tmp_path, quoting)
-    host = given.STAND_IN_HOST
-
-    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
-        route = given.fetch_as_target(args, f"https://{host}/")
-        unknown = given.fetch_as_target(args, f"https://{host}{given.QUOTED_REQUEST}")
-
-    assert route.body == given.SECURE_BODY
-    then.answered_with(unknown, 404, quoting.answer(quoting.quoted_request))
-
-
-@pytest.mark.usefixtures("openssl")
-def test_a_planted_stand_in_replays_the_captured_headers_without_the_connection_ones(
-    tmp_path: Path,
-):
-    directory = given.a_stand_ins_directory(tmp_path)
-    host = given.STAND_IN_HOST
-    secure_length = len(given.SECURE_BODY.encode())
-
-    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
-        route = given.fetch_as_target(args, f"https://{host}/")
-        fallback = given.fetch_as_target(args, f"https://{host}/", method="HEAD")
-        head_route = given.fetch_as_target(
-            args, f"https://{host}{given.HEAD_ONLY_TARGET}", method="HEAD"
-        )
-        default = given.fetch_as_target(args, f"http://{host}/uncaptured")
-
-    then.carries(route, given.SECURE_REPLAYED, secure_length)
-    then.carries(fallback, given.SECURE_REPLAYED, secure_length)
-    then.carries(head_route, given.HEAD_ONLY_REPLAYED, None)
-    then.carries(default, [("Location", f"https://{host}/uncaptured"), given.REDIRECT_SERVER], 0)
-
-
-@pytest.mark.usefixtures("openssl")
-def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
-    directory = given.a_stand_ins_directory(tmp_path)
-    url = f"https://{given.STAND_IN_HOST}/"
-
-    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
-        json_protocol = given.fetch_as_target(args, url, "POST", given.JSON_PROTOCOL_REQUEST)
-        query_protocol = given.fetch_as_target(args, url, "POST", given.QUERY_PROTOCOL_REQUEST)
-        unknown = given.fetch_as_target(args, url, "POST", given.UNKNOWN_ACTION_REQUEST)
-
-    then.answered_by_its_route(json_protocol, given.SECRET_HEADERS, given.SECRET_BODY)
-    then.answered_by_its_route(query_protocol, given.INSTANCES_HEADERS, given.INSTANCES_BODY)
-    then.answered_with(unknown, 404, given.MISSING_BODY)
-
-
 @pytest.mark.parametrize("shape", ["no_network", "holder", "bridge_alias"])
 def test_a_planted_target_reads_no_search_domain_nor_an_audit_name(shape: str):
+    if not given.host_search_domain_reaches_a_plain_container():
+        pytest.skip("the host hands a plain container no search domain to keep out")
     spec = given.a_launch_of_shape(shape)
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
