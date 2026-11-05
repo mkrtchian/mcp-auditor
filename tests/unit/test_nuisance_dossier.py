@@ -4,26 +4,28 @@ layout. These pins are the twin of test_calibration_dossier_writes_an_isolated_k
 
 import re
 import tomllib
+from dataclasses import fields
 from pathlib import Path
 
 import pytest
 
 import tests.unit.support.holdout_kit_isolation as iso
-import tests.unit.support.test_holdout_census_given as given
+import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_nuisance_dossier_given as given
+import tests.unit.support.test_nuisance_dossier_then as then
+import tests.unit.support.test_nuisance_unrecorded_given as unrecorded_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.calibration_dossier import CLEAN_MODULES, acceptance_services, write_kit
 from evals.eval_session import Refused
+from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.nuisance_dossier import write_dossier
-
-_SERVER = "npm:@acme/files"
 
 
 def test_writes_the_isolated_admission_dossier(tmp_path: Path):
-    out = tmp_path / "dossier"
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out)
+    out = given.a_written_dossier(tmp_path)
 
     for relative in (
-        f"advisories/{given.FLAW_WITH_A_CVE}.json",
+        f"advisories/{census_given.FLAW_WITH_A_CVE}.json",
         "evals/__init__.py",
         *(f"evals/{module}.py" for module in CLEAN_MODULES),
         "evals/holdout_kit/fix_check.py",
@@ -45,8 +47,7 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
 
 
 def test_a_backend_dossier_imports_closed(tmp_path: Path):
-    out = tmp_path / "dossier"
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out, backend="doris")
+    out = given.a_written_dossier(tmp_path, backend="doris")
 
     assert (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
     assert (out / "evals" / "doris_backend.py").exists()
@@ -61,7 +62,12 @@ def test_a_backend_dossier_imports_closed(tmp_path: Path):
 def test_an_unknown_backend_is_refused(tmp_path: Path):
     out = tmp_path / "dossier"
     with pytest.raises(Refused):
-        write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out, backend="ghost")
+        write_dossier(
+            walk_given.a_nuisance_census(census_given.a_census()),
+            given.SERVER,
+            out,
+            backend="ghost",
+        )
     assert not out.exists()
 
 
@@ -69,8 +75,7 @@ def test_the_shared_kit_carries_no_worked_exploit(tmp_path: Path):
     # A worked exploit named by its CVE in the shared launch module would reach the admitting
     # agent through the copied kit and pre-answer the flaw it is meant to re-derive. Such a
     # builder belongs with its fixture (evals/nuisance_fix_checks), which the dossier never copies.
-    out = tmp_path / "dossier"
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out)
+    out = given.a_written_dossier(tmp_path)
 
     kit = (out / "evals" / "holdout_kit" / "kit_launch.py").read_text()
     assert "CVE-" not in kit
@@ -86,16 +91,14 @@ def test_the_shared_kit_carries_no_worked_exploit(tmp_path: Path):
 
 
 def test_the_written_dossier_imports_nothing_from_mcp_auditor(tmp_path: Path):
-    out = tmp_path / "dossier"
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out)
+    out = given.a_written_dossier(tmp_path)
 
     assert iso.scan_tree(out) == {}
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
 
 
 def test_the_readme_names_the_kit_tag_and_the_acceptance_services(tmp_path: Path):
-    out = tmp_path / "dossier"
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out)
+    out = given.a_written_dossier(tmp_path)
 
     readme = (out / "README.md").read_text()
     assert "mcp-auditor-kit-<service>:local" in readme
@@ -104,11 +107,11 @@ def test_the_readme_names_the_kit_tag_and_the_acceptance_services(tmp_path: Path
 
 
 def test_both_readmes_state_the_mcp_specifier_of_the_project(tmp_path: Path):
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, tmp_path / "dossier")
-    write_kit(given.a_census(), given.FLAW_WITH_A_CVE, tmp_path / "kit")
+    dossier = given.a_written_dossier(tmp_path)
+    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, tmp_path / "kit")
 
     specifier = _mcp_specifier()
-    assert f"`{specifier}`" in (tmp_path / "dossier" / "README.md").read_text()
+    assert f"`{specifier}`" in (dossier / "README.md").read_text()
     assert f"`{specifier}`" in (tmp_path / "kit" / "README.md").read_text()
 
 
@@ -119,11 +122,11 @@ def _mcp_specifier() -> str:
 
 
 def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Path):
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, tmp_path / "dossier")
-    write_kit(given.a_census(), given.FLAW_WITH_A_CVE, tmp_path / "kit")
+    dossier = given.a_written_dossier(tmp_path)
+    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, tmp_path / "kit")
 
     build = "docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker"
-    assert build in (tmp_path / "dossier" / "README.md").read_text()
+    assert build in (dossier / "README.md").read_text()
     kit_readme = (tmp_path / "kit" / "README.md").read_text()
     assert build in kit_readme
     assert "`evals/stand_ins/`" in kit_readme
@@ -132,44 +135,30 @@ def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Pat
 def test_an_unknown_server_is_refused(tmp_path: Path):
     out = tmp_path / "dossier"
     with pytest.raises(Refused):
-        write_dossier(walk_given.a_nuisance_census(given.a_census()), "npm:nonexistent", out)
+        write_dossier(walk_given.a_nuisance_census(census_given.a_census()), "npm:nonexistent", out)
     assert not out.exists()
 
 
-def test_the_fixture_format_requires_every_field_rule_v3_adds(tmp_path: Path):
-    out = tmp_path / "dossier"
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out)
+def test_the_fixture_format_names_every_field_the_run_refuses_unrecorded(tmp_path: Path):
+    server = unrecorded_given.a_server_with_every_field_unrecorded()
 
-    fixture_format = (out / "fixture_format.md").read_text()
-    assert "Fields rule v3 adds, required for an admission" in fixture_format
-    for field in (
-        "ToolRecord.real_software",
-        "BenignCall.expect",
-        "BenignCall.before",
-        "FixCheckRecord.relies_on_relaying_stand_in",
-        "AdmittedServer.stand_ins",
-        "AdmittedServer.seeds",
-    ):
-        assert f"`{field}`" in fixture_format, field
-    assert "leaves none of them `null`" in fixture_format
-    assert "none left `null`" in (out / "README.md").read_text()
+    fixture_format = (given.a_written_dossier(tmp_path) / "fixture_format.md").read_text()
+
+    for name in [*then.unrecorded_field_names(server), "holdout_fingerprint"]:
+        assert re.search(rf"`\w+\.{name}`", fixture_format), name
 
 
-def test_the_fixture_format_requires_every_field_rule_v4_adds(tmp_path: Path):
-    out = tmp_path / "dossier"
-    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out)
+def test_the_fixture_format_names_every_fix_check_target_field(tmp_path: Path):
+    fixture_format = (given.a_written_dossier(tmp_path) / "fixture_format.md").read_text()
 
-    fixture_format = (out / "fixture_format.md").read_text()
-    assert "Fields rule v4 adds, required for an admission" in fixture_format
-    for field in ("ToolRecord.declared_function_is_effect", "AdmittedServer.software_releases"):
-        assert f"`{field}`" in fixture_format, field
-    assert "`FixCheckRecord.holdout_fingerprint`" in fixture_format
-    assert "rule v3 and v4 fields" in (out / "README.md").read_text()
+    section = fixture_format.split("## FixCheckTarget fields")[1].split("\n## ")[0]
+    for field in fields(FixCheckTarget):
+        assert f"`{field.name}`" in section, field.name
 
 
 def test_the_calibration_kit_readme_requires_the_card_fields_rule_v9_adds(tmp_path: Path):
     out = tmp_path / "kit"
-    write_kit(given.a_census(), given.FLAW_WITH_A_CVE, out)
+    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, out)
 
     readme = (out / "README.md").read_text()
     assert "`seeded_outside_layout`" in readme

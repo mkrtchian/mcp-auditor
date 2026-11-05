@@ -1,33 +1,25 @@
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 import tests.unit.support.test_nuisance_admission_edits_given as edits
-import tests.unit.support.test_nuisance_admission_given as given
-from evals import cve_planting_base, nuisance_confinement, nuisance_fingerprint
+import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_fingerprint_given as given
+from evals import cve_planting_base, nuisance_confinement
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.fixture_provenance import StandInRecord
-from evals.nuisance_admission import AdmissionSettlement, AdmittedServer, ToolCall
+from evals.nuisance_admission import AdmissionSettlement, BackendFixture, ToolCall
 from evals.nuisance_admission_records import SeedRecord
-from evals.nuisance_backends import BACKENDS, RegisteredBackend
+from evals.nuisance_backends import BACKENDS
 from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 
-SERVICE = given.a_server([]).service
-FAKE_BACKEND = given.BackendFixture(
-    provisioner="fake", image="fake/backend:1.0", network="fake-net"
-)
-SERVED_CHANGES = [
-    ("Dockerfile.fake-responder", "FROM python:3.13\n", "FROM python:3.14\n"),
-    ("fake_backend.py", "ANSWER = 1\n", "ANSWER = 2\n"),
-    ("capture.json", '{"body": "one"}', '{"body": "two"}'),
-]
+FAKE_BACKEND = BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
 
 
 def test_the_fingerprint_is_stable_over_the_same_server(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
 
     first = nuisance_fixture_fingerprint(server, tmp_path)
     second = nuisance_fixture_fingerprint(server, tmp_path)
@@ -36,44 +28,54 @@ def test_the_fingerprint_is_stable_over_the_same_server(tmp_path: Path):
 
 
 def test_the_fingerprint_moves_when_a_counted_tools_class_changes(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    reader = _one_flaw_server(MechanismClass.READ_OUTSIDE_SCOPE)
-    runner = _one_flaw_server(MechanismClass.COMMAND_EXECUTION)
+    given.written_dockerfile(tmp_path)
+    reader = given.one_flaw_server(MechanismClass.READ_OUTSIDE_SCOPE)
+    runner = given.one_flaw_server(MechanismClass.COMMAND_EXECUTION)
 
-    assert _fingerprint(reader, tmp_path) != _fingerprint(runner, tmp_path)
+    assert nuisance_fixture_fingerprint(reader, tmp_path) != nuisance_fixture_fingerprint(
+        runner, tmp_path
+    )
 
 
 def test_the_fingerprint_moves_when_a_benign_calls_arguments_change(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
     other = edits.with_the_first_benign_call(server, arguments={"path": "/etc/passwd"})
 
-    assert _fingerprint(server, tmp_path) != _fingerprint(other, tmp_path)
+    assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
+        other, tmp_path
+    )
 
 
 def test_the_fingerprint_moves_when_a_benign_calls_expected_text_changes(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
     other = edits.with_the_first_benign_call(server, expect="another answer")
 
-    assert _fingerprint(server, tmp_path) != _fingerprint(other, tmp_path)
+    assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
+        other, tmp_path
+    )
 
 
 def test_the_fingerprint_moves_when_a_benign_calls_prerequisite_calls_change(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
     connected = edits.with_the_first_benign_call(
         server, before=[ToolCall(tool="connect", arguments={"database": "app"})]
     )
     unrecorded = edits.with_the_first_benign_call(server, before=None)
 
-    assert _fingerprint(server, tmp_path) != _fingerprint(connected, tmp_path)
-    assert _fingerprint(server, tmp_path) != _fingerprint(unrecorded, tmp_path)
+    assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
+        connected, tmp_path
+    )
+    assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
+        unrecorded, tmp_path
+    )
 
 
 def test_the_fingerprint_is_unchanged_by_the_provenance_records(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
     seed = SeedRecord(item="/agents.yaml", kind="written")
     stand_in = StandInRecord(
         replaces="api.example.com",
@@ -84,48 +86,54 @@ def test_the_fingerprint_is_unchanged_by_the_provenance_records(tmp_path: Path):
     )
     recorded = server.model_copy(update={"seeds": [seed], "stand_ins": [stand_in]})
 
-    assert _fingerprint(server, tmp_path) == _fingerprint(recorded, tmp_path)
+    assert nuisance_fixture_fingerprint(server, tmp_path) == nuisance_fixture_fingerprint(
+        recorded, tmp_path
+    )
 
 
 def test_the_fingerprint_moves_when_the_dockerfile_instructions_change(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
-    before = _fingerprint(server, tmp_path)
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
+    before = nuisance_fixture_fingerprint(server, tmp_path)
 
-    _write_dockerfile(tmp_path, "FROM node:22\nRUN npm install demo@1.0.1\n")
+    given.written_dockerfile(tmp_path, "FROM node:22\nRUN npm install demo@1.0.1\n")
 
-    assert _fingerprint(server, tmp_path) != before
+    assert nuisance_fixture_fingerprint(server, tmp_path) != before
 
 
 def test_the_fingerprint_moves_when_a_backend_fixture_is_set(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
-    backend = given.BackendFixture(provisioner="doris", image="fake/backend:1.0", network="net")
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
+    backend = BackendFixture(provisioner="doris", image="fake/backend:1.0", network="net")
 
-    assert _fingerprint(server, tmp_path) != _fingerprint(
-        given.with_a_backend(server, backend), tmp_path
+    assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
+        admission_given.with_a_backend(server, backend), tmp_path
     )
 
 
 def test_the_fingerprint_moves_when_a_backend_image_changes(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
-    one = given.with_a_backend(
-        server, given.BackendFixture(provisioner="doris", image="fake/backend:1.0", network="net")
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
+    one = admission_given.with_a_backend(
+        server, BackendFixture(provisioner="doris", image="fake/backend:1.0", network="net")
     )
-    two = given.with_a_backend(
-        server, given.BackendFixture(provisioner="doris", image="fake/backend:2.0", network="net")
+    two = admission_given.with_a_backend(
+        server, BackendFixture(provisioner="doris", image="fake/backend:2.0", network="net")
     )
 
-    assert _fingerprint(one, tmp_path) != _fingerprint(two, tmp_path)
+    assert nuisance_fixture_fingerprint(one, tmp_path) != nuisance_fixture_fingerprint(
+        two, tmp_path
+    )
 
 
 def test_the_fingerprint_moves_when_the_launch_changes(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
     other = server.model_copy(update={"launch": ["node", "other.js"]})
 
-    assert _fingerprint(server, tmp_path) != _fingerprint(other, tmp_path)
+    assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
+        other, tmp_path
+    )
 
 
 @pytest.mark.parametrize(
@@ -137,26 +145,30 @@ def test_the_fingerprint_moves_when_the_launch_changes(tmp_path: Path):
     ],
 )
 def test_the_fingerprint_moves_when_a_host_field_changes(tmp_path: Path, host: PlantingHost):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
 
-    assert _fingerprint(server, tmp_path) != _fingerprint(given.with_host(server, host), tmp_path)
+    assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
+        admission_given.with_host(server, host), tmp_path
+    )
 
 
 def test_the_fingerprint_is_unchanged_by_a_dockerfile_comment(tmp_path: Path):
-    _write_dockerfile(tmp_path, "FROM node:22\nRUN npm install demo\n")
-    server = given.an_admission().servers[0]
-    before = _fingerprint(server, tmp_path)
+    given.written_dockerfile(tmp_path, "FROM node:22\nRUN npm install demo\n")
+    server = admission_given.an_admission().servers[0]
+    before = nuisance_fixture_fingerprint(server, tmp_path)
 
-    _write_dockerfile(tmp_path, "# pinned\nFROM node:22\n\n  # the server\nRUN npm install demo\n")
+    given.written_dockerfile(
+        tmp_path, "# pinned\nFROM node:22\n\n  # the server\nRUN npm install demo\n"
+    )
 
-    assert _fingerprint(server, tmp_path) == before
+    assert nuisance_fixture_fingerprint(server, tmp_path) == before
 
 
 def test_the_fingerprint_is_unchanged_by_an_exploit_or_a_settlement_change(tmp_path: Path):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
-    before = _fingerprint(server, tmp_path)
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
+    before = nuisance_fixture_fingerprint(server, tmp_path)
 
     moved_exploit = edits.with_the_first_flaw(
         server,
@@ -175,16 +187,18 @@ def test_the_fingerprint_is_unchanged_by_an_exploit_or_a_settlement_change(tmp_p
     )
     changed = moved_exploit.model_copy(update={"settlements": [settled]})
 
-    assert _fingerprint(changed, tmp_path) == before
+    assert nuisance_fixture_fingerprint(changed, tmp_path) == before
 
 
-@pytest.mark.parametrize(("name", "after"), [(name, after) for name, _, after in SERVED_CHANGES])
+@pytest.mark.parametrize(
+    ("name", "after"), [(name, after) for name, _, after in given.SERVED_CHANGES]
+)
 def test_the_fingerprint_moves_when_a_served_file_of_the_backend_changes(
     tmp_path: Path, name: str, after: str
 ):
-    _write_dockerfile(tmp_path)
-    backends = _a_registry_serving(tmp_path)
-    server = given.with_a_backend(given.an_admission().servers[0], FAKE_BACKEND)
+    given.written_dockerfile(tmp_path)
+    backends = given.a_registry_serving(tmp_path)
+    server = admission_given.with_a_backend(admission_given.an_admission().servers[0], FAKE_BACKEND)
     first = nuisance_fixture_fingerprint(server, tmp_path, backends)
 
     (tmp_path / name).write_text(after)
@@ -195,12 +209,12 @@ def test_the_fingerprint_moves_when_a_served_file_of_the_backend_changes(
 def test_the_fingerprint_is_unchanged_by_served_files_for_a_server_with_no_backend(
     tmp_path: Path,
 ):
-    _write_dockerfile(tmp_path)
-    backends = _a_registry_serving(tmp_path)
-    server = given.an_admission().servers[0]
+    given.written_dockerfile(tmp_path)
+    backends = given.a_registry_serving(tmp_path)
+    server = admission_given.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, tmp_path, backends)
 
-    for name, _, after in SERVED_CHANGES:
+    for name, _, after in given.SERVED_CHANGES:
         (tmp_path / name).write_text(after)
 
     assert nuisance_fixture_fingerprint(server, tmp_path, backends) == before
@@ -209,54 +223,54 @@ def test_the_fingerprint_is_unchanged_by_served_files_for_a_server_with_no_backe
 def test_the_fingerprint_moves_when_the_confinement_code_changes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    _write_dockerfile(tmp_path)
-    confinement = _a_confinement_copy(tmp_path, monkeypatch)
-    server = given.an_admission().servers[0]
-    before = _fingerprint(server, tmp_path)
+    given.written_dockerfile(tmp_path)
+    confinement = given.a_confinement_copy(tmp_path, monkeypatch)
+    server = admission_given.an_admission().servers[0]
+    before = nuisance_fixture_fingerprint(server, tmp_path)
 
     confinement.write_text(
         confinement.read_text().replace('MEMORY_BOUND = "4g"', 'MEMORY_BOUND = "8g"')
     )
 
-    assert _fingerprint(server, tmp_path) != before
+    assert nuisance_fixture_fingerprint(server, tmp_path) != before
 
 
 def test_the_fingerprint_is_unchanged_by_a_comment_in_the_confinement(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    _write_dockerfile(tmp_path)
-    confinement = _a_confinement_copy(tmp_path, monkeypatch)
-    server = given.an_admission().servers[0]
-    before = _fingerprint(server, tmp_path)
+    given.written_dockerfile(tmp_path)
+    confinement = given.a_confinement_copy(tmp_path, monkeypatch)
+    server = admission_given.an_admission().servers[0]
+    before = nuisance_fixture_fingerprint(server, tmp_path)
 
     confinement.write_text(confinement.read_text() + "\n# a note on the bound\n")
 
-    assert _fingerprint(server, tmp_path) == before
+    assert nuisance_fixture_fingerprint(server, tmp_path) == before
 
 
 def test_the_fingerprint_moves_when_the_confinement_options_change(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
-    before = _fingerprint(server, tmp_path)
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
+    before = nuisance_fixture_fingerprint(server, tmp_path)
     options = [*nuisance_confinement.nuisance_confinement_args(), "--pids-limit", "512"]
 
     monkeypatch.setattr(nuisance_confinement, "nuisance_confinement_args", lambda: options)
 
-    assert _fingerprint(server, tmp_path) != before
+    assert nuisance_fixture_fingerprint(server, tmp_path) != before
 
 
 def test_the_fingerprint_moves_when_the_resolver_option_changes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    _write_dockerfile(tmp_path)
-    server = given.an_admission().servers[0]
-    before = _fingerprint(server, tmp_path)
+    given.written_dockerfile(tmp_path)
+    server = admission_given.an_admission().servers[0]
+    before = nuisance_fixture_fingerprint(server, tmp_path)
 
     monkeypatch.setattr(cve_planting_base, "resolver_args", lambda: ["--dns-search", "fict"])
 
-    assert _fingerprint(server, tmp_path) != before
+    assert nuisance_fixture_fingerprint(server, tmp_path) != before
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
@@ -264,30 +278,3 @@ def test_every_served_path_of_a_registered_backend_exists(key: str):
     missing = [path for path in BACKENDS[key].served if not path.is_file()]
 
     assert missing == []
-
-
-def _a_registry_serving(directory: Path) -> dict[str, RegisteredBackend]:
-    for name, before, _ in SERVED_CHANGES:
-        (directory / name).write_text(before)
-    served = tuple(directory / name for name, _, _ in SERVED_CHANGES)
-    return {"fake": replace(given.a_backend_registry()["fake"], served=served)}
-
-
-def _a_confinement_copy(directory: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    copy = directory / "nuisance_confinement.py"
-    copy.write_text(nuisance_fingerprint.CONFINEMENT_SOURCE.read_text())
-    monkeypatch.setattr(nuisance_fingerprint, "CONFINEMENT_SOURCE", copy)
-    return copy
-
-
-def _one_flaw_server(effect_class: MechanismClass) -> AdmittedServer:
-    flaw = given.a_flaw_record(given.FIRST_FLAW, effect_class, given.PATCHED_VERSION)
-    return given.a_server([flaw])
-
-
-def _write_dockerfile(tmp_path: Path, text: str = "FROM node:22\nRUN npm install demo\n") -> None:
-    (tmp_path / f"Dockerfile.{SERVICE}").write_text(text)
-
-
-def _fingerprint(server: AdmittedServer, docker_directory: Path) -> str:
-    return nuisance_fixture_fingerprint(server, docker_directory)

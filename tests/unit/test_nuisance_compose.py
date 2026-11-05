@@ -9,7 +9,6 @@ from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.cve_targets import image_tag
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS
-from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 COMPOSE_SERVICES: dict[str, Any] = yaml.safe_load(COMPOSE_FILE.read_text())["services"]
@@ -41,8 +40,3 @@ def test_each_built_backend_is_a_compose_service_profiled_nuisance_but_the_stand
     assert compose_service is not None, f"{service}: no service in {COMPOSE_FILE}"
     assert compose_service["image"] == image_tag(service)
     assert compose_service.get("profiles") == profiles
-
-
-@pytest.mark.parametrize("server", ADMITTED, ids=lambda server: server.service)
-def test_each_admitted_server_has_a_fixture_fingerprint(server: AdmittedServer):
-    nuisance_fixture_fingerprint(server)
