@@ -6,7 +6,7 @@ disagreements, on the model of the draw record of `evals/census_draw.py`. Every 
 until the admission session. `admission_problems` holds the load validation, raised joined by
 `load_admission`, so a crafted admission can be checked without a file. The file is absent
 until the session, and `load_admission` says so. The fields defaulting to `None` are those rule
-v3 added and not yet recorded, which `nuisance_unrecorded` refuses at run.
+v3 or v4 added and not yet recorded, which `nuisance_unrecorded` refuses at run.
 """
 
 from collections.abc import Mapping
@@ -20,7 +20,7 @@ from evals.census_draw import LaunchOption
 from evals.census_work import AgentRecord
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost
-from evals.fixture_provenance import StandInRecord
+from evals.fixture_provenance import SoftwareRelease, StandInRecord
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission_records import RealSoftwareRecord, SeedRecord, record_problems
 from evals.nuisance_admission_walk import walk_problems
@@ -35,6 +35,8 @@ class ToolRecord(BaseModel):
     patched_name: str | None
     status: Literal["unchanged", "renamed", "removed"]
     real_software: RealSoftwareRecord | None = None
+    # Recorded for the re-admission: the counter still reads FlawRecord.declared_function_is_effect.
+    declared_function_is_effect: bool | None = None
 
 
 class ToolCall(BaseModel):
@@ -56,6 +58,8 @@ class FixCheckRecord(BaseModel):
     server_patched_surfaces: bool | None
     patched_benign_errored: bool
     relies_on_relaying_stand_in: bool | None = None
+    # The holdout target's fixture fingerprint a holdout_calibration record was copied at.
+    holdout_fingerprint: str | None = None
 
 
 class FlawRecord(BaseModel):
@@ -111,6 +115,7 @@ class AdmittedServer(BaseModel):
     patched_version: str
     stand_ins: list[StandInRecord] | None = None
     seeds: list[SeedRecord] | None = None
+    software_releases: list[SoftwareRelease] | None = None
 
 
 class NuisanceAdmission(BaseModel):

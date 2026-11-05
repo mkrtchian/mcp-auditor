@@ -151,6 +151,6 @@ def _print_unrecorded(servers: Sequence[AdmittedServer]) -> None:
     gaps = unrecorded_fields(servers)
     if gaps:
         print(
-            f"{len(gaps)} of {len(servers)} servers have fields rule v3 adds not yet recorded"
+            f"{len(gaps)} of {len(servers)} servers have fields rule v3 or v4 adds not yet recorded"
             " (run and gate refuse them)"
         )

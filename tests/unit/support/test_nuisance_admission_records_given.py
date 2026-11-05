@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals.fixture_provenance import StandInOutput, StandInRecord
+from evals.fixture_provenance import SoftwareRelease, StandInOutput, StandInRecord
 from evals.nuisance_admission import (
     AdmittedServer,
     BenignCall,
@@ -24,6 +24,34 @@ def with_a_removed_tool_carrying_a_real_software_record(
     return _with_first_flaw(
         admission, lambda flaw: flaw.model_copy(update={"tools": [*flaw.tools, removed]})
     )
+
+
+def with_a_removed_tool_carrying_a_declared_function_record(
+    admission: NuisanceAdmission,
+) -> NuisanceAdmission:
+    removed = admission_given.a_tool("gone", None, "removed").model_copy(
+        update={"declared_function_is_effect": False}
+    )
+    return _with_first_flaw(
+        admission, lambda flaw: flaw.model_copy(update={"tools": [*flaw.tools, removed]})
+    )
+
+
+def with_a_software_release_without_its_source(admission: NuisanceAdmission) -> NuisanceAdmission:
+    release = SoftwareRelease(software="PostgreSQL", release="16.4", day=None, source=" ")
+    return _with_server(
+        admission, lambda server: server.model_copy(update={"software_releases": [release]})
+    )
+
+
+def with_a_fix_check_record_carrying_a_holdout_fingerprint(
+    admission: NuisanceAdmission,
+) -> NuisanceAdmission:
+    def changed(flaw: FlawRecord) -> FlawRecord:
+        check = flaw.fix_check.model_copy(update={"holdout_fingerprint": "f" * 64})
+        return flaw.model_copy(update={"fix_check": check})
+
+    return _with_first_flaw(admission, changed)
 
 
 def with_a_silent_tool_without_a_cause(admission: NuisanceAdmission) -> NuisanceAdmission:
@@ -134,7 +162,12 @@ def with_every_new_field_unrecorded(admission: NuisanceAdmission) -> NuisanceAdm
     def flaw_unrecorded(flaw: FlawRecord) -> FlawRecord:
         return flaw.model_copy(
             update={
-                "tools": [tool.model_copy(update={"real_software": None}) for tool in flaw.tools],
+                "tools": [
+                    tool.model_copy(
+                        update={"real_software": None, "declared_function_is_effect": None}
+                    )
+                    for tool in flaw.tools
+                ],
                 "benign_calls": [
                     call.model_copy(update={"expect": None, "before": None})
                     for call in flaw.benign_calls
@@ -152,6 +185,7 @@ def with_every_new_field_unrecorded(admission: NuisanceAdmission) -> NuisanceAdm
                 "flaws": [flaw_unrecorded(flaw) for flaw in server.flaws],
                 "stand_ins": None,
                 "seeds": None,
+                "software_releases": None,
             }
         ),
     )

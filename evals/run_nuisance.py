@@ -30,12 +30,15 @@ from evals import eval_display as display
 from evals.audit_progress import AuditProgress
 from evals.census_draw import governing_steps
 from evals.concurrency import positive_int
+from evals.cve_baseline import fixture_fingerprint
+from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
+from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.metrics import quiet_throttle_waits
-from evals.nuisance_admission import ADMISSION_PATH
+from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer
 from evals.nuisance_admission_walk import addition_entries
 from evals.nuisance_calibrate_command import add_calibrate_arguments
 from evals.nuisance_commands import (
@@ -50,6 +53,7 @@ from evals.nuisance_commands import (
 )
 from evals.nuisance_dossier import write_dossier
 from evals.nuisance_gate_command import add_gate_arguments
+from evals.nuisance_holdout_copies import stale_holdout_copies
 from evals.nuisance_markdown import render_markdown
 from evals.nuisance_population import RunPopulation, run_population
 from evals.nuisance_readmission_dossier import write_readmission_dossier
@@ -214,6 +218,7 @@ def _run(args: argparse.Namespace) -> int:
             nuisance_population(nuisance_census), admission, acceptance_servers(nuisance_census)
         )
     refuse_unrecorded(population.audited, "nuisance run refused")
+    _refuse_stale_holdout_copies(population.audited)
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
@@ -260,6 +265,17 @@ def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
     return dataclasses.replace(
         deps, audit=progress.tracked(deps.audit), announce_audits=progress.announce
     )
+
+
+def _refuse_stale_holdout_copies(servers: Sequence[AdmittedServer]) -> None:
+    places = load_places(HOLDOUT_PLACES)
+    current = {target.cve_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS}
+    stale = stale_holdout_copies(servers, current)
+    if stale:
+        reason = (
+            "holdout calibrations copied from a fixture that has since changed or left the holdout"
+        )
+        raise Refused("nuisance run refused", [reason, *stale])
 
 
 def _refuse_tracing() -> None:

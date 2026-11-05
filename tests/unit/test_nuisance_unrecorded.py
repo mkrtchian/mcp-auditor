@@ -16,8 +16,9 @@ def test_every_unset_field_is_named_for_its_server_with_its_count():
     gaps = unrecorded_fields([given.a_server_with_every_field_unrecorded()])
 
     assert gaps == [
-        f"{given.SERVER}: real_software (2 tools), expect (2 benign calls),"
-        " before (2 benign calls), relies_on_relaying_stand_in (2 flaws), stand_ins, seeds"
+        f"{given.SERVER}: real_software (2 tools), declared_function_is_effect (2 tools),"
+        " expect (2 benign calls), before (2 benign calls), relies_on_relaying_stand_in (2 flaws),"
+        " stand_ins, seeds, software_releases"
     ]
 
 
@@ -25,11 +26,18 @@ def test_every_unset_field_is_named_for_its_server_with_its_count():
     ("unset", "gap"),
     [
         (given.without_a_real_software_record, "real_software (1 tool)"),
+        (given.without_a_declared_function_record, "declared_function_is_effect (1 tool)"),
+        (
+            given.with_a_tool_left_out_by_its_declared_function_unrecorded,
+            "declared_function_is_effect (1 tool)",
+        ),
+        (given.a_holdout_copy_without_its_fingerprint, "holdout_fingerprint (1 flaw)"),
         (given.without_an_expected_text, "expect (1 benign call)"),
         (given.without_prerequisite_calls, "before (1 benign call)"),
         (given.without_a_relaying_stand_in_judgment, "relies_on_relaying_stand_in (1 flaw)"),
         (given.without_stand_ins, "stand_ins"),
         (given.without_seeds, "seeds"),
+        (given.without_software_releases, "software_releases"),
     ],
 )
 def test_each_unset_field_is_named_alone(
@@ -50,6 +58,13 @@ def test_a_removed_tool_needs_no_real_software_record():
     assert unrecorded_fields([server]) == []
 
 
+def test_a_fix_check_run_needs_no_holdout_fingerprint():
+    server = given.a_recorded_server()
+
+    assert all(flaw.fix_check.source == "fix_check" for flaw in server.flaws)
+    assert unrecorded_fields([server]) == []
+
+
 def test_refusal_lists_the_gaps():
     server = given.without_seeds(given.a_recorded_server())
 
@@ -58,7 +73,7 @@ def test_refusal_lists_the_gaps():
 
     assert refusal.value.title == "nuisance run refused"
     assert refusal.value.reasons == [
-        "fields rule v3 adds are not yet recorded",
+        "fields rule v3 or v4 adds are not yet recorded",
         f"{given.SERVER}: seeds",
     ]
 

@@ -9,6 +9,9 @@ from evals.nuisance_admission import NuisanceAdmission, admission_problems
 
 _MUTATORS: list[Callable[[NuisanceAdmission], NuisanceAdmission]] = [
     given.with_a_removed_tool_carrying_a_real_software_record,
+    given.with_a_removed_tool_carrying_a_declared_function_record,
+    given.with_a_software_release_without_its_source,
+    given.with_a_fix_check_record_carrying_a_holdout_fingerprint,
     given.with_a_silent_tool_without_a_cause,
     given.with_a_silent_tool_without_evidence,
     given.with_an_answering_tool_carrying_a_cause,

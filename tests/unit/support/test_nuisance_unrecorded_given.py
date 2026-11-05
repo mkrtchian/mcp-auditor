@@ -28,6 +28,28 @@ def without_a_real_software_record(server: AdmittedServer) -> AdmittedServer:
     )
 
 
+def without_a_declared_function_record(server: AdmittedServer) -> AdmittedServer:
+    return _with_first_flaw(server, _tools_without_a_declared_function_record)
+
+
+def with_a_tool_left_out_by_its_declared_function_unrecorded(
+    server: AdmittedServer,
+) -> AdmittedServer:
+    def changed(flaw: FlawRecord) -> FlawRecord:
+        unrecorded = _tools_without_a_declared_function_record(flaw)
+        return unrecorded.model_copy(update={"declared_function_is_effect": True})
+
+    return _with_first_flaw(server, changed)
+
+
+def a_holdout_copy_without_its_fingerprint(server: AdmittedServer) -> AdmittedServer:
+    return _with_first_flaw(server, _fix_check_copied_from_the_holdout)
+
+
+def without_software_releases(server: AdmittedServer) -> AdmittedServer:
+    return server.model_copy(update={"software_releases": None})
+
+
 def without_an_expected_text(server: AdmittedServer) -> AdmittedServer:
     return _with_first_flaw(server, _benign_calls_without("expect"))
 
@@ -74,6 +96,16 @@ def _benign_calls_without(field: str) -> _FlawChange:
 
 def _fix_check_without_a_relaying_judgment(flaw: FlawRecord) -> FlawRecord:
     check = flaw.fix_check.model_copy(update={"relies_on_relaying_stand_in": None})
+    return flaw.model_copy(update={"fix_check": check})
+
+
+def _tools_without_a_declared_function_record(flaw: FlawRecord) -> FlawRecord:
+    tools = [tool.model_copy(update={"declared_function_is_effect": None}) for tool in flaw.tools]
+    return flaw.model_copy(update={"tools": tools})
+
+
+def _fix_check_copied_from_the_holdout(flaw: FlawRecord) -> FlawRecord:
+    check = flaw.fix_check.model_copy(update={"source": "holdout_calibration"})
     return flaw.model_copy(update={"fix_check": check})
 
 

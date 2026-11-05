@@ -1,7 +1,7 @@
 """Assemble, outside the repository, the re-admission dossier for one admitted server.
 
 The first-admission dossier (`nuisance_dossier.write_dossier`) plus what the two blind agents
-need to fill the fields rule v3 adds: the server's committed record, the rule, the run's,
+need to fill the fields rules v3 and v4 add: the server's committed record, the rule, the run's,
 fix-check, holdout-twin and backend Dockerfiles under `evals/docker/`, the server's fix-check
 modules and backend lifecycle with their import closure, the benign probe, the holdout fixture
 of each holdout-calibration flaw as text, and the stated confinement.

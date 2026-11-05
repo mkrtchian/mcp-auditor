@@ -76,6 +76,7 @@ def _a_server() -> AdmittedServer:
         patched_version=PATCHED_VERSION,
         stand_ins=[],
         seeds=[],
+        software_releases=[],
     )
 
 
@@ -127,9 +128,13 @@ def a_tool(
     patched: str | None,
     status: Literal["unchanged", "renamed", "removed"],
 ) -> ToolRecord:
-    verdict = None if status == "removed" else RealSoftwareRecord(answers=True)
+    removed = status == "removed"
     return ToolRecord(
-        vulnerable_name=vulnerable, patched_name=patched, status=status, real_software=verdict
+        vulnerable_name=vulnerable,
+        patched_name=patched,
+        status=status,
+        real_software=None if removed else RealSoftwareRecord(answers=True),
+        declared_function_is_effect=None if removed else False,
     )
 
 

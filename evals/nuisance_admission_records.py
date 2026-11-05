@@ -1,5 +1,7 @@
-"""The admission records rule v3 adds: whether a tool's real software answers, what the fixture
-seeds, and their load checks, which `nuisance_admission.admission_problems` runs per server.
+"""The admission records rule v3 and v4 add: whether a tool's real software answers, what the
+fixture seeds, the real software's releases, a tool's declared function and a copied holdout
+calibration's fingerprint, and their load checks, which `nuisance_admission.admission_problems`
+runs per server.
 
 A field left `None` is not yet recorded and is never a load problem here: the run refuses it
 (`nuisance_unrecorded`). Only the benign calls of the counted flaws are read, so a differing
@@ -14,7 +16,7 @@ from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel
 
-from evals.fixture_provenance import stand_in_problems
+from evals.fixture_provenance import software_release_problems, stand_in_problems
 from evals.nuisance_counting import counted_flaws
 
 if TYPE_CHECKING:
@@ -39,11 +41,14 @@ class SeedRecord(BaseModel):
 def record_problems(server: AdmittedServer) -> list[str]:
     problems = [
         *_real_software_problems(server),
+        *_removed_declared_functions(server),
+        *_fix_check_fingerprints(server),
         *_verdict_conflicts(server),
         *_expectation_problems(server),
         *_duplicate_benign_calls(server),
         *_seed_problems(server),
         *_stand_in_problems(server),
+        *_software_release_problems(server),
     ]
     return [f"{server.server_package}: {problem}" for problem in problems]
 
@@ -64,6 +69,24 @@ def _real_software_problems(server: AdmittedServer) -> list[str]:
             elif verdict.answers and (verdict.cause is not None or verdict.evidence is not None):
                 problems.append(f"{where} answers but records a cause or evidence")
     return problems
+
+
+def _removed_declared_functions(server: AdmittedServer) -> list[str]:
+    return [
+        f"flaw {flaw.flaw} tool {tool.vulnerable_name!r} is removed "
+        "but carries a declared_function_is_effect record"
+        for flaw in server.flaws
+        for tool in flaw.tools
+        if tool.status == "removed" and tool.declared_function_is_effect is not None
+    ]
+
+
+def _fix_check_fingerprints(server: AdmittedServer) -> list[str]:
+    return [
+        f"flaw {flaw.flaw} runs its own fix check but carries a holdout_fingerprint"
+        for flaw in server.flaws
+        if flaw.fix_check.source == "fix_check" and flaw.fix_check.holdout_fingerprint is not None
+    ]
 
 
 def _verdict_conflicts(server: AdmittedServer) -> list[str]:
@@ -131,4 +154,12 @@ def _seed_problems(server: AdmittedServer) -> list[str]:
 def _stand_in_problems(server: AdmittedServer) -> list[str]:
     return [
         problem for stand_in in server.stand_ins or [] for problem in stand_in_problems(stand_in)
+    ]
+
+
+def _software_release_problems(server: AdmittedServer) -> list[str]:
+    return [
+        problem
+        for release in server.software_releases or []
+        for problem in software_release_problems(release)
     ]

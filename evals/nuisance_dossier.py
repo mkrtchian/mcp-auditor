@@ -173,6 +173,26 @@ nothing to declare.
   of Seeding (a published sample, then what the software generates, then a project document,
   then values written for the fixture), `[]` when the fixture seeds nothing.
 
+## Fields rule v4 adds, required for an admission
+
+Optional with a `null` default in the schemas below for the same reason, and left `null` by no
+admission.
+
+- `ToolRecord.declared_function_is_effect`: for every tool of the flaw in the patched version,
+  whether its declared function, read from the tool's description alone, is the effect of the
+  flaw's class. Its agreement field is named `declared_function`.
+  `FlawRecord.declared_function_is_effect` stays: it is the record the count reads until the
+  per-tool one supersedes it.
+- `AdmittedServer.software_releases`: each real software the counted tools drive, with its
+  release, the day that release was the current stable one when its documentation names no
+  version (`null` when it does), and the line of documentation or the release page that gives
+  it, `[]` when the tools drive no real software. A server that reuses a holdout calibration
+  copies its holdout card's list.
+
+`FixCheckRecord.holdout_fingerprint` is not the agents' to fill: the maintainer records it at the
+merge, on a record whose `source` is `holdout_calibration`, as the fixture fingerprint of the
+holdout target it copies.
+
 ## FlawRecord JSON schema
 
 ```json
@@ -238,5 +258,5 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 
 5. Paste the printed `FixCheckResult` into the flaw's `fix_check` record of the admission, and
    fill the rest of the `FlawRecord` and `AdmittedServer` fields (`fixture_format.md` carries
-   their schemas). Fill the rule v3 fields too, none left `null`.
+   their schemas). Fill the rule v3 and v4 fields too, none left `null`.
 """

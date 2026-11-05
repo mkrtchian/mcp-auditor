@@ -48,7 +48,7 @@ def test_vet_counts_the_servers_with_unrecorded_fields_and_keeps_its_exit_code(
     assert run_nuisance.main(["vet", *arguments]) == 0
 
     assert (
-        "1 of 2 servers have fields rule v3 adds not yet recorded (run and gate refuse them)"
+        "1 of 2 servers have fields rule v3 or v4 adds not yet recorded (run and gate refuse them)"
         in capsys.readouterr().out
     )
 

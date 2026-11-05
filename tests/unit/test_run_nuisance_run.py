@@ -9,6 +9,7 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_admission_records_given as records_given
+import tests.unit.support.test_nuisance_holdout_copies_given as copies_given
 import tests.unit.support.test_run_nuisance_run_given as given
 from evals import run_nuisance
 from evals.nuisance_results import RunInterrupted
@@ -42,6 +43,22 @@ def test_run_refuses_a_server_with_an_unrecorded_field_before_its_settings(
     out = capsys.readouterr().out
     assert exit_code == run_nuisance.REFUSED_EXIT
     assert f"{admission_given.SERVER_PACKAGE}: real_software (2 tools)" in out
+    assert not (tmp_path / "nuisance_report.json").with_suffix(".result.json").exists()
+
+
+def test_run_refuses_a_holdout_copy_whose_flaw_left_the_holdout_before_its_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.a_run_refused_before_its_settings(monkeypatch)
+    stale = copies_given.a_server_copying_the_holdout_calibration_at(copies_given.RECORDED)
+    admission = admission_given.an_admission().model_copy(update={"servers": [stale]})
+
+    exit_code = run_nuisance.main(given.a_run_command(tmp_path, admission))
+
+    words = " ".join(capsys.readouterr().out.replace("│", " ").split())
+    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert "copied from a fixture that has since changed or left the holdout" in words
+    assert f"{copies_given.COPIED_FLAW} is no longer a drawn holdout target" in words
     assert not (tmp_path / "nuisance_report.json").with_suffix(".result.json").exists()
 
 

@@ -198,6 +198,12 @@ def test_a_record_judging_a_relaying_stand_in_matches_a_result_that_cannot_carry
     assert nuisance_calibrate_command.fix_check_mismatches(_a_result(), record) == []
 
 
+def test_a_record_carrying_a_holdout_fingerprint_matches_a_result_that_cannot_carry_it():
+    record = _a_record(source="holdout_calibration", holdout_fingerprint="f" * 64)
+
+    assert nuisance_calibrate_command.fix_check_mismatches(_a_result(), record) == []
+
+
 def test_a_differing_witness_nonce_is_not_a_mismatch():
     # check_fix plants a fresh random nonce each run, so the result's witness never equals the one
     # the admission recorded; only the reproducible fields are compared.

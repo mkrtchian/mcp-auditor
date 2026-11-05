@@ -155,6 +155,18 @@ def test_the_fixture_format_requires_every_field_rule_v3_adds(tmp_path: Path):
     assert "none left `null`" in (out / "README.md").read_text()
 
 
+def test_the_fixture_format_requires_every_field_rule_v4_adds(tmp_path: Path):
+    out = tmp_path / "dossier"
+    write_dossier(walk_given.a_nuisance_census(given.a_census()), _SERVER, out)
+
+    fixture_format = (out / "fixture_format.md").read_text()
+    assert "Fields rule v4 adds, required for an admission" in fixture_format
+    for field in ("ToolRecord.declared_function_is_effect", "AdmittedServer.software_releases"):
+        assert f"`{field}`" in fixture_format, field
+    assert "`FixCheckRecord.holdout_fingerprint`" in fixture_format
+    assert "rule v3 and v4 fields" in (out / "README.md").read_text()
+
+
 def test_the_calibration_kit_readme_requires_the_card_fields_rule_v9_adds(tmp_path: Path):
     out = tmp_path / "kit"
     write_kit(given.a_census(), given.FLAW_WITH_A_CVE, out)
