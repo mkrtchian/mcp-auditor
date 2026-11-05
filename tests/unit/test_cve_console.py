@@ -11,12 +11,13 @@ REPORT_PATH = Path("output/cve_report.json")
 
 
 def test_the_summary_shows_each_target_id_whole(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(monkeypatch, width=60)
 
     print_cve_summary(given.a_gated_report(), REPORT_PATH)
 
-    for cve_id in (given.DETECTED_CVE, "CVE-2025-53355"):
-        assert cve_id in output.getvalue()
+    lines = [line.lstrip() for line in output.getvalue().splitlines()]
+    assert sum(line.startswith(given.DETECTED_CVE) for line in lines) == 2  # results and gate rows
+    assert sum(line.startswith("CVE-2025-53355") for line in lines) == 1  # gate row only
 
 
 def test_the_summary_states_the_tally(monkeypatch: pytest.MonkeyPatch):

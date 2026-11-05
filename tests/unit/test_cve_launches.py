@@ -5,6 +5,7 @@
 # here makes a Docker call. Each builder does call `build_layout`, which shells out to host
 # `git` (init, clone, commit) under a temp root even on an empty spec (the tree is universal),
 # a test-environment dependency that needs no Docker and plants no nonce.
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -20,9 +21,9 @@ from evals.cve_environments import (
     ssrf_env,
     ssrf_redirect_env,
 )
-from evals.cve_layout import NEUTRAL_TOKEN, owned_layout
+from evals.cve_layout import NEUTRAL_TOKEN
 from evals.cve_planting import PlantingFailed
-from evals.cve_planting_base import LayoutMount
+from evals.cve_planting_base import LAYOUT_PREFIX, LayoutMount, check_layout_outer
 from evals.holdout_kit import kit_launch
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ExecutionRegime
@@ -128,15 +129,11 @@ def test_a_failing_hand_over_raises_planting_failed_and_leaves_no_outer_director
     assert not Path(docker.hand_overs[0]).parent.exists()
 
 
-def test_the_removal_refuses_any_directory_but_the_outer_one_the_layout_made(tmp_path: Path):
-    docker = FakePlantingDocker()
+def test_the_removal_guard_refuses_any_directory_but_a_layout_outer_one(tmp_path: Path):
+    with given.paths_the_removal_refuses(tmp_path) as refused:
+        for path in refused:
+            with pytest.raises(PlantingFailed):
+                check_layout_outer(path)
 
-    with owned_layout(docker, lambda root: root.mkdir()) as root:
-        with given.paths_the_removal_refuses(tmp_path, root) as refused:
-            for path in refused:
-                with pytest.raises(PlantingFailed):
-                    docker.remove_layout(path)
-                assert list(docker.layouts) == [str(root)], path
-
-        docker.remove_layout(str(root.parent))
-        assert docker.layouts == {}
+    with tempfile.TemporaryDirectory(prefix=LAYOUT_PREFIX) as outer:
+        check_layout_outer(outer)

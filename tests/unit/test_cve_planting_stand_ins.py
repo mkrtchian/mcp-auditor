@@ -6,7 +6,7 @@ import tests.unit.support.test_cve_planting_stand_ins_given as given
 import tests.unit.support.test_cve_planting_stand_ins_then as then
 from evals.cve_planting import PlantingFailed, planted
 from evals.cve_planting_base import STAND_IN_IMAGE, own_network_args
-from tests.unit.support.test_cve_planting_then import resolver_options_in
+from tests.unit.support.test_cve_planting_then import nothing_left_alive, resolver_options_in
 
 
 def test_a_launch_with_a_stand_in_joins_a_holder_pinning_the_name_to_its_set_up_address(
@@ -68,7 +68,7 @@ def test_a_stand_in_on_the_address_of_a_bound_sentinel_is_refused_before_any_con
     ):
         pass
 
-    then.nothing_left_alive(docker)
+    nothing_left_alive(docker)
     assert docker.address_setups == []
 
 
@@ -99,7 +99,7 @@ def test_a_stand_in_that_does_not_listen_fails_the_planting_and_leaves_nothing(t
     ):
         pass
 
-    then.nothing_left_alive(docker)
+    nothing_left_alive(docker)
 
 
 def test_teardown_removes_the_stand_in_and_its_host_files(tmp_path: Path):
@@ -110,7 +110,7 @@ def test_teardown_removes_the_stand_in_and_its_host_files(tmp_path: Path):
     with planted(spec, "image:tag", docker, stand_ins_directory=directory):
         assert len(docker.stand_ins) == 1
 
-    then.nothing_left_alive(docker)
+    nothing_left_alive(docker)
 
 
 def test_a_launch_with_no_public_names_plants_as_before_and_reads_no_file(tmp_path: Path):

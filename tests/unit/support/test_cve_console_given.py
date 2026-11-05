@@ -14,8 +14,8 @@ DETECTED_CVE = "CVE-2025-53109"
 NOT_RUN_CVE = "CVE-2025-68143"
 
 
-def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    return display_given.a_captured_console(monkeypatch, cve_console)
+def a_captured_console(monkeypatch: pytest.MonkeyPatch, width: int = 200) -> StringIO:
+    return display_given.a_captured_console(monkeypatch, cve_console, width=width)
 
 
 def a_gated_report(**update: object) -> CVEBenchmarkReport:

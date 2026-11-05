@@ -43,11 +43,16 @@ def _no_network_host() -> PlantingHost:
 
 
 @contextmanager
-def paths_the_removal_refuses(tmp_path: Path, root: Path) -> Generator[list[str]]:
+def paths_the_removal_refuses(tmp_path: Path) -> Generator[list[str]]:
     """A prefixed directory outside the system temp directory, an unprefixed child of it, a path
-    nested under a prefixed directory and the empty string, each an existing directory but the
+    nested under a prefixed child of it and the empty string, each an existing directory but the
     last."""
     elsewhere = tmp_path / f"{LAYOUT_PREFIX}elsewhere"
     elsewhere.mkdir()
-    with tempfile.TemporaryDirectory(prefix="unprefixed-") as unprefixed:
-        yield [str(elsewhere), unprefixed, str(root), ""]
+    with (
+        tempfile.TemporaryDirectory(prefix="unprefixed-") as unprefixed,
+        tempfile.TemporaryDirectory(prefix=LAYOUT_PREFIX) as outer,
+    ):
+        nested = Path(outer) / "srv"
+        nested.mkdir()
+        yield [str(elsewhere), unprefixed, str(nested), ""]

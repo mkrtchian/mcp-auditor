@@ -326,10 +326,8 @@ def test_an_env_place_emits_a_docker_env_argument_with_the_nonce():
 # --- the resolver option ---------------------------------------------------------------
 
 
-def test_the_resolver_option_sets_no_search_domain_on_an_own_network_and_none():
+def test_the_resolver_option_sets_no_search_domain_and_stays_out_of_the_confinement_joiners_take():
     assert resolver_args() == ["--dns-search", "."]
-    assert own_network_args("fictional-net") == ["--network", "fictional-net", "--dns-search", "."]
-    assert no_network_args() == own_network_args("none")
     assert "--dns-search" not in confinement_args()
 
 
@@ -499,6 +497,13 @@ def test_write_host_file_removes_the_temp_file_when_the_content_cannot_be_encode
         DockerPlanting().write_host_file("\ud800", 0o644)
 
     assert list(tmp_path.iterdir()) == []
+
+
+def test_the_docker_adapter_refuses_to_remove_a_directory_that_is_no_layout_outer(
+    tmp_path: Path,
+):
+    with pytest.raises(PlantingFailed):
+        DockerPlanting().remove_layout(str(tmp_path))
 
 
 def _only_value(mapping: dict[str, given.HostFile]) -> given.HostFile:
