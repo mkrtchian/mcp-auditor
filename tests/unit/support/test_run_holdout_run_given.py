@@ -43,9 +43,7 @@ def a_drawn_run_ending_in(
 
 
 def a_drawn_target_with_a_ready_card(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "evals.holdout_targets.HOLDOUT_TARGETS", (SimpleNamespace(cve_id="CVE-2025-0001"),)
-    )
+    monkeypatch.setattr(run_holdout, "HOLDOUT_TARGETS", (SimpleNamespace(cve_id="CVE-2025-0001"),))
     cards_reporting(monkeypatch, [])
 
 

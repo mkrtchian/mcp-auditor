@@ -29,6 +29,7 @@ _INSTRUMENTS = (
     "capture_probe_corpus",
     "run_cve_benchmark",
     "cve_benchmark_modes",
+    "admission_calibration",
 )
 
 _EVALS = Path(__file__).resolve().parents[2] / "evals"

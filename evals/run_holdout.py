@@ -13,13 +13,12 @@ from pathlib import Path
 
 from rich.progress import Progress
 
-from evals import calibration_dossier, holdout_targets
+from evals import calibration_dossier
 from evals import eval_display as display
+from evals.admission_calibration import calibrate_admitted, default_calibration_deps
 from evals.audit_progress import AuditProgress
 from evals.closed_network import check_closed_network_support
-from evals.concurrency import bounded, positive_int
-from evals.cve_calibration import calibrate_all, calibrate_one
-from evals.cve_layout_check import confirm_admission
+from evals.concurrency import positive_int
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_targets import CVETarget, image_tag
 from evals.eval_runs import tracing_enabled
@@ -38,6 +37,7 @@ from evals.holdout_run import (
     holdout_overrides,
     run_holdout,
 )
+from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
 from evals.provider_errors import ProviderFatal, describe_provider_error
@@ -136,7 +136,7 @@ def _run(args: argparse.Namespace) -> int:
     _refuse_tracing()
     refuse_existing_report(args.report, "holdout run refused")
     conditions = load_conditions(CONDITIONS_PATH)
-    if not holdout_targets.HOLDOUT_TARGETS:
+    if not HOLDOUT_TARGETS:
         print("no holdout target is drawn")
         return 0
     census = _census(args.census)
@@ -155,7 +155,7 @@ def _run(args: argparse.Namespace) -> int:
 
 
 def _refuse_unready_cards(census: HoldoutCensus) -> None:
-    drawn = [target.cve_id for target in holdout_targets.HOLDOUT_TARGETS]
+    drawn = [target.cve_id for target in HOLDOUT_TARGETS]
     gaps = unready_cards(census.draw, drawn)
     if gaps:
         raise Refused(
@@ -180,7 +180,7 @@ def _audit_drawn_targets(args: argparse.Namespace, ready: _ReadyHoldoutRun) -> H
     with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(
             run_holdout(
-                holdout_targets.HOLDOUT_TARGETS,
+                HOLDOUT_TARGETS,
                 disclosure_dates,
                 ready.conditions,
                 ready.settings,
@@ -202,9 +202,7 @@ def _tracked(deps: HoldoutDeps, progress: AuditProgress) -> HoldoutDeps:
 def _calibrate(args: argparse.Namespace) -> int:
     places = load_places(HOLDOUT_PLACES)
     targets = [
-        target
-        for target in holdout_targets.HOLDOUT_TARGETS
-        if args.cve is None or target.cve_id == args.cve
+        target for target in HOLDOUT_TARGETS if args.cve is None or target.cve_id == args.cve
     ]
     if not targets:
         print("no holdout target is drawn")
@@ -224,13 +222,10 @@ async def _calibrate_targets(
 ) -> int:
     tags = [image_tag(service) for service in target_services(targets)]
     try:
-        admission_failures = await confirm_admission(targets, places)
-        all_live = await calibrate_all(
-            targets, bounded(lambda target: calibrate_one(target, places), concurrency)
-        )
+        deps = default_calibration_deps(concurrency, ci=False)
+        return await calibrate_admitted(targets, places, deps)
     finally:
         sweep_containers(tags, sweep.running_containers, sweep.remove_containers)
-    return 0 if all_live and not admission_failures else 1
 
 
 def _refuse_tracing() -> None:

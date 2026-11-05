@@ -10,6 +10,7 @@ from evals import (
     cve_recording_console,
     run_cve_benchmark,
 )
+from evals.admission_calibration import CalibrationDeps
 from evals.baseline import BaselineStatus
 from evals.cve_gate import CVEGateResult, CVEGateVerdict
 from evals.cve_session import CVESessionResult
@@ -19,6 +20,7 @@ from evals.eval_session import TreeState
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep
+from tests.unit.support.test_admission_calibration_given import deps_with
 
 BILLED_CVE = "CVE-billed"
 PRICED_MODEL = "gpt-6-luna"
@@ -43,16 +45,10 @@ def a_calibration(monkeypatch: pytest.MonkeyPatch, *, raises: bool = False) -> N
     """Past the preflight, every fixture admitted and live, or a configuration error."""
     monkeypatch.setattr(run_cve_benchmark, "preflight_ok", lambda: True)
 
-    async def no_admission_failure(*_args: object, **_kwargs: object) -> list[str]:
-        return []
+    def default_calibration_deps(*_args: object, **_kwargs: object) -> CalibrationDeps:
+        return deps_with(raises=raises)
 
-    async def calibrate_all(*_args: object, **_kwargs: object) -> bool:
-        if raises:
-            raise ValueError("a kept id with no record")
-        return True
-
-    monkeypatch.setattr(cve_benchmark_modes, "confirm_admission", no_admission_failure)
-    monkeypatch.setattr(cve_benchmark_modes, "calibrate_all", calibrate_all)
+    monkeypatch.setattr(cve_benchmark_modes, "default_calibration_deps", default_calibration_deps)
 
 
 def a_survey(monkeypatch: pytest.MonkeyPatch, *, raises: bool = False) -> None:
