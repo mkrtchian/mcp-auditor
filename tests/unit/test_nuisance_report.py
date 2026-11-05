@@ -109,8 +109,22 @@ def test_the_raw_fail_count_is_reported_per_server_and_per_run():
 
     markdown = render_markdown(build_report(run))
 
-    assert "## Raw FAIL count (report-only, never compared)\n- A: 1, 1, 0\n- B: 0, 0, 0\n" in (
-        markdown
+    assert (
+        "## Raw FAIL count (report-only, never compared)\n"
+        "- A: 1, 1, 0 (on the tools left out by their declared function: 0, 0, 0)\n"
+        "- B: 0, 0, 0 (on the tools left out by their declared function: 0, 0, 0)\n"
+    ) in markdown
+
+
+def test_the_raw_fail_count_shows_its_part_on_the_tools_left_out_by_their_declared_function():
+    server = a_server_result("A", flagged_runs=1, declared_function_fail_runs=2)
+
+    report = build_report(given.a_run([server]))
+
+    assert report.servers[0].declared_function_fail_per_run == [1, 1, 0]
+    assert (
+        "- A: 2, 1, 0 (on the tools left out by their declared function: 1, 1, 0)\n"
+        in render_markdown(report)
     )
 
 

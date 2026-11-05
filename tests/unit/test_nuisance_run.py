@@ -86,6 +86,7 @@ def test_a_server_is_assembled_from_its_audits_in_run_order():
     assert result.incomplete_runs == 2
     assert result.incomplete_unflagged_runs == 1
     assert result.raw_fail_per_run == [1, 1, 0]
+    assert result.declared_function_fail_per_run == [0, 0, 0]
     assert (result.counted_tools_count, result.tools_count) == (1, 1)
     generator = audits[0].report.generator_usage
     one_run = call_cost(generator, given.LUNA_PRICE) + call_cost(judge, given.LUNA_PRICE)
@@ -103,12 +104,23 @@ def test_each_run_status_carries_its_server_health_and_miss_causes():
     result = assemble_server(given.a_server(), audits, given.draw_entries(), _PRICES)
 
     assert result.statuses == (
-        NuisanceRunStatus(False, False, False, 0, 2, 1, []),
-        NuisanceRunStatus(False, False, True, 0, 0, 3, ["provider_refusal"]),
-        NuisanceRunStatus(False, False, True, 0, 0, 0, ["unreadable_answer"]),
+        NuisanceRunStatus(False, False, False, 0, 0, 2, 1, []),
+        NuisanceRunStatus(False, False, True, 0, 0, 0, 3, ["provider_refusal"]),
+        NuisanceRunStatus(False, False, True, 0, 0, 0, 0, ["unreadable_answer"]),
     )
     assert (result.non_protocol_lines, result.lost_connection_responses) == (2, 4)
     assert result.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
+
+
+def test_each_run_status_counts_the_fails_on_the_tools_left_out_by_their_declared_function():
+    audits = [given.an_audit(True), given.an_audit(False)]
+    server = given.a_server_whose_declared_function_is_its_effect()
+
+    result = assemble_server(server, audits, given.draw_entries(), _PRICES)
+
+    assert result.flagged_per_run == [False, False]
+    assert result.raw_fail_per_run == [1, 0]
+    assert result.declared_function_fail_per_run == [1, 0]
 
 
 def test_a_throttled_step_is_not_a_miss_cause_of_a_run():

@@ -78,10 +78,15 @@ def _servers_section(servers: Sequence[ServerLine]) -> list[str]:
 
 def _raw_fail_section(servers: Sequence[ServerLine]) -> list[str]:
     lines = [
-        f"- {line.server_package}: {', '.join(str(count) for count in line.raw_fail_per_run)}"
+        f"- {line.server_package}: {_counts(line.raw_fail_per_run)} (on the tools left out by "
+        f"their declared function: {_counts(line.declared_function_fail_per_run)})"
         for line in servers
     ]
     return ["## Raw FAIL count (report-only, never compared)", *lines, ""]
+
+
+def _counts(per_run: Sequence[int]) -> str:
+    return ", ".join(str(count) for count in per_run)
 
 
 def _outside_figure_section(report: NuisanceReport) -> list[str]:

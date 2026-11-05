@@ -12,6 +12,7 @@ def a_server_result(
     flagged_runs: int = 0,
     split_flagged_runs: int | None = None,
     incomplete_unflagged_runs: int = 0,
+    declared_function_fail_runs: int = 0,
 ) -> NuisanceServerResult:
     split_flagged = flagged_runs if split_flagged_runs is None else split_flagged_runs
     first_incomplete = runs - incomplete_unflagged_runs
@@ -20,7 +21,8 @@ def a_server_result(
             flagged=index < flagged_runs,
             split_flagged=index < split_flagged,
             incomplete=index >= flagged_runs and index >= first_incomplete,
-            raw_fail_count=1 if index < flagged_runs else 0,
+            raw_fail_count=(index < flagged_runs) + (index < declared_function_fail_runs),
+            declared_function_fail_count=1 if index < declared_function_fail_runs else 0,
             non_protocol_lines=0,
             lost_connection_responses=0,
             miss_causes=[],

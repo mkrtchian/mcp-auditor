@@ -82,6 +82,13 @@ def a_server(
     return server.model_copy(update={"server_package": package, "service": service})
 
 
+def a_server_whose_declared_function_is_its_effect() -> AdmittedServer:
+    flaw = admission.a_flaw_record(
+        FIRST_FLAW, MechanismClass.READ_OUTSIDE_SCOPE, admission.PATCHED_VERSION
+    )
+    return a_server(flaws=[flaw.model_copy(update={"declared_function_is_effect": True})])
+
+
 def a_two_flaw_server() -> AdmittedServer:
     return a_server(
         flaws=[

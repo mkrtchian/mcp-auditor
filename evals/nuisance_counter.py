@@ -1,4 +1,5 @@
-"""The nuisance verdict of one audit report: which counted tools it flags, and its raw count.
+"""The nuisance verdict of one audit report: which counted tools it flags, its raw count and the
+part of it on a given set of tools.
 
 It reads only these domain fields: `tool_reports`, `tool.name`, `cases`, `chains`,
 `eval_result.verdict`, `eval_result.category`.
@@ -45,11 +46,19 @@ def flagged_tools(
     report: AuditReport, counted: Mapping[str, frozenset[JudgeCategory]]
 ) -> frozenset[str]:
     return frozenset(
-        verdict.tool
-        for verdict in tool_verdicts(report)
-        if verdict.verdict is Verdict.FAIL
-        and verdict.tool in counted
-        and verdict.category in counted[verdict.tool]
+        verdict.tool for verdict in tool_verdicts(report) if _fails_on(verdict, counted)
+    )
+
+
+def fail_count_on(report: AuditReport, tools: Mapping[str, frozenset[JudgeCategory]]) -> int:
+    return sum(_fails_on(verdict, tools) for verdict in tool_verdicts(report))
+
+
+def _fails_on(verdict: ToolVerdict, tools: Mapping[str, frozenset[JudgeCategory]]) -> bool:
+    return (
+        verdict.verdict is Verdict.FAIL
+        and verdict.tool in tools
+        and verdict.category in tools[verdict.tool]
     )
 
 

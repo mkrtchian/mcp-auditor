@@ -60,7 +60,8 @@ class ServerLine(BaseModel):
     incomplete_runs: int
     counted_tools_count: int
     tools_count: int
-    raw_fail_per_run: list[int]  # report-only, never compared, as the three below
+    raw_fail_per_run: list[int]  # report-only, never compared, as the four below
+    declared_function_fail_per_run: list[int]  # the raw count's part on those tools
     non_protocol_lines: int
     lost_connection_responses: int
     incomplete_runs_by_cause: dict[str, int]
@@ -234,6 +235,7 @@ def _server_line(server: NuisanceServerResult) -> ServerLine:
         counted_tools_count=server.counted_tools_count,
         tools_count=server.tools_count,
         raw_fail_per_run=server.raw_fail_per_run,
+        declared_function_fail_per_run=server.declared_function_fail_per_run,
         non_protocol_lines=server.non_protocol_lines,
         lost_connection_responses=server.lost_connection_responses,
         incomplete_runs_by_cause=server.incomplete_runs_by_cause,

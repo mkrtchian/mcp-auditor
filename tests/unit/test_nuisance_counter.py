@@ -6,6 +6,7 @@ from evals.cve_units import JudgeCategory, Verdict
 from evals.nuisance_counter import (
     ToolVerdict,
     counter_fingerprint,
+    fail_count_on,
     flagged_tools,
     raw_fail_count,
     tool_verdicts,
@@ -93,6 +94,24 @@ def test_the_raw_count_of_a_report_with_no_judged_case_is_zero():
     report = grammar_given.a_report(cases=[grammar_given.a_case(verdict=None)])
 
     assert raw_fail_count(report) == 0
+
+
+def test_the_count_on_listed_tools_takes_each_fail_on_a_listed_tool_in_its_categories():
+    report = given.a_report_of_tools(
+        given.a_tool_report(
+            "read_file",
+            cases=[
+                grammar_given.a_case(),
+                grammar_given.a_case(category=grammar_given.RESOURCE_ABUSE),
+                grammar_given.a_case(verdict=grammar_given.PASS),
+            ],
+            chains=[grammar_given.a_chain([grammar_given.a_step()])],
+        ),
+        given.a_tool_report("list_dir", cases=[grammar_given.a_case()]),
+    )
+
+    assert JudgeCategory(grammar_given.RESOURCE_ABUSE.value) not in _READ_CATEGORIES
+    assert fail_count_on(report, {"read_file": _READ_CATEGORIES}) == 2
 
 
 def test_the_counter_fingerprint_is_a_stable_digest_apart_from_the_grammars():

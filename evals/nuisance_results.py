@@ -17,7 +17,8 @@ class NuisanceRunStatus:
     flagged: bool
     split_flagged: bool  # flagged through a counted tool of the split flaw
     incomplete: bool  # a step refused or unreadable
-    raw_fail_count: int  # report-only
+    raw_fail_count: int  # report-only, as the one below
+    declared_function_fail_count: int  # the part on the tools left out by their declared function
     non_protocol_lines: int  # report-only, as the two below
     lost_connection_responses: int
     miss_causes: list[str]  # the causes that make it incomplete, sorted, empty on a complete run
@@ -68,6 +69,10 @@ class NuisanceServerResult:
     @property
     def raw_fail_per_run(self) -> list[int]:
         return [status.raw_fail_count for status in self.statuses]
+
+    @property
+    def declared_function_fail_per_run(self) -> list[int]:
+        return [status.declared_function_fail_count for status in self.statuses]
 
     @property
     def non_protocol_lines(self) -> int:
