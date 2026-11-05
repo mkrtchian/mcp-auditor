@@ -1,36 +1,28 @@
 import dataclasses
-from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
-from contextlib import AbstractAsyncContextManager, asynccontextmanager, contextmanager
-from dataclasses import dataclass, field
+from collections.abc import Awaitable, Callable, Generator
+from contextlib import contextmanager
 from io import StringIO
-from typing import Any
 
 import pytest
 
+import tests.unit.support.test_audit_launch_given as launch_given
 import tests.unit.support.test_eval_display_given as display_given
-from evals import audit_attempts, cve_audit
+from evals import audit_attempts, cve_audit, launch_audit
 from evals.audit_attempts import AttemptOutcome
-from evals.cve_audit import Auditor
 from evals.cve_environments import Launch, LaunchShape
 from evals.cve_grammar import PlantedTarget
 from evals.cve_planting_base import PlantingSpec
 from evals.cve_replay import ReplayOutcome, RunToCheck
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.failure_text import FULL_DETAIL, ReportDetail
-from mcp_auditor.adapters.llm_throttling import ThrottleBreaker, current_breaker
-from mcp_auditor.domain.audited_server import AuditedServer
+from evals.launch_audit import Auditor
 from mcp_auditor.domain.models import (
-    AuditCategory,
-    AuditPayload,
     AuditReport,
     AuditStep,
     MissCause,
     MissedStep,
     ProviderUsage,
-    ToolDefinition,
-    ToolResponse,
 )
-from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.support import test_cve_grammar_given as grammar
 
 (TARGET,) = [target for target in CVE_TARGETS if target.cve_id == "CVE-2025-53109"]
@@ -38,19 +30,21 @@ A_LAUNCH = Launch("x", [])
 
 
 def captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    return display_given.a_captured_console(monkeypatch, cve_audit, audit_attempts)
+    return display_given.a_captured_console(monkeypatch, cve_audit, audit_attempts, launch_audit)
 
 
-def an_auditor(report_detail: ReportDetail = FULL_DETAIL) -> Auditor:
-    return Auditor(FakeLLM([]), FakeLLM([]), budget=10, report_detail=report_detail)
+def an_auditor_reporting(
+    *reports: AuditReport, report_detail: ReportDetail = FULL_DETAIL
+) -> Auditor:
+    return launch_given.an_auditor(report_detail, launch_given.graph_reporting(list(reports)))
 
 
-def a_target_launching(launch: Launch = A_LAUNCH) -> CVETarget:
-    """A target planting nothing and launching no container, handing its graph launch."""
+def a_target_launching() -> CVETarget:
+    """A target planting nothing and launching no container."""
 
     @contextmanager
     def no_container(_tag: str, _spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
-        yield launch
+        yield A_LAUNCH
 
     return dataclasses.replace(TARGET, kept_places=(), builder=no_container)
 
@@ -64,106 +58,20 @@ def a_target_failing_to_launch(error: Exception) -> CVETarget:
     return dataclasses.replace(TARGET, kept_places=(), builder=failing_container)
 
 
-@dataclass
-class AuditWiringSeen:
-    graph_inputs: list[dict[str, object]] = field(default_factory=list[dict[str, object]])
-    tools_filters: list[frozenset[str] | None] = field(default_factory=list[frozenset[str] | None])
-    breakers: list[ThrottleBreaker | None] = field(default_factory=list[ThrottleBreaker | None])
-    timeouts: list[int] = field(default_factory=list[int])
-
-
-def an_audit_reporting(
-    monkeypatch: pytest.MonkeyPatch, report: AuditReport | None = None
-) -> AuditWiringSeen:
-    """Fakes the two imported collaborators, build_graph and connect, and records what they were
-    given."""
-    seen = AuditWiringSeen()
-
-    class FakeGraph:
-        async def ainvoke(self, graph_input: dict[str, object]) -> dict[str, object]:
-            seen.graph_inputs.append(graph_input)
-            seen.breakers.append(current_breaker())
-            return {"audit_report": report or grammar.a_report()}
-
-    def fake_build_graph(*_args: object, **kwargs: Any) -> FakeGraph:
-        seen.tools_filters.append(kwargs["tools_filter"])
-        return FakeGraph()
-
-    monkeypatch.setattr(cve_audit, "build_graph", fake_build_graph)
-    monkeypatch.setattr(cve_audit, "connect", _a_fake_connect(seen.timeouts))
-    return seen
-
-
-def an_audit_on_a_noisy_server(
-    monkeypatch: pytest.MonkeyPatch, *, non_protocol_lines: int, lost_calls: int
-) -> None:
+def an_audit_on_a_noisy_server(*, non_protocol_lines: int, lost_calls: int) -> Auditor:
     """The graph sends one call per lost connection, each answered "Connection closed", to a
     client that read `non_protocol_lines` lines it could not parse."""
-
-    class CallingGraph:
-        def __init__(self, server: AuditedServer) -> None:
-            self._server = server
-
-        async def ainvoke(self, _graph_input: dict[str, object]) -> dict[str, object]:
-            for _ in range(lost_calls):
-                await self._server.attempt(_READ, _A_PAYLOAD)
-            return {"audit_report": grammar.a_report()}
-
-    def calling_build_graph(_llm: object, server: AuditedServer, **_kwargs: object) -> CallingGraph:
-        return CallingGraph(server)
-
-    monkeypatch.setattr(cve_audit, "build_graph", calling_build_graph)
-    monkeypatch.setattr(
-        cve_audit, "connect", _a_fake_connect([], client=_NoisyClient(non_protocol_lines))
+    return launch_given.an_auditor(
+        graphs=launch_given.graph_calling(lost_calls),
+        connect=launch_given.FakeConnect(launch_given.a_noisy_client(non_protocol_lines)),
     )
 
 
-_READ = ToolDefinition(name="read", input_schema={})
-_A_PAYLOAD = AuditPayload(
-    category=AuditCategory.INPUT_VALIDATION, description="a read", arguments={"path": "/x"}
-)
-
-
-class _NoisyClient(FakeMCPClient):
-    def __init__(self, non_protocol_lines: int) -> None:
-        lost = ToolResponse(content="Connection closed", is_error=True, error_type="McpError")
-        super().__init__([_READ], {"read": lost})
-        self.non_protocol_lines = non_protocol_lines
-
-
-def an_audit_raising(
-    monkeypatch: pytest.MonkeyPatch, error: Exception, *, grouped: bool = True
-) -> None:
-    """The graph raises `error`, which leaves the client wrapped in nested groups as the MCP
-    SDK's task groups wrap it, or bare as it leaves a server noisy at shutdown."""
-
-    class RaisingGraph:
-        async def ainvoke(self, _graph_input: dict[str, object]) -> dict[str, object]:
-            raise error
-
-    def raising_build_graph(*_args: object, **_kwargs: object) -> RaisingGraph:
-        return RaisingGraph()
-
-    monkeypatch.setattr(cve_audit, "build_graph", raising_build_graph)
-    monkeypatch.setattr(cve_audit, "connect", _a_fake_connect([], grouped=grouped))
-
-
-def _a_fake_connect(
-    timeouts: list[int], *, grouped: bool = True, client: FakeMCPClient | None = None
-) -> Callable[..., AbstractAsyncContextManager[FakeMCPClient]]:
-    @asynccontextmanager
-    async def fake_connect(
-        _launch: Launch, _stderr: object, *, tool_call_timeout: int
-    ) -> AsyncGenerator[FakeMCPClient]:
-        timeouts.append(tool_call_timeout)
-        try:
-            yield FakeMCPClient([]) if client is None else client
-        except Exception as exc:
-            if not grouped:
-                raise
-            raise ExceptionGroup("client", [ExceptionGroup("session", [exc])]) from None
-
-    return fake_connect
+def an_audit_raising(error: Exception, *, grouped: bool = True) -> Auditor:
+    return launch_given.an_auditor(
+        graphs=launch_given.graph_raising(error),
+        connect=launch_given.FakeConnect(grouped=grouped),
+    )
 
 
 def a_report_missing(*causes: MissCause) -> AuditReport:

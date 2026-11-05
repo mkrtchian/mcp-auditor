@@ -1,11 +1,9 @@
 """One graded audit of a CVE target on its pinned server, for the gated session."""
 
 import dataclasses
-import os
 import subprocess
 from collections import Counter
-from collections.abc import AsyncGenerator, Awaitable, Callable
-from contextlib import asynccontextmanager
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from rich.markup import escape
@@ -18,46 +16,38 @@ from evals.audit_attempts import (
     graded_despite_missed_steps,
     graded_or_incomplete,
 )
-from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
+from evals.cve_environments import Launch
 from evals.cve_grammar import DETECTION_RUNGS, CreditCheck, PlantedTarget, RunGrade, grade_run
 from evals.cve_places import Places, kept_records
 from evals.cve_planting import PlantingFailed
-from evals.cve_recording_client import RecordingClient
-from evals.cve_replay import RecordedCall, ReplayOutcome, RunToCheck, replay_with_causes
+from evals.cve_replay import ReplayOutcome, RunToCheck, replay_with_causes
 from evals.cve_report_units import units_of
 from evals.cve_session_model import AuditTarget, GradedAudit
 from evals.cve_targets import CVETarget
 from evals.eval_display import console
-from evals.failure_text import FULL_DETAIL, ReportDetail
+from evals.failure_text import ReportDetail
+from evals.launch_audit import (
+    Auditor,
+    AuditShape,
+    LaunchAudit,
+    audit_launch,
+    print_lost_connections,
+)
 from evals.metrics import SessionThrottles, blocked_reasons
 from evals.provider_errors import (
     AuditFailed,
     ProviderErrorKind,
     ProviderFatal,
-    audit_failures_unwrapped,
-    classified,
     describe_provider_error,
 )
-from evals.server_health import NO_INCIDENTS, ServerHealth, health_of
+from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
-from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.config import load_settings
-from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
-from mcp_auditor.domain.ports import LLMPort, MCPClientPort
-from mcp_auditor.graph.builder import build_graph
+from mcp_auditor.domain.models import AuditReport, MissCause
 
 
 class LaunchError(Exception):
     """A pinned server failed to launch or install (infra, not a detection miss)."""
-
-
-@dataclass(frozen=True)
-class Auditor:
-    llm: LLMPort
-    judge_llm: LLMPort
-    budget: int
-    report_detail: ReportDetail = FULL_DETAIL
 
 
 @dataclass(frozen=True)
@@ -110,18 +100,19 @@ async def attempt_once(
     health = NO_INCIDENTS
     try:
         async with target.launched(records) as planted:
-            report, calls, health = await _audit(planted.launch, target, auditor, overrides)
-            throttles.count(report, target.cve_id)
-            _print_incidents(target, report, auditor.report_detail)
-            _print_lost_connections(target, health)
+            audit = await _audit(planted.launch, target, auditor, overrides)
+            health = audit.health
+            throttles.count(audit.report, target.cve_id)
+            _print_incidents(target, audit.report, auditor.report_detail)
+            print_lost_connections(target.cve_id, health)
             # Captured before the target's launch is left, so a raising exit of `target.launched`
             # cannot erase a completed run (the client's own teardown error is tolerated inside
             # `connect`). The nonces travel per launch, so the graded target is built here.
             run = RunToCheck(
                 target=target,
                 run_target=PlantedTarget(target.mechanisms, target.aim, planted.nonces),
-                report=report,
-                recorded_calls=calls,
+                report=audit.report,
+                recorded_calls=audit.exchanges,
                 records=records,
             )
     except AuditFailed as failure:
@@ -151,7 +142,7 @@ def _provider_error_attempt(target: CVETarget, failure: AuditFailed) -> Provider
 
 async def _graded(run: RunToCheck, health: ServerHealth) -> GradedAudit | IncompleteAttempt:
     # The replay launches the patched version, so it runs only once the vulnerable one has exited.
-    grade, replayed = await _checked_grade(run)
+    grade, replayed = await checked_grade(run)
     outcome = graded_or_incomplete(grade, run.report)
     if isinstance(outcome, IncompleteAttempt):
         return dataclasses.replace(outcome, health=health)
@@ -161,7 +152,7 @@ async def _graded(run: RunToCheck, health: ServerHealth) -> GradedAudit | Incomp
     )
 
 
-async def _checked_grade(
+async def checked_grade(
     run: RunToCheck,
     *,
     replay: Callable[[RunToCheck], Awaitable[ReplayOutcome]] = replay_with_causes,
@@ -193,14 +184,6 @@ def _describe_unchecked_replay(replayed: ReplayOutcome) -> str:
     return f"{replayed.unchecked_reason} ({by_cause})"
 
 
-def _print_lost_connections(target: CVETarget, health: ServerHealth) -> None:
-    if health.lost_connection_responses > 0:
-        console.print(
-            f"[yellow]{target.cve_id}: server connection lost on"
-            f" {health.lost_connection_responses} call(s)[/yellow]"
-        )
-
-
 def _print_incidents(target: CVETarget, report: AuditReport, detail: ReportDetail) -> None:
     for reason in blocked_reasons(report):
         console.print(f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]")
@@ -216,49 +199,17 @@ def _print_incidents(target: CVETarget, report: AuditReport, detail: ReportDetai
 
 async def _audit(
     launch: Launch, target: CVETarget, auditor: Auditor, overrides: RunOverrides | None
-) -> tuple[AuditReport, list[RecordedCall], ServerHealth]:
+) -> LaunchAudit:
     forced = overrides or RunOverrides(None, None, None)
-    chain_budget = _either(forced.chain_budget, launch.chain_budget)
-    max_chain_steps = _either(forced.max_chain_steps, launch.max_chain_steps)
+    shape = AuditShape(
+        tools_filter=None if forced.audit_every_tool else target.tools_filter,
+        chain_budget=forced.chain_budget,
+        max_chain_steps=forced.max_chain_steps,
+        tool_call_timeout=forced.tool_call_timeout,
+    )
     try:
-        with audit_failures_unwrapped():
-            async with _silent_client(launch, overrides) as mcp_client:
-                recorder = RecordingClient(mcp_client)
-                graph = build_graph(
-                    auditor.llm,
-                    AuditedServer(recorder),
-                    judge_llm=auditor.judge_llm,
-                    tools_filter=None if forced.audit_every_tool else target.tools_filter,
-                )
-                with one_audit():
-                    result = await classified(
-                        graph.ainvoke(  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-                            {
-                                "target": f"{launch.command} {' '.join(launch.args)}",
-                                "test_budget": auditor.budget,
-                                "attack_context": AttackContext(),
-                                "chain_budget": chain_budget,
-                                "max_chain_steps": max_chain_steps,
-                            }
-                        )
-                    )
-                health = health_of(mcp_client, recorder.exchanges)
-                return result["audit_report"], recorder.exchanges, health
+        return await audit_launch(launch, auditor, shape)
     except AuditFailed:
         raise
     except Exception as exc:
         raise LaunchError(str(exc)) from exc
-
-
-@asynccontextmanager
-async def _silent_client(
-    launch: Launch, overrides: RunOverrides | None
-) -> AsyncGenerator[MCPClientPort]:
-    timeout = _either(None if overrides is None else overrides.tool_call_timeout, TOOL_CALL_TIMEOUT)
-    with open(os.devnull, "w") as devnull:
-        async with connect(launch, devnull, tool_call_timeout=timeout) as client:
-            yield client
-
-
-def _either(forced: int | None, own: int) -> int:
-    return own if forced is None else forced

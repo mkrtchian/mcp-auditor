@@ -2,7 +2,6 @@
 refused or unreadable step is kept and counted downstream, a launch failure, a throttled attempt
 or a transient provider error is retried, and a fatal provider error stops the run."""
 
-import os
 from collections.abc import Awaitable, Callable, Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -11,11 +10,11 @@ from rich.markup import escape
 
 from evals.audit_attempts import INCOMPLETE_ATTEMPTS, describe_miss_causes
 from evals.concurrency import entered_in_thread
-from evals.cve_audit import Auditor, RunOverrides
-from evals.cve_environments import TOOL_CALL_TIMEOUT, Launch, connect
-from evals.cve_recording_client import RecordingClient
+from evals.cve_audit import RunOverrides
+from evals.cve_environments import Launch
 from evals.eval_display import console
 from evals.failure_text import ReportDetail
+from evals.launch_audit import Auditor, AuditShape, audit_launch, print_lost_connections
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
@@ -29,15 +28,10 @@ from evals.provider_errors import (
     AuditFailed,
     ProviderErrorKind,
     ProviderFatal,
-    audit_failures_unwrapped,
-    classified,
     describe_provider_error,
 )
-from evals.server_health import ServerHealth, health_of
-from mcp_auditor.adapters.llm_throttling import one_audit
-from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AttackContext, AuditReport, MissCause
-from mcp_auditor.graph.builder import build_graph
+from evals.server_health import ServerHealth
+from mcp_auditor.domain.models import AuditReport, MissCause
 
 NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries
 
@@ -111,10 +105,13 @@ async def audit_once(
     """Raises `ProviderFatal` on a provider error no retry cures."""
     # The provisioner blocks for minutes and `DORIS_LAUNCH_LOCK` is a thread lock, so a plain
     # `with` inside the coroutine would freeze the loop and deadlock the server's gathered runs.
+    overrides = auditor.overrides
+    shape = AuditShape(
+        None, overrides.chain_budget, overrides.max_chain_steps, overrides.tool_call_timeout
+    )
     try:
-        with audit_failures_unwrapped():
-            async with entered_in_thread(nuisance_environment(server, backends)) as launch:
-                audit = await _audit(launch, auditor.auditor, auditor.overrides)
+        async with entered_in_thread(nuisance_environment(server, backends)) as launch:
+            audit = await audit_launch(launch, auditor.auditor, shape)
     except AuditFailed as failure:
         if failure.kind is ProviderErrorKind.FATAL:
             raise ProviderFatal(failure.cause) from failure.cause
@@ -123,45 +120,8 @@ async def audit_once(
         return LaunchFailed(auditor.auditor.report_detail.describe(exc))
     auditor.throttles.count(audit.report)
     _print_incidents(server, audit.report, auditor.auditor.report_detail)
-    _print_lost_connections(server, audit.health)
-    return audit
-
-
-async def _audit(launch: Launch, auditor: Auditor, overrides: RunOverrides) -> NuisanceAudit:
-    timeout = _either(overrides.tool_call_timeout, TOOL_CALL_TIMEOUT)
-    with open(os.devnull, "w") as devnull:
-        async with connect(launch, devnull, tool_call_timeout=timeout) as client:
-            recorder = RecordingClient(client)
-            graph = build_graph(
-                auditor.llm, AuditedServer(recorder), judge_llm=auditor.judge_llm, tools_filter=None
-            )
-            with one_audit():
-                result = await classified(
-                    graph.ainvoke(  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-                        {
-                            "target": f"{launch.command} {' '.join(launch.args)}",
-                            "test_budget": auditor.budget,
-                            "attack_context": AttackContext(),
-                            "chain_budget": _either(overrides.chain_budget, launch.chain_budget),
-                            "max_chain_steps": _either(
-                                overrides.max_chain_steps, launch.max_chain_steps
-                            ),
-                        }
-                    )
-                )
-            return NuisanceAudit(result["audit_report"], health_of(client, recorder.exchanges))
-
-
-def _either(forced: int | None, own: int) -> int:
-    return own if forced is None else forced
-
-
-def _print_lost_connections(server: AdmittedServer, health: ServerHealth) -> None:
-    if health.lost_connection_responses > 0:
-        console.print(
-            f"[yellow]{server.server_package}: server connection lost on"
-            f" {health.lost_connection_responses} call(s)[/yellow]"
-        )
+    print_lost_connections(server.server_package, audit.health)
+    return NuisanceAudit(audit.report, audit.health)
 
 
 def _print_incidents(server: AdmittedServer, report: AuditReport, detail: ReportDetail) -> None:

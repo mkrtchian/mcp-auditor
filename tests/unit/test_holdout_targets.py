@@ -30,6 +30,7 @@ _INSTRUMENTS = (
     "run_cve_benchmark",
     "cve_benchmark_modes",
     "admission_calibration",
+    "launch_audit",
 )
 
 _EVALS = Path(__file__).resolve().parents[2] / "evals"
