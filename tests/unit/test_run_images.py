@@ -56,3 +56,14 @@ def test_a_sweep_whose_listing_fails_warns_and_removes_nothing(
 
     assert removed == []
     assert "could not list" in capsys.readouterr().out
+
+
+def test_a_sweep_removes_the_listed_containers_and_says_how_many(
+    capsys: pytest.CaptureFixture[str],
+):
+    removed: list[str] = []
+
+    sweep_containers(["app"], lambda _tags: ["a", "b"], removed.extend)
+
+    assert removed == ["a", "b"]
+    assert "removed 2 containers of the run's images left running" in capsys.readouterr().out

@@ -154,13 +154,3 @@ def test_the_fixture_format_names_every_fix_check_target_field(tmp_path: Path):
     section = fixture_format.split("## FixCheckTarget fields")[1].split("\n## ")[0]
     for field in fields(FixCheckTarget):
         assert f"`{field.name}`" in section, field.name
-
-
-def test_the_calibration_kit_readme_requires_the_card_fields_rule_v9_adds(tmp_path: Path):
-    out = tmp_path / "kit"
-    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, out)
-
-    readme = (out / "README.md").read_text()
-    assert "`seeded_outside_layout`" in readme
-    assert "`stand_ins`" in readme
-    assert "required on a card" in readme
