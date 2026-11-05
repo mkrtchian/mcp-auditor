@@ -1,19 +1,21 @@
 import importlib
 import re
 import threading
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from contextlib import AbstractContextManager
 from dataclasses import replace
 
-import pytest
-
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals import nuisance_provisioners
 from evals.backend_lifecycle import BackendLifecycle
+from evals.cve_environments import Launch
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.holdout_kit.kit_backend_launch import lifecycle_of
 from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_backends import BACKENDS
+from evals.nuisance_provisioners import provisioner_of
 from evals.responder_backend import Responder
+
+type Launcher = Callable[[BackendLifecycle], AbstractContextManager[Launch]]
 
 
 def a_host() -> PlantingHost:
@@ -36,13 +38,8 @@ def a_server_with_backend(key: str) -> AdmittedServer:
     return admission_given.with_a_backend(admission_given.an_admission().servers[0], backend)
 
 
-def a_lifecycle_without_side_effects(key: str, monkeypatch: pytest.MonkeyPatch) -> BackendLifecycle:
-    """The key's lifecycle with no-op ensure and remove, the provisioner's own ensure and remove
-    replaced by the same no-ops, so both launches build their argv and touch no Docker."""
-    lifecycle = lifecycle_of(key)
-    monkeypatch.setattr(nuisance_provisioners, lifecycle.ensure.__name__, _noop_ensure)
-    monkeypatch.setattr(nuisance_provisioners, lifecycle.remove.__name__, _noop_remove)
-    return replace(lifecycle, ensure=_noop_ensure, remove=_noop_remove)
+def a_lifecycle_without_side_effects(key: str) -> BackendLifecycle:
+    return replace(lifecycle_of(key), ensure=_noop_ensure, remove=_noop_remove)
 
 
 def _noop_ensure() -> None:
@@ -51,6 +48,10 @@ def _noop_ensure() -> None:
 
 def _noop_remove(name: str) -> None:
     pass
+
+
+def through_the_provisioner(lifecycle: BackendLifecycle) -> AbstractContextManager[Launch]:
+    return provisioner_of(lifecycle)(admission_given.an_admission().servers[0])
 
 
 def with_the_name_masked(args: Sequence[str]) -> list[str]:

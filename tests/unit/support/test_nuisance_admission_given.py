@@ -1,5 +1,5 @@
-from collections.abc import Callable, Generator
-from contextlib import contextmanager
+import threading
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -7,9 +7,9 @@ import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import cve_baseline
+from evals.backend_lifecycle import BackendLifecycle
 from evals.census_classification import Classification
 from evals.census_work import AgentRecord, AgentRole
-from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.holdout_census import CLASSIFIERS, HoldoutCensus
@@ -147,15 +147,28 @@ def with_host(server: AdmittedServer, host: PlantingHost) -> AdmittedServer:
     return server.model_copy(update={"host": host})
 
 
-@contextmanager
-def _a_fake_provisioner(server: AdmittedServer) -> Generator[Launch]:
-    yield Launch("docker", ["run", "fake"])
+def a_fake_lifecycle(key: str = "fake") -> BackendLifecycle:
+    return BackendLifecycle(key, threading.Lock(), _no_ensure, _fake_server_args, _no_remove)
+
+
+def _no_ensure() -> None:
+    pass
+
+
+def _fake_server_args(
+    name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
+) -> list[str]:
+    return ["run", "fake"]
+
+
+def _no_remove(name: str) -> None:
+    pass
 
 
 def a_backend_registry() -> dict[str, RegisteredBackend]:
     return {
         "fake": RegisteredBackend(
-            provisioner=_a_fake_provisioner,
+            lifecycle=a_fake_lifecycle(),
             network="fake-net",
             image="fake/backend:1.0",
             built_services=(),

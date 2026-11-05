@@ -23,6 +23,7 @@ from evals.nuisance_confinement import single_container_run_args
 from evals.nuisance_counter import flagged_tools
 from evals.nuisance_counting import counted_tools
 from evals.nuisance_images import image_tag
+from evals.nuisance_provisioners import provisioner_of
 from evals.nuisance_results import NotRunCause
 from evals.provider_errors import (
     AuditFailed,
@@ -48,13 +49,13 @@ def nuisance_environment(
     server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
 ) -> Generator[Launch]:
     """The launch of one server on its patched image. With no backend fixture it is the current
-    single-container launch; with one it delegates to the registered provisioner, which brings
-    the backend up and yields the server launch wired to it. The provisioner owns the closed network
-    that joins the server to its backend and to nothing else."""
+    single-container launch; with one it delegates to the provisioner of the registered
+    lifecycle, which brings the backend up and yields the server launch wired to it. The lifecycle
+    owns the closed network that joins the server to its backend and to nothing else."""
     if server.backend is None:
         yield _single_container_launch(server)
     else:
-        with backends[server.backend.provisioner].provisioner(server) as launch:
+        with provisioner_of(backends[server.backend.provisioner].lifecycle)(server) as launch:
             yield launch
 
 

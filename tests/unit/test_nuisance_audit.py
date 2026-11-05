@@ -1,8 +1,9 @@
 import asyncio
 import os
 import threading
-from collections.abc import AsyncGenerator, Callable, Generator
-from contextlib import AbstractAsyncContextManager, asynccontextmanager, contextmanager
+from collections.abc import AsyncGenerator, Callable
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -59,6 +60,7 @@ from tests.unit.support.test_nuisance_admission_given import (
     FIRST_FLAW,
     SECOND_FLAW,
     a_backend_registry,
+    a_fake_lifecycle,
     a_flaw_record,
     a_server,
     with_a_backend,
@@ -199,16 +201,16 @@ async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
 
 
 async def test_two_concurrent_environments_of_one_backend_server_both_complete():
-    lock = threading.Lock()
+    held = threading.Lock()
 
-    @contextmanager
-    def blocking_provisioner(server: AdmittedServer) -> Generator[Launch]:
-        with lock:
-            yield Launch("docker", ["run", "blocked"])
+    def hold() -> None:
+        held.acquire()
 
-    registry = {
-        "block": RegisteredBackend(blocking_provisioner, "fake-net", "fake/backend:1.0", (), ())
-    }
+    def release(name: str) -> None:
+        held.release()
+
+    blocking = replace(a_fake_lifecycle("block"), ensure=hold, remove=release)
+    registry = {"block": RegisteredBackend(blocking, "fake-net", "fake/backend:1.0", (), ())}
     server = with_a_backend(
         SERVER, BackendFixture(provisioner="block", image="fake/backend:1.0", network="fake-net")
     )
@@ -449,14 +451,11 @@ def _an_auditor(report_detail: ReportDetail = FULL_DETAIL) -> NuisanceAuditor:
 def _a_server_whose_provisioner_raises(
     error: Exception,
 ) -> tuple[AdmittedServer, dict[str, RegisteredBackend]]:
-    @contextmanager
-    def failing_provisioner(server: AdmittedServer) -> Generator[Launch]:
+    def fail() -> None:
         raise error
-        yield Launch("docker", [])
 
-    registry = {
-        "fail": RegisteredBackend(failing_provisioner, "fake-net", "fake/backend:1.0", (), ())
-    }
+    failing = replace(a_fake_lifecycle("fail"), ensure=fail)
+    registry = {"fail": RegisteredBackend(failing, "fake-net", "fake/backend:1.0", (), ())}
     server = with_a_backend(
         SERVER, BackendFixture(provisioner="fail", image="fake/backend:1.0", network="fake-net")
     )

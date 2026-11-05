@@ -1,8 +1,8 @@
 """The fixture fingerprint of an admitted nuisance server, built on the Dockerfile identity
 machinery of `cve_images`.
 
-It lives apart from `nuisance_images` because it reads the backend registry, whose provisioners
-import `nuisance_images`.
+It lives apart from `nuisance_images` because it reads the backend registry, which
+`nuisance_images` stays free of.
 """
 
 from __future__ import annotations
