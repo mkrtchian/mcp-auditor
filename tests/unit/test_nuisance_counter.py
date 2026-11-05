@@ -1,5 +1,4 @@
 import tests.unit.support.test_cve_grammar_given as grammar_given
-import tests.unit.support.test_nuisance_counter_given as given
 from evals import cve_baseline
 from evals.cve_grammar import VALID_CATEGORIES, MechanismClass
 from evals.cve_units import JudgeCategory, Verdict
@@ -19,8 +18,8 @@ _INJECTION = JudgeCategory(grammar_given.INJECTION.value)
 
 
 def test_every_case_and_chain_gives_a_verdict_carrying_its_tool():
-    report = given.a_report_of_tools(
-        given.a_tool_report(
+    report = grammar_given.a_report_of_tools(
+        grammar_given.a_tool_report(
             "read_file",
             cases=[
                 grammar_given.a_case(),
@@ -28,7 +27,7 @@ def test_every_case_and_chain_gives_a_verdict_carrying_its_tool():
             ],
             chains=[grammar_given.a_chain([grammar_given.a_step()], verdict=grammar_given.PASS)],
         ),
-        given.a_tool_report(
+        grammar_given.a_tool_report(
             "list_dir", cases=[grammar_given.a_case(category=grammar_given.INJECTION)]
         ),
     )
@@ -55,9 +54,11 @@ def test_a_counted_tool_failing_outside_its_categories_is_not_flagged():
 
 
 def test_a_fail_on_a_tool_that_is_not_counted_flags_nothing():
-    report = given.a_report_of_tools(
-        given.a_tool_report("read_file", cases=[grammar_given.a_case(verdict=grammar_given.PASS)]),
-        given.a_tool_report("list_dir", cases=[grammar_given.a_case()]),
+    report = grammar_given.a_report_of_tools(
+        grammar_given.a_tool_report(
+            "read_file", cases=[grammar_given.a_case(verdict=grammar_given.PASS)]
+        ),
+        grammar_given.a_tool_report("list_dir", cases=[grammar_given.a_case()]),
     )
 
     assert flagged_tools(report, {"read_file": _READ_CATEGORIES}) == frozenset()
@@ -76,13 +77,13 @@ def test_a_chain_judged_fail_flags_its_counted_tool():
 
 
 def test_the_raw_count_takes_every_fail_on_every_tool():
-    report = given.a_report_of_tools(
-        given.a_tool_report(
+    report = grammar_given.a_report_of_tools(
+        grammar_given.a_tool_report(
             "read_file",
             cases=[grammar_given.a_case(), grammar_given.a_case(verdict=grammar_given.PASS)],
             chains=[grammar_given.a_chain([grammar_given.a_step()])],
         ),
-        given.a_tool_report(
+        grammar_given.a_tool_report(
             "list_dir", cases=[grammar_given.a_case(category=grammar_given.RESOURCE_ABUSE)]
         ),
     )
@@ -97,8 +98,8 @@ def test_the_raw_count_of_a_report_with_no_judged_case_is_zero():
 
 
 def test_the_count_on_listed_tools_takes_each_fail_on_a_listed_tool_in_its_categories():
-    report = given.a_report_of_tools(
-        given.a_tool_report(
+    report = grammar_given.a_report_of_tools(
+        grammar_given.a_tool_report(
             "read_file",
             cases=[
                 grammar_given.a_case(),
@@ -107,7 +108,7 @@ def test_the_count_on_listed_tools_takes_each_fail_on_a_listed_tool_in_its_categ
             ],
             chains=[grammar_given.a_chain([grammar_given.a_step()])],
         ),
-        given.a_tool_report("list_dir", cases=[grammar_given.a_case()]),
+        grammar_given.a_tool_report("list_dir", cases=[grammar_given.a_case()]),
     )
 
     assert JudgeCategory(grammar_given.RESOURCE_ABUSE.value) not in _READ_CATEGORIES

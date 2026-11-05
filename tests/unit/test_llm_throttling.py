@@ -48,9 +48,7 @@ class TestThrottleOf:
         ],
     )
     def test_a_billing_limit_is_no_throttle(self, code: str):
-        body = {"message": "You exceeded your current quota", "code": code}
-
-        assert throttle_of(given.an_openai_rate_limit(body=body)) is None
+        assert throttle_of(given.an_openai_billing_limit(code)) is None
 
     def test_a_rate_limit_of_the_insufficient_quota_type_is_no_throttle(self):
         body = {"message": "Credit balance exhausted", "type": "insufficient_quota", "code": None}

@@ -2,8 +2,8 @@ from io import StringIO
 from typing import Any
 
 import pytest
-from rich.console import Console
 
+import tests.unit.support.test_eval_display_given as display_given
 import tests.unit.support.test_judge_outcomes_given as outcomes_given
 from evals import judge_display
 from evals.gate import CellComparison, CellOutcome, FlipCause
@@ -14,9 +14,7 @@ FLIPPED_ID = outcomes_given.FLIPPED_ID
 
 
 def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    buffer = StringIO()
-    monkeypatch.setattr(judge_display, "console", Console(file=buffer, width=200))
-    return buffer
+    return display_given.a_captured_console(monkeypatch, judge_display)
 
 
 def a_result_with_a_flip_not_reproduced() -> JudgeSessionResult:

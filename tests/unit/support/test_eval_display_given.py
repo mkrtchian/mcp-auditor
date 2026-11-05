@@ -1,4 +1,5 @@
 from io import StringIO
+from types import ModuleType
 
 import pytest
 from rich.console import Console
@@ -11,9 +12,13 @@ from evals.gate_verdict import GateMode, GateResult, GateVerdict
 from evals.metrics import EvalMetrics
 
 
-def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
+def a_captured_console(
+    monkeypatch: pytest.MonkeyPatch, *modules: ModuleType, width: int = 200
+) -> StringIO:
     buffer = StringIO()
-    monkeypatch.setattr(eval_display, "console", Console(file=buffer, width=200))
+    shared = Console(file=buffer, width=width)
+    for module in (eval_display, *modules):
+        monkeypatch.setattr(module, "console", shared)
     return buffer
 
 

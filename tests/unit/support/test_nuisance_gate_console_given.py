@@ -1,9 +1,9 @@
 from io import StringIO
 
 import pytest
-from rich.console import Console
 
-from evals import eval_display, nuisance_gate_console
+import tests.unit.support.test_eval_display_given as display_given
+from evals import nuisance_gate_console
 from evals.nuisance_gate_report import NuisanceGateReport
 from tests.unit.support.test_nuisance_gate_report_given import (
     a_held_server_beside_a_regression,
@@ -14,11 +14,7 @@ from tests.unit.support.test_nuisance_gate_session_given import KUBERNETES
 
 
 def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    buffer = StringIO()
-    shared = Console(file=buffer, width=200)
-    monkeypatch.setattr(nuisance_gate_console, "console", shared)
-    monkeypatch.setattr(eval_display, "console", shared)
-    return buffer
+    return display_given.a_captured_console(monkeypatch, nuisance_gate_console)
 
 
 def a_red_report(throttled_requests: int = 0) -> NuisanceGateReport:

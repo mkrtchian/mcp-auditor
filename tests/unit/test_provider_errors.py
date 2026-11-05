@@ -21,7 +21,7 @@ TRANSIENT = ProviderErrorKind.TRANSIENT
 @pytest.mark.parametrize(
     "error",
     [
-        given.an_openai_billing_limit(),
+        billing.an_openai_billing_limit(),
         billing.an_anthropic_billing_error(),
         billing.an_anthropic_spend_limit_reached(),
         billing.an_anthropic_spend_cap_reached(),

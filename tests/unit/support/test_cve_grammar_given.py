@@ -124,12 +124,24 @@ def a_report(
     chains: list[AttackChain] | None = None,
     target: str = "test",
 ) -> AuditReport:
-    tool_report = ToolReport(
-        tool=ToolDefinition(name="read_file", description="test", input_schema={"type": "object"}),
+    report = a_report_of_tools(a_tool_report("read_file", cases, chains))
+    return report.model_copy(update={"target": target})
+
+
+def a_tool_report(
+    name: str, cases: list[TestCase] | None = None, chains: list[AttackChain] | None = None
+) -> ToolReport:
+    return ToolReport(
+        tool=ToolDefinition(name=name, description="test", input_schema={"type": "object"}),
         cases=cases or [],
         chains=chains or [],
     )
-    return AuditReport(target=target, tool_reports=[tool_report], provider_usage=ProviderUsage())
+
+
+def a_report_of_tools(*tool_reports: ToolReport) -> AuditReport:
+    return AuditReport(
+        target="test", tool_reports=list(tool_reports), provider_usage=ProviderUsage()
+    )
 
 
 def a_detected_run() -> RunGrade:

@@ -2,14 +2,14 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
-from rich.console import Console
 
 import tests.unit.support.test_census_draw_given as draw_given
+import tests.unit.support.test_eval_display_given as display_given
 import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals import eval_display, nuisance_gate_command, nuisance_gate_console
+from evals import nuisance_gate_command, nuisance_gate_console
 from evals.baseline import BaselineStatus
 from evals.eval_session import TreeState
 from evals.gate_verdict import GateVerdict
@@ -83,11 +83,9 @@ def _gate_arguments(
 
 
 def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    buffer = StringIO()
-    shared = Console(file=buffer, width=400)
-    for module in (nuisance_gate_command, nuisance_gate_console, eval_display):
-        monkeypatch.setattr(module, "console", shared)
-    return buffer
+    return display_given.a_captured_console(
+        monkeypatch, nuisance_gate_command, nuisance_gate_console, width=400
+    )
 
 
 def a_green_recording_writing(

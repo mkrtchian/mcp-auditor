@@ -6,8 +6,8 @@ from io import StringIO
 from typing import Any
 
 import pytest
-from rich.console import Console
 
+import tests.unit.support.test_eval_display_given as display_given
 from evals import audit_attempts, cve_audit
 from evals.audit_attempts import AttemptOutcome
 from evals.cve_audit import Auditor
@@ -38,11 +38,7 @@ A_LAUNCH = Launch("x", [])
 
 
 def captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    output = StringIO()
-    console = Console(file=output, width=200)
-    monkeypatch.setattr(cve_audit, "console", console)
-    monkeypatch.setattr(audit_attempts, "console", console)
-    return output
+    return display_given.a_captured_console(monkeypatch, cve_audit, audit_attempts)
 
 
 def an_auditor(report_detail: ReportDetail = FULL_DETAIL) -> Auditor:

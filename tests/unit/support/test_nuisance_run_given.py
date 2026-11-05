@@ -8,7 +8,6 @@ import pytest
 
 import tests.unit.support.test_cve_grammar_given as grammar
 import tests.unit.support.test_nuisance_admission_given as admission
-import tests.unit.support.test_nuisance_counter_given as counter
 from evals import nuisance_vetting
 from evals.cve_environments import Launch
 from evals.cve_grammar import MechanismClass
@@ -112,7 +111,7 @@ def a_report(
     """One tool report on the counted tool: a FAIL in a category of its class when flagged, a
     PASS otherwise, and a missed step of the given cause."""
     verdict = grammar.FAIL if flagged else grammar.PASS
-    tool_report = counter.a_tool_report(COUNTED_TOOL, cases=[grammar.a_case(verdict=verdict)])
+    tool_report = grammar.a_tool_report(COUNTED_TOOL, cases=[grammar.a_case(verdict=verdict)])
     steps = (
         []
         if missed is None

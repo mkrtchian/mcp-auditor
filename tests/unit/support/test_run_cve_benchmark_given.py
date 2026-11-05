@@ -2,13 +2,12 @@ from collections.abc import Callable
 from io import StringIO
 
 import pytest
-from rich.console import Console
 
+import tests.unit.support.test_eval_display_given as display_given
 from evals import (
     cve_benchmark_modes,
     cve_console,
     cve_recording_console,
-    eval_display,
     run_cve_benchmark,
 )
 from evals.baseline import BaselineStatus
@@ -83,11 +82,9 @@ def a_session_under_priced_models(
 
 
 def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    buffer = StringIO()
-    shared = Console(file=buffer, width=400)
-    for module in (run_cve_benchmark, cve_console, cve_recording_console, eval_display):
-        monkeypatch.setattr(module, "console", shared)
-    return buffer
+    return display_given.a_captured_console(
+        monkeypatch, run_cve_benchmark, cve_console, cve_recording_console, width=400
+    )
 
 
 def a_recording_session_writing(monkeypatch: pytest.MonkeyPatch, status: BaselineStatus) -> None:

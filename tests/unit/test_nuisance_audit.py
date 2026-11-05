@@ -3,13 +3,12 @@ import os
 import threading
 from collections.abc import AsyncGenerator, Callable, Generator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager, contextmanager
-from io import StringIO
 from typing import Any
 
 import pytest
 from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
-from rich.console import Console
 
+import tests.unit.support.test_eval_display_given as display_given
 from evals import nuisance_audit as nuisance_audit_module
 from evals.concurrency import entered_in_thread
 from evals.cve_audit import Auditor, RunOverrides
@@ -149,7 +148,7 @@ async def test_a_launch_failure_on_a_nuisance_run_carries_the_error_type_without
 async def test_a_missed_step_on_a_nuisance_run_prints_its_cause_without_the_provider_message(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = _captured_console(monkeypatch)
+    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     refused = _missing_a_step(_a_report_throttled(0), MissCause.PROVIDER_REFUSAL, "secret-nonce")
     _audits_reporting(monkeypatch, [refused])
 
@@ -162,7 +161,7 @@ async def test_a_missed_step_on_a_nuisance_run_prints_its_cause_without_the_prov
 async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttled_requests(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     throttled = _missing_a_step(_a_report_throttled(3), MissCause.PROVIDER_THROTTLED)
     clean = _a_report_throttled(2)
     _audits_reporting(monkeypatch, [throttled, clean])
@@ -178,7 +177,7 @@ async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttle
 async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = _captured_console(monkeypatch)
+    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     _audits_on_a_noisy_server(monkeypatch, non_protocol_lines=2, lost_calls=1)
 
     outcome = await audit_once(SERVER, _an_auditor())
@@ -191,7 +190,7 @@ async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection
 async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = _captured_console(monkeypatch)
+    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     _audits_on_a_noisy_server(monkeypatch, non_protocol_lines=2, lost_calls=0)
 
     await audit_once(SERVER, _an_auditor())
@@ -222,7 +221,7 @@ async def test_two_concurrent_environments_of_one_backend_server_both_complete()
 
 
 async def test_a_clean_report_stands_at_the_first_call(monkeypatch: pytest.MonkeyPatch):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     audit = _audited(grammar.a_report())
     attempt = _ScriptedAttempts([audit])
 
@@ -233,7 +232,7 @@ async def test_a_clean_report_stands_at_the_first_call(monkeypatch: pytest.Monke
 
 
 async def test_a_refused_step_with_a_fail_is_kept(monkeypatch: pytest.MonkeyPatch):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     report = _missing_a_step(grammar.a_report([grammar.a_case()]), MissCause.PROVIDER_REFUSAL)
     audit = _audited(report)
     attempt = _ScriptedAttempts([audit])
@@ -247,7 +246,7 @@ async def test_a_refused_step_with_a_fail_is_kept(monkeypatch: pytest.MonkeyPatc
 async def test_an_unreadable_step_with_no_fail_is_kept_as_incomplete(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     report = _missing_a_step(grammar.a_report(), MissCause.UNREADABLE_ANSWER)
 
     audit = _audited(report)
@@ -263,7 +262,7 @@ def test_a_report_with_no_missed_step_is_complete():
 
 
 async def test_a_launch_failing_at_every_attempt_drops_the_run(monkeypatch: pytest.MonkeyPatch):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     attempt = _ScriptedAttempts([LaunchFailed("no image")] * 3)
 
     outcome = await nuisance_audit(SERVER, attempt)
@@ -273,7 +272,7 @@ async def test_a_launch_failing_at_every_attempt_drops_the_run(monkeypatch: pyte
 
 
 async def test_a_run_throttled_at_any_attempt_drops_as_throttled(monkeypatch: pytest.MonkeyPatch):
-    output = _captured_console(monkeypatch)
+    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     throttled = _missing_a_step(grammar.a_report(), MissCause.PROVIDER_THROTTLED)
 
     attempt = _ScriptedAttempts([_PROVIDER_ERROR, LaunchFailed("no image"), _audited(throttled)])
@@ -288,7 +287,7 @@ async def test_a_run_throttled_at_any_attempt_drops_as_throttled(monkeypatch: py
 async def test_a_launch_failure_is_retried_and_a_later_report_stands(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     audit = _audited(grammar.a_report())
     attempt = _ScriptedAttempts([LaunchFailed("no image"), audit])
 
@@ -339,7 +338,7 @@ async def test_a_transient_provider_error_is_named_without_its_message(
 async def test_a_fatal_provider_error_of_an_attempt_stops_the_run_at_once(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     attempt = _ScriptedAttempts([ProviderFatal(ModelAuthenticationError("invalid key"))])
 
     with pytest.raises(ProviderFatal):
@@ -351,7 +350,7 @@ async def test_a_fatal_provider_error_of_an_attempt_stops_the_run_at_once(
 async def test_a_provider_error_at_every_attempt_drops_the_run_as_a_provider_error(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = _captured_console(monkeypatch)
+    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     attempt = _ScriptedAttempts([_PROVIDER_ERROR] * NUISANCE_INFRA_ATTEMPTS)
 
     outcome = await nuisance_audit(SERVER, attempt)
@@ -364,7 +363,7 @@ async def test_a_provider_error_at_every_attempt_drops_the_run_as_a_provider_err
 async def test_a_provider_error_is_retried_and_a_later_report_stands(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     audit = _audited(grammar.a_report())
 
     outcome = await nuisance_audit(SERVER, _ScriptedAttempts([_PROVIDER_ERROR, audit]))
@@ -375,7 +374,7 @@ async def test_a_provider_error_is_retried_and_a_later_report_stands(
 async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provider_error(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     no_image = LaunchFailed("no image")
 
     outcome = await nuisance_audit(SERVER, _ScriptedAttempts([no_image, _PROVIDER_ERROR, no_image]))
@@ -386,7 +385,7 @@ async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provide
 async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refused_step(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     report = run_given.a_report(True, missed=MissCause.PROVIDER_REFUSAL)
     audit = _ScriptedAudits([_audited(report)])
 
@@ -401,7 +400,7 @@ async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refused_step(
 async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = _captured_console(monkeypatch)
+    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     clean = run_given.a_report(False)
     unreadable = run_given.a_report(False, missed=MissCause.UNREADABLE_ANSWER)
     audit = _ScriptedAudits([_audited(unreadable), _audited(clean)])
@@ -418,7 +417,7 @@ async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
 async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = _captured_console(monkeypatch)
+    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     incomplete = run_given.a_report(False, missed=MissCause.PROVIDER_REFUSAL)
     audit = _ScriptedAudits([_audited(incomplete)] * 3)
 
@@ -430,7 +429,7 @@ async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
 
 
 async def test_a_dropped_gate_run_does_not_complete_at_once(monkeypatch: pytest.MonkeyPatch):
-    _captured_console(monkeypatch)
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module)
     audit = _ScriptedAudits([DroppedRun(NotRunCause.THROTTLED)])
 
     run = await gate_run(run_given.a_server(), audit)
@@ -589,9 +588,3 @@ class _ScriptedAudits:
     async def __call__(self) -> NuisanceAudit | DroppedRun:
         self.calls += 1
         return self._outcomes.pop(0)
-
-
-def _captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    output = StringIO()
-    monkeypatch.setattr(nuisance_audit_module, "console", Console(file=output, width=200))
-    return output

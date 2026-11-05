@@ -21,6 +21,10 @@ def an_openai_rate_limit(
     return openai.RateLimitError("Error code: 429 - slow down", response=response, body=body)
 
 
+def an_openai_billing_limit(code: str = "insufficient_quota") -> openai.RateLimitError:
+    return an_openai_rate_limit(body={"message": "You exceeded your current quota", "code": code})
+
+
 def an_anthropic_rate_limit(headers: dict[str, str] | None = None) -> anthropic.RateLimitError:
     response = httpx2.Response(429, headers=headers, request=httpx2.Request("POST", _URL))
     return anthropic.RateLimitError("Error code: 429 - slow down", response=response, body=None)

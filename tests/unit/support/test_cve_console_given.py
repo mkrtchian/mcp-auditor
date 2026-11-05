@@ -2,10 +2,10 @@ from datetime import date
 from io import StringIO
 
 import pytest
-from rich.console import Console
 
 import tests.unit.support.test_cve_oracle_given as oracle_given
-from evals import cve_console, eval_display
+import tests.unit.support.test_eval_display_given as display_given
+from evals import cve_console
 from evals.cve_gate import CVEGateResult, CVEGateVerdict, TargetComparison, TargetOutcome
 from evals.cve_grammar import CVEStatus
 from evals.cve_oracle import CVEBenchmarkReport, CVEResult, UngradedStatus
@@ -15,11 +15,7 @@ NOT_RUN_CVE = "CVE-2025-68143"
 
 
 def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    buffer = StringIO()
-    shared = Console(file=buffer, width=200)
-    monkeypatch.setattr(cve_console, "console", shared)
-    monkeypatch.setattr(eval_display, "console", shared)
-    return buffer
+    return display_given.a_captured_console(monkeypatch, cve_console)
 
 
 def a_gated_report(**update: object) -> CVEBenchmarkReport:
