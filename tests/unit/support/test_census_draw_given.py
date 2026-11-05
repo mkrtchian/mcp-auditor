@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import date
 from typing import Literal
 
@@ -6,6 +7,7 @@ import tests.unit.support.test_holdout_census_given as census_given
 from evals.census_draw import (
     CalibrationCard,
     CardCheck,
+    CardStandIn,
     DrawRecord,
     DrawWalkStep,
     GiveUp,
@@ -15,7 +17,12 @@ from evals.census_figures import compute_figures
 from evals.census_grouping import READERS, ProofJudgment, gap_population, known_gap
 from evals.census_sources import SourceName, SourceRecord
 from evals.census_work import AgentRecord, AgentRole
-from evals.fixture_provenance import SoftwareRelease
+from evals.fixture_provenance import (
+    SoftwareRelease,
+    SourceKind,
+    StandInOutput,
+    StandInRecord,
+)
 from evals.holdout_census import CLASSIFIERS, CensusFlaw, Discovery, HoldoutCensus, draw_candidates
 
 A_DRAWN_FLAW = "CVE-2025-0001"
@@ -114,9 +121,43 @@ def a_card(flaw: str) -> CalibrationCard:
     )
 
 
+def a_draw_carrying(*cards: CalibrationCard) -> DrawRecord:
+    return a_draw().model_copy(update={"cards": list(cards)})
+
+
 def a_draw_whose_card_records(release: SoftwareRelease) -> DrawRecord:
-    card = a_card(A_DRAWN_FLAW).model_copy(update={"software_releases": [release]})
-    return a_draw().model_copy(update={"cards": [card]})
+    return a_draw_carrying(a_card(A_DRAWN_FLAW).model_copy(update={"software_releases": [release]}))
+
+
+def a_ready_draw() -> DrawRecord:
+    """`a_draw` whose card sets the fields rules v9 and v11 add, checked under rule v11."""
+    card = a_card(A_DRAWN_FLAW).model_copy(
+        update={"seeded_outside_layout": [], "stand_ins": [], "software_releases": []}
+    )
+    check = CardCheck(flaw=A_DRAWN_FLAW, reported_gaps=[], confirmed_gaps=[], rule_version=11)
+    return a_draw_carrying(card).model_copy(update={"card_checks": [check]})
+
+
+def a_card_stand_in(
+    file: str,
+    request: str,
+    *,
+    source: SourceKind = "software_sources",
+    replaces: str = "the vendor API",
+    returned_by: Sequence[str] = (),
+) -> CardStandIn:
+    output = StandInOutput(request=request, source=source, citation="API reference")
+    stand_in = StandInRecord(
+        replaces=replaces,
+        reason=f"{replaces} is a public host the closed network cannot reach",
+        file=file,
+        outputs=[output],
+    )
+    return CardStandIn(stand_in=stand_in, returned_by=list(returned_by), used_by_default_by=[])
+
+
+def a_card_with_a_stand_in(flaw: str, stand_in: CardStandIn) -> CalibrationCard:
+    return a_card(flaw).model_copy(update={"stand_ins": [stand_in]})
 
 
 def a_census_with_draw(draw: DrawRecord) -> HoldoutCensus:

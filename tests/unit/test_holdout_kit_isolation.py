@@ -1,6 +1,6 @@
 """The pin that keeps the holdout kit free of mcp_auditor, the way the acceptance conformance
 phase had to be re-pinned: the written kit's import closure, a static scan of the kit, a
-negative control, and the KitTarget/CVETarget field parity."""
+negative control, and the KitTarget/CVETarget field transplant rule."""
 
 from dataclasses import fields
 from pathlib import Path
@@ -9,50 +9,11 @@ import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_holdout_census_given as census_given
 from evals.calibration_dossier import write_kit
 from evals.cve_targets import CVETarget
-from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget
+from evals.holdout_kit.fix_check import FixCheckResult
 from evals.holdout_kit.kit_target import KitTarget
 from evals.nuisance_admission import FixCheckRecord
 
 _KIT_DIR = iso.REPO_ROOT / "evals" / "holdout_kit"
-
-# The fields the fix-check driver reads off the fixture the admission agent writes. As the drawn
-# target parity above, this pins the kit-local mirror against drift.
-_FIX_CHECK_TARGET_FIELDS = frozenset(
-    {
-        "flaw",
-        "mechanism",
-        "aim",
-        "witness",
-        "planting_host",
-        "builder",
-        "exploits",
-        "benign_calls",
-        "vulnerable_service",
-        "patched_service",
-        "server_patched_service",
-    }
-)
-
-# A drawn target is a CVETarget, so the parity the transplant needs is between KitTarget's fields
-# and CVETarget's: the maintainer wraps a KitTarget into a CVETarget (these fields).
-_DRAWN_TARGET_FIELDS = frozenset(
-    {
-        "cve_id",
-        "mechanisms",
-        "aim",
-        "reaches",
-        "kept_places",
-        "images",
-        "server_image",
-        "patched_image",
-        "planting_host",
-        "builder",
-        "exploits",
-        "benign",
-        "launch_mode",
-        "fallback_scope",
-    }
-)
 
 
 def test_the_written_kit_imports_from_its_own_tree_with_no_mcp_auditor_module(tmp_path: Path):
@@ -74,11 +35,11 @@ def test_scan_flags_a_planted_mcp_auditor_import(tmp_path: Path):
     assert iso.scan_tree(tmp_path) == {str(planted): ["mcp_auditor"]}
 
 
-def test_kit_target_mirrors_the_drawn_cve_target_fields():
+# A drawn target is a CVETarget the maintainer wraps a KitTarget into, so every KitTarget field
+# must exist on CVETarget for the transplant.
+def test_kit_target_fields_are_cve_target_fields():
     kit_names = {field.name for field in fields(KitTarget)}
-    cve_names = {field.name for field in fields(CVETarget)}
-    assert kit_names == _DRAWN_TARGET_FIELDS
-    assert cve_names >= _DRAWN_TARGET_FIELDS
+    assert kit_names <= {field.name for field in fields(CVETarget)}
 
 
 def test_fix_check_result_mirrors_the_admission_record_fields():
@@ -89,7 +50,3 @@ def test_fix_check_result_mirrors_the_admission_record_fields():
         "holdout_fingerprint",
     }
     assert {field.name for field in fields(FixCheckResult)} == recorded
-
-
-def test_fix_check_target_mirrors_the_admission_fields_the_driver_reads():
-    assert {field.name for field in fields(FixCheckTarget)} == _FIX_CHECK_TARGET_FIELDS

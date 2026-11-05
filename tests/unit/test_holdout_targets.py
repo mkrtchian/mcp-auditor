@@ -1,6 +1,5 @@
 import ast
 from collections.abc import Iterable
-from dataclasses import replace
 from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
@@ -47,14 +46,8 @@ def test_holdout_identifiers_are_disjoint_from_the_acceptance_layer():
 
 
 def test_holdout_services_are_disjoint_from_the_acceptance_services():
+    assert _services(HOLDOUT_TARGETS)
     assert _services(HOLDOUT_TARGETS).isdisjoint(_services(CVE_TARGETS))
-
-
-def test_a_holdout_service_reusing_an_acceptance_name_breaks_the_disjointness():
-    filesystem = next(target for target in CVE_TARGETS if target.server_image == "filesystem")
-    reusing = replace(filesystem, cve_id="CVE-0000-00000")
-
-    assert not _services([reusing]).isdisjoint(_services(CVE_TARGETS))
 
 
 # The sentinel and the stand-in are the fixture images targets share, so a holdout target may

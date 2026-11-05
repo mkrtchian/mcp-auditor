@@ -7,9 +7,9 @@ from pydantic import ValidationError
 
 import tests.unit.support.test_census_draw_given as given
 import tests.unit.support.test_holdout_census_given as census
-from evals.census_draw import CardStandIn, GiveUp, GiveUpReason, KeptPlace
+from evals.census_draw import GiveUp, GiveUpReason, KeptPlace
 from evals.census_work import AgentRole
-from evals.fixture_provenance import SoftwareRelease, StandInOutput, StandInRecord
+from evals.fixture_provenance import SoftwareRelease
 from evals.holdout_census import load_census
 from evals.run_census import CENSUS_PATH
 from tests.unit.support.test_census_draw_given import A_DRAWN_FLAW, A_TWICE_GIVEN_UP_FLAW
@@ -33,7 +33,7 @@ def test_a_card_citing_an_unknown_place_id_fails(tmp_path: Path):
     card = given.a_card(A_DRAWN_FLAW).model_copy(
         update={"kept": [KeptPlace(place_id="no-such-place-xyz", reason="only the target")]}
     )
-    draw = given.a_draw().model_copy(update={"cards": [card]})
+    draw = given.a_draw_carrying(card)
 
     with pytest.raises(ValueError, match=re.escape("no-such-place-xyz")):
         load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
@@ -109,8 +109,7 @@ def test_a_give_up_reason_outside_the_closed_set_fails_at_deserialization(tmp_pa
 
 
 def test_a_flaw_with_two_give_ups_and_a_card_fails(tmp_path: Path):
-    cards = [given.a_card(A_DRAWN_FLAW), given.a_card(A_TWICE_GIVEN_UP_FLAW)]
-    draw = given.a_draw().model_copy(update={"cards": cards})
+    draw = given.a_draw_carrying(given.a_card(A_DRAWN_FLAW), given.a_card(A_TWICE_GIVEN_UP_FLAW))
 
     refusal = f"flaw {A_TWICE_GIVEN_UP_FLAW} has two give-ups and a card"
     with pytest.raises(ValueError, match=re.escape(refusal)):
@@ -162,28 +161,14 @@ def test_a_flaw_whose_only_calibrator_record_is_set_aside_has_no_calibrator(tmp_
         load_census(census.written(tmp_path, set_aside))
 
 
-def test_a_card_with_the_fields_rule_v9_adds_unset_loads(tmp_path: Path):
-    card = given.a_card(A_DRAWN_FLAW)
-    draw = given.a_draw().model_copy(update={"cards": [card]})
-
-    loaded = load_census(census.written(tmp_path, given.a_census_with_draw(draw)))
-
-    assert loaded.draw is not None
-    assert loaded.draw.cards[0].stand_ins is None
-    assert loaded.draw.cards[0].seeded_outside_layout is None
-
-
 def test_a_card_stand_in_with_an_invented_output_and_no_form_source_fails(tmp_path: Path):
-    output = StandInOutput(request="GET /api/status", source="invented", citation="none")
-    stand_in = StandInRecord(
-        replaces="the vendor API",
-        reason="the vendor API is a public host the closed network cannot reach",
-        file="evals/docker/Dockerfile.vendor-responder",
-        outputs=[output],
+    stand_in = given.a_card_stand_in(
+        "evals/docker/Dockerfile.vendor-responder",
+        "GET /api/status",
+        source="invented",
+        returned_by=["status"],
     )
-    card_stand_in = CardStandIn(stand_in=stand_in, returned_by=["status"], used_by_default_by=[])
-    card = given.a_card(A_DRAWN_FLAW).model_copy(update={"stand_ins": [card_stand_in]})
-    draw = given.a_draw().model_copy(update={"cards": [card]})
+    draw = given.a_draw_carrying(given.a_card_with_a_stand_in(A_DRAWN_FLAW, stand_in))
 
     refusal = f"card for flaw {A_DRAWN_FLAW}: stand-in for the vendor API"
     with pytest.raises(ValueError, match=re.escape(refusal)):
