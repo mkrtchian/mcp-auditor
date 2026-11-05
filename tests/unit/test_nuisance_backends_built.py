@@ -4,7 +4,6 @@ import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_run_given as run_given
 from evals import cve_targets
 from evals.ckan_backend import CKAN_RESPONDER_IMAGE
-from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.neo4j_backend import NEO4J_IMAGE
 from evals.nuisance_backends import (
     BACKENDS,
@@ -12,6 +11,8 @@ from evals.nuisance_backends import (
     built_backend_services,
     built_backend_tags,
 )
+from evals.responder_backend import Responder
+from tests.unit.support.test_backend_lifecycle_given import every_responder
 
 
 def _is_built(entry: RegisteredBackend) -> bool:
@@ -27,15 +28,15 @@ def test_a_backend_built_locally_names_the_compose_service_of_its_image(key: str
         assert entry.image in tags
     else:
         assert tags == []
+        assert "@sha256:" in entry.image
 
 
-def test_the_pulled_backends_name_no_service():
-    assert BACKENDS["doris"].built_services == ()
-    assert BACKENDS["mysql"].built_services == ()
+@pytest.mark.parametrize("responder", every_responder(), ids=lambda r: r.container)
+def test_every_responder_image_is_rebuilt_with_its_backend(responder: Responder):
+    backend_on = {entry.network: entry for entry in BACKENDS.values()}
 
-
-def test_apify_builds_its_responder_and_the_api_stand_in():
-    assert BACKENDS["apify"].built_services == ("apify-responder", STAND_IN_SERVICE)
+    built = backend_on[responder.bridge].built_services
+    assert responder.image in [cve_targets.image_tag(service) for service in built]
 
 
 def test_two_servers_on_one_backend_give_one_service():

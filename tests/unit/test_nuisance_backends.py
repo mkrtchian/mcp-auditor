@@ -2,45 +2,25 @@ import ipaddress
 
 import pytest
 
-import tests.unit.support.test_nuisance_admission_given as given
-from evals.ckan_backend import CKAN_BRIDGE, CKAN_RESPONDER_IMAGE
-from evals.contextforge_backend import (
-    CONTEXTFORGE_BRIDGE,
-    CONTEXTFORGE_RESPONDER_IMAGE,
-    CONTEXTFORGE_RESPONDER_IP,
-)
+import tests.unit.support.test_backend_lifecycle_given as given
+from evals.ckan_backend import CKAN_ALIASES, CKAN_RESPONDER_IP, ckan_server_args
+from evals.contextforge_backend import CONTEXTFORGE_RESPONDER_IP
 from evals.docker_paths import DOCKER_DIRECTORY
-from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
-from evals.mysql_backend import MYSQL_BRIDGE, MYSQL_IMAGE
-from evals.n8n_backend import N8N_BRIDGE, N8N_RESPONDER_IMAGE
-from evals.nuisance_admission import AdmittedServer, BackendFixture
-from evals.nuisance_backends import BACKENDS, backend_problems
+from evals.gitlab_backend import GITLAB_RESPONDER_IP
+from evals.googleapis_backend import GOOGLEAPIS_RESPONDER_IP
+from evals.jenkins_backend import JENKINS_RESPONDER_IP
+from evals.neo4j_backend import NEO4J_HOST
+from tests.unit.support.docker_argv import carries, values_after
 
-
-def _a_server() -> AdmittedServer:
-    return given.an_admission().servers[0]
-
-
-def test_the_doris_fixture_is_accepted_by_the_registry():
-    backend = BackendFixture(provisioner="doris", image=DORIS_IMAGE, network=DORIS_BRIDGE)
-
-    assert backend_problems(given.with_a_backend(_a_server(), backend), BACKENDS) == []
-
-
-def test_the_ckan_fixture_is_accepted_by_the_registry():
-    backend = BackendFixture(provisioner="ckan", image=CKAN_RESPONDER_IMAGE, network=CKAN_BRIDGE)
-
-    assert backend_problems(given.with_a_backend(_a_server(), backend), BACKENDS) == []
-
-
-def test_the_contextforge_fixture_is_accepted_by_the_registry():
-    backend = BackendFixture(
-        provisioner="contextforge",
-        image=CONTEXTFORGE_RESPONDER_IMAGE,
-        network=CONTEXTFORGE_BRIDGE,
-    )
-
-    assert backend_problems(given.with_a_backend(_a_server(), backend), BACKENDS) == []
+# These servers take their backend's address from their image, so the address baked into the run
+# Dockerfile and its vulnerable twin has to be the one the backend stands its responder at.
+_BAKED_ADDRESSES = {
+    "contextforge": f'"GW_BENIGN_URL", "http://{CONTEXTFORGE_RESPONDER_IP}/"',
+    "jenkins": f"JENKINS_URL=http://{JENKINS_RESPONDER_IP}",
+    "gitlab": f"GITLAB_API_URL=http://{GITLAB_RESPONDER_IP}/",
+    "googleapis": f"UPSTREAM_URL=http://{GOOGLEAPIS_RESPONDER_IP}",
+    "neo4j": f"NEO4J_URI=bolt://{NEO4J_HOST}:",
+}
 
 
 def test_the_contextforge_responder_ip_is_global():
@@ -49,20 +29,22 @@ def test_the_contextforge_responder_ip_is_global():
     assert ipaddress.ip_address(CONTEXTFORGE_RESPONDER_IP).is_global
 
 
-@pytest.mark.parametrize("dockerfile", ["Dockerfile.contextforge", "Dockerfile.contextforge-vuln"])
-def test_the_gateway_benign_tool_aims_at_the_contextforge_responder(dockerfile: str):
-    baked = (DOCKER_DIRECTORY / dockerfile).read_text()
+@pytest.mark.parametrize(
+    ("dockerfile", "baked"),
+    [
+        (f"Dockerfile.{service}{suffix}", baked)
+        for service, baked in _BAKED_ADDRESSES.items()
+        for suffix in ("", "-vuln")
+    ],
+)
+def test_the_run_image_bakes_the_address_its_backend_stands_at(dockerfile: str, baked: str):
+    assert baked in (DOCKER_DIRECTORY / dockerfile).read_text()
 
-    assert f'"GW_BENIGN_URL", "http://{CONTEXTFORGE_RESPONDER_IP}/"' in baked
 
+def test_the_ckan_portal_hosts_resolve_to_the_self_signed_responder_the_server_trusts():
+    args = ckan_server_args("server-name", "image", given.a_host(), ["serve"])
 
-def test_the_mysql_fixture_is_accepted_by_the_registry():
-    backend = BackendFixture(provisioner="mysql", image=MYSQL_IMAGE, network=MYSQL_BRIDGE)
-
-    assert backend_problems(given.with_a_backend(_a_server(), backend), BACKENDS) == []
-
-
-def test_the_n8n_fixture_is_accepted_by_the_registry():
-    backend = BackendFixture(provisioner="n8n", image=N8N_RESPONDER_IMAGE, network=N8N_BRIDGE)
-
-    assert backend_problems(given.with_a_backend(_a_server(), backend), BACKENDS) == []
+    assert sorted(values_after(args, "--add-host")) == sorted(
+        f"{alias}:{CKAN_RESPONDER_IP}" for alias in CKAN_ALIASES
+    )
+    assert carries(args, ["-e", "NODE_TLS_REJECT_UNAUTHORIZED=0"])

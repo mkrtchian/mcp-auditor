@@ -51,26 +51,23 @@ def errored_exchanges(tool: str = "list_dir") -> list[Exchange]:
 def an_exercise(
     exploits: Sequence[list[Exchange]],
     benign: Sequence[Exchange] = (),
-    nonces: dict[str, str] | None = None,
 ) -> Exercised:
     return Exercised(
-        nonces={WITNESS_ID: NONCE} if nonces is None else nonces,
+        nonces={WITNESS_ID: NONCE},
         exploits=[list(exploit) for exploit in exploits],
         benign=list(benign),
     )
 
 
 def a_fix_check_target(
-    mechanism: MechanismClass | None = MechanismClass.READ_OUTSIDE_SCOPE,
-    aim: re.Pattern[str] = AIM,
     server_patched_service: str | None = None,
     working_directory: str = "/srv",
     witness_path: str = "/tmp/witness",
 ) -> FixCheckTarget:
     return FixCheckTarget(
         flaw="CVE-2025-0001",
-        mechanism=mechanism,
-        aim=aim,
+        mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
+        aim=AIM,
         witness=a_witness(witness_path),
         planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, working_directory, has_network=False),
         builder=_unused_builder,

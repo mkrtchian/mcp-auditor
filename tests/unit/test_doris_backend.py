@@ -4,7 +4,6 @@ import tests.unit.support.test_doris_serialization_given as given
 from evals import cve_environments
 from evals.doris_backend import DORIS_SERVER_LAUNCH, doris_server_args
 from evals.nuisance_confinement import memory_bound_args, user_args
-from tests.unit.support.docker_argv import value_after
 
 
 def _strip_pair(args: list[str], flag: str) -> list[str]:
@@ -33,13 +32,3 @@ def test_the_helper_and_the_holdout_env_agree_on_the_launch_tail(monkeypatch: py
     helper = _without(helper, memory_bound_args())
 
     assert helper == _strip_pair(env_args, "--name")
-
-
-def test_the_helper_adds_the_hosts_user_and_working_directory():
-    spec = given.a_minimal_doris_spec()
-
-    args = doris_server_args("server-name", "image", spec.host, DORIS_SERVER_LAUNCH)
-
-    assert value_after(args, "--user") == "65534:65534"
-    assert value_after(args, "-w") == "/srv"
-    assert args[-len(DORIS_SERVER_LAUNCH) - 1 :] == ["image", *DORIS_SERVER_LAUNCH]

@@ -1,65 +1,21 @@
+import ipaddress
+
 from evals.apify_backend import (
     API_HOST,
     APIFY_BENIGN_HOST,
-    APIFY_BRIDGE,
-    APIFY_RESPONDER_IP,
+    APIFY_SUBNET,
     APIFY_SUFFIX_HOST,
     apify_network_args,
-    apify_server_args,
 )
-from evals.cve_planting_base import PlantingHost, SymbolicUser
-from tests.unit.support.docker_argv import value_after, values_after
-
-HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
-API_STAND_IN_PIN = f"{API_HOST}:198.18.1.3"
-LAUNCH = ["--transport", "stdio"]
-
-
-def test_the_server_joins_the_responder_bridge_as_the_hosts_user():
-    args = apify_server_args("server-name", "image", HOST, LAUNCH)
-
-    assert value_after(args, "--network") == APIFY_BRIDGE
-    assert value_after(args, "--user") == "65534:65534"
-    assert value_after(args, "-w") == "/"
-
-
-def test_the_server_launch_follows_the_image():
-    args = apify_server_args("server-name", "image", HOST, LAUNCH)
-
-    assert args[-len(LAUNCH) - 1 :] == ["image", *LAUNCH]
-
-
-def test_the_documentation_hosts_resolve_to_the_responder_and_the_api_to_its_stand_in():
-    aliases = values_after(apify_server_args("server-name", "image", HOST, LAUNCH), "--add-host")
-
-    assert sorted(aliases) == sorted(
-        [
-            f"{APIFY_BENIGN_HOST}:{APIFY_RESPONDER_IP}",
-            f"{APIFY_SUFFIX_HOST}:{APIFY_RESPONDER_IP}",
-            API_STAND_IN_PIN,
-        ]
-    )
-
-
-def test_the_suffix_host_extends_the_benign_one():
-    assert APIFY_SUFFIX_HOST.startswith(f"{APIFY_BENIGN_HOST}.")
-
-
-def test_the_server_trusts_the_self_signed_responder_through_its_own_environment():
-    args = apify_server_args("server-name", "image", HOST, LAUNCH)
-
-    assert "NODE_TLS_REJECT_UNAUTHORIZED=0" in values_after(args, "-e")
-
-
-def test_the_server_carries_a_dummy_token_it_needs_to_start():
-    args = apify_server_args("server-name", "image", HOST, LAUNCH)
-
-    assert "APIFY_TOKEN=calib-token" in values_after(args, "-e")
+from tests.unit.support.docker_argv import values_after
 
 
 def test_the_documentation_hosts_resolve_to_the_responder_address_it_is_given():
     aliases = values_after(apify_network_args("198.18.1.77"), "--add-host")
 
+    [api_pin] = [alias for alias in aliases if alias.startswith(f"{API_HOST}:")]
     assert sorted(aliases) == sorted(
-        [f"{APIFY_BENIGN_HOST}:198.18.1.77", f"{APIFY_SUFFIX_HOST}:198.18.1.77", API_STAND_IN_PIN]
+        [f"{APIFY_BENIGN_HOST}:198.18.1.77", f"{APIFY_SUFFIX_HOST}:198.18.1.77", api_pin]
     )
+    stand_in_address = ipaddress.ip_address(api_pin.removeprefix(f"{API_HOST}:"))
+    assert stand_in_address in ipaddress.ip_network(APIFY_SUBNET)

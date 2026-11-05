@@ -2,16 +2,13 @@ import threading
 import time
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 
 import pytest
 
 from evals import cve_environments
 from evals.cve_environments import Launch
 from evals.cve_planting_base import PlantingHost, PlantingSpec, SentinelIntent, SymbolicUser
-
-# Captured before any monkeypatch so the overlap window survives a faked `time.sleep`
-# on the module under test.
-_REAL_SLEEP = time.sleep
 
 
 @dataclass
@@ -23,20 +20,16 @@ class OverlapRecorder:
     _guard: threading.Lock = field(default_factory=threading.Lock)
     active: int = 0
     max_active: int = 0
-    enter_threads: list[int] = field(default_factory=list[int])
-    exit_threads: list[int] = field(default_factory=list[int])
 
     def enter(self) -> None:
         with self._guard:
             self.active += 1
             self.max_active = max(self.max_active, self.active)
-            self.enter_threads.append(threading.get_ident())
-        _REAL_SLEEP(self.window)
+        time.sleep(self.window)
 
     def exit(self) -> None:
         with self._guard:
             self.active -= 1
-            self.exit_threads.append(threading.get_ident())
 
 
 def an_overlap_recorder() -> OverlapRecorder:
@@ -56,7 +49,7 @@ def doris_helpers_faked(monkeypatch: pytest.MonkeyPatch, recorder: OverlapRecord
     monkeypatch.setattr(cve_environments, "ensure_doris", recorder.enter)
     monkeypatch.setattr(cve_environments, "doris_rm", reap)
     monkeypatch.setattr(cve_environments, "start_doris_sentinel", start_sentinel)
-    monkeypatch.setattr(cve_environments.time, "sleep", no_sleep)
+    monkeypatch.setattr(cve_environments, "time", SimpleNamespace(sleep=no_sleep))
 
 
 def a_minimal_doris_spec() -> PlantingSpec:
@@ -83,7 +76,6 @@ def a_minimal_doris_spec() -> PlantingSpec:
 @dataclass
 class ThreadOutcome:
     thread_id: int = 0
-    result: object = None
     error: BaseException | None = None
 
 
@@ -103,7 +95,7 @@ def enter_then_exit_on_separate_threads(manager: AbstractContextManager[Launch])
     def enter_target() -> None:
         entered.thread_id = threading.get_ident()
         try:
-            entered.result = manager.__enter__()
+            manager.__enter__()
         except Exception as exc:
             entered.error = exc
         enter_done.set()
