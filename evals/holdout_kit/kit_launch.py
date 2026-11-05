@@ -14,9 +14,12 @@ Landmine flags (CLAUDE.md), each named against the failure it guards:
 - The `--user` mapping and the layout's owner. The tree is owned by the unprivileged account,
   65534:65534, handed over by `cve_layout.owned_layout` once built and removed by a container
   after the launch, so a server under that account owns the checkout git runs in and writes to
-  the layout only where the launch mounts it read-write. The `--user` is emitted by
+  the layout only where the target's host declares a read-write layout (`layout_mount`, read
+  through `cve_layout.layout_mount_args`). The `--user` is emitted by
   cve_planting.unprivileged_user_args (or the planted account's) through PlantedArgs.run_args(),
-  exactly as the acceptance launch emits it, so it is reused here rather than rewritten.
+  exactly as the acceptance launch emits it, so it is reused here rather than rewritten; the
+  `/work` tmpfs comes the same way. `kit_driver.check_target` reports a launch running as any
+  other account, so a builder that sets its own `--user` is caught.
 - `--tmpfs /home/audit:exec,uid=,gid=` and `--memory-swap` are the auditor's OWN confined-run
   container flags (mcp_auditor.adapters.server_launch.container_argv), not this declared-container
   launch. The CVE/kit launch sets HOME=/tmp and no memory bound (cve_planting.confinement_args), so
@@ -31,7 +34,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from evals.cve_layout import ANCHOR_PATHS, build_empty_layout, build_layout, owned_layout
+from evals.cve_layout import (
+    ANCHOR_PATHS,
+    build_empty_layout,
+    build_layout,
+    layout_mount_args,
+    owned_layout,
+)
 from evals.cve_places import LayoutAnchor
 from evals.cve_planting import (
     PlantedArgs,
@@ -99,7 +108,7 @@ def filesystem_env(
         owned_layout(docker, lambda root: _materialise_with_leak_links(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
-        yield _filesystem_launch(root, image, args)
+        yield _filesystem_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
 
 
 @contextmanager
@@ -114,7 +123,8 @@ def git_init_traversal_env(
         owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
-        yield _git_launch(root, image, args, chain_budget=3, max_chain_steps=5)
+        layout = layout_mount_args(root, spec.host.layout_mount)
+        yield _git_launch(layout, image, args, chain_budget=3, max_chain_steps=5)
 
 
 @contextmanager
@@ -129,7 +139,7 @@ def command_injection_env(
         owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
-        yield _read_only_launch(root, image, args)
+        yield _layout_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
 
 
 @contextmanager
@@ -144,7 +154,7 @@ def ssrf_env(
         owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
-        yield _read_only_launch(root, image, args)
+        yield _layout_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
 
 
 @contextmanager
@@ -157,13 +167,13 @@ def arcadedb_env(
 ) -> Generator[Launch]:
     # The trimmed twin of cve_environments.arcadedb_mcp_env. The ArcadeDB MCP stdio server takes no
     # scope argument (it is driven over stdio, not pointed at a directory), so its launch is the
-    # read-only /srv mount and the planting args with no path appended after the image, identical to
-    # the read-only launch the command-injection and SSRF builders use.
+    # /srv mount and the planting args with no path appended after the image, identical to the
+    # launch the command-injection and SSRF builders use.
     with (
         owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
-        yield _read_only_launch(root, image, args)
+        yield _layout_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
 
 
 def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
@@ -183,25 +193,15 @@ def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchSh
             os.symlink(intent.container_path, leak / "report")
 
 
-def _read_only_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
+def _layout_launch(layout: list[str], image: str, args: PlantedArgs) -> Launch:
     return Launch(
         command="docker",
-        args=[
-            "run",
-            "-i",
-            "--rm",
-            *confinement_args(),
-            *args.run_args(),
-            "-v",
-            f"{root}:{_WORKSPACE}:ro",
-            image,
-        ],
+        args=["run", "-i", "--rm", *confinement_args(), *args.run_args(), *layout, image],
     )
 
 
-def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
-    # Read-only: the filesystem server only reads. The server's allowed directory is the in-scope
-    # checkout, passed as the final argument.
+def _filesystem_launch(layout: list[str], image: str, args: PlantedArgs) -> Launch:
+    # The server's allowed directory is the in-scope checkout, passed as the final argument.
     return Launch(
         command="docker",
         args=[
@@ -210,8 +210,7 @@ def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
             "--rm",
             *confinement_args(),
             *args.run_args(),
-            "-v",
-            f"{root}:{_WORKSPACE}:ro",
+            *layout,
             image,
             _PROJECT,
         ],
@@ -220,9 +219,12 @@ def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
 
 
 def _git_launch(
-    root: Path, image: str, args: PlantedArgs, chain_budget: int = 0, max_chain_steps: int = 3
+    layout: list[str],
+    image: str,
+    args: PlantedArgs,
+    chain_budget: int = 0,
+    max_chain_steps: int = 3,
 ) -> Launch:
-    # Read-write: git_init writes a .git into /srv, and git operates on a repo it owns.
     return Launch(
         command="docker",
         args=[
@@ -231,8 +233,7 @@ def _git_launch(
             "--rm",
             *confinement_args(),
             *args.run_args(),
-            "-v",
-            f"{root}:{_WORKSPACE}",
+            *layout,
             image,
             "--repository",
             _PROJECT,

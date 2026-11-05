@@ -10,11 +10,12 @@ from evals.cve_baseline import (
     baseline_integrity,
     fixture_fingerprint,
     load_baselines,
+    planting_host_parts,
     write_baseline,
 )
 from evals.cve_grammar import CVEStatus
 from evals.cve_places import LayoutAnchor
-from evals.cve_planting_base import STAND_IN_SERVICE
+from evals.cve_planting_base import STAND_IN_SERVICE, PlantingHost, SymbolicUser
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_targets import HOLDOUT_TARGETS
 
@@ -74,6 +75,12 @@ def test_the_fixture_fingerprint_moves_when_a_backend_source_changes(tmp_path: P
     given.rewriting_the_backend_source(target)
 
     assert fixture_fingerprint(target, places) != before
+
+
+def test_a_read_only_host_is_its_user_working_directory_and_network_stance_alone():
+    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/app", has_network=True)
+
+    assert planting_host_parts(host) == ["unprivileged", "/srv/app", True]
 
 
 def test_a_target_without_public_names_reads_no_stand_in(tmp_path: Path):

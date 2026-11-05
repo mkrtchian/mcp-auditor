@@ -27,7 +27,7 @@ from evals.cve_planting import (
     SymbolicUser,
 )
 from evals.cve_planting import planting_spec as compute_planting_spec
-from evals.cve_planting_base import PublicNames
+from evals.cve_planting_base import LayoutMount, PublicNames
 from mcp_auditor.domain.ports import MCPClientPort
 
 
@@ -263,8 +263,11 @@ CVE_TARGETS: list[CVETarget] = [
         images=("git",),
         server_image="git",
         patched_image="git-patched-68143",
-        # Its own host: the git_init exploit writes a .git into the layout, which its account owns.
-        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
+        # Read-write: the git_init exploit, written from the published mechanism, writes a .git
+        # into /srv, and git operates on a checkout its account owns.
+        planting_host=PlantingHost(
+            SymbolicUser.UNPRIVILEGED, "/", has_network=False, layout_mount=LayoutMount.READ_WRITE
+        ),
         builder=git_init_traversal_env,
         exploits=(cve_exploits.exploit_git_init_traversal,),
         benign=cve_exploits.benign_git_init_traversal,

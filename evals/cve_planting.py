@@ -19,6 +19,7 @@ from collections.abc import Generator
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
 
+from evals.cve_layout import WORK
 from evals.cve_planting_base import (
     RANDOM_NONCES as RANDOM_NONCES,
 )
@@ -29,10 +30,13 @@ from evals.cve_planting_base import (
     SENTINEL_SERVICE as SENTINEL_SERVICE,
 )
 from evals.cve_planting_base import (
+    UNPRIVILEGED_GID,
+    UNPRIVILEGED_UID,
     AccountIntent,
     PlantedArgs,
     PlantingDocker,
     PlantingFailed,
+    PlantingHost,
     PlantingSpec,
     SentinelIntent,
     SymbolicUser,
@@ -51,9 +55,6 @@ from evals.cve_planting_base import (
 )
 from evals.cve_planting_base import (
     NonceSource as NonceSource,
-)
-from evals.cve_planting_base import (
-    PlantingHost as PlantingHost,
 )
 from evals.cve_planting_docker import (
     DockerPlanting as DockerPlanting,
@@ -137,12 +138,21 @@ def _set_up(
         user=user,
         working_directory=("-w", spec.host.working_directory),
         env=(*_env_args(spec), *trust_env),
-        mounts=(*mounts, *trust_mounts),
+        mounts=(*mounts, *trust_mounts, *_work_mounts(spec.host)),
         hostname=hostname,
         network=_network_args(network, holder),
     )
     _probe_endpoints(spec, args, docker)
     return args
+
+
+def _work_mounts(host: PlantingHost) -> tuple[str, ...]:
+    # Empty at every launch, outside the layout, owned by the unprivileged account and sticky like
+    # /tmp, so a target under the planted account writes to it while `ls -ld` names no nonce.
+    if host.working_directory != WORK:
+        return ()
+    owner = f"uid={UNPRIVILEGED_UID},gid={UNPRIVILEGED_GID}"
+    return ("--tmpfs", f"{WORK}:exec,mode=1777,{owner}")
 
 
 def _probe_endpoints(spec: PlantingSpec, args: PlantedArgs, docker: PlantingDocker) -> None:

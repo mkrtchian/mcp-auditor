@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from urllib.parse import quote, unquote
 
 from evals.cve_endpoint_address import claim_bind_address, endpoint_bind_address, pin_public_names
+from evals.cve_layout import WORK
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting_base import (
     AccountIntent,
@@ -115,6 +116,8 @@ def _plant_file(place: Place, host: PlantingHost, nonces: NonceSource, draft: _S
     draft.nonces[place.id] = content
     for raw in _coordinate_paths(place.coordinates):
         container_path = resolve_container_path(raw, host.working_directory)
+        if container_path == WORK or container_path.startswith(f"{WORK}/"):
+            raise ValueError(f"{place.id}: {WORK} holds no place")
         _reject_overlap(place.id, container_path, draft)
         draft.files.append((place.id, FileIntent(container_path, content)))
 

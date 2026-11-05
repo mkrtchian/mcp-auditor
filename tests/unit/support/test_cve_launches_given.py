@@ -1,7 +1,8 @@
 import tempfile
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
+from typing import Any, Protocol
 
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting import (
@@ -11,11 +12,19 @@ from evals.cve_planting import (
     SymbolicUser,
     planting_spec,
 )
-from evals.cve_planting_base import LAYOUT_PREFIX
+from evals.cve_planting_base import LAYOUT_PREFIX, LayoutMount
+from tests.fakes.planting_docker import FakePlantingDocker
 
 
-def an_empty_spec() -> PlantingSpec:
-    return planting_spec((), _no_network_host(), RANDOM_NONCES)
+class Builder(Protocol):
+    def __call__(
+        self, image: str, spec: PlantingSpec, *, docker: FakePlantingDocker
+    ) -> AbstractContextManager[Any]: ...
+
+
+def an_empty_spec(mount: LayoutMount = LayoutMount.READ_ONLY) -> PlantingSpec:
+    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False, layout_mount=mount)
+    return planting_spec((), host, RANDOM_NONCES)
 
 
 def a_spec_with_a_file_place() -> PlantingSpec:

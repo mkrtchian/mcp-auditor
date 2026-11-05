@@ -15,6 +15,7 @@ from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
 from evals.cve_targets import image_tag
 from evals.holdout_kit.kit_client import KitMCPClient, docker_client_env
+from evals.holdout_kit.kit_driver import TargetVersion, launch_user_condition, options_before_image
 from evals.holdout_kit.kit_launch import filesystem_env
 
 _SERVICE = "filesystem"
@@ -48,9 +49,10 @@ def _prerequisites() -> None:
 
 
 async def test_list_tools_and_a_benign_call_over_a_real_launch():
-    host = PlantingHost(SymbolicUser.HOST, "/", has_network=False)
+    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
     spec = planting_spec((), host, RANDOM_NONCES)
     with filesystem_env(_IMAGE, spec) as launch:
+        options = options_before_image(launch.args, _IMAGE)
         async with KitMCPClient.connect(
             launch.command, launch.args, env=docker_client_env(os.environ)
         ) as client:
@@ -60,3 +62,4 @@ async def test_list_tools_and_a_benign_call_over_a_real_launch():
     assert "list_directory" in {tool.name for tool in tools}
     assert ".git" in response.content
     assert response.is_error is False
+    assert launch_user_condition(TargetVersion.VULNERABLE, options, spec) is None

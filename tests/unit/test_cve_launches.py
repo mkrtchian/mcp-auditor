@@ -13,13 +13,18 @@ import pytest
 import tests.unit.support.test_cve_launches_given as given
 from evals.cve_environments import (
     Launch,
+    arcadedb_mcp_env,
     command_injection_env,
     filesystem_env,
     git_init_traversal_env,
+    mysql_db_env,
     ssrf_env,
+    ssrf_redirect_env,
 )
 from evals.cve_layout import NEUTRAL_TOKEN, owned_layout
 from evals.cve_planting import PlantingFailed
+from evals.cve_planting_base import LayoutMount
+from evals.holdout_kit import kit_launch
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ExecutionRegime
 from tests.fakes.planting_docker import FakePlantingDocker
@@ -48,16 +53,34 @@ def test_the_command_injection_fixture_launches_as_a_declared_container():
         )
 
 
-def test_the_git_hosts_mount_the_tree_read_write():
-    for builder in (git_init_traversal_env,):
-        with builder("img", given.an_empty_spec(), docker=FakePlantingDocker()) as launch:
-            assert _mount(launch).endswith(":/srv")
+_LAYOUT_BUILDERS = {
+    "filesystem": filesystem_env,
+    "git_init_traversal": git_init_traversal_env,
+    "command_injection": command_injection_env,
+    "ssrf": ssrf_env,
+    "arcadedb_mcp": arcadedb_mcp_env,
+    "ssrf_redirect": ssrf_redirect_env,
+    "mysql_db": mysql_db_env,
+    "kit filesystem": kit_launch.filesystem_env,
+    "kit git_init_traversal": kit_launch.git_init_traversal_env,
+    "kit command_injection": kit_launch.command_injection_env,
+    "kit ssrf": kit_launch.ssrf_env,
+    "kit arcadedb": kit_launch.arcadedb_env,
+}
 
 
-def test_the_other_hosts_mount_the_tree_read_only():
-    for builder in (filesystem_env, command_injection_env, ssrf_env):
-        with builder("img", given.an_empty_spec(), docker=FakePlantingDocker()) as launch:
-            assert _mount(launch).endswith(":/srv:ro")
+@pytest.mark.parametrize("builder", _LAYOUT_BUILDERS.values(), ids=list(_LAYOUT_BUILDERS))
+def test_every_builder_mounts_the_tree_read_only_under_a_default_host(builder: given.Builder):
+    with builder("img", given.an_empty_spec(), docker=FakePlantingDocker()) as launch:
+        assert _mount(launch).endswith(":/srv:ro")
+
+
+@pytest.mark.parametrize("builder", _LAYOUT_BUILDERS.values(), ids=list(_LAYOUT_BUILDERS))
+def test_every_builder_mounts_the_tree_read_write_under_a_read_write_host(builder: given.Builder):
+    spec = given.an_empty_spec(LayoutMount.READ_WRITE)
+
+    with builder("img", spec, docker=FakePlantingDocker()) as launch:
+        assert _mount(launch).endswith(":/srv")
 
 
 def test_an_empty_spec_still_materialises_the_universal_tree_with_neutral_content():

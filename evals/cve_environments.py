@@ -74,7 +74,13 @@ from pathlib import Path
 from typing import IO
 from uuid import uuid4
 
-from evals.cve_layout import ANCHOR_PATHS, build_empty_layout, build_layout, owned_layout
+from evals.cve_layout import (
+    ANCHOR_PATHS,
+    build_empty_layout,
+    build_layout,
+    layout_mount_args,
+    owned_layout,
+)
 from evals.cve_places import LayoutAnchor
 from evals.cve_planting import (
     DockerPlanting,
@@ -184,7 +190,7 @@ def filesystem_env(
         owned_layout(docker, lambda root: _materialise_with_leak_links(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
-        yield _filesystem_launch(root, image, args)
+        yield _filesystem_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
 
 
 def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
@@ -216,7 +222,8 @@ def git_init_traversal_env(
         owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
-        yield _git_launch(root, image, args, chain_budget=3, max_chain_steps=5)
+        layout = layout_mount_args(root, spec.host.layout_mount)
+        yield _git_launch(layout, image, args, chain_budget=3, max_chain_steps=5)
 
 
 @contextmanager
@@ -239,8 +246,7 @@ def command_injection_env(
                 "--rm",
                 *confinement_args(),
                 *args.run_args(),
-                "-v",
-                f"{root}:{_WORKSPACE}:ro",
+                *layout_mount_args(root, spec.host.layout_mount),
                 image,
             ],
         )
@@ -266,8 +272,7 @@ def ssrf_env(
                 "--rm",
                 *confinement_args(),
                 *args.run_args(),
-                "-v",
-                f"{root}:{_WORKSPACE}:ro",
+                *layout_mount_args(root, spec.host.layout_mount),
                 image,
             ],
         )
@@ -284,8 +289,8 @@ def arcadedb_mcp_env(
     # The ArcadeDB MCP stdio server reads files and fetches endpoints through the same polyglot-JS
     # sandbox escape, so its kept places span planted files, the hostname, the process environment
     # and the holder-bound metadata sentinels. It takes no scope argument (it is driven over stdio,
-    # not pointed at a directory), so the launch is the read-only /srv mount and the planting
-    # layer's args, with no path appended after the image.
+    # not pointed at a directory), so the launch is the /srv mount and the planting layer's args,
+    # with no path appended after the image.
     with (
         owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
@@ -298,8 +303,7 @@ def arcadedb_mcp_env(
                 "--rm",
                 *confinement_args(),
                 *args.run_args(),
-                "-v",
-                f"{root}:{_WORKSPACE}:ro",
+                *layout_mount_args(root, spec.host.layout_mount),
                 image,
             ],
         )
@@ -345,8 +349,7 @@ def ssrf_redirect_env(
                     "N8N_API_KEY=calib-key",
                     "-e",
                     "N8N_MCP_TELEMETRY_DISABLED=true",
-                    "-v",
-                    f"{root}:{_WORKSPACE}:ro",
+                    *layout_mount_args(root, spec.host.layout_mount),
                     image,
                 ],
             )
@@ -423,8 +426,8 @@ def mysql_db_env(
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     # The self-contained MySQL-MCP image carries its own engine and an AWS credential stub, both
-    # started by the entrypoint, so the launch adds nothing but the frozen /srv layout, mounted
-    # read-only (ADR 031). The server takes no scope argument, so none is appended after the image;
+    # started by the entrypoint, so the launch adds nothing but the frozen /srv layout (ADR 031).
+    # The server takes no scope argument, so none is appended after the image;
     # the network isolation, the planted file mounts, the planted env and the hostname all come
     # from the planting layer's PlantedArgs.
     with (
@@ -439,8 +442,7 @@ def mysql_db_env(
                 "--rm",
                 *confinement_args(),
                 *args.run_args(),
-                "-v",
-                f"{root}:{_WORKSPACE}:ro",
+                *layout_mount_args(root, spec.host.layout_mount),
                 image,
             ],
         )
@@ -500,9 +502,7 @@ def doris_db_env(
                 doris_rm(name)
 
 
-def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
-    # Read-only: the filesystem server only reads, and git_init (the one writer) belongs to the
-    # git target, which mounts read-write.
+def _filesystem_launch(layout: list[str], image: str, args: PlantedArgs) -> Launch:
     return Launch(
         command="docker",
         args=[
@@ -511,8 +511,7 @@ def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
             "--rm",
             *confinement_args(),
             *args.run_args(),
-            "-v",
-            f"{root}:{_WORKSPACE}:ro",
+            *layout,
             image,
             _PROJECT,
         ],
@@ -521,9 +520,12 @@ def _filesystem_launch(root: Path, image: str, args: PlantedArgs) -> Launch:
 
 
 def _git_launch(
-    root: Path, image: str, args: PlantedArgs, chain_budget: int = 0, max_chain_steps: int = 3
+    layout: list[str],
+    image: str,
+    args: PlantedArgs,
+    chain_budget: int = 0,
+    max_chain_steps: int = 3,
 ) -> Launch:
-    # Read-write: git_init writes a .git into /srv, and git operates on a repo it owns.
     return Launch(
         command="docker",
         args=[
@@ -532,8 +534,7 @@ def _git_launch(
             "--rm",
             *confinement_args(),
             *args.run_args(),
-            "-v",
-            f"{root}:{_WORKSPACE}",
+            *layout,
             image,
             "--repository",
             _PROJECT,

@@ -284,6 +284,29 @@ def test_the_user_working_directory_and_network_args_follow_an_unprivileged_host
     assert args.network == tuple(no_network_args())
 
 
+def test_a_work_host_works_in_a_tmpfs_owned_by_the_unprivileged_account_and_sticky():
+    spec = given.spec_of([], host=given.unprivileged_host(working_directory="/work"))
+
+    args = _args_in(spec)
+
+    assert args.working_directory == ("-w", "/work")
+    assert given.following(args.mounts, "--tmpfs") == "/work:exec,mode=1777,uid=65534,gid=65534"
+
+
+def test_another_working_directory_gets_no_tmpfs():
+    spec = given.spec_of([], host=given.unprivileged_host(working_directory="/srv/app"))
+
+    assert "--tmpfs" not in _args_in(spec).run_args()
+
+
+@pytest.mark.parametrize("path", ["/work", "/work/secret", "/srv/../work/secret", "notes/secret"])
+def test_a_file_place_resolving_under_work_is_refused(path: str):
+    host = given.unprivileged_host(working_directory="/work")
+
+    with pytest.raises(ValueError, match="holds no place"):
+        given.spec_of([given.file_place(path=path)], host=host)
+
+
 def test_a_host_user_launch_resolves_the_uid_only_at_planted():
     host = given.host_user_host(working_directory="/work")
     spec = given.spec_of([], host=host)

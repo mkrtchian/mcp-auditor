@@ -240,6 +240,19 @@ def test_no_labelled_container_or_network_outlives_two_launches():
     then.nothing_it_made_outlives(docker)
 
 
+@pytest.mark.parametrize("with_an_account", [False, True], ids=["unprivileged", "planted"])
+def test_work_starts_empty_takes_a_file_and_names_no_nonce_as_its_owner(with_an_account: bool):
+    spec = given.a_work_spec(with_an_account=with_an_account)
+
+    with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
+        observed = given.work_as_target(args)
+
+    assert observed.at_start == ""
+    assert observed.created
+    assert not any(nonce in observed.listing for nonce in spec.nonces.values())
+    assert "nobody" in observed.listing
+
+
 def test_the_adapter_hands_over_and_removes_a_tree_holding_a_dangling_absolute_link():
     with owned_layout(DockerPlanting(), given.a_tree_holding_a_dangling_absolute_link) as root:
         link = os.lstat(root / given.DANGLING_LINK)

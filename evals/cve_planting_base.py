@@ -44,6 +44,11 @@ class SymbolicUser(StrEnum):
     HOST = "host"
 
 
+class LayoutMount(StrEnum):
+    READ_ONLY = "ro"
+    READ_WRITE = "rw"  # a target whose exploits, written from the published mechanism, write to it
+
+
 @dataclass(frozen=True)
 class PublicNames:
     stand_ins: tuple[str, ...] = ()  # hosts served by a stand-in under their real name
@@ -57,6 +62,7 @@ class PlantingHost:
     working_directory: str
     has_network: bool
     public_names: PublicNames = PublicNames()
+    layout_mount: LayoutMount = LayoutMount.READ_ONLY
 
 
 @dataclass(frozen=True)

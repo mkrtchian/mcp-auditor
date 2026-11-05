@@ -29,6 +29,7 @@ from evals.cve_grammar import DETECTION_RUNGS, CVEStatus, MechanismClass
 from evals.cve_images import dockerfile_instructions
 from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
 from evals.cve_planting import PlantingHost
+from evals.cve_planting_base import LayoutMount
 from evals.cve_targets import CVETarget, LaunchMode, image_tag
 from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.gate import ReplayRule
@@ -184,6 +185,10 @@ def planting_host_parts(
     host: PlantingHost, stand_ins_directory: Path = STAND_INS_DIRECTORY
 ) -> list[object]:
     parts: list[object] = [host.user.value, host.working_directory, host.has_network]
+    # Like the public names below, only a read-write layout adds a part, so a read-only host (every
+    # nuisance host) keeps its fingerprint.
+    if host.layout_mount is LayoutMount.READ_WRITE:
+        parts.append(host.layout_mount.value)
     names = host.public_names
     # Only a declaring host gains parts: a host with none keeps its fingerprint and reads no file.
     if names.stand_ins or names.trust or names.ip_label_domains:

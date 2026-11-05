@@ -10,7 +10,7 @@ from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_grammar import CVEStatus, MechanismClass
 from evals.cve_places import Coordinates, LayoutAnchor, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_base import PublicNames
+from evals.cve_planting_base import LayoutMount, PublicNames
 from evals.cve_targets import CVE_TARGETS, CVETarget, LaunchMode
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.gate import ReplayRule
@@ -136,6 +136,16 @@ def _replacing(**fields: object) -> TargetChange:
     return change
 
 
+def _declaring_a_read_write_layout() -> TargetChange:
+    def change(
+        target: CVETarget, places: Places, _docker_directory: Path
+    ) -> tuple[CVETarget, Places]:
+        host = dataclasses.replace(target.planting_host, layout_mount=LayoutMount.READ_WRITE)
+        return dataclasses.replace(target, planting_host=host), places
+
+    return change
+
+
 def _declaring_a_backend_source() -> TargetChange:
     def change(
         target: CVETarget, places: Places, docker_directory: Path
@@ -211,6 +221,7 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "server image": _replacing(server_image="another-service"),
     "reaches": _replacing(reaches=frozenset({"arbitrary_read"})),
     "planting host": _replacing(planting_host=PlantingHost(SymbolicUser.HOST, "/elsewhere", True)),
+    "a read-write layout": _declaring_a_read_write_layout(),
     "a fictional kept id added": _keeping_another_record(),
     "a kept record moved in the mapping": _moving_the_kept_endpoint_record(),
     "the sentinel Dockerfile (a kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),

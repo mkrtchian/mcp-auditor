@@ -11,6 +11,7 @@ from evals import cve_exploits
 from evals.cve_environments import Launch, LaunchShape, command_injection_env
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingSpec, SymbolicUser
+from evals.cve_planting_base import LayoutMount
 from evals.cve_proofs import is_aimed
 from evals.cve_recording_client import RecordingClient
 from evals.cve_targets import (
@@ -253,6 +254,14 @@ def test_the_patched_version_launches_the_patched_image_tag():
 
 def test_no_acceptance_target_runs_as_the_host_user():
     assert [t.cve_id for t in CVE_TARGETS if t.planting_host.user is SymbolicUser.HOST] == []
+
+
+def test_only_the_git_target_declares_a_read_write_layout():
+    mounts = {t.cve_id: t.planting_host.layout_mount for t in CVE_TARGETS}
+
+    assert [cve for cve, mount in mounts.items() if mount is LayoutMount.READ_WRITE] == [
+        "CVE-2025-68143"
+    ]
 
 
 def test_an_empty_spec_plants_no_nonce():

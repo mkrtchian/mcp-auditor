@@ -18,6 +18,13 @@ either, so the root sits under a host-owned outer directory carrying `LAYOUT_PRE
 second container removes the root before the outer directory is cleaned up. The root is
 traversable and the tree readable by any account, whatever the host's umask, so a server under
 any account resolves `/srv` and `..` as a deployed one does.
+
+The mount mode is the target's, declared on its host (`PlantingHost.layout_mount`), so its two
+versions and its layout check share it: read-only, or read-write on a target whose exploits,
+written from the published mechanism, write to the layout. Every builder mounts the tree through
+`layout_mount_args`, and none decides the mode itself. `WORK` is the working directory of a
+target that cannot write to the checkout while a tool its flaw is reached through writes to the
+working directory first: a per-launch tmpfs the planting layer emits, never a place.
 """
 
 import os
@@ -28,7 +35,13 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from evals.cve_places import LayoutAnchor
-from evals.cve_planting_base import LAYOUT_PREFIX, LAYOUT_ROOT, LayoutNode, PlantingDocker
+from evals.cve_planting_base import (
+    LAYOUT_PREFIX,
+    LAYOUT_ROOT,
+    LayoutMount,
+    LayoutNode,
+    PlantingDocker,
+)
 
 ANCHOR_PATHS: Mapping[LayoutAnchor, str] = {
     LayoutAnchor.WORKSPACE: "/srv",
@@ -52,6 +65,7 @@ PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]
 PROJECT_BARE = ANCHOR_PATHS[LayoutAnchor.PROJECT_BARE]
 BARE_CONFIG = f"{PROJECT_BARE}/{_CONFIG}"
 WORKSPACE_DOTENV = f"{WORKSPACE}/{_WORKSPACE_ENV}"
+WORK = "/work"
 
 # The neutral-content templates: a remote URL whose userinfo carries the value, and a dotenv
 # line whose value carries it. Only the value changes between a kept and an unkept node.
@@ -82,6 +96,12 @@ def owned_layout(docker: PlantingDocker, build: Callable[[Path], None]) -> Gener
             yield root
         finally:
             docker.remove_layout(name)
+
+
+def layout_mount_args(root: Path, mount: LayoutMount) -> list[str]:
+    if mount is LayoutMount.READ_WRITE:
+        return ["-v", f"{root}:{WORKSPACE}"]
+    return ["-v", f"{root}:{WORKSPACE}:ro"]
 
 
 def build_layout(root: Path, nodes: Sequence[LayoutNode]) -> None:

@@ -171,6 +171,22 @@ The tree is owned by the unprivileged account, `65534:65534`, on every target an
 the pinned busybox running `chown -hR 65534:65534`, and removes it with another after the
 launch. A layout builder enters `owned_layout` before `planted`.
 
+The mount mode is the target's, declared on its `PlantingHost` (`layout_mount`) and the same on
+both versions: read-only by default, read-write (`LayoutMount.READ_WRITE`) only on a target whose
+exploits, written from the published mechanism, write to the layout. A builder mounts the tree
+with `cve_layout.layout_mount_args(root, spec.host.layout_mount)` and never chooses the mode.
+
+The target runs as the unprivileged account, `65534:65534`, unless a kept `account` place has it
+run as the account named after a nonce: the planting layer emits that `--user`. `kit_driver`
+reports, on each version, a launch whose last `--user` before the image is any other account, or
+that sets none, as a dead condition, so a builder must not pass a `--user` of its own.
+
+A target that cannot write to the checkout, while a tool its flaw is reached through writes to
+the working directory before the flaw's code runs, takes `/work` as its working directory
+(`PlantingHost.working_directory`, `cve_layout.WORK`): an empty tmpfs outside the layout, owned
+by `65534:65534` and sticky, that the planting layer mounts at each launch. The checkout stays its
+scope, and `/work` holds no place: a file place resolving under it is refused.
+
 Nodes (the `anchor` of a layout place in `holdout_places.json`):
 
 - `workspace` -> `/srv`: the workspace directory. `/srv/.env` sits here, a dotenv at the
@@ -211,7 +227,12 @@ The authored `KitTarget` then wraps into a `CVETarget` (the shared fields).
 - `images`, `server_image`, `patched_image`: service names, built and launched as
   `mcp-auditor-kit-<service>:local`. The service name must differ from every acceptance service
   (the README lists them).
-- `planting_host`: the `PlantingHost` the places plant into.
+- `planting_host`: the `PlantingHost` the places plant into: `user` (`SymbolicUser.UNPRIVILEGED`),
+  `working_directory` (the checkout `/srv/app`, or `/work` for a target that cannot write to the
+  checkout while a tool its flaw is reached through writes to its working directory first),
+  `has_network`, `public_names` (optional), and `layout_mount` (`LayoutMount.READ_ONLY` by
+  default, `LayoutMount.READ_WRITE` when the exploits, written from the published mechanism,
+  write to the layout). `layout.md` gives the rules.
 - `builder`: a context manager yielding a `kit_launch.Launch`.
 - `exploits`, `benign`: `async (Places, KitClient) -> None`.
 - `launch_mode`, `fallback_scope`: optional, defaulting to normal launch and no fallback.

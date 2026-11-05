@@ -119,6 +119,12 @@ def spec_of(
     return planting_spec(places, planting_host, RANDOM_NONCES)
 
 
+def a_work_spec(*, with_an_account: bool) -> PlantingSpec:
+    places = [_place("account-1", Coordinates(PlantKind.ACCOUNT))] if with_an_account else []
+    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/work", False)
+    return planting_spec(places, planting_host, RANDOM_NONCES)
+
+
 def a_stand_in_spec() -> PlantingSpec:
     names = PublicNames(stand_ins=(STAND_IN_HOST,), trust=("SSL_CERT_FILE",))
     planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", True, names)
@@ -353,6 +359,44 @@ def identity_as_target(args: PlantedArgs) -> dict[str, str]:
     )
     sections = result.stdout.split(_SECTION)[1:]
     return dict(section.split("\n", 1) for section in sections)
+
+
+@dataclass(frozen=True)
+class WorkObservation:
+    at_start: str  # `ls -A /work` before the write
+    created: bool
+    listing: str  # `ls -ld /work` after the write
+
+
+def work_as_target(args: PlantedArgs) -> WorkObservation:
+    """What a container started with the target's own options sees of `/work`, and whether it
+    can write a file there."""
+    script = (
+        f"ls -A /work; echo '{_SECTION}'; touch /work/written && echo created; "
+        f"echo '{_SECTION}'; ls -ld /work"
+    )
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--label",
+            LABEL,
+            *confinement_args(),
+            *args.run_args(),
+            "--entrypoint",
+            "/bin/sh",
+            SENTINEL_IMAGE,
+            "-c",
+            script,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=_READ_TIMEOUT,
+        check=True,
+    )
+    at_start, created, listing = result.stdout.split(f"{_SECTION}\n")
+    return WorkObservation(at_start, created.strip() == "created", listing)
 
 
 _SECTION = "=== "
