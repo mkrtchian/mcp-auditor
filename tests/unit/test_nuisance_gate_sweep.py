@@ -10,7 +10,7 @@ from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_gate_session import run_gate
 from evals.nuisance_images import image_tag
-from tests.unit.support.test_holdout_run_given import RunningContainers
+from tests.fakes import FakeContainerSweep
 from tests.unit.support.test_nuisance_admission_given import with_a_backend
 
 
@@ -18,7 +18,7 @@ async def test_the_gate_removes_the_server_and_built_backend_containers_left_run
     tmp_path: Path,
 ):
     server = _on_the_ckan_backend(given.FILESYSTEM)
-    containers = RunningContainers(["leftover_server", "leftover_responder"])
+    containers = FakeContainerSweep(["leftover_server", "leftover_responder"])
     audit = given.scripted({server.server_package: given.clean_runs()})
 
     await run_gate(given.options([server]), given.a_harness(tmp_path, audit, containers=containers))
@@ -29,7 +29,7 @@ async def test_the_gate_removes_the_server_and_built_backend_containers_left_run
 
 async def test_a_gate_that_raises_still_removes_the_containers_left_running(tmp_path: Path):
     server = _on_the_ckan_backend(given.FILESYSTEM)
-    containers = RunningContainers(["leftover_server"])
+    containers = FakeContainerSweep(["leftover_server"])
 
     with pytest.raises(AssertionError, match="unscripted audit"):
         await run_gate(

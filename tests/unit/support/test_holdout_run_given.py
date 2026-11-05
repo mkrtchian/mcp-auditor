@@ -1,6 +1,6 @@
 import asyncio
 import dataclasses
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import date
 from typing import Any
 
@@ -17,6 +17,7 @@ from evals.holdout_run import HoldoutDeps, run_holdout
 from evals.probe_candidates import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep, ProviderUsage
+from tests.fakes import FakeContainerSweep
 from tests.unit.support import test_cve_grammar_given as grammar
 
 FILESYSTEM = "CVE-2025-53109"
@@ -104,34 +105,17 @@ class InterruptingAudit:
         raise AssertionError("a run that never ends completed")
 
 
-class RunningContainers:
-    """Answers each listing of the running containers with the next of `listings`, then with
-    none, and records the tags listed and the containers removed."""
-
-    def __init__(self, *listings: list[str]) -> None:
-        self.listed_tags: list[list[str]] = []
-        self.removed: list[str] = []
-        self._listings = list(listings)
-
-    def running(self, tags: Sequence[str]) -> list[str]:
-        self.listed_tags.append(list(tags))
-        return self._listings.pop(0) if self._listings else []
-
-    def remove(self, containers: Sequence[str]) -> None:
-        self.removed.extend(containers)
-
-
 def deps_auditing(
     audit: Audit,
     *,
     check: dict[str, list[str]] | None = None,
     layout: dict[str, LayoutCheck] | None = None,
     throttled: int = 0,
-    containers: RunningContainers | None = None,
+    containers: FakeContainerSweep | None = None,
 ) -> HoldoutDeps:
     checks = check or {}
     layouts = layout or {}
-    docker = containers or RunningContainers()
+    docker = containers or FakeContainerSweep()
 
     async def _check(target: CVETarget) -> list[str]:
         return checks.get(target.cve_id, [])

@@ -18,9 +18,8 @@ from evals.cve_session_model import AuditTarget, CVEHarness, CVEOptions
 from evals.cve_session_recording import WrittenBaseline
 from evals.eval_session import TreeState
 from evals.metrics import SessionThrottles
-from evals.run_images import ContainerSweep
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
-from tests.unit.support.test_holdout_run_given import RunningContainers
+from tests.fakes import FakeContainerSweep
 
 BILLED_CVE = "CVE-billed"
 PRICED_MODEL = "gpt-6-luna"
@@ -34,11 +33,10 @@ def exit_code_of(monkeypatch: pytest.MonkeyPatch, *flags: str) -> object:
     return exit_.value.code
 
 
-def a_sweep_finding(monkeypatch: pytest.MonkeyPatch, *running: str) -> RunningContainers:
+def a_sweep_finding(monkeypatch: pytest.MonkeyPatch, *running: str) -> FakeContainerSweep:
     """The containers left running that the final sweep lists, once."""
-    containers = RunningContainers(list(running))
-    sweep = ContainerSweep(containers.running, containers.remove)
-    monkeypatch.setattr(run_cve_benchmark, "DOCKER_SWEEP", sweep)
+    containers = FakeContainerSweep(list(running))
+    monkeypatch.setattr(run_cve_benchmark, "DOCKER_SWEEP", containers.sweep)
     return containers
 
 

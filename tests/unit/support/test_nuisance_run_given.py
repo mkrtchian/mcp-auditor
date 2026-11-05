@@ -33,8 +33,8 @@ from mcp_auditor.domain.models import (
     ToolResponse,
 )
 from mcp_auditor.domain.ports import MCPClientPort
+from tests.fakes import FakeContainerSweep
 from tests.fakes.mcp_client import FakeMCPClient
-from tests.unit.support.test_holdout_run_given import RunningContainers
 
 FIRST_FLAW = admission.FIRST_FLAW
 SECOND_FLAW = admission.SECOND_FLAW
@@ -189,10 +189,10 @@ def deps_auditing(
     *,
     benign_call: dict[str, str | None] | None = None,
     throttled: int = 0,
-    containers: RunningContainers | None = None,
+    containers: FakeContainerSweep | None = None,
 ) -> NuisanceDeps:
     reasons = benign_call or {}
-    docker = containers or RunningContainers()
+    docker = containers or FakeContainerSweep()
 
     async def _benign_call(server: AdmittedServer) -> str | None:
         return reasons.get(server.server_package)

@@ -15,7 +15,9 @@ from evals.holdout_kit.benign_probe import (
     report_lines,
     single_container_launch,
 )
+from evals.holdout_kit.kit_client import KitTool
 from evals.nuisance_images import image_tag
+from tests.fakes import FakeKitClient
 
 
 def test_record_calls_keeps_record_order_and_drops_exact_duplicates():
@@ -88,7 +90,10 @@ def test_the_probe_launch_of_a_record_with_a_backend_is_its_lifecycle_launch(
 
 
 async def test_probe_client_answers_each_call_in_order():
-    client = given.FakeKitClient(["read", "list"], {"read": given.ok("a"), "list": given.ok("b")})
+    client = FakeKitClient(
+        [KitTool("read", None, {}), KitTool("list", None, {})],
+        {"read": given.ok("a"), "list": given.ok("b")},
+    )
 
     report = await probe_client(client, [given.a_probe_call("list"), given.a_probe_call("read")])
 

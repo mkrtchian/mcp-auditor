@@ -14,8 +14,8 @@ from evals.cve_planting_base import SENTINEL_SERVICE
 from evals.cve_targets import CVE_TARGETS, image_tag
 from evals.holdout_draw import draw_order
 from evals.holdout_kit import kit_launch
-from evals.run_images import ContainerSweep, target_services
-from tests.unit.support.test_holdout_run_given import RunningContainers
+from evals.run_images import target_services
+from tests.fakes import FakeContainerSweep
 
 
 @pytest.fixture(autouse=True)
@@ -23,10 +23,9 @@ def _no_docker_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
     _leftovers(monkeypatch)
 
 
-def _leftovers(monkeypatch: pytest.MonkeyPatch, *running: str) -> RunningContainers:
-    containers = RunningContainers(list(running))
-    sweep = ContainerSweep(containers.running, containers.remove)
-    monkeypatch.setattr(run_holdout, "DOCKER_SWEEP", sweep)
+def _leftovers(monkeypatch: pytest.MonkeyPatch, *running: str) -> FakeContainerSweep:
+    containers = FakeContainerSweep(list(running))
+    monkeypatch.setattr(run_holdout, "DOCKER_SWEEP", containers.sweep)
     return containers
 
 

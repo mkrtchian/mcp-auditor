@@ -9,8 +9,7 @@ from evals.holdout_kit import kit_launch
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget
 from evals.nuisance_admission import ADMISSION_PATH, BackendFixture, NuisanceAdmission
 from evals.nuisance_backends import BACKENDS
-from evals.run_images import ContainerSweep
-from tests.unit.support.test_holdout_run_given import RunningContainers
+from tests.fakes import FakeContainerSweep
 from tests.unit.support.test_nuisance_admission_given import an_admission, with_a_backend
 
 
@@ -19,10 +18,9 @@ def _no_docker_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
     _leftovers(monkeypatch)
 
 
-def _leftovers(monkeypatch: pytest.MonkeyPatch, *running: str) -> RunningContainers:
-    containers = RunningContainers(list(running))
-    sweep = ContainerSweep(containers.running, containers.remove)
-    monkeypatch.setattr(nuisance_calibrate_command, "DOCKER_SWEEP", sweep)
+def _leftovers(monkeypatch: pytest.MonkeyPatch, *running: str) -> FakeContainerSweep:
+    containers = FakeContainerSweep(list(running))
+    monkeypatch.setattr(nuisance_calibrate_command, "DOCKER_SWEEP", containers.sweep)
     return containers
 
 

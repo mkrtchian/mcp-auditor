@@ -22,6 +22,7 @@ from evals.probe import call_cost
 from evals.provider_errors import ProviderFatal
 from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage, ToolResponse
+from tests.fakes import FakeContainerSweep
 
 _EARLY = date(2025, 3, 1)
 _LATE = date(2026, 4, 1)
@@ -373,7 +374,7 @@ async def test_a_container_of_the_run_images_running_at_start_refuses_before_the
     deps = dataclasses.replace(
         given.deps_reaching_nothing(),
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
-        running_containers=given.RunningContainers(["leftover_server"]).running,
+        running_containers=FakeContainerSweep.running_before_the_rebuild("leftover_server").running,
     )
 
     with pytest.raises(Refused) as refused:
@@ -384,7 +385,7 @@ async def test_a_container_of_the_run_images_running_at_start_refuses_before_the
 
 async def test_a_container_seen_only_after_the_rebuild_refuses_and_is_left_running():
     server = given.a_server()
-    containers = given.RunningContainers([], ["concurrent_server"])
+    containers = FakeContainerSweep.appearing_after_the_rebuild("concurrent_server")
     deps = given.deps_auditing(given.scripted({server.server_package: []}), containers=containers)
 
     with pytest.raises(Refused) as refused:
@@ -398,7 +399,7 @@ async def test_the_containers_left_running_at_the_end_are_removed_and_counted(
     capsys: pytest.CaptureFixture[str],
 ):
     server = given.a_server()
-    containers = given.RunningContainers([], [], ["stuck_one", "stuck_two"])
+    containers = FakeContainerSweep.left_at_the_end("stuck_one", "stuck_two")
     audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 
     await given.run([server], given.deps_auditing(audit, containers=containers))
@@ -411,7 +412,7 @@ async def test_no_container_left_at_the_end_removes_and_prints_nothing(
     capsys: pytest.CaptureFixture[str],
 ):
     server = given.a_server()
-    containers = given.RunningContainers()
+    containers = FakeContainerSweep()
     audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 
     await given.run([server], given.deps_auditing(audit, containers=containers))
@@ -421,7 +422,7 @@ async def test_no_container_left_at_the_end_removes_and_prints_nothing(
 
 
 async def test_the_sweep_runs_when_an_audit_raises():
-    containers = given.RunningContainers([], [], ["stuck_one"])
+    containers = FakeContainerSweep.left_at_the_end("stuck_one")
 
     async def audit(_server: object) -> given.Outcome:
         raise ProviderFatal(PermissionError("the key was revoked"))
@@ -434,7 +435,7 @@ async def test_the_sweep_runs_when_an_audit_raises():
 
 async def test_the_sweep_runs_when_no_server_survives():
     server = given.a_server()
-    containers = given.RunningContainers([], [], ["stuck_one"])
+    containers = FakeContainerSweep.left_at_the_end("stuck_one")
     deps = given.deps_auditing(
         given.scripted({server.server_package: []}),
         benign_call={server.server_package: "benign call errored"},
@@ -452,7 +453,7 @@ async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
         given.a_server(),
         BackendFixture(provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"),
     )
-    containers = given.RunningContainers()
+    containers = FakeContainerSweep()
     audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 
     await given.run([server], given.deps_auditing(audit, containers=containers))

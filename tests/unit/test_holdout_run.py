@@ -19,6 +19,7 @@ from evals.probe import call_cost
 from evals.provider_errors import ProviderFatal
 from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage
+from tests.fakes import FakeContainerSweep
 
 
 async def test_a_target_is_assembled_from_its_runs():
@@ -326,7 +327,9 @@ async def test_a_container_of_the_run_images_running_at_start_refuses_before_the
     deps = dataclasses.replace(
         given.deps_reaching_nothing(),
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
-        running_containers=given.RunningContainers(["leftover_filesystem"]).running,
+        running_containers=FakeContainerSweep.running_before_the_rebuild(
+            "leftover_filesystem"
+        ).running,
     )
 
     with pytest.raises(Refused) as refused:
@@ -337,7 +340,7 @@ async def test_a_container_of_the_run_images_running_at_start_refuses_before_the
 
 async def test_a_container_seen_only_after_the_rebuild_refuses_and_is_left_running():
     target = given.a_target(given.FILESYSTEM)
-    containers = given.RunningContainers([], ["concurrent_filesystem"])
+    containers = FakeContainerSweep.appearing_after_the_rebuild("concurrent_filesystem")
     deps = given.deps_auditing(given.scripted({target.cve_id: []}), containers=containers)
 
     with pytest.raises(Refused) as refused:
@@ -351,7 +354,7 @@ async def test_the_containers_left_running_at_the_end_are_removed_and_counted(
     capsys: pytest.CaptureFixture[str],
 ):
     target = given.a_target(given.FILESYSTEM)
-    containers = given.RunningContainers([], [], ["stuck_one", "stuck_two"])
+    containers = FakeContainerSweep.left_at_the_end("stuck_one", "stuck_two")
     deps = given.deps_auditing(
         given.scripted({target.cve_id: given.three_detections()}), containers=containers
     )
@@ -366,7 +369,7 @@ async def test_no_container_left_at_the_end_removes_and_prints_nothing(
     capsys: pytest.CaptureFixture[str],
 ):
     target = given.a_target(given.FILESYSTEM)
-    containers = given.RunningContainers()
+    containers = FakeContainerSweep()
     deps = given.deps_auditing(
         given.scripted({target.cve_id: given.three_detections()}), containers=containers
     )
@@ -379,7 +382,7 @@ async def test_no_container_left_at_the_end_removes_and_prints_nothing(
 
 async def test_the_sweep_runs_when_an_audit_raises():
     target = given.a_target(given.FILESYSTEM)
-    containers = given.RunningContainers([], [], ["stuck_one"])
+    containers = FakeContainerSweep.left_at_the_end("stuck_one")
 
     async def audit(_target: object) -> given.Outcome:
         raise ProviderFatal(PermissionError("the key was revoked"))
@@ -392,7 +395,7 @@ async def test_the_sweep_runs_when_an_audit_raises():
 
 async def test_the_sweep_runs_when_no_target_survives():
     dead = given.a_target(given.KUBERNETES)
-    containers = given.RunningContainers([], [], ["stuck_one"])
+    containers = FakeContainerSweep.left_at_the_end("stuck_one")
     deps = given.deps_auditing(
         given.scripted({dead.cve_id: []}),
         check={dead.cve_id: ["vulnerable: no exploit surfaces"]},
@@ -407,7 +410,7 @@ async def test_the_sweep_runs_when_no_target_survives():
 
 async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
     target = given.a_target(backend_images=("apache/doris:all-in-one-4.1.3",))
-    containers = given.RunningContainers()
+    containers = FakeContainerSweep()
     deps = given.deps_auditing(
         given.scripted({target.cve_id: given.three_detections()}), containers=containers
     )

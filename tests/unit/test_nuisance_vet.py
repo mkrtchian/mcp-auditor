@@ -14,7 +14,7 @@ from evals import run_nuisance
 from evals.eval_session import Refused
 from evals.nuisance_commands import UNKNOWN_SERVER_EXIT
 from evals.nuisance_vet_command import VetDeps, vet_servers
-from tests.unit.support.test_holdout_run_given import RunningContainers
+from tests.fakes import FakeContainerSweep
 
 
 def test_every_server_answering_exits_zero_with_the_count(
@@ -63,7 +63,7 @@ def test_a_server_container_running_at_start_refuses_with_nothing_rebuilt(
 
 
 async def test_a_server_container_seen_only_after_the_rebuild_refuses_and_is_left_running():
-    containers = RunningContainers([], ["concurrent_server"])
+    containers = FakeContainerSweep.appearing_after_the_rebuild("concurrent_server")
     deps = dataclasses.replace(
         given.deps_on(backends.DockerHost()),
         running_containers=containers.running,

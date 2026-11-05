@@ -13,6 +13,7 @@ from evals.holdout_kit import benign_probe
 from evals.holdout_kit.benign_probe import ProbeCall, ProbeOutcome, ProbeReport
 from evals.holdout_kit.kit_client import KitResponse, KitTool
 from evals.nuisance_admission import AdmittedServer, BackendFixture
+from tests.fakes import FakeKitClient
 
 
 def a_server() -> AdmittedServer:
@@ -59,38 +60,22 @@ def _server_args(
     return ["run", "--name", name, image, host.working_directory, *server_launch]
 
 
-class FakeKitClient:
-    """Lists `tools` and answers each call with the response set for its tool, an error naming
-    the tool when none is set. Records the calls made."""
-
-    def __init__(self, tools: Sequence[str], responses: dict[str, KitResponse]) -> None:
-        self._tools = tools
-        self._responses = responses
-        self.calls: list[str] = []
-
-    async def list_tools(self) -> list[KitTool]:
-        return [KitTool(name, None, {}) for name in self._tools]
-
-    async def call_tool(self, name: str, args: dict[str, Any]) -> KitResponse:
-        self.calls.append(name)
-        return self._responses.get(name, KitResponse(f"unknown tool {name}", True))
-
-
 class PrerequisiteFakeKitClient(FakeKitClient):
     """Answers `read_note` only once `create_note` was called."""
 
     def __init__(self) -> None:
         super().__init__(
-            ["create_note", "read_note"], {"create_note": KitResponse("created", False)}
+            [KitTool("create_note", None, {}), KitTool("read_note", None, {})],
+            {"create_note": KitResponse("created", False)},
         )
 
     async def call_tool(self, name: str, args: dict[str, Any]) -> KitResponse:
-        if name == "read_note":
-            self.calls.append(name)
-            if "create_note" in self.calls:
-                return KitResponse("the note", False)
-            return KitResponse("no such note", True)
-        return await super().call_tool(name, args)
+        response = await super().call_tool(name, args)
+        if name != "read_note":
+            return response
+        if any(called == "create_note" for called, _ in self.calls):
+            return KitResponse("the note", False)
+        return KitResponse("no such note", True)
 
 
 def a_probe_call(tool: str, expect: str | None = None, before: Sequence[str] = ()) -> ProbeCall:
