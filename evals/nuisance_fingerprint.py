@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from evals import cve_planting_base, nuisance_confinement
 from evals.baseline import fingerprint_sources
-from evals.cve_baseline import planting_host_parts
+from evals.cve_baseline import host_stand_in_files, planting_host_parts
 from evals.cve_images import dockerfile_instructions
 from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
@@ -58,7 +58,7 @@ def nuisance_fixture_fingerprint(
         nuisance_confinement.nuisance_confinement_args(),
         cve_planting_base.resolver_args(),
         None if backend is None else backend.model_dump(),
-        None if backend is None else backend_content(backends[backend.provisioner].served),
+        None if backend is None else backend_content(_served(server, backends)),
         sorted((name, sorted(categories)) for name, categories in counted.items()),
         [
             _benign_call_parts(call)
@@ -68,6 +68,24 @@ def nuisance_fixture_fingerprint(
         ],
     ]
     return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
+
+
+def fingerprinted_files(
+    server: AdmittedServer,
+    docker_directory: Path = DOCKER_DIRECTORY,
+    backends: Mapping[str, RegisteredBackend] = BACKENDS,
+) -> list[Path]:
+    """The fixture files whose content the fingerprint reads: the patched Dockerfile, what the
+    backend serves and the host's stand-in files."""
+    return [
+        image_dockerfile(server.service, docker_directory),
+        *_served(server, backends),
+        *host_stand_in_files(server.host),
+    ]
+
+
+def _served(server: AdmittedServer, backends: Mapping[str, RegisteredBackend]) -> tuple[Path, ...]:
+    return () if server.backend is None else backends[server.backend.provisioner].served
 
 
 def _benign_call_parts(call: BenignCall) -> tuple[object, ...]:

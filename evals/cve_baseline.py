@@ -33,7 +33,7 @@ from evals.cve_planting_base import LayoutMount
 from evals.cve_targets import CVETarget, LaunchMode, image_tag
 from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.gate import ReplayRule
-from evals.public_stand_ins import STAND_INS_DIRECTORY, stand_in
+from evals.public_stand_ins import STAND_INS_DIRECTORY, stand_in, stand_in_files
 from mcp_auditor.config import Settings
 
 CVE_BASELINE_DIRECTORY = Path(__file__).parent / "baselines" / "cve"
@@ -201,9 +201,20 @@ def planting_host_parts(
 
 
 def _stand_in_parts(host: str, stand_ins_directory: Path) -> list[str]:
-    loaded = stand_in(host, stand_ins_directory)
-    served = (loaded.capture, loaded.certificate, loaded.key, loaded.authority)
-    return [host, loaded.address, *(hashlib.sha256(text.encode()).hexdigest() for text in served)]
+    address = stand_in(host, stand_ins_directory).address
+    served = (path.read_text() for path in _served_files(host, stand_ins_directory))
+    return [host, address, *(hashlib.sha256(text.encode()).hexdigest() for text in served)]
+
+
+def host_stand_in_files(host: PlantingHost) -> list[Path]:
+    """The stand-in files `planting_host_parts` hashes for the host."""
+    names = host.public_names.stand_ins
+    return [path for name in names for path in _served_files(name, STAND_INS_DIRECTORY)]
+
+
+def _served_files(host: str, stand_ins_directory: Path) -> tuple[Path, ...]:
+    files = stand_in_files(host, stand_ins_directory)
+    return (files.capture, files.certificate, files.key, files.authority)
 
 
 def _record_parts(record: Place) -> list[object]:
