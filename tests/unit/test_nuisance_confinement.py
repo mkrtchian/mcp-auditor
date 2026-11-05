@@ -9,7 +9,6 @@ from evals.cve_planting_base import (
     no_network_args,
 )
 from evals.nuisance_confinement import (
-    LAUNCH_LABEL,
     labelled_run_args,
     launch_digest,
     launch_matches,
@@ -51,7 +50,6 @@ def test_the_launch_label_goes_right_after_run_detached_and_the_rest_keeps_its_o
         f"mcp-auditor-cve-launch={launch_digest(BACKEND_RUN)}",
         *BACKEND_RUN[2:],
     ]
-    assert LAUNCH_LABEL == "mcp-auditor-cve-launch"
 
 
 def test_only_a_detached_run_is_labelled():
@@ -97,13 +95,27 @@ def test_the_single_container_run_ends_with_the_image_then_the_launch():
     assert args[-3:] == ["image:local", *LAUNCH]
 
 
-def test_the_single_container_run_is_confined_bounded_and_without_network():
-    args = single_container_run_args("image:local", HOST, LAUNCH)
+@pytest.mark.parametrize(
+    "host",
+    [HOST, PlantingHost(SymbolicUser.HOST, "/", has_network=False)],
+    ids=["unprivileged", "host user"],
+)
+def test_the_single_container_run_is_confined_bounded_and_without_network(host: PlantingHost):
+    args = single_container_run_args("image:local", host, LAUNCH)
 
     assert _holds(args, nuisance_confinement_args())
     assert _holds(args, no_network_args())
-    assert _holds(args, user_args(HOST.user))
-    assert _holds(args, ["-w", "/srv"])
+    assert _holds(args, user_args(host.user))
+    assert _holds(args, ["-w", host.working_directory])
+
+
+def test_the_single_container_run_has_no_network_even_on_a_networked_host():
+    networked = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
+
+    args = single_container_run_args("image:local", networked, LAUNCH)
+
+    assert _holds(args, no_network_args())
+    assert args.count("--network") == 1
 
 
 def _holds(args: list[str], segment: list[str]) -> bool:
