@@ -63,6 +63,9 @@ class PlantingHost:
     has_network: bool
     public_names: PublicNames = PublicNames()
     layout_mount: LayoutMount = LayoutMount.READ_ONLY
+    # Rule v11's `/work`, an empty per-launch tmpfs that holds no place, is the CVE family's. A
+    # nuisance fix check sets this: its `/work` is the server's project, baked into its image.
+    baked_work: bool = False
 
 
 @dataclass(frozen=True)

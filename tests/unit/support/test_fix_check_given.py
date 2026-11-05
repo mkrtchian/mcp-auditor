@@ -11,23 +11,24 @@ from contextlib import AbstractContextManager
 
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, PlantKind
-from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser
+from evals.cve_planting import PlantedArgs, PlantingHost, PlantingSpec, SymbolicUser, planted
 from evals.holdout_kit.fix_check import Exchange, Exercised, FixCheckTarget
 from evals.holdout_kit.kit_client import KitResponse
 from evals.holdout_kit.kit_launch import Launch, LaunchShape
+from tests.fakes.planting_docker import FakePlantingDocker
 
 WITNESS_ID = "witness"
 NONCE = "MCPAUDIT-fixcheckwitnessnonce"
 AIM = re.compile(r"cat ")
 
 
-def a_witness() -> Place:
+def a_witness(path: str = "/tmp/witness") -> Place:
     return Place(
         id=WITNESS_ID,
         family="fix_check",
         reachable_by=frozenset({"arbitrary_read"}),
         kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path="/tmp/witness"),
+        coordinates=Coordinates(PlantKind.FILE, path=path),
     )
 
 
@@ -63,13 +64,15 @@ def a_fix_check_target(
     mechanism: MechanismClass | None = MechanismClass.READ_OUTSIDE_SCOPE,
     aim: re.Pattern[str] = AIM,
     server_patched_service: str | None = None,
+    working_directory: str = "/srv",
+    witness_path: str = "/tmp/witness",
 ) -> FixCheckTarget:
     return FixCheckTarget(
         flaw="CVE-2025-0001",
         mechanism=mechanism,
         aim=aim,
-        witness=a_witness(),
-        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False),
+        witness=a_witness(witness_path),
+        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, working_directory, has_network=False),
         builder=_unused_builder,
         exploits=(),
         benign_calls=(),
@@ -77,6 +80,11 @@ def a_fix_check_target(
         patched_service="patched",
         server_patched_service=server_patched_service,
     )
+
+
+def launch_args(spec: PlantingSpec) -> PlantedArgs:
+    with planted(spec, "image:tag", FakePlantingDocker()) as args:
+        return args
 
 
 def _unused_builder(

@@ -136,11 +136,11 @@ def _replacing(**fields: object) -> TargetChange:
     return change
 
 
-def _declaring_a_read_write_layout() -> TargetChange:
+def _changing_its_host(**fields: object) -> TargetChange:
     def change(
         target: CVETarget, places: Places, _docker_directory: Path
     ) -> tuple[CVETarget, Places]:
-        host = dataclasses.replace(target.planting_host, layout_mount=LayoutMount.READ_WRITE)
+        host = dataclasses.replace(target.planting_host, **fields)
         return dataclasses.replace(target, planting_host=host), places
 
     return change
@@ -221,7 +221,8 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "server image": _replacing(server_image="another-service"),
     "reaches": _replacing(reaches=frozenset({"arbitrary_read"})),
     "planting host": _replacing(planting_host=PlantingHost(SymbolicUser.HOST, "/elsewhere", True)),
-    "a read-write layout": _declaring_a_read_write_layout(),
+    "a read-write layout": _changing_its_host(layout_mount=LayoutMount.READ_WRITE),
+    "a baked /work": _changing_its_host(baked_work=True),
     "a fictional kept id added": _keeping_another_record(),
     "a kept record moved in the mapping": _moving_the_kept_endpoint_record(),
     "the sentinel Dockerfile (a kept endpoint)": _appending_to_the_sentinel_dockerfile("RUN true"),

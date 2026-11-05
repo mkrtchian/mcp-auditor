@@ -149,7 +149,7 @@ def _set_up(
 def _work_mounts(host: PlantingHost) -> tuple[str, ...]:
     # Empty at every launch, outside the layout, owned by the unprivileged account and sticky like
     # /tmp, so a target under the planted account writes to it while `ls -ld` names no nonce.
-    if host.working_directory != WORK:
+    if host.working_directory != WORK or host.baked_work:
         return ()
     owner = f"uid={UNPRIVILEGED_UID},gid={UNPRIVILEGED_GID}"
     return ("--tmpfs", f"{WORK}:exec,mode=1777,{owner}")

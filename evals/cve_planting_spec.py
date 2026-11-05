@@ -116,7 +116,8 @@ def _plant_file(place: Place, host: PlantingHost, nonces: NonceSource, draft: _S
     draft.nonces[place.id] = content
     for raw in _coordinate_paths(place.coordinates):
         container_path = resolve_container_path(raw, host.working_directory)
-        if container_path == WORK or container_path.startswith(f"{WORK}/"):
+        in_work = container_path == WORK or container_path.startswith(f"{WORK}/")
+        if in_work and not host.baked_work:
             raise ValueError(f"{place.id}: {WORK} holds no place")
         _reject_overlap(place.id, container_path, draft)
         draft.files.append((place.id, FileIntent(container_path, content)))

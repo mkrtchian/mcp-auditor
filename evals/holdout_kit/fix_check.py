@@ -20,7 +20,7 @@ import os
 import re
 import tempfile
 from collections.abc import Awaitable, Callable, Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Literal
 
 from evals.cve_grammar import MechanismClass, PlantedTarget
@@ -51,7 +51,9 @@ class FixCheckTarget:
     server_patched_service: str | None  # None when the server's patched version is the flaw's
 
     def planting_spec(self, nonces: NonceSource = RANDOM_NONCES) -> PlantingSpec:
-        return compute_planting_spec((self.witness,), self.planting_host, nonces)
+        # The nuisance rule defines no `/work`: a fix check's is a directory baked into its image.
+        host = replace(self.planting_host, baked_work=True)
+        return compute_planting_spec((self.witness,), host, nonces)
 
 
 @dataclass(frozen=True)

@@ -128,3 +128,12 @@ def test_the_benign_transcript_shows_each_exchange_on_one_line():
         "CVE-2025-0001 patched: benign show -> ok 'roles:\\n  analyst'",
         "CVE-2025-0001 patched: benign list -> error 'backend unavailable'",
     ]
+
+
+def test_a_fix_check_working_in_work_holds_its_witness_there_with_no_tmpfs():
+    target = given.a_fix_check_target(working_directory="/work", witness_path="/work/secret.md")
+
+    spec = target.planting_spec()
+
+    assert [intent.container_path for intent in spec.files] == ["/work/secret.md"]
+    assert "--tmpfs" not in given.launch_args(spec).run_args()

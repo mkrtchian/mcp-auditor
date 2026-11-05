@@ -185,10 +185,12 @@ def planting_host_parts(
     host: PlantingHost, stand_ins_directory: Path = STAND_INS_DIRECTORY
 ) -> list[object]:
     parts: list[object] = [host.user.value, host.working_directory, host.has_network]
-    # Like the public names below, only a read-write layout adds a part, so a read-only host (every
-    # nuisance host) keeps its fingerprint.
+    # Like the public names below, only a read-write layout or a baked `/work` adds a part, so a
+    # host declaring neither (every nuisance host) keeps its fingerprint.
     if host.layout_mount is LayoutMount.READ_WRITE:
         parts.append(host.layout_mount.value)
+    if host.baked_work:
+        parts.append("baked_work")
     names = host.public_names
     # Only a declaring host gains parts: a host with none keeps its fingerprint and reads no file.
     if names.stand_ins or names.trust or names.ip_label_domains:

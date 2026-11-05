@@ -62,6 +62,12 @@ def _services(targets: Iterable[CVETarget]) -> set[str]:
     return services - {SENTINEL_SERVICE, STAND_IN_SERVICE}
 
 
+# A baked `/work` is a nuisance fix check's: rule v11 gives a CVE target's `/work` the empty tmpfs.
+def test_no_acceptance_or_holdout_target_bakes_its_work_directory():
+    for target in (*CVE_TARGETS, *HOLDOUT_TARGETS):
+        assert not target.planting_host.baked_work, target.cve_id
+
+
 def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():
     for target in HOLDOUT_TARGETS:
         assert target.tools_filter is None
