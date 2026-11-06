@@ -7,6 +7,7 @@ from evals.fixture_sources import (
     unfingerprinted_pins,
     unfingerprinted_stand_in_files,
     unheld_requests,
+    unreplayed_captures,
     unsourced_copies,
 )
 from evals.nuisance_admission_records import SeedRecord
@@ -105,6 +106,32 @@ def test_a_stand_in_request_its_file_does_not_hold_is_refused(tmp_path: Path):
     stand_in = _a_stand_in("responder.py", "GET /never/served")
 
     assert unheld_requests(stand_in, tmp_path) == ["GET /never/served"]
+
+
+def test_a_capture_backed_stand_in_served_by_the_replayer_holds_its_requests(tmp_path: Path):
+    (tmp_path / "Dockerfile.stand-in").write_text("FROM python\n")
+    stand_in = _a_captured_stand_in("Dockerfile.stand-in", "the page a browser fetches")
+
+    assert unheld_requests(stand_in, tmp_path) == []
+    assert unreplayed_captures(stand_in, tmp_path / "Dockerfile.stand-in", tmp_path) == []
+
+
+def test_a_capture_declared_on_another_file_than_the_replayer_is_refused(tmp_path: Path):
+    stand_in = _a_captured_stand_in("responder.py", "GET /")
+
+    assert unreplayed_captures(stand_in, tmp_path / "Dockerfile.stand-in", tmp_path) == [
+        "responder.py"
+    ]
+
+
+def test_a_stand_in_without_a_capture_needs_no_replayer(tmp_path: Path):
+    stand_in = _a_stand_in("responder.py", "GET /")
+
+    assert unreplayed_captures(stand_in, tmp_path / "Dockerfile.stand-in", tmp_path) == []
+
+
+def _a_captured_stand_in(file: str, request: str) -> StandInRecord:
+    return _a_stand_in(file, request).model_copy(update={"capture": "host.json"})
 
 
 def _a_seed_pinned(pin: str | None) -> SeedRecord:

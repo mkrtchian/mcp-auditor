@@ -10,8 +10,43 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      chromium ca-certificates fonts-liberation \
+      chromium ca-certificates fonts-liberation libnss3-tools \
     && rm -rf /var/lib/apt/lists/*
+
+# Trust the stand-ins' fixture authority where Chromium reads it on Linux: the per-user NSS
+# database at $HOME/.pki/nssdb (HOME=/tmp for the unprivileged account), not an environment
+# variable (Chromium ignores SSL_CERT_FILE / NODE_EXTRA_CA_CERTS for page.goto). The authority
+# is inlined, not COPYed, so it stays in the instruction fingerprint; it must equal
+# evals/stand_ins/tls/fixture-authority.pem (a unit test checks it), so a regeneration rebuilds
+# this image. certutil is from libnss3-tools. The store belongs to account 65534, which reads it
+# at launch.
+RUN mkdir -p /tmp/.pki/nssdb \
+ && cat > /tmp/fixture-authority.pem <<'AUTHORITY_EOF' \
+ && certutil -d sql:/tmp/.pki/nssdb -A -n 'Local Root CA' -t 'C,,' -i /tmp/fixture-authority.pem \
+ && rm -f /tmp/fixture-authority.pem \
+ && chown -R 65534:65534 /tmp/.pki
+-----BEGIN CERTIFICATE-----
+MIIDcTCCAxegAwIBAgIUYLflog2It9stynNoJsRfk2nZBoEwCgYIKoZIzj0EAwIw
+KDEmMCQGA1UEAwwdbWNwLWF1ZGl0b3IgZml4dHVyZSBhdXRob3JpdHkwIBcNMjYx
+MTA2MDQ1NDE5WhgPMjEyNjEwMTMwNDU0MTlaMCgxJjAkBgNVBAMMHW1jcC1hdWRp
+dG9yIGZpeHR1cmUgYXV0aG9yaXR5MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE
+92oJ6uTxCnWRbu3zuWvBLMLJChsbKcWiQkktlvx/+G495x8WZqg0eYH5oDvhtjIX
+IhzdCzWaECqsYG/QN4ZIOKOCAhswggIXMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0P
+AQH/BAQDAgEGMB0GA1UdDgQWBBQA7oipB7Lgqj7Q+avlCUP084N4KDCCAdMGA1Ud
+HgEB/wSCAccwggHDoIHgMA2CC2V4YW1wbGUuY29tMA+CDWRlbW8uY2thbi5vcmcw
+D4INYXBpLmFwaWZ5LmNvbTAdghtyZHMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20w
+KIImc2VjcmV0c21hbmFnZXIudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20wFYITaHRt
+bC5kdWNrZHVja2dvLmNvbTAQgg5hcGkuZ2l0aHViLmNvbTAfgh1leGFtcGxlLW9y
+Zy5teS5zYWxlc2ZvcmNlLmNvbTAOggx3M2NoYWxscy5jb20wCocILTcACv////+h
+gd0wDoIMLmV4YW1wbGUuY29tMBCCDi5kZW1vLmNrYW4ub3JnMBCCDi5hcGkuYXBp
+ZnkuY29tMB6CHC5yZHMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20wKYInLnNlY3Jl
+dHNtYW5hZ2VyLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tMBaCFC5odG1sLmR1Y2tk
+dWNrZ28uY29tMBGCDy5hcGkuZ2l0aHViLmNvbTAggh4uZXhhbXBsZS1vcmcubXku
+c2FsZXNmb3JjZS5jb20wD4INLnczY2hhbGxzLmNvbTAKBggqhkjOPQQDAgNIADBF
+AiBo0QIFS0JIMht8Md0MxUqNBaKd4Y9kZ4a65AP0IIuBHQIhAKJYydfR4hYFraEZ
+JbaRB3j65WDU11rRc28HbnJJRanu
+-----END CERTIFICATE-----
+AUTHORITY_EOF
 
 RUN npm install -g a11y-mcp@1.0.4
 

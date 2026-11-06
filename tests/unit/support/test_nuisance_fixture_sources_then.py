@@ -1,15 +1,19 @@
 from pathlib import Path
 
 from evals.cve_images import dockerfile_instructions
+from evals.docker_paths import image_dockerfile
 from evals.fixture_sources import (
     unfingerprinted_pins,
     unfingerprinted_stand_in_files,
     unheld_requests,
+    unreplayed_captures,
     unsourced_copies,
 )
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_fingerprint import fingerprinted_files
+
+_REPLAYER = image_dockerfile("stand-in")
 
 
 def every_dockerfile_copies_nothing_unsourced(server: AdmittedServer) -> None:
@@ -32,6 +36,7 @@ def every_stand_in_is_a_fingerprinted_file_holding_its_requests(server: Admitted
     for stand_in in server.stand_ins or []:
         assert unfingerprinted_stand_in_files(stand_in, covered, REPO_ROOT) == []
         assert unheld_requests(stand_in, REPO_ROOT) == []
+        assert unreplayed_captures(stand_in, _REPLAYER, REPO_ROOT) == []
 
 
 def _dockerfiles(paths: list[Path]) -> list[Path]:

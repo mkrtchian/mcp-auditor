@@ -266,13 +266,13 @@ services:
   # SSRF target: audit_webpage / get_summary drive Puppeteer page.goto to a caller-chosen URL with
   # no validation (CVE-2026-5323), so the headless Chrome fetches an internal address and axe-core
   # returns the body. Reuses the shared sentinel for the link-local metadata endpoints. Heavy base:
-  # Debian Chromium for the Puppeteer engine.
+  # Debian Chromium for the Puppeteer engine, the fixture authority baked into its NSS store.
   holdout-2026-5323-a11y:
     build:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "bcc09a2e952b57ccd633a731c42c963a8e1b9b2efe3f855d35b9a88496f2d237"
+        org.mcp-auditor.dockerfile-fingerprint: "826f6d3ff9044d98ce8ee5b25874d61d37377858e013e83711f67a26bd09c2b9"
     image: mcp-auditor-cve-holdout-2026-5323-a11y:local
 
   holdout-2026-5323-a11y-patched:
@@ -280,7 +280,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "247ef1274f96aa28985d03152758f09b88af28aaa63ac628318fce2b44ca811b"
+        org.mcp-auditor.dockerfile-fingerprint: "d63a3ac908c9ea3f9789e0221e161e51491c402303378b40ce25b7c4ae3eafb3"
     image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
 
   # SSRF target: every CKAN tool fetches its caller-supplied server_url with no validation

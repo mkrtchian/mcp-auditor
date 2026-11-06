@@ -5,8 +5,14 @@ from evals.cve_baseline import ENVIRONMENT_PATHS, host_stand_in_files
 from evals.cve_places import HOLDOUT_PLACES, PlantKind, kept_records, load_places
 from evals.cve_targets import CVETarget
 from evals.docker_paths import image_dockerfile
-from evals.fixture_sources import unfingerprinted_stand_in_files, unheld_requests
+from evals.fixture_sources import (
+    unfingerprinted_stand_in_files,
+    unheld_requests,
+    unreplayed_captures,
+)
 from evals.honeypots import REPO_ROOT
+
+_REPLAYER = image_dockerfile("stand-in")
 
 
 def every_card_stand_in_is_fingerprinted(card: CalibrationCard, target: CVETarget) -> None:
@@ -14,6 +20,7 @@ def every_card_stand_in_is_fingerprinted(card: CalibrationCard, target: CVETarge
     for card_stand_in in card.stand_ins or []:
         assert unfingerprinted_stand_in_files(card_stand_in.stand_in, covered, REPO_ROOT) == []
         assert unheld_requests(card_stand_in.stand_in, REPO_ROOT) == []
+        assert unreplayed_captures(card_stand_in.stand_in, _REPLAYER, REPO_ROOT) == []
 
 
 def _fingerprinted_files(target: CVETarget) -> list[Path]:

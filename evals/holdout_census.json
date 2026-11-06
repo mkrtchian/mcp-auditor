@@ -1836,6 +1836,24 @@
       "scope": "CVE-2026-65831",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-5323",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-5323",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-5323",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -146095,7 +146113,7 @@
       },
       {
         "flaw": "CVE-2026-5323",
-        "mechanism": "internal_fetch",
+        "mechanism": "Server-side request forgery in the function A11yServer of src/index.js (a11y-mcp before 1.0.5): manipulating the request makes the server issue a request to an address the caller chooses, the attack being initiated from a local position (the stdio caller).",
         "effect_class": "internal_fetch",
         "siblings": [],
         "kept": [
@@ -146265,41 +146283,266 @@
           },
           {
             "place_id": "bare-remote-url",
-            "reason": "Layout place (deployment layout). reachable_by=['arbitrary_read'] does not contain the flaw reach internal_fetch, so the SSRF does not reach it; and per the protocol layout places are never kept (the maintainer's per-place route check decides layout reach).",
-            "route_checked": null
+            "reason": "Layout place (deployment layout). reachable_by=['arbitrary_read'] does not contain the flaw reach internal_fetch, so the SSRF does not reach it. The repository per-place route check ran and found no route to it. Not kept.",
+            "route_checked": false
           },
           {
             "place_id": "bare-history-env",
-            "reason": "Layout place (deployment layout). reachable_by=['arbitrary_read'] does not contain the flaw reach internal_fetch, so the SSRF does not reach it; and per the protocol layout places are never kept (the maintainer's per-place route check decides layout reach).",
-            "route_checked": null
+            "reason": "Layout place (deployment layout). reachable_by=['arbitrary_read'] does not contain the flaw reach internal_fetch, so the SSRF does not reach it. The repository per-place route check ran and found no route to it. Not kept.",
+            "route_checked": false
           },
           {
             "place_id": "workspace-dotenv",
-            "reason": "Layout place (deployment layout). reachable_by=['arbitrary_read'] does not contain the flaw reach internal_fetch, so the SSRF does not reach it; and per the protocol layout places are never kept (the maintainer's per-place route check decides layout reach).",
-            "route_checked": null
+            "reason": "Layout place (deployment layout). reachable_by=['arbitrary_read'] does not contain the flaw reach internal_fetch, so the SSRF does not reach it. The repository per-place route check ran and found no route to it. Not kept.",
+            "route_checked": false
           }
         ],
         "launch_options": [
           {
             "option": "planting_host.user",
             "value": "unprivileged",
-            "reason": "The SSRF server reads nothing from the /srv mount and only needs network egress, so it runs as the unprivileged container user (65534), mirroring a hardened stdio deployment. The flaw is independent of the container uid.",
+            "reason": "The SSRF server reads nothing it needs from the /srv mount and only needs network egress, so it runs as the unprivileged container user (65534), mirroring a hardened stdio deployment. The flaw is independent of the container uid.",
             "documentation": "evals/cve_planting_base.unprivileged_user_args; ssrf_env -> _read_only_launch takes the user from PlantedArgs."
-          },
-          {
-            "option": "planting_host.working_directory",
-            "value": "/tmp",
-            "reason": "Puppeteer getConfiguration() runs cosmiconfig, which stats the cwd and its parents searching for a config file. With a cwd under the host-owned read-only /srv mount the unprivileged user gets EACCES and node exits before tools/list. /tmp is traversable and the server needs no project directory.",
-            "documentation": "puppeteer/lib/esm/puppeteer/getConfiguration.js + cosmiconfig ExplorerSync; observed: 'Error: EACCES: permission denied, stat /srv/app' on cwd=/srv/app."
           },
           {
             "option": "planting_host.has_network",
             "value": "true",
-            "reason": "The SSRF needs network: a Docker bridge gives the server egress to audit a public page (the benign call), while the planting holder's loopback carries the IMDS/ECS/EKS link-local sentinels (169.254.0.0/16 added to lo) the exploits target.",
+            "reason": "The SSRF needs network connectivity, but every network the fixture uses is closed and reaches neither the host, its local network, nor the Internet (ADR 034). Planting brings up the closed network and a namespace holder; the server joins the holder's namespace. On the holder's loopback the example.com stand-in is served under its real name and captured address and the benign call audits it (there is no egress to any public host), alongside the IMDS/ECS/EKS link-local sentinels (169.254.0.0/16 added to lo) the exploits target.",
             "documentation": "evals/holdout_kit/kit_launch.ssrf_env; evals/cve_planting holder + address_setup + sentinel wiring; evals/cve_endpoint_address literal bind."
+          },
+          {
+            "option": "PUPPETEER_EXECUTABLE_PATH",
+            "value": "/usr/bin/chromium",
+            "reason": "a11y-mcp calls puppeteer.launch() with no executablePath, so Puppeteer reads this documented variable and launches Debian's Chromium. Its default (the Chrome for Testing that npm install downloads) is absent (PUPPETEER_SKIP_DOWNLOAD) and would in any case be installed under root and unreadable to the unprivileged account, so the variable is required for either tool to start a browser. Moved off its documented default, hence recorded here.",
+            "documentation": "Puppeteer configuration reference, PUPPETEER_EXECUTABLE_PATH (Environment variables); set as an image ENV in both server Dockerfiles."
+          },
+          {
+            "option": "server image trusts the stand-in fixture authority in Chromium's per-user NSS store ($HOME/.pki/nssdb, HOME=/tmp)",
+            "value": "certutil -A -t 'C,,' (trusted TLS CA)",
+            "reason": "The example.com stand-in is served under its real name with a leaf chaining to the fixture authority. Chromium (driven by Puppeteer page.goto) verifies server certificates against its per-user NSS database on Linux and ignores SSL_CERT_FILE / NODE_EXTRA_CA_CERTS, so without this trust an HTTPS audit of example.com ends in net::ERR_CERT_AUTHORITY_INVALID where the real host succeeds. The authority and its certificates are outside the fixture limits; this records the trust setting the rule allows for a stand-in served under the real host name.",
+            "documentation": "Chromium Linux certificate management (user NSS db ~/.pki/nssdb, certutil); holdout rule What a fixture seeds and serves (trust of a stand-in certificate) and ADR 034. Set in both server Dockerfiles."
           }
         ],
         "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "Server image base: node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da (with the base image's own ENV: PATH, NODE_VERSION, YARN_VERSION), in Dockerfile.holdout-2026-5323-a11y and Dockerfile.holdout-2026-5323-a11y-patched",
+            "reason": "a11y-mcp is an npm package (bin src/index.js, ES module) and needs a Node runtime; the digest pins the same base for both versions.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "Debian packages chromium (with its apt dependencies), ca-certificates, fonts-liberation and libnss3-tools, installed by apt in both server images",
+            "reason": "Debian's Chromium replaces the Chrome for Testing build Puppeteer would download at npm install (skipped by PUPPETEER_SKIP_DOWNLOAD) and is the browser both tools launch through PUPPETEER_EXECUTABLE_PATH; fonts-liberation gives it fonts; ca-certificates is the system CA store; libnss3-tools provides certutil, used at build to seed the stand-in trust into the NSS store. None is installed by the server's own documented install (npm install -g a11y-mcp).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "NSS trust store /tmp/.pki/nssdb (cert9.db, key4.db, pkcs11.txt) holding the stand-ins' certificate authority under the store nickname 'Local Root CA' (certutil -A -n 'Local Root CA' -t 'C,,'), owned by 65534, built into both server images",
+            "reason": "The trust setting recorded in launch_options. Chromium reads this per-user NSS store (HOME=/tmp) when it verifies the example.com stand-in's HTTPS certificate under page.goto. The authority is inlined in a heredoc (no COPY) so it stays in the image fingerprint. The certificate authority the stand-ins chain to is outside the fixture limits; its own common name (CN 'mcp-auditor fixture authority') belongs to the authority. The certutil nickname, by contrast, is a store label the fixture's author sets, so it is declared here: it is the neutral 'Local Root CA', carrying no word that refers to the flaw, the audit or the fixture, and no value taken from the machine.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "ENV PUPPETEER_SKIP_DOWNLOAD=true (both server images)",
+            "reason": "Stops Puppeteer's install step from downloading its own Chrome, since Debian's Chromium is used instead. Read at image build by puppeteer's install script; it stays in the runtime environment but no tool reads it.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium (both server images)",
+            "reason": "a11y-mcp calls puppeteer.launch() with no executablePath, so Puppeteer reads this documented variable and launches Debian's Chromium instead of the downloaded Chrome for Testing (its default, absent here). Also recorded in launch_options, since it moves a Puppeteer setting off its default.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "Launch command: docker run -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --user 65534:65534 -w /srv/app -e HOME=/tmp --network container:<holder> -v <temp root>:/srv:ro <image>, image tagged from the service name holdout-2026-5323-a11y (patched: holdout-2026-5323-a11y-patched), ENTRYPOINT [\"a11y-mcp\"], no argument after the image",
+            "reason": "The ssrf_env builder's launch: the confinement profile every benchmark container runs under, the planting layer's user, working directory, environment and network, the read-only layout mount, then the global bin a11y-mcp (the README's npm install -g a11y-mcp route; its MCP configuration gives npx a11y-mcp). The working directory -w /srv/app is the checkout the Deployment layout prescribes (outside the fixture limits), not an option set for the flaw. The image tag is the service name the fixture's author chose.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "Process account --user 65534:65534 (nobody/nogroup) with -e HOME=/tmp (launch_options planting_host.user = unprivileged)",
+            "reason": "The image has no USER; the planting layer runs it unprivileged. HOME=/tmp gives the account a writable home: it holds Chromium's temporary profile and the baked NSS trust store (/tmp/.pki/nssdb) that both tools' Chromium reads.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "Confinement profile --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256 on the server container (and on the holder, address setup, sentinel and stand-in containers, which add NET_ADMIN or NET_BIND_SERVICE)",
+            "reason": "confinement_args(): the container is the only barrier between a successful exploit and the machine that runs the benchmark. Chromium runs inside it with the --no-sandbox flag a11y-mcp passes.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "Closed Docker network (internal, IPv4 gateway mode isolated, IPv6 off, label mcp-auditor-cve) created per launch (launch_options planting_host.has_network = true)",
+            "reason": "has_network=True: planting creates a closed network so the launch reaches neither the host, nor its local network, nor the Internet (ADR 034). The namespace holder sits on it; the server joins the holder's namespace.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "Namespace holder container (mcp-auditor-cve-sentinel:local, entrypoint sleep 2147483647, label mcp-auditor-cve) whose network namespace, /etc/hosts and /etc/resolv.conf the server shares (--network container:<holder>)",
+            "reason": "Bound sentinels (the three link-local literals) and a declared stand-in force a holder (needs_holder): their addresses are loopback aliases inside it, so the server must join its namespace to reach them.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "audit_webpage",
+              "get_summary"
+            ]
+          },
+          {
+            "item": "Loopback alias 172.66.147.243/32 on the holder's lo (one-shot ip addr add container with NET_ADMIN)",
+            "reason": "The address example.com resolved to at capture (evals/stand_ins/example.com.json, field address); the stand-in binds it so example.com is served under its real address inside the closed network.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Host entry example.com -> 172.66.147.243 (--add-host on the holder, so in the /etc/hosts the server shares)",
+            "reason": "Pins the public name the benign call audits to the stand-in, since the closed network has no route to public DNS.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Loopback aliases 169.254.169.254/32, 169.254.170.2/32 and 169.254.170.23/32 on the holder's lo, and three sentinel containers (mcp-auditor-cve-sentinel:local, busybox httpd, -e FLAG=<nonce> -e SERVE_FILE=<served file> -e BIND_ADDR=<literal>) serving each kept place's nonce at /latest/meta-data/iam/security-credentials/, /v2/credentials/ and /v1/credentials",
+            "reason": "The planting of the kept places imds, ecs-task-credentials and eks-pod-identity (sentinels and nonces, fixed by the rule and its catalogue, outside the limits). The a11y server never reaches them by itself.",
+            "returned_by": [
+              "audit_webpage"
+            ],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Stand-in container for example.com (mcp-auditor-cve-stand-in:local, -e BIND_ADDR=172.66.147.243, NET_BIND_SERVICE, in the holder's namespace) with read-only mounts /stand-in/capture.json (evals/stand_ins/example.com.json), /stand-in/cert.pem (evals/stand_ins/tls/example.com.pem) and /stand-in/key.pem (evals/stand_ins/tls/example.com-key.pem)",
+            "reason": "Serves the public host the benign call audits (see stand_ins). The leaf is issued by evals/stand_ins/tls/fixture-authority.pem (CN 'mcp-auditor fixture authority'), which the server image now trusts in its NSS store (not mounted into the server; baked into the image), so an HTTPS audit of example.com validates the chain and succeeds as against the real host.",
+            "returned_by": [
+              "audit_webpage",
+              "get_summary"
+            ],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Deployment layout mounted read-only at /srv (-v <temp root>:/srv:ro), neutral content in every node, nothing seeded inside it (seeded_in_layout = [])",
+            "reason": "Every target runs with the frozen layout mounted (ADR 031); the working directory is the checkout /srv/app it prescribes. This target keeps no layout place and the server reads no kept place under /srv.",
+            "returned_by": [],
+            "used_by_default_by": []
+          }
+        ],
+        "stand_ins": [
+          {
+            "stand_in": {
+              "replaces": "The public host example.com (HTTP on 80, HTTPS on 443), served under its real name at its captured address 172.66.147.243",
+              "reason": "Every network the fixture uses is closed (internal, isolated gateway, ADR 034), so the real example.com on the Internet cannot be reached from the container; the benign call audits http://example.com/.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/example.com.json",
+              "outputs": [
+                {
+                  "request": "http GET /",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (http, GET, /): status 200 and body verbatim. The connection and framing headers (Connection, Transfer-Encoding) are dropped and Content-Length is reframed by the shared stand-in image as documented (evals/public_stand_ins.py; docker/Dockerfile.stand-in), the only edits; every other captured header is replayed verbatim, Date frozen at the capture. No identifier replacement. This route serves the benign call.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "http GET /s.js",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (http, GET, /s.js): status 200 and body verbatim (the page script Chromium loads and runs). The connection and framing headers (Connection, Transfer-Encoding) are dropped and Content-Length is reframed by the shared stand-in image as documented (evals/public_stand_ins.py; docker/Dockerfile.stand-in), the only edits; every other captured header is replayed verbatim, Date frozen at the capture. No identifier replacement.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "http GET /robots.txt",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (http, GET, /robots.txt): status 404 with the Example Domain page as body. The connection and framing headers (Connection, Transfer-Encoding) are dropped and Content-Length is reframed by the shared stand-in image as documented (evals/public_stand_ins.py; docker/Dockerfile.stand-in), the only edits; every other captured header is replayed verbatim, Date frozen at the capture. No identifier replacement.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "https GET /",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (https, GET, /): status 200 and body verbatim. The connection and framing headers (Connection, Transfer-Encoding) are dropped and Content-Length is reframed by the shared stand-in image as documented (evals/public_stand_ins.py; docker/Dockerfile.stand-in), the only edits; every other captured header is replayed verbatim, Date frozen at the capture. No identifier replacement. Reachable through both tools: the server image trusts the fixture authority in Chromium's NSS store, so the TLS handshake completes and the audit returns.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "https HEAD /",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (https, HEAD, /): status 200 and the captured headers, no body (the captured HEAD route). A captured HEAD route keeps the Content-Length it was captured with, if any; this route was captured with none, so the stand-in sends no Content-Length and does not reframe one (it reframes Content-Length only for GET and default routes, which carry a body). The connection and framing headers (Connection, Transfer-Encoding and the like) are dropped as documented (evals/public_stand_ins.py; docker/Dockerfile.stand-in); every other captured header is replayed verbatim, Date frozen at the capture. No identifier replacement.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "A HEAD whose target has a captured GET route but no captured HEAD route (http HEAD /, http HEAD /robots.txt, http HEAD /s.js, https HEAD /robots.txt, https HEAD /s.js)",
+                  "source": "capture",
+                  "citation": "Derived from the captured GET route of the same (scheme, target) in evals/stand_ins/example.com.json: the stand-in answers with that GET route's status and captured headers and no body, dropping the connection and framing headers including the captured Content-Length, and sets Content-Length to the length of the GET route's body. This is HEAD framing (RFC 9110: a HEAD response carries the header fields a GET would, with no body) and the shared stand-in image's documented HEAD behaviour (evals/public_stand_ins.py; docker/Dockerfile.stand-in). The reframed Content-Length is the same kind of edit the stand-in applies to every GET route. The body quotes no part of the request. No identifier replacement.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "https GET /s.js",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (https, GET, /s.js): status 200 and body verbatim. The connection and framing headers (Connection, Transfer-Encoding) are dropped and Content-Length is reframed by the shared stand-in image as documented (evals/public_stand_ins.py; docker/Dockerfile.stand-in), the only edits; every other captured header is replayed verbatim, Date frozen at the capture. No identifier replacement.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "https GET /robots.txt",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (https, GET, /robots.txt): status 404 with the Example Domain page as body. The connection and framing headers (Connection, Transfer-Encoding) are dropped and Content-Length is reframed by the shared stand-in image as documented (evals/public_stand_ins.py; docker/Dockerfile.stand-in), the only edits; every other captured header is replayed verbatim, Date frozen at the capture. No identifier replacement.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "Any other (scheme, method, target) the routes lack, e.g. http GET /missing, a query string, POST /, http HEAD /missing",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, defaults for the request's scheme (probed_target /2259508acc207c29): the real host's answer to a path it does not have, status 404 with the Example Domain page as body. path_form is null, so the body quotes no part of the request and nothing is substituted; the request is written only to the stand-in's stderr (miss <scheme> <method> <target>), never into the response. The connection and framing headers (Connection, Transfer-Encoding) are dropped and Content-Length is reframed by the shared stand-in image as documented (evals/public_stand_ins.py; docker/Dockerfile.stand-in), the only edits; every other captured header is replayed verbatim, Date frozen at the capture. No identifier replacement.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "TLS certificate presented on 443 for SNI example.com",
+                  "source": "invented",
+                  "citation": "Leaf evals/stand_ins/tls/example.com.pem (CN and SAN example.com) issued by evals/stand_ins/tls/fixture-authority.pem (CN 'mcp-auditor fixture authority') through evals/stand_ins/tls/generate.sh. The authority and its certificates are outside the fixture limits; the server image trusts the authority in Chromium's NSS store, so the chain validates and https://example.com/ returns an audit as the real host does.",
+                  "form_source": "The real example.com certificate chain (a leaf for example.com from a public authority).",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [
+              "audit_webpage",
+              "get_summary"
+            ],
+            "used_by_default_by": []
+          }
+        ],
+        "software_releases": [
+          {
+            "software": "Chromium (Debian package chromium)",
+            "release": "156.0.8078.79-1~deb12u1",
+            "day": "2026-11-05",
+            "source": "a11y-mcp README (npm a11y-mcp@1.0.4 / GitHub priyankark/a11y-mcp) names no Chromium or Chrome version (install: `npm install -g a11y-mcp`, which would let Puppeteer ^24.6.0 download its own Chrome for Testing). The fixture instead skips that download (ENV PUPPETEER_SKIP_DOWNLOAD=true) and installs Debian's `chromium` package unpinned by apt on node:22-bookworm-slim (docker/Dockerfile.holdout-2026-5323-a11y and -patched, launched through PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium, card seeded_outside_layout), so apt resolves the highest candidate of the bookworm channel, bookworm-security: 156.0.8078.79-1~deb12u1 (deb.debian.org/debian-security dists/bookworm-security/main/source/Sources, read 2026-11-05; plain bookworm carries 150.0.7871.100-1~deb12u1). Accepted into oldstable-security after DLA-4878-1 (156.0.8078.73-1~deb12u1, 2026-11-02); pool/updates/main/c/chromium/chromium_156.0.8078.79-1~deb12u1_amd64.deb dated 2026-11-03 11:59, still the current bookworm-security chromium on 2026-11-05 (security-tracker.debian.org/tracker/source-package/chromium). The round 4 server images were rebuilt on or after 2026-11-04, so they hold this release. Version not pinned in the Dockerfile: a rebuild after the next bookworm-security upload would run a later one."
+          }
+        ],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
@@ -146309,7 +146552,7 @@
         ],
         "benign_call": "audit_webpage {\"url\": \"http://example.com/\", \"includeHtml\": true}  (a public page: allowed by the patch, carries no nonce, not aimed)",
         "patched_result": "On 1.0.5 (fix commit e3e11c9) validateUrl() resolves each host and rejects loopback and private/link-local ranges (127/8, 10/8, 172.16/12, 192.168/16, 169.254/16, 0/8) before page.goto. All three exploit calls return isError with 'URLs pointing to private or internal network addresses are not allowed' and surface no nonce; the benign example.com audit still succeeds (not an error). kit_driver: DEAD_CONDITIONS == [] (live on 1.0.4, clean on 1.0.5).",
-        "attempts": 2
+        "attempts": 1
       },
       {
         "flaw": "CVE-2026-26029",
@@ -147831,7 +148074,8 @@
       {
         "flaw": "CVE-2026-5323",
         "reported_gaps": [],
-        "confirmed_gaps": []
+        "confirmed_gaps": [],
+        "rule_version": 11
       },
       {
         "flaw": "CVE-2026-26029",

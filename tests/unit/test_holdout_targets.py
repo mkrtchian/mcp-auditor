@@ -95,6 +95,17 @@ def test_the_n8n_target_fingerprints_the_module_that_provisions_its_instance():
     assert Path(n8n_instance_backend.__file__) in n8n.backend_sources
 
 
+# The a11y images inline a copy of the fixture authority into Chromium's NSS store: a regeneration
+# of the authority leaves that copy stale until both Dockerfiles take the new one and are rebuilt.
+def test_the_a11y_images_bake_the_committed_fixture_authority():
+    a11y = next(target for target in HOLDOUT_TARGETS if target.cve_id == "CVE-2026-5323")
+    committed = (_EVALS / "stand_ins" / "tls" / "fixture-authority.pem").read_text()
+
+    for service in (a11y.server_image, a11y.patched_image):
+        dockerfile = _EVALS / "docker" / f"Dockerfile.{service}"
+        assert given.the_authority_inlined_in(dockerfile) == committed, service
+
+
 def test_every_backend_image_is_pinned_by_digest():
     targets = [*HOLDOUT_TARGETS, *CVE_TARGETS]
     unpinned = [

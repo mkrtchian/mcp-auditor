@@ -73,5 +73,15 @@ def unfingerprinted_stand_in_files(
 
 
 def unheld_requests(stand_in: StandInRecord, root: Path) -> list[str]:
+    if stand_in.capture is not None:
+        # The capture's route keys are the words the stand-in branches on, not its file's text.
+        return []
     text = (root / stand_in.file).read_text()
     return [output.request for output in stand_in.outputs if output.request not in text]
+
+
+def unreplayed_captures(stand_in: StandInRecord, replayer: Path, root: Path) -> list[str]:
+    """A capture is replayed only by the generic stand-in, whose Dockerfile is `replayer`."""
+    if stand_in.capture is None or (root / stand_in.file).resolve() == replayer.resolve():
+        return []
+    return [stand_in.file]
