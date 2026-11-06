@@ -69,7 +69,7 @@ TARGET = CVETarget(
     patched_image="holdout-2026-33060-ckan-patched",
     planting_host=PlantingHost(
         user=SymbolicUser.UNPRIVILEGED,
-        working_directory="/srv",
+        working_directory="/srv/app",
         has_network=True,
         public_names=PublicNames(stand_ins=("demo.ckan.org",), trust=("NODE_EXTRA_CA_CERTS",)),
     ),

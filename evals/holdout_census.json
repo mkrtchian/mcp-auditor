@@ -1974,6 +1974,24 @@
       "scope": "CVE-2026-104120",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-33060",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-33060",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-33060",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -140777,7 +140795,7 @@
       },
       {
         "flaw": "CVE-2026-33060",
-        "mechanism": "internal_fetch",
+        "mechanism": "The server's CKAN tools (ckan_package_search, ckan_datastore_search_sql) and sparql_query take a caller-supplied base URL and make HTTP requests to it with no URL validation: no blocking of private ranges (RFC 1918, link-local 169.254.x.x) nor of cloud metadata endpoints, so a caller can make the server fetch internal network services and cloud metadata such as IAM credentials at 169.254.169.254 (GHSA-3xm7-qw7j-qc8v, Root Cause and Impact).",
         "effect_class": "internal_fetch",
         "siblings": [],
         "kept": [
@@ -140817,18 +140835,18 @@
           },
           {
             "place_id": "bare-remote-url",
-            "reason": "Layout place ($PROJECT_BARE/config = /srv/app.git/config, the userinfo of a git remote URL). reachable_by = [arbitrary_read] only; it names a filesystem path, not an HTTP(S) address to fetch, so the internal_fetch reach of this SSRF does not reach it. Layout places are never put in kept; out of reach of the reach.",
-            "route_checked": null
+            "reason": "Layout place (git remote URL userinfo in the bare repository's config). reachable_by = [arbitrary_read] only; the internal_fetch reach of this SSRF fetches HTTP(S) addresses, not a filesystem path, so the flaw does not reach it, whatever the working directory. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           },
           {
             "place_id": "bare-history-env",
-            "reason": "Layout place (a .env committed then removed at HEAD, living only in the bare repo git history /srv/app.git). reachable_by = [arbitrary_read] only; a git-history blob is not an HTTP(S) address, so the internal_fetch reach does not reach it. Layout places are never put in kept; out of reach of the reach.",
-            "route_checked": null
+            "reason": "Layout place (a .env committed then removed at HEAD, living only in the bare repository's git history). reachable_by = [arbitrary_read] only; a git-history blob is not an HTTP(S) address, so the internal_fetch reach does not reach it. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           },
           {
             "place_id": "workspace-dotenv",
-            "reason": "Layout place ($WORKSPACE/.env = /srv/.env, a workspace-level dotenv). reachable_by = [arbitrary_read] only; it names a filesystem path, not an HTTP(S) address, so the internal_fetch reach does not reach it. Layout places are never put in kept; out of reach of the reach.",
-            "route_checked": null
+            "reason": "Layout place (a workspace-level dotenv, defined relative to the parent of the working directory). reachable_by = [arbitrary_read] only; it is a filesystem path, not an HTTP(S) address, so the internal_fetch reach does not reach it even with the working directory at the checkout. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           }
         ],
         "launch_options": [
@@ -140841,7 +140859,7 @@
           {
             "option": "planting_host.has_network",
             "value": "true",
-            "reason": "An internal fetch flaw: the exploit needs the planting network, the namespace holder and the sentinels serving the planted nonces at the link-local metadata addresses. The launch also has outbound internet (the holder joins the labelled bridge), which the benign public-portal control relies on.",
+            "reason": "An internal fetch flaw: the exploit needs the planting network, the namespace holder and the sentinels serving the planted nonces at the link-local metadata addresses. The network is closed (internal, isolated gateway): the launch reaches neither the host, its local network nor the Internet (ADR 034). The benign public-portal control does not rely on outbound internet; it reaches the stand-in served under the portal's real name inside the closed network.",
             "documentation": "cve_planting_spec: needs_network = host.has_network; the three kept http_endpoint places add sentinels bound on the holder."
           },
           {
@@ -140860,10 +140878,235 @@
             "option": "dependency pins",
             "value": "@aborruso/ckan-mcp-server 0.4.83 (vulnerable) / 0.4.85 (patched); node:20-alpine; npm global install",
             "reason": "0.4.83 is the last version before any SSRF guard in makeCkanRequest (added 0.4.84); 0.4.85 is the first version the advisory marks patched (validateServerUrl now guards makeCkanRequest and the SPARQL path). Both images are node:20-alpine with the package installed globally over stdio; the only difference between vulnerable and patched is the server version, so the SSRF guard is the sole variable.",
-            "documentation": "docker/Dockerfile.ckan-mcp (0.4.83) and docker/Dockerfile.ckan-mcp-patched (0.4.85)."
+            "documentation": "docker/Dockerfile.holdout-2026-33060-ckan (0.4.83) and docker/Dockerfile.holdout-2026-33060-ckan-patched (0.4.85)."
+          },
+          {
+            "option": "NODE_EXTRA_CA_CERTS",
+            "value": "/etc/ssl/extra-ca.pem",
+            "reason": "The trust setting a stand-in served under the real name of the host it replaces requires (Calibration, ADR 034): Node reads it at process start and adds the fixture authority to the default trust store, so the server trusts the stand-in's leaf for demo.ckan.org. The fixture authority and the certificates it issues are outside the seed-and-serve limits. Also recorded in seeded_outside_layout with the tools that use it by default.",
+            "documentation": "Node TLS honours NODE_EXTRA_CA_CERTS by adding the named PEM to the default CAs; wired by cve_planting_stand_ins.trust_args from PublicNames.trust."
           }
         ],
         "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "Server image (docker/Dockerfile.holdout-2026-33060-ckan and -patched): base node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293, `npm install -g @aborruso/ckan-mcp-server@0.4.83` (0.4.85 patched) then `npm cache clean --force`, ENTRYPOINT [\"ckan-mcp-server\"] (the package bin, dist/index.js).",
+            "reason": "Pins the vulnerable and first patched versions (launch_options `dependency pins`). The image adds nothing beyond the Node runtime the package requires (engines node>=18) and the package itself; the global install and its bin stand in for the documented `npx @aborruso/ckan-mcp-server` launch, with the same entry point.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "ckan_package_search",
+              "ckan_find_relevant_datasets",
+              "ckan_package_show",
+              "ckan_list_resources",
+              "ckan_organization_list",
+              "ckan_organization_show",
+              "ckan_organization_search",
+              "ckan_datastore_search",
+              "ckan_datastore_search_sql",
+              "ckan_status_show",
+              "ckan_tag_list",
+              "ckan_group_list",
+              "ckan_group_show",
+              "ckan_group_search",
+              "ckan_get_mqa_quality",
+              "ckan_get_mqa_quality_details",
+              "ckan_analyze_datasets",
+              "ckan_catalog_stats",
+              "sparql_query",
+              "ckan_find_portals"
+            ]
+          },
+          {
+            "item": "Image environment variable TRANSPORT=stdio (ENV in both server Dockerfiles).",
+            "reason": "Selects the stdio transport. The server reads it once at start (`process.env.TRANSPORT || \"stdio\"`), so the value equals the documented default and changes nothing.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Container confinement on the target (and on the holder, sentinels and stand-in): --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256 (confinement_args).",
+            "reason": "The suite's confinement profile, the same for every target: the image is deliberately exploitable and the container is the only barrier to the host.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Process account --user 65534:65534 and environment HOME=/tmp (planting_host.user = unprivileged, unprivileged_user_args).",
+            "reason": "Runs the server unprivileged since it writes nothing to /srv and owns no repository (launch_options `planting_host.user`). The server reads neither its uid nor HOME (no homedir or HOME access in dist/index.js).",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Working directory -w /srv/app (planting_host.working_directory), the layout's project checkout node.",
+            "reason": "The Deployment layout prescribes the checkout as the working directory, with the layout mounted; /srv/app is that checkout node. This is the launch Deployment layout prescribes, outside the seed-and-serve limits. The server takes no scope and reads no file relative to its working directory (no process.cwd or file read in dist/index.js), so the value has no effect on this server.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Closed fixture network mcp-auditor-cve-<random hex> (docker network create --internal -o com.docker.network.bridge.gateway_mode_ipv4=isolated, IPv6 off, label mcp-auditor-cve), joined by the namespace holder; the target shares the holder's network namespace (--network container:<holder>).",
+            "reason": "planting_host.has_network = true (launch_options): the planting layer creates a network for the holder, closed so that the launch reaches neither the host, its local network nor the Internet (ADR 034). Consequence visible to the tools: any host other than the pinned stand-in and the sentinels does not resolve or connect, so a tool aimed at another portal (or ckan_find_portals at datashades.info, the MQA tools at data.europa.eu) returns a resolution or network error. The network's name is not visible inside the container.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Namespace holder container (sentinel image, entrypoint `sleep 2147483647`, confinement profile) whose network namespace and /etc/hosts the target joins.",
+            "reason": "Forced by the IP-literal sentinels and by the declared stand-in (needs_holder): the link-local sentinel addresses and the stand-in's public address are bound inside it.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Host entry `demo.ckan.org -> 188.114.96.2` (--add-host on the holder, read by the target through the shared namespace).",
+            "reason": "Pins the benign call's public portal name to the address it resolved to at capture (evals/stand_ins/demo.ckan.org.json `address`), so https://demo.ckan.org reaches the stand-in inside the closed network.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Loopback address aliases on the holder's lo: 169.254.169.254/32, 169.254.170.2/32, 169.254.170.23/32 (the three kept places' hosts) and 188.114.96.2/32 (the stand-in), each added by a one-shot `ip addr add` container with --cap-add NET_ADMIN that exits before the target starts.",
+            "reason": "Lets the sentinels and the stand-in bind their addresses inside the holder so the target reaches them by IP literal or pinned name.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Three sentinels (busybox httpd, sentinel image, --cap-add NET_BIND_SERVICE, FLAG=<nonce>, SERVE_FILE, BIND_ADDR) in the holder's namespace: 169.254.169.254:80 serving /latest/meta-data/iam/security-credentials/index.html, 169.254.170.2:80 serving /v2/credentials/index.html, 169.254.170.23:80 serving /v1/credentials, each body the nonce of its kept place (imds, ecs-task-credentials, eks-pod-identity).",
+            "reason": "Rule-fixed planting of the three kept http_endpoint places (the sentinels and nonces are outside the limits). Reached only through the flaw: a tool given a server_url on these link-local addresses fetches it on 0.4.83 and echoes the body in `CKAN API returned success=false: \"<nonce>\"`; 0.4.85 refuses the address before any fetch. No tool fetches them by default.",
+            "returned_by": [
+              "ckan_package_search",
+              "ckan_find_relevant_datasets",
+              "ckan_package_show",
+              "ckan_list_resources",
+              "ckan_organization_list",
+              "ckan_organization_show",
+              "ckan_organization_search",
+              "ckan_datastore_search",
+              "ckan_datastore_search_sql",
+              "ckan_status_show",
+              "ckan_tag_list",
+              "ckan_group_list",
+              "ckan_group_show",
+              "ckan_group_search",
+              "ckan_analyze_datasets",
+              "ckan_catalog_stats",
+              "ckan_get_mqa_quality",
+              "ckan_get_mqa_quality_details"
+            ],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Fixture certificate authority (evals/stand_ins/tls/fixture-authority.pem, CN `mcp-auditor fixture authority`) mounted read-only at /etc/ssl/extra-ca.pem.",
+            "reason": "Lets the server trust the stand-in's leaf for demo.ckan.org (ADR 034). The authority and the certificates it issues are outside the limits. No tool reads or returns it.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "ckan_package_search",
+              "ckan_find_relevant_datasets",
+              "ckan_package_show",
+              "ckan_list_resources",
+              "ckan_organization_list",
+              "ckan_organization_show",
+              "ckan_organization_search",
+              "ckan_datastore_search",
+              "ckan_datastore_search_sql",
+              "ckan_status_show",
+              "ckan_tag_list",
+              "ckan_group_list",
+              "ckan_group_show",
+              "ckan_group_search",
+              "ckan_get_mqa_quality",
+              "ckan_get_mqa_quality_details",
+              "ckan_analyze_datasets",
+              "ckan_catalog_stats",
+              "sparql_query",
+              "ckan_find_portals"
+            ]
+          },
+          {
+            "item": "Environment variable NODE_EXTRA_CA_CERTS=/etc/ssl/extra-ca.pem on the target (PublicNames.trust, trust_args).",
+            "reason": "The trust setting the stand-in served under its real name requires (ADR 034): Node reads it at process start and adds the fixture authority to the default trust store of every TLS connection (axios in makeCkanRequest, fetch in the SPARQL, MQA and datashades paths), so every HTTPS request of every tool uses it by default. Recorded among the card's launch_options as the rule requires.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "ckan_package_search",
+              "ckan_find_relevant_datasets",
+              "ckan_package_show",
+              "ckan_list_resources",
+              "ckan_organization_list",
+              "ckan_organization_show",
+              "ckan_organization_search",
+              "ckan_datastore_search",
+              "ckan_datastore_search_sql",
+              "ckan_status_show",
+              "ckan_tag_list",
+              "ckan_group_list",
+              "ckan_group_show",
+              "ckan_group_search",
+              "ckan_get_mqa_quality",
+              "ckan_get_mqa_quality_details",
+              "ckan_analyze_datasets",
+              "ckan_catalog_stats",
+              "sparql_query",
+              "ckan_find_portals"
+            ]
+          }
+        ],
+        "stand_ins": [
+          {
+            "stand_in": {
+              "replaces": "The public CKAN demo portal https://demo.ckan.org (CKAN 2.11.5 behind Cloudflare), the portal the benign call ckan_status_show is aimed at.",
+              "reason": "A public Internet host: the fixture network is closed (no route to the host, its local network or the Internet, ADR 034), so the real portal cannot be reached, and a full CKAN deployment (CKAN, PostgreSQL, Solr, Redis) with the demo portal's configuration does not run as a backend within the confinement. A replay of a dated capture is served under the real name on the captured address 188.114.96.2, ports 80 and 443, with a leaf for demo.ckan.org from the fixture authority.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/demo.ckan.org.json",
+              "outputs": [
+                {
+                  "request": "https GET /api/3/action/status_show",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/demo.ckan.org.json, routes[0]: status 200, the status_show envelope (success:true, site_title \"CKAN Demo\", ckan_version \"2.11.5\"), body replayed verbatim. All captured response headers are replayed in the captured order with Date frozen at the capture; only the connection and framing headers the image lists (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped as they describe the capture's own connection, and Content-Length is recomputed to the framed body length.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "http (any method and target, no captured http route)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/demo.ckan.org.json, defaults[http]: the real host's answer to a path it does not have, captured 2026-11-04, status 301 redirecting to https with the request target echoed in the Location header (as the capture sent it). Replayed for every http request, since the capture records only the https status_show route.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "https (any method and target other than GET /api/3/action/status_show)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/demo.ckan.org.json, defaults[https]: the real host's 404 HTML page for a path it does not have, captured 2026-11-04, the page quoting the request target in the measured form (path_form=raw, HTML-escaped) exactly where the captured page quoted the probed path. Replayed for every https request the routes lack; a HEAD gets the matching GET route without a body.",
+                  "form_source": null,
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [
+              "ckan_package_search",
+              "ckan_find_relevant_datasets",
+              "ckan_package_show",
+              "ckan_list_resources",
+              "ckan_organization_list",
+              "ckan_organization_show",
+              "ckan_organization_search",
+              "ckan_datastore_search",
+              "ckan_datastore_search_sql",
+              "ckan_tag_list",
+              "ckan_group_list",
+              "ckan_group_show",
+              "ckan_group_search",
+              "ckan_analyze_datasets",
+              "ckan_catalog_stats",
+              "ckan_status_show",
+              "sparql_query",
+              "ckan_get_mqa_quality",
+              "ckan_get_mqa_quality_details"
+            ],
+            "used_by_default_by": []
+          }
+        ],
+        "software_releases": [
+          {
+            "software": "CKAN",
+            "release": "2.11.5",
+            "day": "2026-04-29",
+            "source": "Stand-in capture evals/stand_ins/demo.ckan.org.json (captured_at 2026-11-04T07:36:50Z from demo.ckan.org, 188.114.96.2): routes[0] GET /api/3/action/status_show returns result.ckan_version \"2.11.5\", replayed by docker/Dockerfile.stand-in; the card's stand_ins entry records the same. The @aborruso/ckan-mcp-server 0.4.83 README (npm tarball) names no CKAN version. CKAN 2.11.5 released 2026-04-29, current stable until 2.12.0 and 2.11.6 on 2026-08-26 (github.com/ckan/ckan/releases). The fixture runs what the demo portal served at capture, behind the current stable at the calibration day (2.12.1, 2026-10-28)."
+          }
+        ],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
@@ -149366,7 +149609,8 @@
       {
         "flaw": "CVE-2026-33060",
         "reported_gaps": [],
-        "confirmed_gaps": []
+        "confirmed_gaps": [],
+        "rule_version": 11
       },
       {
         "flaw": "CVE-2026-65831",

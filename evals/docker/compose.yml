@@ -291,7 +291,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-33060-ckan
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "2ee3528351cc216e30095edec697484b315a5f26649a62c564fe643ff53c8167"
+        org.mcp-auditor.dockerfile-fingerprint: "16847e3682f9c41cff846d33ca9a8460eb3bd3e3c6328f629920a5576d50728a"
     image: mcp-auditor-cve-holdout-2026-33060-ckan:local
 
   holdout-2026-33060-ckan-patched:
@@ -299,7 +299,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-33060-ckan-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "f5420a8353824634060cf09535ef3827231205e885ead93387d38903dd28651d"
+        org.mcp-auditor.dockerfile-fingerprint: "ddc143f532903bb9a9083e6aa3cd10e0318c375376745fcd9c4ff109f19f9b22"
     image: mcp-auditor-cve-holdout-2026-33060-ckan-patched:local
 
   # SSRF target: flyto-core's is_private_ip never unwraps the IPv4 embedded in an IPv6 transition
