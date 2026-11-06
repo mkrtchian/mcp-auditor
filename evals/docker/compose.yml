@@ -140,7 +140,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-104120-fetch
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ac8819c4af88f691eeec775619810da11e9097a415a4a99d8f990eae74a8f27f"
+        org.mcp-auditor.dockerfile-fingerprint: "47923289829514545392eff3fd37f4a42b2056a25cd240a140a3628f079fd9eb"
     image: mcp-auditor-cve-holdout-2026-104120-fetch:local
 
   holdout-2026-104120-fetch-patched:
@@ -148,7 +148,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-104120-fetch-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0631645bc99bed8205ab3928a714da3cd6e1552756bd47afc55a29b61473a650"
+        org.mcp-auditor.dockerfile-fingerprint: "bdc990ab5b316783c3665d8298a0f5a8fdceb40777d08ad0788958678fdf2c62"
     image: mcp-auditor-cve-holdout-2026-104120-fetch-patched:local
 
   holdout-2026-85788-mysql:

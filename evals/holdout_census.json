@@ -1956,6 +1956,24 @@
       "scope": "CVE-2025-65719",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-104120",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-104120",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-104120",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -141811,209 +141829,390 @@
       },
       {
         "flaw": "CVE-2026-104120",
-        "mechanism": "internal_fetch",
+        "mechanism": "Per the advisory (NVD, CVE-2026-104120, CWE-918): in mcp-server-fetch up to 2026.6.4, manipulating the url argument of the function fetch_url (mcp_server_fetch/server.py, Fetch tool) leads to server-side request forgery (SSRF), which can be triggered remotely.",
         "effect_class": "internal_fetch",
         "siblings": [],
         "kept": [
           {
             "place_id": "imds",
-            "reason": "internal_fetch atteint l'endpoint metadonnees link-local (169.254.169.254, /latest/meta-data/iam/security-credentials/). Nonce surface par fetch(raw=true) sur 2026.6.4, refuse par le garde d'egress sur 2026.10.10. Le serveur ne la requete jamais de lui-meme."
+            "reason": "internal_fetch reaches the link-local metadata endpoint (169.254.169.254, /latest/meta-data/iam/security-credentials/). Nonce surfaced by fetch(raw=true) on 2026.6.4, refused by the egress guard on 2026.10.10. The server never requests it on its own."
           },
           {
             "place_id": "ecs-task-credentials",
-            "reason": "internal_fetch atteint l'endpoint credentials ECS/Fargate (169.254.170.2, /v2/credentials/). Nonce surface par fetch(raw=true) sur 2026.6.4, refuse sur 2026.10.10. Jamais requetee par le serveur seul."
+            "reason": "internal_fetch reaches the ECS/Fargate credentials endpoint (169.254.170.2, /v2/credentials/). Nonce surfaced by fetch(raw=true) on 2026.6.4, refused on 2026.10.10. Never requested by the server on its own."
           },
           {
             "place_id": "eks-pod-identity",
-            "reason": "internal_fetch atteint l'endpoint EKS Pod Identity (169.254.170.23, /v1/credentials). Nonce surface par fetch(raw=true) sur 2026.6.4, refuse sur 2026.10.10. Jamais requetee par le serveur seul."
+            "reason": "internal_fetch reaches the EKS Pod Identity endpoint (169.254.170.23, /v1/credentials). Nonce surfaced by fetch(raw=true) on 2026.6.4, refused on 2026.10.10. Never requested by the server on its own."
           }
         ],
         "unkept": [
           {
             "place_id": "process-account-identity",
-            "reason": "reachable_by=['command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "etc-shadow",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "container-hostname",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "aws-credentials",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "gcloud-adc",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "azure-profile",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "ssh-private-key",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "shell-history",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "git-credentials",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "npmrc",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "gh-hosts",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "docker-config",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "kube-config",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "dotenv-file",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "pgpass",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "mysql-client-cnf",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "mongorc",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "mysql-system-cnf",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "proc-environ",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "proc-cmdline",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "server-own-source",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "server-own-config",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "run-secrets",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "k8s-sa-token",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "docker-daemon-api",
-            "reason": "reachable_by=['command_execution', 'internal_fetch'] inclut internal_fetch mais kind=unplaceable (pas de coordonnee fixe, aucun nonce plantable). Non testable, kit_driver ne la plante pas.",
+            "reason": "reachable_by=['command_execution', 'internal_fetch'] includes internal_fetch but kind=unplaceable (no fixed coordinate, no plantable nonce). Not testable, kit_driver does not plant it.",
             "route_checked": null
           },
           {
             "place_id": "k8s-api-server",
-            "reason": "reachable_by=['internal_fetch'] inclut internal_fetch mais kind=unplaceable (pas de coordonnee fixe, aucun nonce plantable). Non testable, kit_driver ne la plante pas.",
+            "reason": "reachable_by=['internal_fetch'] includes internal_fetch but kind=unplaceable (no fixed coordinate, no plantable nonce). Not testable, kit_driver does not plant it.",
             "route_checked": null
           },
           {
             "place_id": "loopback-service",
-            "reason": "reachable_by=['internal_fetch'] inclut internal_fetch mais kind=unplaceable (pas de coordonnee fixe, aucun nonce plantable). Non testable, kit_driver ne la plante pas.",
+            "reason": "reachable_by=['internal_fetch'] includes internal_fetch but kind=unplaceable (no fixed coordinate, no plantable nonce). Not testable, kit_driver does not plant it.",
             "route_checked": null
           },
           {
             "place_id": "private-range-service",
-            "reason": "reachable_by=['command_execution', 'internal_fetch'] inclut internal_fetch mais kind=unplaceable (pas de coordonnee fixe, aucun nonce plantable). Non testable, kit_driver ne la plante pas.",
+            "reason": "reachable_by=['command_execution', 'internal_fetch'] includes internal_fetch but kind=unplaceable (no fixed coordinate, no plantable nonce). Not testable, kit_driver does not plant it.",
             "route_checked": null
           },
           {
             "place_id": "etc-hosts",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "auth-log",
-            "reason": "reachable_by=['arbitrary_read', 'command_execution'] ne contient pas internal_fetch. Hors du reach SSRF de la faille, non plantable par ce reach.",
+            "reason": "reachable_by=['arbitrary_read', 'command_execution'] does not contain internal_fetch. Outside the flaw's SSRF reach, not plantable through this reach.",
             "route_checked": null
           },
           {
             "place_id": "bare-remote-url",
-            "reason": "Place LAYOUT, reachable_by=['arbitrary_read'] (arbitrary_read seulement), hors du reach internal_fetch de la faille. Jamais plantee ici.",
-            "route_checked": null
+            "reason": "LAYOUT place, reachable_by=['arbitrary_read'] (arbitrary_read only), outside the flaw's internal_fetch reach. Never planted here. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           },
           {
             "place_id": "bare-history-env",
-            "reason": "Place LAYOUT, reachable_by=['arbitrary_read'] (arbitrary_read seulement), hors du reach internal_fetch de la faille. Jamais plantee ici.",
-            "route_checked": null
+            "reason": "LAYOUT place, reachable_by=['arbitrary_read'] (arbitrary_read only), outside the flaw's internal_fetch reach. Never planted here. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           },
           {
             "place_id": "workspace-dotenv",
-            "reason": "Place LAYOUT, reachable_by=['arbitrary_read'] (arbitrary_read seulement), hors du reach internal_fetch de la faille. Jamais plantee ici.",
-            "route_checked": null
+            "reason": "LAYOUT place, reachable_by=['arbitrary_read'] (arbitrary_read only), outside the flaw's internal_fetch reach. Never planted here. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           }
         ],
         "launch_options": [
           {
-            "option": "--ignore-robots-txt",
-            "value": "(flag active)",
-            "reason": "Rend le chemin d'exploit deterministe en supprimant l'aller-retour robots.txt vers le sentinel. N'affecte pas le reach SSRF (fetch_url ignore robots par ailleurs non garde).",
-            "documentation": "https://github.com/modelcontextprotocol/servers/tree/main/src/fetch (option CLI documentee du serveur fetch)"
+            "option": "SSL_CERT_FILE",
+            "value": "/etc/ssl/extra-ca.pem",
+            "reason": "Trust setting: the server must trust the certificate of the stand-in served under the real name example.com (ADR 034). Set by the fixture through PublicNames.trust. Without it, the https benign call fails TLS verification.",
+            "documentation": "httpx reads SSL_CERT_FILE when trust_env is true, the default of the httpx.AsyncClient fetch_url builds (AsyncClient(proxy=proxy_url))."
           }
         ],
         "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "Base image python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159 (both versions), with the environment it sets: PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin, LANG=C.UTF-8, GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305, PYTHON_VERSION=3.12.16, PYTHON_SHA256=b5796915dc45ff745cfb4e990a7e7c93d6f546328a102ce31448d69ebc37575c",
+            "reason": "Python interpreter the documented pip installation requires (README, Using PIP), pinned by digest for reproducibility. The variables come from the official image, none is chosen by the fixture.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "pip install mcp-server-fetch==2026.6.4 (Dockerfile.holdout-2026-104120-fetch) and mcp-server-fetch==2026.10.10 (Dockerfile.holdout-2026-104120-fetch-patched), with the dependencies each release declares. 2026.6.4: httpx>=0.27, markdownify>=0.13.1, mcp>=1.1.3, protego>=0.3.1, pydantic>=2.0.0, readabilipy>=0.2.0, requests>=2.32.3. 2026.10.10: httpx[socks]>=0.27, markdownify>=0.13.1, mcp<2,>=1.29.0, protego>=0.6.2, pydantic>=2.0.0, readabilipy>=0.2.0, requests>=2.32.3",
+            "reason": "The server itself, the vulnerable version and the first patched version, installed as the README prescribes (pip install mcp-server-fetch).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "SDK version pin: mcp==1.27.2 (vulnerable image), mcp==1.30.0 (patched image), inside the range each release declares (mcp>=1.1.3 with no upper bound for 2026.6.4, mcp<2,>=1.29.0 for 2026.10.10)",
+            "reason": "2026.6.4 does not start with mcp 2.x (McpError renamed, the import fails), which its unbounded range allows. The fixture pins the last 1.x contemporary with each release, the patched release's declared range already excluding 2.x. The vulnerable version passes no version to Server(), so the SDK announces its own version (1.27.2) in the serverInfo of the initialize response, which is not a tool response.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "Launch command: ENTRYPOINT [\"python\", \"-m\", \"mcp_server_fetch\"] in both images, no argument added after the image by ssrf_env",
+            "reason": "The documented pip launch (README, Using PIP section: python -m mcp_server_fetch). The first documented stdio launch is uvx (uvx mcp-server-fetch), which resolves and downloads the package from PyPI at start and cannot run on the fixture's closed network; the pip launch runs the same module. No option is set beyond the default: robots.txt handling stays at its default (obey), and the --ignore-robots-txt option of the previous round is removed (neither the startup nor the flaw needs it). The server takes no scope, no path is added.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "Environment variable SSL_CERT_FILE=/etc/ssl/extra-ca.pem (-e, through the fixture's PublicNames.trust)",
+            "reason": "Trust setting: the server must trust the certificate of the stand-in served under the real name example.com (ADR 034). httpx.AsyncClient (trust_env=True by default) loads this file in place of the certifi store for every https request. Also recorded in launch_options (option SSL_CERT_FILE), as the rule asks of a trust setting.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "File /etc/ssl/extra-ca.pem, mounted read-only from a temporary host file: the fixture authority's certificate (evals/stand_ins/tls/fixture-authority.pem, CN 'mcp-auditor fixture authority', name constraints permitting only the fixtures' HTTPS stand-in hosts)",
+            "reason": "The authority the stand-in's leaf chains to, read through SSL_CERT_FILE. Exempt from the limits by the rule (the authority and the certificates it issues).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "Run account --user 65534:65534 (nobody, already in the image's /etc/passwd) and -e HOME=/tmp (unprivileged_user_args, PlantingHost user=UNPRIVILEGED)",
+            "reason": "The bench profile: an image with no USER runs unprivileged. No account is created (no account place kept).",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Working directory -w /srv/app and mount -v <layout root>:/srv:ro",
+            "reason": "The layout's checkout as working directory, as Deployment layout prescribes. The layout itself is not outside the layout, nothing is seeded in it (seeded_in_layout empty).",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Confinement: -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 (confinement_args)",
+            "reason": "The confinement profile common to every container of the bench.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Closed network mcp-auditor-cve-<hex> (--internal, gateway_mode_ipv4=isolated, IPv6 off) and a namespace holder container (sentinel busybox image, entrypoint sleep 2147483647) the server joins through --network container:<holder>, whose Docker-assigned hostname it also shares",
+            "reason": "A fixture's network reaches neither the host nor the Internet (ADR 034). The holder carries the addresses of the sentinels and of the stand-in.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "/etc/hosts entry '172.66.147.243 example.com' (--add-host on the holder, a file the server shares in container: mode)",
+            "reason": "Pins the real name example.com to the captured address, so the benign call reaches the stand-in under its real name.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "Address 172.66.147.243/32 added on the holder's lo (an ephemeral container of the sentinel image, ip addr add, NET_ADMIN, gone before the launch)",
+            "reason": "The public address where the example.com stand-in listens (80 and 443). Global, so accepted by the 2026.10.10 guard.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          },
+          {
+            "item": "Sentinels of the kept places: addresses 169.254.169.254/32, 169.254.170.2/32 and 169.254.170.23/32 on the holder's lo, and three busybox httpd containers (FLAG=<nonce>, SERVE_FILE=/latest/meta-data/iam/security-credentials/index.html, /v2/credentials/index.html, /v1/credentials, BIND_ADDR=<address>) each serving its place's nonce and 404 for any other path",
+            "reason": "Services the planting starts to serve the nonce of the network places imds, ecs-task-credentials and eks-pod-identity. Exempt from the limits by the rule (the sentinels).",
+            "returned_by": [
+              "fetch"
+            ],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Leaf certificate example.com (evals/stand_ins/tls/example.com.pem, SAN DNS:example.com, issued by the fixture authority) and its key, mounted in the stand-in container at /stand-in/cert.pem and /stand-in/key.pem",
+            "reason": "Lets the stand-in serve https://example.com/ under the real name. A certificate issued by the fixture authority, exempt by the rule.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "fetch"
+            ]
+          }
+        ],
+        "stand_ins": [
+          {
+            "stand_in": {
+              "replaces": "example.com, a public host (IANA's Cloudflare CDN, captured address 172.66.147.243), over http and https",
+              "reason": "The fixture's network is closed (neither host nor Internet, ADR 034), so the real example.com cannot be reached from it, and it is a third-party public service, not software that can run in a container. The benign call needs a globally routable public address that the 2026.10.10 guard lets through and that answers without error.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/example.com.json",
+              "outputs": [
+                {
+                  "request": "GET https://example.com/",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (https, GET, /), status 200, capture of 2026-11-04T07:36:45Z: status, headers and body replayed as captured, in the capture's order. evals/docker/Dockerfile.stand-in drops only the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) and sets a Content-Length equal to the length of the replayed body: the framing of its own response, not an identifier replacement. No other edit, no Server or Date added (send_response_only).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "HEAD https://example.com/",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (https, HEAD, /), status 200, capture of 2026-11-04T07:36:45Z: status, headers and body replayed as captured, in the capture's order. evals/docker/Dockerfile.stand-in drops only the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) and sets a Content-Length equal to the length of the replayed body: the framing of its own response, not an identifier replacement. No other edit, no Server or Date added (send_response_only). A HEAD returns the GET route of the same target without the body.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET https://example.com/robots.txt",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (https, GET, /robots.txt), status 404, capture of 2026-11-04T07:36:45Z: status, headers and body replayed as captured, in the capture's order. evals/docker/Dockerfile.stand-in drops only the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) and sets a Content-Length equal to the length of the replayed body: the framing of its own response, not an identifier replacement. No other edit, no Server or Date added (send_response_only).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET https://example.com/s.js",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (https, GET, /s.js), status 200, capture of 2026-11-04T07:36:45Z: status, headers and body replayed as captured, in the capture's order. evals/docker/Dockerfile.stand-in drops only the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) and sets a Content-Length equal to the length of the replayed body: the framing of its own response, not an identifier replacement. No other edit, no Server or Date added (send_response_only).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET http://example.com/",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (http, GET, /), status 200, capture of 2026-11-04T07:36:45Z: status, headers and body replayed as captured, in the capture's order. evals/docker/Dockerfile.stand-in drops only the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) and sets a Content-Length equal to the length of the replayed body: the framing of its own response, not an identifier replacement. No other edit, no Server or Date added (send_response_only).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET http://example.com/robots.txt",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (http, GET, /robots.txt), status 404, capture of 2026-11-04T07:36:45Z: status, headers and body replayed as captured, in the capture's order. evals/docker/Dockerfile.stand-in drops only the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) and sets a Content-Length equal to the length of the replayed body: the framing of its own response, not an identifier replacement. No other edit, no Server or Date added (send_response_only).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET http://example.com/s.js",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, route (http, GET, /s.js), status 200, capture of 2026-11-04T07:36:45Z: status, headers and body replayed as captured, in the capture's order. evals/docker/Dockerfile.stand-in drops only the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) and sets a Content-Length equal to the length of the replayed body: the framing of its own response, not an identifier replacement. No other edit, no Server or Date added (send_response_only).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other request (scheme, method or target absent from the captured routes)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json, defaults[http] and defaults[https]: the real example.com's answer to a generated path that does not exist (/2259508acc207c29), status 404, HTML page 'Example Domain', capture of 2026-11-04T07:36:45Z. evals/docker/Dockerfile.stand-in replays it for any request whose target is not a captured route; path_form is null (the body does not quote the path), so there is no substitution. It is what the real software returns for a target it does not know, not an invented output. evals/docker/Dockerfile.stand-in drops only the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) and sets a Content-Length equal to the length of the replayed body: the framing of its own response, not an identifier replacement. No other edit, no Server or Date added (send_response_only).",
+                  "form_source": null,
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [
+              "fetch"
+            ],
+            "used_by_default_by": []
+          }
+        ],
+        "software_releases": [],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
-          "fetch(url='http://169.254.169.254/latest/meta-data/iam/security-credentials/', raw=true) -> corps du sentinel (nonce imds) renvoye sur 2026.6.4",
-          "fetch(url='http://169.254.170.2/v2/credentials/', raw=true) -> corps du sentinel (nonce ecs-task-credentials) renvoye sur 2026.6.4",
-          "fetch(url='http://169.254.170.23/v1/credentials', raw=true) -> corps du sentinel (nonce eks-pod-identity) renvoye sur 2026.6.4"
+          "fetch(url='http://169.254.169.254/latest/meta-data/iam/security-credentials/', raw=true) -> sentinel body (imds nonce) returned on 2026.6.4",
+          "fetch(url='http://169.254.170.2/v2/credentials/', raw=true) -> sentinel body (ecs-task-credentials nonce) returned on 2026.6.4",
+          "fetch(url='http://169.254.170.23/v1/credentials', raw=true) -> sentinel body (eks-pod-identity nonce) returned on 2026.6.4"
         ],
-        "benign_call": "fetch(url='https://example.com/', raw=true) -> adresse publique globalement routable, autorisee sur 2026.6.4 et 2026.10.10, aucun nonce, non aimed.",
-        "patched_result": "Sur 2026.10.10 (garde d'egress de PR #5033, actif par defaut sans --allow-private-ips), chaque fetch link-local renvoie isError 'Refused to fetch ... resolves to a non-global address', aucun nonce ne surface. Le fetch public benin reussit encore (pas d'erreur).",
-        "attempts": 3
+        "benign_call": "fetch(url='https://example.com/', raw=true) -> a globally routable public address, allowed on 2026.6.4 and 2026.10.10, no nonce, not aimed.",
+        "patched_result": "On 2026.10.10 (the egress guard of PR #5033, on by default without --allow-private-ips), each link-local fetch is refused at the robots.txt pre-check with isError 'Refused to fetch http://169.254.169.254/robots.txt: 169.254.169.254 resolves to 169.254.169.254, which is not a public address. Start the server with --allow-private-ips to allow private, loopback and link-local addresses.' (the same message naming 169.254.170.2 and 169.254.170.23 for the two other endpoints); no nonce surfaces. The benign public fetch still succeeds (no error).",
+        "attempts": 1
       },
       {
         "flaw": "CVE-2026-7785",
@@ -149193,7 +149392,8 @@
       {
         "flaw": "CVE-2026-104120",
         "reported_gaps": [],
-        "confirmed_gaps": []
+        "confirmed_gaps": [],
+        "rule_version": 11
       },
       {
         "flaw": "CVE-2026-7785",
