@@ -737,6 +737,22 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "e1c6558b35da9eaed3ba2a690cfcee978acd592caa29c6a942c501938bcb07de"
     image: mcp-auditor-cve-holdout-2026-53710-python-sandbox-patched:local
 
+  holdout-2026-85787-postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-85787-postgres
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "9c4bfd3797c4d0fa1a2da918947569d70797d3df80fb0bd38c1b1d81b6ac40d0"
+    image: mcp-auditor-cve-holdout-2026-85787-postgres:local
+
+  holdout-2026-85787-postgres-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-85787-postgres-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ca2fdf3ceb033115927f6b1bba4fbbf247bde10651a4d1a9c9f35c1f426721fe"
+    image: mcp-auditor-cve-holdout-2026-85787-postgres-patched:local
+
   # Nuisance suite: one patched image per admitted server (evals/nuisance_admission.json), in its
   # own mcp-auditor-nuisance- namespace, under the nuisance profile.
   kanban:

@@ -11,12 +11,7 @@ from evals.cve_targets import CVE_TARGETS
 from evals.holdout_targets import HOLDOUT_TARGETS
 
 # Hosts whose capture is committed before the target declaring it is vested.
-PENDING_STAND_IN_HOSTS = frozenset(
-    {
-        "rds.us-east-1.amazonaws.com",  # CVE-2026-85787, CVE-2026-85788
-        "secretsmanager.us-east-1.amazonaws.com",  # CVE-2026-85787, CVE-2026-85788
-    }
-)
+PENDING_STAND_IN_HOSTS: frozenset[str] = frozenset()
 
 
 def declared_stand_in_hosts() -> set[str]:

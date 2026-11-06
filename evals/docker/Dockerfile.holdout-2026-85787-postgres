@@ -1,0 +1,51 @@
+# CVE-2026-85787 vulnerable build: awslabs.postgres-mcp-server 1.1.6.
+# The read-only mode enforces safe SQL with an application-level blocklist that does not fold a
+# double-quoted identifier, so "pg_read_file"(...) slips past the dangerous-function check and runs
+# as the superuser, returning a file outside the database scope. The real PyPI package is installed
+# unchanged; nothing of the flaw is reimplemented.
+#
+# The server is a PostgreSQL client: the real PostgreSQL backend runs co-located in the image. Its
+# documentation names no PostgreSQL version, so the latest release the project published on the
+# calibration day (2026-11-05) is used, PostgreSQL 18.6 (2026-08-13).
+FROM postgres:18.6-bookworm@sha256:f1ea2a1a4fb7b68d4836be1fdcb8a6466a89b072158bf9d97663600538c294c5
+
+ARG PGMCP_VERSION=1.1.6
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 python3-venv ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv /opt/venv \
+ && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+ && /opt/venv/bin/pip install --no-cache-dir "awslabs.postgres-mcp-server==${PGMCP_VERSION}" "mcp>=1.18,<2"
+ENV PATH=/opt/venv/bin:/usr/lib/postgresql/18/bin:$PATH
+
+# AWS's published example keys: boto3 signs its requests to the stood-in RDS and Secrets Manager
+# endpoints with them, and environment credentials keep it from querying the instance metadata.
+ENV AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+ENV AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+ENV AWS_DEFAULT_REGION=us-east-1
+
+# The data directory is initialised at build under the unprivileged account the server runs as.
+# The 18 image moved its default PGDATA under /var/lib/postgresql/18/docker; /data is set
+# explicitly here, so the move does not apply.
+ENV PGDATA=/data
+RUN mkdir -p /data && chown 65534:65534 /data
+USER 65534
+RUN initdb -D /data -U postgres --auth=trust --auth-host=trust --auth-local=trust \
+ && echo "listen_addresses='127.0.0.1'" >> /data/postgresql.conf \
+ && echo "unix_socket_directories='/data'" >> /data/postgresql.conf \
+ && pg_ctl -D /data -o "-c listen_addresses=127.0.0.1 -c unix_socket_directories=/data" -w -t 60 start \
+ && psql -h /data -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS dblink;" \
+ && pg_ctl -D /data -w -t 60 stop
+
+# pg_ctl's output goes to stderr so it never corrupts the JSON-RPC on stdout.
+RUN printf '%s\n' \
+ '#!/bin/sh' \
+ 'set -e' \
+ 'pg_ctl -D /data -l /data/postgres.log -w -t 60 start 1>&2' \
+ 'exec awslabs.postgres-mcp-server' \
+ > /data/entrypoint.sh \
+ && chmod +x /data/entrypoint.sh
+
+ENTRYPOINT ["/data/entrypoint.sh"]
