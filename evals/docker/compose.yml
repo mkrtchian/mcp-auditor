@@ -156,7 +156,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-85788-mysql
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "85723fbc278a6e0127a05058f5bd9637e5b9a68a36bdb17af23a3ec145252480"
+        org.mcp-auditor.dockerfile-fingerprint: "aaf73200324ae70ebd600554c034a3fe607c1926468e8e4ef85878c84693c650"
     image: mcp-auditor-cve-holdout-2026-85788-mysql:local
 
   holdout-2026-85788-mysql-patched:
@@ -164,7 +164,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-85788-mysql-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "803b6704c00fbf6de690142a65a138f23ff6f60064f2471e163367663e63d241"
+        org.mcp-auditor.dockerfile-fingerprint: "3d7de7f47935b9a7847f3587d6701622aefbcad8d4a0a180988738ace94ab0a4"
     image: mcp-auditor-cve-holdout-2026-85788-mysql-patched:local
 
   holdout-2026-25546-godot-mcp:

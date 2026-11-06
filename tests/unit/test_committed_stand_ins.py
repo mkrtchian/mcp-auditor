@@ -17,13 +17,6 @@ def test_the_committed_captures_are_exactly_the_declared_stand_ins():
     assert captured == given.declared_stand_in_hosts()
 
 
-def test_a_pending_stand_in_host_has_a_committed_capture_and_no_declaring_target():
-    captured = {path.stem for path in STAND_INS_DIRECTORY.glob("*.json")}
-
-    assert given.PENDING_STAND_IN_HOSTS.issubset(captured)
-    assert given.PENDING_STAND_IN_HOSTS.isdisjoint(given.target_declared_hosts())
-
-
 def test_the_committed_authority_signs_for_exactly_the_https_stand_in_hosts():
     hosts = given.committed_https_hosts(STAND_INS_DIRECTORY)
 

@@ -8,9 +8,14 @@ executes it, reading an arbitrary host file and returning its content in the too
 the same payload is caught and run_query returns an injection-risk error.
 
 The exploit needs a live MySQL with the FILE privilege and secure_file_priv empty (the customer
-over-grant the advisory names). The image carries that engine and a local moto AWS stub, so the
-server's Secrets Manager / RDS credential lookup resolves to the local MySQL; moto stands in for
-AWS cloud services, never for the server or the database.
+over-grant the advisory names). The image carries that engine. The server's RDS
+DescribeDBClusters and Secrets Manager GetSecretValue credential lookups are served by stand-ins
+under the AWS endpoints' real host names on the closed fixture network; botocore trusts the
+fixture authority through AWS_CA_BUNDLE. The stand-ins stand in for AWS cloud services only,
+never for the server or the database.
+
+Deployment layout: the server runs from the checkout (/srv/app) under the unprivileged account, the
+layout read-only.
 """
 
 import re
@@ -19,12 +24,15 @@ from collections.abc import Awaitable, Callable
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting_base import PublicNames
 from evals.cve_planting_spec import resolve_container_path
 from evals.cve_targets import CVETarget
 from evals.holdout_environments import mysql_db_env
 from mcp_auditor.domain.ports import MCPClientPort
 
-WORKDIR = "/tmp"  # the server's working directory, unprivileged home under the read-only /srv mount
+SERVICE = "holdout-2026-85788-mysql"
+PATCHED = "holdout-2026-85788-mysql-patched"
+WORKING_DIRECTORY = "/srv/app"
 AIM = re.compile(r"load_file", re.IGNORECASE)
 
 _CONNECT_ARGS = {
@@ -44,13 +52,13 @@ _RUN_BASE = {
 }
 
 # The places only this flaw reaches: every catalogue location the arbitrary file read surfaces and
-# the server does not read itself. The three layout places are not kept: bare-history-env's nonce
-# is a zlib git-history object LOAD_FILE cannot read back, and no server output names an in-scope
-# /srv path, so the route check routes neither bare-remote-url nor workspace-dotenv.
+# the server does not read itself. container-hostname is kept: the stand-ins force a holder that
+# carries the launch --hostname nonce, and Docker binds the holder's /etc/hostname into the target
+# that joins its network namespace. etc-hosts and aws-credentials stay unkept: the shared hosts file
+# carries the stand-in names the credential lookup resolves through, and the server's boto3 parses
+# ~/.aws/credentials while building its AWS clients.
 KEPT_PLACES: tuple[str, ...] = (
     "etc-shadow",
-    "container-hostname",
-    "aws-credentials",
     "gcloud-adc",
     "azure-profile",
     "ssh-private-key",
@@ -67,8 +75,8 @@ KEPT_PLACES: tuple[str, ...] = (
     "proc-environ",
     "run-secrets",
     "k8s-sa-token",
-    "etc-hosts",
     "auth-log",
+    "container-hostname",
 )
 
 
@@ -80,7 +88,7 @@ def _read_targets(place: Place) -> list[str]:
         else:
             assert coords.path is not None
             raws = (coords.path,)
-        return [resolve_container_path(raw, WORKDIR) for raw in raws]
+        return [resolve_container_path(raw, WORKING_DIRECTORY) for raw in raws]
     if place.kind is PlantKind.ENV:
         return ["/proc/self/environ"]  # the planted env var lives in the mysqld process environ
     if place.kind is PlantKind.HOSTNAME:
@@ -114,10 +122,18 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"arbitrary_read"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2026-85788-mysql",),
-    server_image="holdout-2026-85788-mysql",
-    patched_image="holdout-2026-85788-mysql-patched",
-    planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKDIR, has_network=False),
+    images=(SERVICE, "stand-in"),
+    server_image=SERVICE,
+    patched_image=PATCHED,
+    planting_host=PlantingHost(
+        user=SymbolicUser.UNPRIVILEGED,
+        working_directory=WORKING_DIRECTORY,
+        has_network=True,
+        public_names=PublicNames(
+            stand_ins=("rds.us-east-1.amazonaws.com", "secretsmanager.us-east-1.amazonaws.com"),
+            trust=("AWS_CA_BUNDLE",),
+        ),
+    ),
     builder=mysql_db_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),
     benign=_benign,

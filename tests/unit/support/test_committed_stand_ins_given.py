@@ -10,17 +10,11 @@ from evals.apify_backend import API_HOST
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_targets import HOLDOUT_TARGETS
 
-# Hosts whose capture is committed before the target declaring it is vested.
-PENDING_STAND_IN_HOSTS: frozenset[str] = frozenset()
-
 
 def declared_stand_in_hosts() -> set[str]:
-    return target_declared_hosts() | {API_HOST} | PENDING_STAND_IN_HOSTS
-
-
-def target_declared_hosts() -> set[str]:
     targets = (*CVE_TARGETS, *HOLDOUT_TARGETS)
-    return {host for target in targets for host in target.planting_host.public_names.stand_ins}
+    declared = {host for target in targets for host in target.planting_host.public_names.stand_ins}
+    return declared | {API_HOST}
 
 
 def committed_https_hosts(directory: Path) -> set[str]:
