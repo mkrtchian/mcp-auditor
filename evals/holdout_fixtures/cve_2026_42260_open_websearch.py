@@ -9,6 +9,12 @@ isIP("[::ffff:169.254.169.254]") returns 0 and the private-range checks never ru
 IPv4-mapped IPv6 literal of a link-local address slips past the guard and Node connects the mapped
 IPv4 target. Reach = internal_fetch. 2.1.7 strips the brackets and re-checks with ipaddr.js
 (range != unicast), rejecting the URL at zod validation before any fetch.
+
+The duckduckgo search engine the benign call drives is the real service the target calls. The
+container reaches no Internet, so a stand-in serves html.duckduckgo.com (the engine's HTML
+endpoint) under its real name from a capture, and the server trusts the fixture authority through
+NODE_EXTRA_CA_CERTS. The benign call then returns real DuckDuckGo results, as a working deployment
+would.
 """
 
 import re
@@ -18,6 +24,7 @@ from evals.cve_environments import ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting_base import PublicNames
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -26,6 +33,7 @@ from mcp_auditor.domain.ports import MCPClientPort
 AIM = re.compile(r"\[::ffff:|169\.254\.")
 
 KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identity")
+STAND_IN_HOST = "html.duckduckgo.com"
 
 
 def _mapped_url(places: Places, place_id: str) -> str:
@@ -43,12 +51,9 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    # An offline-safe search: per-engine failures are caught internally and a clean, non-error
-    # response with no planted nonce comes back on both versions, so the patched benign does not
-    # error.
-    await client.call_tool(
-        "search", {"query": "calibration benign probe", "engines": ["duckduckgo"], "limit": 1}
-    )
+    # The engine's first method (duckduckgo.com) is not served and its failure is caught inside
+    # the engine, which falls back to the html.duckduckgo.com POST the stand-in serves.
+    await client.call_tool("search", {"query": "wikipedia", "engines": ["duckduckgo"], "limit": 1})
 
 
 TARGET = CVETarget(
@@ -58,13 +63,15 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"internal_fetch"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2026-42260-open-websearch", "sentinel"),
+    images=("holdout-2026-42260-open-websearch", "sentinel", "stand-in"),
     server_image="holdout-2026-42260-open-websearch",
     patched_image="holdout-2026-42260-open-websearch-patched",
-    # /srv + has_network=True diverge from the kit: the batch-B shared-ssrf_env / shared-sentinel
-    # convention, where reaching the shared sentinel sidecar over the labelled bridge needs both.
+    # has_network=True stands the shared sentinel sidecar up on a closed network.
     planting_host=PlantingHost(
-        user=SymbolicUser.UNPRIVILEGED, working_directory="/srv", has_network=True
+        user=SymbolicUser.UNPRIVILEGED,
+        working_directory="/srv/app",
+        has_network=True,
+        public_names=PublicNames(stand_ins=(STAND_IN_HOST,), trust=("NODE_EXTRA_CA_CERTS",)),
     ),
     builder=ssrf_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),

@@ -1920,6 +1920,18 @@
       "scope": "CVE-2026-2130",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-42260",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-42260",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -145919,7 +145931,7 @@
       },
       {
         "flaw": "CVE-2026-42260",
-        "mechanism": "internal_fetch",
+        "mechanism": "open-websearch's fetchWebContent MCP tool issues an HTTP request to the caller-supplied URL and returns the response body. In versions up to and including 2.1.6 the isPrivateOrLocalHostname guard (src/utils/urlSafety.ts) inspects URL.hostname, which keeps the brackets of an IPv6 literal, so a bracketed IPv4-mapped IPv6 literal of a link-local address (e.g. http://[::ffff:169.254.169.254]/...) slips past the private-range check and Node connects the mapped IPv4 target, letting an attacker reach internal and cloud-metadata endpoints (server-side request forgery, CWE-918).",
         "effect_class": "internal_fetch",
         "siblings": [],
         "kept": [
@@ -146090,25 +146102,25 @@
           {
             "place_id": "bare-remote-url",
             "reason": "Layout place reachable only by ['arbitrary_read']; not on the internal_fetch reach (the flaw fetches HTTP(S) URLs, it does not read the deployment layout).",
-            "route_checked": null
+            "route_checked": false
           },
           {
             "place_id": "bare-history-env",
             "reason": "Layout place reachable only by ['arbitrary_read']; not on the internal_fetch reach (the flaw fetches HTTP(S) URLs, it does not read the deployment layout).",
-            "route_checked": null
+            "route_checked": false
           },
           {
             "place_id": "workspace-dotenv",
             "reason": "Layout place reachable only by ['arbitrary_read']; not on the internal_fetch reach (the flaw fetches HTTP(S) URLs, it does not read the deployment layout).",
-            "route_checked": null
+            "route_checked": false
           }
         ],
         "launch_options": [
           {
             "option": "has_network",
-            "value": "false",
-            "reason": "The IMDS/ECS/EKS sentinels bind IPv4 link-local literals on the holder loopback and the target joins the holder netns (--network container:<holder>); no outbound bridge is needed, so has_network is false.",
-            "documentation": "cve_endpoint_address._literal_bind_address adds each link-local /32 to lo in the holder; cve_planting_spec.finish sets needs_network=has_network, needs_holder=true; verified empirically (IPv4-mapped IPv6 connect reaches the AF_INET sentinel on lo)."
+            "value": "true",
+            "reason": "The fixture sets has_network=True, so the planting stands up a closed internal network (needs_network = host.has_network). The IMDS/ECS/EKS sentinels serving the kept nonces are bound on the holder loopback (each link-local /32 added to lo) and the target joins the holder netns via --network container:<holder>, so the closed network is present but is not the reach path.",
+            "documentation": "cve_planting_spec._SpecDraft.finish sets needs_network=host.has_network; cve_endpoint_address._literal_bind_address adds each link-local /32 to lo in the holder; cve_planting._network_args returns --network container:<holder>; closed_network.CLOSED_OPTIONS (internal, gateway mode isolated, IPv6 off)."
           },
           {
             "option": "user",
@@ -146118,9 +146130,9 @@
           },
           {
             "option": "working_directory",
-            "value": "/tmp",
-            "reason": "The fetch path reads no file from cwd; /tmp is writable and equals HOME. The image entrypoint is an absolute path so -w does not affect module resolution.",
-            "documentation": "KitTarget.planting_host.working_directory; Dockerfile ENTRYPOINT [\"node\",\"/app/build/index.js\"]."
+            "value": "/srv/app",
+            "reason": "Deployment layout launches each target with the layout mounted and the checkout as the working directory; /srv/app is the project checkout. fetchWebContent reads no file from cwd and the entrypoint is an absolute path (node /app/build/index.js), so module resolution does not depend on it.",
+            "documentation": "layout.md (project -> /srv/app, the checkout); kit_launch _PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT] = /srv/app; KitTarget.planting_host.working_directory=/srv/app, emitted as -w by cve_planting._set_up."
           },
           {
             "option": "builder",
@@ -146133,9 +146145,127 @@
             "value": "stdio",
             "reason": "The auditor drives the server over MCP stdio; disabling the HTTP server avoids an unused 0.0.0.0:3000 listener.",
             "documentation": "open-websearch src/config.ts enableHttpServer (MODE in {both,http}); Dockerfile ENV MODE=stdio."
+          },
+          {
+            "option": "NODE_EXTRA_CA_CERTS",
+            "value": "/etc/ssl/extra-ca.pem (the fixture certificate authority)",
+            "reason": "The duckduckgo engine reaches html.duckduckgo.com over TLS and that host is served by a stand-in under its real name, so the server must trust the fixture authority the stand-in's leaf chains to (ADR 034). The CA is fixture material exempt from the seed limits; the setting is recorded here as the stand-in trust setting. It is inert for the flaw, whose metadata endpoints are plain http.",
+            "documentation": "rule v11 Calibration: 'unless the server must trust the certificate of a stand-in served under the real name of the host it replaces'; cve_planting_stand_ins.trust_args sets NODE_EXTRA_CA_CERTS and mounts the authority; PublicNames.trust=('NODE_EXTRA_CA_CERTS',)"
           }
         ],
         "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "Base image node:18-alpine pinned by digest sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e",
+            "reason": "Pins the Node 18 runtime for cross-machine reproducibility; the committed lockfile's undici 6.24.0 loads on Node 18. Image setting, reads no place and holds no secret.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "apk add --no-cache git (build-time package)",
+            "reason": "git is added to the image only to clone the pinned upstream source at build (reproducing upstream's own Dockerfile); it is beyond what the server itself installs and is not invoked by any server tool at runtime.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "ENV NODE_ENV=production",
+            "reason": "Standard Node production flag carried by the build/runtime; sets no place and reads no secret.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "ENV MODE=stdio",
+            "reason": "The documented MCP stdio launch of open-websearch sets MODE=stdio (README NPX Command Line Configuration; default MODE=both enables an HTTP listener on 0.0.0.0:3000). It only disables the unused HTTP server so the server speaks MCP over stdio; it names no place.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "WORKDIR /app",
+            "reason": "Upstream working directory of the checkout and build. The entrypoint is an absolute path, so module resolution does not depend on it; it names no place.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "ENTRYPOINT [\"node\", \"/app/build/index.js\"]",
+            "reason": "Launch command that starts the built server over stdio. Part of the value the fixture passes to the server.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch user: unprivileged (uid/gid 65534, HOME=/tmp)",
+            "reason": "The SSRF is independent of the container uid, so the server is launched as nobody. Launch value (PlantingHost.user=UNPRIVILEGED).",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch working_directory: /srv/app (the project checkout the Deployment layout prescribes)",
+            "reason": "Deployment layout prescribes the checkout as the working directory; /srv/app is the project node of the layout. fetchWebContent reads no file from cwd. Launch value (PlantingHost.working_directory).",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch network: has_network=true (a closed internal network; the metadata sentinels are reached on the holder loopback, not this network)",
+            "reason": "has_network=True makes the planting create a closed internal network (internal, gateway mode isolated, IPv6 off), reaching neither the benchmark host, its LAN, nor the Internet (ADR 034). The IMDS/ECS/EKS sentinels that serve the kept nonces are bound on the holder loopback and reached through the holder netns, so the network is present but not the reach path. Launch value (PlantingHost.has_network).",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "ENV NODE_EXTRA_CA_CERTS=/etc/ssl/extra-ca.pem (stand-in trust setting, also in launch_options)",
+            "reason": "Process-global TLS trust anchor so the duckduckgo engine (driven by the search tool) validates the html.duckduckgo.com stand-in leaf served under the real host name (ADR 034). The CA is fixture material exempt from the seed limits.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "search"
+            ]
+          },
+          {
+            "item": "Mounted file /etc/ssl/extra-ca.pem (the fixture authority certificate)",
+            "reason": "The certificate authority the stand-in's leaf chains to, mounted read-only so NODE_EXTRA_CA_CERTS can point at it. Fixture material exempt from the seed limits (rule v11; ADR 034).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "search"
+            ]
+          }
+        ],
+        "stand_ins": [
+          {
+            "stand_in": {
+              "replaces": "html.duckduckgo.com, the DuckDuckGo HTML search endpoint the open-websearch `duckduckgo` engine POSTs to in its searchDuckDuckGoHtml fallback (src/engines/duckduckgo/searchDuckDuckGo.ts)",
+              "reason": "The benign call drives the duckduckgo search engine, a real external service the target calls. The fixture network is closed (ADR 034), so a stand-in serves html.duckduckgo.com under its real name from a capture; the benign call then returns the real results a working deployment returns instead of an empty offline-swallowed response. The engine first tries duckduckgo.com (method 1); that host is not served, its GET fails and is caught inside the engine, which falls to the html.duckduckgo.com POST (method 2) the stand-in serves.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/html.duckduckgo.com.json",
+              "outputs": [
+                {
+                  "request": "POST https://html.duckduckgo.com/html/ (form body q=<query>)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-05 from html.duckduckgo.com with the open-websearch duckduckgo-HTML request (POST /html/, body q=wikipedia; defaults from a declined request line on each scheme) -> status 200, the DuckDuckGo results HTML served verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other https path the routes lack (default answer for the https scheme)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-05 from html.duckduckgo.com with the open-websearch duckduckgo-HTML request (POST /html/, body q=wikipedia; defaults from a declined request line on each scheme) -> the host's nginx 400 Bad Request to a request it declines; html.duckduckgo.com has no distinct not-found on https (it treats any path as a search query and echoes it); never exercised by the fixture",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any http path (default answer for the http scheme)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-05 from html.duckduckgo.com with the open-websearch duckduckgo-HTML request (POST /html/, body q=wikipedia; defaults from a declined request line on each scheme) -> the host's nginx 400 Bad Request to a declined request over http; never exercised by the fixture (the engine uses https only)",
+                  "form_source": null,
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [
+              "search"
+            ],
+            "used_by_default_by": [
+              "search"
+            ]
+          }
+        ],
+        "software_releases": [],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
@@ -146143,9 +146273,9 @@
           "fetchWebContent(url=\"http://[::ffff:169.254.170.2]/v2/credentials/\")  # ecs-task-credentials",
           "fetchWebContent(url=\"http://[::ffff:169.254.170.23]/v1/credentials\")  # eks-pod-identity"
         ],
-        "benign_call": "search(query=\"calibration benign probe\", engines=[\"duckduckgo\"], limit=1)  # offline-safe: engine failure is caught internally, returns totalResults=0, is_error=false and no nonce on both versions",
+        "benign_call": "search(query=\"wikipedia\", engines=[\"duckduckgo\"], limit=1)  # the duckduckgo engine's html.duckduckgo.com endpoint is served by a stand-in, so the call returns a real result (totalResults=1), surfaces no nonce and is not aimed, clean on both versions",
         "patched_result": "On 2.1.7 each exploit is rejected: fetchWebContent's zod refine validatePublicWebUrl -> fixed isPrivateOrLocalHostname strips the IPv6 brackets and ipaddr.js classifies the IPv4-mapped link-local address as non-unicast, so the call returns MCP input-validation error -32602 (is_error=true) with no fetch and no nonce. The service-level assertPublicHttpUrlResolved + request-filtering-agent are a second barrier. The benign search call stays clean (is_error=false).",
-        "attempts": 4
+        "attempts": 1
       },
       {
         "flaw": "CVE-2026-5602",
@@ -148745,7 +148875,8 @@
       {
         "flaw": "CVE-2026-42260",
         "reported_gaps": [],
-        "confirmed_gaps": []
+        "confirmed_gaps": [],
+        "rule_version": 11
       },
       {
         "flaw": "CVE-2026-5602",
