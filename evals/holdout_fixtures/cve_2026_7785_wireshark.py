@@ -133,7 +133,7 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2026-7785-wireshark",),
+    images=("holdout-2026-7785-wireshark", "sentinel"),
     server_image="holdout-2026-7785-wireshark",
     patched_image="holdout-2026-7785-wireshark-patched",
     planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKDIR, has_network=False),
