@@ -2,9 +2,35 @@
 # Real software, cloned from the public repo and pinned at the affected commit 400c3da.
 FROM python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
 
+ENV DEBIAN_FRONTEND=noninteractive
+
+# tshark is the real software the server shells out to; the README requires it
+# ("TShark (Wireshark's command-line component) must be installed") but names no install
+# channel, so it is the current stable release of the Wireshark project built from the
+# upstream source the project distributes. Build deps are the basic set from the source
+# tree's tools/debian-setup.sh.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates \
+    && apt-get install -y --no-install-recommends \
+        git ca-certificates wget xz-utils \
+        cmake flex g++ gcc make \
+        libc-ares-dev libgcrypt-dev libglib2.0-dev libpcap-dev libpcre2-dev \
+        libspeexdsp-dev libxml2-dev libxml2-utils \
     && rm -rf /var/lib/apt/lists/*
+
+# Current stable release of the Wireshark project on the calibration day (4.6.9, 2026-09-23),
+# built CLI-only (no Qt GUI) with the documented BUILD_wireshark=OFF; the rest at cmake defaults.
+ARG WIRESHARK_VERSION=4.6.9
+ARG WIRESHARK_SHA256=d062d416a1ab3a49975aafe3a671c882dde0562ccd71b078808ceb59d465fc0f
+RUN cd /tmp \
+    && wget -q "https://www.wireshark.org/download/src/all-versions/wireshark-${WIRESHARK_VERSION}.tar.xz" \
+    && echo "${WIRESHARK_SHA256}  wireshark-${WIRESHARK_VERSION}.tar.xz" | sha256sum -c - \
+    && tar xf "wireshark-${WIRESHARK_VERSION}.tar.xz" \
+    && cmake -S "wireshark-${WIRESHARK_VERSION}" -B ws-build \
+        -DCMAKE_BUILD_TYPE=Release -DBUILD_wireshark=OFF -DBUILD_logray=OFF -DBUILD_stratoshark=OFF \
+    && cmake --build ws-build -j "$(nproc)" \
+    && cmake --install ws-build \
+    && ldconfig \
+    && rm -rf "/tmp/wireshark-${WIRESHARK_VERSION}" /tmp/ws-build "/tmp/wireshark-${WIRESHARK_VERSION}.tar.xz"
 
 WORKDIR /opt
 RUN git clone https://github.com/A-G-U-P-T-A/wireshark-mcp.git \

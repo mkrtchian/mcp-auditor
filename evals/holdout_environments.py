@@ -7,9 +7,16 @@ orphan sweep) governs these builders too. Fingerprinted into every CVE fixture w
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
+from pathlib import Path
 from uuid import uuid4
 
-from evals.cve_environments import Launch, LaunchShape, filesystem_launch, materialise
+from evals.cve_environments import (
+    CHECKOUT,
+    Launch,
+    LaunchShape,
+    filesystem_launch,
+    materialise,
+)
 from evals.cve_layout import layout_mount_args, owned_layout
 from evals.cve_planting import PlantingDocker, PlantingSpec, confinement_args, planted
 from evals.cve_planting_base import LABEL, own_network_args, unprivileged_user_args
@@ -72,6 +79,41 @@ def filesystem_scope_env(
         planted(spec, image, docker) as args,
     ):
         yield filesystem_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
+
+
+@contextmanager
+def command_injection_checkout_env(
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
+) -> Generator[Launch]:
+    # command_injection_env for a server whose start creates ./captures, its documented capture
+    # directory, in its working directory: run from the read-only checkout, it needs the
+    # directory to exist already, so the tree carries it empty.
+    with (
+        owned_layout(docker, lambda root: _materialise_with_captures(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
+        yield Launch(
+            command="docker",
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                *args.run_args(),
+                *layout_mount_args(root, spec.host.layout_mount),
+                image,
+            ],
+        )
+
+
+def _materialise_with_captures(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
+    # The reference arm carries it too, so the server starts there and the break check compares.
+    materialise(root, spec, shape)
+    (root / CHECKOUT / "captures").mkdir()
 
 
 # The no-holder launch's key: no instance runs there, the key only keeps the API tools registered

@@ -9,20 +9,25 @@ The flaw is general command execution, so the exploit surfaces a planted nonce f
 the executed command can reach and the server does not read itself. Each exploit breaks out of the
 tshark interface quoting and emits one tab-separated line whose src field carries the nonce; the
 server parses that line and echoes src under "Top Source IPs".
+
+The server runs from the checkout (/srv/app), the layout's working directory. Its lifespan creates
+./captures there and the checkout is mounted read-only, so the launch seeds that directory empty
+(command_injection_checkout_env); quick_capture never writes into it. Every kept coordinate is
+absolute or $HOME-rooted, so the working directory does not enter the payloads.
 """
 
 import re
 from collections.abc import Awaitable, Callable
 
-from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_spec import resolve_container_path
 from evals.cve_targets import CVETarget
+from evals.holdout_environments import command_injection_checkout_env
 from mcp_auditor.domain.ports import MCPClientPort
 
-WORKDIR = "/tmp"
+WORKDIR = "/srv/app"  # the in-scope checkout
 
 # command_execution-reachable, plantable places the server does not read itself.
 KEPT_PLACES: tuple[str, ...] = (
@@ -132,7 +137,7 @@ TARGET = CVETarget(
     server_image="holdout-2026-7785-wireshark",
     patched_image="holdout-2026-7785-wireshark-patched",
     planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKDIR, has_network=False),
-    builder=command_injection_env,
+    builder=command_injection_checkout_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),
     benign=_benign,
     awaited_capability=None,

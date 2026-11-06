@@ -13,6 +13,7 @@ import pytest
 import tests.unit.support.test_cve_launches_given as given
 from evals.cve_environments import (
     Launch,
+    LaunchShape,
     command_injection_env,
     filesystem_env,
     git_init_traversal_env,
@@ -23,6 +24,7 @@ from evals.cve_planting import PlantingFailed
 from evals.cve_planting_base import LAYOUT_PREFIX, LayoutMount, check_layout_outer
 from evals.holdout_environments import (
     arcadedb_mcp_env,
+    command_injection_checkout_env,
     filesystem_scope_env,
     mysql_db_env,
     ssrf_redirect_env,
@@ -61,6 +63,7 @@ _LAYOUT_BUILDERS = {
     "filesystem_scope": filesystem_scope_env,
     "ssrf_redirect": ssrf_redirect_env,
     "mysql_db": mysql_db_env,
+    "command_injection_checkout": command_injection_checkout_env,
     "kit filesystem": kit_launch.filesystem_env,
     "kit git_init_traversal": kit_launch.git_init_traversal_env,
     "kit command_injection": kit_launch.command_injection_env,
@@ -112,6 +115,19 @@ def test_the_scope_fixture_launches_with_the_checkout_as_scope():
     with filesystem_scope_env("img", given.an_empty_spec(), docker=FakePlantingDocker()) as launch:
         assert launch.scope == "/srv/app"
         assert launch.args[-1] == "/srv/app"
+
+
+@pytest.mark.parametrize("shape", list(LaunchShape))
+def test_the_checkout_fixture_hands_over_an_empty_captures_directory_in_the_checkout(
+    shape: LaunchShape,
+):
+    docker = FakePlantingDocker()
+    spec = given.an_empty_spec()
+
+    with command_injection_checkout_env("img", spec, shape, docker=docker) as launch:
+        handed_over = docker.layouts[str(_root(launch))]
+        assert "app/captures" in handed_over
+        assert not any(path.startswith("app/captures/") for path in handed_over)
 
 
 def test_no_handed_over_tree_remains_and_its_outer_directory_is_gone_after_the_launch():

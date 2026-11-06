@@ -369,7 +369,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-7785-wireshark
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "c4922dbbb26d5358ccbb08d7cef4563d48e90e3f7e3d4808fdf7bf14bb87edb9"
+        org.mcp-auditor.dockerfile-fingerprint: "b41e5fcb75a5ee682cb8a33e82fc0bd44919a48ed73d923c1184fee0b87eb63c"
     image: mcp-auditor-cve-holdout-2026-7785-wireshark:local
 
   holdout-2026-7785-wireshark-patched:
@@ -377,7 +377,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-7785-wireshark-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "95df3df250c07a08edf6b38ad613ed8b229d187d2c2f84c251c365f725000359"
+        org.mcp-auditor.dockerfile-fingerprint: "eb34ffb5c55624cb6855535bb93a16ba107ad2a58ef6128bbbb90e5d961178ba"
     image: mcp-auditor-cve-holdout-2026-7785-wireshark-patched:local
 
   # Command-execution target: mcp-ssh's runRemoteCommand concatenates the hostAlias into an
