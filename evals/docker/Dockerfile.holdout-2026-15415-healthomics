@@ -1,0 +1,16 @@
+# Vulnerable server: awslabs.aws-healthomics-mcp-server 0.0.35 (CVE-2026-15415).
+# LintAHOWorkflowBundle joins the caller's main_workflow_file onto a temporary bundle directory
+# without containment, then runs the WDL/CWL linter on the joined path and returns its output, so a
+# traversal sequence makes the linter read a file outside the bundle and echo its content.
+FROM python:3.12-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
+
+# miniwdl and cwltool are the real linters the server calls; the server pins neither (miniwdl>=1.12.0,
+# cwltool[deps]>=3.1.0), so they are pinned here to the releases pip resolved at calibration, which the
+# card records, to keep the image byte-stable across rebuilds.
+RUN pip install --no-cache-dir \
+      "awslabs.aws-healthomics-mcp-server==0.0.35" \
+      "mcp[cli]>=1.23.0,<2" \
+      "miniwdl==1.16.0" \
+      "cwltool==3.3.20260925135507"
+
+ENTRYPOINT ["awslabs.aws-healthomics-mcp-server"]

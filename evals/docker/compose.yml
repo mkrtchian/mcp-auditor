@@ -705,6 +705,22 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "de7da0247f3e04a09af7a9e4c41bb5ebe920268c37346adcde4f08082a824da0"
     image: mcp-auditor-cve-holdout-2026-44717-calculate-patched:local
 
+  holdout-2026-15415-healthomics:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-15415-healthomics
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "38a71b4b245840e39ed5baa007a16fed29a3b740776c86b8254c924a74d32809"
+    image: mcp-auditor-cve-holdout-2026-15415-healthomics:local
+
+  holdout-2026-15415-healthomics-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-15415-healthomics-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "bee9b130e4a419ba024ffc591d4b1b89e8412af05b962a73f8514ae641f834ca"
+    image: mcp-auditor-cve-holdout-2026-15415-healthomics-patched:local
+
   # Nuisance suite: one patched image per admitted server (evals/nuisance_admission.json), in its
   # own mcp-auditor-nuisance- namespace, under the nuisance profile.
   kanban:

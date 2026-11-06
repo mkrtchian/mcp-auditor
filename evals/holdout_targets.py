@@ -28,6 +28,7 @@ from evals.holdout_fixtures import (
     cve_2026_5603_magento2,
     cve_2026_5833_taskwarrior,
     cve_2026_7785_wireshark,
+    cve_2026_15415_healthomics,
     cve_2026_19978_android,
     cve_2026_25546_godot_mcp,
     cve_2026_26029_sf_mcp,
@@ -84,4 +85,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_47394_praisonai.TARGET,
     cve_2025_65719_kubectl.TARGET,
     cve_2026_44717_calculate.TARGET,
+    cve_2026_15415_healthomics.TARGET,
 )
