@@ -60,11 +60,9 @@ TARGET = CVETarget(
     images=("holdout-2026-58485-searxng", "sentinel", "stand-in"),
     server_image="holdout-2026-58485-searxng",
     patched_image="holdout-2026-58485-searxng-patched",
-    # /srv + has_network=True diverge from the kit: the batch-B shared-ssrf_env / shared-sentinel
-    # convention, where reaching the shared sentinel sidecar over the labelled bridge needs both.
     planting_host=PlantingHost(
         user=SymbolicUser.UNPRIVILEGED,
-        working_directory="/srv",
+        working_directory="/srv/app",
         has_network=True,
         public_names=PublicNames(
             stand_ins=("example.com",),

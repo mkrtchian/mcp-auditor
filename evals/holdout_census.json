@@ -1992,6 +1992,24 @@
       "scope": "CVE-2026-33060",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-58485",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-58485",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-58485",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -142758,7 +142776,7 @@
       },
       {
         "flaw": "CVE-2026-58485",
-        "mechanism": "internal_fetch",
+        "mechanism": "The web_url_read tool's assertUrlAllowed() validates only the syntactic hostname string against a private IP/hostname blocklist without performing DNS resolution, so a domain the attacker controls that resolves to a private or loopback IP address (e.g. via a wildcard DNS service like nip.io, or a custom DNS entry) bypasses the check. undiciFetch() then resolves the name and connects to that address, letting the server read arbitrary internal HTTP services reachable from its host and return their content in the tool response (CWE-918).",
         "effect_class": "internal_fetch",
         "siblings": [],
         "kept": [
@@ -142928,26 +142946,26 @@
           },
           {
             "place_id": "bare-remote-url",
-            "reason": "Layout place (source=layout, kind=git_remote_url), reachable_by=['arbitrary_read']: arbitrary_read only, outside the internal_fetch reach. Layout places are never kept; the per-place route check (run in the repository) is not consulted here.",
-            "route_checked": null
+            "reason": "Layout place (source=layout, kind=git_remote_url), reachable_by=['arbitrary_read']: arbitrary_read only, outside the internal_fetch reach, so the flaw (web_url_read only fetches a caller-supplied URL and returns the body) does not reach it. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           },
           {
             "place_id": "bare-history-env",
-            "reason": "Layout place (source=layout, kind=git_history), reachable_by=['arbitrary_read']: arbitrary_read only, outside the internal_fetch reach. Layout places are never kept; the per-place route check (run in the repository) is not consulted here.",
-            "route_checked": null
+            "reason": "Layout place (source=layout, kind=git_history), reachable_by=['arbitrary_read']: arbitrary_read only, outside the internal_fetch reach, so the flaw does not reach it. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           },
           {
             "place_id": "workspace-dotenv",
-            "reason": "Layout place (source=layout, kind=dotenv), reachable_by=['arbitrary_read']: arbitrary_read only, outside the internal_fetch reach. Layout places are never kept; the per-place route check (run in the repository) is not consulted here.",
-            "route_checked": null
+            "reason": "Layout place (source=layout, kind=dotenv), reachable_by=['arbitrary_read']: arbitrary_read only, outside the internal_fetch reach. The working directory is now the checkout /srv/app, so this dotenv sits at its parent (/srv/.env, the workspace), but the flaw still does not reach it. The repository per-place route check ran and found no route to it.",
+            "route_checked": false
           }
         ],
         "launch_options": [
           {
             "option": "planting_host.has_network",
             "value": "true",
-            "reason": "The exploit reaches a planted link-local sentinel through a public wildcard-DNS name (sslip.io) that resolves to it, which is the CVE's own mechanism; resolving that name needs the container to have outbound DNS.",
-            "documentation": "ssrf_env puts the holder (and the joined target) on a labelled bridge; the shared resolver (127.0.0.11) resolves the name to the sentinel IP bound on the holder's loopback. A literal-IP URL is blocked on both versions by the lexical check, so the name is what separates them."
+            "reason": "The exploit reaches a planted link-local sentinel through a public wildcard-DNS name (sslip.io) that resolves to it, which is the CVE's own mechanism; the closed network needs the namespace holder to carry the pinned name resolution.",
+            "documentation": "ssrf_env puts the server on the namespace holder's closed --internal network (ADR 034): the three sslip.io names and example.com are pinned in the holder's /etc/hosts (--add-host) and the sentinel and stand-in addresses are bound on the holder's loopback, so no public resolver is used. A literal-IP URL is blocked on both versions by the lexical check, so the resolving name is what separates them."
           },
           {
             "option": "planting_host.user",
@@ -142957,18 +142975,222 @@
           },
           {
             "option": "planting_host.working_directory",
-            "value": "/app",
-            "reason": "A valid working directory for the node process; the SSRF does not depend on it.",
-            "documentation": "Passed as docker run -w /app; Docker creates it."
+            "value": "/srv/app",
+            "reason": "The layout checkout, which Deployment layout prescribes as the working directory for every target; the SSRF does not depend on it.",
+            "documentation": "layout.md: project -> /srv/app ('a shallow checkout cloned from the bare repository'); rule, Deployment layout: launched 'with the layout mounted and the checkout as its working directory'. Passed as docker run -w /srv/app."
           },
           {
             "option": "builder",
             "value": "ssrf_env",
             "reason": "Read-only launch with no scope argument appended; the SSRF targets a caller-supplied URL.",
             "documentation": "kit_launch.ssrf_env -> _read_only_launch (-v root:/srv:ro, container:holder network)."
+          },
+          {
+            "option": "NODE_EXTRA_CA_CERTS",
+            "value": "/etc/ssl/extra-ca.pem",
+            "reason": "The server must trust the leaf the example.com stand-in serves under the real host name (ADR 034), so the benign https://example.com/ read verifies on both versions. This is the trust setting the rule asks the card to record among the launch options.",
+            "documentation": "Node.js docs (CLI / environment variables): NODE_EXTRA_CA_CERTS names a PEM file whose certificates are added to Node's trusted CA store. Set via -e by public_names.trust."
           }
         ],
         "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "Server image docker/Dockerfile.holdout-2026-58485-searxng: base node:24-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c with mcp-searxng@1.7.0 installed by `npm install -g` (patched image: same base, mcp-searxng@1.7.1)",
+            "reason": "Runs the pinned real server. The global npm install is the image-time equivalent of the documented `npx -y mcp-searxng` launch, so nothing beyond what the server installs is added (no extra package, binary or file).",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Image setting ENTRYPOINT [\"node\", \"/usr/local/lib/node_modules/mcp-searxng/dist/cli.js\"] (both images)",
+            "reason": "Starts the package's bin (dist/cli.js, the `mcp-searxng` bin of package.json) over stdio, its default transport (MCP_HTTP_PORT unset). dist/index.js only exports main and does not start.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch value --user 65534:65534 (planting_host.user = unprivileged, already in launch_options)",
+            "reason": "web_url_read only reads over the network and writes nothing, so the server runs as nobody rather than the image's root.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Environment variable HOME=/tmp (added with --user by unprivileged_user_args)",
+            "reason": "Gives the uid 65534, which has no usable home in the image, a writable home. The server reads no HOME-relative file.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch value -w /srv/app (planting_host.working_directory)",
+            "reason": "The layout checkout, which Deployment layout prescribes as the working directory for every target (layout.md: project -> /srv/app). The SSRF does not depend on it. The in-force census card recorded /app; aligned to the prescribed checkout this round.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch values of the suite's confinement: --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, -i --rm",
+            "reason": "The confinement every target is launched under (confinement_args), not chosen for this flaw.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Read-only mount of the frozen deployment layout at /srv (-v <layout root>:/srv:ro), with no scope argument",
+            "reason": "The layout the rule prescribes for every target. mcp-searxng takes no scope, so nothing is appended after the image (builder ssrf_env, already in launch_options).",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Closed fixture network (docker network create --internal, gateway_mode_ipv4=isolated, IPv6 off, label mcp-auditor-cve) (planting_host.has_network = true, already in launch_options)",
+            "reason": "Gives the namespace holder a network that reaches neither the host, its local network nor the Internet (ADR 034). The census card's documentation of this option (outbound DNS through 127.0.0.11) no longer matches the fixture: the names are pinned in the holder's host entries.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Namespace holder container (sentinel image, entrypoint `sleep 2147483647`, confinement args, on the closed network), whose network namespace the server joins with --network container:<holder>",
+            "reason": "Holds the loopback-bound addresses of the sentinels and the stand-in, and the host entries, so the server reaches them by their real addresses and names.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Loopback aliases 169.254.169.254/32, 169.254.170.2/32 and 169.254.170.23/32 added on the holder's lo (ip addr add, sentinel image with NET_ADMIN)",
+            "reason": "The link-local addresses of the three kept places (imds, ecs-task-credentials, eks-pod-identity), so each sentinel binds the address its catalogue coordinate names.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Loopback alias 172.66.147.243/32 added on the holder's lo",
+            "reason": "The address example.com resolved to at capture, bound by the example.com stand-in.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "web_url_read"
+            ]
+          },
+          {
+            "item": "Host entry example.com -> 172.66.147.243 (--add-host on the holder, shared /etc/hosts of the joined server)",
+            "reason": "Resolves example.com to its stand-in inside the closed network, where no public DNS answers.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "web_url_read"
+            ]
+          },
+          {
+            "item": "Host entries 169-254-169-254.sslip.io -> 169.254.169.254, 169-254-170-2.sslip.io -> 169.254.170.2, 169-254-170-23.sslip.io -> 169.254.170.23 (--add-host on the holder from ip_label_domains=(\"sslip.io\",), shared /etc/hosts of the joined server)",
+            "reason": "The closed network reaches no public resolver, so the answers sslip.io gives for a dashed IPv4 label are pinned (holder --add-host) for the three sentinel addresses. These pinned names are the endpoint the published mechanism puts under the attacker's control (rule, What a fixture seeds and serves: 'an endpoint the flaw's published mechanism puts under the attacker's control'), and are therefore exempt from the limit against seeding something that names or leads to a kept place: the advisory itself puts the resolving domain under the attacker's control and names a wildcard-DNS service (e.g. nip.io). nip.io, which the advisory also names, is not served; serving it is optional. Only these three names are pinned (the attacker's own vector for the three kept places), so this is the attacker-controlled endpoint and not a stand-in for the sslip.io service.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "web_url_read"
+            ]
+          },
+          {
+            "item": "Three sentinel containers (docker/Dockerfile.sentinel, busybox httpd) bound in the holder on 169.254.169.254:80, 169.254.170.2:80, 169.254.170.23:80, each serving its place's nonce (FLAG) at the path of its coordinate",
+            "reason": "The planting of the three kept http_endpoint places (imds, ecs-task-credentials, eks-pod-identity). Sentinels are fixed by the rule and its catalogue.",
+            "returned_by": [
+              "web_url_read"
+            ],
+            "used_by_default_by": []
+          },
+          {
+            "item": "File /etc/ssl/extra-ca.pem (the fixture authority's certificate, CN \"mcp-auditor fixture authority\", from evals/stand_ins/tls/fixture-authority.pem) mounted read-only into the server",
+            "reason": "Lets the server trust the leaf the example.com stand-in serves under the real name (ADR 034).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "web_url_read"
+            ]
+          },
+          {
+            "item": "Environment variable NODE_EXTRA_CA_CERTS=/etc/ssl/extra-ca.pem (public_names.trust; the trust setting the rule asks the card to record among the launch options, absent from the census card's launch_options)",
+            "reason": "Node's documented setting to extend its root store with extra certificates, so an https request to the example.com stand-in verifies (the benign https://example.com/ read returned the page at calibration).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "web_url_read"
+            ]
+          },
+          {
+            "item": "Stand-in container for example.com (docker/Dockerfile.stand-in), bound in the holder on 172.66.147.243:80 and :443, with the capture evals/stand_ins/example.com.json, the leaf evals/stand_ins/tls/example.com.pem (SAN DNS:example.com) and its key mounted read-only under /stand-in/",
+            "reason": "Serves example.com under its real name, the host the benign call reads; detailed under stand_ins.",
+            "returned_by": [
+              "web_url_read"
+            ],
+            "used_by_default_by": []
+          }
+        ],
+        "stand_ins": [
+          {
+            "stand_in": {
+              "replaces": "example.com, the public host (Cloudflare-fronted web server) the benign call reads, served under its real name on http :80 and https :443",
+              "reason": "Every network of the fixture is closed and reaches no Internet (ADR 034), so the real example.com cannot be reached from the confinement.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/example.com.json",
+              "outputs": [
+                {
+                  "request": "GET https://example.com/",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), route (https, GET, /) status 200; replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "HEAD https://example.com/",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), route (https, HEAD, /) status 200, empty body; replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET https://example.com/robots.txt",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), route (https, GET, /robots.txt) status 404 with the Example Domain page; replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET https://example.com/s.js",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), route (https, GET, /s.js) status 200; replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET http://example.com/",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), route (http, GET, /) status 200; replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "HEAD http://example.com/ (web_url_read sends it before GET http://example.com/)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), no captured (http, HEAD, /) route, so the captured (http, GET, /) route status 200 is replayed without its body (framed by that body's length); replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET http://example.com/robots.txt",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), route (http, GET, /robots.txt) status 404 with the Example Domain page; replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET http://example.com/s.js",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), route (http, GET, /s.js) status 200; replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "Any other (scheme, method, request-target) its routes lack",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/example.com.json (captured_at 2026-11-04T07:36:45Z), the scheme's recorded default: the real host's status 404 answer to a generated path it does not have (probed at capture as /2259508acc207c29). path_form is null, so the Example Domain 404 body is replayed unmodified and the request-target is substituted only into a Location header the default does not carry; replayed with its recorded status, headers and body; the connection and framing headers (Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, TE, Trailer, Upgrade, Content-Length) are dropped and Content-Length is reframed to the replayed body's length, Date frozen at the capture, every other captured header (including Server: cloudflare) replayed verbatim",
+                  "form_source": null,
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [
+              "web_url_read"
+            ],
+            "used_by_default_by": []
+          }
+        ],
+        "software_releases": [],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
@@ -142978,7 +143200,7 @@
         ],
         "benign_call": "web_url_read(url=\"https://example.com/\")",
         "patched_result": "On 1.7.1 all three exploits are blocked: createUrlReaderLookup resolves the sslip.io name with all:true, sees the private 169.254.x address and raises URLSecurityPolicyDnsError before any connect, so no nonce surfaces. The benign example.com read still succeeds (public address), so the patched benign call does not error.",
-        "attempts": 3
+        "attempts": 1
       },
       {
         "flaw": "CVE-2026-85788",
@@ -149651,7 +149873,8 @@
       {
         "flaw": "CVE-2026-58485",
         "reported_gaps": [],
-        "confirmed_gaps": []
+        "confirmed_gaps": [],
+        "rule_version": 11
       },
       {
         "flaw": "CVE-2026-85788",
