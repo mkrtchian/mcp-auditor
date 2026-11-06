@@ -1,31 +1,13 @@
-# Stand-in for the external n8n instance (the backend an n8n-mcp deployment points
-# N8N_API_URL at). It is NOT the server under test and carries none of the flaw: it only
-# answers the two requests a webhook trigger makes, so the REAL redirect-following fetch in
-# n8n-mcp (the GHSA-8g7g-hmwm-6rv2 SSRF) can be exercised end to end:
-#   - GET /api/v1/workflows/<id>  -> an active workflow holding a webhook trigger node
-#   - /webhook/r/<host>/<rest...> -> 302 Location: http://<host>/<rest...>
-# The server under test validates the 302's origin, then follows the redirect to the
-# internal host without re-validating it. BIND_ADDR/PORT choose where it listens.
-FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
-
-RUN printf '%s\n' \
-  "const http=require('http');" \
-  "const BIND=process.env.BIND_ADDR||'0.0.0.0', PORT=Number(process.env.PORT||80);" \
-  "http.createServer((req,res)=>{" \
-  "  console.error('REQ '+req.method+' '+req.url);" \
-  "  const wf=req.url.match(/^\\/api\\/v1\\/workflows\\/([^/?]+)/);" \
-  "  if(wf){" \
-  "    res.writeHead(200,{'Content-Type':'application/json'});" \
-  "    res.end(JSON.stringify({id:wf[1],name:'calib',active:true,connections:{}," \
-  "      nodes:[{id:'n1',name:'Webhook',type:'n8n-nodes-base.webhook',typeVersion:1," \
-  "        position:[0,0],parameters:{path:'calib',httpMethod:'GET'}}]}));" \
-  "    return;" \
-  "  }" \
-  "  const m=req.url.match(/^\\/webhook\\/r\\/(.+)$/);" \
-  "  if(m){res.writeHead(302,{Location:'http://'+m[1]});res.end('redirect');return;}" \
-  "  if(req.url.startsWith('/webhook/')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,message:'workflow started'}));return;}" \
-  "  res.writeHead(404,{'Content-Type':'text/plain'});res.end('no route');" \
-  "}).listen(PORT,BIND,()=>console.error('stub on '+BIND+':'+PORT));" \
-  > /stub.js
-
-ENTRYPOINT ["node", "/stub.js"]
+# The external n8n instance an n8n-mcp deployment points N8N_API_URL at. This is NOT the server
+# under test: it is the real n8n, the workflow-automation software n8n-mcp's documentation names
+# as the instance the n8n API tools talk to, pulled from the image n8n distributes (the digest
+# docker.n8n.io serves for 2.46.6, the same as Docker Hub's). The fixture provisions it at launch
+# through n8n's own REST and public API (owner setup, an API key, one active webhook workflow,
+# evals/n8n_instance_backend.py) and n8n serves both legs n8n_test_workflow exercises: GET
+# /api/v1/workflows/<id> (loading the workflow the tool triggers) and GET /webhook/<path> (the
+# webhook endpoint of the attacker's own workflow, the endpoint the published redirect-following
+# SSRF puts under the attacker's control). The workflow's Respond to Webhook node answers that
+# webhook with a 302 whose Location is taken from the request's u query parameter, so the redirect
+# target is the exploit call's own argument; n8n-mcp 2.50.0 follows the 302, 2.50.1 (maxRedirects:
+# 0) stops at it.
+FROM docker.n8n.io/n8nio/n8n:2.46.6@sha256:8602f5dfacbe2c931eeafd010de0e68182310e9f309921e780ab69182e92b3ae

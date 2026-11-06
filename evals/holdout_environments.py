@@ -4,7 +4,6 @@ orphan sweep) governs these builders too. Fingerprinted into every CVE fixture w
 (`cve_baseline.ENVIRONMENT_PATHS`).
 """
 
-import subprocess
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -13,12 +12,7 @@ from uuid import uuid4
 from evals.cve_environments import Launch, LaunchShape, materialise
 from evals.cve_layout import layout_mount_args, owned_layout
 from evals.cve_planting import PlantingDocker, PlantingSpec, confinement_args, planted
-from evals.cve_planting_base import (
-    LABEL,
-    SENTINEL_IMAGE,
-    own_network_args,
-    unprivileged_user_args,
-)
+from evals.cve_planting_base import LABEL, own_network_args, unprivileged_user_args
 from evals.cve_planting_docker import DOCKER_PLANTING
 from evals.doris_backend import (
     DORIS_BRIDGE,
@@ -29,6 +23,7 @@ from evals.doris_backend import (
     ensure_doris,
     start_doris_sentinel,
 )
+from evals.n8n_instance_backend import N8N_API_URL, running_n8n_instance
 
 
 @contextmanager
@@ -62,8 +57,9 @@ def arcadedb_mcp_env(
         )
 
 
-_N8N_REDIRECT_IMAGE = "mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:local"
-_N8N_STUB_IP = "203.0.113.10"  # TEST-NET-3: the SSRF guard treats it as an ordinary public host
+# The no-holder launch's key: no instance runs there, the key only keeps the API tools registered
+# so both arms of the layout check list the same tools.
+_UNPROVISIONED_KEY = "unprovisioned"
 
 
 @contextmanager
@@ -74,20 +70,18 @@ def ssrf_redirect_env(
     *,
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    # ssrf_env plus a redirecting stand-in co-located in the sentinels' namespace holder. The
-    # shared sentinels serve the per-launch nonce; the stand-in serves the workflow API and the 302
-    # the server follows inward without re-validating (the flaw). planting() binds the IP-literal
-    # sentinels inside a holder on loopback and the server joins that holder's namespace, so the
-    # stand-in joins it too and binds a public-looking address the SSRF guard passes. The reference
-    # arm plants no sentinel, so it joins no holder and needs no stand-in: launch the server plainly
-    # then, exactly as ssrf_env's reference arm runs without its sentinel sidecar.
+    # ssrf_env plus the real n8n instance N8N_API_URL points at, co-located in the sentinels'
+    # namespace holder and provisioned for this launch (n8n_instance_backend). planting() binds the
+    # IP-literal sentinels inside a holder on loopback and the server joins that holder's
+    # namespace, so the instance joins it too on a public-looking address the SSRF guard passes.
+    # The reference arm plants no sentinel, so it joins no holder and starts no instance: launch
+    # the server plainly then, exactly as ssrf_env's reference arm runs without its sentinel.
     with (
         owned_layout(docker, lambda root: materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
         holder_ref = args.network[1] if _joins_holder(args.network) else None
-        stub = _start_n8n_stub(holder_ref) if holder_ref is not None else None
-        try:
+        with _n8n_api_key(holder_ref) as api_key:
             yield Launch(
                 command="docker",
                 args=[
@@ -97,18 +91,22 @@ def ssrf_redirect_env(
                     *confinement_args(),
                     *args.run_args(),
                     "-e",
-                    f"N8N_API_URL=http://{_N8N_STUB_IP}/",
+                    f"N8N_API_URL={N8N_API_URL}",
                     "-e",
-                    "N8N_API_KEY=calib-key",
-                    "-e",
-                    "N8N_MCP_TELEMETRY_DISABLED=true",
+                    f"N8N_API_KEY={api_key}",
                     *layout_mount_args(root, spec.host.layout_mount),
                     image,
                 ],
             )
-        finally:
-            if stub is not None:
-                subprocess.run(["docker", "rm", "-f", stub], capture_output=True)
+
+
+@contextmanager
+def _n8n_api_key(holder_ref: str | None) -> Generator[str]:
+    if holder_ref is None:
+        yield _UNPROVISIONED_KEY
+        return
+    with running_n8n_instance(holder_ref) as api_key:
+        yield api_key
 
 
 @contextmanager
@@ -209,23 +207,3 @@ def doris_db_env(
 
 def _joins_holder(network: tuple[str, ...]) -> bool:
     return len(network) >= 2 and network[0] == "--network" and network[1].startswith("container:")
-
-
-def _start_n8n_stub(holder_ref: str) -> str:
-    # Bind the stand-in on a public-looking address inside the holder, then start it there: the
-    # server joins the same namespace and reaches it on loopback, the SSRF guard passes the
-    # TEST-NET-3 origin, and the 302 it serves points at the internal sentinel.
-    subprocess.run(
-        ["docker", "run", "--rm", "--label", LABEL, *confinement_args(),
-         "--cap-add", "NET_ADMIN", "--network", holder_ref, "--entrypoint", "ip",
-         SENTINEL_IMAGE, "addr", "add", f"{_N8N_STUB_IP}/32", "dev", "lo"],
-        check=True, capture_output=True, text=True,
-    )  # fmt: skip
-    stub = f"{LABEL}-n8n-stub-{uuid4().hex}"
-    subprocess.run(
-        ["docker", "run", "-d", "--rm", "--label", LABEL, "--name", stub, *confinement_args(),
-         "--cap-add", "NET_BIND_SERVICE", "--network", holder_ref,
-         "-e", f"BIND_ADDR={_N8N_STUB_IP}", _N8N_REDIRECT_IMAGE],
-        check=True, capture_output=True, text=True,
-    )  # fmt: skip
-    return stub

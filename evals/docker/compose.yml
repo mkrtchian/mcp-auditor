@@ -225,7 +225,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "db97163b04f25233bb5a902359afc08d6ed2167b1d23e74b9b433612731827c4"
+        org.mcp-auditor.dockerfile-fingerprint: "4a19c8784686d9a57e2c2e4f05aac420690e41e9b6e8ea7c299799487d596fb6"
     image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n:local
 
   holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched:
@@ -233,7 +233,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "5398e59d7157c8372eac04ce836f53bc7db24a490b53713753c8bfe7c844e016"
+        org.mcp-auditor.dockerfile-fingerprint: "c940928888fbacf12ec825805187a8ce150505a78f3619f59ee0d14b1d79b569"
     image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-patched:local
 
   holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:
@@ -241,7 +241,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "f9d8a70d16ccd31086819bf9a7f9cbba09f1396ee1315d98cc5307e2645f2e13"
+        org.mcp-auditor.dockerfile-fingerprint: "2bad5f619891f055d05c5e6f4f900a096a0740ae2fef7160a853d3960915e3a7"
     image: mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:local
 
   # Read-plus-fetch target: the polyglot-JS sandbox escape reads host files and fetches the

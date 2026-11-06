@@ -4,7 +4,7 @@ from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
 import tests.unit.support.test_holdout_targets_given as given
-from evals import doris_backend
+from evals import doris_backend, n8n_instance_backend
 from evals.cve_places import (
     HOLDOUT_PLACES,
     REACHABLE_BY,
@@ -80,6 +80,12 @@ def test_the_doris_target_fingerprints_the_module_that_seeds_its_backend():
     doris = next(target for target in HOLDOUT_TARGETS if target.cve_id == "CVE-2025-66335")
 
     assert Path(doris_backend.__file__) in doris.backend_sources
+
+
+def test_the_n8n_target_fingerprints_the_module_that_provisions_its_instance():
+    n8n = next(target for target in HOLDOUT_TARGETS if target.cve_id == "GHSA-8g7g-hmwm-6rv2")
+
+    assert Path(n8n_instance_backend.__file__) in n8n.backend_sources
 
 
 def test_every_backend_image_is_pinned_by_digest():
