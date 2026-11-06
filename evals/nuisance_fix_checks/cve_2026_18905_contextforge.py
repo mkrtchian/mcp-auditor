@@ -73,13 +73,13 @@ _GW_PUBLIC_IP = "8.8.8.8"  # the public address a GW_TOOLS hostname resolves to 
 def contextforge_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
-    # The trimmed twin of cve_environments.contextforge_ssrf_env. The gateway runs as root inside
-    # the sentinels' namespace holder (joined via args.network) so its entrypoint can flip
-    # /etc/hosts from the public to the internal sentinel address between tool creation and
-    # invocation (the TOCTOU the module docstring describes). No /srv layout is mounted (a network
-    # fetch, not a filesystem read), so the shape is inert; the reference arm plants no sentinel, so
-    # GW_TOOLS is empty and the gateway registers no tool. It lives here, beside the fixture that
-    # uses it and never in the shared kit the admission dossier copies, like the flyto builders.
+    # The gateway runs as root inside the sentinels' namespace holder (joined via args.network)
+    # so its entrypoint can flip /etc/hosts from the public to the internal sentinel address
+    # between tool creation and invocation (the TOCTOU the module docstring describes). No /srv
+    # layout is mounted (a network fetch, not a filesystem read), so the shape is inert; the
+    # reference arm plants no sentinel, so GW_TOOLS is empty and the gateway registers no tool. It
+    # lives here, beside the fixture that uses it and never in the shared kit the admission
+    # dossier copies, like the flyto builders.
     with planted(spec, image, DockerPlanting()) as args:
         yield Launch(
             command="docker",

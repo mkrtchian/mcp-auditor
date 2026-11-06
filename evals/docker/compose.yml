@@ -263,25 +263,6 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "b8ae784314f1fc925fa167e7c5d84ceedad3efeffae8e6d9921b1fe5c0288122"
     image: mcp-auditor-cve-holdout-2026-65831-arcadedb-patched:local
 
-  # Command-execution target: get_diagnostics runs the analyzers a baked malicious solution
-  # references (CVE-2026-45555), so a Roslyn DiagnosticAnalyzer executes in the .NET server process.
-  # Heavy .NET SDK base image.
-  holdout-2026-45555-roslyncodelens:
-    build:
-      context: .
-      dockerfile: Dockerfile.holdout-2026-45555-roslyncodelens
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "97bfec51d46fed179d97ae4b26ece4a85664e080e208694c9b4e77273204e349"
-    image: mcp-auditor-cve-holdout-2026-45555-roslyncodelens:local
-
-  holdout-2026-45555-roslyncodelens-patched:
-    build:
-      context: .
-      dockerfile: Dockerfile.holdout-2026-45555-roslyncodelens-patched
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "2364776cb7d3d42fb0d53200d5db043a37e83dfdaa0cb70bbe8047ef0f33ef86"
-    image: mcp-auditor-cve-holdout-2026-45555-roslyncodelens-patched:local
-
   # SSRF target: audit_webpage / get_summary drive Puppeteer page.goto to a caller-chosen URL with
   # no validation (CVE-2026-5323), so the headless Chrome fetches an internal address and axe-core
   # returns the body. Reuses the shared sentinel for the link-local metadata endpoints. Heavy base:
@@ -379,27 +360,6 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "7675e3363a6588d9dbf91e43dcc0806e1896f1650d8101c693701999361416c6"
     image: mcp-auditor-cve-holdout-2026-42260-open-websearch-patched:local
-
-  # SSRF target: ContextForge's gateway validates a REST tool's URL against its SSRF guard only at
-  # tool creation, not at invocation (CVE-2026-18905), so a DNS-rebinding host that resolves public
-  # at creation and link-local at invocation makes the gateway fetch the internal address and return
-  # its body. The entrypoint runs the real gateway as root in the sentinels' namespace holder and
-  # performs the rebinding; reuses the shared sentinel.
-  holdout-2026-18905-contextforge:
-    build:
-      context: .
-      dockerfile: Dockerfile.holdout-2026-18905-contextforge
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "af0818bffe04646739e259012a785bd35530ab237f7fbc527770f19815eee19b"
-    image: mcp-auditor-cve-holdout-2026-18905-contextforge:local
-
-  holdout-2026-18905-contextforge-patched:
-    build:
-      context: .
-      dockerfile: Dockerfile.holdout-2026-18905-contextforge-patched
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a48e33fae56b204d4a56a36c24c43afcbb3cd5f7a9479f04d3714c96f87ccb31"
-    image: mcp-auditor-cve-holdout-2026-18905-contextforge-patched:local
 
   # Command-execution target: wireshark-mcp's quick_capture interpolates the interface argument
   # into a tshark command run with shell=True (CVE-2026-7785), so a shell metacharacter executes
