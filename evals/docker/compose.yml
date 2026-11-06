@@ -518,7 +518,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-58358-markdownify
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "88c51c899324a2aec295c868526aebbad67dc0ab8c5e51a262c76f4ef6aa3f68"
+        org.mcp-auditor.dockerfile-fingerprint: "c15efaf150097d8e4a26bb1470f799035d871c09f14b7c3aea112156407d9f2c"
     image: mcp-auditor-cve-holdout-2025-58358-markdownify:local
 
   holdout-2025-58358-markdownify-patched:
@@ -526,7 +526,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-58358-markdownify-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "55431fd0778839b66f13a11d2a01421d4b29386f028d023ad31db17f48baa384"
+        org.mcp-auditor.dockerfile-fingerprint: "2b047c2521dfcd62622d3ccf28c4fe78738949b027bfcd9d51fbea4276724ace"
     image: mcp-auditor-cve-holdout-2025-58358-markdownify-patched:local
 
   holdout-2026-5603-magento2:

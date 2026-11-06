@@ -10,7 +10,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/b
 
 WORKDIR /app
 RUN git clone https://github.com/zcaceres/markdownify-mcp.git . \
- && git checkout a31204de058b
+ && git checkout a31204de058b22a47e1dcc24508993cfe97e5bb3
 
 # Drop the broken devDependencies metadata, install the real runtime deps from package.json
 # (this commit adds private-ip, used by the SSRF fix in server.ts), then add the TypeScript
@@ -22,7 +22,5 @@ RUN npx tsc && npx shx chmod +x dist/*.js
 
 RUN uv sync
 ENV UV_PATH=/usr/local/bin/uv
-
-RUN printf '# Release notes\n\nNothing secret here.\n' > /opt/benign.md
 
 ENTRYPOINT ["node", "/app/dist/index.js"]

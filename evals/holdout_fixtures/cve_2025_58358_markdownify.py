@@ -7,9 +7,11 @@ vulnerable server (949f12e, npm 0.0.1) the shell executes the reader and echoes 
 tool response, while on the patched server (a31204d, execFile with an argument array, no shell) the
 `$(...)` is echoed verbatim.
 
-The reach is command_execution, so every kept place is read by running a command: cat for files, id
-for the account, hostname for the UTS name, tr</proc/self/environ for the env var, curl for the
-internal HTTP endpoints.
+The target's reach is the union of its own command_execution and the read/fetch reach of its
+siblings (CVE-2025-5273 arbitrary_read, CVE-2025-5276 internal_fetch). Every kept place surfaces
+through the command_execution path: it is read by running a command, cat for files, id for the
+account, hostname for the UTS name, tr</proc/self/environ for the env var, curl for the internal
+HTTP endpoints.
 """
 
 import re
@@ -80,17 +82,25 @@ def _exploit(place_id: str):
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    await client.call_tool("get-markdown-file", {"filepath": "/opt/benign.md"})
+    # A normal read of the project's own README (shipped by the git checkout, a .md file the
+    # patched get-markdown-file accepts): no shell metacharacters, clean on both versions.
+    await client.call_tool("get-markdown-file", {"filepath": "/app/README.md"})
 
 
 TARGET = CVETarget(
     cve_id="CVE-2025-58358",
     severity="CVSS 8.8 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
+    mechanisms=frozenset(
+        {
+            MechanismClass.COMMAND_EXECUTION,
+            MechanismClass.READ_OUTSIDE_SCOPE,
+            MechanismClass.INTERNAL_FETCH,
+        }
+    ),
     aim=AIM,
-    reaches=frozenset({"command_execution"}),
+    reaches=frozenset({"command_execution", "arbitrary_read", "internal_fetch"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2025-58358-markdownify",),
+    images=("holdout-2025-58358-markdownify", "sentinel"),
     server_image="holdout-2025-58358-markdownify",
     patched_image="holdout-2025-58358-markdownify-patched",
     planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKDIR, has_network=False),
