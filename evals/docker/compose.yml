@@ -721,6 +721,22 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "bee9b130e4a419ba024ffc591d4b1b89e8412af05b962a73f8514ae641f834ca"
     image: mcp-auditor-cve-holdout-2026-15415-healthomics-patched:local
 
+  holdout-2026-53710-python-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-53710-python-sandbox
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "01dc97b1d781b3220cb3b81a5fdc149681aaa3fa6b80d1c2526b5b388667f309"
+    image: mcp-auditor-cve-holdout-2026-53710-python-sandbox:local
+
+  holdout-2026-53710-python-sandbox-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-53710-python-sandbox-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "e1c6558b35da9eaed3ba2a690cfcee978acd592caa29c6a942c501938bcb07de"
+    image: mcp-auditor-cve-holdout-2026-53710-python-sandbox-patched:local
+
   # Nuisance suite: one patched image per admitted server (evals/nuisance_admission.json), in its
   # own mcp-auditor-nuisance- namespace, under the nuisance profile.
   kanban:

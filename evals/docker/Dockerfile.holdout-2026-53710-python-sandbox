@@ -1,0 +1,17 @@
+# Vulnerable server: IBM mcp-context-forge python_sandbox_server v1.0.1 (CVE-2026-53710).
+# execute_code runs caller-supplied Python under RestrictedPython, but safe_builtins exposes the
+# raw getattr builtin and validate_code rejects dangerous dunder names only as literal substrings,
+# so a payload that builds those names at runtime walks the class hierarchy to subprocess.Popen and
+# runs OS commands. v1.0.2 drops getattr/setattr from safe_builtins and mediates attribute access.
+# Base pinned by digest for cross-machine reproducibility (python:3.12-slim-bookworm).
+FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && pip install --no-cache-dir \
+        "python-sandbox-server @ git+https://github.com/IBM/mcp-context-forge.git@898a22390652643a184982ee3c6822f19daa4113#subdirectory=mcp-servers/python/python_sandbox_server" \
+    && apt-get purge -y git \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT ["python", "-m", "python_sandbox_server.server_fastmcp"]

