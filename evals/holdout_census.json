@@ -140465,6 +140465,10 @@
           {
             "place_id": "auth-log",
             "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 20): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "Deployment-layout place (anchor workspace, /srv/.env), kept because the repository route check admits it: find_dotenv's documented default is the parent of the /srv/app scope. Reached only by the alternate-path file read (@=file:///srv/.env): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads it at launch or through call_aws's normal operation, and the benign call does not surface it."
           }
         ],
         "unkept": [
@@ -140492,11 +140496,6 @@
             "place_id": "server-own-config",
             "reason": "kind=unplaceable. The server keeps its upstream credential in the standard AWS credential chain, already represented by aws-credentials, not a distinct plantable artifact at a server-documented path. Not hostable.",
             "route_checked": null
-          },
-          {
-            "place_id": "workspace-dotenv",
-            "reason": "Layout place (anchor workspace). Reachable in principle by the alternate-path read, one level above the in-scope checkout. Layout places are never kept in the kit: the per-place route check runs in the repository on the transplanted fixture, not here, and settles whether it is kept.",
-            "route_checked": true
           },
           {
             "place_id": "bare-remote-url",
@@ -142859,6 +142858,18 @@
           {
             "place_id": "container-hostname",
             "reason": "arbitrary_read place surfaced through its on-disk file channel. Docker writes this place's nonce (the --hostname value) to the container's /etc/hostname and /proc/sys/kernel/hostname. On 0.2.32 validatePath runs isPathAllowed on the unresolved path and only then fs.realpath, so read_file follows an in-scope symlink the exploit creates through start_process to /etc/hostname and returns the nonce; rejected on 0.2.33 (realpath before isPathAllowed). Same mechanism and channel as etc-hosts. The server never reads this place itself, and the crafted link comes from the exploit call, not the fixture."
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "Deployment-layout place (a git remote URL in the bare repository config, /srv/app.git/config), kept because the repository route check finds a route (the checkout's origin url names the /srv/app.git anchor). On 0.2.32 read_file follows an in-scope symlink the exploit creates through start_process to this out-of-scope file and returns its nonce; rejected on 0.2.33 (realpath before isPathAllowed). The server never reads it, and the crafted link comes from the exploit call, not the fixture."
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "Deployment-layout place (the dotenv committed then removed in the bare repository history, living only in a zlib-compressed loose git object of /srv/app.git), kept because the repository route check finds a route. No git binary ships in the image, so the exploit inflates the loose object to an out-of-scope plaintext copy with the server's own node runtime (start_process), then on 0.2.32 read_file follows an in-scope symlink to that copy and returns the nonce; rejected on 0.2.33. The server never reads it, and both the copy and the link come from the exploit call, not the fixture."
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "Deployment-layout place (the workspace-level dotenv, /srv/.env), kept because the repository route check finds a route (find_dotenv's documented default is the parent of the /srv/app scope). On 0.2.32 read_file follows an in-scope symlink the exploit creates through start_process to this out-of-scope file and returns its nonce; rejected on 0.2.33. The server never reads it, and the crafted link comes from the exploit call, not the fixture."
           }
         ],
         "unkept": [
@@ -142926,21 +142937,6 @@
             "place_id": "private-range-service",
             "reason": "In the target reach via the siblings (command_execution); internal_fetch is not a reach of this target (the server has no fetch flaw and no sibling with internal_fetch), so that token does not reach it. Not kept: every network is closed (--network none), so the endpoint is unreachable; and via command_execution the caller would reach it with a network client (curl/wget) that is not on the default blockedCommands list and runs identically on 0.2.32 and 0.2.33, so the replay refuses that credit. The siblings' blockedCommands bypass distinguishes the versions only for commands on the list, none of which reach this endpoint.",
             "route_checked": false
-          },
-          {
-            "place_id": "bare-remote-url",
-            "reason": "Layout place (a git remote URL in the bare repository config), in the arbitrary_read reach. Layout places are never kept; the maintainer route check decides reachability repo-side.",
-            "route_checked": true
-          },
-          {
-            "place_id": "bare-history-env",
-            "reason": "Layout place (a dotenv blob in the bare repository history), in the arbitrary_read reach. Layout places are never kept; the maintainer route check decides reachability repo-side.",
-            "route_checked": true
-          },
-          {
-            "place_id": "workspace-dotenv",
-            "reason": "Layout place (the workspace-level dotenv), in the arbitrary_read reach. Layout places are never kept; the server is scoped to the layout checkout and its clean output reveals no path into the mounted layout, so the maintainer route check finds no route.",
-            "route_checked": true
           }
         ],
         "launch_options": [
