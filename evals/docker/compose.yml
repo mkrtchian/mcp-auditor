@@ -561,6 +561,22 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "56d1b2eec19bd961986d246b7e8bef10f1f595bbb09ff0c1a7045b5ad890eff2"
     image: mcp-auditor-cve-holdout-2025-53818-github-kanban-patched:local
 
+  holdout-2025-65719-kubectl:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-65719-kubectl
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "8b03df59c24950e9686aef3bfd29c36a2b76c830ba869a721c2774fda692129c"
+    image: mcp-auditor-cve-holdout-2025-65719-kubectl:local
+
+  holdout-2025-65719-kubectl-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2025-65719-kubectl-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "110b80b91b9cf5c33fbbc3685a7ddfa8fb82fbe31bea9ecabc73c84bec7fbc03"
+    image: mcp-auditor-cve-holdout-2025-65719-kubectl-patched:local
+
   holdout-2026-5833-taskwarrior:
     build:
       context: .

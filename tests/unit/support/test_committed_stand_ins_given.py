@@ -13,7 +13,6 @@ from evals.holdout_targets import HOLDOUT_TARGETS
 # Hosts whose capture is committed before the target declaring it is vested.
 PENDING_STAND_IN_HOSTS = frozenset(
     {
-        "45.55.0.10",  # CVE-2025-65719
         "rds.us-east-1.amazonaws.com",  # CVE-2026-85787, CVE-2026-85788
         "secretsmanager.us-east-1.amazonaws.com",  # CVE-2026-85787, CVE-2026-85788
     }

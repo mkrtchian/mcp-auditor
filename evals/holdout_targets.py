@@ -17,6 +17,7 @@ from evals.holdout_fixtures import (
     cve_2025_11489_desktop_commander,
     cve_2025_53818_github_kanban,
     cve_2025_58358_markdownify,
+    cve_2025_65719_kubectl,
     cve_2025_66335_doris,
     cve_2026_2130_maigret,
     cve_2026_3484_nmap,
@@ -80,4 +81,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_46514_frogman.TARGET,
     cve_2026_35402_neo4j_cypher.TARGET,
     cve_2026_47394_praisonai.TARGET,
+    cve_2025_65719_kubectl.TARGET,
 )

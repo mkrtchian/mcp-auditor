@@ -1,0 +1,35 @@
+# kubectl-mcp-server v1.1.1: the pinned vulnerable version. process_natural_language passes a
+# query beginning with "kubectl " verbatim to subprocess.run(shell=True), so a shell
+# metacharacter in the argument runs an attacker-chosen command (CWE-94, GHSA-94gr-w3q5-rfqr).
+# Base pinned by digest and the server pinned to the commit v1.1.1 resolves to.
+FROM python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git \
+    && curl -fsSL https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+    && chmod 0755 /usr/local/bin/kubectl \
+    && pip install --no-cache-dir "mcp>=1.5.0,<2" "git+https://github.com/rohitg00/kubectl-mcp-server.git@0c7fb95d0e5670cd5a2fa8499639503c6bfaa4ef" \
+    && apt-get purge -y curl git && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /tmp/.kube && cat > /tmp/.kube/config <<'EOF' && chmod 0644 /tmp/.kube/config && chmod 0777 /tmp/.kube
+apiVersion: v1
+kind: Config
+clusters:
+- name: example
+  cluster:
+    server: https://45.55.0.10:443
+contexts:
+- name: example
+  context:
+    cluster: example
+    namespace: default
+    user: example
+current-context: example
+users:
+- name: example
+  user:
+    token: ZXhhbXBsZS1jbHVzdGVyLXRva2Vu
+EOF
+
+ENTRYPOINT ["python", "-m", "kubectl_mcp_tool.minimal_wrapper"]
