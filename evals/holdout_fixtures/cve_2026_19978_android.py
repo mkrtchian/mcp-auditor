@@ -11,6 +11,10 @@ the executed command can reach and the server does not read itself. Each exploit
 list-packages call whose deviceId injects `… ; <read the place> ; true`; the leading
 `zzz >/dev/null 2>&1` swallows the `adb -s` noise and the trailing `true` eats the appended
 `shell pm list packages` so the shell exits 0 with the read on stdout.
+
+The server launches from the in-scope checkout (/srv/app) with the /srv layout mounted. The
+command-execution reads are absolute or $HOME-rooted, so the working directory does not change
+where any kept place is planted or read.
 """
 
 import re
@@ -24,7 +28,7 @@ from evals.cve_planting_spec import resolve_container_path
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
-WORKDIR = "/app"
+WORKDIR = "/srv/app"
 
 # command_execution-reachable, plantable places the server does not read itself.
 KEPT_PLACES: tuple[str, ...] = (
@@ -100,7 +104,7 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2026-19978-android",),
+    images=("holdout-2026-19978-android", "sentinel"),
     server_image="holdout-2026-19978-android",
     patched_image="holdout-2026-19978-android-patched",
     planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKDIR, has_network=False),
