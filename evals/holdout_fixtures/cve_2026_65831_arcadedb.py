@@ -20,8 +20,11 @@ from evals.cve_targets import CVETarget
 from evals.holdout_environments import arcadedb_mcp_env
 from mcp_auditor.domain.ports import MCPClientPort
 
-WORKDIR = "/home/arcadedb"
-DATABASE = "mydb"
+# Deployment layout runs the server with the read-only checkout /srv/app as the working directory.
+# The image CMD invokes mcp-stdio.sh by absolute path, so the server starts from here; absolute and
+# $HOME-rooted exploit paths do not depend on it (resolve_container_path ignores it for them).
+WORKDIR = "/srv/app"
+DATABASE = "Imported"
 
 # Every exploit walks the bound object to the class loader; the benign call never does.
 AIM = re.compile(r"getClassLoader\(\)")
@@ -123,14 +126,14 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
 async def _benign(places: Places, client: MCPClientPort) -> None:
     # Same tool, a plain SQL read: no polyglot, no reflection, no nonce. The negative control.
     await client.call_tool(
-        "execute_command", {"database": DATABASE, "language": "sql", "command": "SELECT 1 AS probe"}
+        "execute_command", {"database": DATABASE, "language": "sql", "command": "SELECT 1 AS n"}
     )
 
 
 TARGET = CVETarget(
     cve_id="CVE-2026-65831",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.INTERNAL_FETCH}),
     aim=AIM,
     reaches=frozenset({"arbitrary_read", "internal_fetch"}),
     kept_places=KEPT_PLACES,

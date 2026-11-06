@@ -1,26 +1,35 @@
 # Vulnerable target for CVE-2026-65831: ArcadeDB 26.6.1, polyglot JS over the MCP stdio
-# server. PolyglotQueryEngine runs scripts under HostAccess.ALL, so a bound-object reflection
-# chain (database.getClass().getClassLoader().loadClass(...)) reaches java.io.* and reads any
-# host file. The MCP stdio session authenticates as root, but the flaw does not depend on the
-# principal: 26.6.1 has no reflection deny-list on the GraalVM host access.
+# server. The polyglot command path skips the database authorization checks SQL/Cypher go
+# through and runs under a GraalVM host-access policy a script escapes by reflecting off the
+# bound `database` object (database.getClass().getClassLoader().loadClass(...)) to load host
+# classes such as java.io.File (arbitrary_read) and java.net.URL (internal_fetch). Process
+# creation is blocked, so command_execution is out of reach.
 FROM arcadedata/arcadedb:26.6.1@sha256:b89478bd698ebfb6301918ec6745818a02759515b7d00dd1c86c842470274f5b
 
-# The launch runs as a non-root uid (the kit's planting host). Make the install tree writable by
-# any uid so the server can open its database directory and write its log, independent of uid.
 USER root
 
-# An MCP deployment that permits write-class tool calls. ArcadeDB classifies any polyglot script
-# as a CREATE operation, so execute_command needs allowInsert to reach the engine at all; this is
-# a deployment choice, not the flaw. Identical on both versions: the only difference that matters
-# is the GraalVM host-access policy inside the engine.
+# An MCP deployment that permits write-class tool calls. ArcadeDB classifies a polyglot script
+# as a CREATE operation, so execute_command needs write-class permission to reach the engine at
+# all; a deployment choice, identical on both versions. The only behavioural difference between
+# the two images is the engine's host-access policy.
 RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["root"]}' > /home/arcadedb/config/mcp-config.json
 
 # The launch runs as a non-root uid (the kit's planting host). Make the install tree writable by
 # any uid so the server can open its database directory and write its log, independent of uid.
 RUN chmod -R a+rwX /home/arcadedb
 
-# rootPassword is mandatory for mcp-stdio.sh; defaultDatabases seeds the mydb the tools target.
-ENV ARCADEDB_SETTINGS="-Darcadedb.server.rootPassword=playpassword -Darcadedb.server.defaultDatabases=mydb[seed:seedpass:admin]"
+# rootPassword and defaultDatabases from ArcadeDB's documented Docker example, minus the network
+# {import:...} clause (closed network). rootPassword is mandatory for mcp-stdio.sh; the database
+# gives execute_command something to bind the `database` object to.
+# rootPath: its documented default is the current directory, but Deployment layout runs the server
+# with the read-only checkout (/srv/app) as the working directory, where the server cannot write
+# its databases/log/event-log and shuts down. Pin it to the writable install tree so the server
+# starts under the prescribed working directory; nothing is written into the mounted layout.
+ENV ARCADEDB_SETTINGS="-Darcadedb.server.rootPassword=playwithdata -Darcadedb.server.defaultDatabases=Imported[root] -Darcadedb.server.rootPath=/home/arcadedb"
 
+# Invoke the stdio launch script by absolute path. ArcadeDB's documented command is
+# ./bin/mcp-stdio.sh run from ARCADEDB_HOME; the script resolves ARCADEDB_HOME from its own
+# location, not the working directory, so the absolute form is behaviourally identical and still
+# starts when Deployment layout sets the working directory to the checkout (/srv/app).
 ENTRYPOINT ["/__cacert_entrypoint.sh"]
-CMD ["./bin/mcp-stdio.sh"]
+CMD ["/home/arcadedb/bin/mcp-stdio.sh"]

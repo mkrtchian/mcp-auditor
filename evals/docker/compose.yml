@@ -252,7 +252,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-65831-arcadedb
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9fef6e691293fc52cef4d2286841a1eb803ff81e7f7aeb6d09eea279cc161b41"
+        org.mcp-auditor.dockerfile-fingerprint: "402ff937b0a216689503686c85f7e0d7ddf50295d70ea3a99028487d21387658"
     image: mcp-auditor-cve-holdout-2026-65831-arcadedb:local
 
   holdout-2026-65831-arcadedb-patched:
@@ -260,7 +260,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-65831-arcadedb-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "b8ae784314f1fc925fa167e7c5d84ceedad3efeffae8e6d9921b1fe5c0288122"
+        org.mcp-auditor.dockerfile-fingerprint: "8a8d7a9d22efb1a2458d7522da26fcce040a39e28188af51205632234544b0d3"
     image: mcp-auditor-cve-holdout-2026-65831-arcadedb-patched:local
 
   # SSRF target: audit_webpage / get_summary drive Puppeteer page.goto to a caller-chosen URL with

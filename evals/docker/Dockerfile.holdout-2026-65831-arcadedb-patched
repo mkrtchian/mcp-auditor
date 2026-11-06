@@ -1,19 +1,25 @@
-# Patched target for CVE-2026-65831: ArcadeDB 26.7.1 (first patched version). GraalPolyglotEngine
-# now builds its context with HostAccess.newBuilder(HostAccess.ALL).denyAccess(Class, ClassLoader,
-# AccessibleObject, Member), so database.getClass().getClassLoader() throws before any file read,
-# and PolyglotQueryEngine.command/analyze additionally require UPDATE_SECURITY. Either gate blocks
-# the reflection chain; the deny-list blocks it even for the root stdio principal.
+# Patched target for CVE-2026-65831: ArcadeDB 26.7.1 (first patched version). Polyglot script
+# execution now requires the updateSecurity database-administrator permission on command/analyze/
+# registerFunctions, and the GraalVM host-access policy denies java.lang.Class, java.lang.ClassLoader
+# and java.lang.reflect members, so database.getClass().getClassLoader() throws before any file
+# read or URL fetch, for the root stdio principal as for any other.
 FROM arcadedata/arcadedb:26.7.1@sha256:37db3d210bde5849ba5c772ce33b8666b215a77f7b88331fda31fbbf2d130738
 
 USER root
 
-# Identical MCP deployment config to the vulnerable image: write-class tool calls permitted, so
-# the only behavioural difference between the two images is the engine's host-access policy.
+# Identical MCP deployment config to the vulnerable image, so the only behavioural difference
+# between the two images is the engine's host-access policy.
 RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["root"]}' > /home/arcadedb/config/mcp-config.json
 
 RUN chmod -R a+rwX /home/arcadedb
 
-ENV ARCADEDB_SETTINGS="-Darcadedb.server.rootPassword=playpassword -Darcadedb.server.defaultDatabases=mydb[seed:seedpass:admin]"
+# rootPath pinned to the writable install tree, identical to the vulnerable image: Deployment
+# layout runs the server with the read-only checkout as the working directory, where rootPath's
+# documented default (the current directory) is unwritable and the server would shut down.
+ENV ARCADEDB_SETTINGS="-Darcadedb.server.rootPassword=playwithdata -Darcadedb.server.defaultDatabases=Imported[root] -Darcadedb.server.rootPath=/home/arcadedb"
 
+# Absolute path to the stdio launch script, identical to the vulnerable image: the script
+# resolves ARCADEDB_HOME from its own location, so it starts from the checkout working directory
+# Deployment layout sets.
 ENTRYPOINT ["/__cacert_entrypoint.sh"]
-CMD ["./bin/mcp-stdio.sh"]
+CMD ["/home/arcadedb/bin/mcp-stdio.sh"]
