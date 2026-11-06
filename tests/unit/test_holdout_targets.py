@@ -5,6 +5,7 @@ from pathlib import Path
 import tests.unit.support.test_cve_planting_given as planting_given
 import tests.unit.support.test_holdout_targets_given as given
 from evals import doris_backend, n8n_instance_backend
+from evals.cve_layout import PROJECT, WORK
 from evals.cve_places import (
     HOLDOUT_PLACES,
     REACHABLE_BY,
@@ -88,6 +89,12 @@ def test_no_acceptance_or_holdout_image_names_a_path_under_work():
 def test_no_holdout_target_runs_as_the_host_user():
     for target in HOLDOUT_TARGETS:
         assert target.planting_host.user is not SymbolicUser.HOST, target.cve_id
+
+
+# Rule v11 starts a target in the checkout, or in the empty `/work` when it cannot write there.
+def test_every_holdout_target_starts_in_the_checkout_or_work():
+    for target in HOLDOUT_TARGETS:
+        assert target.planting_host.working_directory in {PROJECT, WORK}, target.cve_id
 
 
 def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():

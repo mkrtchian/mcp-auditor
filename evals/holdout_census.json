@@ -141373,7 +141373,7 @@
       {
         "flaw": "CVE-2026-65831",
         "mechanism": "A polyglot script (language 'js') sent through ArcadeDB's command execution skips the database authorization checks that SQL and Cypher pass through and runs under a GraalVM host-access policy that the script escapes by reflecting off the bound database object to load arbitrary JVM classes such as java.io.File and java.net.URL, so it reads any file the server process can read and fetches any address it can reach. Process creation is blocked, so the confirmed impact is host file read and internal fetch, not OS command execution.",
-        "effect_class": "read_outside_scope | internal_fetch",
+        "effect_class": "read_outside_scope, internal_fetch",
         "siblings": [],
         "kept": [
           {
@@ -145829,7 +145829,7 @@
       {
         "flaw": "CVE-2025-58358",
         "mechanism": "mcp-markdownify-server is vulnerable to OS command injection in the pptx-to-markdown tool: the tool's unsanitised filepath (and uvPath) input is interpolated into the shell command string `${uvPath} run ${markitdownPath} \"${filePath}\"` run through child_process.exec, so shell metacharacters and a command substitution such as `$(id>/tmp/TEST)` in the path execute arbitrary system commands under the server process's privileges.",
-        "effect_class": "command_execution | read_outside_scope | internal_fetch",
+        "effect_class": "command_execution, read_outside_scope, internal_fetch",
         "siblings": [
           {
             "flaw": "CVE-2025-5273",
@@ -148761,7 +148761,7 @@
             ]
           },
           {
-            "item": "Launch command: docker run -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --user 65534:65534 -w /srv/app -e HOME=/tmp --network container:<holder> -v <temp root>:/srv:ro <image>, image tagged from the service name holdout-2026-5323-a11y (patched: holdout-2026-5323-a11y-patched), ENTRYPOINT [\"a11y-mcp\"], no argument after the image",
+            "item": "Launch command: docker run -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --user 65534:65534 -w /srv/app -e HOME=/tmp --network container:<holder> -v <layout root>:/srv:ro <image>, image tagged from the service name holdout-2026-5323-a11y (patched: holdout-2026-5323-a11y-patched), ENTRYPOINT [\"a11y-mcp\"], no argument after the image",
             "reason": "The ssrf_env builder's launch: the confinement profile every benchmark container runs under, the planting layer's user, working directory, environment and network, the read-only layout mount, then the global bin a11y-mcp (the README's npm install -g a11y-mcp route; its MCP configuration gives npx a11y-mcp). The working directory -w /srv/app is the checkout the Deployment layout prescribes (outside the fixture limits), not an option set for the flaw. The image tag is the service name the fixture's author chose.",
             "returned_by": [],
             "used_by_default_by": [
@@ -148835,7 +148835,7 @@
             "used_by_default_by": []
           },
           {
-            "item": "Deployment layout mounted read-only at /srv (-v <temp root>:/srv:ro), neutral content in every node, nothing seeded inside it (seeded_in_layout = [])",
+            "item": "Deployment layout mounted read-only at /srv (-v <layout root>:/srv:ro), neutral content in every node, nothing seeded inside it (seeded_in_layout = [])",
             "reason": "Every target runs with the frozen layout mounted (ADR 031); the working directory is the checkout /srv/app it prescribes. This target keeps no layout place and the server reads no kept place under /srv.",
             "returned_by": [],
             "used_by_default_by": []
