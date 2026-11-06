@@ -42,7 +42,7 @@ async def test_a_server_that_never_answers_initialize_times_out() -> None:
     assert time.monotonic() - started < 10
 
 
-async def test_the_cli_delivers_the_report_of_a_server_logging_its_shutdown_to_stdout(
+async def test_an_audit_of_a_server_logging_its_shutdown_to_stdout_completes_its_report(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -50,3 +50,6 @@ async def test_the_cli_delivers_the_report_of_a_server_logging_its_shutdown_to_s
     report = await given.an_audit_of(given.a_stub("noisy_shutdown")).run()
 
     assert report is not None
+    assert report.is_complete
+    assert [t.tool.name for t in report.tool_reports] == ["read"]
+    assert len(report.tool_reports[0].cases) == 1

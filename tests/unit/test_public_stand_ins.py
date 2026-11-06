@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import pytest
@@ -223,7 +222,6 @@ def test_an_html_quote_is_escaped_with_markupsafes_table():
 def test_a_json_quote_is_the_content_of_a_json_string():
     value = "/a<b>\"'\\c"
 
-    assert body_quoting(value, "application/json") == json.dumps(value)[1:-1]
     assert body_quoting(value, "application/json") == "/a<b>\\\"'\\\\c"
 
 
