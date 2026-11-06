@@ -13,7 +13,12 @@ from uuid import uuid4
 from evals.cve_environments import Launch, LaunchShape, materialise
 from evals.cve_layout import layout_mount_args, owned_layout
 from evals.cve_planting import PlantingDocker, PlantingSpec, confinement_args, planted
-from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, own_network_args
+from evals.cve_planting_base import (
+    LABEL,
+    SENTINEL_IMAGE,
+    own_network_args,
+    unprivileged_user_args,
+)
 from evals.cve_planting_docker import DOCKER_PLANTING
 from evals.doris_backend import (
     DORIS_BRIDGE,
@@ -139,15 +144,23 @@ def mysql_db_env(
 
 @contextmanager
 def doris_db_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     # The flaw's internal fetch runs on the Doris backend (its http() TVF), not on the server
     # container, so the sentinels sit on a static-IP link-local bridge the Doris node reaches,
-    # not behind the generic planting holder. The cluster is heavy (an FE+BE JVM) and persistent:
+    # not behind the generic planting holder, and planted() is never called: its holder's network
+    # would replace the Doris bridge. The cluster is heavy (an FE+BE JVM) and persistent:
     # provisioned once and reused across exercises, only the per-launch sentinels are stood and
-    # torn down here. No /srv layout is mounted: every kept place is an http_endpoint, so the
-    # reference-arm shape has nothing to materialise and the server takes none.
-    with DORIS_LAUNCH_LOCK:
+    # torn down here. The server runs as every target does, under the unprivileged account from
+    # its host's working directory on the /srv layout, which no kept place needs.
+    with (
+        owned_layout(docker, lambda root: materialise(root, spec, shape)) as root,
+        DORIS_LAUNCH_LOCK,
+    ):
         ensure_doris()
         # doris-mcp-server does not exit on stdin EOF, so --rm cannot fire when the stdio adapter
         # reaps it and the container orphans; a unique name force-removed on teardown reaps it for
@@ -158,10 +171,9 @@ def doris_db_env(
             for sentinel in spec.sentinels:
                 sentinels.append(start_doris_sentinel(sentinel))
             time.sleep(2)  # let each sentinel's httpd bind before the server can drive a fetch
-            # Twin of doris_backend.doris_server_args (the nuisance suite's server launch), except
-            # the nuisance memory bound: fold this wiring back into that helper at the next
-            # acceptance reset, when this module (AST-fingerprinted into every acceptance fixture)
-            # moves anyway.
+            # No longer a twin of doris_backend.doris_server_args (the nuisance suite's launch):
+            # that one mounts no layout, the nuisance suite having none, reads its admission
+            # host's user and takes the nuisance memory bound.
             yield Launch(
                 command="docker",
                 args=[
@@ -174,6 +186,10 @@ def doris_db_env(
                     "--label",
                     LABEL,
                     *own_network_args(DORIS_BRIDGE),
+                    *unprivileged_user_args(),
+                    "-w",
+                    spec.host.working_directory,
+                    *layout_mount_args(root, spec.host.layout_mount),
                     image,
                     "--db-host",
                     DORIS_HOST,

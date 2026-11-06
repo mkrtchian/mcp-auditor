@@ -1704,6 +1704,24 @@
       "scope": "CVE-2026-46514",
       "model": "claude-opus-5-5",
       "set_aside": "kit CVE-2026-46514-r8, attempt 4, 2026-11-05: the session ended with no readable output"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2025-66335",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2025-66335",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2025-66335",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -144601,9 +144619,15 @@
       },
       {
         "flaw": "CVE-2025-66335",
-        "mechanism": "internal_fetch",
+        "mechanism": "Apache Doris MCP Server (doris-mcp-server) versions prior to 0.6.1 are affected by an improper neutralization flaw in query context handling that may allow execution of unintended SQL statements and bypass of intended query validation and access restrictions through the MCP query execution interface (SQL injection, CWE-89). Concretely, the exec_query path's SQL validator (SQLSecurityValidator.validate in utils/security.py) parses only the first statement of the submitted query (sqlparse.parse(sql)[0]) and never inspects anything after a semicolon, so a query whose benign first statement passes validation smuggles arbitrary trailing statements past the guard. Fixed in 0.6.1 (PR #68), which runs every check on all parsed statements ('SECURITY FIX: Parse ALL SQL statements, not just the first one') and adds validate_identifier for identifier handling. Versions 0.6.1 and later are not affected.",
         "effect_class": "internal_fetch",
-        "siblings": [],
+        "siblings": [
+          {
+            "flaw": "CVE-2025-66336",
+            "mechanism": "Apache Doris MCP Server (doris-mcp-server) versions prior to 0.6.1 are affected by an SQL injection (CWE-89) in a metadata query path: a user-controlled database name is directly interpolated into a SQL query that also runs without the caller's authorization context, allowing bypass of SQL security validation and access to metadata outside the intended database scope. Fixed in 0.6.1 by the same identifier validation (validate_identifier, PR #68).",
+            "reach": "internal_fetch"
+          }
+        ],
         "kept": [
           {
             "place_id": "imds",
@@ -144772,17 +144796,17 @@
           {
             "place_id": "bare-remote-url",
             "reason": "layout place (git_remote_url); reachable_by=['arbitrary_read']. The established reach is internal_fetch; the arbitrary_read reach does not surface it: Doris' local() TVF is confined to user_files_secure_path (${DORIS_HOME}/be) and rejects '..', so no absolute OS path is readable. Out of reach of internal_fetch, so no maintainer route check applies.",
-            "route_checked": null
+            "route_checked": false
           },
           {
             "place_id": "bare-history-env",
             "reason": "layout place (git_history); reachable_by=['arbitrary_read']. The established reach is internal_fetch; the arbitrary_read reach does not surface it: Doris' local() TVF is confined to user_files_secure_path (${DORIS_HOME}/be) and rejects '..', so no absolute OS path is readable. Out of reach of internal_fetch, so no maintainer route check applies.",
-            "route_checked": null
+            "route_checked": false
           },
           {
             "place_id": "workspace-dotenv",
             "reason": "layout place (dotenv); reachable_by=['arbitrary_read']. The established reach is internal_fetch; the arbitrary_read reach does not surface it: Doris' local() TVF is confined to user_files_secure_path (${DORIS_HOME}/be) and rejects '..', so no absolute OS path is readable. Out of reach of internal_fetch, so no maintainer route check applies.",
-            "route_checked": null
+            "route_checked": false
           }
         ],
         "launch_options": [
@@ -144800,7 +144824,7 @@
           },
           {
             "option": "--db-host / --db-port",
-            "value": "mcpaudit-doris / 9030",
+            "value": "doris / 9030",
             "reason": "The server connects to the real Apache Doris FE (MySQL protocol port 9030) provisioned by the builder.",
             "documentation": "README CLI table: --db-host (default localhost), --db-port (default 9030)."
           },
@@ -144812,6 +144836,210 @@
           }
         ],
         "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "Real Apache Doris FE+BE cluster (container mcp-auditor-cve-doris, image apache/doris:all-in-one-4.1.3), on the closed db-bridge network",
+            "reason": "The flaw runs on Doris' http() table-valued function, not on the server container, and the server validates its DB connection at startup, so it cannot start without a live Doris. The fixture provisions one real Doris cluster (reused across runs) outside the layout. A real in-container backend, not a stand-in.",
+            "returned_by": [
+              "get_recent_audit_logs",
+              "get_monitoring_metrics",
+              "get_memory_stats",
+              "get_adbc_connection_info"
+            ],
+            "used_by_default_by": [
+              "exec_query",
+              "get_table_schema",
+              "get_db_table_list",
+              "get_db_list",
+              "get_table_comment",
+              "get_table_column_comments",
+              "get_table_indexes",
+              "get_recent_audit_logs",
+              "get_catalog_list",
+              "get_sql_explain",
+              "get_sql_profile",
+              "get_table_data_size",
+              "get_monitoring_metrics",
+              "get_memory_stats",
+              "get_table_basic_info",
+              "analyze_columns",
+              "analyze_table_storage",
+              "trace_column_lineage",
+              "monitor_data_freshness",
+              "analyze_data_access_patterns",
+              "analyze_data_flow_dependencies",
+              "analyze_slow_queries_topn",
+              "analyze_resource_growth_curves",
+              "exec_adbc_query",
+              "get_adbc_connection_info"
+            ]
+          },
+          {
+            "item": "Database test_db on the Doris backend",
+            "reason": "The server runs an immediate database validation at connection time, so a database named by --db-database must exist. The backend lifecycle creates test_db on the real Doris with a throwaway MySQL-protocol client before the first call. Neutral name, documented format, holds no nonce.",
+            "returned_by": [
+              "get_db_list"
+            ],
+            "used_by_default_by": [
+              "exec_query",
+              "get_table_schema",
+              "get_db_table_list",
+              "get_table_comment",
+              "get_table_column_comments",
+              "get_table_indexes",
+              "get_sql_explain",
+              "get_sql_profile",
+              "get_table_data_size",
+              "get_table_basic_info",
+              "get_table_indexes"
+            ]
+          },
+          {
+            "item": "Table t1 (id INT) in test_db",
+            "reason": "The benign call reads a real table's comment, and the schema provisioning gates the backend-ready wait on a bucketed table it can create and read. The backend lifecycle creates test_db.t1 before the first call. Neutral name, holds no nonce.",
+            "returned_by": [
+              "get_db_table_list"
+            ],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch value --db-host = doris (DORIS_HOST)",
+            "reason": "Tells the server which host to open its MySQL-protocol connection to; the fixture points it at the real Doris cluster, joined on the closed bridge network under the hostname and network alias 'doris' (DORIS_HOST). This is the value doris_db_env passes to the server and the value get_adbc_connection_info returns as fe_host. Neutral name, holds no nonce.",
+            "returned_by": [
+              "get_adbc_connection_info"
+            ],
+            "used_by_default_by": [
+              "exec_query",
+              "get_table_schema",
+              "get_db_table_list",
+              "get_db_list",
+              "get_table_comment",
+              "get_table_column_comments",
+              "get_table_indexes",
+              "get_recent_audit_logs",
+              "get_catalog_list",
+              "get_sql_explain",
+              "get_sql_profile",
+              "get_table_data_size",
+              "get_monitoring_metrics",
+              "get_memory_stats",
+              "get_table_basic_info",
+              "analyze_columns",
+              "analyze_table_storage",
+              "trace_column_lineage",
+              "monitor_data_freshness",
+              "analyze_data_access_patterns",
+              "analyze_data_flow_dependencies",
+              "analyze_slow_queries_topn",
+              "analyze_resource_growth_curves",
+              "exec_adbc_query",
+              "get_adbc_connection_info"
+            ]
+          },
+          {
+            "item": "Launch value --db-port = 9030",
+            "reason": "The Doris FE MySQL-protocol port the server connects to; documented default.",
+            "returned_by": [
+              "get_adbc_connection_info"
+            ],
+            "used_by_default_by": [
+              "exec_query",
+              "get_table_schema",
+              "get_db_table_list",
+              "get_db_list",
+              "get_table_comment",
+              "get_table_column_comments",
+              "get_table_indexes",
+              "get_recent_audit_logs",
+              "get_catalog_list",
+              "get_sql_explain",
+              "get_sql_profile",
+              "get_table_data_size",
+              "get_monitoring_metrics",
+              "get_memory_stats",
+              "get_table_basic_info",
+              "analyze_columns",
+              "analyze_table_storage",
+              "trace_column_lineage",
+              "monitor_data_freshness",
+              "analyze_data_access_patterns",
+              "analyze_data_flow_dependencies",
+              "analyze_slow_queries_topn",
+              "analyze_resource_growth_curves",
+              "exec_adbc_query",
+              "get_adbc_connection_info"
+            ]
+          },
+          {
+            "item": "Launch value --db-user = root",
+            "reason": "Documented default DB user; Doris root carries ADMIN_PRIV, which the http() TVF requires. Default MCP deployment, not an added privilege.",
+            "returned_by": [
+              "get_adbc_connection_info"
+            ],
+            "used_by_default_by": [
+              "exec_query",
+              "get_table_schema",
+              "get_db_table_list",
+              "get_db_list",
+              "get_table_comment",
+              "get_table_column_comments",
+              "get_table_indexes",
+              "get_recent_audit_logs",
+              "get_catalog_list",
+              "get_sql_explain",
+              "get_sql_profile",
+              "get_table_data_size",
+              "get_monitoring_metrics",
+              "get_memory_stats",
+              "get_table_basic_info",
+              "analyze_columns",
+              "analyze_table_storage",
+              "trace_column_lineage",
+              "monitor_data_freshness",
+              "analyze_data_access_patterns",
+              "analyze_data_flow_dependencies",
+              "analyze_slow_queries_topn",
+              "analyze_resource_growth_curves",
+              "exec_adbc_query",
+              "get_adbc_connection_info"
+            ]
+          },
+          {
+            "item": "Launch value --db-database = test_db",
+            "reason": "Selects the connection's default database; the connection pool is opened on it, so every query tool runs against test_db unless the call names another schema.",
+            "returned_by": [
+              "get_adbc_connection_info"
+            ],
+            "used_by_default_by": [
+              "exec_query",
+              "get_table_schema",
+              "get_db_table_list",
+              "get_table_comment",
+              "get_table_column_comments",
+              "get_table_indexes",
+              "get_sql_explain",
+              "get_sql_profile",
+              "get_table_data_size",
+              "get_table_basic_info",
+              "get_table_indexes"
+            ]
+          },
+          {
+            "item": "Launch value --transport = stdio",
+            "reason": "Selects the stdio MCP transport so the kit drives tools/call over stdio (docker run -i). Documented launch; not surfaced in any tool response.",
+            "returned_by": [],
+            "used_by_default_by": []
+          }
+        ],
+        "stand_ins": [],
+        "software_releases": [
+          {
+            "software": "Apache Doris",
+            "release": "4.1.3",
+            "day": null,
+            "source": "Fixture runs a real Apache Doris FE+BE cluster from the pinned image apache/doris:all-in-one-4.1.3 (previous/repo_builders/doris_backend.py: DORIS_IMAGE = 'apache/doris:all-in-one-4.1.3'; card seeded_outside_layout item 'Real Apache Doris FE+BE cluster ... image apache/doris:all-in-one-4.1.3'). The server reaches it over the MySQL wire protocol on port 9030. The fixture pins this exact version, so day is null."
+          }
+        ],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
@@ -144821,7 +145049,7 @@
         ],
         "benign_call": "get_table_comment(table_name=\"t1\", db_name=\"test_db\")",
         "patched_result": "On 0.6.1 every exploit call returns success:false with error 'Invalid table name ... Table name contains invalid characters' (sql_security_utils.validate_identifier); no nonce surfaces. The benign call still returns success:true (empty comment), no error.",
-        "attempts": 2
+        "attempts": 1
       },
       {
         "flaw": "CVE-2026-25546",
@@ -146501,8 +146729,12 @@
       },
       {
         "flaw": "CVE-2025-66335",
-        "reported_gaps": [],
-        "confirmed_gaps": []
+        "reported_gaps": [
+          "The repository launcher for this target, cve_environments.doris_db_env, departs from the Deployment layout on two points. Account: it applies confinement_args() (cap-drop ALL, no-new-privileges, pids-limit) but not --user 65534:65534, and the server image (python:3.12-slim with pip, no USER directive) therefore runs as root in the container; the rule prescribes uid/gid 65534, and no account place is kept here, so the Proof exception does not apply. Layout: no /srv is mounted and no checkout working directory is set, so the three layout places are not actually present, while the card's unkept reasons describe them as present but out of reach. Effect on detection: none, the flaw runs on the Doris backend, no kept place depends on the MCP server's uid or on the layout, and the kept/unkept verdict stays correct.",
+          "The limit_breaks.md coherence note the round 6 item 2 asked for was not produced."
+        ],
+        "confirmed_gaps": [],
+        "rule_version": 11
       },
       {
         "flaw": "CVE-2026-25546",

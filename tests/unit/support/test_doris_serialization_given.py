@@ -53,10 +53,10 @@ def doris_helpers_faked(monkeypatch: pytest.MonkeyPatch, recorder: OverlapRecord
 
 
 def a_minimal_doris_spec() -> PlantingSpec:
-    # `doris_db_env` reads only `spec.sentinels`; empty sentinels keep the faked builder minimal.
+    # No place and no sentinel: the builder materialises the neutral layout and stands nothing.
     return PlantingSpec(
         host=PlantingHost(
-            user=SymbolicUser.UNPRIVILEGED, working_directory="/srv", has_network=True
+            user=SymbolicUser.UNPRIVILEGED, working_directory="/srv/app", has_network=True
         ),
         places=(),
         nonces={},
