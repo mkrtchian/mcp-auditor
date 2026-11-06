@@ -21,7 +21,7 @@ from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 # An exploit is "aimed" when its URL carries the IPv4-mapped IPv6 transition form that slips past
-# the unpatched is_private_ip; the benign catalogue call has no URL and is not aimed.
+# the unpatched is_private_ip; the catalogue control call has no URL and is not aimed.
 AIM = re.compile(r"\[::ffff:")
 
 KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identity")
@@ -44,7 +44,7 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
     return run
 
 
-async def _benign(places: Places, client: MCPClientPort) -> None:
+async def _catalogue_read(places: Places, client: MCPClientPort) -> None:
     # A pure-catalogue tool call: no fetch, no planted place, so it surfaces no nonce, is not
     # aimed, and does not error on the patched server.
     await client.call_tool("list_modules", {})
@@ -60,14 +60,12 @@ TARGET = CVETarget(
     images=("holdout-2026-55787-flyto", "sentinel"),
     server_image="holdout-2026-55787-flyto",
     patched_image="holdout-2026-55787-flyto-patched",
-    # /srv + has_network=True diverge from the kit: the batch-B shared-ssrf_env / shared-sentinel
-    # convention, where reaching the shared sentinel sidecar over the labelled bridge needs both.
     planting_host=PlantingHost(
-        user=SymbolicUser.UNPRIVILEGED, working_directory="/srv", has_network=True
+        user=SymbolicUser.UNPRIVILEGED, working_directory="/srv/app", has_network=True
     ),
     builder=ssrf_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),
-    benign=_benign,
+    benign=_catalogue_read,
     awaited_capability=None,
     note=(
         "SSRF (CWE-918): is_private_ip never unwraps the IPv4 embedded in an IPv6 transition "
