@@ -43,7 +43,9 @@ def a_draw() -> DrawRecord:
             ),
         ],
         cards=[a_card(A_DRAWN_FLAW)],
-        card_checks=[CardCheck(flaw=A_DRAWN_FLAW, reported_gaps=[], confirmed_gaps=[])],
+        card_checks=[
+            CardCheck(flaw=A_DRAWN_FLAW, reported_gaps=[], confirmed_gaps=[], rule_version=11)
+        ],
         give_ups=[
             GiveUp(
                 flaw=A_DRAWN_FLAW,
@@ -79,7 +81,7 @@ def a_draw_re_walking(flaw: str, under: int | None) -> DrawRecord:
             "cards": [*draw.cards, a_card(flaw)],
             "card_checks": [
                 *draw.card_checks,
-                CardCheck(flaw=flaw, reported_gaps=[], confirmed_gaps=[], rule_version=under),
+                CardCheck(flaw=flaw, reported_gaps=[], confirmed_gaps=[], rule_version=11),
             ],
             "drawn": [*draw.drawn, flaw],
         }
@@ -112,6 +114,9 @@ def a_card(flaw: str) -> CalibrationCard:
         unkept=[],
         launch_options=[],
         seeded_in_layout=[],
+        seeded_outside_layout=[],
+        stand_ins=[],
+        software_releases=[],
         fallback_scope=None,
         fallback_documentation=None,
         exploit_calls=["read_file"],
@@ -127,15 +132,6 @@ def a_draw_carrying(*cards: CalibrationCard) -> DrawRecord:
 
 def a_draw_whose_card_records(release: SoftwareRelease) -> DrawRecord:
     return a_draw_carrying(a_card(A_DRAWN_FLAW).model_copy(update={"software_releases": [release]}))
-
-
-def a_ready_draw() -> DrawRecord:
-    """`a_draw` whose card sets the fields rules v9 and v11 add, checked under rule v11."""
-    card = a_card(A_DRAWN_FLAW).model_copy(
-        update={"seeded_outside_layout": [], "stand_ins": [], "software_releases": []}
-    )
-    check = CardCheck(flaw=A_DRAWN_FLAW, reported_gaps=[], confirmed_gaps=[], rule_version=11)
-    return a_draw_carrying(card).model_copy(update={"card_checks": [check]})
 
 
 def a_card_stand_in(
@@ -235,7 +231,7 @@ def _a_draw_of(identifiers: list[str]) -> DrawRecord:
         ],
         cards=[a_card(identifier) for identifier in identifiers],
         card_checks=[
-            CardCheck(flaw=identifier, reported_gaps=[], confirmed_gaps=[])
+            CardCheck(flaw=identifier, reported_gaps=[], confirmed_gaps=[], rule_version=11)
             for identifier in identifiers
         ],
         give_ups=[],

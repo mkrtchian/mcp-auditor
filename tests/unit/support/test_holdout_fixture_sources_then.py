@@ -17,7 +17,7 @@ _REPLAYER = image_dockerfile("stand-in")
 
 def every_card_stand_in_is_fingerprinted(card: CalibrationCard, target: CVETarget) -> None:
     covered = _fingerprinted_files(target)
-    for card_stand_in in card.stand_ins or []:
+    for card_stand_in in card.stand_ins:
         assert unfingerprinted_stand_in_files(card_stand_in.stand_in, covered, REPO_ROOT) == []
         assert unheld_requests(card_stand_in.stand_in, REPO_ROOT) == []
         assert unreplayed_captures(card_stand_in.stand_in, _REPLAYER, REPO_ROOT) == []

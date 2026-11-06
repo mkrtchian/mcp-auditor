@@ -299,11 +299,8 @@ MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    source of its outputs (`stand_ins`), both with the tools that return it or use it by default,
    the release of each real software the fixture runs (`software_releases`), with the day that
    release was the current stable one when the documentation names no version, the exploit and
-   benign calls, the patched result and the number of attempts.
-
-   The schema shows `seeded_outside_layout`, `stand_ins` and `software_releases` optional with a
-   `null` default because the committed census predates them. They are required on a card: `[]`
-   records that there is nothing to declare.
+   benign calls, the patched result and the number of attempts. `[]` records that there is
+   nothing to declare.
 
 ## The layout and route checks are NOT in the kit
 

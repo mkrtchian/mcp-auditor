@@ -6,10 +6,8 @@ import sys
 from pathlib import Path
 
 import tests.unit.support.test_calibration_dossier_given as given
-import tests.unit.support.test_census_draw_given as draw_given
 from evals.census_classification import Classification
 from evals.census_draw import CalibrationCard
-from evals.holdout_card_readiness import unready_cards
 
 
 def test_the_fixture_format_embeds_the_card_and_classification_schemas(tmp_path: Path):
@@ -43,15 +41,3 @@ def test_a_stand_in_loads_through_the_copied_loader(tmp_path: Path):
     directory, host = result.stdout.split()
     assert Path(directory).resolve() == (out / "evals" / "stand_ins").resolve()
     assert host == "example.com"
-
-
-def test_the_readme_requires_every_card_field_the_run_refuses_unset(tmp_path: Path):
-    draw = given.a_ready_draw_whose_card_leaves_every_optional_field_unset()
-    [gaps] = unready_cards(draw, [draw_given.A_DRAWN_FLAW])
-    field_names = [gap.removesuffix(" unset") for gap in gaps.split(": ", 1)[1].split(", ")]
-
-    readme = (given.a_written_kit(tmp_path) / "README.md").read_text()
-
-    assert field_names
-    for name in field_names:
-        assert f"`{name}`" in readme, name

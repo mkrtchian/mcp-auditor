@@ -77,12 +77,9 @@ class CalibrationCard(BaseModel):
     unkept: list[UnkeptPlace]
     launch_options: list[LaunchOption]
     seeded_in_layout: list[SeededFile]
-    # Holdout rule v9 adds these two; None reads "not yet recorded", which `run_holdout run`
-    # refuses through holdout_card_readiness.
-    seeded_outside_layout: list[SeededOutsideLayout] | None = None
-    stand_ins: list[CardStandIn] | None = None
-    # Holdout rule v11 adds it, with the same None reading; [] records no real software.
-    software_releases: list[SoftwareRelease] | None = None
+    seeded_outside_layout: list[SeededOutsideLayout]
+    stand_ins: list[CardStandIn]
+    software_releases: list[SoftwareRelease]  # [] records no real software
     fallback_scope: str | None
     fallback_documentation: str | None
     exploit_calls: list[str]
@@ -100,7 +97,7 @@ class CardCheck(BaseModel):
     flaw: str
     reported_gaps: list[str]
     confirmed_gaps: list[ConfirmedGap]
-    rule_version: int | None = None  # the holdout rule version the card was checked under
+    rule_version: int  # the holdout rule version the card was checked under
 
 
 class GiveUpReason(StrEnum):
@@ -293,7 +290,7 @@ def _stand_in_problems(draw: DrawRecord) -> list[str]:
     return [
         f"card for flaw {card.flaw}: {problem}"
         for card in draw.cards
-        for card_stand_in in card.stand_ins or []
+        for card_stand_in in card.stand_ins
         for problem in stand_in_problems(card_stand_in.stand_in)
     ]
 
@@ -302,7 +299,7 @@ def _software_release_problems(draw: DrawRecord) -> list[str]:
     return [
         f"card for flaw {card.flaw}: {problem}"
         for card in draw.cards
-        for release in card.software_releases or []
+        for release in card.software_releases
         for problem in software_release_problems(release)
     ]
 
