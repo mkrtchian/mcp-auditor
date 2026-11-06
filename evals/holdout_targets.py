@@ -32,6 +32,7 @@ from evals.holdout_fixtures import (
     cve_2026_26029_sf_mcp,
     cve_2026_33060_ckan,
     cve_2026_42260_open_websearch,
+    cve_2026_46514_frogman,
     cve_2026_55157_token_optimizer,
     cve_2026_55581_mcp_shell,
     cve_2026_55787_flyto,
@@ -74,4 +75,5 @@ HOLDOUT_TARGETS: tuple[CVETarget, ...] = (
     cve_2026_55157_token_optimizer.TARGET,
     cve_2026_81562_claude_in_mobile.TARGET,
     cve_2026_82112_houtini_lm.TARGET,
+    cve_2026_46514_frogman.TARGET,
 )

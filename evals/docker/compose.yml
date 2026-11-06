@@ -399,6 +399,27 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "84ac218866dbb9fef4a351edcb4ceeb08377d87a43e9d765b5088d7be0deefa6"
     image: mcp-auditor-cve-holdout-2026-82112-houtini-lm-patched:local
 
+  # Command-execution target: frogman's fm_dialplan_apply interpolates template parameters into
+  # the Asterisk dialplan without escaping (sibling CVE-2026-46512), so a newline breakout plants a
+  # hint whose ${SHELL(...)} the tool's own dialplan reload runs on the FreePBX host
+  # (CVE-2026-46514). The whole FreePBX 17 + Asterisk 22 + MariaDB + PHP stack is built cold in the
+  # image; the fixed version 1.6.2 validates the template parameter and rejects the breakout.
+  holdout-2026-46514-frogman:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-46514-frogman
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "bc8b683235f71fd8529ba1c41b43efd38f495723078b949f87f3c2ef54735d76"
+    image: mcp-auditor-cve-holdout-2026-46514-frogman:local
+
+  holdout-2026-46514-frogman-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-46514-frogman-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "265798ab8eeae8624a7915c1e3af688bb5017ac9400d7296ecdc45a3b9dac659"
+    image: mcp-auditor-cve-holdout-2026-46514-frogman-patched:local
+
   # Command-execution target: mcp-ssh's runRemoteCommand concatenates the hostAlias into an
   # `ssh "<hostAlias>" "<command>"` line run through child_process.exec (CVE-2025-9654), so a
   # quote-breakout hostAlias executes an arbitrary command in the server's container.
