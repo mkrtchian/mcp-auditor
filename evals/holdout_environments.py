@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from evals.cve_environments import (
     CHECKOUT,
+    PROJECT,
     Launch,
     LaunchShape,
     filesystem_launch,
@@ -114,6 +115,43 @@ def _materialise_with_captures(root: Path, spec: PlantingSpec, shape: LaunchShap
     # The reference arm carries it too, so the server starts there and the break check compares.
     materialise(root, spec, shape)
     (root / CHECKOUT / "captures").mkdir()
+
+
+# The @houtini/lm server reads caller-chosen paths through the OpenAI-compatible endpoint of the
+# llama-server baked on the image's loopback. HOUTINI_LM_FILE_ROOTS names the scope the patched
+# version confines reads to (the checkout), and HOUTINI_LM_ENDPOINT_URL points at that in-image
+# inference server, so the launch adds only those two variables over command_injection_env.
+_HOUTINI_ENDPOINT_URL = "http://127.0.0.1:1234"
+
+
+@contextmanager
+def houtini_lm_env(
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
+) -> Generator[Launch]:
+    with (
+        owned_layout(docker, lambda root: materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
+        yield Launch(
+            command="docker",
+            args=[
+                "run",
+                "-i",
+                "--rm",
+                *confinement_args(),
+                *args.run_args(),
+                *layout_mount_args(root, spec.host.layout_mount),
+                "-e",
+                f"HOUTINI_LM_FILE_ROOTS={PROJECT}",
+                "-e",
+                f"HOUTINI_LM_ENDPOINT_URL={_HOUTINI_ENDPOINT_URL}",
+                image,
+            ],
+        )
 
 
 # The no-holder launch's key: no instance runs there, the key only keeps the API tools registered

@@ -1,0 +1,59 @@
+# First fixed @houtini/lm (CVE-2026-82112): code_task_files now resolves each caller-supplied path
+# against the HOUTINI_LM_FILE_ROOTS confinement with realpath, so a path outside the roots is refused.
+# Real software, cloned from the public repo and pinned at the first fixed commit 35d97bc.
+FROM ghcr.io/ggml-org/llama.cpp:server@sha256:c0a11067c72bb1eb330b8bddbf9869274c195e596bf4fae55fd527102e644b85
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates curl git wget xz-utils \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Node.js is the server's runtime. The base image follows NodeSource's setup_20.x, so the current
+# stable release of the Node.js 20 line on the calibration day (20.20.2, the line's last release)
+# is installed from the project's own linux-x64 tarball, checked against its published sha256.
+ARG NODE_VERSION=20.20.2
+ARG NODE_SHA256=df770b2a6f130ed8627c9782c988fda9669fa23898329a61a871e32f965e007d
+RUN cd /tmp \
+    && wget -q "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+    && echo "${NODE_SHA256}  node-v${NODE_VERSION}-linux-x64.tar.xz" | sha256sum -c - \
+    && tar xf "node-v${NODE_VERSION}-linux-x64.tar.xz" -C /usr/local --strip-components=1 \
+    && rm "node-v${NODE_VERSION}-linux-x64.tar.xz" \
+    && node --version && npm --version
+
+# The model the in-image llama-server serves on loopback. The server documentation names no model
+# version, so the GGUF revision main pointed to on the calibration day is pinned by commit and its
+# sha256 checked (Qwen2.5-3B-Instruct q4_k_m, unchanged upstream since 2024-09-20).
+ARG MODEL_REVISION=7dabda4d13d513e3e842b20f0d435c732f172cbe
+ARG MODEL_SHA256=626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d
+RUN mkdir -p /opt/models \
+    && wget -q -O /opt/models/model.gguf \
+        "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/${MODEL_REVISION}/qwen2.5-3b-instruct-q4_k_m.gguf" \
+    && echo "${MODEL_SHA256}  /opt/models/model.gguf" | sha256sum -c -
+
+RUN git clone https://github.com/houtini-ai/houtini-lm /opt/houtini \
+    && cd /opt/houtini \
+    && git checkout 35d97bca0531894da36a85aedb95312da1bd5b7a \
+    && npm install \
+    && npm run build
+
+# The entrypoint starts the baked llama-server on the loopback endpoint the code_task_files tool
+# addresses, waits for it to answer, then runs the MCP stdio server.
+RUN cat > /usr/local/bin/entrypoint-houtini.sh <<'EOF' \
+    && chmod 0755 /usr/local/bin/entrypoint-houtini.sh
+#!/bin/sh
+set -e
+export LD_LIBRARY_PATH=/app
+/app/llama-server -m /opt/models/model.gguf --host 127.0.0.1 --port 1234 >/tmp/llama.log 2>&1 &
+i=0
+while [ "$i" -lt 180 ]; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:1234/v1/models || echo 000)
+  [ "$code" = "200" ] && break
+  i=$((i + 1))
+  sleep 1
+done
+exec node /opt/houtini/dist/index.js
+EOF
+
+ENTRYPOINT ["/usr/local/bin/entrypoint-houtini.sh"]

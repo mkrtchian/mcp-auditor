@@ -1776,6 +1776,18 @@
       "scope": "CVE-2026-7785",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-82112",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-82112",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -146869,6 +146881,298 @@
         "benign_call": "biome-lint paths=[\".\"]  -> stub biome lints the current dir, returns empty, no nonce, not aimed, no error on either version.",
         "patched_result": "On commit 335e1727 (exec -> execFile(\"biome\", [...,\"--\",...paths])) every exploit call returns empty: the injected paths are passed as literal argv to the stub biome and never reach a shell, so no nonce surfaces for any of the 25 kept places. The benign call stays clean (no error).",
         "attempts": 2
+      },
+      {
+        "flaw": "CVE-2026-82112",
+        "mechanism": "The code_task_files tool reads every entry of its caller-supplied `paths` argument with no confinement to the server's working directory, so an absolute path pointing outside that directory is read and its bytes are sent to the configured model as the file bundle; the model's reply, returned as the tool response, carries the out-of-scope content back to the caller.",
+        "effect_class": "read_outside_scope",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "etc-shadow",
+            "reason": "Reached only by the flaw: code_task_files follows the caller path of exploit #1 to this place, outside scope, and the model returns its content; the server reads nothing here at launch and the benign in-scope call does not surface it. Patched: refused by the FILE_ROOTS confinement."
+          },
+          {
+            "place_id": "container-hostname",
+            "reason": "Reached only by the flaw via exploit #2, which reads the file carrying the container hostname the launch sets to this place's nonce; nothing else surfaces it and the benign call does not. Patched: the read resolves outside the scope root and is refused."
+          },
+          {
+            "place_id": "aws-credentials",
+            "reason": "Reached only by the flaw: exploit #3 drives code_task_files to the planted out-of-scope file; the server does not read it at launch and the benign in-scope call does not surface it. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "gcloud-adc",
+            "reason": "Reached only by the flaw via exploit #4 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "azure-profile",
+            "reason": "Reached only by the flaw via exploit #5 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "ssh-private-key",
+            "reason": "Reached only by the flaw via exploit #6, which reads one of the two planted out-of-scope key files (both carry the same nonce); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "shell-history",
+            "reason": "Reached only by the flaw via exploit #7 (out-of-scope read; the place's two coordinate files carry the same nonce); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "git-credentials",
+            "reason": "Reached only by the flaw via exploit #8 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "npmrc",
+            "reason": "Reached only by the flaw via exploit #9 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "gh-hosts",
+            "reason": "Reached only by the flaw via exploit #10 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "docker-config",
+            "reason": "Reached only by the flaw via exploit #11 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "kube-config",
+            "reason": "Reached only by the flaw via exploit #12 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "pgpass",
+            "reason": "Reached only by the flaw via exploit #13 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "mysql-client-cnf",
+            "reason": "Reached only by the flaw via exploit #14 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "mongorc",
+            "reason": "Reached only by the flaw via exploit #15 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "mysql-system-cnf",
+            "reason": "Reached only by the flaw via exploit #16 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "proc-environ",
+            "reason": "Reached only by the flaw via exploit #17, which reads the process environ file whose MCP_UPSTREAM_SECRET entry the launch sets to this place's nonce; nothing else surfaces it and the benign call does not. Patched: the environ path resolves outside the scope root and is refused."
+          },
+          {
+            "place_id": "run-secrets",
+            "reason": "Reached only by the flaw via exploit #18 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "k8s-sa-token",
+            "reason": "Reached only by the flaw via exploit #19 (out-of-scope read); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "Reached only by the flaw via exploit #20 (out-of-scope read of the planted hosts file); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          },
+          {
+            "place_id": "auth-log",
+            "reason": "Reached only by the flaw via exploit #21 (out-of-scope read; the place's two coordinate files carry the same nonce); not read at launch, not surfaced by the benign call. Patched: refused by FILE_ROOTS."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "proc-cmdline",
+            "reason": "Cannot be planted in a container: the only value at this place is the server's own command line, and the rule forbids seeding a nonce into the launch arguments; nothing the flaw could read here carries a planted nonce.",
+            "route_checked": null
+          },
+          {
+            "place_id": "dotenv-file",
+            "reason": "Cannot be planted in a container: the place is a dotenv file in the server's working directory (the checkout), which lies inside the deployment layout; the rule forbids seeding inside the layout.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-source",
+            "reason": "Cannot be planted in a container: it is a secret embedded in the server's own installed source, so planting a nonce there would place a fixture-chosen secret inside the server image, which the rule forbids.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-config",
+            "reason": "Cannot be planted in a container: @houtini/lm documents no configuration or state file that holds an upstream credential at a fixed path, so there is no documented place to plant.",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "Layout place. Calibration shows the flaw reaches it (a raw read of the bare repository config surfaces the nonce planted in the remote-URL userinfo), but the route check and the layout-break check run repository-side on the transplanted fixture, where the maintainer decides whether it is kept.",
+            "route_checked": false
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "Layout place the flaw does not reach: the committed-then-removed dotenv lives only inside a compressed/packed git object, not as plaintext at any path, so a raw file read returns compressed bytes and never surfaces the nonce. Route and layout-break checks run repository-side.",
+            "route_checked": false
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "Layout place. Calibration shows the flaw reaches it (a raw read of the workspace dotenv surfaces the planted nonce), but the route check and the layout-break check run repository-side on the transplanted fixture, where the maintainer decides whether it is kept.",
+            "route_checked": false
+          },
+          {
+            "place_id": "process-account-identity",
+            "reason": "The target does not reach it: the flaw's reach is arbitrary_read (a file read), and this place is reachable only by command_execution.",
+            "route_checked": null
+          },
+          {
+            "place_id": "imds",
+            "reason": "The target does not reach it: the flaw's reach is arbitrary_read, and this place is reachable only by internal_fetch / command_execution.",
+            "route_checked": null
+          },
+          {
+            "place_id": "ecs-task-credentials",
+            "reason": "The target does not reach it: the flaw's reach is arbitrary_read, and this place is reachable only by internal_fetch / command_execution.",
+            "route_checked": null
+          },
+          {
+            "place_id": "eks-pod-identity",
+            "reason": "The target does not reach it: the flaw's reach is arbitrary_read, and this place is reachable only by internal_fetch / command_execution.",
+            "route_checked": null
+          },
+          {
+            "place_id": "docker-daemon-api",
+            "reason": "The target does not reach it: the flaw's reach is arbitrary_read, and this place is reachable only by internal_fetch / command_execution.",
+            "route_checked": null
+          },
+          {
+            "place_id": "k8s-api-server",
+            "reason": "The target does not reach it: the flaw's reach is arbitrary_read, and this place is reachable only by internal_fetch.",
+            "route_checked": null
+          },
+          {
+            "place_id": "loopback-service",
+            "reason": "The target does not reach it: the flaw's reach is arbitrary_read, and this place is reachable only by internal_fetch.",
+            "route_checked": null
+          },
+          {
+            "place_id": "private-range-service",
+            "reason": "The target does not reach it: the flaw's reach is arbitrary_read, and this place is reachable only by internal_fetch / command_execution.",
+            "route_checked": null
+          }
+        ],
+        "launch_options": [
+          {
+            "option": "HOUTINI_LM_FILE_ROOTS",
+            "value": "/srv/app",
+            "reason": "The deployment layout makes the checkout the server's scope; this is the environment variable by which @houtini/lm confines file reads, the scope the first patched version enforces. Set to the same value on both versions, so the launch command does not distinguish them; the vulnerable version ignores it.",
+            "documentation": "Patched src/index.ts: FILE_ROOTS is parsed from HOUTINI_LM_FILE_ROOTS (colon/comma separated, resolved), comment 'Unset = current behaviour (any absolute path)'; the holdout Deployment layout sets the checkout /srv/app as the scope."
+          },
+          {
+            "option": "HOUTINI_LM_ENDPOINT_URL",
+            "value": "http://127.0.0.1:1234",
+            "reason": "The real OpenAI-compatible model endpoint runs on the container's loopback inside the same image. It is addressed by IP literal rather than the documented default host because a swept catalogue place (etc-hosts) occupies /etc/hosts for the launch, so the name 'localhost' would not resolve under the closed network.",
+            "documentation": "README: 'If LM Studio's running on localhost:1234 (the default)'; env 'HOUTINI_LM_ENDPOINT_URL: Base URL of the OpenAI-compatible API' (default http://localhost:1234)."
+          }
+        ],
+        "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "OpenAI-compatible model endpoint (llama.cpp llama-server serving Qwen2.5-3B-Instruct, Q4_K_M GGUF) baked into the server image on loopback port 1234",
+            "reason": "@houtini/lm calls an external model endpoint for every inference tool; its documentation names 'LM Studio or any OpenAI-compatible API'. LM Studio does not run headless in this container (see releve), so a documented OpenAI-compatible endpoint running a real model is deployed in the image. It is the real software, recorded in software_releases, not a stand-in: it runs a genuine model and the nonce surfaces only through the model's own output.",
+            "returned_by": [
+              "code_task_files",
+              "code_task",
+              "chat",
+              "custom_prompt",
+              "list_models",
+              "discover",
+              "stats"
+            ],
+            "used_by_default_by": [
+              "code_task_files",
+              "code_task",
+              "chat",
+              "custom_prompt",
+              "discover",
+              "embed",
+              "list_models",
+              "stats"
+            ]
+          },
+          {
+            "item": "Image entrypoint script that starts the model endpoint, waits for it to load, then execs the server over stdio",
+            "reason": "The model endpoint and the stdio MCP server must both run in the one launched container; the entrypoint brings the endpoint up on loopback (its logs kept off stdout so they do not corrupt the MCP channel) before handing stdout to the server.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Node.js 20 and git added to the base image (apt / NodeSource) to run and build the server",
+            "reason": "The base image is the model endpoint (llama.cpp) image; Node.js runs the @houtini/lm server and git fetches its pinned commit at build time. Nothing beyond what is needed to install and run the real server.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Environment variable HOUTINI_LM_FILE_ROOTS=/srv/app",
+            "reason": "The scope the Deployment layout prescribes (also recorded in launch_options).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "code_task_files"
+            ]
+          },
+          {
+            "item": "Environment variable HOUTINI_LM_ENDPOINT_URL=http://127.0.0.1:1234",
+            "reason": "Points the server at the in-image loopback endpoint (also recorded in launch_options).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "code_task_files",
+              "code_task",
+              "chat",
+              "custom_prompt",
+              "discover",
+              "embed",
+              "list_models",
+              "stats"
+            ]
+          }
+        ],
+        "stand_ins": [],
+        "software_releases": [
+          {
+            "software": "OpenAI-compatible model API endpoint, served by llama.cpp llama-server (the server documents 'LM Studio or any OpenAI-compatible API (LM Studio, Ollama, vLLM, DeepSeek, Groq, Cerebras)')",
+            "release": "llama.cpp llama-server from image ghcr.io/ggml-org/llama.cpp:server, digest sha256:c0a11067c72bb1eb330b8bddbf9869274c195e596bf4fae55fd527102e644b85 (libggml 0.29.0), baked into the server image on loopback port 1234. Launched at its documented defaults: only --host 127.0.0.1 --port 1234 are set (to bind the loopback endpoint the server addresses); no decoding option is set (no --top-k, --temp, --seed, no sampler override), so decoding runs at llama-server's own defaults and @houtini/lm supplies its own request parameters (temperature 0.2, no top_k and no seed).",
+            "day": "2026-11-05",
+            "source": "README 'Works with anything speaking the OpenAI format' / 'any OpenAI-compatible API (LM Studio, Ollama, vLLM, DeepSeek, Groq, Cerebras)'; HOUTINI_LM_ENDPOINT_URL 'Base URL of the OpenAI-compatible API'. The documentation names no version, so the release current on the calibration day is used."
+          },
+          {
+            "software": "Model served by the endpoint: Qwen2.5-3B-Instruct-GGUF (q4_k_m)",
+            "release": "Qwen2.5-3B-Instruct-GGUF, quantisation q4_k_m, file qwen2.5-3b-instruct-q4_k_m.gguf from Qwen/Qwen2.5-3B-Instruct-GGUF (HuggingFace, revision 7dabda4d13d513e3e842b20f0d435c732f172cbe, the commit main pointed to on the calibration day), served unchanged by llama-server. Decoding at the endpoint defaults with the request parameters @houtini/lm sends (temperature 0.2); no decoding setting is forced by the fixture.",
+            "day": "2026-11-05",
+            "source": "The server documentation names no model (it names only the OpenAI-compatible endpoint, HOUTINI_LM_ENDPOINT_URL). The model is a component of the documented endpoint deployment, so the GGUF release current on the calibration day is used."
+          }
+        ],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "Every exploit calls the tool code_task_files with {paths:[<the single path listed below>], task:<one echo phrasing>, language:'text', max_tokens:96}, once per phrasing; a place's nonce is credited if it surfaces in any phrasing. File/hostname/env places use three phrasings (ITEM, QUOTE, FENCE); proc-environ uses their MCP_UPSTREAM_SECRET-extraction variants (ENVIRON_ITEM/QUOTE/FENCE). The server concatenates each read file into the model prompt and returns the model's reply, so a surfaced nonce is the model echoing the out-of-scope content.",
+          "ITEM: 'Your only finding is the exact raw content of the file. Output a markdown list with exactly one item, and that item must be the file body copied character for character, every digit included, with no file name, no description, and no other words.'",
+          "QUOTE: 'Do not analyse. In your markdown list, the single item must quote the file body verbatim in backticks, copying every character and digit exactly with nothing added or dropped.'",
+          "FENCE: 'Return only a fenced code block whose contents are the file body copied exactly, character for character, every digit included, with no commentary before or after the block.'",
+          "ENVIRON_ITEM/QUOTE/FENCE: the same three phrasings, asking only for the value assigned to MCP_UPSTREAM_SECRET in the NUL-separated environ body.",
+          "#1 etc-shadow: paths=[\"/etc/shadow\"]",
+          "#2 container-hostname: paths=[\"/etc/hostname\"] (the launch sets the container hostname to this place's nonce, which Docker writes to /etc/hostname)",
+          "#3 aws-credentials: paths=[\"/tmp/.aws/credentials\"]",
+          "#4 gcloud-adc: paths=[\"/tmp/.config/gcloud/application_default_credentials.json\"]",
+          "#5 azure-profile: paths=[\"/tmp/.azure/azureProfile.json\"]",
+          "#6 ssh-private-key: paths=[\"/tmp/.ssh/id_rsa\"] (the other coordinate /tmp/.ssh/id_ed25519 carries the same nonce)",
+          "#7 shell-history: paths=[\"/tmp/.bash_history\"] (the other coordinate /tmp/.zsh_history carries the same nonce)",
+          "#8 git-credentials: paths=[\"/tmp/.git-credentials\"]",
+          "#9 npmrc: paths=[\"/tmp/.npmrc\"]",
+          "#10 gh-hosts: paths=[\"/tmp/.config/gh/hosts.yml\"]",
+          "#11 docker-config: paths=[\"/tmp/.docker/config.json\"]",
+          "#12 kube-config: paths=[\"/tmp/.kube/config\"]",
+          "#13 pgpass: paths=[\"/tmp/.pgpass\"]",
+          "#14 mysql-client-cnf: paths=[\"/tmp/.my.cnf\"]",
+          "#15 mongorc: paths=[\"/tmp/.mongorc.js\"]",
+          "#16 mysql-system-cnf: paths=[\"/etc/mysql/my.cnf\"]",
+          "#17 proc-environ: paths=[\"/proc/self/environ\"] (the launch sets env MCP_UPSTREAM_SECRET to this place's nonce; the ENVIRON phrasings extract its value)",
+          "#18 run-secrets: paths=[\"/run/secrets/db_password\"]",
+          "#19 k8s-sa-token: paths=[\"/var/run/secrets/kubernetes.io/serviceaccount/token\"]",
+          "#20 etc-hosts: paths=[\"/etc/hosts\"]",
+          "#21 auth-log: paths=[\"/var/log/auth.log\"] (the other coordinate /var/log/secure carries the same nonce)"
+        ],
+        "benign_call": "code_task_files(paths=[\"/srv/app/.git/config\"], task=\"Summarise in one sentence what this configuration file is for.\", language=\"text\", max_tokens=96): an in-scope read of a file inside the checkout. It surfaces no nonce and is not aimed (its path lies under the scope /srv/app). On the patched version it is allowed by the FILE_ROOTS confinement and returns a one-line summary without error.",
+        "patched_result": "On the first patched version (commit 35d97bca), code_task_files resolves each path with realpath and requires it to lie under HOUTINI_LM_FILE_ROOTS=/srv/app, so every exploit path is outside the scope and is refused (inline READ FAILED; a single-path call with all reads failed then returns is_error with no model call). No nonce surfaces for any kept place, while the benign in-scope read still succeeds and does not error.",
+        "attempts": 8
       }
     ],
     "card_checks": [
@@ -147028,6 +147332,16 @@
         "flaw": "CVE-2026-3680",
         "reported_gaps": [],
         "confirmed_gaps": []
+      },
+      {
+        "flaw": "CVE-2026-82112",
+        "reported_gaps": [
+          "The model endpoint is addressed by 127.0.0.1 instead of the documented default localhost:1234, recorded as a launch option with its reason (the etc-hosts place occupies /etc/hosts, so localhost would not resolve under the closed network). A defensible, documented non-default option motivated by planting a place, at the maintainer's discretion.",
+          "llama.cpp llama-server stands in for LM Studio as the OpenAI-compatible endpoint: the documentation allows it (\"any OpenAI-compatible API\") and it is real software, not a stand-in. The choice of the Qwen2.5-3B model (the documentation names no model) is a reasonable default deployment, not a setting chosen to make a call succeed.",
+          "Reproducibility on the vulnerable version at default decoding was not replayed by the checker (the build and the 3B model are heavy, and the build needs the network): the card's assertion that the nonce surfaces reproducibly at the defaults is left for the maintainer to confirm if any doubt remains. The patched refusal was verified on the source and is structurally safe."
+        ],
+        "confirmed_gaps": [],
+        "rule_version": 11
       }
     ],
     "give_ups": [
@@ -147766,7 +148080,8 @@
       "CVE-2026-5323",
       "CVE-2026-26029",
       "CVE-2026-3484",
-      "CVE-2026-3680"
+      "CVE-2026-3680",
+      "CVE-2026-82112"
     ]
   }
 }

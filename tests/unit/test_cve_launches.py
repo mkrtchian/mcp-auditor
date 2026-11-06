@@ -26,6 +26,7 @@ from evals.holdout_environments import (
     arcadedb_mcp_env,
     command_injection_checkout_env,
     filesystem_scope_env,
+    houtini_lm_env,
     mysql_db_env,
     ssrf_redirect_env,
 )
@@ -64,6 +65,7 @@ _LAYOUT_BUILDERS = {
     "ssrf_redirect": ssrf_redirect_env,
     "mysql_db": mysql_db_env,
     "command_injection_checkout": command_injection_checkout_env,
+    "houtini_lm": houtini_lm_env,
     "kit filesystem": kit_launch.filesystem_env,
     "kit git_init_traversal": kit_launch.git_init_traversal_env,
     "kit command_injection": kit_launch.command_injection_env,
@@ -128,6 +130,15 @@ def test_the_checkout_fixture_hands_over_an_empty_captures_directory_in_the_chec
         handed_over = docker.layouts[str(_root(launch))]
         assert "app/captures" in handed_over
         assert not any(path.startswith("app/captures/") for path in handed_over)
+
+
+def test_the_houtini_fixture_puts_its_two_environment_variables_before_the_image():
+    with houtini_lm_env("img", given.an_empty_spec(), docker=FakePlantingDocker()) as launch:
+        image = launch.args.index("img")
+        before = launch.args[:image]
+        assert "-e" in before
+        assert "HOUTINI_LM_FILE_ROOTS=/srv/app" in before
+        assert "HOUTINI_LM_ENDPOINT_URL=http://127.0.0.1:1234" in before
 
 
 def test_no_handed_over_tree_remains_and_its_outer_directory_is_gone_after_the_launch():

@@ -380,6 +380,25 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "eb34ffb5c55624cb6855535bb93a16ba107ad2a58ef6128bbbb90e5d961178ba"
     image: mcp-auditor-cve-holdout-2026-7785-wireshark-patched:local
 
+  # Read-outside-scope target: @houtini/lm's code_task_files reads every caller-supplied path with
+  # no confinement and sends the bytes to the in-image llama-server, whose reply returns the
+  # out-of-scope content (CVE-2026-82112). The fixed version confines reads to HOUTINI_LM_FILE_ROOTS.
+  holdout-2026-82112-houtini-lm:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-82112-houtini-lm
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "3831f29df53a9485be72dff28afd0fffb26bc97207039619b0b51bf118919d38"
+    image: mcp-auditor-cve-holdout-2026-82112-houtini-lm:local
+
+  holdout-2026-82112-houtini-lm-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-82112-houtini-lm-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "84ac218866dbb9fef4a351edcb4ceeb08377d87a43e9d765b5088d7be0deefa6"
+    image: mcp-auditor-cve-holdout-2026-82112-houtini-lm-patched:local
+
   # Command-execution target: mcp-ssh's runRemoteCommand concatenates the hostAlias into an
   # `ssh "<hostAlias>" "<command>"` line run through child_process.exec (CVE-2025-9654), so a
   # quote-breakout hostAlias executes an arbitrary command in the server's container.
