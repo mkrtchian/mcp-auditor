@@ -24,14 +24,9 @@ from evals.nuisance_gate_session_model import (
     WrittenBaseline,
 )
 from tests.unit.support.test_nuisance_gate_baseline_given import conditions
-from tests.unit.support.test_nuisance_gate_session_given import KUBERNETES, a_harness, scripted
+from tests.unit.support.test_nuisance_gate_session_given import a_harness, scripted
 
-GATE_SERVER = KUBERNETES.server_package
-
-
-def a_census_with_the_gate_server() -> HoldoutCensus:
-    assert GATE_SERVER == admission_given.ACCEPTANCE_PACKAGE
-    return admission_given.a_census_with_an_acceptance_server()
+GATE_SERVER = admission_given.ACCEPTANCE_PACKAGE
 
 
 def gate_arguments(tmp_path: Path, census: HoldoutCensus, admission_path: Path) -> list[str]:
@@ -55,7 +50,7 @@ def a_gate_set_of_one_server(
     admitted by `admitted`, by default fully recorded."""
     return _gate_arguments(
         tmp_path,
-        a_census_with_the_gate_server(),
+        admission_given.a_census_with_an_acceptance_server(),
         admitted or admission_given.admitting_the_acceptance_server(),
     )
 

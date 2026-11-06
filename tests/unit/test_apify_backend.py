@@ -7,7 +7,7 @@ from evals.apify_backend import (
     APIFY_SUFFIX_HOST,
     apify_network_args,
 )
-from tests.unit.support.docker_argv import values_after
+from tests.unit.support.docker_argv import environment, values_after
 
 
 def test_the_documentation_hosts_resolve_to_the_responder_address_it_is_given():
@@ -19,3 +19,7 @@ def test_the_documentation_hosts_resolve_to_the_responder_address_it_is_given():
     )
     stand_in_address = ipaddress.ip_address(api_pin.removeprefix(f"{API_HOST}:"))
     assert stand_in_address in ipaddress.ip_network(APIFY_SUBNET)
+
+
+def test_the_server_skips_verifying_the_self_signed_responder():
+    assert environment(apify_network_args("198.18.1.77"))["NODE_TLS_REJECT_UNAUTHORIZED"] == "0"

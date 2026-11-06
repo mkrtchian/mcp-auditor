@@ -16,16 +16,17 @@ from tests.unit.support.test_nuisance_admission_given import (
     with_a_backend,
 )
 
+NO_OVERRIDES = RunOverrides(None, None, None)
+
 
 def an_auditor(
     report_detail: ReportDetail = FULL_DETAIL,
     graphs: launch_given.FakeGraphs | None = None,
     connect: launch_given.FakeConnect | None = None,
+    overrides: RunOverrides = NO_OVERRIDES,
 ) -> NuisanceAuditor:
     return NuisanceAuditor(
-        launch_given.an_auditor(report_detail, graphs, connect),
-        RunOverrides(None, None, None),
-        SessionThrottles(),
+        launch_given.an_auditor(report_detail, graphs, connect), overrides, SessionThrottles()
     )
 
 

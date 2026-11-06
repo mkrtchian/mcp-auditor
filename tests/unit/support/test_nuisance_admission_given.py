@@ -374,7 +374,7 @@ def admitting_the_server_of(flaw: str, server_package: str, service: str) -> Nui
 
 
 ACCEPTANCE_FLAW = walk_given.A_CURRENT_TARGET_FLAW
-ACCEPTANCE_PACKAGE = "npm:mcp-server-kubernetes"
+ACCEPTANCE_PACKAGE = "npm:an-acceptance-server"
 
 
 def a_census_with_an_acceptance_server() -> HoldoutCensus:
@@ -387,4 +387,4 @@ def a_census_with_an_acceptance_server() -> HoldoutCensus:
 
 
 def admitting_the_acceptance_server() -> NuisanceAdmission:
-    return admitting_the_server_of(ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE, "kubernetes-nuisance")
+    return admitting_the_server_of(ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE, "acceptance-nuisance")

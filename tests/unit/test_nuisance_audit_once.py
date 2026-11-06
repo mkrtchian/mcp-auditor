@@ -7,6 +7,7 @@ import tests.unit.support.test_eval_display_given as display_given
 import tests.unit.support.test_nuisance_audit_once_given as given
 from evals import launch_audit
 from evals import nuisance_audit as nuisance_audit_module
+from evals.cve_audit import RunOverrides
 from evals.cve_environments import Launch
 from evals.failure_text import TYPES_ONLY
 from evals.nuisance_audit import (
@@ -90,6 +91,19 @@ async def test_a_missed_step_on_a_nuisance_run_prints_its_cause_without_the_prov
 
     assert "Refused by the model provider" in output.getvalue()
     assert "secret-nonce" not in output.getvalue()
+
+
+async def test_the_run_overrides_reach_the_graph_and_the_client(monkeypatch: pytest.MonkeyPatch):
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+    graphs = launch_given.graph_reporting([grammar.a_report()])
+    connect = launch_given.FakeConnect()
+    auditor = given.an_auditor(graphs=graphs, connect=connect, overrides=RunOverrides(7, 9, 11))
+
+    await audit_once(an_admitted_server(), auditor)
+
+    [graph_input] = graphs.graph_inputs
+    assert (graph_input["chain_budget"], graph_input["max_chain_steps"]) == (7, 9)
+    assert connect.timeouts == [11]
 
 
 async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttled_requests(

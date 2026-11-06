@@ -34,7 +34,10 @@ def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
     path = admission.written(tmp_path, admission.an_admission())
 
     exit_code = run_nuisance.main(
-        ["gate", *given.gate_arguments(tmp_path, given.a_census_with_the_gate_server(), path)]
+        [
+            "gate",
+            *given.gate_arguments(tmp_path, admission.a_census_with_an_acceptance_server(), path),
+        ]
     )
 
     assert exit_code == 0
@@ -49,7 +52,10 @@ def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
     path = admission.written(tmp_path, without_stdio(admitted, given.GATE_SERVER))
 
     exit_code = run_nuisance.main(
-        ["gate", *given.gate_arguments(tmp_path, given.a_census_with_the_gate_server(), path)]
+        [
+            "gate",
+            *given.gate_arguments(tmp_path, admission.a_census_with_an_acceptance_server(), path),
+        ]
     )
 
     out = capsys.readouterr().out
@@ -64,7 +70,7 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
 ):
     given.without_any_llm_key(monkeypatch)
     path = admission.written(tmp_path, admission.admitting_the_acceptance_server())
-    gate_set = given.gate_arguments(tmp_path, given.a_census_with_the_gate_server(), path)
+    gate_set = given.gate_arguments(tmp_path, admission.a_census_with_an_acceptance_server(), path)
 
     exit_code = run_nuisance.main(["gate", *gate_set, "--server", "npm:other"])
 

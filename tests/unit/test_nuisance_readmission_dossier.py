@@ -18,6 +18,8 @@ from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.docker_paths import image_dockerfile
 from evals.dossier_closure import import_closure
 from evals.eval_session import Refused
+from evals.holdout_kit import benign_probe
+from evals.holdout_kit.fix_check import check_fix
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import nuisance_confinement_args, user_args
@@ -166,6 +168,13 @@ def test_the_readme_says_a_server_without_a_backend_has_none():
     readme = readmission_readme(admission_given.an_admitted_server(), [])
 
     assert "has no backend" in readme
+
+
+def test_the_readme_commands_name_the_probe_and_fix_check_entry_points_the_kit_ships():
+    readme = readmission_readme(admission_given.an_admitted_server(), [])
+
+    assert f"python -m {benign_probe.__name__} --record" in readme
+    assert f"from {check_fix.__module__} import {check_fix.__name__}" in readme
 
 
 def test_the_readme_keeps_the_agent_off_every_shared_backend():
