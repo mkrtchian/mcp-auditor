@@ -1015,3 +1015,15 @@ Commit: the one that adds this entry.
 **Fingerprint.** The grammar fingerprint stays `4208029a711b929723d0a0460a0fb986e94f15dbb865afa7078dffd54e5ac9b1`. No fixture fingerprint moves, `evals/fixture_sources.py` being hashed by none.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument's provenance guard, a unit test over the committed records. No prompt, guard or default of the system under test moves, no fixture and no label. (2) It was raised by the first committed card with a capture-backed stand-in (CVE-2026-5323), whose requests the guard could not find in the stand-in's Dockerfile, not by a measured value: no graded run exists. (3) What the generic stand-in serves is fixed by its Dockerfile, the capture, the leaf, its key and the authority, all fingerprinted, so the capture is the source of its outputs. It reads no measured value. (4) It applies to every stand-in record alike, holdout and nuisance. None is special-cased.
+
+### 2026-11-06, the route procedure reads a null `required` as no required argument
+
+Commit: the one that adds this entry.
+
+**State.** No CVE acceptance baseline is stored (`evals/baselines/` holds `honeypot_e2e.json` and `judge_isolation.json` only), so none is deleted. No holdout or nuisance run exists. The honeypot ground truth is unchanged.
+
+**What changes.** The route procedure's minimal call (`cve_route.minimal_calls`) fills the arguments a tool's input schema lists under `required`. A schema that sets `"required": null` made it raise a `TypeError`, which the admission check reported as a failed launch on every arm, so the layout-break and route observations of that target were empty. It now reads a null `required` as no required argument, the same as an absent one, and calls the tool with no argument. No target the repository held sent such a schema, so no route or break result moves and the route and layout golden masters are not regenerated.
+
+**Fingerprint.** The grammar fingerprint stays `4208029a711b929723d0a0460a0fb986e94f15dbb865afa7078dffd54e5ac9b1`. No fixture fingerprint moves, `evals/cve_route.py` being hashed by none.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument's route procedure, the admission check of `run_holdout calibrate` and `run_cve_benchmark --calibrate`. No prompt, guard or default of the system under test moves, no fixture and no label. (2) It was raised by the first target whose server sends a null `required` (CVE-2026-47394, praisonai, eleven of its 86 tools), whose admission launches all failed on it, not by a measured value: no graded run exists. (3) A null `required` and an absent one say the same thing, that no argument is required, whatever any run measures. It reads no measured value. (4) It applies to every tool of every CVE target alike. None is special-cased.

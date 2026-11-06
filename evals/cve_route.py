@@ -124,7 +124,8 @@ def minimal_calls(
 def _minimal_arguments(tool: ToolDefinition, scope: str | None) -> dict[str, Any]:
     schema = tool.input_schema
     properties = cast(dict[str, Any], schema.get("properties", {}))
-    required = cast(list[str], schema.get("required", []))
+    # Some servers (praisonai) send `"required": null` for a tool with no required argument.
+    required = cast(list[str], schema.get("required") or [])
     return {
         name: _filler(name, cast(dict[str, Any], properties.get(name, {})), scope)
         for name in required

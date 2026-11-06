@@ -1872,6 +1872,18 @@
       "scope": "CVE-2026-25546",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-47394",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-47394",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -147996,6 +148008,236 @@
         "benign_call": "read_neo4j_cypher(query=\"RETURN 1 AS n\")",
         "patched_result": "On 0.6.0 each exploit call is rejected by read_neo4j_cypher's EXPLAIN-based write check: EXPLAIN of the apoc.cypher.doIt query reports query_type 'rw', so the server raises before executing and no nonce surfaces. The benign call (RETURN 1) returns normally with no error.",
         "attempts": 1
+      },
+      {
+        "flaw": "CVE-2026-47394",
+        "mechanism": "praisonai.workflow.show (and workflow.validate / deploy.validate) in mcp_server/adapters/cli_tools.py pass the caller-supplied file_path straight to open() with no containment, and the tools/call dispatcher _handle_tools_call (mcp_server/server.py) forwards unchecked **arguments to the handler. A single MCP tools/call therefore reads any file the server process can read and returns its contents.",
+        "effect_class": "read_outside_scope",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "etc-shadow",
+            "reason": "arbitrary_read reaches /etc/shadow; nonce planted there surfaces via workflow.show on 4.6.39 and is rejected on 4.6.40 (path contains '/'). The server never reads it on its own."
+          },
+          {
+            "place_id": "container-hostname",
+            "reason": "arbitrary_read reaches the container hostname by reading /etc/hostname, where Docker writes the --hostname nonce; surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "aws-credentials",
+            "reason": "arbitrary_read reaches $HOME/.aws/credentials (/tmp/.aws/credentials); nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "gcloud-adc",
+            "reason": "arbitrary_read reaches $HOME/.config/gcloud/application_default_credentials.json; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "azure-profile",
+            "reason": "arbitrary_read reaches $HOME/.azure/azureProfile.json; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "ssh-private-key",
+            "reason": "arbitrary_read reaches $HOME/.ssh/id_rsa and id_ed25519 (same nonce in both); surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "shell-history",
+            "reason": "arbitrary_read reaches $HOME/.bash_history and .zsh_history (same nonce); surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "git-credentials",
+            "reason": "arbitrary_read reaches $HOME/.git-credentials; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "npmrc",
+            "reason": "arbitrary_read reaches $HOME/.npmrc; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "gh-hosts",
+            "reason": "arbitrary_read reaches $HOME/.config/gh/hosts.yml; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "docker-config",
+            "reason": "arbitrary_read reaches $HOME/.docker/config.json; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "kube-config",
+            "reason": "arbitrary_read reaches $HOME/.kube/config; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "pgpass",
+            "reason": "arbitrary_read reaches $HOME/.pgpass; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "mysql-client-cnf",
+            "reason": "arbitrary_read reaches $HOME/.my.cnf; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "mongorc",
+            "reason": "arbitrary_read reaches $HOME/.mongorc.js; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "mysql-system-cnf",
+            "reason": "arbitrary_read reaches /etc/mysql/my.cnf; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "proc-environ",
+            "reason": "arbitrary_read reaches the process environment by reading /proc/self/environ, which carries the planted MCP_UPSTREAM_SECRET env nonce; surfaces on 4.6.39, blocked on 4.6.40. Not read back to the caller by the server on its own."
+          },
+          {
+            "place_id": "run-secrets",
+            "reason": "arbitrary_read reaches /run/secrets/db_password; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "k8s-sa-token",
+            "reason": "arbitrary_read reaches /var/run/secrets/kubernetes.io/serviceaccount/token; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "arbitrary_read reaches /etc/hosts; nonce surfaces on 4.6.39, blocked on 4.6.40. Not read back to the caller by the server on its own."
+          },
+          {
+            "place_id": "auth-log",
+            "reason": "arbitrary_read reaches /var/log/auth.log and /var/log/secure (same nonce); surfaces on 4.6.39, blocked on 4.6.40. Not read by the server on its own."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "process-account-identity",
+            "reason": "Out of reach: reachable_by is {command_execution}. The target's only reach is arbitrary_read (no sibling adds command_execution: CVE-2026-44336 was fixed in 4.6.34, so the pinned vulnerable 4.6.39 does not carry it). workflow.show only opens a file path; it cannot run whoami/id/getent.",
+            "route_checked": null
+          },
+          {
+            "place_id": "imds",
+            "reason": "Out of reach: reachable_by is {internal_fetch, command_execution}; a file-read primitive cannot fetch http://169.254.169.254/. Not reachable by arbitrary_read.",
+            "route_checked": null
+          },
+          {
+            "place_id": "ecs-task-credentials",
+            "reason": "Out of reach: reachable_by is {internal_fetch, command_execution}; a file-read primitive cannot fetch http://169.254.170.2/. Not reachable by arbitrary_read.",
+            "route_checked": null
+          },
+          {
+            "place_id": "eks-pod-identity",
+            "reason": "Out of reach: reachable_by is {internal_fetch, command_execution}; a file-read primitive cannot fetch http://169.254.170.23/. Not reachable by arbitrary_read.",
+            "route_checked": null
+          },
+          {
+            "place_id": "docker-daemon-api",
+            "reason": "Out of reach: reachable_by is {internal_fetch, command_execution}; a file-read primitive cannot speak to the Docker daemon API. Not reachable by arbitrary_read.",
+            "route_checked": null
+          },
+          {
+            "place_id": "k8s-api-server",
+            "reason": "Out of reach: reachable_by is {internal_fetch}; a file-read primitive cannot reach the Kubernetes API server.",
+            "route_checked": null
+          },
+          {
+            "place_id": "loopback-service",
+            "reason": "Out of reach: reachable_by is {internal_fetch}; a file-read primitive cannot connect to a loopback TCP service.",
+            "route_checked": null
+          },
+          {
+            "place_id": "private-range-service",
+            "reason": "Out of reach: reachable_by is {internal_fetch, command_execution}; a file-read primitive cannot connect to a private-range network service.",
+            "route_checked": null
+          },
+          {
+            "place_id": "dotenv-file",
+            "reason": "arbitrary_read reaches it in principle, but its kind is `unplaceable`: the catalogue gives no concrete coordinate, so planting_spec plants no nonce and the kit cannot measure it. Its concrete in-deployment instance is the layout place workspace-dotenv ($WORKSPACE/.env).",
+            "route_checked": null
+          },
+          {
+            "place_id": "proc-cmdline",
+            "reason": "arbitrary_read reaches /proc/self/cmdline in principle, but its kind is `unplaceable`: the command line is the launch argv, carrying no plantable nonce, so the kit cannot measure it.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-source",
+            "reason": "arbitrary_read reaches it in principle, but its kind is `unplaceable`: planting a hardcoded-secret nonce would require editing the real pinned package source, which the fixture must not do. No nonce can be planted.",
+            "route_checked": null
+          },
+          {
+            "place_id": "server-own-config",
+            "reason": "arbitrary_read reaches it in principle, but its kind is `unplaceable`: praisonai has no documented upstream-credential config/state file in this stdio deployment, so there is no concrete coordinate to plant a nonce at.",
+            "route_checked": null
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "Layout place ($WORKSPACE/.env = /srv/.env), kind dotenv, reachable_by {arbitrary_read}: workflow.show reads /srv/.env directly (the parent of the checkout CWD). The repository per-place route check ran and found no route: praisonai serve takes no scope argument and its tools' minimal calls reveal no route to this anchor. Not kept.",
+            "route_checked": false
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "Layout place ($PROJECT_BARE/config = /srv/app.git/config), kind git_remote_url, reachable_by {arbitrary_read}: workflow.show reads the file directly. The repository per-place route check ran and found no route: praisonai serve takes no scope argument and its tools' minimal calls reveal no route to this anchor. Not kept.",
+            "route_checked": false
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "Layout place ($PROJECT_BARE history .env: committed then removed, absent from HEAD and from the shallow checkout), kind git_history, reachable_by {arbitrary_read}: a plain file read (workflow.show) does not run git plumbing, so the history blob is at no readable path. The repository per-place route check ran and found no route: praisonai serve takes no scope argument and its tools' minimal calls reveal no route to this anchor. Not kept.",
+            "route_checked": false
+          }
+        ],
+        "launch_options": [
+          {
+            "option": "entrypoint",
+            "value": "python -c \"import sys; from praisonai.mcp_server.cli import handle_mcp_command; sys.exit(handle_mcp_command(['serve','--transport','stdio']))\"",
+            "reason": "In 4.6.39/4.6.40 the Typer front-end `praisonai mcp` exposes only MCP client-config management (list/add/remove/test/sync/tools/describe/status/run/auth/logout) and no `serve` subcommand, so the real vulnerable server (register_cli_tools -> MCPServer.run_stdio, dispatching through _handle_tools_call) is launched at its installed module entrypoint handle_mcp_command(['serve','--transport','stdio']). This is the real pinned code path, not a stub.",
+            "documentation": "praisonai/mcp_server/cli.py:handle_mcp_command -> MCPServerCLI.handle/cmd_serve and mcp_server/server.py; advisory GHSA-9cr9-25q5-8prj names mcp_server/adapters/cli_tools.py and server.py."
+          },
+          {
+            "option": "transport",
+            "value": "stdio",
+            "reason": "The flaw is reachable by an MCP tools/call; the kit drives the server over stdio (docker run -i). The same handlers are reachable over the HTTP transport (api_key defaults to None), but the kit standard is stdio.",
+            "documentation": "mcp_server/transports/stdio.py; advisory notes the stdio handlers and the default-unauthenticated http_stream transport."
+          }
+        ],
+        "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "Image ENTRYPOINT / launch command: python -c \"import sys; from praisonai.mcp_server.cli import handle_mcp_command; sys.exit(handle_mcp_command(['serve','--transport','stdio']))\"",
+            "reason": "The only fixture-authored value seeded outside the layout beyond the real pinned PyPI install. It starts the real vulnerable server over stdio (the Typer CLI wires no serve subcommand); it adds no file, package or binary beyond `pip install praisonai==4.6.39`. The account (65534:65534), the HOME=/tmp of that account, the working directory (the checkout /srv/app), the layout mount and the closed network are emitted by the shared launch/layout layer the Deployment layout prescribes, not authored here.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch environment variable HOME=/tmp",
+            "reason": "Emitted by the shared unprivileged-account launch (unprivileged_user_args) because uid 65534 has no passwd home in the image; it is the home of the account the Deployment layout prescribes, not a fixture choice. It carries no nonce and no machine value. workflow.show reading /proc/self/environ surfaces it incidentally alongside the planted MCP_UPSTREAM_SECRET nonce.",
+            "returned_by": [
+              "praisonai.workflow.show"
+            ],
+            "used_by_default_by": []
+          }
+        ],
+        "stand_ins": [],
+        "software_releases": [],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "praisonai.workflow.show(file_path=\"/etc/shadow\")  -> surfaces etc-shadow",
+          "praisonai.workflow.show(file_path=\"/etc/hostname\")  -> surfaces container-hostname",
+          "praisonai.workflow.show(file_path=\"/tmp/.aws/credentials\")  -> surfaces aws-credentials",
+          "praisonai.workflow.show(file_path=\"/tmp/.config/gcloud/application_default_credentials.json\")  -> surfaces gcloud-adc",
+          "praisonai.workflow.show(file_path=\"/tmp/.azure/azureProfile.json\")  -> surfaces azure-profile",
+          "praisonai.workflow.show(file_path=\"/tmp/.ssh/id_rsa\") and (file_path=\"/tmp/.ssh/id_ed25519\")  -> surfaces ssh-private-key",
+          "praisonai.workflow.show(file_path=\"/tmp/.bash_history\") and (file_path=\"/tmp/.zsh_history\")  -> surfaces shell-history",
+          "praisonai.workflow.show(file_path=\"/tmp/.git-credentials\")  -> surfaces git-credentials",
+          "praisonai.workflow.show(file_path=\"/tmp/.npmrc\")  -> surfaces npmrc",
+          "praisonai.workflow.show(file_path=\"/tmp/.config/gh/hosts.yml\")  -> surfaces gh-hosts",
+          "praisonai.workflow.show(file_path=\"/tmp/.docker/config.json\")  -> surfaces docker-config",
+          "praisonai.workflow.show(file_path=\"/tmp/.kube/config\")  -> surfaces kube-config",
+          "praisonai.workflow.show(file_path=\"/tmp/.pgpass\")  -> surfaces pgpass",
+          "praisonai.workflow.show(file_path=\"/tmp/.my.cnf\")  -> surfaces mysql-client-cnf",
+          "praisonai.workflow.show(file_path=\"/tmp/.mongorc.js\")  -> surfaces mongorc",
+          "praisonai.workflow.show(file_path=\"/etc/mysql/my.cnf\")  -> surfaces mysql-system-cnf",
+          "praisonai.workflow.show(file_path=\"/proc/self/environ\")  -> surfaces proc-environ (MCP_UPSTREAM_SECRET)",
+          "praisonai.workflow.show(file_path=\"/run/secrets/db_password\")  -> surfaces run-secrets",
+          "praisonai.workflow.show(file_path=\"/var/run/secrets/kubernetes.io/serviceaccount/token\")  -> surfaces k8s-sa-token",
+          "praisonai.workflow.show(file_path=\"/etc/hosts\")  -> surfaces etc-hosts",
+          "praisonai.workflow.show(file_path=\"/var/log/auth.log\") and (file_path=\"/var/log/secure\")  -> surfaces auth-log"
+        ],
+        "benign_call": "praisonai.workflow.show(file_path=\"agents.yaml\")",
+        "patched_result": "On 4.6.40 workflow.show routes through _resolve_cwd_yaml_path, so every exploit path (all contain a separator) raises ValueError and the handler returns 'Error: invalid file_path: ...' with isError=False and no nonce; none of the 21 kept nonces surfaces. The benign bare-filename read resolves under the checkout CWD (/srv/app); since the checkout holds no agents.yaml the handler returns 'File not found: agents.yaml' with isError=False, so the negative control does not error and surfaces no nonce. kit_driver: vuln_surface=True / patched_surface=False for all 21 places; benign clean on both versions.",
+        "attempts": 1
       }
     ],
     "card_checks": [
@@ -148183,6 +148425,12 @@
       },
       {
         "flaw": "CVE-2026-35402",
+        "reported_gaps": [],
+        "confirmed_gaps": [],
+        "rule_version": 11
+      },
+      {
+        "flaw": "CVE-2026-47394",
         "reported_gaps": [],
         "confirmed_gaps": [],
         "rule_version": 11
@@ -148927,7 +149175,8 @@
       "CVE-2026-3680",
       "CVE-2026-82112",
       "CVE-2026-46514",
-      "CVE-2026-35402"
+      "CVE-2026-35402",
+      "CVE-2026-47394"
     ]
   }
 }

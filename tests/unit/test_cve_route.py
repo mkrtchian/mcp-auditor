@@ -71,6 +71,21 @@ def test_a_required_array_argument_is_called_with_an_empty_list():
     assert dict(calls)["git_add"]["files"] == []
 
 
+def test_a_tool_whose_schema_sets_required_to_null_is_called_with_no_argument():
+    tool = ToolDefinition(
+        name="memory_show",
+        input_schema={
+            "type": "object",
+            "properties": {"session_id": {"type": "string"}},
+            "required": None,
+        },
+    )
+
+    calls = minimal_calls([tool], None, "/srv/app")
+
+    assert dict(calls)["memory_show"] == {}
+
+
 def test_a_null_filter_exposes_every_tool():
     tools = [_path_tool("read_file"), _git_tool("git_init")]
 
