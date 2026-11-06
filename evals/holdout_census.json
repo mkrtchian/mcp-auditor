@@ -2118,6 +2118,24 @@
       "scope": "CVE-2026-5602",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-55157",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-55157",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-55157",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -141539,8 +141557,8 @@
       },
       {
         "flaw": "CVE-2026-55157",
-        "mechanism": "command_execution",
-        "effect_class": "command_execution",
+        "mechanism": "OS command injection (CWE-78) in the smart_user tool's get-user-info operation: the username argument supplied by the MCP client is interpolated into the double-quoted shell string `getent passwd \"${username}\" || grep \"^${username}:\" /etc/passwd` and run through execAsync, and because a POSIX shell still evaluates $(...) command substitution inside double quotes, a crafted username runs arbitrary commands with the privileges of the user running the server (CVSS 8.4, AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H).",
+        "effect_class": "command_execution, read_outside_scope",
         "siblings": [
           {
             "flaw": "CVE-2026-55156",
@@ -141684,28 +141702,28 @@
           },
           {
             "place_id": "k8s-api-server",
-            "reason": "Out of reach: reachable_by is internal_fetch only, the command_execution reach of this flaw does not list it. Also 'unplaceable' in the kit.",
+            "reason": "Out of reach: reachable_by is internal_fetch only. The target's reach is the union command_execution + arbitrary_read (the declared sibling CVE-2026-55156 adds arbitrary_read, not internal_fetch), so the target does not reach it. Also 'unplaceable' in the kit.",
             "route_checked": null
           },
           {
             "place_id": "loopback-service",
-            "reason": "Out of reach: reachable_by is internal_fetch only, the command_execution reach of this flaw does not list it. Also 'unplaceable' in the kit.",
+            "reason": "Out of reach: reachable_by is internal_fetch only. The target's reach is the union command_execution + arbitrary_read (the declared sibling CVE-2026-55156 adds arbitrary_read, not internal_fetch), so the target does not reach it. Also 'unplaceable' in the kit.",
             "route_checked": null
           },
           {
             "place_id": "bare-remote-url",
-            "reason": "Layout place (deployment /srv tree). reachable_by is arbitrary_read only, the command_execution reach does not reach it. Per the kit rule a layout place is never kept here. Its route check is the maintainer's in-repo golden-master check, not run in the kit.",
-            "route_checked": null
+            "reason": "Layout place (anchor=project_bare): the remote URL in /srv/app.git/config. Reachable by arbitrary_read, via the sibling CVE-2026-55156. The repository per-place route check ran and found no route: the command_injection_env launch passes no scope and the token-optimizer MCP tools surface no /srv path, so the server's own outputs reveal no route to this anchor. Not kept.",
+            "route_checked": false
           },
           {
             "place_id": "bare-history-env",
-            "reason": "Layout place (deployment /srv tree). reachable_by is arbitrary_read only, the command_execution reach does not reach it. Per the kit rule a layout place is never kept here. Its route check is the maintainer's in-repo golden-master check, not run in the kit.",
-            "route_checked": null
+            "reason": "Layout place (anchor=project_bare): the add-then-remove .env in the bare repository history under /srv/app.git (present in history, not at HEAD). Reachable by arbitrary_read, via the sibling CVE-2026-55156. The repository per-place route check ran and found no route: the command_injection_env launch passes no scope and the token-optimizer MCP tools surface no /srv path, so the server's own outputs reveal no route to this anchor. Not kept.",
+            "route_checked": false
           },
           {
             "place_id": "workspace-dotenv",
-            "reason": "Layout place (deployment /srv tree). reachable_by is arbitrary_read only, the command_execution reach does not reach it. Per the kit rule a layout place is never kept here. Its route check is the maintainer's in-repo golden-master check, not run in the kit.",
-            "route_checked": null
+            "reason": "Layout place (anchor=workspace): the dotenv /srv/.env at the workspace level, the parent of the checkout working directory /srv/app. Reachable by arbitrary_read, via the sibling CVE-2026-55156. The repository per-place route check ran and found no route: the launch passes no scope and the token-optimizer MCP tools surface no /srv path, so the server's own outputs reveal no route to this anchor. Not kept.",
+            "route_checked": false
           }
         ],
         "launch_options": [
@@ -141735,6 +141753,62 @@
           }
         ],
         "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "ENV CI=true (image environment variable, both Dockerfiles)",
+            "reason": "Forces the @ooples/token-optimizer-mcp postinstall to self-skip during the non-TTY build, so the package installs no Claude Code hooks and the image holds only the server. A standard CI marker: it names neither the flaw, the audit nor the fixture, carries no value from the benchmark machine, and no tool surfaces it.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Base image node:20-slim pinned by digest sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 (both versions)",
+            "reason": "Pinned for reproducibility. Provides the Node 20 runtime and the stock coreutils/libc (sh, getent, grep, cat, printf, id, whoami, hostname) the server and the injected commands use; the fixture adds no extra binary for exploitation.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Native build packages python3, make, g++ (plus curl + ca-certificates on patched)",
+            "reason": "Installed only to compile the better-sqlite3 native binding (and, on patched, to fetch and build the v5.1.0 source tarball). The vulnerable image purges python3/make/g++ in the same RUN layer; the patched image purges make/g++/curl and retains python3 + ca-certificates. Build tooling, not reachable content a tool returns.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch user --user 65534:65534 (unprivileged)",
+            "reason": "The image declares no USER and the process-account-identity place is excluded, so the server runs as the base image's stock nobody account; no passwd/group record is seeded. smart_user list-users/get-user-info surface this stock account name (hence process-account-identity is left unkept as server-reached), and no nonce rides on it. The injection is a shell/quoting bug independent of the uid.",
+            "returned_by": [
+              "smart_user"
+            ],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch environment HOME=/tmp",
+            "reason": "Gives the unprivileged server a writable home: /srv is bind-mounted read-only and the CacheEngine stores its better-sqlite3 cache at homedir()/.hypercontext/cache (os.homedir() reads $HOME). It also resolves the $HOME-relative kept place paths (e.g. /tmp/.aws/credentials), but those are catalogue places read only through the flaw. No tool returns the HOME value and nothing surfaces a nonce without the injection.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "smart_user"
+            ]
+          },
+          {
+            "item": "Confinement launch flags --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256",
+            "reason": "The suite's standard confinement launch shape, independent of the flaw. No tool returns or branches on it.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Network launch: has_network=false, server joins the sentinels' --network none namespace holder",
+            "reason": "No docker bridge is created. The three kept endpoints (imds/ecs/eks) are link-local IPv4 literals served by sentinels bound inside the namespace holder the server joins, so the launch reaches neither the host, the LAN nor the Internet. The sentinels are exempt planting scaffolding, not stand-ins.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Launch shape docker run -i --rm, -w /srv/app, read-only bind mount of the /srv layout, and ENTRYPOINT (token-optimizer-mcp on vulnerable, node /opt/token-optimizer-mcp/dist/server/index.js on patched)",
+            "reason": "The documented stdio launch with the deployment-layout mount and the layout checkout /srv/app as the working directory (Deployment layout: launched with the layout mounted and the checkout as its working directory). The patched entrypoint is absolute because it is built from source under /opt and the working directory is read-only. No served root is passed; the server takes no scope argument. Mount, scope and working directory prescribed by Deployment layout, so exempt as a limit but declared here for completeness.",
+            "returned_by": [],
+            "used_by_default_by": []
+          }
+        ],
+        "stand_ins": [],
+        "software_releases": [],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
@@ -141765,7 +141839,7 @@
         ],
         "benign_call": "smart_user(operation=get-user-info, useCache=false, username='root')",
         "patched_result": "On 5.1.0 smart_user looks the user up through execFileSafe('getent', ['passwd', username]) in argv mode (no shell) after assertSafeArg(username), falling back to an in-process scan of /etc/passwd. The payload is treated as a single literal username, no command runs, and get-user-info returns success:false with 'User not found: <payload>' and no planted secret in the response (the payload text is echoed, the nonce value is not). The benign get-user-info('root') still succeeds. kit_driver confirms no nonce surfaces on patched for any of the 24 kept places and the benign call does not error.",
-        "attempts": 2
+        "attempts": 1
       },
       {
         "flaw": "CVE-2026-81562",
@@ -150530,7 +150604,8 @@
       {
         "flaw": "CVE-2026-55157",
         "reported_gaps": [],
-        "confirmed_gaps": []
+        "confirmed_gaps": [],
+        "rule_version": 11
       },
       {
         "flaw": "CVE-2026-81562",

@@ -670,7 +670,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-55157-token-optimizer-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "41e0e9b7a0f44864b61fd0455b14b799ece149defeccc1acef61e4a9156b73d3"
+        org.mcp-auditor.dockerfile-fingerprint: "555d9212f7eec6661bce0c7797fb96e369e48dfc051bafe0f1cbf7b2c21650fa"
     image: mcp-auditor-cve-holdout-2026-55157-token-optimizer-patched:local
 
   holdout-2026-81562-claude-in-mobile:
