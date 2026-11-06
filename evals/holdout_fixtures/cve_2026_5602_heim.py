@@ -9,9 +9,11 @@ version (execFile, argv array, no shell) passes the same payload as one literal 
 nothing surfaces. The fixture exercises deploy_heim_application, the cleanest of the three tools
 that share the flaw (one exec, returns stdout+stderr).
 
-`heim` itself is an external CLI the server shells out to, stubbed to a benign no-op (exit 0) in
-both images; the injection lives entirely in heim-mcp's exec call, so the stub is an adapter, not
-a stand-in.
+`heim` itself is an external CLI the server shells out to, served in both images by a stand-in
+under its real name: `heim deploy /opt/myapp` replays the documented deploy output, `heim deploy`
+with any other or no path gets heim's build error, any other subcommand the unrecognized-subcommand
+error. The benign call deploys the published heim example application seeded at /opt/myapp,
+outside the layout, as a working heim install would.
 """
 
 import re
@@ -76,7 +78,7 @@ def _exploit(command: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    await client.call_tool(TOOL, {"path": "/srv/app"})
+    await client.call_tool(TOOL, {"path": "/opt/myapp"})
 
 
 TARGET = CVETarget(
@@ -86,7 +88,7 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=(SERVICE,),
+    images=(SERVICE, "sentinel"),
     server_image=SERVICE,
     patched_image=PATCHED,
     planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKING_DIRECTORY, has_network=False),

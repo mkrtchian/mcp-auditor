@@ -8,11 +8,134 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-ARG HEIM_COMMIT=c321d8a
+ARG HEIM_COMMIT=c321d8af25f77668781e6ccb43a1336f9185df37
 RUN curl -sfL "https://codeload.github.com/Nor2-io/heim-mcp/tar.gz/${HEIM_COMMIT}" \
     | tar xz --strip-components=1
 RUN npm install && npm run build
 
-RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/heim && chmod +x /usr/local/bin/heim
+# Same published heim rust-http example application as the vulnerable image, seeded whole outside
+# the layout so the benign `heim deploy /opt/myapp` points at a real, deployable heim application.
+RUN mkdir -p /opt/myapp/src
+RUN cat > /opt/myapp/component.toml <<'COMPONENT_TOML_EOF'
+name = "myapp" # Component name
+version = "0.1.0"
+
+[commands] # Custom commands that can be used from the heim cli
+run = "wasmtime serve -S cli target/wasm32-wasip2/debug/myapp.wasm --addr=127.0.0.1:8080"
+run_production = "wasmtime serve -S cli target/wasm32-wasip2/release/myapp.wasm --addr=127.0.0.1:8080"
+
+
+[build.dev] # Dev build command and output
+build = "cargo build --target=wasm32-wasip2"
+wasm_path = "target/wasm32-wasip2/debug/myapp.wasm"
+
+[build.prod] # Prod build command and output
+build = "cargo build --target=wasm32-wasip2 --release"
+wasm_path = "target/wasm32-wasip2/release/myapp.wasm"
+COMPONENT_TOML_EOF
+RUN cat > /opt/myapp/application.toml <<'APPLICATION_TOML_EOF'
+name = "myapp" # application name
+component_target = 'myapp:0.1.0' # component to target
+
+[[trigger]] # Trigger definition
+type = 'http'
+path = '/myapp'
+method = 'GET'
+APPLICATION_TOML_EOF
+RUN cat > /opt/myapp/Cargo.toml <<'CARGO_TOML_EOF'
+[package]
+name = "myapp"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.component]
+package = "myorg:myapp"
+proxy = false
+
+[dependencies]
+waki = { version = "0.5.0", features = ["json"] }
+
+# reduce wasm binary size
+[profile.release]
+lto = true
+strip = "symbols"
+CARGO_TOML_EOF
+RUN cat > /opt/myapp/src/lib.rs <<'LIB_RS_EOF'
+use waki::{handler, ErrorCode, Request, Response};
+
+#[handler]
+fn hello(req: Request) -> Result<Response, ErrorCode> {
+    Response::builder()
+        .status_code(200)
+        .body("Hello World")
+        .build()
+}
+LIB_RS_EOF
+
+# Same heim stand-in as the vulnerable image: `heim deploy /opt/myapp` replays the documented
+# `heim deploy` output, `heim deploy` with any other / no path gets heim's build error, and any
+# non-deploy invocation the unrecognized-subcommand error. On this version execFile passes the
+# payload as one literal argv element, so the stand-in sees `deploy` plus a single path argument
+# that is not /opt/myapp and returns the build error, with no shell to inject into.
+RUN mkdir -p /usr/local/share/heim
+RUN cat > /usr/local/share/heim/deploy.stdout <<'HEIM_DEPLOY_STDOUT_EOF'
+INFO [ heim_cli::wasm::build ] Building Component: myapp
+    Compiling myapp v0.1.0 (/home/work/repos/myapp)
+    ...
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.18s
+Creating component target/wasm32-wasip2/debug/myapp.wasm
+INFO [ heim_registry::registry ] "myapp":"0.1.0":cb4abe161542a7b146fe27c5f5cdb60970d68a369f5703bde252664ddbe2eedf
+INFO [ Heim::Deploy ] Heim application `myapp` is now built and written to registry.
+INFO [ Heim::Pipeline ] Starting pipeline 'Deploy application'
+INFO [ Heim::Pipeline ] Storing unoptimized component state
+INFO [ Heim::Pipeline ] Checking if defined regions in app definition is valid
+INFO [ Heim::Pipeline ] Continuing with localhost region heim-localhost
+INFO [ Heim::Pipeline ] Getting region specific application environment values
+INFO [ Heim::Pipeline ] Set environment values for region 'heim-localhost'
+INFO [ Heim::Pipeline ] Getting region specific application scaling values
+INFO [ Heim::Pipeline ] Set scaling values for region 'heim-localhost'
+INFO [ Heim::Pipeline ] Getting capabilities
+INFO [ Heim::Pipeline ] Set capabilities values for region 'heim-localhost'
+INFO [ Heim::Pipeline ] Getting triggers
+INFO [ Heim::Pipeline ] Set trigger values for region 'heim-localhost'
+INFO [ Heim::Pipeline ] Component environment values are valid for all regions
+INFO [ Heim::Pipeline ] Checking for region with changes to build
+INFO [ Heim::Pipeline ] Region "heim-localhost" has been changed and will be built
+INFO [ Heim::Pipeline ] Storing component and optimized component
+INFO [ Heim::Pipeline ] Stored component at ''
+INFO [ Heim::Pipeline ] Stored optimized component at ''
+INFO [ Heim::Pipeline ] Storing region states
+INFO [ Heim::Pipeline ] Stored state for region(s) heim-localhost successfully
+INFO [ Heim::Pipeline ] Creating and caching application(s)
+INFO [ Heim::Pipeline ] Creating and caching application(s) for region(s) heim-localhost
+INFO [ Heim::Pipeline ] Created application with hash 8aba8efca7c309fe7cafce25df43fe78bbe9d0479f9b709cea97f9d507048a11 for region(s) heim-localhost
+INFO [ Heim::Pipeline ] Application has been deployed for region(s) heim-localhost
+INFO [ Heim::Pipeline ] Pipeline 'Deploy application' finished with status 'Success'
+INFO [ Heim::Deploy ] Heim deploy pipeline was successful
+INFO [ Heim::Deploy ] Application is accaccessible at:
+INFO [ Heim::Deploy ] [GET] http://127.0.0.1:3000/myapp
+INFO [ Heim::Deploy ] Written and deployed application `myapp`.
+HEIM_DEPLOY_STDOUT_EOF
+RUN cat > /usr/local/bin/heim <<'HEIM_STANDIN_EOF'
+#!/bin/sh
+case "$1" in
+  deploy)
+    if [ "$2" = "/opt/myapp" ]; then
+        cat /usr/local/share/heim/deploy.stdout
+        exit 0
+    fi
+    printf 'ERROR [ heim_cli::wasm::build ] could not build component: no component.toml found in the target path\n' >&2
+    exit 1
+    ;;
+  *)
+    printf 'error: unrecognized subcommand\n\nUsage: heim [OPTIONS] <COMMAND>\n\nFor more information, try '\''--help'\''.\n' >&2
+    exit 2
+    ;;
+esac
+HEIM_STANDIN_EOF
+RUN chmod +x /usr/local/bin/heim
 
 ENTRYPOINT ["node", "/app/dist/index.js"]

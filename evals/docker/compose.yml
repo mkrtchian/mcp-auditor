@@ -646,7 +646,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5602-heim
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "50350210e78b5003e7e6aaafa8c1b62dc848c88c670a24d5afd6fdb45dfab9a2"
+        org.mcp-auditor.dockerfile-fingerprint: "8e98bc1b99df5204da68e128dc746320073539a0a17c8ddd9efa780e4ecf3663"
     image: mcp-auditor-cve-holdout-2026-5602-heim:local
 
   holdout-2026-5602-heim-patched:
@@ -654,7 +654,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5602-heim-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "1bb82cba0e0a6868a5545238b3f0268e1cf85a97c74d801fde94c061e790cd00"
+        org.mcp-auditor.dockerfile-fingerprint: "770c7f775fbd13f03c790ac825a01ead53a689a9d5f5dbaf00caf116ee0f0912"
     image: mcp-auditor-cve-holdout-2026-5602-heim-patched:local
 
   holdout-2026-55157-token-optimizer:
