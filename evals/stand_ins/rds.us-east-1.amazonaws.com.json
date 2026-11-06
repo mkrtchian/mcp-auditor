@@ -1,0 +1,73 @@
+{
+  "host": "rds.us-east-1.amazonaws.com",
+  "address": "52.94.233.130",
+  "source": "software_sources",
+  "command": "hand-written from the AWS RDS API Reference examples: DescribeDBInstances (85787's instance) and DescribeDBClusters (85788's cluster), each answered for its Action",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ],
+        [
+          "x-amzn-RequestId",
+          "00000000-0000-0000-0000-000000000000"
+        ]
+      ],
+      "body": "<DescribeDBInstancesResponse xmlns=\"http://rds.amazonaws.com/doc/2014-10-31/\"><DescribeDBInstancesResult><DBInstances><DBInstance><DBInstanceIdentifier>mydbinstance</DBInstanceIdentifier><DBInstanceStatus>available</DBInstanceStatus><Engine>postgres</Engine><MasterUsername>postgres</MasterUsername><Endpoint><Address>localhost</Address><Port>5432</Port></Endpoint><MasterUserSecret><SecretArn>arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3</SecretArn><SecretStatus>active</SecretStatus></MasterUserSecret></DBInstance></DBInstances></DescribeDBInstancesResult><ResponseMetadata><RequestId>00000000-0000-0000-0000-000000000000</RequestId></ResponseMetadata></DescribeDBInstancesResponse>",
+      "action": "DescribeDBInstances"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ],
+        [
+          "x-amzn-RequestId",
+          "00000000-0000-0000-0000-000000000000"
+        ]
+      ],
+      "body": "<DescribeDBClustersResponse xmlns=\"http://rds.amazonaws.com/doc/2014-10-31/\"><DescribeDBClustersResult><DBClusters><DBCluster><DBClusterIdentifier>app-cluster</DBClusterIdentifier><Status>available</Status><Engine>aurora-mysql</Engine><Endpoint>127.0.0.1</Endpoint><Port>3306</Port><MasterUsername>postgres</MasterUsername><HttpEndpointEnabled>false</HttpEndpointEnabled><DBClusterArn>arn:aws:rds:us-east-1:123456789012:cluster:app-cluster</DBClusterArn><MasterUserSecret><SecretArn>arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3</SecretArn><SecretStatus>active</SecretStatus></MasterUserSecret></DBCluster></DBClusters></DescribeDBClustersResult><ResponseMetadata><RequestId>00000000-0000-0000-0000-000000000000</RequestId></ResponseMetadata></DescribeDBClustersResponse>",
+      "action": "DescribeDBClusters"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/0123456789abcdef",
+      "status": 400,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ]
+      ],
+      "body": "<ErrorResponse xmlns=\"http://rds.amazonaws.com/doc/2014-10-31/\"><Error><Type>Sender</Type><Code>InvalidAction</Code><Message>Could not find operation</Message></Error><RequestId>00000000-0000-0000-0000-000000000000</RequestId></ErrorResponse>",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/0123456789abcdef",
+      "status": 400,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ]
+      ],
+      "body": "<ErrorResponse xmlns=\"http://rds.amazonaws.com/doc/2014-10-31/\"><Error><Type>Sender</Type><Code>InvalidAction</Code><Message>Could not find operation</Message></Error><RequestId>00000000-0000-0000-0000-000000000000</RequestId></ErrorResponse>",
+      "path_form": null
+    }
+  ]
+}

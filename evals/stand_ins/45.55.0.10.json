@@ -1,0 +1,89 @@
+{
+  "host": "45.55.0.10",
+  "address": "45.55.0.10",
+  "source": "software_sources",
+  "command": "hand-written from the Kubernetes API documentation (API discovery: APIVersions, APIGroupList, APIResourceList for core/v1; and an empty core/v1 PodList); the cluster endpoint 45.55.0.10 and its routes are synthetic, no real capture",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/api?timeout=32s",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"kind\": \"APIVersions\", \"versions\": [\"v1\"], \"serverAddressByClientCIDRs\": [{\"clientCIDR\": \"0.0.0.0/0\", \"serverAddress\": \"kubernetes.example.com:443\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/apis?timeout=32s",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"kind\": \"APIGroupList\", \"apiVersion\": \"v1\", \"groups\": []}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/api/v1?timeout=32s",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"kind\": \"APIResourceList\", \"groupVersion\": \"v1\", \"resources\": [{\"name\": \"pods\", \"singularName\": \"pod\", \"namespaced\": true, \"kind\": \"Pod\", \"verbs\": [\"create\", \"delete\", \"deletecollection\", \"get\", \"list\", \"patch\", \"update\", \"watch\"], \"shortNames\": [\"po\"], \"categories\": [\"all\"]}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/api/v1/namespaces/default/pods?limit=500",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"kind\": \"PodList\", \"apiVersion\": \"v1\", \"metadata\": {\"resourceVersion\": \"1\"}, \"items\": []}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/0123456789abcdef",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"kind\":\"Status\",\"apiVersion\":\"v1\",\"metadata\":{},\"status\":\"Failure\",\"message\":\"the server could not find the requested resource\",\"reason\":\"NotFound\",\"code\":404}",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/0123456789abcdef",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"kind\":\"Status\",\"apiVersion\":\"v1\",\"metadata\":{},\"status\":\"Failure\",\"message\":\"the server could not find the requested resource\",\"reason\":\"NotFound\",\"code\":404}",
+      "path_form": null
+    }
+  ]
+}

@@ -1,0 +1,185 @@
+{
+  "host": "html.duckduckgo.com",
+  "address": "52.142.124.215",
+  "source": "capture",
+  "captured_at": "2026-11-05T04:15:55Z",
+  "command": "curl -sS -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'User-Agent: Apifox/1.0.0 (https://apifox.com)' -H 'Accept: */*' --data 'q=wikipedia' https://html.duckduckgo.com/html/  (defaults: a declined request line on each scheme)",
+  "request_headers": [
+    [
+      "Content-Type",
+      "application/x-www-form-urlencoded"
+    ],
+    [
+      "User-Agent",
+      "Apifox/1.0.0 (https://apifox.com)"
+    ],
+    [
+      "Accept",
+      "*/*"
+    ]
+  ],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "target": "/html/",
+      "status": 200,
+      "headers": [
+        [
+          "server",
+          "nginx"
+        ],
+        [
+          "date",
+          "Thu, 05 Nov 2026 04:04:52 GMT"
+        ],
+        [
+          "content-type",
+          "text/html; charset=UTF-8"
+        ],
+        [
+          "vary",
+          "Accept-Encoding"
+        ],
+        [
+          "server-timing",
+          "total;dur=482;desc=\"Backend Total [n]\""
+        ],
+        [
+          "vary",
+          "Origin"
+        ],
+        [
+          "strict-transport-security",
+          "max-age=31536000"
+        ],
+        [
+          "permissions-policy",
+          "interest-cohort=()"
+        ],
+        [
+          "content-security-policy",
+          "default-src 'none' ; connect-src  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; manifest-src  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; media-src  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; script-src blob:  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; font-src data:  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; img-src data:  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; style-src  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; object-src 'none' ; worker-src blob: ; child-src blob:  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; frame-src blob:  https://duck.ai https://*.duck.ai https://duckduckgo.com https://*.duckduckgo.com https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/ https://spreadprivacy.com ; frame-ancestors 'self' ; base-uri 'self' ; block-all-mixed-content ;"
+        ],
+        [
+          "x-frame-options",
+          "SAMEORIGIN"
+        ],
+        [
+          "x-xss-protection",
+          "1;mode=block"
+        ],
+        [
+          "x-content-type-options",
+          "nosniff"
+        ],
+        [
+          "referrer-policy",
+          "origin"
+        ],
+        [
+          "expect-ct",
+          "max-age=0"
+        ],
+        [
+          "expires",
+          "Thu, 05 Nov 2026 04:04:53 GMT"
+        ],
+        [
+          "cache-control",
+          "max-age=1"
+        ],
+        [
+          "x-duckduckgo-locale",
+          "en_US"
+        ]
+      ],
+      "body": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n\n<!--[if IE 6]><html class=\"ie6\" xmlns=\"http://www.w3.org/1999/xhtml\"><![endif]-->\n<!--[if IE 7]><html class=\"lt-ie8 lt-ie9\" xmlns=\"http://www.w3.org/1999/xhtml\"><![endif]-->\n<!--[if IE 8]><html class=\"lt-ie9\" xmlns=\"http://www.w3.org/1999/xhtml\"><![endif]-->\n<!--[if gt IE 8]><!--><html xmlns=\"http://www.w3.org/1999/xhtml\"><!--<![endif]-->\n<head>\n  <meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=1\" />\n  <meta name=\"referrer\" content=\"origin\" />\n  <meta name=\"HandheldFriendly\" content=\"true\" />\n  <meta name=\"robots\" content=\"noindex, nofollow\" />\n  <title>wikipedia at DuckDuckGo</title>\n  <link title=\"DuckDuckGo (HTML)\" type=\"application/opensearchdescription+xml\" rel=\"search\" href=\"//duckduckgo.com/opensearch_html_v2.xml\" />\n  <link href=\"//duckduckgo.com/favicon.ico\" rel=\"shortcut icon\" />\n  <link rel=\"icon\" href=\"//duckduckgo.com/favicon.ico\" type=\"image/x-icon\" />\n  <link id=\"icon60\" rel=\"apple-touch-icon\" href=\"//duckduckgo.com/assets/icons/meta/DDG-iOS-icon_60x60.png?v=2\"/>\n  <link id=\"icon76\" rel=\"apple-touch-icon\" sizes=\"76x76\" href=\"//duckduckgo.com/assets/icons/meta/DDG-iOS-icon_76x76.png?v=2\"/>\n  <link id=\"icon120\" rel=\"apple-touch-icon\" sizes=\"120x120\" href=\"//duckduckgo.com/assets/icons/meta/DDG-iOS-icon_120x120.png?v=2\"/>\n  <link id=\"icon152\" rel=\"apple-touch-icon\" sizes=\"152x152\" href=\"//duckduckgo.com/assets/icons/meta/DDG-iOS-icon_152x152.png?v=2\"/>\n  <link rel=\"image_src\" href=\"//duckduckgo.com/assets/icons/meta/DDG-icon_256x256.png\">\n  <link rel=\"stylesheet\" media=\"handheld, all\" href=\"//duckduckgo.com/dist/h.12e359033b8c1146e5f7.css\" type=\"text/css\"/>\n</head>\n\n<body class=\"body--html\">\n  <a name=\"top\" id=\"top\"></a>\n\n  <form action=\"/html/\" method=\"post\">\n    <input type=\"text\" name=\"state_hidden\" id=\"state_hidden\" />\n  </form>\n\n  <div>\n    <div class=\"site-wrapper-border\"></div>\n\n    <div id=\"header\" class=\"header cw header--html\">\n      <a title=\"DuckDuckGo\" href=\"/html/\" class=\"header__logo-wrap\"></a>\n\n      <form name=\"x\" class=\"header__form\" action=\"/html/\" method=\"post\">\n        <div class=\"search search--header\">\n          <input name=\"q\" autocomplete=\"off\" class=\"search__input\" id=\"search_form_input_homepage\" type=\"text\" value=\"wikipedia\" />\n          <input name=\"b\" id=\"search_button_homepage\" class=\"search__button search__button--html\" value=\"\" title=\"Search\" alt=\"Search\" type=\"submit\" />\n        </div>\n\n        \n        \n        \n        \n\n        <div class=\"frm__select\">\n          <select name=\"kl\">\n            \n              <option value=\"\" >All Regions</option>\n            \n              <option value=\"ar-es\" >Argentina</option>\n            \n              <option value=\"au-en\" >Australia</option>\n            \n              <option value=\"at-de\" >Austria</option>\n            \n              <option value=\"be-fr\" >Belgium (fr)</option>\n            \n              <option value=\"be-nl\" >Belgium (nl)</option>\n            \n              <option value=\"br-pt\" >Brazil</option>\n            \n              <option value=\"bg-bg\" >Bulgaria</option>\n            \n              <option value=\"ca-en\" >Canada (en)</option>\n            \n              <option value=\"ca-fr\" >Canada (fr)</option>\n            \n              <option value=\"ct-ca\" >Catalonia</option>\n            \n              <option value=\"cl-es\" >Chile</option>\n            \n              <option value=\"cn-zh\" >China</option>\n            \n              <option value=\"co-es\" >Colombia</option>\n            \n              <option value=\"hr-hr\" >Croatia</option>\n            \n              <option value=\"cz-cs\" >Czech Republic</option>\n            \n              <option value=\"dk-da\" >Denmark</option>\n            \n              <option value=\"ee-et\" >Estonia</option>\n            \n              <option value=\"fi-fi\" >Finland</option>\n            \n              <option value=\"fr-fr\" >France</option>\n            \n              <option value=\"de-de\" >Germany</option>\n            \n              <option value=\"gr-el\" >Greece</option>\n            \n              <option value=\"hk-tzh\" >Hong Kong</option>\n            \n              <option value=\"hu-hu\" >Hungary</option>\n            \n              <option value=\"is-is\" >Iceland</option>\n            \n              <option value=\"in-en\" >India (en)</option>\n            \n              <option value=\"id-en\" >Indonesia (en)</option>\n            \n              <option value=\"ie-en\" >Ireland</option>\n            \n              <option value=\"il-en\" >Israel (en)</option>\n            \n              <option value=\"it-it\" >Italy</option>\n            \n              <option value=\"jp-jp\" >Japan</option>\n            \n              <option value=\"kr-kr\" >Korea</option>\n            \n              <option value=\"lv-lv\" >Latvia</option>\n            \n              <option value=\"lt-lt\" >Lithuania</option>\n            \n              <option value=\"my-en\" >Malaysia (en)</option>\n            \n              <option value=\"mx-es\" >Mexico</option>\n            \n              <option value=\"nl-nl\" >Netherlands</option>\n            \n              <option value=\"nz-en\" >New Zealand</option>\n            \n              <option value=\"no-no\" >Norway</option>\n            \n              <option value=\"pk-en\" >Pakistan (en)</option>\n            \n              <option value=\"pe-es\" >Peru</option>\n            \n              <option value=\"ph-en\" >Philippines (en)</option>\n            \n              <option value=\"pl-pl\" >Poland</option>\n            \n              <option value=\"pt-pt\" >Portugal</option>\n            \n              <option value=\"ro-ro\" >Romania</option>\n            \n              <option value=\"ru-ru\" >Russia</option>\n            \n              <option value=\"xa-ar\" >Saudi Arabia</option>\n            \n              <option value=\"sg-en\" >Singapore</option>\n            \n              <option value=\"sk-sk\" >Slovakia</option>\n            \n              <option value=\"sl-sl\" >Slovenia</option>\n            \n              <option value=\"za-en\" >South Africa</option>\n            \n              <option value=\"es-ca\" >Spain (ca)</option>\n            \n              <option value=\"es-es\" >Spain (es)</option>\n            \n              <option value=\"se-sv\" >Sweden</option>\n            \n              <option value=\"ch-de\" >Switzerland (de)</option>\n            \n              <option value=\"ch-fr\" >Switzerland (fr)</option>\n            \n              <option value=\"tw-tzh\" >Taiwan</option>\n            \n              <option value=\"th-en\" >Thailand (en)</option>\n            \n              <option value=\"tr-tr\" >Turkey</option>\n            \n              <option value=\"us-en\" >US (English)</option>\n            \n              <option value=\"us-es\" >US (Spanish)</option>\n            \n              <option value=\"ua-uk\" >Ukraine</option>\n            \n              <option value=\"uk-en\" >United Kingdom</option>\n            \n              <option value=\"vn-en\" >Vietnam (en)</option>\n            \n          </select>\n        </div>\n\n        <div class=\"frm__select frm__select--last\">\n          <select class=\"\" name=\"df\">\n            \n              <option value=\"\" selected>Any Time</option>\n            \n              <option value=\"d\" >Past Day</option>\n            \n              <option value=\"w\" >Past Week</option>\n            \n              <option value=\"m\" >Past Month</option>\n            \n              <option value=\"y\" >Past Year</option>\n            \n          </select>\n        </div>\n      </form>\n    </div>\n\n    \n\n    \n      <!-- Web results are present -->\n      <div>\n        <div class=\"serp__results\">\n          <div id=\"links\" class=\"results\">\n            \n\n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal\">Wikipédia, l&#x27;encyclopédie libre</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/fr.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal\">\n                            fr.wikipedia.org/wiki/Wikipédia:Accueil_principal\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal\"><b>Wikipédia</b> L&#x27;encyclopédie libre que vous pouvez améliorer Accueil de la communauté Comment contribuer ? Portails thématiques Principes fondateurs Sommaire de l&#x27;aide Poser une question</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://www.wikipedia.org/\">Wikipedia</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://www.wikipedia.org/\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/www.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://www.wikipedia.org/\">\n                            www.wikipedia.org\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://www.wikipedia.org/\"><b>Wikipedia</b> is a free online encyclopedia, created and edited by volunteers around the world and hosted by the Wikimedia Foundation.</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://en.wikipedia.org/wiki/Main_Page\">Wikipedia, the free encyclopedia</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://en.wikipedia.org/wiki/Main_Page\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/en.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://en.wikipedia.org/wiki/Main_Page\">\n                            en.wikipedia.org/wiki/Main_Page\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://en.wikipedia.org/wiki/Main_Page\">Other areas of <b>Wikipedia</b> Community portal - The central hub for editors, with resources, links, tasks, and announcements. Village pump - Forum for discussions about <b>Wikipedia</b> itself, including policies and technical issues. Site news - Sources of news about <b>Wikipedia</b> and the broader Wikimedia movement.</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://en.wikipedia.org/wiki/Wikipedia\">Wikipedia - Wikipedia</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://en.wikipedia.org/wiki/Wikipedia\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/en.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://en.wikipedia.org/wiki/Wikipedia\">\n                            en.wikipedia.org/wiki/Wikipedia\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://en.wikipedia.org/wiki/Wikipedia\">Wikipedia[e] is a free online encyclopedia written and maintained by a community of volunteer editors, known as Wikipedians, through open collaboration and the wiki software MediaWiki. Founded by Jimmy Wales and Larry Sanger in 2001, <b>Wikipedia</b> has been hosted since 2003 by the Wikimedia Foundation, an American nonprofit organization funded mainly by donations from readers. [1] <b>Wikipedia</b> is the ...</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://es.wikipedia.org/wiki/Wikipedia:Portada\">Wikipedia, la enciclopedia libre</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://es.wikipedia.org/wiki/Wikipedia:Portada\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/es.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://es.wikipedia.org/wiki/Wikipedia:Portada\">\n                            es.wikipedia.org/wiki/Wikipedia:Portada\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://es.wikipedia.org/wiki/Wikipedia:Portada\"><b>Wikipedia</b> es uno de los proyectos Wikimedia, de contenido libre y administrados técnicamente por la Fundación Wikimedia, una organización estadounidense sin fines de lucro.</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://de.wikipedia.org/wiki/Wikipedia:Hauptseite\">Wikipedia - Die freie Enzyklopädie</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://de.wikipedia.org/wiki/Wikipedia:Hauptseite\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/de.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://de.wikipedia.org/wiki/Wikipedia:Hauptseite\">\n                            de.wikipedia.org/wiki/Wikipedia:Hauptseite\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://de.wikipedia.org/wiki/Wikipedia:Hauptseite\"><b>Wikipedia</b> ist ein Projekt zum Aufbau einer Enzyklopädie aus freien Inhalten, zu denen du sehr gern beitragen kannst. Seit März 2001 sind 3.163.569 Artikel in deutscher Sprache entstanden. Geographie Geschichte Gesellschaft Kunst und Kultur Religion Sport Technik Wissenschaft Artikel nach Themen Artikel nach Kategorien Gesprochene <b>Wikipedia</b> Archiv der Hauptseite Mitmachen Mentorenprogramm ...</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://es.wikipedia.org/wiki/Wikipedia_en_Espa%C3%B1ol\">Wikipedia en español - Wikipedia, la enciclopedia libre</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://es.wikipedia.org/wiki/Wikipedia_en_Espa%C3%B1ol\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/es.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://es.wikipedia.org/wiki/Wikipedia_en_Espa%C3%B1ol\">\n                            es.wikipedia.org/wiki/Wikipedia_en_Español\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://es.wikipedia.org/wiki/Wikipedia_en_Espa%C3%B1ol\">La <b>Wikipedia</b> en español es la edición en español o castellano de <b>Wikipedia</b>. Al igual que las versiones existentes de <b>Wikipedia</b> en otros idiomas, es una enciclopedia de contenido libre, publicada en Internet bajo las licencias libres CC BY-SA 4.0 y GFDL. En la actualidad cuenta con 2 147 936 artículos, y es escrita por usuarios voluntarios, es decir, que cualquiera puede editar un artículo ...</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://fr.wikipedia.org/wiki/Wikip%C3%A9dia\">Wikipédia — Wikipédia</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://fr.wikipedia.org/wiki/Wikip%C3%A9dia\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/fr.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://fr.wikipedia.org/wiki/Wikip%C3%A9dia\">\n                            fr.wikipedia.org/wiki/Wikipédia\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://fr.wikipedia.org/wiki/Wikip%C3%A9dia\"><b>Wikipédia</b> est produite collaborativement sur Internet par un réseau décentralisé et auto-organisé de contributeurs volontaires 19, sans structure hiérarchique formelle, ce mode d&#x27;organisation étant souvent qualifié de « production participative » ou « production par les pairs » 20. Le système wiki de <b>Wikipédia</b> permet la création et la modification immédiates des pages par tous ...</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://simple.wikipedia.org/wiki/Main_Page\">Wikipedia</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://simple.wikipedia.org/wiki/Main_Page\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/simple.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://simple.wikipedia.org/wiki/Main_Page\">\n                            simple.wikipedia.org/wiki/Main_Page\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://simple.wikipedia.org/wiki/Main_Page\"><b>Wikipedia</b> is a free online encyclopedia that allows users to edit and create articles collaboratively in multiple languages.</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n              \n                <div class=\"result results_links results_links_deep web-result \">\n                  <div class=\"links_main links_deep result__body\"> <!-- This is the visible part -->\n                    \n                      <h2 class=\"result__title\">\n                        <a rel=\"nofollow\" class=\"result__a\" href=\"https://it.wikipedia.org/wiki/Pagina_principale\">Wikipedia, l&#x27;enciclopedia libera</a>\n                      </h2>\n\n                    \n\n                    \n                      <div class=\"result__extras\">\n                        <div class=\"result__extras__url\">\n                          <span class=\"result__icon\">\n                            <a rel=\"nofollow\" href=\"https://it.wikipedia.org/wiki/Pagina_principale\">\n                              <img class=\"result__icon__img\" width=\"16\" height=\"16\" alt=\"\" src=\"//external-content.duckduckgo.com/ip3/it.wikipedia.org.ico\" name=\"i15\" />\n                            </a>\n                          </span>\n                          <a class=\"result__url\" href=\"https://it.wikipedia.org/wiki/Pagina_principale\">\n                            it.wikipedia.org/wiki/Pagina_principale\n                          </a>\n                          \n                        </div>\n                      </div>\n                    \n\n                    \n                      \n                        <a class=\"result__snippet\" href=\"https://it.wikipedia.org/wiki/Pagina_principale\"><b>Wikipedia</b> è un&#x27; enciclopedia online, libera e collaborativa. Grazie al contributo di volontari da tutto il mondo, <b>Wikipedia</b> è disponibile in oltre 340 lingue. Chiunque può contribuire alle voci esistenti o crearne di nuove, affrontando sia gli argomenti tipici delle enciclopedie tradizionali sia quelli presenti in almanacchi, dizionari geografici e pubblicazioni specialistiche. Tutti i ...</a>\n                      \n                    \n\n                    <div class=\"clear\"></div>\n                  </div>\n                </div>\n              \n            \n\n            \n              \n              \n                <div class=\"nav-link\">\n                  <form action=\"/html/\" method=\"post\">\n                    <input type=\"submit\" class='btn btn--alt' value=\"Next\" />\n                    <input type=\"hidden\" name=\"q\" value=\"wikipedia\" />\n                    <input type=\"hidden\" name=\"s\" value=\"10\" />\n                    <input type=\"hidden\" name=\"nextParams\" value=\"\" />\n                    <input type=\"hidden\" name=\"v\" value=\"l\" />\n                    <input type=\"hidden\" name=\"o\" value=\"json\" />\n                    <input type=\"hidden\" name=\"dc\" value=\"11\" />\n                    <input type=\"hidden\" name=\"api\" value=\"d.js\" />\n                    <input type=\"hidden\" name=\"vqd\" value=\"4-293679604448378035425896161588185767161\" />\n\n                    \n                    \n                    \n                      <input name=\"kl\" value=\"wt-wt\" type=\"hidden\" />\n                    \n                    \n                    \n                    \n                  </form>\n                </div>\n              \n            \n\n            <div class=\"feedback-btn\">\n              <a rel=\"nofollow\" href=\"//duckduckgo.com/feedback.html\" target=\"_new\">Feedback</a>\n            </div>\n            <div class=\"clear\"></div>\n          </div>\n        </div>\n      </div> <!-- links wrapper //-->\n    \n  </div>\n\n  <div id=\"bottom_spacing2\"></div>\n\n  \n    <img src=\"//duckduckgo.com/t/sl_h\"/>\n  \n</body>\n</html>",
+      "form_field": "q"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "https",
+      "probed_target": "/0123456789abcdef",
+      "status": 400,
+      "headers": [
+        [
+          "Server",
+          "nginx"
+        ],
+        [
+          "Date",
+          "Thu, 05 Nov 2026 04:15:14 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html; charset=UTF-8"
+        ],
+        [
+          "Permissions-Policy",
+          "interest-cohort=()"
+        ],
+        [
+          "X-XSS-Protection",
+          "1;mode=block"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ],
+        [
+          "Referrer-Policy",
+          "origin"
+        ],
+        [
+          "Expect-CT",
+          "max-age=0"
+        ]
+      ],
+      "body": "<html>\r\n<head><title>400 Bad Request</title></head>\r\n<body>\r\n<center><h1>400 Bad Request</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n",
+      "path_form": null
+    },
+    {
+      "scheme": "http",
+      "probed_target": "/0123456789abcdef",
+      "status": 400,
+      "headers": [
+        [
+          "Server",
+          "nginx"
+        ],
+        [
+          "Date",
+          "Thu, 05 Nov 2026 04:15:14 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html; charset=UTF-8"
+        ],
+        [
+          "Permissions-Policy",
+          "interest-cohort=()"
+        ],
+        [
+          "X-XSS-Protection",
+          "1;mode=block"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ],
+        [
+          "Referrer-Policy",
+          "origin"
+        ],
+        [
+          "Expect-CT",
+          "max-age=0"
+        ]
+      ],
+      "body": "<html>\r\n<head><title>400 Bad Request</title></head>\r\n<body>\r\n<center><h1>400 Bad Request</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n",
+      "path_form": null
+    }
+  ]
+}

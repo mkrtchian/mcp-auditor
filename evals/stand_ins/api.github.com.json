@@ -1,0 +1,82 @@
+{
+  "host": "api.github.com",
+  "address": "140.82.112.6",
+  "source": "software_sources",
+  "command": "hand-written from the GitHub GraphQL API reference (Repository.issues IssueConnection) and the IssueList query the pinned gh 2.103.3 sends, since a capture of api.github.com would need an authenticated signed session the closed fixture network denies",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "target": "/graphql",
+      "status": 200,
+      "headers": [
+        [
+          "Date",
+          "Thu, 05 Nov 2026 00:00:00 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json; charset=utf-8"
+        ],
+        [
+          "Server",
+          "github.com"
+        ],
+        [
+          "X-GitHub-Media-Type",
+          "github.v3; format=json"
+        ],
+        [
+          "X-GitHub-Request-Id",
+          "0000:000000:0000000:00000000:00000000"
+        ]
+      ],
+      "body": "{\"data\":{\"repository\":{\"hasIssuesEnabled\":true,\"issues\":{\"totalCount\":0,\"nodes\":[],\"pageInfo\":{\"hasNextPage\":false,\"endCursor\":null}}}}}\n"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/0123456789abcdef",
+      "status": 301,
+      "headers": [
+        [
+          "Content-Type",
+          "text/html"
+        ],
+        [
+          "Location",
+          "https://api.github.com/0123456789abcdef"
+        ]
+      ],
+      "body": "",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/0123456789abcdef",
+      "status": 404,
+      "headers": [
+        [
+          "Date",
+          "Thu, 05 Nov 2026 00:00:00 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json; charset=utf-8"
+        ],
+        [
+          "Server",
+          "github.com"
+        ],
+        [
+          "X-GitHub-Media-Type",
+          "github.v3; format=json"
+        ]
+      ],
+      "body": "{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest\",\"status\":\"404\"}",
+      "path_form": null
+    }
+  ]
+}

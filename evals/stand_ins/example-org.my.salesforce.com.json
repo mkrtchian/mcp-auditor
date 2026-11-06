@@ -1,0 +1,111 @@
+{
+  "host": "example-org.my.salesforce.com",
+  "address": "136.146.47.14",
+  "source": "software_sources",
+  "command": "hand-authored from the Salesforce REST API Developer Guide and OAuth 2.0 docs; no live capture is possible without an authenticated org under the closed fixture network",
+  "request_headers": [
+    [
+      "User-Agent",
+      "sfdx toolbelt"
+    ],
+    [
+      "Accept",
+      "application/json"
+    ]
+  ],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "target": "/services/oauth2/token",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "{\"access_token\": \"00Dxx0000000000!AQEAQNarbitraryfixedaccesstokenvalueforthefixtureorg\", \"signature\": \"aGFzaGVkc2lnbmF0dXJldmFsdWVmb3JmaXh0dXJl\", \"scope\": \"refresh_token api\", \"instance_url\": \"https://example-org.my.salesforce.com\", \"id\": \"https://login.salesforce.com/id/00Dxx0000000000EAA/005xx0000000000AAA\", \"token_type\": \"Bearer\", \"issued_at\": \"1762300800000\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/services/data",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "[{\"version\": \"68.0\", \"label\": \"Winter '27\", \"url\": \"/services/data/v68.0\"}]"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/services/data/v68.0",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "{\"sobjects\": \"/services/data/v68.0/sobjects\", \"identity\": \"https://example-org.my.salesforce.com/services/data/v68.0/identity\", \"connect\": \"/services/data/v68.0/connect\", \"query\": \"/services/data/v68.0/query\", \"queryAll\": \"/services/data/v68.0/queryAll\", \"tooling\": \"/services/data/v68.0/tooling\", \"composite\": \"/services/data/v68.0/composite\", \"limits\": \"/services/data/v68.0/limits\", \"search\": \"/services/data/v68.0/search\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "{\"totalSize\": 0, \"done\": true, \"records\": []}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/services/data/v68.0/query?q=SELECT%20Name%2C%20InstanceName%2C%20IsSandbox%2C%20TrialExpirationDate%2C%20NamespacePrefix%2C%20OrganizationType%20FROM%20Organization",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "{\"totalSize\": 1, \"done\": true, \"records\": [{\"attributes\": {\"type\": \"Organization\", \"url\": \"/services/data/v68.0/sobjects/Organization/00Dxx0000000000EAA\"}, \"Name\": \"Example Org\", \"InstanceName\": \"NA139\", \"IsSandbox\": false, \"TrialExpirationDate\": null, \"NamespacePrefix\": null, \"OrganizationType\": \"Developer Edition\"}]}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "https",
+      "probed_target": "/0123456789abcdef",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "[{\"errorCode\": \"NOT_FOUND\", \"message\": \"The requested resource does not exist\"}]",
+      "path_form": null
+    },
+    {
+      "scheme": "http",
+      "probed_target": "/0123456789abcdef",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "[{\"errorCode\": \"NOT_FOUND\", \"message\": \"The requested resource does not exist\"}]",
+      "path_form": null
+    }
+  ]
+}
