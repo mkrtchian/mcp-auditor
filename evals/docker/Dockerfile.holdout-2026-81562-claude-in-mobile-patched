@@ -2,11 +2,32 @@
 # a86d9e5 moves every adb invocation to execFileSync(adb, argv) so the host shell is never
 # spawned, and extends the validateShellCommand denylist. Built from its public GitHub tag
 # v3.10.3 (same build method as the vulnerable image) to keep the two byte-comparable.
+#
+# The real adb (Android SDK Platform-Tools) runs in the image, resolved from PATH (the server's
+# documented ADB discovery order, priority 5). The reference deployment attaches an Android device
+# over adb; no emulator or physical device can run under the suite confinement, so a device-side
+# adb transport listens on the local emulator port (127.0.0.1:5555) and the entrypoint waits for
+# adb to report the device before the server starts. The transport is identical to the vulnerable
+# image (it serves only the device listing, independent of the fix).
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates \
+    && apt-get install -y --no-install-recommends git ca-certificates curl unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Real Android SDK Platform-Tools (adb), release 37.0.1, installed as the documentation prescribes
+# (download the Platform-Tools package and put its directory on PATH). The README names no version,
+# so the stable release current on the calibration day (2026-11-05) is used: 37.0.1 (July 2026).
+# Google's SDK repository manifest (dl.google.com/android/repository/repository2-3.xml) publishes
+# only the zip's sha1 and size: the download matched both, and the sha256 pinned here was computed
+# from it.
+ARG PLATFORM_TOOLS_SHA256=d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1
+RUN curl -fsSL -o /tmp/platform-tools.zip \
+      https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip \
+    && echo "${PLATFORM_TOOLS_SHA256}  /tmp/platform-tools.zip" | sha256sum -c - \
+    && unzip -q /tmp/platform-tools.zip -d /opt/android \
+    && rm /tmp/platform-tools.zip
+ENV PATH=/opt/android/platform-tools:$PATH
 
 WORKDIR /opt
 RUN git clone https://github.com/AlexGladkov/claude-in-mobile.git app \
@@ -17,7 +38,64 @@ WORKDIR /opt/app
 RUN npm install --no-audit --no-fund --loglevel=error \
     && npm run build
 
-RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/adb && chmod 0755 /usr/local/bin/adb
-ENV ADB_PATH=/usr/local/bin/adb
+# Device-side adb transport (the device stand-in), byte-identical to the vulnerable image. It
+# serves the adb A_CNXN connection handshake with the device identity, and answers A_OPEN stream
+# requests with A_CLSE; adb auto-detects a listener on the local emulator port 5555 as
+# emulator-5554. Device identity values are copied verbatim from the official adb documentation
+# example (developer.android.com/tools/adb): emulator-5554 device product:sdk_google_phone_x86
+# model:Android_SDK_built_for_x86 device:generic_x86. Wire framing (A_CNXN, the identity banner,
+# version 0x01000001, maxdata 256*1024) follows the AOSP adb protocol doc
+# (android.googlesource.com/platform/packages/modules/adb/+/refs/heads/main/docs/dev/protocol.md).
+RUN cat > /usr/local/lib/adbd.js <<'JS'
+const net = require("net");
+const A_CNXN = 0x4e584e43;
+const A_OPEN = 0x4e45504f;
+const A_CLSE = 0x45534c43;
+const BANNER = Buffer.from(
+  "device::ro.product.name=sdk_google_phone_x86;ro.product.model=Android_SDK_built_for_x86;ro.product.device=generic_x86;features=shell_v2,cmd,stat_v2\0"
+);
+function checksum(buf) { let s = 0; for (const b of buf) s = (s + b) >>> 0; return s; }
+function pack(cmd, a0, a1, data) {
+  const h = Buffer.alloc(24);
+  h.writeUInt32LE(cmd >>> 0, 0);
+  h.writeUInt32LE(a0 >>> 0, 4);
+  h.writeUInt32LE(a1 >>> 0, 8);
+  h.writeUInt32LE(data.length, 12);
+  h.writeUInt32LE(checksum(data), 16);
+  h.writeUInt32LE((cmd ^ 0xffffffff) >>> 0, 20);
+  return Buffer.concat([h, data]);
+}
+const PORT = parseInt(process.argv[2] || "5555", 10);
+net.createServer((sock) => {
+  let buf = Buffer.alloc(0);
+  sock.on("data", (d) => {
+    buf = Buffer.concat([buf, d]);
+    while (buf.length >= 24) {
+      const cmd = buf.readUInt32LE(0);
+      const dlen = buf.readUInt32LE(12);
+      if (buf.length < 24 + dlen) break;
+      const arg0 = buf.readUInt32LE(4);
+      buf = buf.subarray(24 + dlen);
+      if (cmd === A_CNXN) sock.write(pack(A_CNXN, 0x01000001, 256 * 1024, BANNER));
+      else if (cmd === A_OPEN) sock.write(pack(A_CLSE, 0, arg0, Buffer.alloc(0)));
+    }
+  });
+  sock.on("error", () => {});
+}).listen(PORT, "127.0.0.1");
+JS
 
-ENTRYPOINT ["node", "/opt/app/dist/index.js"]
+RUN cat > /usr/local/bin/startup <<'SH'
+#!/bin/sh
+node /usr/local/lib/adbd.js 5555 &
+until node -e 'require("net").connect(5555,"127.0.0.1").on("connect",function(){process.exit(0)}).on("error",function(){process.exit(1)})' 2>/dev/null; do sleep 0.2; done
+adb start-server >/dev/null 2>&1
+i=0
+until adb devices 2>/dev/null | grep -qE 'emulator-5554[[:space:]]+device'; do
+  i=$((i+1)); [ "$i" -ge 60 ] && break; sleep 0.25
+done
+exec "$@"
+SH
+RUN chmod +x /usr/local/bin/startup
+
+ENTRYPOINT ["/usr/local/bin/startup"]
+CMD ["node", "/opt/app/dist/index.js"]

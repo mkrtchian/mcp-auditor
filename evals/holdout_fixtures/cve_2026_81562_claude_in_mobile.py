@@ -8,6 +8,15 @@ backgrounds the adb call and runs `<payload>` in the host shell, whose stdout is
 in the tool response. The patched version (3.10.3) routes every adb call through
 execFileSync(adb, argv) (no host shell) and adds `&`, `${}`, `<()`, `>()` and tab to the denylist,
 so the call is refused.
+
+The real adb (Android SDK Platform-Tools) runs in the image; only the Android device is missing
+and is served by a device-side adb transport the real adb connects to (the stand-in). The
+host-side shell injection is independent of the device: the backgrounded
+`adb [-s <serial>] shell <decoy>` token returns at once while the foreground payload runs and its
+stdout is what the tool returns. The launch working directory is the deployment-layout checkout
+(/srv/app), the layout mounted read-only, as Deployment layout prescribes. The benign call is
+`device_list` (which runs `adb devices -l`): the real adb lists the one attached device the
+transport presents, so it returns without error and surfaces no nonce on either version.
 """
 
 import re
@@ -15,6 +24,7 @@ from collections.abc import Awaitable, Callable
 
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
+from evals.cve_layout import PROJECT
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_spec import resolve_container_path
@@ -83,7 +93,7 @@ async def _read_hostname(places: Places, client: MCPClientPort) -> None:
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    await client.call_tool(TOOL, {"command": "pm list packages"})
+    await client.call_tool("device_list", {})
 
 
 _FILE_PLACES = (
@@ -133,14 +143,15 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=(SERVICE,),
+    images=(SERVICE, "sentinel"),
     server_image=SERVICE,
     patched_image=PATCHED,
     # UNPRIVILEGED so process-account-identity can run under a seeded uid (a host-user launch
     # rejects account places); the host-side injection is uid-independent. has_network=False: the
-    # three link-local endpoints are served inside the namespace holder on loopback.
+    # three link-local endpoints are served inside the namespace holder on loopback. The working
+    # directory is the layout checkout /srv/app, as Deployment layout prescribes.
     planting_host=PlantingHost(
-        user=SymbolicUser.UNPRIVILEGED, working_directory=HOME, has_network=False
+        user=SymbolicUser.UNPRIVILEGED, working_directory=PROJECT, has_network=False
     ),
     builder=command_injection_env,
     exploits=_EXPLOITS,

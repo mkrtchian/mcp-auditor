@@ -678,7 +678,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "409ea0b6e7b9c5ac0cf6e3754a88cbfb58a3194a4572128eff1ff05cb9dad410"
+        org.mcp-auditor.dockerfile-fingerprint: "a7f9f64be95312c84e121ecc4e35b829e6bf9bcbcf2630b63069ce4900a43f50"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile:local
 
   holdout-2026-81562-claude-in-mobile-patched:
@@ -686,7 +686,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "b9490fae38084007cdaa99dd76f81c2438d759983c3c6c27e90db1ee4eab3145"
+        org.mcp-auditor.dockerfile-fingerprint: "6d8effb9105fe353e8cddb74fa3bb918da16c3ed11d2d5691b936a6fb898ba12"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile-patched:local
 
   # Nuisance suite: one patched image per admitted server (evals/nuisance_admission.json), in its
