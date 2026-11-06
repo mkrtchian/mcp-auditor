@@ -214,8 +214,9 @@ def mysql_db_env(
     *,
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    # The self-contained MySQL-MCP image carries its own engine and an AWS credential stub, both
-    # started by the entrypoint, so the launch adds nothing but the frozen /srv layout (ADR 031).
+    # The self-contained MySQL-MCP image carries its own engine, started by the entrypoint, and its
+    # AWS lookups reach the planting layer's stand-ins, so the launch adds nothing but the frozen
+    # /srv layout (ADR 031).
     # The server takes no scope argument, so none is appended after the image;
     # the network isolation, the planted file mounts, the planted env and the hostname all come
     # from the planting layer's PlantedArgs.

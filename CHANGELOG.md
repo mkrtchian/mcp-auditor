@@ -112,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The nuisance run's server and backend containers run under a memory bound, `--memory 4g --memory-swap 4g`, in `run`, `vet`, `gate` and the benign probe, the backends' real software (the Doris cluster shared with the holdout, MySQL, Neo4j) and stand-ins alike. A persistent backend started without it is recreated once with it. Every nuisance fixture fingerprint moves once. The fix checks' server and per-launch responder containers stay unbounded.
 - The calibration kit of `python -m evals.run_holdout calibration-dossier`, and the nuisance admission dossier, carry the stand-in captures (`evals/stand_ins/`) and the stand-in image's Dockerfile, so a target that declares a stand-in calibrates in the kit, and their READMEs state the client pin `mcp>=1.18.0,<2`.
 - The holdout draw record refuses a give-up recorded under a rule version that has no walk step of its flaw, which no check read before. The nuisance walk record no longer asks for a settlement when the census classifiers disagree on a queue flaw's grammar class, which the walk no longer reads.
+- The CVE benchmark and holdout plant the `aws-credentials` place (`~/.aws/credentials`) as an AWS shared-credentials file, a `[default]` section whose access key id and secret access key carry the nonce, where the file held the bare nonce, which an AWS SDK refused to parse. The CVE-2026-55581 and CVE-2026-7785 fixtures read the file whole. Every CVE fixture fingerprint moves, and no nuisance fingerprint.
 
 ### Fixed
 

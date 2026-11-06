@@ -1,3 +1,4 @@
+import configparser
 import logging
 import os
 import re
@@ -47,6 +48,14 @@ def test_paths_plants_every_path_under_the_one_nonce():
 
     assert [intent.container_path for intent in spec.files] == ["/a/one", "/b/two"]
     assert {intent.content for intent in spec.files} == {spec.nonces["file-1"]}
+
+
+def test_the_aws_credentials_place_plants_a_parsable_shared_credentials_file_carrying_the_nonce():
+    spec = given.spec_of([given.file_place("aws-credentials", path="~/.aws/credentials")])
+
+    credentials = configparser.ConfigParser()
+    credentials.read_string(spec.files[0].content)
+    assert spec.nonces["aws-credentials"] in credentials["default"]["aws_secret_access_key"]
 
 
 def test_each_accepted_coordinate_notation_resolves_to_an_absolute_container_path():

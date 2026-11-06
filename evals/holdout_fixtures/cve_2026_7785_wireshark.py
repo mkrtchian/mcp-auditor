@@ -8,7 +8,9 @@ rejects shell metacharacters and requires an exact interface match, blocking the
 The flaw is general command execution, so the exploit surfaces a planted nonce from every place
 the executed command can reach and the server does not read itself. Each exploit breaks out of the
 tshark interface quoting and emits one tab-separated line whose src field carries the nonce; the
-server parses that line and echoes src under "Top Source IPs".
+server parses that line and echoes src under "Top Source IPs". A file is read with its newlines
+turned into spaces, so a multi-line file (the planted AWS shared-credentials file) stays on that
+one line.
 
 The server runs from the checkout (/srv/app), the layout's working directory. Its lifespan creates
 ./captures there and the checkout is mounted read-only, so the launch seeds that directory empty
@@ -90,7 +92,7 @@ def _file_read_cmd(place: Place) -> str:
         assert coords.paths is not None
         raw = coords.paths[0]
     container_path = resolve_container_path(raw, WORKDIR)
-    return f"cat {container_path} 2>/dev/null"
+    return f"cat {container_path} 2>/dev/null | tr '\\n' ' '"
 
 
 def _payload_for(place: Place) -> str:

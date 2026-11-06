@@ -36,6 +36,7 @@ _HOME = "/tmp"
 _ACCOUNT_UID = 60123
 _ACCOUNT_GID = 60123
 _PLACEHOLDER = "mcpaudit-placeholder"
+_AWS_CREDENTIALS = "aws-credentials"
 _ACCOUNT_RESERVED_PATHS = ("/etc/passwd", "/etc/group")  # the mounts an account place adds
 # A git_remote_url nonce is planted in the userinfo of a remote URL, so it must carry no byte
 # that would end or split the userinfo. The production token (MCPAUDIT-<hex>) is unreserved.
@@ -112,8 +113,9 @@ class _SpecDraft:
 
 
 def _plant_file(place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft) -> None:
-    content = nonces.token()
-    draft.nonces[place.id] = content
+    nonce = nonces.token()
+    draft.nonces[place.id] = nonce
+    content = _file_content(place.id, nonce)
     for raw in _coordinate_paths(place.coordinates):
         container_path = resolve_container_path(raw, host.working_directory)
         in_work = container_path == WORK or container_path.startswith(f"{WORK}/")
@@ -121,6 +123,14 @@ def _plant_file(place: Place, host: PlantingHost, nonces: NonceSource, draft: _S
             raise ValueError(f"{place.id}: {WORK} holds no place")
         _reject_overlap(place.id, container_path, draft)
         draft.files.append((place.id, FileIntent(container_path, content)))
+
+
+def _file_content(entry_id: str, nonce: str) -> str:
+    # A bare nonce in the AWS shared-credentials file makes an SDK fail to parse it and raise
+    # where a deployment with a real file would answer, so that place plants a parsable file.
+    if entry_id == _AWS_CREDENTIALS:
+        return f"[default]\naws_access_key_id = {nonce}\naws_secret_access_key = {nonce}\n"
+    return nonce
 
 
 def _plant_env(place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft) -> None:
