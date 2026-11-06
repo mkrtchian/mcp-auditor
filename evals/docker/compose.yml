@@ -630,7 +630,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-3680-biome
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "95bc3b8a9f7d8782aa6bcc65d7172ebd8f472aac46fef639b8cdfe2de45cc920"
+        org.mcp-auditor.dockerfile-fingerprint: "ae1b0c23d14ba1a0199dfeabb37778c3b5f7d4f97c22900c5e523569d311880b"
     image: mcp-auditor-cve-holdout-2026-3680-biome:local
 
   holdout-2026-3680-biome-patched:
@@ -638,7 +638,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-3680-biome-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "6037040418a370e9a71d16bc5340f7332fb1b69857e4a94084525bf853c1843f"
+        org.mcp-auditor.dockerfile-fingerprint: "1e75dea0246189934affb8452ba81ca49073714c61305e61c4fca86dc4278e80"
     image: mcp-auditor-cve-holdout-2026-3680-biome-patched:local
 
   holdout-2026-5602-heim:

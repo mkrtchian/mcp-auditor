@@ -7,11 +7,12 @@ exec for execFile("biome", [..., "--", ...paths]), passing the paths as literal 
 sees them and no nonce surfaces. The advertised biome-lint and biome-format both carry the flaw;
 the exploit targets biome-lint.
 
-The biome binary is the external dependency and is stubbed to a benign no-op in the image, so the
-injection runs in the real server's own exec/execFile chain, not in the stub. The reach is
-command_execution, so every kept place is read by running a command: cat for files, cat
-/proc/self/environ for the env var, whoami/id for the account, hostname for the UTS name, curl for
-the internal HTTP endpoints.
+The real @biomejs/biome 1.9.4 is installed by the server's own `npm install` and runs offline in
+the container (exposed on PATH via node_modules/.bin). The injection runs in the server's own
+exec/execFile chain after the `;`, so the nonce surfaces through the server's shell, not through
+biome. The reach is command_execution, so every kept place is read by running a command: cat for
+files, cat /proc/self/environ for the env var, whoami/id for the account, hostname for the UTS
+name, curl for the internal HTTP endpoints.
 """
 
 import re
@@ -26,10 +27,7 @@ from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-3680-biome"
 PATCHED = "holdout-2026-3680-biome-patched"
-# The server's own install dir, root-owned and world-traversable. The /srv layout temp root is
-# host-owned 0700, so a non-host-uid child (tsx/esbuild spawns at import) with a cwd under it dies
-# with EACCES. This flaw needs no scope dir, so the cwd sits in /opt/server.
-WORKING_DIRECTORY = "/opt/server"
+WORKING_DIRECTORY = "/srv/app"  # the checkout, the deployment layout's working directory
 TOOL = "biome-lint"
 
 AIM = re.compile(r"[;`$|&]")  # a shell metacharacter: in every exploit, absent from the benign call
@@ -88,8 +86,11 @@ def _exploit(place_id: str):
     return run
 
 
+BENIGN_PATH = "/opt/server/biome-mcp-server.ts"  # a real file biome processes, outside the layout
+
+
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    await client.call_tool(TOOL, {"paths": ["."]})
+    await client.call_tool(TOOL, {"paths": [BENIGN_PATH]})
 
 
 TARGET = CVETarget(
@@ -99,7 +100,7 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=(SERVICE,),
+    images=(SERVICE, "sentinel"),
     server_image=SERVICE,
     patched_image=PATCHED,
     planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKING_DIRECTORY, has_network=False),

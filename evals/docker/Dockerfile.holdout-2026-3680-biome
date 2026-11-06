@@ -17,12 +17,11 @@ RUN git checkout 97c0fb2b488d3914bd767bd5d1c582642532a84c
 # Real install of the real server (SDK, zod, tsx, typescript, @biomejs/biome).
 RUN npm install
 
-# The biome binary is the external dependency: stub it as a benign no-op adapter so the
-# shell-injection runs in the real server's own exec/execFile chain, not in the stub. The
-# vulnerable server builds `biome lint <interpolated> ; <payload>` and hands it to a shell;
-# the stub makes `biome ...` exit cleanly so the injected payload is what surfaces.
-RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/biome && chmod +x /usr/local/bin/biome
+# The server shells out to the bare command `biome`: node_modules/.bin on PATH serves the real
+# @biomejs/biome 1.9.4 the server's own install brings, which runs offline in the container. The
+# injection runs in the server's own exec chain after the `;`, not through biome.
+ENV PATH="/opt/server/node_modules/.bin:${PATH}"
 
-# Absolute paths: the kit launch passes `-w <workdir>`, overriding WORKDIR, so the entrypoint
+# Absolute paths: the launch passes `-w <workdir>`, overriding WORKDIR, so the entrypoint
 # must not rely on the current directory to find tsx or the server source.
 ENTRYPOINT ["/opt/server/node_modules/.bin/tsx", "/opt/server/biome-mcp-server.ts"]

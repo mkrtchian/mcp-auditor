@@ -16,10 +16,10 @@ RUN git fetch origin pull/1/head && git checkout 335e1727147efeef011f1ff8b05dd75
 
 RUN npm install
 
-# Same benign biome stub: on the patched server execFile invokes `biome` with the paths as
-# literal arguments, so the stub exits cleanly and the benign call stays clean.
-RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/biome && chmod +x /usr/local/bin/biome
+# The real @biomejs/biome 1.9.4 on PATH, as on the vulnerable image: execFile hands it the paths
+# as literal arguments after `--`.
+ENV PATH="/opt/server/node_modules/.bin:${PATH}"
 
-# Absolute paths: the kit launch passes `-w <workdir>`, overriding WORKDIR, so the entrypoint
+# Absolute paths: the launch passes `-w <workdir>`, overriding WORKDIR, so the entrypoint
 # must not rely on the current directory to find tsx or the server source.
 ENTRYPOINT ["/opt/server/node_modules/.bin/tsx", "/opt/server/biome-mcp-server.ts"]
