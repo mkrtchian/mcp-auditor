@@ -12,7 +12,7 @@ from evals.cve_places import (
     kept_records,
     load_places,
 )
-from evals.cve_planting import planting_spec
+from evals.cve_planting import SymbolicUser, planting_spec
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget
 from evals.holdout_targets import HOLDOUT_TARGETS
@@ -68,6 +68,13 @@ def _services(targets: Iterable[CVETarget]) -> set[str]:
 def test_no_acceptance_or_holdout_target_bakes_its_work_directory():
     for target in (*CVE_TARGETS, *HOLDOUT_TARGETS):
         assert not target.planting_host.baked_work, target.cve_id
+
+
+# Version 11 runs every target under the unprivileged account: the host uid is a
+# benchmark-machine value that must not reach the launch.
+def test_no_holdout_target_runs_as_the_host_user():
+    for target in HOLDOUT_TARGETS:
+        assert target.planting_host.user is not SymbolicUser.HOST, target.cve_id
 
 
 def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():

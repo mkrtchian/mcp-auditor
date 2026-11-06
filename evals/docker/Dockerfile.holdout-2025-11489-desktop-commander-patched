@@ -8,8 +8,8 @@ RUN npm install -g --ignore-scripts @wonderwhy-er/desktop-commander@0.2.33 \
  && test -f /usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js
 
 RUN mkdir -p /tmp/.claude-server-commander \
- && printf '%s' '{"allowedDirectories":["/srv/app"],"blockedCommands":[],"telemetryEnabled":false,"pendingWelcomeOnboarding":false,"fileReadLineLimit":100000,"fileWriteLineLimit":50}' \
+ && printf '%s' '{"blockedCommands":["mkfs","format","mount","umount","fdisk","dd","parted","diskpart","sudo","su","passwd","adduser","useradd","usermod","groupadd","chsh","visudo","shutdown","reboot","halt","poweroff","init","iptables","firewall","netsh","sfc","bcdedit","reg","net","sc","runas","cipher","takeown"],"allowedDirectories":["/srv/app"],"telemetryEnabled":true,"fileWriteLineLimit":50,"fileReadLineLimit":1000,"pendingWelcomeOnboarding":true}' \
       > /tmp/.claude-server-commander/config.json \
  && chmod -R 0777 /tmp/.claude-server-commander
 
-ENTRYPOINT ["node", "/usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js", "--no-onboarding"]
+ENTRYPOINT ["node", "/usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js"]

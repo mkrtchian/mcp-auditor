@@ -188,7 +188,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-11489-desktop-commander
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a1661e988ce3e604035f780767ccb8b34f48b3b6047a709d93a6064ac20e15cc"
+        org.mcp-auditor.dockerfile-fingerprint: "6de51caa51f34dbb7c1bafbc53e7729e25c5e000364b640b2664ca3ce74ea1cb"
     image: mcp-auditor-cve-holdout-2025-11489-desktop-commander:local
 
   holdout-2025-11489-desktop-commander-patched:
@@ -196,7 +196,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-11489-desktop-commander-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a3c57c5e05acd3bc3bc83d8c8fb170a8a16df05001c8c7f836d2a317856526a9"
+        org.mcp-auditor.dockerfile-fingerprint: "cfb96c078a9fe437f2034e962d3bf5563f8512a57fa6ad7e3ab644077e4f5c75"
     image: mcp-auditor-cve-holdout-2025-11489-desktop-commander-patched:local
 
   # Internal-fetch target: a real Apache Doris backend does the fetch (http() TVF), reusing the
