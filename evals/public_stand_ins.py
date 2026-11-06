@@ -19,6 +19,16 @@ route of its target, else the default, as the real service answers an action it 
 with an error. The capture command records no action: those routes are written by hand from
 the services' published examples, since a real capture would need signed requests.
 
+A `POST` route may instead carry a form field: a request whose
+`application/x-www-form-urlencoded` body carries that field gets the route, else the
+field-less route of its target, else the default. The route is chosen on a fixed word at a
+fixed position of the request, the field's name, never on its value.
+
+A file is either a capture (`source` `capture`, dated by `captured_at`) or written by hand
+from the software's documentation or published examples (`source` `software_sources`, no
+`captured_at`, `command` naming the documentation it follows). A written file's `address` is a
+fixed global address of the fixture, not a resolution of the host.
+
 The leaf, its key and the fixture authority sit beside the captures under `tls/`, made by
 `tls/generate.sh`.
 """
@@ -58,11 +68,19 @@ class StandInRoute(BaseModel):
     headers: list[tuple[str, str]]
     body: str
     action: str | None = None
+    form_field: str | None = None
 
     @model_validator(mode="after")
-    def _an_action_keys_a_post_only(self) -> Self:
+    def _an_action_or_a_form_field_keys_a_post_only(self) -> Self:
         if self.action is not None and self.method != "POST":
             raise ValueError("only a POST route carries an AWS action")
+        if self.form_field is not None and self.method != "POST":
+            raise ValueError("only a POST route carries a form field")
+        if self.action is not None and self.form_field is not None:
+            raise ValueError(
+                "a route is keyed on an action or a form field, never both,"
+                " since the stand-in looks them up one after the other"
+            )
         return self
 
 
@@ -117,11 +135,21 @@ class StandInCapture(BaseModel):
 
     host: str
     address: Annotated[str, AfterValidator(_global_unicast)]
-    captured_at: str = Field(min_length=1)
+    source: Literal["capture", "software_sources"]
+    captured_at: str | None = Field(default=None, min_length=1)
     command: str = Field(min_length=1)
     request_headers: list[tuple[str, str]]
     routes: list[StandInRoute]
     defaults: list[StandInDefault]
+
+    @model_validator(mode="after")
+    def _a_date_only_on_a_capture(self) -> Self:
+        if (self.captured_at is not None) != (self.source == "capture"):
+            raise ValueError(
+                "captured_at dates a capture, so a capture carries it"
+                " and a file written from the software's sources does not"
+            )
+        return self
 
     @model_validator(mode="after")
     def _one_default_per_scheme(self) -> Self:
@@ -134,10 +162,13 @@ class StandInCapture(BaseModel):
 
     @model_validator(mode="after")
     def _one_route_per_key(self) -> Self:
-        keys = [(each.scheme, each.method, each.target, each.action) for each in self.routes]
+        keys = [
+            (each.scheme, each.method, each.target, each.action, each.form_field)
+            for each in self.routes
+        ]
         if len(set(keys)) != len(keys):
             raise ValueError(
-                "two routes answer one (scheme, method, target, action),"
+                "two routes answer one (scheme, method, target, action, form_field),"
                 " so the stand-in could replay only one of them"
             )
         return self

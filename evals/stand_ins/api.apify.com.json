@@ -1,6 +1,7 @@
 {
   "host": "api.apify.com",
   "address": "184.197.248.173",
+  "source": "capture",
   "captured_at": "2026-11-04T07:36:55Z",
   "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/api.apify.com.json --header 'Authorization: Bearer calib-token' 'https://api.apify.com/v2/actors/apify~rag-web-browser' https://api.apify.com/v2/users/me",
   "request_headers": [

@@ -1,15 +1,18 @@
 from dataclasses import replace
 
+import httpx
 import pytest
 
 import tests.unit.support.test_capture_stand_in_given as given
 from evals.capture_stand_in import (
+    CaptureRequest,
     ProbedDefault,
     capture_record,
     default_requests,
     parse_request,
     path_form,
 )
+from evals.public_stand_ins import StandInCapture
 from tests.unit.support.test_public_stand_ins_given import PROBED_TARGET
 
 _HTML = ("Content-Type", "text/html; charset=utf-8")
@@ -101,16 +104,53 @@ def test_a_head_route_keeps_its_method_status_and_headers_with_an_empty_body():
 
 
 def test_a_bare_url_is_a_get():
-    assert parse_request("https://example.com/a?b=1") == ("GET", "https://example.com/a?b=1")
+    assert parse_request("https://example.com/a?b=1") == CaptureRequest(
+        "GET", httpx.URL("https://example.com/a?b=1")
+    )
 
 
 def test_a_url_prefixed_head_is_a_head():
-    assert parse_request("HEAD https://example.com/") == ("HEAD", "https://example.com/")
+    assert parse_request("HEAD https://example.com/") == CaptureRequest(
+        "HEAD", httpx.URL("https://example.com/")
+    )
 
 
-def test_another_method_prefix_is_refused():
+def test_a_url_prefixed_post_and_followed_by_a_form_body_is_a_post_of_that_field():
+    assert parse_request("POST https://example.com/html/ q=wikipedia") == CaptureRequest(
+        "POST", httpx.URL("https://example.com/html/"), body="q=wikipedia", form_field="q"
+    )
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "PUT https://example.com/",
+        "POST https://example.com/",
+        "POST https://example.com/ q=wikipedia&kl=fr-fr",
+        "POST https://example.com/ =wikipedia",
+        "HEAD https://example.com/ q=wikipedia",
+    ],
+    ids=["another_method", "post_without_body", "two_fields", "unnamed_field", "head_with_body"],
+)
+def test_a_request_other_than_a_get_a_head_or_a_post_of_one_form_field_is_refused(text: str):
     with pytest.raises(SystemExit, match="HEAD"):
-        parse_request("POST https://example.com/")
+        parse_request(text)
+
+
+def test_a_post_route_records_the_form_field_its_request_carried():
+    posted = replace(given.a_route(), method="POST", form_field="q")
+
+    record = capture_record(given.A_PROVENANCE, [posted], given.NOT_FOUND_DEFAULTS)
+
+    assert record["routes"][0]["method"] == "POST"
+    assert record["routes"][0]["form_field"] == "q"
+
+
+def test_the_record_says_it_was_captured():
+    record = capture_record(given.A_PROVENANCE, [given.a_route()], given.NOT_FOUND_DEFAULTS)
+
+    assert record["source"] == "capture"
+    StandInCapture.model_validate(record)
 
 
 def test_each_default_keeps_its_scheme_probed_target_status_headers_body_and_path_form():
@@ -242,10 +282,10 @@ def test_a_default_whose_quote_the_stand_in_cannot_reproduce_is_refused(
 def test_the_default_requests_are_the_plain_then_the_form_probe_on_each_scheme():
     requests = default_requests("example.com", PROBED_TARGET)
 
-    assert [(method, str(url)) for method, url in requests] == [
+    assert [(request.method, str(request.url)) for request in requests] == [
         ("GET", "http://example.com/0123456789abcdef"),
         ("GET", "https://example.com/0123456789abcdef"),
         ("GET", "http://example.com/0123456789abcdef%3Cx%3E%22%27"),
         ("GET", "https://example.com/0123456789abcdef%3Cx%3E%22%27"),
     ]
-    assert {url.raw_path for _, url in requests[2:]} == {b"/0123456789abcdef%3Cx%3E%22%27"}
+    assert {request.url.raw_path for request in requests[2:]} == {b"/0123456789abcdef%3Cx%3E%22%27"}

@@ -109,3 +109,15 @@ def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
     then.answered_by_its_route(json_protocol, given.SECRET_HEADERS, given.SECRET_BODY)
     then.answered_by_its_route(query_protocol, given.INSTANCES_HEADERS, given.INSTANCES_BODY)
     then.answered_with(unknown, 404, given.MISSING_BODY)
+
+
+def test_a_planted_stand_in_answers_a_form_post_by_the_field_it_carries(tmp_path: Path):
+    directory = given.a_stand_ins_directory(tmp_path)
+    url = f"https://{given.STAND_IN_HOST}{given.FORM_TARGET}"
+
+    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
+        carrying = given.fetch_as_target(args, url, "POST", given.SEARCH_REQUEST)
+        lacking = given.fetch_as_target(args, url, "POST", given.FIELDLESS_SEARCH_REQUEST)
+
+    then.answered_by_its_route(carrying, given.RESULTS_HEADERS, given.RESULTS_BODY)
+    then.answered_with(lacking, 404, given.MISSING_BODY)

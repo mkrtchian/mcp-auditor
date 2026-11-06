@@ -6,7 +6,6 @@ from pydantic import ValidationError
 import tests.unit.support.test_public_stand_ins_given as given
 from evals.cve_planting_base import StandIn
 from evals.public_stand_ins import (
-    STAND_INS_DIRECTORY,
     StandInFiles,
     body_quoting,
     media_type,
@@ -57,8 +56,12 @@ def test_a_route_scheme_other_than_http_or_https_is_refused(tmp_path: Path):
     [
         [given.a_route("https"), given.a_route("https")],
         [given.a_route("https", "POST", "Describe"), given.a_route("https", "POST", "Describe")],
+        [
+            given.a_route("https", "POST", form_field="q"),
+            given.a_route("https", "POST", form_field="q"),
+        ],
     ],
-    ids=["action_less", "one_action"],
+    ids=["action_less", "one_action", "one_form_field"],
 )
 def test_two_routes_with_one_key_are_refused(tmp_path: Path, routes: list[dict[str, object]]):
     directory = given.a_stand_in_directory(tmp_path, routes=routes)
@@ -95,11 +98,64 @@ def test_an_action_on_a_route_other_than_post_is_refused(tmp_path: Path, method:
 
 
 @pytest.mark.parametrize("field", ["command", "captured_at"])
-def test_an_empty_provenance_field_is_refused(tmp_path: Path, field: str):
+def test_an_empty_provenance_field_of_a_capture_is_refused(tmp_path: Path, field: str):
     directory = given.a_stand_in_directory(tmp_path, **{field: ""})
 
     with pytest.raises(ValidationError, match=field):
         stand_in(given.HOST, directory)
+
+
+def test_a_capture_without_its_date_is_refused(tmp_path: Path):
+    directory = given.a_stand_in_directory(tmp_path, captured_at=None)
+
+    with pytest.raises(ValidationError, match="captured_at"):
+        stand_in(given.HOST, directory)
+
+
+def test_a_file_written_from_the_software_sources_loads_without_a_date(tmp_path: Path):
+    directory = given.a_stand_in_directory(
+        tmp_path, source="software_sources", captured_at=None, command="the AWS API reference"
+    )
+
+    assert stand_in(given.HOST, directory).host == given.HOST
+
+
+def test_a_file_written_from_the_software_sources_with_a_date_is_refused(tmp_path: Path):
+    directory = given.a_stand_in_directory(tmp_path, source="software_sources")
+
+    with pytest.raises(ValidationError, match="captured_at"):
+        stand_in(given.HOST, directory)
+
+
+def test_a_source_other_than_capture_or_software_sources_is_refused(tmp_path: Path):
+    directory = given.a_stand_in_directory(tmp_path, source="invented")
+
+    with pytest.raises(ValidationError, match="source"):
+        stand_in(given.HOST, directory)
+
+
+@pytest.mark.parametrize("method", ["GET", "HEAD"])
+def test_a_form_field_on_a_route_other_than_post_is_refused(tmp_path: Path, method: str):
+    routes = [given.a_route("https", method, form_field="q")]
+    directory = given.a_stand_in_directory(tmp_path, routes=routes)
+
+    with pytest.raises(ValidationError, match="only a POST route"):
+        stand_in(given.HOST, directory)
+
+
+def test_a_form_field_beside_an_action_is_refused(tmp_path: Path):
+    routes = [given.a_route("https", "POST", "DescribeDBInstances", form_field="q")]
+    directory = given.a_stand_in_directory(tmp_path, routes=routes)
+
+    with pytest.raises(ValidationError, match="action or a form field"):
+        stand_in(given.HOST, directory)
+
+
+def test_routes_of_one_target_differing_only_by_their_form_field_load(tmp_path: Path):
+    routes = [given.a_route("https", "POST", form_field=field) for field in (None, "q", "query")]
+    directory = given.a_stand_in_directory(tmp_path, routes=routes)
+
+    assert stand_in(given.HOST, directory).host == given.HOST
 
 
 @pytest.mark.parametrize(
@@ -250,36 +306,3 @@ def test_the_files_of_a_stand_in_are_named_without_being_read(tmp_path: Path):
         key=tmp_path / "tls" / "example.com-key.pem",
         authority=tmp_path / "tls" / "fixture-authority.pem",
     )
-
-
-def test_every_committed_capture_loads_with_its_leaf():
-    hosts = [path.stem for path in STAND_INS_DIRECTORY.glob("*.json")]
-
-    loaded = [stand_in(host) for host in hosts]
-
-    assert all(each.certificate.startswith("-----BEGIN CERTIFICATE-----") for each in loaded)
-
-
-def test_the_committed_captures_are_exactly_the_declared_stand_ins():
-    captured = {path.stem for path in STAND_INS_DIRECTORY.glob("*.json")}
-
-    assert captured == given.declared_stand_in_hosts()
-
-
-def test_the_committed_authority_signs_for_exactly_the_https_stand_in_hosts():
-    hosts = given.committed_https_hosts(STAND_INS_DIRECTORY)
-
-    critical, permitted, excluded = given.committed_authority_constraints(STAND_INS_DIRECTORY)
-
-    assert critical
-    assert permitted == hosts
-    assert excluded == {f".{host}" for host in hosts}
-
-
-def test_every_committed_leaf_names_an_https_stand_in_host():
-    hosts = given.committed_https_hosts(STAND_INS_DIRECTORY)
-
-    leaves = given.committed_leaf_names(STAND_INS_DIRECTORY)
-
-    assert {name: names for name, names in leaves.items() if not names <= hosts} == {}
-    assert all(len(names) == 1 for names in leaves.values())

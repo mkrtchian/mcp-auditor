@@ -5,6 +5,10 @@
 Every URL shares one host. A URL is fetched with GET, or with HEAD when prefixed `HEAD `
 (one argument, `'HEAD https://example.com/'`), for a server that checks a page before reading
 it: a HEAD route is recorded with the status and headers the service gave and an empty body.
+A URL prefixed `POST ` and followed by a form body of one field (one argument,
+`'POST https://html.duckduckgo.com/html/ q=wikipedia'`) is posted as
+`application/x-www-form-urlencoded`, and its route records the field's name as `form_field`,
+the body staying in `command`.
 Each is fetched once with no redirect following and no content
 coding, and its status, every response header (in the order received, duplicates kept, names in
 the host's case) and its body are recorded whatever the status, so a 401 or a 404 is replayed as
@@ -19,7 +23,7 @@ path (`path_form`, decoded or raw). The stand-in replays that answer for any req
 lack, quoting the request where the host quoted the probed path; an answer quoting it in another
 header than `Location`, in a body that is neither HTML nor JSON, or in an escaping the stand-in
 does not reproduce, is refused. A capture is written whole, never appended, so one file carries
-one date.
+one date, and says so with `source` `capture`.
 """
 
 import argparse
@@ -53,6 +57,14 @@ class CaptureProvenance:
 
 
 @dataclass(frozen=True)
+class CaptureRequest:
+    method: str
+    url: httpx.URL
+    body: str | None = None
+    form_field: str | None = None
+
+
+@dataclass(frozen=True)
 class CapturedResponse:
     scheme: str
     method: str
@@ -60,6 +72,7 @@ class CapturedResponse:
     status: int
     headers: tuple[tuple[str, str], ...]
     body: bytes
+    form_field: str | None = None
 
 
 @dataclass(frozen=True)
@@ -76,6 +89,7 @@ def capture_record(
     return {
         "host": provenance.host,
         "address": provenance.address,
+        "source": "capture",
         "captured_at": provenance.captured_at,
         "command": provenance.command,
         "request_headers": [list(header) for header in provenance.request_headers],
@@ -85,7 +99,7 @@ def capture_record(
 
 
 def _route(response: CapturedResponse) -> dict[str, Any]:
-    return {
+    route: dict[str, Any] = {
         "scheme": response.scheme,
         "method": response.method,
         "target": response.target,
@@ -93,6 +107,9 @@ def _route(response: CapturedResponse) -> dict[str, Any]:
         "headers": [list(header) for header in response.headers],
         "body": _text(response),
     }
+    if response.form_field is not None:
+        route["form_field"] = response.form_field
+    return route
 
 
 def _default(probe: ProbedDefault) -> dict[str, Any]:
@@ -166,29 +183,46 @@ def _text(response: CapturedResponse) -> str:
         ) from error
 
 
-def default_requests(host: str, probed_target: str) -> list[tuple[str, httpx.URL]]:
+def default_requests(host: str, probed_target: str) -> list[CaptureRequest]:
     targets = (probed_target, probed_target + FORM_SUFFIX)
     return [
-        ("GET", httpx.URL(f"{scheme}://{host}{target}"))
+        CaptureRequest("GET", httpx.URL(f"{scheme}://{host}{target}"))
         for target in targets
         for scheme in ("http", "https")
     ]
 
 
-def parse_request(text: str) -> tuple[str, str]:
-    method, separator, url = text.partition(" ")
-    if not separator:
-        return "GET", text
-    if method != "HEAD":
-        raise SystemExit(f"{text!r}: a URL is bare (GET) or prefixed 'HEAD '")
-    return method, url.strip()
+def parse_request(text: str) -> CaptureRequest:
+    words = text.split()
+    match words:
+        case [url]:
+            return CaptureRequest("GET", httpx.URL(url))
+        case ["HEAD", url]:
+            return CaptureRequest("HEAD", httpx.URL(url))
+        case ["POST", url, body] if (field := _single_form_field(body)) is not None:
+            return CaptureRequest("POST", httpx.URL(url), body=body, form_field=field)
+        case _:
+            raise SystemExit(
+                f"{text!r}: a URL is bare (GET), prefixed 'HEAD ',"
+                " or prefixed 'POST ' and followed by a form body of one field"
+            )
+
+
+def _single_form_field(body: str) -> str | None:
+    try:
+        fields = urllib.parse.parse_qsl(body, keep_blank_values=True, strict_parsing=True)
+    except ValueError:
+        return None
+    if len(fields) != 1 or not fields[0][0]:
+        return None
+    return fields[0][0]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     parsed = _parser().parse_args(arguments)
-    requests = [(method, httpx.URL(url)) for method, url in map(parse_request, parsed.urls)]
-    hosts = {url.host for _, url in requests}
+    requests = [parse_request(text) for text in parsed.urls]
+    hosts = {request.url.host for request in requests}
     if len(hosts) != 1:
         raise SystemExit(f"every URL must share one host, got {sorted(hosts)}")
     headers = tuple(_header(text) for text in parsed.header)
@@ -218,7 +252,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=_COMMAND)
     parser.add_argument("--out", required=True)
     parser.add_argument("--header", action="append", default=[], metavar="'NAME: VALUE'")
-    parser.add_argument("urls", nargs="+", metavar="[HEAD ]URL")
+    parser.add_argument("urls", nargs="+", metavar="[HEAD |POST ]URL[ BODY]")
     return parser
 
 
@@ -234,18 +268,20 @@ def _first_ipv4(host: str) -> str:
 
 
 def _fetch_all(
-    requests: Sequence[tuple[str, httpx.URL]], headers: tuple[tuple[str, str], ...]
+    requests: Sequence[CaptureRequest], headers: tuple[tuple[str, str], ...]
 ) -> list[CapturedResponse]:
     sent = [("Accept-Encoding", "identity"), *headers]
     with httpx.Client(follow_redirects=False, headers=sent) as client:
-        return [_fetch(client, method, url) for method, url in requests]
+        return [_fetch(client, request) for request in requests]
 
 
-def _fetch(client: httpx.Client, method: str, url: httpx.URL) -> CapturedResponse:
-    response = client.request(method, url)
+def _fetch(client: httpx.Client, request: CaptureRequest) -> CapturedResponse:
+    form = {} if request.body is None else {"Content-Type": "application/x-www-form-urlencoded"}
+    response = client.request(request.method, request.url, content=request.body, headers=form)
+    url = request.url
     return CapturedResponse(
         scheme=url.scheme,
-        method=method,
+        method=request.method,
         target=url.raw_path.decode("ascii"),
         status=response.status_code,
         headers=tuple(
@@ -253,6 +289,7 @@ def _fetch(client: httpx.Client, method: str, url: httpx.URL) -> CapturedRespons
             for name, value in response.headers.raw
         ),
         body=response.content,
+        form_field=request.form_field,
     )
 
 

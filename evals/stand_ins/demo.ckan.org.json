@@ -1,6 +1,7 @@
 {
   "host": "demo.ckan.org",
   "address": "188.114.96.2",
+  "source": "capture",
   "captured_at": "2026-11-04T07:36:50Z",
   "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/demo.ckan.org.json https://demo.ckan.org/api/3/action/status_show",
   "request_headers": [],

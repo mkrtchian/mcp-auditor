@@ -93,6 +93,14 @@ UNKNOWN_ACTION_REQUEST = Sent(
     ),
     "{}",
 )
+# A search form's route, chosen by the field the form body carries.
+FORM_TARGET = "/html/"
+FORM_FIELD = "q"
+RESULTS_BODY = "<html>the results for wikipedia</html>"
+RESULTS_HEADERS = (("Content-Type", "text/html"),)
+_FORM_CONTENT = (("Content-Type", "application/x-www-form-urlencoded"),)
+SEARCH_REQUEST = Sent(_FORM_CONTENT, "q=wikipedia&kl=fr-fr")
+FIELDLESS_SEARCH_REQUEST = Sent(_FORM_CONTENT, "kl=fr-fr")
 _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
 # The stand-in image's Python as the target: http.client sends the target as given and follows
 # no redirect, and the default context verifies TLS against the default paths, which
@@ -163,6 +171,7 @@ def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -
     capture = {
         "host": STAND_IN_HOST,
         "address": STAND_IN_ADDRESS,
+        "source": "capture",
         "captured_at": "2026-11-02T10:00:00Z",
         "command": "uv run python -m evals.capture_stand_in --out x.json http://public.fict/",
         "request_headers": [],
@@ -172,6 +181,7 @@ def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -
             _head_only_route(),
             _post_route(SECRET_ACTION, SECRET_BODY, SECRET_HEADERS),
             _post_route(INSTANCES_ACTION, INSTANCES_BODY, INSTANCES_HEADERS),
+            _form_route(),
         ],
         "defaults": [_redirect_to_https(), secure_default],
     }
@@ -215,6 +225,18 @@ def _post_route(action: str, body: str, headers: Sequence[tuple[str, str]]) -> d
         "status": 200,
         "headers": [list(header) for header in headers],
         "body": body,
+    }
+
+
+def _form_route() -> dict[str, object]:
+    return {
+        "scheme": "https",
+        "method": "POST",
+        "target": FORM_TARGET,
+        "form_field": FORM_FIELD,
+        "status": 200,
+        "headers": [list(header) for header in RESULTS_HEADERS],
+        "body": RESULTS_BODY,
     }
 
 
