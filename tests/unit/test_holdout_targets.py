@@ -70,6 +70,19 @@ def test_no_acceptance_or_holdout_target_bakes_its_work_directory():
         assert not target.planting_host.baked_work, target.cve_id
 
 
+# The image's own `/work` would sit under the per-launch tmpfs the planting layer mounts there, so a
+# target that needs a writable project bakes it elsewhere.
+def test_no_acceptance_or_holdout_image_names_a_path_under_work():
+    services = {
+        service
+        for target in (*CVE_TARGETS, *HOLDOUT_TARGETS)
+        for service in (*target.images, target.server_image, target.patched_image)
+    }
+
+    for service in sorted(services):
+        assert given.the_instructions_naming_work_in(service) == [], service
+
+
 # Version 11 runs every target under the unprivileged account: the host uid is a
 # benchmark-machine value that must not reach the launch.
 def test_no_holdout_target_runs_as_the_host_user():
