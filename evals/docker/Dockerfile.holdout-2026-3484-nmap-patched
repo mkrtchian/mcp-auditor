@@ -4,8 +4,25 @@
 FROM node@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git nmap curl ca-certificates \
+    && apt-get install -y --no-install-recommends \
+        git curl ca-certificates build-essential bzip2 \
     && rm -rf /var/lib/apt/lists/*
+
+# Same real nmap deployment as the vulnerable image: Nmap 7.993 (nmap.org, 2026-10-23), the
+# current stable project release, from the upstream source tarball, documented source install
+# at its defaults (nmap.org/book/install.html).
+# The tarball's sha256 is the one nmap.org publishes in dist/sigs/nmap-7.993.tar.bz2.digest.txt.
+ARG NMAP_SHA256=270e55f04915bfcecb5db8feb959d4c5ba86a48c094520a4f1c07571e1c79c59
+RUN curl -fsSL https://nmap.org/dist/nmap-7.993.tar.bz2 -o /tmp/nmap.tar.bz2 \
+    && echo "${NMAP_SHA256}  /tmp/nmap.tar.bz2" | sha256sum -c - \
+    && mkdir -p /tmp/nmapsrc \
+    && bzip2 -cd /tmp/nmap.tar.bz2 | tar xf - -C /tmp/nmapsrc --strip-components=1 \
+    && cd /tmp/nmapsrc \
+    && ./configure \
+    && make \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/nmapsrc /tmp/nmap.tar.bz2
 
 WORKDIR /app
 # Real install of the pinned first-patched source.
@@ -16,4 +33,4 @@ RUN git clone https://github.com/PhialsBasement/nmap-mcp-server.git . \
 # itself is untouched.
 RUN npm install zod-to-json-schema@3.23.5 && npm install && npm run build
 
-ENTRYPOINT ["node", "dist/index.js"]
+ENTRYPOINT ["node", "/app/dist/index.js"]

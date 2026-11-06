@@ -8,6 +8,10 @@ The patched commit (30a6b9e) switches to execFile('nmap', args) (no shell) plus
 validateAdditionalFlags, so the payload reaches nmap as one inert argv element and no nonce
 surfaces.
 
+Both images run the real Nmap 7.993, built from the nmap.org source tarball. The server runs from
+the checkout /srv/app, the deployment layout's working directory, and its entrypoint names
+/app/dist/index.js by absolute path so it starts there.
+
 The server's HOME is /tmp (the unprivileged launch home), so a $HOME coordinate resolves under
 /tmp. The reach is command_execution, so every kept place is read by running a command: cat for
 files, id -un for the account, cat /proc/sys/kernel/hostname for the UTS name, curl for the
@@ -25,6 +29,7 @@ from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-3484-nmap"
 PATCHED = "holdout-2026-3484-nmap-patched"
+WORKING_DIRECTORY = "/srv/app"
 
 # place_id -> the shell command the injection runs to surface that place's nonce. Container paths
 # are the planter's resolution of the coordinates ($HOME -> /tmp, the unprivileged launch home).
@@ -79,10 +84,10 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=(SERVICE,),
+    images=(SERVICE, "sentinel"),
     server_image=SERVICE,
     patched_image=PATCHED,
-    planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/app", has_network=False),
+    planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKING_DIRECTORY, has_network=False),
     builder=command_injection_env,
     exploits=tuple(_make_exploit(PLACE_COMMANDS[pid]) for pid in KEPT_PLACES),
     benign=_benign,
