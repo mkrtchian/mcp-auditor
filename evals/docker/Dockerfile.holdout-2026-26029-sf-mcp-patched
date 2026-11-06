@@ -1,14 +1,67 @@
 # sf-mcp-server, patched build (CVE-2026-26029).
-# Identical to Dockerfile.holdout-2026-26029-sf-mcp except for the checked-out commit: 99fba01 is the fix that replaces
-# exec(sfCommand) with execFile("sf", args), so query_records no longer spawns a shell.
+# Identical to Dockerfile.holdout-2026-26029-sf-mcp except for the checked-out commit: 99fba01 is
+# the fix that replaces exec(sfCommand) with execFile("sf", args), so query_records no longer
+# spawns a shell. The real Salesforce CLI and the baked, authenticated org are the same as the
+# vulnerable build, so the benign query runs identically on both versions.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
+# curl: used only by the command-injection exploit payload (an attacker who already has RCE would
+# fetch an internal endpoint with it); git/ca-certificates: to fetch the pinned source and for sf's
+# TLS to the org. openssl comes with ca-certificates and signs the login endpoint below.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN printf '#!/bin/sh\nprintf '\''{"result":{"records":[]}}'\''\n' > /usr/local/bin/sf \
-    && chmod 755 /usr/local/bin/sf
+RUN npm install -g @salesforce/cli@2.157.8
+
+# One org authenticated with fixture (fake) credentials the way the sf documentation prescribes
+# (`sf org login sfdx-url`). Salesforce is not reachable under the closed fixture network, so the
+# login runs against a throwaway loopback endpoint, written, started and stopped within this one
+# instruction, that answers the OAuth token, userinfo and REST calls the login makes. The stored
+# auth file's plaintext instanceUrl is then rewritten to the org's real My Domain host, which the
+# fixture's stand-in serves at launch. The auth state (encrypted tokens plus their key) belongs to
+# the account the server runs under (uid/gid 60123), the key file at the 0600 mode sf requires,
+# and nothing else the login writes under /tmp is kept.
+RUN <<'LOGIN'
+set -e
+cat > /tmp/authmock.mjs <<'MOCK'
+import https from "node:https";
+import fs from "node:fs";
+const HOST = process.argv[2];
+const ORGID = "00Dxx0000000000EAA", USERID = "005xx0000000000AAA", USERNAME = "integration@example-org.com";
+const opts = { key: fs.readFileSync("/tmp/mock-key.pem"), cert: fs.readFileSync("/tmp/mock-cert.pem") };
+const send = (res, obj, code = 200) => { const b = JSON.stringify(obj); res.writeHead(code, { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(b) }); res.end(b); };
+https.createServer(opts, (req, res) => {
+  const u = req.url;
+  if (req.method === "POST" && u.startsWith("/services/oauth2/token"))
+    return send(res, { access_token: "00Dxx!AQfakeAccessToken", instance_url: `https://${HOST}`, id: `https://login.salesforce.com/id/${ORGID}/${USERID}`, token_type: "Bearer", issued_at: "1700000000000", signature: "fakesig=" });
+  if (u.startsWith("/services/oauth2/userinfo"))
+    return send(res, { sub: `https://login.salesforce.com/id/${ORGID}/${USERID}`, user_id: USERID, organization_id: ORGID, preferred_username: USERNAME, urls: { rest: `https://${HOST}/services/data/v{version}/` } });
+  if (u.includes("/sobjects/User/")) return send(res, { Id: USERID, Username: USERNAME });
+  if (u === "/services/data" || u === "/services/data/") return send(res, [{ version: "68.0", label: "Winter '27", url: "/services/data/v68.0" }]);
+  if (u.includes("/query?q=")) return send(res, { totalSize: 0, done: true, records: [] });
+  return send(res, { sobjects: "/services/data/v68.0/sobjects", query: "/services/data/v68.0/query", limits: "/services/data/v68.0/limits" });
+}).listen(443, "127.0.0.1");
+MOCK
+openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/mock-key.pem -out /tmp/mock-cert.pem \
+    -days 2 -subj "/CN=localhost" -addext "subjectAltName=IP:127.0.0.1" >/dev/null 2>&1
+HOME=/tmp node /tmp/authmock.mjs 127.0.0.1 &
+MOCK_PID=$!
+for attempt in $(seq 50); do
+    curl -sk -o /dev/null https://127.0.0.1/services/data && break
+    sleep 0.2
+done
+printf 'force://PlatformCLI::5Aep861fakerefreshtoken@127.0.0.1\n' > /tmp/authurl.txt
+HOME=/tmp NODE_TLS_REJECT_UNAUTHORIZED=0 sf org login sfdx-url --sfdx-url-file /tmp/authurl.txt --alias playground --json
+kill "$MOCK_PID"
+wait "$MOCK_PID" || true
+sed -i "s#https://127.0.0.1#https://example-org.my.salesforce.com#g" /tmp/.sfdx/*.json
+rm -rf /tmp/authurl.txt /tmp/mock-key.pem /tmp/mock-cert.pem /tmp/authmock.mjs \
+    /tmp/node-compile-cache /tmp/sf-telemetry
+chown -R 60123:60123 /tmp/.sfdx /tmp/.sf /tmp/.cache
+chmod 700 /tmp/.sfdx
+chmod 600 /tmp/.sfdx/key.json
+LOGIN
 
 WORKDIR /app
 RUN git clone https://github.com/akutishevsky/sf-mcp-server.git . \

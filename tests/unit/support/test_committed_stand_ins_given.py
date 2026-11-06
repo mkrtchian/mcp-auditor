@@ -16,7 +16,6 @@ PENDING_STAND_IN_HOSTS = frozenset(
         "w3challs.com",  # CVE-2026-2130
         "html.duckduckgo.com",  # CVE-2026-42260
         "api.github.com",  # CVE-2025-53818
-        "example-org.my.salesforce.com",  # CVE-2026-26029
         "45.55.0.10",  # CVE-2025-65719
         "rds.us-east-1.amazonaws.com",  # CVE-2026-85787, CVE-2026-85788
         "secretsmanager.us-east-1.amazonaws.com",  # CVE-2026-85787, CVE-2026-85788
