@@ -534,7 +534,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5603-magento2
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "8737a111a1d6702623f56510c2cc84f29824d0d17130945123aac19ce8384e9a"
+        org.mcp-auditor.dockerfile-fingerprint: "950925cd9d0cb865e5dd6536b9bbb66cefb72274ffe9fbbfb9da1a2214ad197e"
     image: mcp-auditor-cve-holdout-2026-5603-magento2:local
 
   holdout-2026-5603-magento2-patched:
@@ -542,7 +542,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5603-magento2-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "7a6f1e67204824889dc42b9ddbf7627059babd04a780d7ee10a252c2b297f241"
+        org.mcp-auditor.dockerfile-fingerprint: "db7cd141f83ac44cf7c8d7ab578c6e0e8c926f254e2c361f8211c5882d83051f"
     image: mcp-auditor-cve-holdout-2026-5603-magento2-patched:local
 
   holdout-2025-53818-github-kanban:

@@ -10,7 +10,13 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates php-cli \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://files.magerun.net/n98-magerun2.phar -o /usr/local/bin/magerun2 \
+# n98-magerun2, the real program executeMagerun2Command shells out to. The server documentation
+# names no magerun2 channel or version, so the latest release the project published applies:
+# 10.1.0 (github.com/netz98/n98-magerun2/releases, 2026-10-07), its release phar pinned by sha256.
+ARG MAGERUN2_SHA256=76c931312f3ab6a5a5e1dbd40544cf43f9ecab176bca6a3597ebf4a3413fe270
+RUN curl -fsSL https://github.com/netz98/n98-magerun2/releases/download/10.1.0/n98-magerun2.phar \
+        -o /usr/local/bin/magerun2 \
+    && echo "${MAGERUN2_SHA256}  /usr/local/bin/magerun2" | sha256sum -c - \
     && chmod +x /usr/local/bin/magerun2
 
 # The pinned vulnerable server, straight from npm.

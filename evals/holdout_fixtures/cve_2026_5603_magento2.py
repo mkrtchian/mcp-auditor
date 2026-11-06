@@ -13,6 +13,7 @@ import re
 
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
+from evals.cve_layout import PROJECT
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_targets import CVETarget
@@ -80,17 +81,16 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=(SERVICE,),
+    images=(SERVICE, "sentinel"),
     server_image=SERVICE,
     patched_image=PATCHED,
     planting_host=PlantingHost(
         # Unprivileged (an account place needs a non-host user). The injection is independent of
-        # the working directory, so the server runs from /tmp, which the unprivileged account can
-        # traverse (the /srv layout temp root is host-user 0700 and carries no kept place for this
-        # reach) and which holds no docker-env marker, so the patched server takes its local
-        # execFile path.
+        # the working directory, so the server runs from the layout checkout (/srv/app), the
+        # directory the deployment layout prescribes. The checkout holds no docker-env marker, so
+        # the patched server takes its local execFile path.
         SymbolicUser.UNPRIVILEGED,
-        "/tmp",
+        PROJECT,
         has_network=False,
     ),
     builder=command_injection_env,
