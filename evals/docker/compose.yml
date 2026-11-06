@@ -689,6 +689,22 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "6d8effb9105fe353e8cddb74fa3bb918da16c3ed11d2d5691b936a6fb898ba12"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile-patched:local
 
+  holdout-2026-44717-calculate:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-44717-calculate
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "e805432c5c958b5858db5ac424888ae809bed9f9c914b86131ecbdbf336026fa"
+    image: mcp-auditor-cve-holdout-2026-44717-calculate:local
+
+  holdout-2026-44717-calculate-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-44717-calculate-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "de7da0247f3e04a09af7a9e4c41bb5ebe920268c37346adcde4f08082a824da0"
+    image: mcp-auditor-cve-holdout-2026-44717-calculate-patched:local
+
   # Nuisance suite: one patched image per admitted server (evals/nuisance_admission.json), in its
   # own mcp-auditor-nuisance- namespace, under the nuisance profile.
   kanban:

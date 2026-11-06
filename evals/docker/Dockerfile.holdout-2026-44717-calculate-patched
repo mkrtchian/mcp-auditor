@@ -1,0 +1,15 @@
+# Patched server: 611711Dark/mcp_calculate_server at commit 9dee7f0 (0.1.1, the fix of
+# CVE-2026-44717). calculate_expression parses the expression with ast and evaluates it through an
+# allow-list validator over a curated SymPy namespace, so Python code is rejected.
+FROM python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/611711Dark/mcp_calculate_server.git /opt/mcp_calculate_server \
+    && git -C /opt/mcp_calculate_server checkout 9dee7f04f6da57c39a2b1fca9ca2cd566dbdbc3c
+
+RUN pip install --no-cache-dir "mcp>=1.5.0,<2" "sympy>=1.13.3"
+
+CMD ["python", "/opt/mcp_calculate_server/server.py"]

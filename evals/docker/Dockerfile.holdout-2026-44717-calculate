@@ -1,0 +1,16 @@
+# Vulnerable server: 611711Dark/mcp_calculate_server at commit 5e98d9a (0.1.0, CVE-2026-44717).
+# calculate_expression passes the caller's expression to eval() with the module's globals, so an
+# expression that is Python code runs in the server process and its result is returned. No PyPI
+# release exists; the real server is cloned from its public repository at the pinned commit.
+FROM python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/611711Dark/mcp_calculate_server.git /opt/mcp_calculate_server \
+    && git -C /opt/mcp_calculate_server checkout 5e98d9a20dda1ec7b738fd0b63e9f369fed1e1f5
+
+RUN pip install --no-cache-dir "mcp>=1.5.0,<2" "sympy>=1.13.3"
+
+CMD ["python", "/opt/mcp_calculate_server/server.py"]
