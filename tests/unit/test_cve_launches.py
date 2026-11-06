@@ -21,7 +21,12 @@ from evals.cve_environments import (
 from evals.cve_layout import NEUTRAL_TOKEN
 from evals.cve_planting import PlantingFailed
 from evals.cve_planting_base import LAYOUT_PREFIX, LayoutMount, check_layout_outer
-from evals.holdout_environments import arcadedb_mcp_env, mysql_db_env, ssrf_redirect_env
+from evals.holdout_environments import (
+    arcadedb_mcp_env,
+    filesystem_scope_env,
+    mysql_db_env,
+    ssrf_redirect_env,
+)
 from evals.holdout_kit import kit_launch
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ExecutionRegime
@@ -53,6 +58,7 @@ _LAYOUT_BUILDERS = {
     "command_injection": command_injection_env,
     "ssrf": ssrf_env,
     "arcadedb_mcp": arcadedb_mcp_env,
+    "filesystem_scope": filesystem_scope_env,
     "ssrf_redirect": ssrf_redirect_env,
     "mysql_db": mysql_db_env,
     "kit filesystem": kit_launch.filesystem_env,
@@ -91,6 +97,21 @@ def test_the_tree_is_handed_over_once_complete_its_leak_links_included():
     with filesystem_env("img", given.a_spec_with_a_file_place(), docker=docker) as launch:
         assert list(docker.layouts) == [str(_root(launch))]
         assert {".env", "app.git/config", "app/leak0/report"} <= docker.layouts[str(_root(launch))]
+
+
+def test_the_scope_fixture_hands_over_a_tree_without_leak_links():
+    docker = FakePlantingDocker()
+
+    with filesystem_scope_env("img", given.a_spec_with_a_file_place(), docker=docker) as launch:
+        handed_over = docker.layouts[str(_root(launch))]
+        assert ".env" in handed_over
+        assert not any(path.startswith("app/leak") for path in handed_over)
+
+
+def test_the_scope_fixture_launches_with_the_checkout_as_scope():
+    with filesystem_scope_env("img", given.an_empty_spec(), docker=FakePlantingDocker()) as launch:
+        assert launch.scope == "/srv/app"
+        assert launch.args[-1] == "/srv/app"
 
 
 def test_no_handed_over_tree_remains_and_its_outer_directory_is_gone_after_the_launch():

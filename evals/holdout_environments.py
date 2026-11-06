@@ -9,7 +9,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from uuid import uuid4
 
-from evals.cve_environments import Launch, LaunchShape, materialise
+from evals.cve_environments import Launch, LaunchShape, filesystem_launch, materialise
 from evals.cve_layout import layout_mount_args, owned_layout
 from evals.cve_planting import PlantingDocker, PlantingSpec, confinement_args, planted
 from evals.cve_planting_base import LABEL, own_network_args, unprivileged_user_args
@@ -55,6 +55,23 @@ def arcadedb_mcp_env(
                 image,
             ],
         )
+
+
+@contextmanager
+def filesystem_scope_env(
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
+) -> Generator[Launch]:
+    # filesystem_env without its leak<i>/report links: those lie inside the layout and lead to a
+    # kept place, while the exploits of a scope-carrying server name each place by absolute path.
+    with (
+        owned_layout(docker, lambda root: materialise(root, spec, shape)) as root,
+        planted(spec, image, docker) as args,
+    ):
+        yield filesystem_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
 
 
 # The no-holder launch's key: no instance runs there, the key only keeps the API tools registered

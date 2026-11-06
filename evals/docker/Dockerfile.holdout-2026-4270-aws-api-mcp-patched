@@ -9,8 +9,7 @@ RUN pip install --no-cache-dir \
       "fastmcp==3.4.9" \
       "pydantic==2.11.10"
 
-ENV AWS_REGION=us-east-1 \
-    AWS_API_MCP_TELEMETRY=false
+ENV AWS_REGION=us-east-1
 
 RUN printf '#!/bin/sh\nexport AWS_API_MCP_WORKING_DIR="$1"\nexec awslabs.aws-api-mcp-server\n' \
       > /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh

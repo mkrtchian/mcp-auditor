@@ -107,7 +107,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-4270-aws-api-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9f0aedfb23139ea947145a65b6bd23789bc19ec4de8cc062303a4b528fc7e3fd"
+        org.mcp-auditor.dockerfile-fingerprint: "3bf6c2d3a10e52c227bcab13946583d7f4e97ac5b76c7bd414cf21a2a05cd4b6"
     image: mcp-auditor-cve-holdout-2026-4270-aws-api-mcp:local
 
   holdout-2026-4270-aws-api-mcp-patched:
@@ -115,7 +115,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-4270-aws-api-mcp-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "c4515490e1b6232d76270441df700e4f2508aa77668a602ab908be67b37eba80"
+        org.mcp-auditor.dockerfile-fingerprint: "af2b6d5677f5bda780ec91cf0092a830beabedd026136f81dc0d3ef5ceb026ab"
     image: mcp-auditor-cve-holdout-2026-4270-aws-api-mcp-patched:local
 
   holdout-2026-2130-maigret:

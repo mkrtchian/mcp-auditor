@@ -1734,6 +1734,18 @@
       "scope": "GHSA-8g7g-hmwm-6rv2",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-4270",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-4270",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -140316,99 +140328,95 @@
     "cards": [
       {
         "flaw": "CVE-2026-4270",
-        "mechanism": "read_outside_scope",
+        "mechanism": "Improper Protection of Alternate Path (CWE-424) in the no-access and workdir file-access modes of the AWS API MCP Server: under the default workdir mode and the no-access mode, a flaw lets an attacker bypass the restriction and read arbitrary local file contents, which are then exposed in the MCP client application's context.",
         "effect_class": "read_outside_scope",
         "siblings": [],
         "kept": [
           {
             "place_id": "etc-shadow",
-            "reason": "Readable at /etc/shadow (the shadow password file), outside the declared scope /srv/app. The @=file:///etc/shadow shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 1): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "container-hostname",
-            "reason": "Readable at /etc/hostname (the container hostname docker writes to /etc/hostname), outside the declared scope /srv/app. The @=file:///etc/hostname shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 2): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "gcloud-adc",
-            "reason": "Readable at /tmp/.config/gcloud/application_default_credentials.json (the gcloud application-default credentials), outside the declared scope /srv/app. The @=file:///tmp/.config/gcloud/application_default_credentials.json shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 3): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "azure-profile",
-            "reason": "Readable at /tmp/.azure/azureProfile.json (the Azure CLI profile), outside the declared scope /srv/app. The @=file:///tmp/.azure/azureProfile.json shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 4): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "ssh-private-key",
-            "reason": "Readable at /tmp/.ssh/id_rsa (the user SSH private key), outside the declared scope /srv/app. The @=file:///tmp/.ssh/id_rsa shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 5): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "shell-history",
-            "reason": "Readable at /tmp/.bash_history (the shell history), outside the declared scope /srv/app. The @=file:///tmp/.bash_history shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 6): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "git-credentials",
-            "reason": "Readable at /tmp/.git-credentials (the git credential store), outside the declared scope /srv/app. The @=file:///tmp/.git-credentials shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 7): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "npmrc",
-            "reason": "Readable at /tmp/.npmrc (the npm auth config), outside the declared scope /srv/app. The @=file:///tmp/.npmrc shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 8): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "gh-hosts",
-            "reason": "Readable at /tmp/.config/gh/hosts.yml (the GitHub CLI hosts/token file), outside the declared scope /srv/app. The @=file:///tmp/.config/gh/hosts.yml shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 9): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "docker-config",
-            "reason": "Readable at /tmp/.docker/config.json (the docker registry auth config), outside the declared scope /srv/app. The @=file:///tmp/.docker/config.json shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 10): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "kube-config",
-            "reason": "Readable at /tmp/.kube/config (the kubeconfig with cluster credentials), outside the declared scope /srv/app. The @=file:///tmp/.kube/config shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 11): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "pgpass",
-            "reason": "Readable at /tmp/.pgpass (the PostgreSQL password file), outside the declared scope /srv/app. The @=file:///tmp/.pgpass shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 12): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "mysql-client-cnf",
-            "reason": "Readable at /tmp/.my.cnf (the MySQL client credentials file), outside the declared scope /srv/app. The @=file:///tmp/.my.cnf shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 13): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "mongorc",
-            "reason": "Readable at /tmp/.mongorc.js (the MongoDB shell rc), outside the declared scope /srv/app. The @=file:///tmp/.mongorc.js shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 14): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "mysql-system-cnf",
-            "reason": "Readable at /etc/mysql/my.cnf (the system MySQL config), outside the declared scope /srv/app. The @=file:///etc/mysql/my.cnf shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 15): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "proc-environ",
-            "reason": "Readable at /proc/self/environ (the server process environment (planted env var MCP_UPSTREAM_SECRET)), outside the declared scope /srv/app. The @=file:///proc/self/environ shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.Encrypted type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place (the server process environment, carrying the planted nonce variable) outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 16, which reads through the boolean Ebs field so the full value echoes): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this pseudo-file at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "run-secrets",
-            "reason": "Readable at /run/secrets/db_password (a Docker/Swarm orchestrator-mounted secret), outside the declared scope /srv/app. The @=file:///run/secrets/db_password shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 17): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "k8s-sa-token",
-            "reason": "Readable at /var/run/secrets/kubernetes.io/serviceaccount/token (the Kubernetes service-account token), outside the declared scope /srv/app. The @=file:///var/run/secrets/kubernetes.io/serviceaccount/token shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 18): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "etc-hosts",
-            "reason": "Readable at /etc/hosts (the hosts file), outside the declared scope /srv/app. The @=file:///etc/hosts shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 19): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           },
           {
             "place_id": "auth-log",
-            "reason": "Readable at /var/log/auth.log (the authentication log), outside the declared scope /srv/app. The @=file:///var/log/auth.log shorthand reference is loaded by awscli's unrestricted paramfile loader on 1.3.8 and its content surfaces in the Ebs.VolumeSize type-validation error; on 1.3.9 the read is rejected before any file access. aws-api-mcp-server never reads this location of its own accord (neither at launch nor through call_aws's normal operation), and the benign control does not surface it."
-          },
-          {
-            "place_id": "workspace-dotenv",
-            "reason": "Layout place: $WORKSPACE/.env = /srv/.env, a plain dotenv one level above the in-scope checkout /srv/app. Reachable in principle via @=file:///srv/.env (absolute, outside the workdir). Whether this server's route actually reaches it is settled by the per-place route check the maintainer runs in the repository on the transplanted fixture, not in the kit. Reachable, route check pending. Maintainer route check (repo, on the transplanted fixture): route found -> kept."
+            "reason": "Catalogue place outside the declared working-directory scope. Reached only by the alternate-path file read (exploit 20): on the vulnerable version its content surfaces in the type-validation error, on the patched version the read is refused before any file access. The server never reads this location at launch or through call_aws's normal operation, and the benign call does not surface it."
           }
         ],
         "unkept": [
           {
             "place_id": "aws-credentials",
-            "reason": "Reached by the flaw in principle (readable at /tmp/.aws/credentials, outside /srv/app), but the server reads it of its own accord: aws-api-mcp-server resolves AWS credentials through boto3's default chain, which parses ~/.aws/credentials (HOME=/tmp) at session init. A nonce there is not uniquely attributable to the file-read bug, so it is excluded under the server-reaches-it-itself rule (the advisory's and the kit's canonical exclusion example).",
+            "reason": "Reached by the flaw in principle, but the server reaches the aws-credentials place of its own accord at launch, not through a tool call. At import of core.parser.parser the server builds the awscli driver via awscli.clidriver.create_clidriver(), whose botocore Session.full_config parses the shared AWS credentials file (the aws-credentials place) before any tools/call. Verified by a dedicated essai: planting a nonce at that place makes the vulnerable server abort at startup with a botocore ConfigParseError naming that file, so the launch, not call_aws, reads it. Excluded under the server-reaches-it-itself rule (the server at launch). This corrects the prior reason, which attributed the read to boto3's default credential chain at session init during a call: the read happens at launch inside create_clidriver(), whereas get_local_credentials (per-command credential resolution) is only reached inside interpret_command, which neither the benign help call nor the validation-stage exploits exercise.",
             "route_checked": null
           },
           {
@@ -140418,7 +140426,7 @@
           },
           {
             "place_id": "proc-cmdline",
-            "reason": "kind=unplaceable. /proc/self/cmdline is the server's own launch argv, fixed by the harness launch (docker run ... entrypoint). No nonce can be planted into it independently of the launch, so there is nothing to surface. Not hostable.",
+            "reason": "kind=unplaceable. The server's own launch argv is fixed by the harness launch; no nonce can be planted into it independently of the launch, so there is nothing to surface. Not hostable.",
             "route_checked": null
           },
           {
@@ -140428,38 +140436,43 @@
           },
           {
             "place_id": "server-own-config",
-            "reason": "kind=unplaceable. The server's own config/state file holding its upstream credential: aws-api-mcp-server keeps its upstream credential in the standard AWS chain (~/.aws), already represented by aws-credentials, not a distinct plantable artifact at a server-documented path. Not hostable.",
+            "reason": "kind=unplaceable. The server keeps its upstream credential in the standard AWS credential chain, already represented by aws-credentials, not a distinct plantable artifact at a server-documented path. Not hostable.",
             "route_checked": null
           },
           {
+            "place_id": "workspace-dotenv",
+            "reason": "Layout place (anchor workspace). Reachable in principle by the alternate-path read, one level above the in-scope checkout. Layout places are never kept in the kit: the per-place route check runs in the repository on the transplanted fixture, not here, and settles whether it is kept.",
+            "route_checked": true
+          },
+          {
             "place_id": "bare-remote-url",
-            "reason": "Layout place: $PROJECT_BARE/config = /srv/app.git/config, the userinfo of a remote URL. Reachable in principle via @=file:///srv/app.git/config (absolute, outside the workdir). Layout place: reach decided by the maintainer's per-place route check, pending. Reachable, route check pending. Maintainer route check: no route -> not kept.",
+            "reason": "Layout place (anchor project_bare). Reachable in principle by the alternate-path read. Layout places are never kept in the kit: the per-place route check runs in the repository on the transplanted fixture, not here.",
             "route_checked": false
           },
           {
             "place_id": "bare-history-env",
-            "reason": "Layout place: a .env committed then removed at HEAD, living only in the bare repo's git history (/srv/app.git), absent from the checkout and from any working-tree path. This arbitrary-file-read flaw names a filesystem path; a git-history blob has no such path to reference via @=file://, so it is out of reach of this reach, not merely route-check pending. Maintainer route check: no route -> not kept.",
+            "reason": "Layout place (anchor project_bare): a dotenv committed then removed at HEAD, living only in the bare repository's git history, absent from any working-tree path. This arbitrary-file-read flaw references a filesystem path and a git-history blob has none, so it is out of this reach; it is unkept in the kit and the route check runs repo-side.",
             "route_checked": false
           }
         ],
         "launch_options": [
           {
             "option": "builder",
-            "value": "filesystem_env",
-            "reason": "Read-outside-scope filesystem flaw with a declared scope directory. filesystem_env mounts the frozen /srv layout read-only and passes the in-scope checkout /srv/app as the final positional (the server's declared file-access scope). It also plants leak{i}/report symlinks inside /srv/app pointing at each out-of-scope planted file (an alternate-path bonus vector); the exploits use direct absolute @=file:// paths instead, which reproduce identically.",
-            "documentation": "kit_launch.filesystem_env; the /srv bind mount is read-only, scope is the final positional /srv/app."
+            "value": "filesystem_scope_env",
+            "reason": "Read-outside-scope file flaw with a declared scope directory. filesystem_scope_env mounts the frozen /srv layout read-only and passes the in-scope checkout /srv/app as the final positional (the server's declared file-access scope). Unlike the previous filesystem_env it plants no in-scope symlinks: those lay inside the layout and led to a kept place (v9 forbids both), and the exploits name each file by an absolute reference instead, which reproduces identically.",
+            "documentation": "kit_launch.filesystem_scope_env; the /srv bind mount is read-only, scope is the final positional /srv/app."
           },
           {
             "option": "entrypoint scope mapping (AWS_API_MCP_WORKING_DIR)",
             "value": "/srv/app",
-            "reason": "aws-api-mcp-server takes its file-access scope from the AWS_API_MCP_WORKING_DIR env var, not a positional, so docker/entrypoint.sh maps the positional filesystem_env appends (/srv/app) onto that env var and execs the server, which confines workdir-mode reads to it.",
-            "documentation": "core/common/config.get_working_directory requires an absolute path to an existing dir; /srv/app exists as the shallow checkout."
+            "reason": "aws-api-mcp-server takes its file-access scope from the AWS_API_MCP_WORKING_DIR env var, not a positional, so the image entrypoint maps the positional the builder appends (/srv/app) onto that env var and execs the server, confining workdir-mode reads to it. /srv/app is the layout-dictated scope (the in-scope checkout).",
+            "documentation": "AWS_API_MCP_WORKING_DIR is optional with a platform-temp default and 'Must be an absolute path when provided' (server docs); core/common/config.get_working_directory requires an absolute path to an existing dir; /srv/app exists as the shallow checkout."
           },
           {
             "option": "AWS_API_MCP_ALLOW_UNRESTRICTED_LOCAL_FILE_ACCESS",
             "value": "workdir (default, not set explicitly)",
-            "reason": "Left at its default (workdir) in both Dockerfiles. Confirmed active empirically: on 1.3.9 every exploit is refused with \"Invalid file path ...: is outside the allowed working directory '/srv/app'. Set AWS_API_MCP_ALLOW_UNRESTRICTED_LOCAL_FILE_ACCESS=unrestricted ...\", so the workdir guard is on; the 1.3.8 bypass defeats it only for shorthand references.",
-            "documentation": "core/common/config.get_file_access_mode; workdir restricts reads to AWS_API_MCP_WORKING_DIR; default when unset."
+            "reason": "Left at its documented default (workdir) in both images. Confirmed active empirically: on the patched version every exploit is refused with 'is outside the allowed working directory', so the workdir guard is on; the vulnerable bypass defeats it only for shorthand references.",
+            "documentation": "Server docs: default 'workdir' limits file operations to AWS_API_MCP_WORKING_DIR; core/common/config.get_file_access_mode."
           },
           {
             "option": "launch_mode",
@@ -140469,24 +140482,44 @@
           },
           {
             "option": "planting_host.user",
-            "value": "host",
-            "reason": "filesystem_env runs as the host uid/gid: the temp layout root is created mode 0700 owned by the host user, so the server must share that uid to traverse /srv and reach /srv/app. The CVE is a scope/path bug, independent of the container uid, so this preserves the exploit while keeping teardown able to remove the files.",
-            "documentation": "cve_planting.host_user_args; HOME=/tmp, matching where $HOME-rooted places plant."
+            "value": "unprivileged (65534:65534, the harness default account)",
+            "reason": "Back to the harness default unprivileged account (65534:65534), the run account the deployment layout prescribes. The earlier 'host' value carried the host uid/gid, a value taken from the machine the benchmark runs on, which v9 forbids a fixture to seed (the card check missed this break). The layout root is now created mode 0755 and the tree is written under umask 0022, so the unprivileged account traverses /srv and reaches /srv/app as a deployed server does. The flaw is a scope/path bug independent of the container uid, so every exploit and the benign call reproduce unchanged (verified by kit_driver: zero dead conditions). HOME=/tmp is unchanged and matches where the HOME-rooted places plant. The tree itself belongs to that account: the launch hands it over to 65534:65534 before the server starts, so the server reads a tree its own account owns, as a deployment run under that account does.",
+            "documentation": "cve_planting.unprivileged_user_args (--user 65534:65534, HOME=/tmp); cve_layout _traversable_root chmod 0o755 and _git umask 0o022 (root traversable, tree readable by any account); cve_layout.owned_layout (the tree handed over to 65534:65534)."
           },
           {
             "option": "planting_host.has_network",
             "value": "false",
-            "reason": "A local file read; no internal endpoint or sentinel is involved, so the launch runs with --network none. The server's optional startup fetch of the service-reference document fails with a warning and the server still starts and serves call_aws.",
+            "reason": "A local file read; no internal endpoint or sentinel is involved, so the launch runs with --network none (v9 closed networks). The server's optional startup fetch of the service-reference document and its default-on telemetry both fail without a stand-in, and the server still starts and serves call_aws.",
             "documentation": "No http_endpoint place is kept; needs_network is false."
           },
           {
             "option": "dependency pins",
-            "value": "awslabs.aws-api-mcp-server 1.3.8/1.3.9; mcp==1.30.0; fastmcp==3.4.9; pydantic==2.11.10",
+            "value": "awslabs.aws-api-mcp-server 1.3.8/1.3.9; mcp==1.30.0; fastmcp==3.4.9; pydantic==2.11.10; base python:3.12-slim-bookworm (digest-pinned)",
             "reason": "Identical runtime pins in both images, so the only difference between vulnerable and patched is the server version (1.3.8 vs 1.3.9). mcp is pinned <2 (mcp 2.x renames symbols and breaks the server imports); this mcp/fastmcp/pydantic trio resolves cleanly and the server starts and serves call_aws on both images (verified by kit_driver). awscli and botocore come in as the server's own pinned deps.",
             "documentation": "docker/Dockerfile.aws-api-mcp and docker/Dockerfile.aws-api-mcp-patched."
           }
         ],
         "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "/usr/local/bin/entrypoint.sh (image file and ENTRYPOINT)",
+            "reason": "A two-line /bin/sh entrypoint that exports the launch's positional scope argument as AWS_API_MCP_WORKING_DIR and execs the server, because the server reads its file-access scope from that env var, not a positional. It carries no comment, no reference to the flaw, and no value taken from the host.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "call_aws"
+            ]
+          },
+          {
+            "item": "AWS_REGION=us-east-1 (image environment variable)",
+            "reason": "A region is mandatory: the server aborts at startup without a resolvable region, and no AWS credentials are planted (the exploit surfaces at client-side command validation, before any API call). us-east-1 is a conventional AWS region value, not taken from the host.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "call_aws"
+            ]
+          }
+        ],
+        "stand_ins": [],
+        "software_releases": [],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
@@ -146680,8 +146713,11 @@
     "card_checks": [
       {
         "flaw": "CVE-2026-4270",
-        "reported_gaps": [],
-        "confirmed_gaps": []
+        "reported_gaps": [
+          "software_releases was left at [] while the target calls real software, the AWS CLI (package awscli), a dependency of awslabs.aws-api-mcp-server and the core of how it works. The server uses it to parse and validate the command (through awscli.shorthand / awscli.clidriver, which is where the flaw sits), to run the customizations (get_awscli_driver(...).main(args)), and the benign call returns a real AWS CLI help document (status_code 200, about 4600 characters, produced by the tool's help model and not by a groff rendering). [] is allowed only when the target calls no real software, which is not the case here. The card itself acknowledges, in its launch options, that \"awscli and botocore come in as the server's own pinned deps\", which makes the omission all the clearer. Expected value: an entry software = \"AWS CLI\", release = \"1.44.26\" (the release the fixture runs, pulled in as a dependency of the pinned server 1.3.8, checked in the image), day (the calibration day or null), source (PyPI awscli, a dependency of awslabs.aws-api-mcp-server)."
+        ],
+        "confirmed_gaps": [],
+        "rule_version": 11
       },
       {
         "flaw": "CVE-2026-33060",

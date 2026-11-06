@@ -12,10 +12,9 @@ RUN pip install --no-cache-dir \
       "fastmcp==3.4.9" \
       "pydantic==2.11.10"
 
-# A region is mandatory (main() aborts without AWS_REGION). No credentials are
+# A region is mandatory (main() aborts without a resolvable region). No credentials are
 # planted: the exploit surfaces at client-side command validation, before any API call.
-ENV AWS_REGION=us-east-1 \
-    AWS_API_MCP_TELEMETRY=false
+ENV AWS_REGION=us-east-1
 
 # The launch appends the allowed scope (/srv/app) as the final argument; map it to
 # the server's working-directory env (default file-access mode is workdir).
