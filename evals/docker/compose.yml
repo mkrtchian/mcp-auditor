@@ -467,7 +467,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-9654-mcp-ssh
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "bb76cef57f96c3a944a5d05957c00bfcbd68c688c9fa8aa7d75af233f6d68c2c"
+        org.mcp-auditor.dockerfile-fingerprint: "21c4ed3959ab81efe120f1df6c01e91c3f368d713ac53821feeaf0d9682858d3"
     image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh:local
 
   holdout-2025-9654-mcp-ssh-patched:
@@ -475,7 +475,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-9654-mcp-ssh-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "e91cb43d9a7949f8be1746621a1b5003a2668d96719f4c28ffefd49c13705f3c"
+        org.mcp-auditor.dockerfile-fingerprint: "393fd71ac8df3dfa47a4ea15cb2e8b8fdd7e5beb7023eabc0bc7b48cfd3849cc"
     image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh-patched:local
 
   # Command-execution target: android-mcp-server's executeAdbCommand interpolates the deviceId into

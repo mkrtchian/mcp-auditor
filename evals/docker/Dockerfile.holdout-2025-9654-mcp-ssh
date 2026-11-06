@@ -5,13 +5,36 @@
 # installed unchanged; nothing of the flaw is reimplemented.
 FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
-# ssh/scp so the benign path behaves like a real deployment; wget so a command-execution
-# payload can reach an internal HTTP endpoint (IMDS-style places).
+# wget so a command-execution payload can reach an internal HTTP endpoint (IMDS-style places), and
+# it fetches the OpenSSH tarball at build; libssl3 and zlib1g are the client's runtime libraries.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends openssh-client wget ca-certificates \
+ && apt-get install -y --no-install-recommends wget ca-certificates libssl3 zlib1g \
  && rm -rf /var/lib/apt/lists/*
+
+# The real SSH client (ssh, scp) the server shells out to, as its README requires ("SSH client
+# installed"). The README names no channel or version, so the latest release the OpenSSH project
+# published on the calibration day (2026-11-05) is used: OpenSSH 10.6p1 (2026-10-06), built from the
+# portable release tarball. The release notes give its SHA256 in base64,
+# qdyVZd/+hkD2TYY80poyvEo9vewFZqf8RMXW7nZ9Xzk=, which is the hex digest pinned here. Only the
+# client is built and installed: the image carries no sshd. The build toolchain is purged after.
+ARG OPENSSH_SHA256=a9dc9565dffe8640f64d863cd29a32bc4a3dbdec0566a7fc44c5d6ee767d5f39
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends gcc make libc6-dev libssl-dev zlib1g-dev \
+ && wget -q -O /tmp/openssh.tar.gz \
+      https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.6p1.tar.gz \
+ && echo "${OPENSSH_SHA256}  /tmp/openssh.tar.gz" | sha256sum -c - \
+ && mkdir /tmp/openssh \
+ && tar -xzf /tmp/openssh.tar.gz -C /tmp/openssh --strip-components=1 \
+ && cd /tmp/openssh \
+ && ./configure --prefix=/usr --sysconfdir=/etc/ssh --without-pam \
+ && make -j"$(nproc)" ssh scp \
+ && install -m 0755 ssh scp /usr/bin/ \
+ && cd / \
+ && rm -rf /tmp/openssh /tmp/openssh.tar.gz \
+ && apt-get purge -y --auto-remove gcc make libc6-dev libssl-dev zlib1g-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && test ! -e /usr/sbin/sshd
 
 RUN npm install -g @aiondadotcom/mcp-ssh@1.0.3
 
-ENV MCP_SILENT=true
 ENTRYPOINT ["mcp-ssh"]
