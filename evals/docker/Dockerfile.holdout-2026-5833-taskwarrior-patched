@@ -15,8 +15,10 @@ RUN git clone https://github.com/awwaiid/mcp-server-taskwarrior /opt/mcp \
  && npm install \
  && npm run build
 
+# Non-interactive taskwarrior: confirmation=off stops `task` asking y/n on a tty it
+# does not have; every other setting is left at its taskwarrior default.
 RUN mkdir -p /opt/task/data \
- && printf 'data.location=/opt/task/data\nconfirmation=off\nverbose=nothing\ngc=off\n' > /opt/task/.taskrc \
+ && printf 'data.location=/opt/task/data\nconfirmation=off\n' > /opt/task/.taskrc \
  && chmod -R 0777 /opt/task
 ENV TASKRC=/opt/task/.taskrc
 ENV TASKDATA=/opt/task/data

@@ -582,7 +582,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5833-taskwarrior
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "aa67694c5d4390b1abfd7ba6b9d456a7cba655a5bb68b56ecbe66087807c5cd3"
+        org.mcp-auditor.dockerfile-fingerprint: "4785b764c6541a5b65dfc304616e82fb90ee6089516516dcec60007ebb01f5bf"
     image: mcp-auditor-cve-holdout-2026-5833-taskwarrior:local
 
   holdout-2026-5833-taskwarrior-patched:
@@ -590,7 +590,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5833-taskwarrior-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "94e140df8369cbd8e8fbc3f52ce2e647544200a32540bb863ebe15ffa507912c"
+        org.mcp-auditor.dockerfile-fingerprint: "72c25c2c31de5ec9c60725a85220f12b2bff7e35cbf96853da3e2aa1547adb13"
     image: mcp-auditor-cve-holdout-2026-5833-taskwarrior-patched:local
 
   holdout-2026-26029-sf-mcp:
