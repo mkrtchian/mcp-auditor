@@ -1,9 +1,9 @@
-# mcp-maigret 1.0.12: the version carrying CVE-2026-2130 (shell command injection in
-# search_username / parse_url, built from unsanitised input and run through child_process.exec).
+# mcp-maigret 1.0.12: the pinned vulnerable version (unsanitised username/url built into a
+# docker shell string and run through child_process.exec).
 FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
 
-# The real maigret OSINT tool the server shells out to, node to run the server, and the
-# unix tooling the command-injection exploits read through (cat, id, whoami, env, curl).
+# node to run the server, the real maigret OSINT tool the server shells out to, and the unix
+# tooling the command-injection exploits read through (cat, id, whoami, env, curl).
 RUN apt-get update && apt-get install -y --no-install-recommends \
       nodejs npm curl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
@@ -12,50 +12,81 @@ RUN pip install --no-cache-dir 'maigret==0.6.6'
 # The pinned vulnerable server, installed from npm (the real published package, not a stub).
 RUN npm install -g mcp-maigret@1.0.12
 
-# The docker CLI the server invokes, forwarded to the native maigret (see the script header).
-# Baked inline rather than COPYed so the Dockerfile fingerprint covers the shim's content.
-RUN cat > /usr/local/bin/docker <<'DOCKER_SHIM_EOF'
+# The server invokes the `docker` CLI to run `soxoj/maigret:latest`; nested Docker is unavailable
+# under the kit confinement (--cap-drop ALL, no socket), so the `docker` CLI is stood in for and
+# forwards the maigret invocation to the natively installed maigret. The server's own command
+# string building is untouched: the shell that parses the username is the server's own exec.
+# Baked inline so the Dockerfile fingerprint covers the stand-in's content. The stand-in carries
+# no comments. Its outputs are recorded in the calibration card (stand_ins).
+RUN cat > /usr/local/bin/docker <<'DOCKER_STANDIN_EOF'
 #!/bin/sh
-# mcp-maigret shells out to `docker run ... soxoj/maigret:latest <maigret args>` through a
-# shell (the CVE-2026-2130 injection point). Nested Docker is unavailable under the kit's
-# confinement (--cap-drop ALL, no socket), so this shim stands in for the `docker` CLI the
-# server calls and forwards the maigret invocation to the real maigret installed natively in
-# the image. The server's own command-string building (the flaw) is untouched: the shell that
-# parses the injected username/url is the server's, exactly as in production.
 case "$1" in
   --version)
-    echo "Docker version 28.0.0-maigret-shim, build shim00000"
-    exit 0
+    echo "Docker version 23.0.3, build 3e7cbfd"
     ;;
   image)
-    # `image inspect soxoj/maigret:latest`: report the image as present so the server
-    # skips `docker pull`.
-    exit 0
-    ;;
-  pull)
-    exit 0
+    cat <<'IMAGE_INSPECT_JSON'
+[
+    {
+        "Id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "RepoTags": [],
+        "RepoDigests": [],
+        "Parent": "",
+        "Comment": "",
+        "Created": "2024-01-01T00:00:00Z",
+        "Container": "",
+        "DockerVersion": "23.0.3",
+        "Author": "",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": null,
+            "WorkingDir": "/app",
+            "Entrypoint": null,
+            "Labels": null
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 0,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+            ]
+        }
+    }
+]
+IMAGE_INSPECT_JSON
     ;;
   run)
     shift
-    # Drop `docker run` options up to and including the image name; the rest are maigret's
-    # own arguments.
+    reports_parent=""
     while [ "$#" -gt 0 ]; do
       arg="$1"
       shift
-      if [ "$arg" = "soxoj/maigret:latest" ]; then
+      if [ "$arg" = "-v" ]; then
+        host_path="${1%%:*}"
+        reports_parent="$(dirname "$host_path")"
+      elif [ "$arg" = "soxoj/maigret:latest" ]; then
         break
       fi
     done
+    if [ -n "$reports_parent" ]; then
+      cd "$reports_parent"
+    fi
     exec maigret "$@"
     ;;
   *)
-    exit 0
+    echo "docker: '$1' is not a docker command." >&2
+    echo "See 'docker --help'" >&2
+    exit 1
     ;;
 esac
-DOCKER_SHIM_EOF
+DOCKER_STANDIN_EOF
 RUN chmod +x /usr/local/bin/docker
 
-# The server refuses to start without MAIGRET_REPORTS_DIR; /tmp is writable under the kit's
-# read-only /srv mount and the unprivileged launch user.
+# The server throws at construction if MAIGRET_REPORTS_DIR is unset; /tmp is writable under the
+# unprivileged launch user while /srv is mounted read-only.
 ENV MAIGRET_REPORTS_DIR=/tmp/reports
 ENTRYPOINT ["mcp-maigret"]

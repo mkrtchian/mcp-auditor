@@ -8,9 +8,15 @@ runs docker through `execFile` with an argument array, so no shell parses the in
 
 Every exploit injects `; <command> #` as the username; the server's own shell runs <command>
 and its stdout comes back in the tool response. One dedicated exploit per kept place names the
-location it reads. The benign call searches a plain username, which the patched validator
-accepts and which runs the real maigret to completion (offline, so it fails fast and returns
-within the client timeout).
+location it reads.
+
+The benign call runs a real maigret username search. maigret is the real OSINT software the
+server shells out to, and it works by querying each public site over the network. The container
+reaches no Internet, so the benign call is bounded by `tags=['tn']` to the single site that tag
+selects in maigret's bundled database (W3challs), and a stand-in serves `w3challs.com` under its
+real name from a capture of that site. The benign call then returns maigret's real result on that
+site (the searched username is not found there), as a working deployment would. maigret disables
+TLS verification (ssl.CERT_NONE in its aiohttp checker), so the stand-in needs no CA trust wiring.
 """
 
 import re
@@ -20,21 +26,26 @@ from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve_planting_base import PublicNames
 from evals.cve_planting_spec import resolve_container_path
 from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
-WORKDIR = "/tmp"  # the server's working directory; writable under the read-only /srv mount
-BENIGN_USERNAME = "testuser"
+WORKDIR = "/srv/app"
+BENIGN_USERNAME = "noonewouldeverusethis7"  # maigret's documented usernameUnclaimed for W3challs
+BENIGN_TAG = "tn"  # unique in the bundled maigret DB: selects only W3challs (w3challs.com)
+STAND_IN_HOST = "w3challs.com"
 TOOL = "search_username"
 
 # The command-injection signature: the username carries a shell command separator. Every
-# exploit payload starts with it; the benign username (letters only) does not.
+# exploit payload starts with it; the benign username (letters/digits only) does not.
 AIM = re.compile(r";")
 
 # Every command_execution-reachable place of a plantable kind (file / env / account / hostname /
 # http_endpoint). The unplaceable and layout places, and the internal_fetch-only places, are
-# excluded in the draw, not here.
+# excluded in the draw, not here. `etc-hosts` is also excluded: planting a nonce over /etc/hosts
+# removes the name resolution the real-maigret stand-in needs to reach w3challs.com on the closed
+# network, so it cannot be kept while the benign call runs the real software (card: unkept).
 KEPT_PLACES: tuple[str, ...] = (
     "process-account-identity",
     "proc-environ",
@@ -56,7 +67,6 @@ KEPT_PLACES: tuple[str, ...] = (
     "mysql-system-cnf",
     "run-secrets",
     "k8s-sa-token",
-    "etc-hosts",
     "auth-log",
     "imds",
     "ecs-task-credentials",
@@ -102,7 +112,7 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    await client.call_tool(TOOL, {"username": BENIGN_USERNAME})
+    await client.call_tool(TOOL, {"username": BENIGN_USERNAME, "tags": [BENIGN_TAG]})
 
 
 TARGET = CVETarget(
@@ -112,10 +122,15 @@ TARGET = CVETarget(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=("holdout-2026-2130-maigret",),
+    images=("holdout-2026-2130-maigret", "sentinel", "stand-in"),
     server_image="holdout-2026-2130-maigret",
     patched_image="holdout-2026-2130-maigret-patched",
-    planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, WORKDIR, has_network=False),
+    planting_host=PlantingHost(
+        SymbolicUser.UNPRIVILEGED,
+        WORKDIR,
+        has_network=False,
+        public_names=PublicNames(stand_ins=(STAND_IN_HOST,)),
+    ),
     builder=command_injection_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),
     benign=_benign,

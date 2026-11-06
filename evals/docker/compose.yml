@@ -123,7 +123,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-2130-maigret
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "953aa175c0b9b4ac835c97e7be66e57f50563a4d0da3a174fcf3cf5a4800ba4c"
+        org.mcp-auditor.dockerfile-fingerprint: "f455bdb30f7739e5db4ad602c98a608ea2b9c05d4cc29d62ca732fc3ff59ee8c"
     image: mcp-auditor-cve-holdout-2026-2130-maigret:local
 
   holdout-2026-2130-maigret-patched:
@@ -131,7 +131,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-2130-maigret-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0dafbc00cef3411ec4a6788013d1a090244e9350d68621557ef6e84bec7bd6fd"
+        org.mcp-auditor.dockerfile-fingerprint: "d18dde7ae7698ee4d5b43e436ed1cdf96b6fc917cceea996fd157e332c3961d7"
     image: mcp-auditor-cve-holdout-2026-2130-maigret-patched:local
 
   # SSRF target: reuses the shared sentinel service (no per-target sentinel).
