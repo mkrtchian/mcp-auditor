@@ -62,7 +62,7 @@ Then write the download days into `output/holdout_census/work/downloads.json`, o
 | `recall*.jsonl` | `RecallFinding` | recall agents |
 | `vulnerablemcp*.jsonl` | `VulnerableMcpEntry` | the `vulnerablemcp.info` agent |
 | `widenings*.jsonl` | `PrefilterTerm` | the maintainer |
-| `agents*.jsonl` | `AgentRecord` | the maintainer, one line per agent launched |
+| `agents*.jsonl` | `AgentRecord` | the maintainer, one line per agent launched: an agent that continued on the fallback model is one line, with the model it was launched on as `model` and the one that answered as `fallback_model` |
 | `classifier_1.jsonl`, `classifier_2.jsonl` | `Classification` | the classifiers, copied in by the maintainer |
 | `grouping_reader_1.jsonl`, `grouping_reader_2.jsonl` | `ProofJudgment` (`evals/census_grouping.py`) | the readers of the grouping by proof, copied in by the maintainer |
 | `downloads.json` | `Downloads` | the maintainer |

@@ -3,11 +3,13 @@ import json
 
 import tests.unit.support.test_cve_layout_check_golden_given as given
 from evals.cve_layout_check import (
+    LayoutRoute,
     LayoutSurface,
     VersionObservation,
     admission_gave_up,
     layout_breaks_any,
     layout_check,
+    layout_routes,
     unrouted_kept_places,
 )
 from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
@@ -153,3 +155,32 @@ def test_layout_check_reports_the_break_and_the_unrouted_kept_places():
     assert check.breaks is True  # the patched planted arm lost tools/list
     assert check.unrouted == ["bare-remote-url"]
     assert check.gave_up is None
+
+
+def test_layout_routes_lists_each_layout_place_once_with_its_kept_flag_and_route():
+    catalogue = _catalogue_place()
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlantKind.GIT_REMOTE_URL)
+    places = {place.id: place for place in (catalogue, dotenv, bare_url)}
+
+    routes = layout_routes(places, ("workspace-dotenv", "etc-shadow"), _SCOPED_NO_DISCLOSURE)
+
+    assert routes == [
+        LayoutRoute(place_id="workspace-dotenv", kept=True, routed=True),
+        LayoutRoute(place_id="bare-remote-url", kept=False, routed=False),
+    ]
+
+
+def test_an_unrouted_unkept_layout_place_adds_no_admission_failure():
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlantKind.GIT_REMOTE_URL)
+    healthy = _observed(started=True)
+    vuln = VersionObservation(reference=healthy, planted=_SCOPED_NO_DISCLOSURE, nonces=())
+    places = {place.id: place for place in (dotenv, bare_url)}
+
+    check = layout_check(_A_TARGET, (dotenv,), vuln, vuln)
+
+    assert LayoutRoute("bare-remote-url", kept=False, routed=False) in layout_routes(
+        places, ("workspace-dotenv",), vuln.planted
+    )
+    assert check.unrouted == []

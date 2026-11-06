@@ -69,10 +69,20 @@ class AgentRole(StrEnum):
 
 
 class AgentRecord(BaseModel):
+    """One agent launched. An agent the provider moved to another model mid-run is still one
+    record, so two records of one role and scope are always two agents."""
+
     role: AgentRole
     scope: str
-    model: str
+    model: str  # the model the agent was launched on
+    fallback_model: str | None = None  # the model that answered, when the provider refused `model`
     set_aside: str | None = None  # the cause; a set-aside agent's output counts for nothing
+
+    @model_validator(mode="after")
+    def _fallback_differs(self) -> Self:
+        if self.fallback_model == self.model:
+            raise ValueError(f"fallback_model {self.fallback_model} is the requested model")
+        return self
 
 
 def read_jsonl[Record: BaseModel](path: Path, schema: type[Record]) -> list[Record]:

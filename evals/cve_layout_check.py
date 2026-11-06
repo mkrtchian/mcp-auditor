@@ -20,7 +20,8 @@ here.
 first. Per target it launches, on both the vulnerable and the patched version, the reference arm (a
 minimal valid empty node at each layout path) then the launch its launch-mode field selects (normal,
 or the fallback); it reports the break (on either version) and, on the vulnerable version, the leak
-(the layout check) and each kept place's route (the route check). The break detector only reports;
+(the layout check), each kept place's route (the route check) and each unkept layout place's route,
+labelled not kept, which a card records and no decision reads. The break detector only reports;
 the maintainer sets the fallback launch-mode. It gives up (`admission_gave_up`) only when a target
 already in the fallback launch-mode cannot start even that launch. It gates nothing on the model.
 """
@@ -52,6 +53,13 @@ class LayoutSurface:
     responses: tuple[str, ...]
     call_errored: tuple[bool, ...]  # per call, whether it returned an error
     tools_list_succeeded: bool  # whether tools/list itself returned (a failed launch sets it False)
+
+
+@dataclass(frozen=True)
+class LayoutRoute:
+    place_id: str
+    kept: bool
+    routed: bool
 
 
 @dataclass(frozen=True)
@@ -116,6 +124,19 @@ def unrouted_kept_places(records: Sequence[Place], observations: RouteObservatio
     return [place for place in records if not route_admits(place, observations)]
 
 
+def layout_routes(
+    places: Places, kept: Sequence[str], planted: RouteObservations
+) -> list[LayoutRoute]:
+    """The route check's result for every layout place, kept or not, so a card records it for each
+    (a catalogue place carries no anchor and is left out). Only a kept place's missing route fails
+    the admission, which `layout_check` decides."""
+    return [
+        LayoutRoute(place.id, place.id in kept, route_admits(place, planted))
+        for place in places.values()
+        if place.coordinates.anchor is not None
+    ]
+
+
 def layout_check(
     target: CVETarget,
     records: Sequence[Place],
@@ -146,7 +167,7 @@ async def observe_versions(
 async def confirm_admission(
     targets: list[CVETarget], places: Places, ci: bool = False
 ) -> list[str]:
-    """Report each target's layout break, nonce leak and per-kept-place route, and return the
+    """Report each target's layout break, nonce leak and per-layout-place route, and return the
     admission failures: a kept layout place without a route breaks the rule's keeping condition
     (holdout-rule.md, Deployment layout (A place is kept for a target)), so the caller fails the
     maintainer run on it (never a gated run)."""
@@ -166,6 +187,9 @@ async def confirm_admission(
         _report_leak(target.cve_id, nonce_in_surface(_surface(vuln.planted), vuln.nonces))
         for place in records:
             _report_route(target.cve_id, place, route_admits(place, vuln.planted))
+        _report_unkept_routes(
+            target.cve_id, layout_routes(places, target.kept_places, vuln.planted)
+        )
         failures += [
             f"{target.cve_id}: kept layout place {pid} has no route" for pid in check.unrouted
         ]
@@ -193,6 +217,13 @@ def _report_leak(cve_id: str, leaks: bool) -> None:
 def _report_route(cve_id: str, place: Place, admits: bool) -> None:
     status = "[green]route[/green]" if admits else "[red]no route[/red]"
     console.print(f"  {status}  {cve_id} -> {place.id}")
+
+
+def _report_unkept_routes(cve_id: str, routes: Sequence[LayoutRoute]) -> None:
+    for route in routes:
+        if not route.kept:
+            status = "route" if route.routed else "no route"
+            console.print(f"  [dim]{status}[/dim]  {cve_id} -> {route.place_id} (not kept)")
 
 
 @dataclass(frozen=True)

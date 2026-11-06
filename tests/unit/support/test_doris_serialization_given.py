@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from evals import cve_environments
+from evals import holdout_environments
 from evals.cve_environments import Launch
 from evals.cve_planting_base import PlantingHost, PlantingSpec, SentinelIntent, SymbolicUser
 
@@ -46,10 +46,10 @@ def doris_helpers_faked(monkeypatch: pytest.MonkeyPatch, recorder: OverlapRecord
     def no_sleep(_seconds: float) -> None:
         return None
 
-    monkeypatch.setattr(cve_environments, "ensure_doris", recorder.enter)
-    monkeypatch.setattr(cve_environments, "doris_rm", reap)
-    monkeypatch.setattr(cve_environments, "start_doris_sentinel", start_sentinel)
-    monkeypatch.setattr(cve_environments, "time", SimpleNamespace(sleep=no_sleep))
+    monkeypatch.setattr(holdout_environments, "ensure_doris", recorder.enter)
+    monkeypatch.setattr(holdout_environments, "doris_rm", reap)
+    monkeypatch.setattr(holdout_environments, "start_doris_sentinel", start_sentinel)
+    monkeypatch.setattr(holdout_environments, "time", SimpleNamespace(sleep=no_sleep))
 
 
 def a_minimal_doris_spec() -> PlantingSpec:

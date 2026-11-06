@@ -1,4 +1,5 @@
-"""Per-target CVE environment context managers.
+"""Per-target CVE environment context managers. The builders only holdout targets use live in
+`holdout_environments`, which reuses this module's launch types and helpers.
 
 Each builder materialises the frozen `/srv` deployment layout (ADR 031) under a temp root
 mounted into the container, adds whatever target-specific vulnerable structure its flaw needs,
@@ -64,15 +65,12 @@ then remove the emptied directories (the `docker run` is one command, wrapped he
 
 import json
 import os
-import subprocess
-import time
 from collections.abc import AsyncGenerator, Generator, Mapping
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import IO
-from uuid import uuid4
 
 from evals.cve_layout import (
     ANCHOR_PATHS,
@@ -90,17 +88,8 @@ from evals.cve_planting import (
     confinement_args,
     planted,
 )
-from evals.cve_planting_base import LABEL, SENTINEL_IMAGE, SentinelIntent, own_network_args
+from evals.cve_planting_base import SentinelIntent
 from evals.cve_planting_docker import DOCKER_PLANTING
-from evals.doris_backend import (
-    DORIS_BRIDGE,
-    DORIS_DB,
-    DORIS_HOST,
-    DORIS_LAUNCH_LOCK,
-    doris_rm,
-    ensure_doris,
-    start_doris_sentinel,
-)
 from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
@@ -122,12 +111,12 @@ class LaunchShape(StrEnum):
     FALLBACK = "fallback"
 
 
-def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
+def materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
     # EMPTY_LAYOUT builds the rule's reference arm (a minimal valid empty node at each anchor by
     # node type); NORMAL and FALLBACK both build the full neutral tree, since the fallback keeps the
     # layout mounted.
     # The FALLBACK launch applies only FALLBACK_SCOPE, not a target's FallbackScope shape: honouring
-    # an arbitrary per-target fallback scope (EMPTY_OUTSIDE, a non-_PROJECT path) is deferred below.
+    # an arbitrary per-target fallback scope (EMPTY_OUTSIDE, a non-PROJECT path) is deferred below.
     if shape is LaunchShape.EMPTY_LAYOUT:
         build_empty_layout(root)
     else:
@@ -135,8 +124,8 @@ def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
 
 
 _WORKSPACE = ANCHOR_PATHS[LayoutAnchor.WORKSPACE]  # the mount target, /srv
-_PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]  # the in-scope checkout, /srv/app
-_CHECKOUT = Path(_PROJECT).relative_to(_WORKSPACE)  # the checkout's path under the temp root
+PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]  # the in-scope checkout, /srv/app
+CHECKOUT = Path(PROJECT).relative_to(_WORKSPACE)  # the checkout's path under the temp root
 
 # The documented default scope a scope-carrying server falls back to when the layout breaks it
 # (holdout-rule.md, Deployment layout (A server the layout breaks)): the in-scope checkout the
@@ -146,9 +135,9 @@ _CHECKOUT = Path(_PROJECT).relative_to(_WORKSPACE)  # the checkout's path under 
 # carry its own fallback scope on the card. The per-target CVETarget.fallback_scope is read only by
 # fixture_fingerprint today, never by a builder. Wiring an arbitrary fallback scope (its three
 # shapes) into the launch waits for the holdout-run machinery that does not exist yet, so a FALLBACK
-# launch-mode with a scope other than this _PROJECT default would not be honoured yet. It stays
+# launch-mode with a scope other than this PROJECT default would not be honoured yet. It stays
 # inert while every target keeps the normal launch-mode.
-FALLBACK_SCOPE = _PROJECT
+FALLBACK_SCOPE = PROJECT
 
 
 @dataclass(frozen=True)
@@ -190,7 +179,7 @@ def filesystem_env(
         owned_layout(docker, lambda root: _materialise_with_leak_links(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
-        yield _filesystem_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
+        yield filesystem_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
 
 
 def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
@@ -201,9 +190,9 @@ def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchSh
     # (EMPTY_LAYOUT) plants nothing and has no checkout to hang a symlink off; the fallback keeps
     # the full tree, so it plants them like the normal launch. Built before the hand-over, so the
     # links are the account's too.
-    _materialise(root, spec, shape)
+    materialise(root, spec, shape)
     if shape is not LaunchShape.EMPTY_LAYOUT:
-        checkout = root / _CHECKOUT
+        checkout = root / CHECKOUT
         for index, intent in enumerate(spec.files):
             leak = checkout / f"leak{index}"
             leak.mkdir()
@@ -219,7 +208,7 @@ def git_init_traversal_env(
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     with (
-        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        owned_layout(docker, lambda root: materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
         layout = layout_mount_args(root, spec.host.layout_mount)
@@ -235,7 +224,7 @@ def command_injection_env(
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     with (
-        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        owned_layout(docker, lambda root: materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
         yield Launch(
@@ -261,7 +250,7 @@ def ssrf_env(
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     with (
-        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
+        owned_layout(docker, lambda root: materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
         yield Launch(
@@ -276,86 +265,6 @@ def ssrf_env(
                 image,
             ],
         )
-
-
-@contextmanager
-def arcadedb_mcp_env(
-    image: str,
-    spec: PlantingSpec,
-    shape: LaunchShape = LaunchShape.NORMAL,
-    *,
-    docker: PlantingDocker = DOCKER_PLANTING,
-) -> Generator[Launch]:
-    # The ArcadeDB MCP stdio server reads files and fetches endpoints through the same polyglot-JS
-    # sandbox escape, so its kept places span planted files, the hostname, the process environment
-    # and the holder-bound metadata sentinels. It takes no scope argument (it is driven over stdio,
-    # not pointed at a directory), so the launch is the /srv mount and the planting layer's args,
-    # with no path appended after the image.
-    with (
-        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
-        planted(spec, image, docker) as args,
-    ):
-        yield Launch(
-            command="docker",
-            args=[
-                "run",
-                "-i",
-                "--rm",
-                *confinement_args(),
-                *args.run_args(),
-                *layout_mount_args(root, spec.host.layout_mount),
-                image,
-            ],
-        )
-
-
-_N8N_REDIRECT_IMAGE = "mcp-auditor-cve-holdout-ghsa-8g7g-hmwm-6rv2-n8n-redirect:local"
-_N8N_STUB_IP = "203.0.113.10"  # TEST-NET-3: the SSRF guard treats it as an ordinary public host
-
-
-@contextmanager
-def ssrf_redirect_env(
-    image: str,
-    spec: PlantingSpec,
-    shape: LaunchShape = LaunchShape.NORMAL,
-    *,
-    docker: PlantingDocker = DOCKER_PLANTING,
-) -> Generator[Launch]:
-    # ssrf_env plus a redirecting stand-in co-located in the sentinels' namespace holder. The
-    # shared sentinels serve the per-launch nonce; the stand-in serves the workflow API and the 302
-    # the server follows inward without re-validating (the flaw). planting() binds the IP-literal
-    # sentinels inside a holder on loopback and the server joins that holder's namespace, so the
-    # stand-in joins it too and binds a public-looking address the SSRF guard passes. The reference
-    # arm plants no sentinel, so it joins no holder and needs no stand-in: launch the server plainly
-    # then, exactly as ssrf_env's reference arm runs without its sentinel sidecar.
-    with (
-        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
-        planted(spec, image, docker) as args,
-    ):
-        holder_ref = args.network[1] if _joins_holder(args.network) else None
-        stub = _start_n8n_stub(holder_ref) if holder_ref is not None else None
-        try:
-            yield Launch(
-                command="docker",
-                args=[
-                    "run",
-                    "-i",
-                    "--rm",
-                    *confinement_args(),
-                    *args.run_args(),
-                    "-e",
-                    f"N8N_API_URL=http://{_N8N_STUB_IP}/",
-                    "-e",
-                    "N8N_API_KEY=calib-key",
-                    "-e",
-                    "N8N_MCP_TELEMETRY_DISABLED=true",
-                    *layout_mount_args(root, spec.host.layout_mount),
-                    image,
-                ],
-            )
-        finally:
-            if stub is not None:
-                subprocess.run(["docker", "rm", "-f", stub], capture_output=True)
 
 
 # The rebinding hosts resolve here at REST-tool creation (passing the gateway's creation-time SSRF
@@ -417,92 +326,7 @@ def _gw_tools(spec: PlantingSpec) -> list[dict[str, str | None]]:
     return tools
 
 
-@contextmanager
-def mysql_db_env(
-    image: str,
-    spec: PlantingSpec,
-    shape: LaunchShape = LaunchShape.NORMAL,
-    *,
-    docker: PlantingDocker = DOCKER_PLANTING,
-) -> Generator[Launch]:
-    # The self-contained MySQL-MCP image carries its own engine and an AWS credential stub, both
-    # started by the entrypoint, so the launch adds nothing but the frozen /srv layout (ADR 031).
-    # The server takes no scope argument, so none is appended after the image;
-    # the network isolation, the planted file mounts, the planted env and the hostname all come
-    # from the planting layer's PlantedArgs.
-    with (
-        owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
-        planted(spec, image, docker) as args,
-    ):
-        yield Launch(
-            command="docker",
-            args=[
-                "run",
-                "-i",
-                "--rm",
-                *confinement_args(),
-                *args.run_args(),
-                *layout_mount_args(root, spec.host.layout_mount),
-                image,
-            ],
-        )
-
-
-@contextmanager
-def doris_db_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    # The flaw's internal fetch runs on the Doris backend (its http() TVF), not on the server
-    # container, so the sentinels sit on a static-IP link-local bridge the Doris node reaches,
-    # not behind the generic planting holder. The cluster is heavy (an FE+BE JVM) and persistent:
-    # provisioned once and reused across exercises, only the per-launch sentinels are stood and
-    # torn down here. No /srv layout is mounted: every kept place is an http_endpoint, so the
-    # reference-arm shape has nothing to materialise and the server takes none.
-    with DORIS_LAUNCH_LOCK:
-        ensure_doris()
-        # doris-mcp-server does not exit on stdin EOF, so --rm cannot fire when the stdio adapter
-        # reaps it and the container orphans; a unique name force-removed on teardown reaps it for
-        # certain, so launches do not accumulate across calibration re-runs.
-        server = f"{LABEL}-doris-server-{uuid4().hex}"
-        sentinels: list[str] = []
-        try:
-            for sentinel in spec.sentinels:
-                sentinels.append(start_doris_sentinel(sentinel))
-            time.sleep(2)  # let each sentinel's httpd bind before the server can drive a fetch
-            # Twin of doris_backend.doris_server_args (the nuisance suite's server launch), except
-            # the nuisance memory bound: fold this wiring back into that helper at the next
-            # acceptance reset, when this module (AST-fingerprinted into every acceptance fixture)
-            # moves anyway.
-            yield Launch(
-                command="docker",
-                args=[
-                    "run",
-                    "-i",
-                    "--rm",
-                    *confinement_args(),
-                    "--name",
-                    server,
-                    "--label",
-                    LABEL,
-                    *own_network_args(DORIS_BRIDGE),
-                    image,
-                    "--db-host",
-                    DORIS_HOST,
-                    "--db-port",
-                    "9030",
-                    "--db-user",
-                    "root",
-                    "--db-database",
-                    DORIS_DB,
-                ],
-            )
-        finally:
-            doris_rm(server)
-            for name in sentinels:
-                doris_rm(name)
-
-
-def _filesystem_launch(layout: list[str], image: str, args: PlantedArgs) -> Launch:
+def filesystem_launch(layout: list[str], image: str, args: PlantedArgs) -> Launch:
     return Launch(
         command="docker",
         args=[
@@ -513,9 +337,9 @@ def _filesystem_launch(layout: list[str], image: str, args: PlantedArgs) -> Laun
             *args.run_args(),
             *layout,
             image,
-            _PROJECT,
+            PROJECT,
         ],
-        scope=_PROJECT,
+        scope=PROJECT,
     )
 
 
@@ -537,33 +361,9 @@ def _git_launch(
             *layout,
             image,
             "--repository",
-            _PROJECT,
+            PROJECT,
         ],
         chain_budget=chain_budget,
         max_chain_steps=max_chain_steps,
-        scope=_PROJECT,
+        scope=PROJECT,
     )
-
-
-def _joins_holder(network: tuple[str, ...]) -> bool:
-    return len(network) >= 2 and network[0] == "--network" and network[1].startswith("container:")
-
-
-def _start_n8n_stub(holder_ref: str) -> str:
-    # Bind the stand-in on a public-looking address inside the holder, then start it there: the
-    # server joins the same namespace and reaches it on loopback, the SSRF guard passes the
-    # TEST-NET-3 origin, and the 302 it serves points at the internal sentinel.
-    subprocess.run(
-        ["docker", "run", "--rm", "--label", LABEL, *confinement_args(),
-         "--cap-add", "NET_ADMIN", "--network", holder_ref, "--entrypoint", "ip",
-         SENTINEL_IMAGE, "addr", "add", f"{_N8N_STUB_IP}/32", "dev", "lo"],
-        check=True, capture_output=True, text=True,
-    )  # fmt: skip
-    stub = f"{LABEL}-n8n-stub-{uuid4().hex}"
-    subprocess.run(
-        ["docker", "run", "-d", "--rm", "--label", LABEL, "--name", stub, *confinement_args(),
-         "--cap-add", "NET_BIND_SERVICE", "--network", holder_ref,
-         "-e", f"BIND_ADDR={_N8N_STUB_IP}", _N8N_REDIRECT_IMAGE],
-        check=True, capture_output=True, text=True,
-    )  # fmt: skip
-    return stub

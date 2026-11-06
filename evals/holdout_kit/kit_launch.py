@@ -1,9 +1,9 @@
 """A trimmed copy of evals/cve_environments.py's launch logic, free of mcp_auditor.
 
 Parity note: the acceptance twin is evals/cve_environments.py. This module copies the four
-acceptance per-target environment builders and their helpers, plus the `arcadedb_env` nuisance
-twin, dropping only the `connect` coroutine that wraps the auditor's StdioMCPClient; the kit
-connects through kit_client.py instead. It adds
+acceptance per-target environment builders and their helpers, plus `arcadedb_env`, the twin of
+`holdout_environments.arcadedb_mcp_env`, dropping only the `connect` coroutine that wraps the
+auditor's StdioMCPClient; the kit connects through kit_client.py instead. It adds
 `image_tag` and `build_images`. `image_tag` uses the `mcp-auditor-kit-` prefix, not the acceptance
 `mcp-auditor-cve-` one, so a kit build never overwrites an acceptance image. The clean
 planting and layout layers are reused by in-repo import (cve_planting, cve_layout, cve_places),
@@ -165,10 +165,10 @@ def arcadedb_env(
     *,
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    # The trimmed twin of cve_environments.arcadedb_mcp_env. The ArcadeDB MCP stdio server takes no
-    # scope argument (it is driven over stdio, not pointed at a directory), so its launch is the
-    # /srv mount and the planting args with no path appended after the image, identical to the
-    # launch the command-injection and SSRF builders use.
+    # The trimmed twin of holdout_environments.arcadedb_mcp_env. The ArcadeDB MCP stdio server
+    # takes no scope argument (it is driven over stdio, not pointed at a directory), so its launch
+    # is the /srv mount and the planting args with no path appended after the image, identical to
+    # the launch the command-injection and SSRF builders use.
     with (
         owned_layout(docker, lambda root: _materialise(root, spec, shape)) as root,
         planted(spec, image, docker) as args,

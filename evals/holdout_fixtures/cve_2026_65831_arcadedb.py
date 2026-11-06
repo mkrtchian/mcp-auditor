@@ -12,12 +12,12 @@ chain throws before it touches a file or a socket, for every principal (the stdi
 import re
 from collections.abc import Awaitable, Callable
 
-from evals.cve_environments import arcadedb_mcp_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_spec import resolve_container_path
 from evals.cve_targets import CVETarget
+from evals.holdout_environments import arcadedb_mcp_env
 from mcp_auditor.domain.ports import MCPClientPort
 
 WORKDIR = "/home/arcadedb"

@@ -16,11 +16,11 @@ the server fetches the sentinel on the vulnerable version and returns its nonce.
 import re
 from collections.abc import Awaitable, Callable
 
-from evals.cve_environments import ssrf_redirect_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_targets import CVETarget
+from evals.holdout_environments import ssrf_redirect_env
 from mcp_auditor.domain.ports import MCPClientPort
 
 # An exploit is aimed when the webhook path names an internal link-local / metadata target; a

@@ -3,9 +3,9 @@ holdout already drives.
 
 A server records a `BackendFixture` naming one of these keys; the provisioner built from the
 key's lifecycle (`nuisance_provisioners.provisioner_of`) ensures the backend is up and
-query-ready and yields the server `Launch` wired to it, as `doris_db_env` does for the holdout.
-`backend_problems` is the load check that a recorded fixture matches the backend its key
-defines.
+query-ready and yields the server `Launch` wired to it, as `holdout_environments.doris_db_env`
+does for the holdout. `backend_problems` is the load check that a recorded fixture matches the
+backend its key defines.
 """
 
 from __future__ import annotations

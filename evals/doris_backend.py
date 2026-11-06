@@ -3,8 +3,8 @@
 A persistent Doris FE+BE cluster: a JVM front-end and back-end, heavy and slow to stand up, so it
 is provisioned once and reused across every exercise rather than per launch; only the per-launch
 sentinels are stood and torn down per run. This module owns that lifecycle, kept apart from the
-launch-construction concern of `cve_environments`: ensuring the cluster is up and query-ready (the
-front-end health wait, then the schema provisioning that gates on a live back-end), standing a
+launch-construction concern of `holdout_environments`: ensuring the cluster is up and query-ready
+(the front-end health wait, then the schema provisioning that gates on a live back-end), standing a
 sentinel on the static-IP link-local network the back-end reaches, and the thin `docker` wrappers
 underneath. Both networks are closed: no route to the host or the Internet.
 

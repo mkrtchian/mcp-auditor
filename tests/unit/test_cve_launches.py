@@ -13,17 +13,15 @@ import pytest
 import tests.unit.support.test_cve_launches_given as given
 from evals.cve_environments import (
     Launch,
-    arcadedb_mcp_env,
     command_injection_env,
     filesystem_env,
     git_init_traversal_env,
-    mysql_db_env,
     ssrf_env,
-    ssrf_redirect_env,
 )
 from evals.cve_layout import NEUTRAL_TOKEN
 from evals.cve_planting import PlantingFailed
 from evals.cve_planting_base import LAYOUT_PREFIX, LayoutMount, check_layout_outer
+from evals.holdout_environments import arcadedb_mcp_env, mysql_db_env, ssrf_redirect_env
 from evals.holdout_kit import kit_launch
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ExecutionRegime

@@ -20,12 +20,12 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from evals import doris_backend
-from evals.cve_environments import DORIS_DB, doris_db_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_targets import CVETarget
-from evals.doris_backend import DORIS_IMAGE, MYSQL_CLIENT_IMAGE
+from evals.doris_backend import DORIS_DB, DORIS_IMAGE, MYSQL_CLIENT_IMAGE
+from evals.holdout_environments import doris_db_env
 from mcp_auditor.domain.ports import MCPClientPort
 
 # An exploit is aimed when its SQL carries Doris' http() TVF; the benign metadata read does not.

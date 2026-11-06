@@ -1,7 +1,7 @@
 import pytest
 
 import tests.unit.support.test_doris_serialization_given as given
-from evals import cve_environments
+from evals import holdout_environments
 from evals.doris_backend import DORIS_SERVER_LAUNCH, doris_server_args
 from evals.nuisance_confinement import memory_bound_args, user_args
 
@@ -22,7 +22,7 @@ def test_the_helper_and_the_holdout_env_agree_on_the_launch_tail(monkeypatch: py
     given.doris_helpers_faked(monkeypatch, given.an_overlap_recorder())
     spec = given.a_minimal_doris_spec()
 
-    with cve_environments.doris_db_env("image", spec) as launch:
+    with holdout_environments.doris_db_env("image", spec) as launch:
         env_args = launch.args
     helper = doris_server_args("server-name", "image", spec.host, DORIS_SERVER_LAUNCH)
 

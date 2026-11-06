@@ -22,6 +22,7 @@ from evals import (
     cve_proofs,
     cve_report_units,
     cve_units,
+    holdout_environments,
     public_stand_ins,
 )
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
@@ -48,6 +49,7 @@ GRAMMAR_PATHS = (
 # decides what reaches the auditor, so a semantic change to it moves every target's fingerprint.
 ENVIRONMENT_PATHS = (
     Path(cve_environments.__file__),
+    Path(holdout_environments.__file__),
     Path(cve_layout.__file__),
     Path(cve_places.__file__),
     Path(cve_planting.__file__),

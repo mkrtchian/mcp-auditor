@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
+import tests.unit.support.test_holdout_targets_given as given
 from evals import doris_backend
 from evals.cve_places import (
     HOLDOUT_PLACES,
@@ -33,6 +34,12 @@ _INSTRUMENTS = (
 )
 
 _EVALS = Path(__file__).resolve().parents[2] / "evals"
+
+
+def test_the_holdout_targets_are_the_census_drawn_flaws():
+    # The run reads HOLDOUT_TARGETS and the census records draw.drawn: a flaw in one and not the
+    # other would be skipped or refused silently. The orders differ (transplant against draw).
+    assert {target.cve_id for target in HOLDOUT_TARGETS} == given.the_census_drawn_identifiers()
 
 
 def test_holdout_identifiers_are_disjoint_from_the_acceptance_layer():
