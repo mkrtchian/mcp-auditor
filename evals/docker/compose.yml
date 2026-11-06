@@ -550,7 +550,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-53818-github-kanban
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "3e89a8dee4f88cbc703c72c85fe26c87c0031975aa11c74ae29260c84c82f4e5"
+        org.mcp-auditor.dockerfile-fingerprint: "8257602763e78e08208cf2a0f939e8b05156d298655110555c87d4c0960deba4"
     image: mcp-auditor-cve-holdout-2025-53818-github-kanban:local
 
   holdout-2025-53818-github-kanban-patched:
@@ -558,7 +558,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-53818-github-kanban-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9dc43fcee7f14632bac4b39903aab6b8acf77323d901bd6be6842a380e9a7778"
+        org.mcp-auditor.dockerfile-fingerprint: "56d1b2eec19bd961986d246b7e8bef10f1f595bbb09ff0c1a7045b5ad890eff2"
     image: mcp-auditor-cve-holdout-2025-53818-github-kanban-patched:local
 
   holdout-2026-5833-taskwarrior:

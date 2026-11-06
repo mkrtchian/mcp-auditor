@@ -3,11 +3,19 @@
 # (253d93bbdf7ee9fe42bd8fdf15feea93ae59cbae, "fix: prevent gh command injection"; released as
 # the v0.4.1 tree). It replaces execAsync(shell string) with execFile('gh', [...argv]) and adds
 # issue_number / repo validation. This is the same server build as the vulnerable image except
-# for the fix, so the pair isolates exactly CVE-2025-53818 (and its create_issue sibling).
+# for the fix, so the pair isolates exactly CVE-2025-53818 (and its create_issue sibling). gh is
+# the same pinned real CLI; api.github.com is served by the stand-in (see the fixture).
 FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+ARG GH_VERSION=2.103.3
+ARG GH_DEB_SHA256=e3bafef96328d1a67de3a968bdfe1cc2ffd58cf6aba8b5e201356897ed06bb3d
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
+    && curl -fsSL -o /tmp/gh.deb "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.deb" \
+    && echo "${GH_DEB_SHA256}  /tmp/gh.deb" | sha256sum -c - \
+    && dpkg -i /tmp/gh.deb \
+    && rm -f /tmp/gh.deb \
+    && rm -rf /var/lib/apt/lists/* \
+    && gh --version
 
 ARG COMMIT=253d93bbdf7ee9fe42bd8fdf15feea93ae59cbae
 WORKDIR /opt/server
@@ -18,38 +26,8 @@ RUN git init -q \
     && npm install --no-audit --no-fund \
     && test -f build/index.js
 
-# gh test shim: the external GitHub CLI, not the server. On the patched build the server calls
-# execFile('gh', [...]) with the argument vector, so the shim just returns success for the benign
-# call. Baked inline rather than COPYed so the fingerprint covers it.
-RUN cat > /usr/local/bin/gh <<'GH_SHIM_EOF' \
-    && chmod 0755 /usr/local/bin/gh
-#!/bin/sh
-# Test shim for the GitHub CLI. The sandbox has no network and no GitHub auth, so the real
-# `gh` would always exit non-zero and the server's benign path would error. This shim exits 0
-# with plausible output so a normal tool call succeeds. It does NOT touch the server's command
-# construction: the CVE-2025-53818 shell injection lives entirely in the real server code
-# (execAsync with string interpolation), and `sh -c` interprets the injected payload before any
-# `gh` process is reached. On the patched build the server calls execFile('gh', [...]) with the
-# argument vector, so this shim just returns success.
-case "$1 $2" in
-  "issue view")
-    echo '{"number":1,"title":"Test issue","state":"open","url":"https://github.com/acme/kanban/issues/1"}'
-    ;;
-  "issue create")
-    echo 'https://github.com/acme/kanban/issues/1'
-    ;;
-  "issue list")
-    echo '[]'
-    ;;
-  "label list")
-    : # empty label list
-    ;;
-  *)
-    : # comment / edit / close / reopen / label create: nothing to print
-    ;;
-esac
-exit 0
-GH_SHIM_EOF
+ENV GH_TOKEN=gho_A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8
+ENV GH_NO_UPDATE_NOTIFIER=1
 
 RUN mkdir -p /repo/.git \
     && printf '[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = https://github.com/acme/kanban.git\n' > /repo/.git/config \

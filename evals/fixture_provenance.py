@@ -32,7 +32,9 @@ class StandInRecord(BaseModel):
     # The repository path of what implements it: a responder Dockerfile, a backend module, a
     # stub-writing run Dockerfile.
     file: str
-    capture: str | None = None  # an evals/stand_ins/ capture that sources every route
+    # An evals/stand_ins/ file that sources every route, a capture or one written from the
+    # software sources: the generic stand-in replays either.
+    capture: str | None = None
     outputs: list[StandInOutput]
 
 

@@ -1,14 +1,21 @@
 # Vulnerable github-kanban-mcp-server (CVE-2025-53818, OS command injection in add_comment).
 # Built from the real pinned upstream source at the commit immediately before the fix
 # (0a4f9f92a13a201fe31cda310da1c95d63876579, the last vulnerable state; package tree ~ v0.4.0).
+# The real GitHub CLI gh (the software the server shells out to) is installed from its pinned
+# official .deb; api.github.com, which gh contacts, is served by a stand-in under its real name
+# (see the fixture) and gh trusts the fixture authority through SSL_CERT_FILE set at launch.
 FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
 
-# Tools the exploit command-execution reach uses once injected (curl for the SSRF endpoints);
-# coreutils / getent / hostname ship with the base image.
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+ARG GH_VERSION=2.103.3
+ARG GH_DEB_SHA256=e3bafef96328d1a67de3a968bdfe1cc2ffd58cf6aba8b5e201356897ed06bb3d
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
+    && curl -fsSL -o /tmp/gh.deb "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.deb" \
+    && echo "${GH_DEB_SHA256}  /tmp/gh.deb" | sha256sum -c - \
+    && dpkg -i /tmp/gh.deb \
+    && rm -f /tmp/gh.deb \
+    && rm -rf /var/lib/apt/lists/* \
+    && gh --version
 
-# Real pinned server source, built with its own toolchain (npm install runs prepare -> tsc).
 ARG COMMIT=0a4f9f92a13a201fe31cda310da1c95d63876579
 WORKDIR /opt/server
 RUN git init -q \
@@ -18,42 +25,9 @@ RUN git init -q \
     && npm install --no-audit --no-fund \
     && test -f build/index.js
 
-# gh test shim: the external GitHub CLI, not the server. The sandbox has no network and no GitHub
-# auth, so the real gh would always exit non-zero and the benign path would error; this shim exits
-# 0 with plausible output. It does NOT touch the server's command construction: the injection lives
-# in the real server code (execAsync with string interpolation) and `sh -c` interprets the payload
-# before any gh process is reached. Baked inline rather than COPYed so the fingerprint covers it.
-RUN cat > /usr/local/bin/gh <<'GH_SHIM_EOF' \
-    && chmod 0755 /usr/local/bin/gh
-#!/bin/sh
-# Test shim for the GitHub CLI. The sandbox has no network and no GitHub auth, so the real
-# `gh` would always exit non-zero and the server's benign path would error. This shim exits 0
-# with plausible output so a normal tool call succeeds. It does NOT touch the server's command
-# construction: the CVE-2025-53818 shell injection lives entirely in the real server code
-# (execAsync with string interpolation), and `sh -c` interprets the injected payload before any
-# `gh` process is reached. On the patched build the server calls execFile('gh', [...]) with the
-# argument vector, so this shim just returns success.
-case "$1 $2" in
-  "issue view")
-    echo '{"number":1,"title":"Test issue","state":"open","url":"https://github.com/acme/kanban/issues/1"}'
-    ;;
-  "issue create")
-    echo 'https://github.com/acme/kanban/issues/1'
-    ;;
-  "issue list")
-    echo '[]'
-    ;;
-  "label list")
-    : # empty label list
-    ;;
-  *)
-    : # comment / edit / close / reopen / label create: nothing to print
-    ;;
-esac
-exit 0
-GH_SHIM_EOF
+ENV GH_TOKEN=gho_A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8
+ENV GH_NO_UPDATE_NOTIFIER=1
 
-# A git checkout the server can resolve owner/repo from (reads .git/config remote origin url).
 RUN mkdir -p /repo/.git \
     && printf '[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = https://github.com/acme/kanban.git\n' > /repo/.git/config \
     && chmod -R a+rX /repo
