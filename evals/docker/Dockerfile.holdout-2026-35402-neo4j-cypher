@@ -1,0 +1,71 @@
+# Vulnerable mcp-neo4j-cypher 0.5.3 (CVE-2026-35402): read_neo4j_cypher's write guard is a keyword
+# regex, so a CALL of an APOC procedure bypasses read-only mode and its LOAD CSV fetches an internal
+# URL. The real Neo4j 5.26.1 with its bundled APOC core runs in the same container, started by the
+# entrypoint before the MCP server, as calibrated.
+FROM neo4j:5.26.1@sha256:2ebf971c90529d900bdaf8125761a54a4f78203796756eef74c579143f9577c5
+
+# uv provides the pinned CPython 3.12 the server requires (the base ships no Python). Its static
+# build is taken from the release current on the calibration day, checked against its published
+# sha256.
+ARG UV_VERSION=0.13.7
+ARG UV_SHA256=287491da03f2a785c70fa75b13e1f849918c2f2b5415fe84876b8214eeb792f9
+RUN cd /tmp \
+ && wget -q "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-musl.tar.gz" \
+ && echo "${UV_SHA256}  uv-x86_64-unknown-linux-musl.tar.gz" | sha256sum -c - \
+ && tar xzf uv-x86_64-unknown-linux-musl.tar.gz -C /usr/local/bin --strip-components=1 \
+      uv-x86_64-unknown-linux-musl/uv uv-x86_64-unknown-linux-musl/uvx \
+ && rm uv-x86_64-unknown-linux-musl.tar.gz \
+ && uv --version
+
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv/python \
+    UV_TOOL_DIR=/opt/uv/tools \
+    UV_TOOL_BIN_DIR=/usr/local/bin \
+    UV_CACHE_DIR=/tmp/uvcache
+
+RUN uv tool install --python 3.12 "mcp-neo4j-cypher==0.5.3" \
+ && rm -rf /tmp/uvcache \
+ && chmod -R a+rX /opt/uv /usr/local/bin/mcp-neo4j-cypher
+
+RUN cp /var/lib/neo4j/labs/apoc-*-core.jar /var/lib/neo4j/plugins/
+
+RUN conf=/var/lib/neo4j/conf/neo4j.conf \
+ && sed -ri '/^\s*(server\.memory\.heap\.initial_size|server\.memory\.heap\.max_size|server\.memory\.pagecache\.size|server\.http\.enabled|server\.https\.enabled|dbms\.security\.procedures\.unrestricted)\s*=/d' "$conf" \
+ && { \
+      echo 'server.memory.heap.initial_size=512m'; \
+      echo 'server.memory.heap.max_size=512m'; \
+      echo 'server.memory.pagecache.size=100m'; \
+      echo 'server.http.enabled=false'; \
+      echo 'server.https.enabled=false'; \
+      echo 'dbms.security.procedures.unrestricted=apoc.*'; \
+      echo 'server.jvm.additional=-XX:ActiveProcessorCount=2'; \
+    } >> "$conf"
+
+RUN neo4j-admin dbms set-initial-password password
+
+RUN chmod -R 777 /data /logs /var/lib/neo4j && chmod 1777 /tmp
+
+ENV NEO4J_URI=bolt://localhost:7687 \
+    NEO4J_USERNAME=neo4j \
+    NEO4J_PASSWORD=password \
+    NEO4J_DATABASE=neo4j
+
+# The entrypoint starts Neo4j in the background (its log off the stdio stream), waits up to 110 s
+# for Bolt, then runs the MCP stdio server in read-only mode.
+RUN cat > /usr/local/bin/entrypoint.sh <<'EOF' \
+ && chmod +x /usr/local/bin/entrypoint.sh
+#!/bin/bash
+set -eu
+neo4j console >/tmp/neo4j.boot 2>&1 &
+for _ in $(seq 1 110); do
+  if (exec 3<>/dev/tcp/127.0.0.1/7687) 2>/dev/null; then
+    exec 3>&-
+    exec 3<&-
+    break
+  fi
+  sleep 1
+done
+sleep 3
+exec /usr/local/bin/mcp-neo4j-cypher --transport stdio --read-only
+EOF
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
