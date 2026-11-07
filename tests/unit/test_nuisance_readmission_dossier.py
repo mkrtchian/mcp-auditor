@@ -46,7 +46,7 @@ SHAPES = [
     given.a_committed_server_with_fix_checks,
     given.a_committed_server_with_a_backend,
     given.a_committed_server_with_a_holdout_copy,
-    given.a_committed_twin_with_its_own_fix_check,
+    dossier_given.a_twin_with_its_own_fix_check,
 ]
 
 
@@ -134,7 +134,7 @@ def test_a_holdout_copy_dossier_carries_its_holdout_reference_as_text(dossier_of
 def test_a_twin_with_its_own_fix_check_carries_its_holdout_reference_and_card(
     dossier_of: DossierOf,
 ):
-    server = given.a_committed_twin_with_its_own_fix_check()
+    server = dossier_given.a_twin_with_its_own_fix_check()
 
     out = dossier_of(server)
 
