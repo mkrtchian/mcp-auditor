@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from evals import (
+    closed_network,
     cve_endpoint_address,
     cve_planting,
     cve_planting_base,
@@ -21,6 +22,7 @@ from evals import (
     cve_planting_spec,
     cve_planting_stand_ins,
     nuisance_confinement,
+    public_stand_ins,
 )
 from evals.baseline import fingerprint_sources
 from evals.cve_baseline import host_stand_in_files, planting_host_parts
@@ -34,7 +36,8 @@ if TYPE_CHECKING:
 
 CONFINEMENT_SOURCE = Path(nuisance_confinement.__file__)
 # What a backend-less server with public names is launched through besides the confinement: the
-# holder's and the stand-in's images and the planting code that stands them.
+# holder's and the stand-in's images, the planting code that stands them, the capture loader it
+# reads them through and the closed network it puts them on.
 _SHARED_SERVICES = (cve_planting_base.SENTINEL_SERVICE, cve_planting_base.STAND_IN_SERVICE)
 _PUBLIC_NAME_SOURCES = (
     Path(cve_planting.__file__),
@@ -43,6 +46,8 @@ _PUBLIC_NAME_SOURCES = (
     Path(cve_planting_stand_ins.__file__),
     Path(cve_planting_docker.__file__),
     Path(cve_endpoint_address.__file__),
+    Path(public_stand_ins.__file__),
+    Path(closed_network.__file__),
 )
 
 
@@ -99,7 +104,8 @@ def fingerprinted_files(
     backends: Mapping[str, RegisteredBackend] = BACKENDS,
 ) -> list[Path]:
     """The fixture files whose content the fingerprint reads: the patched Dockerfile, what the
-    backend serves and the host's stand-in files."""
+    backend serves, the host's stand-in files and, for a server with no backend and public
+    names, the holder's and the stand-in's Dockerfiles and the planting modules that stand them."""
     return [
         image_dockerfile(server.service, docker_directory),
         *_served(server, backends),
