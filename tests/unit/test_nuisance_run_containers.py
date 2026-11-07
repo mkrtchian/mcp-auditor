@@ -1,0 +1,44 @@
+"""The images a nuisance run rebuilds: a backend-less server with public names adds the holder's
+and the stand-in's images, which the run rebuilds but never sweeps by tag, since the launch
+removes its own containers and a calibration may share those images."""
+
+import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_run_given as run_given
+from evals.cve_planting_base import (
+    SENTINEL_SERVICE,
+    STAND_IN_SERVICE,
+    PlantingHost,
+    PublicNames,
+    SymbolicUser,
+)
+from evals.nuisance_run_containers import run_images
+
+SERVED = PlantingHost(
+    SymbolicUser.UNPRIVILEGED, "/", False, PublicNames(stand_ins=("example.com",))
+)
+
+
+def test_a_backend_less_server_with_public_names_rebuilds_the_holder_and_stand_in_images():
+    server = admission_given.with_host(run_given.a_server("npm:served"), SERVED)
+
+    images = run_images([run_given.a_server("npm:plain"), server])
+
+    assert images.backend_services == [SENTINEL_SERVICE, STAND_IN_SERVICE]
+    assert images.backend_tags == []
+
+
+def test_servers_without_public_names_rebuild_no_shared_image():
+    images = run_images([run_given.a_server("npm:plain")])
+
+    assert images.backend_services == []
+
+
+def test_the_stand_in_a_backend_also_builds_is_rebuilt_once():
+    apify = edits.with_the_registered_backend(run_given.a_server("npm:apify"), "apify")
+    served = admission_given.with_host(run_given.a_server("npm:served"), SERVED)
+
+    images = run_images([apify, served])
+
+    assert images.backend_services.count(STAND_IN_SERVICE) == 1
+    assert SENTINEL_SERVICE in images.backend_services

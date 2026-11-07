@@ -220,6 +220,30 @@ def test_the_fingerprint_is_unchanged_by_served_files_for_a_server_with_no_backe
     assert nuisance_fixture_fingerprint(server, tmp_path, backends) == before
 
 
+def test_the_fingerprint_moves_when_the_stand_in_image_of_a_public_name_changes(tmp_path: Path):
+    given.written_dockerfile(tmp_path)
+    given.written_public_name_dockerfiles(tmp_path)
+    server = given.serving_a_public_name(admission_given.an_admission().servers[0])
+    before = nuisance_fixture_fingerprint(server, tmp_path)
+
+    given.written_public_name_dockerfiles(tmp_path, stand_in="FROM python:3.13\nRUN true\n")
+
+    assert nuisance_fixture_fingerprint(server, tmp_path) != before
+
+
+def test_the_fingerprint_is_unchanged_by_the_stand_in_image_for_a_server_with_no_public_name(
+    tmp_path: Path,
+):
+    given.written_dockerfile(tmp_path)
+    given.written_public_name_dockerfiles(tmp_path)
+    server = admission_given.an_admission().servers[0]
+    before = nuisance_fixture_fingerprint(server, tmp_path)
+
+    given.written_public_name_dockerfiles(tmp_path, stand_in="FROM python:3.13\nRUN true\n")
+
+    assert nuisance_fixture_fingerprint(server, tmp_path) == before
+
+
 def test_the_fingerprint_moves_when_the_confinement_code_changes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):

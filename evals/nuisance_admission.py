@@ -169,12 +169,17 @@ def _fingerprint_problems(admission: NuisanceAdmission, grammar_fingerprint: str
 
 
 def _network_problems(server: AdmittedServer) -> list[str]:
+    problems: list[str] = []
     if server.host.has_network and server.backend is None:
-        return [
+        problems.append(
             f"{server.server_package}: has_network without a backend: "
             "a server with no backend runs with no network"
-        ]
-    return []
+        )
+    names = server.host.public_names
+    if names.trust and not names.stand_ins:
+        # The launch plants only for a stand-in, so a trust setting alone would be ignored.
+        problems.append(f"{server.server_package}: a trust setting with no stand-in")
+    return problems
 
 
 def _unsettled_disagreements(server: AdmittedServer) -> list[str]:

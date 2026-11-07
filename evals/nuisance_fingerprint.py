@@ -13,7 +13,15 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from evals import cve_planting_base, nuisance_confinement
+from evals import (
+    cve_endpoint_address,
+    cve_planting,
+    cve_planting_base,
+    cve_planting_docker,
+    cve_planting_spec,
+    cve_planting_stand_ins,
+    nuisance_confinement,
+)
 from evals.baseline import fingerprint_sources
 from evals.cve_baseline import host_stand_in_files, planting_host_parts
 from evals.cve_images import dockerfile_instructions
@@ -25,6 +33,17 @@ if TYPE_CHECKING:
     from evals.nuisance_admission import AdmittedServer, BenignCall
 
 CONFINEMENT_SOURCE = Path(nuisance_confinement.__file__)
+# What a backend-less server with public names is launched through besides the confinement: the
+# holder's and the stand-in's images and the planting code that stands them.
+_SHARED_SERVICES = (cve_planting_base.SENTINEL_SERVICE, cve_planting_base.STAND_IN_SERVICE)
+PUBLIC_NAME_SOURCES = (
+    Path(cve_planting.__file__),
+    Path(cve_planting_base.__file__),
+    Path(cve_planting_spec.__file__),
+    Path(cve_planting_stand_ins.__file__),
+    Path(cve_planting_docker.__file__),
+    Path(cve_endpoint_address.__file__),
+)
 
 
 def nuisance_fixture_fingerprint(
@@ -41,7 +60,9 @@ def nuisance_fixture_fingerprint(
     (`nuisance_confinement_args()`, the acceptance confinement included), the resolver option
     (`resolver_args()`), the backend fixture
     (provisioner, pinned image, network), what its backend serves (each Dockerfile by its
-    instructions, each Python module by its code, any other file by its bytes), the counted tools
+    instructions, each Python module by its code, any other file by its bytes), for a server
+    with no backend and public names the holder's and the stand-in's Dockerfiles and the planting
+    modules that stand them, the counted tools
     with the valid judge categories of their classes, and the benign calls of those counted tools
     in record order, with their expected texts and their prerequisite calls.
     Out: the vulnerable Dockerfile, the exploits, the agents, the agreement, the settlements, the
@@ -67,6 +88,8 @@ def nuisance_fixture_fingerprint(
             if call.tool in counted
         ],
     ]
+    if _serves_public_names(server):
+        parts.append(backend_content(_public_name_launch(docker_directory)))
     return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
 
 
@@ -81,7 +104,17 @@ def fingerprinted_files(
         image_dockerfile(server.service, docker_directory),
         *_served(server, backends),
         *host_stand_in_files(server.host),
+        *(_public_name_launch(docker_directory) if _serves_public_names(server) else ()),
     ]
+
+
+def _serves_public_names(server: AdmittedServer) -> bool:
+    return server.backend is None and bool(server.host.public_names.stand_ins)
+
+
+def _public_name_launch(docker_directory: Path) -> tuple[Path, ...]:
+    dockerfiles = (image_dockerfile(service, docker_directory) for service in _SHARED_SERVICES)
+    return (*dockerfiles, *PUBLIC_NAME_SOURCES)
 
 
 def _served(server: AdmittedServer, backends: Mapping[str, RegisteredBackend]) -> tuple[Path, ...]:

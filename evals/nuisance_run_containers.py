@@ -2,7 +2,9 @@
 it may be an audit in progress. A running built backend container is removed before the rebuild,
 since a responder is a stateless stand-in its provisioner starts again from the fresh image. Both
 are swept at the end. The pulled backends (Doris, the `mysql` backend's) are persistent by design
-and left alone."""
+and left alone. A backend-less server with public names launches a holder and stand-ins, whose
+images the run rebuilds but never sweeps by tag: the launch removes its own containers, and a
+calibration may run containers of the same images."""
 
 from __future__ import annotations
 
@@ -11,6 +13,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
 from evals import nuisance_images
+from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.nuisance_backends import built_backend_services, built_backend_tags
 from evals.run_images import refuse_running_containers, sweep_containers
 
@@ -42,10 +45,19 @@ def run_images(servers: Sequence[AdmittedServer]) -> RunImages:
     services = server_services(servers)
     return RunImages(
         server_services=services,
-        backend_services=built_backend_services(servers),
+        backend_services=list(
+            dict.fromkeys([*built_backend_services(servers), *_public_name_services(servers)])
+        ),
         server_tags=[nuisance_images.image_tag(service) for service in services],
         backend_tags=built_backend_tags(servers),
     )
+
+
+def _public_name_services(servers: Sequence[AdmittedServer]) -> list[str]:
+    serves = any(
+        server.backend is None and server.host.public_names.stand_ins for server in servers
+    )
+    return [SENTINEL_SERVICE, STAND_IN_SERVICE] if serves else []
 
 
 def server_services(servers: Sequence[AdmittedServer]) -> list[str]:

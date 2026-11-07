@@ -24,6 +24,7 @@ _MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] =
     (given.with_an_unknown_backend_provisioner, "is not registered"),
     (given.with_a_backend_fixture_differing_from_its_provisioner, "fake/backend:1.0"),
     (given.with_a_networked_host_and_no_backend, "has_network without a backend"),
+    (given.with_a_trust_setting_and_no_stand_in, "a trust setting with no stand-in"),
 ]
 
 

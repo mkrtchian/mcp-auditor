@@ -6,6 +6,7 @@ import pytest
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals import nuisance_fingerprint
 from evals.cve_grammar import MechanismClass
+from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, PublicNames
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import RegisteredBackend
 
@@ -44,3 +45,15 @@ def one_flaw_server(effect_class: MechanismClass) -> AdmittedServer:
         admission_given.FIRST_FLAW, effect_class, admission_given.PATCHED_VERSION
     )
     return admission_given.a_server([flaw])
+
+
+def written_public_name_dockerfiles(
+    directory: Path, stand_in: str = "FROM python:3.12\nRUN true\n"
+) -> None:
+    (directory / f"Dockerfile.{SENTINEL_SERVICE}").write_text("FROM busybox:1.37\n")
+    (directory / f"Dockerfile.{STAND_IN_SERVICE}").write_text(stand_in)
+
+
+def serving_a_public_name(server: AdmittedServer) -> AdmittedServer:
+    names = PublicNames(stand_ins=("example.com",))
+    return admission_given.with_host(server, replace(server.host, public_names=names))

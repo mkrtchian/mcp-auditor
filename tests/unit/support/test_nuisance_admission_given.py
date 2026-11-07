@@ -12,7 +12,7 @@ from evals.backend_lifecycle import BackendLifecycle
 from evals.census_classification import Classification
 from evals.census_work import AgentRecord, AgentRole
 from evals.cve_grammar import MechanismClass
-from evals.cve_planting_base import PlantingHost, SymbolicUser
+from evals.cve_planting_base import PlantingHost, PublicNames, SymbolicUser
 from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.nuisance_admission import (
     AdmissionSettlement,
@@ -217,6 +217,12 @@ def with_a_backend_fixture_differing_from_its_provisioner(
 
 def with_a_networked_host_and_no_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
     host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
+    return edits.with_the_server(admission, lambda server: with_host(server, host))
+
+
+def with_a_trust_setting_and_no_stand_in(admission: NuisanceAdmission) -> NuisanceAdmission:
+    names = PublicNames(trust=("NODE_EXTRA_CA_CERTS",))
+    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False, public_names=names)
     return edits.with_the_server(admission, lambda server: with_host(server, host))
 
 
