@@ -1,9 +1,13 @@
+import dataclasses
 import os
+from pathlib import Path
 
 import pytest
 
+import tests.unit.support.test_cve_planting_stand_ins_given as stand_ins_given
 from evals.cve_planting_base import (
     PlantingHost,
+    PublicNames,
     SymbolicUser,
     confinement_args,
     no_network_args,
@@ -13,6 +17,7 @@ from evals.nuisance_confinement import (
     launch_digest,
     launch_matches,
     nuisance_confinement_args,
+    single_container_launch_args,
     single_container_run_args,
     user_args,
 )
@@ -120,3 +125,53 @@ def test_the_single_container_run_has_no_network_even_on_a_networked_host():
 
 def _holds(args: list[str], segment: list[str]) -> bool:
     return any(args[i : i + len(segment)] == segment for i in range(len(args)))
+
+
+def test_a_launch_with_no_public_names_is_the_single_container_argv_and_starts_nothing(
+    tmp_path: Path,
+):
+    docker = stand_ins_given.FakePlantingDocker()
+
+    with single_container_launch_args(
+        "image:local", HOST, LAUNCH, docker=docker, stand_ins_directory=tmp_path / "absent"
+    ) as args:
+        assert args == single_container_run_args("image:local", HOST, LAUNCH)
+        assert (docker.holders, docker.stand_ins, docker.host_files) == ({}, {}, {})
+
+
+def test_a_launch_with_a_public_name_joins_the_holder_serving_it_under_the_confinement(
+    tmp_path: Path,
+):
+    directory = stand_ins_given.a_stand_ins_directory(tmp_path)
+    docker = stand_ins_given.FakePlantingDocker()
+    host = dataclasses.replace(HOST, public_names=PublicNames(stand_ins=(stand_ins_given.HOST,)))
+
+    with single_container_launch_args(
+        "image:local", host, LAUNCH, docker=docker, stand_ins_directory=directory
+    ) as args:
+        (holder,) = docker.holders
+        assert len(docker.stand_ins) == 1
+        assert args[:3] == ["run", "-i", "--rm"]
+        assert args[3 : 3 + len(nuisance_confinement_args())] == nuisance_confinement_args()
+        assert then_network_of(args) == f"container:{holder}"
+        assert args[-3:] == ["image:local", *LAUNCH]
+    assert (docker.holders, docker.stand_ins) == ({}, {})
+
+
+def test_a_trust_setting_points_its_variable_at_the_mounted_fixture_authority(tmp_path: Path):
+    directory = stand_ins_given.a_stand_ins_directory(tmp_path)
+    names = PublicNames(stand_ins=(stand_ins_given.HOST,), trust=("NODE_EXTRA_CA_CERTS",))
+    host = dataclasses.replace(HOST, public_names=names)
+
+    with single_container_launch_args(
+        "image:local",
+        host,
+        LAUNCH,
+        docker=stand_ins_given.FakePlantingDocker(),
+        stand_ins_directory=directory,
+    ) as args:
+        assert any(arg.startswith("NODE_EXTRA_CA_CERTS=") for arg in args)
+
+
+def then_network_of(args: list[str]) -> str:
+    return args[args.index("--network") + 1]

@@ -18,7 +18,7 @@ from evals.launch_audit import Auditor, AuditShape, audit_launch, print_lost_con
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
-from evals.nuisance_confinement import single_container_run_args
+from evals.nuisance_confinement import single_container_launch_args
 from evals.nuisance_counter import flagged_tools
 from evals.nuisance_counting import counted_tools
 from evals.nuisance_images import image_tag
@@ -42,26 +42,20 @@ _INCOMPLETE_CAUSES = frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE
 def nuisance_environment(
     server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
 ) -> Generator[Launch]:
-    """The launch of one server on its patched image. With no backend fixture it is the current
-    single-container launch; with one it delegates to the provisioner of the registered
-    lifecycle, which brings the backend up and yields the server launch wired to it. The lifecycle
-    owns the closed network that joins the server to its backend and to nothing else."""
+    """The launch of one server on its patched image. With no backend fixture it is the
+    single-container launch under the nuisance confinement, with no mount and no network, its
+    public names served by a holder when it declares some; with one it delegates to the
+    provisioner of the registered lifecycle, which brings the backend up and yields the server
+    launch wired to it. The lifecycle owns the closed network that joins the server to its
+    backend and to nothing else."""
     if server.backend is None:
-        yield _single_container_launch(server)
+        with single_container_launch_args(
+            image_tag(server.service), server.host, server.launch
+        ) as args:
+            yield Launch(command="docker", args=args)
     else:
         with provisioner_of(backends[server.backend.provisioner].lifecycle)(server) as launch:
             yield launch
-
-
-def _single_container_launch(server: AdmittedServer) -> Launch:
-    """The patched image under the nuisance confinement (`nuisance_confinement`, the acceptance
-    one plus the memory bound), with no mount, no layout and no planting. The user and working
-    directory come from `server.host`. A server with no backend runs with no network, the
-    admission refusing `has_network` without one."""
-    return Launch(
-        command="docker",
-        args=single_container_run_args(image_tag(server.service), server.host, server.launch),
-    )
 
 
 @dataclass(frozen=True)

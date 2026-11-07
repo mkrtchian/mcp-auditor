@@ -1,10 +1,11 @@
 """The benign probe a re-admission agent runs on a server's patched image, free of mcp_auditor.
 
 Parity note: the twin is `run_nuisance vet`, which makes the same benign calls through the run's
-own launch. The record is the dossier's admission_record.json read as plain JSON, since
-nuisance_admission is not clean. The single-container launch is the run's
-(nuisance_confinement.single_container_run_args), and a backend launch goes through
-kit_backend_launch, both pinned to the run launch by tests.
+own launch. The record is the dossier's admission_record.json, or an agent's own record, read as
+plain JSON, since nuisance_admission is not clean. The single-container launch is the run's
+(nuisance_confinement.single_container_launch_args), serving the record's public names from this
+tree's `evals/stand_ins/`, and a backend launch goes through kit_backend_launch, both pinned to
+the run launch by tests.
 """
 
 import argparse
@@ -12,8 +13,8 @@ import asyncio
 import json
 import os
 import tempfile
-from collections.abc import Mapping, Sequence
-from contextlib import AbstractContextManager, nullcontext
+from collections.abc import Generator, Mapping, Sequence
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -22,7 +23,7 @@ from evals.cve_planting_base import PlantingHost, PublicNames, SymbolicUser
 from evals.holdout_kit.kit_backend_launch import backend_launch, lifecycle_of
 from evals.holdout_kit.kit_client import KitClient, KitMCPClient, KitResponse, docker_client_env
 from evals.holdout_kit.kit_launch import Launch
-from evals.nuisance_confinement import single_container_run_args
+from evals.nuisance_confinement import single_container_launch_args
 
 _DEFAULT_TOOL_CALL_TIMEOUT = 30
 
@@ -106,13 +107,15 @@ def record_host(record: Mapping[str, Any]) -> PlantingHost:
     )
 
 
-def single_container_launch(record: Mapping[str, Any], image: str) -> Launch:
-    return Launch("docker", single_container_run_args(image, record_host(record), record["launch"]))
+@contextmanager
+def single_container_launch(record: Mapping[str, Any], image: str) -> Generator[Launch]:
+    with single_container_launch_args(image, record_host(record), record["launch"]) as args:
+        yield Launch("docker", args)
 
 
 def probe_launch(record: Mapping[str, Any], image: str) -> AbstractContextManager[Launch]:
     if record["backend"] is None:
-        return nullcontext(single_container_launch(record, image))
+        return single_container_launch(record, image)
     lifecycle = lifecycle_of(record["backend"]["provisioner"])
     return backend_launch(lifecycle, image, record_host(record), record["launch"])
 

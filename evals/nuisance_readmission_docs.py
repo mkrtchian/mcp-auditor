@@ -60,7 +60,7 @@ def _run_args(server: AdmittedServer) -> list[str]:
 
 def _backend_paragraph(server: AdmittedServer) -> str:
     if server.backend is None:
-        return "The server has no backend: it runs with no network.\n"
+        return _NO_BACKEND
     return _BACKEND.format(
         key=server.backend.provisioner,
         network=BACKENDS[server.backend.provisioner].network,
@@ -113,8 +113,17 @@ The confinement options, every server alike:
 {options}
 
 A server with a backend joins its backend's closed network instead of running with no network,
-and its backend's containers run under the same memory bound. The benign probe launches a record
-exactly as the run does.
+and its backend's containers run under the same memory bound. A server with no backend whose host
+declares public names joins a namespace holder that serves each one under its real name from its
+capture in `evals/stand_ins/`, with the trust setting. The benign probe launches a record exactly
+as the run does, a proposed capture included once it is in `evals/stand_ins/`.
+"""
+
+_NO_BACKEND = """\
+The server has no backend: it runs with no network. When its host declares public names, the
+launch joins a namespace holder that serves each one under its real name from its capture in
+`evals/stand_ins/`, with the trust setting, and the argv above takes the holder's network in
+place of `--network none`.
 """
 
 _BACKEND = """\

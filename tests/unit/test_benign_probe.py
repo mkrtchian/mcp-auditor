@@ -71,7 +71,8 @@ def test_the_single_container_launch_is_the_run_launch():
     with nuisance_audit.nuisance_environment(server) as run_launch:
         run_args = run_launch.args
 
-    assert single_container_launch(given.the_record_of(server), image).args == run_args
+    with single_container_launch(given.the_record_of(server), image) as probe_launch_:
+        assert probe_launch_.args == run_args
 
 
 def test_the_probe_launch_of_a_record_with_a_backend_is_its_lifecycle_launch(

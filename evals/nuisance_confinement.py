@@ -2,15 +2,25 @@
 software): the acceptance and holdout confinement plus the memory bound, which only the nuisance
 suite sets, on its server containers and on every backend container (the shared Doris cluster
 included). A persistent backend container carries the digest of its launch, so one started with
-another launch is recreated once."""
+another launch is recreated once.
+
+A server with no backend runs with no network. When its admission declares public names, the
+hosts it needs are served under their real names the way a CVE launch serves them (ADR 034): the
+planting layer stands a namespace holder and the stand-ins, plants nothing, and the server joins
+the holder's network namespace with the trust setting.
+"""
 
 import hashlib
 import json
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
+from contextlib import contextmanager
+from pathlib import Path
 
+from evals.cve_planting import RANDOM_NONCES, planted, planting_spec
 from evals.cve_planting_base import (
     LABEL,
+    PlantingDocker,
     PlantingHost,
     SymbolicUser,
     confinement_args,
@@ -18,6 +28,8 @@ from evals.cve_planting_base import (
     no_network_args,
     unprivileged_user_args,
 )
+from evals.cve_planting_docker import DOCKER_PLANTING
+from evals.public_stand_ins import STAND_INS_DIRECTORY
 
 # arcadedb's fixed 2 GiB ZGC heap plus an audit's load; the product's regime uses 2g (ADR 018)
 MEMORY_BOUND = "4g"
@@ -83,3 +95,28 @@ def single_container_run_args(
         image,
         *server_launch,
     ]  # fmt: skip
+
+
+@contextmanager
+def single_container_launch_args(
+    image: str,
+    host: PlantingHost,
+    server_launch: Sequence[str],
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
+    stand_ins_directory: Path = STAND_INS_DIRECTORY,
+) -> Generator[list[str]]:
+    if not host.public_names.stand_ins:
+        yield single_container_run_args(image, host, server_launch)
+        return
+    spec = planting_spec((), host, RANDOM_NONCES)
+    with planted(spec, image, docker, stand_ins_directory) as args:
+        yield [
+            "run",
+            "-i",
+            "--rm",
+            *nuisance_confinement_args(),
+            *args.run_args(),
+            image,
+            *server_launch,
+        ]
