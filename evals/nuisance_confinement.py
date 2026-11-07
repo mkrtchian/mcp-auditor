@@ -83,20 +83,6 @@ def user_args(user: SymbolicUser) -> list[str]:
             return unprivileged_user_args()
 
 
-def single_container_run_args(
-    image: str, host: PlantingHost, server_launch: Sequence[str]
-) -> list[str]:
-    return [
-        "run", "-i", "--rm",
-        *nuisance_confinement_args(),
-        *user_args(host.user),
-        "-w", host.working_directory,
-        *no_network_args(),
-        image,
-        *server_launch,
-    ]  # fmt: skip
-
-
 @contextmanager
 def single_container_launch_args(
     image: str,
@@ -120,3 +106,17 @@ def single_container_launch_args(
             image,
             *server_launch,
         ]
+
+
+def single_container_run_args(
+    image: str, host: PlantingHost, server_launch: Sequence[str]
+) -> list[str]:
+    return [
+        "run", "-i", "--rm",
+        *nuisance_confinement_args(),
+        *user_args(host.user),
+        "-w", host.working_directory,
+        *no_network_args(),
+        image,
+        *server_launch,
+    ]  # fmt: skip

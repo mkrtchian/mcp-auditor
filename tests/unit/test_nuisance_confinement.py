@@ -153,7 +153,7 @@ def test_a_launch_with_a_public_name_joins_the_holder_serving_it_under_the_confi
         assert len(docker.stand_ins) == 1
         assert args[:3] == ["run", "-i", "--rm"]
         assert args[3 : 3 + len(nuisance_confinement_args())] == nuisance_confinement_args()
-        assert then_network_of(args) == f"container:{holder}"
+        assert args[args.index("--network") + 1] == f"container:{holder}"
         assert args[-3:] == ["image:local", *LAUNCH]
     assert (docker.holders, docker.stand_ins) == ({}, {})
 
@@ -171,7 +171,3 @@ def test_a_trust_setting_points_its_variable_at_the_mounted_fixture_authority(tm
         stand_ins_directory=directory,
     ) as args:
         assert any(arg.startswith("NODE_EXTRA_CA_CERTS=") for arg in args)
-
-
-def then_network_of(args: list[str]) -> str:
-    return args[args.index("--network") + 1]
