@@ -6,7 +6,7 @@ tools."""
 import shlex
 from collections.abc import Sequence
 
-from evals.cve_planting_base import no_network_args
+from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.holdout_kit.kit_backend_launch import lifecycle_of
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS
@@ -31,10 +31,8 @@ def confinement_text(server: AdmittedServer) -> str:
 
 def admission_confinement_text() -> str:
     options = "\n".join(f"- `{option}`" for option in _paired(nuisance_confinement_args()))
-    command = (
-        f"docker run -i --rm {shlex.join(nuisance_confinement_args())} <user> "
-        f"-w <working directory> {shlex.join(no_network_args())} <image> <launch>"
-    )
+    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "<working directory>", has_network=False)
+    command = f"docker {shlex.join(single_container_run_args(_IMAGE, host, ['<launch>']))}"
     return _ADMISSION_CONFINEMENT.format(command=command, options=options)
 
 
@@ -101,10 +99,10 @@ The confinement options, every server alike:
 _ADMISSION_CONFINEMENT = """\
 # The run's confinement
 
-A server with no backend is launched with this argv. `<user>` is `--user 65534:65534 -e
-HOME=/tmp` for the `unprivileged` user of `PlantingHost` (the default) and the invoking user's
-uid and gid for `host`, `<working directory>` is the host's `working_directory`, `<image>` the
-image tag and `<launch>` the record's `launch`:
+A server with no backend is launched with this argv, shown for the `unprivileged` user of
+`PlantingHost` (the default): the `host` user takes the invoking user's uid and gid in `--user`
+instead. `<working directory>` is the host's `working_directory`, `<image>` the image tag and
+`<launch>` the record's `launch`:
 
 ```
 {command}
