@@ -32,7 +32,7 @@ AIM = re.compile(r"/srv/app/x\d+")
 # non-file place is kept too, container-hostname, whose nonce Docker writes to /etc/hostname (via
 # --hostname); the exploit links an in-scope path to it, so the same symlink-follow read surfaces
 # it, exactly as for etc-hosts. proc-environ (kind=env) is not kept: read_file refuses
-# /proc/self/environ as a binary (NUL-separated) file. Layout places are left to the route check.
+# /proc/self/environ as a binary (NUL-separated) file. The layout places are in the card's `unkept`.
 KEPT_PLACES: tuple[str, ...] = (
     "etc-shadow",
     "aws-credentials",
