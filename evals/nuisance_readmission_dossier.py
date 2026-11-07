@@ -27,6 +27,7 @@ from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_dossier import write_dossier
 from evals.nuisance_fixtures import FIX_CHECK_TARGETS
+from evals.nuisance_holdout_reference import holdout_targets_among
 from evals.nuisance_walk_record import NuisanceCensus
 
 
@@ -63,7 +64,8 @@ def readmission_dockerfiles(server: AdmittedServer) -> list[str]:
         services += [target.vulnerable_service, target.patched_service]
         if target.server_patched_service is not None:
             services.append(target.server_patched_service)
-    for holdout in holdout_references(server):
+    twins = [*holdout_references(server), *holdout_targets_among(f.flaw for f in server.flaws)]
+    for holdout in twins:
         services += [*holdout.images, holdout.patched_image]
     if server.backend is not None:
         services += BACKENDS[server.backend.provisioner].built_services
