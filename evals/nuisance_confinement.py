@@ -15,6 +15,7 @@ import json
 import subprocess
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 
 from evals.cve_planting import RANDOM_NONCES, planted, planting_spec
@@ -95,7 +96,8 @@ def single_container_launch_args(
     if not host.public_names.stand_ins:
         yield single_container_run_args(image, host, server_launch)
         return
-    spec = planting_spec((), host, RANDOM_NONCES)
+    # A nuisance server's `/work` is its project, baked into its image, never the CVE tmpfs.
+    spec = planting_spec((), replace(host, baked_work=True), RANDOM_NONCES)
     with planted(spec, image, docker, stand_ins_directory) as args:
         yield [
             "run",

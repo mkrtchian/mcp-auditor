@@ -171,3 +171,21 @@ def test_a_trust_setting_points_its_variable_at_the_mounted_fixture_authority(tm
         stand_ins_directory=directory,
     ) as args:
         assert any(arg.startswith("NODE_EXTRA_CA_CERTS=") for arg in args)
+
+
+def test_a_launch_with_a_public_name_keeps_the_project_baked_into_its_work_directory(
+    tmp_path: Path,
+):
+    directory = stand_ins_given.a_stand_ins_directory(tmp_path)
+    names = PublicNames(stand_ins=(stand_ins_given.HOST,))
+    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/work", has_network=False, public_names=names)
+
+    with single_container_launch_args(
+        "image:local",
+        host,
+        LAUNCH,
+        docker=stand_ins_given.FakePlantingDocker(),
+        stand_ins_directory=directory,
+    ) as args:
+        assert "--tmpfs" not in args
+        assert _holds(args, ["-w", "/work"])
