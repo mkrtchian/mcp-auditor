@@ -8,23 +8,30 @@ fix-check driver (`evals/holdout_kit/fix_check.py`) and no `holdout_places.json`
 plants the flaw's own witness at its own coordinate, free of any catalogue place.
 
 The dossier is rebuilt from the committed census (`CensusFlaw` fields alone), one advisory per
-census flaw of the server, never from the raw hand-downloaded exports.
+census flaw of the server, never from the raw hand-downloaded exports. It also carries the rule,
+the confinement every nuisance server runs with, the benign probe, the stand-in capture tool and,
+for each census flaw of the server that is a holdout target, that target's holdout reference.
 """
 
 import json
+import shutil
 from pathlib import Path
 
-from evals import calibration_dossier, dossier_closure, nuisance_walk
+from evals import calibration_dossier, dossier_closure, nuisance_holdout_reference, nuisance_walk
 from evals.calibration_dossier import KIT_MODULES, acceptance_services, copy_clean_sources
 from evals.eval_session import Refused
 from evals.holdout_census import HoldoutCensus
+from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer, FlawRecord
+from evals.nuisance_readmission_docs import admission_confinement_text
 from evals.nuisance_walk_record import NuisanceCensus, normalized_package
 from evals.run_census import GRAMMAR_CLASSES
 
 # Kept here, not read from the nuisance_backends registry, so the dossier stays free of the
 # auditor-coupled registry.
 _BACKENDS = frozenset({"doris"})
+
+NUISANCE_RULE = REPO_ROOT / "docs" / "nuisance-rule.md"
 
 
 def write_dossier(
@@ -42,6 +49,12 @@ def write_dossier(
     copy_clean_sources(out, (*KIT_MODULES, "fix_check"))
     if backend == "doris":
         dossier_closure.copy_closure(out, ["evals.holdout_kit.kit_backends"])
+    dossier_closure.copy_closure(out, ["evals.holdout_kit.benign_probe", "evals.capture_stand_in"])
+    nuisance_holdout_reference.write_holdout_references(
+        out,
+        nuisance_census.census,
+        nuisance_holdout_reference.holdout_targets_among(identifiers),
+    )
     _write_docs(out, backend)
 
 
@@ -64,6 +77,8 @@ def _write_advisories(census: HoldoutCensus, identifiers: list[str], out: Path) 
 
 def _write_docs(out: Path, backend: str | None) -> None:
     (out / "grammar_classes.md").write_text(GRAMMAR_CLASSES)
+    shutil.copyfile(NUISANCE_RULE, out / "nuisance-rule.md")
+    (out / "confinement.md").write_text(admission_confinement_text())
     (out / "fixture_format.md").write_text(_fixture_format(backend))
     (out / "README.md").write_text(_readme())
 
@@ -259,4 +274,24 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 5. Paste the printed `FixCheckResult` into the flaw's `fix_check` record of the admission, and
    fill the rest of the `FlawRecord` and `AdmittedServer` fields (`fixture_format.md` carries
    their schemas). Fill the rule v3 and v4 fields too, none left `null`.
+
+## What else the dossier carries
+
+- `nuisance-rule.md`: the admission rule the record is checked against.
+- `confinement.md`: the container options every nuisance server runs with, and the shape of the
+  run's argv.
+- The benign probe, `python -m evals.holdout_kit.benign_probe --record <record.json> --image
+  <tag>`: it launches the image under the run's confinement and makes each benign call of a
+  record in the `AdmittedServer` shape (`fixture_format.md`), each `before` call first, and exits
+  0 when every call answers without error and every set `expect` is found.
+- The stand-in capture tool, `python -m evals.capture_stand_in --out evals/stand_ins/<host>.json
+  <url> [<url> ...]`: run from this directory with network access, it records what a public host
+  answers in the format the stand-in replays, every route of one host in one capture. A
+  `--header` is recorded verbatim, so it never carries a real credential.
+- `reference/`, for each census flaw of the server that is a holdout target: its holdout fixture
+  and its builder's source as text under `reference/holdout_fixtures/`, its Dockerfiles under
+  `reference/docker/` and its calibration card as `reference/cards/<id>.json`. The agents may
+  start from that fixture when the server's patched version is the one the holdout calibration
+  checks, and adapt it otherwise (`nuisance-rule.md`, Admission). Nothing under `reference/`
+  imports or runs.
 """

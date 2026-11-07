@@ -1,17 +1,17 @@
 """Assemble, outside the repository, the re-admission dossier for one admitted server.
 
-The first-admission dossier (`nuisance_dossier.write_dossier`) plus what the two blind agents
-need to fill the fields rules v3 and v4 add: the server's committed record, the rule, the run's,
-fix-check, holdout-twin and backend Dockerfiles under `evals/docker/`, the server's fix-check
-modules and backend lifecycle with their import closure, the benign probe, the holdout fixture
-of each holdout-calibration flaw as text, and the stated confinement.
+The first-admission dossier (`nuisance_dossier.write_dossier`, which already carries the rule,
+the benign probe, the capture tool and the holdout reference of each holdout target among the
+server's flaws) plus what the two blind agents need to fill the fields rules v3 and v4 add: the
+server's committed record, the run's, fix-check, holdout-twin and backend Dockerfiles under
+`evals/docker/`, the server's fix-check modules and backend lifecycle with their import closure,
+and the confinement stated for this server's launch.
 
 This module imports `holdout_targets`, `nuisance_fixtures` and `nuisance_backends`, none of them
 clean: only the files it writes must be.
 """
 
 import importlib
-import inspect
 import pkgutil
 import shutil
 from pathlib import Path
@@ -23,30 +23,23 @@ from evals.docker_paths import image_dockerfile
 from evals.eval_session import Refused
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_targets import HOLDOUT_TARGETS
-from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_dossier import write_dossier
 from evals.nuisance_fixtures import FIX_CHECK_TARGETS
 from evals.nuisance_walk_record import NuisanceCensus
 
-NUISANCE_RULE = REPO_ROOT / "docs" / "nuisance-rule.md"
-HOLDOUT_FIXTURES = REPO_ROOT / "evals" / "holdout_fixtures"
-
 
 def write_readmission_dossier(
     nuisance_census: NuisanceCensus, admission: NuisanceAdmission, server_package: str, out: Path
 ) -> None:
     server = _admitted_server(admission, server_package)
-    references = {holdout_fixture_file(t.cve_id): t for t in holdout_references(server)}
     dockerfiles = readmission_dockerfiles(server)
     closure = dossier_closure.import_closure(closure_roots(server))
     write_dossier(nuisance_census, server_package, out)
     (out / "admission_record.json").write_text(server.model_dump_json(indent=2))
-    shutil.copyfile(NUISANCE_RULE, out / "nuisance-rule.md")
     _copy_dockerfiles(out, [*dockerfiles, SENTINEL_SERVICE, STAND_IN_SERVICE])
     dossier_closure.copy_closure(out, closure)
-    _write_references(out, references)
     (out / "confinement.md").write_text(nuisance_readmission_docs.confinement_text(server))
     with (out / "README.md").open("a") as readme:
         readme.write(
@@ -126,35 +119,9 @@ def holdout_references(server: AdmittedServer) -> list[CVETarget]:
     return [by_identifier[flaw] for flaw in calibrated]
 
 
-def holdout_fixture_file(identifier: str) -> Path:
-    slug = identifier.lower().replace("-", "_")
-    matches = sorted(HOLDOUT_FIXTURES.glob(f"{slug}_*.py"))
-    if len(matches) != 1:
-        raise Refused(
-            f"Refused: the holdout flaw {identifier} matches {len(matches)} fixture modules.",
-            [f"evals/holdout_fixtures/{slug}_*.py must match exactly one module"],
-        )
-    return matches[0]
-
-
 def _copy_dockerfiles(out: Path, services: list[str]) -> None:
     docker_out = out / "evals" / "docker"
     docker_out.mkdir(parents=True, exist_ok=True)
     for service in services:
         source = image_dockerfile(service)
         shutil.copyfile(source, docker_out / source.name)
-
-
-def _write_references(out: Path, references: dict[Path, CVETarget]) -> None:
-    if not references:
-        return
-    reference_out = out / "reference" / "holdout_fixtures"
-    reference_out.mkdir(parents=True, exist_ok=True)
-    for fixture, target in references.items():
-        builder = target.builder
-        text = (
-            f"{fixture.read_text()}\n\n"
-            f"# The builder {builder.__name__}, from {builder.__module__}:\n\n"
-            f"{inspect.getsource(builder)}"
-        )
-        (reference_out / f"{fixture.name}.txt").write_text(text)

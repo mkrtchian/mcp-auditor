@@ -18,7 +18,8 @@ import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.calibration_dossier import CLEAN_MODULES, acceptance_services, write_kit
 from evals.eval_session import Refused
 from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.nuisance_dossier import write_dossier
+from evals.nuisance_dossier import NUISANCE_RULE, write_dossier
+from evals.nuisance_readmission_docs import admission_confinement_text
 
 
 def test_writes_the_isolated_admission_dossier(tmp_path: Path):
@@ -37,8 +38,15 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
         "README.md",
         "fixture_format.md",
         "grammar_classes.md",
+        "nuisance-rule.md",
+        "confinement.md",
+        "evals/holdout_kit/benign_probe.py",
+        "evals/capture_stand_in.py",
     ):
         assert (out / relative).exists(), relative
+    assert (out / "nuisance-rule.md").read_text() == NUISANCE_RULE.read_text()
+    assert (out / "confinement.md").read_text() == admission_confinement_text()
+    assert not (out / "reference").exists()
     assert not (out / "evals" / "holdout_places.json").exists()
     assert not (out / "layout.md").exists()
     assert not (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
@@ -95,6 +103,36 @@ def test_the_written_dossier_imports_nothing_from_mcp_auditor(tmp_path: Path):
 
     assert iso.scan_tree(out) == {}
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
+
+
+def test_a_holdout_twin_dossier_carries_the_holdout_reference_of_each_of_its_targets(
+    tmp_path: Path,
+):
+    server = given.a_twin_with_its_own_fix_check()
+
+    out = given.a_written_twin_dossier(tmp_path, server)
+
+    for target in given.its_holdout_targets(server):
+        then.it_carries_the_holdout_reference_of(out, target)
+    assert iso.scan_tree(out) == {}
+    assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
+
+
+def test_the_readme_lists_the_rule_confinement_probe_capture_tool_and_reference(
+    tmp_path: Path,
+):
+    readme = (given.a_written_dossier(tmp_path) / "README.md").read_text()
+
+    for named in (
+        "`nuisance-rule.md`",
+        "`confinement.md`",
+        "evals.holdout_kit.benign_probe",
+        "evals.capture_stand_in",
+        "`reference/cards/<id>.json`",
+        "`reference/holdout_fixtures/`",
+        "`reference/docker/`",
+    ):
+        assert named in readme, named
 
 
 def test_the_readme_names_the_kit_tag_and_the_acceptance_services(tmp_path: Path):

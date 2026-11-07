@@ -13,6 +13,8 @@ import evals.nuisance_readmission_dossier as readmission
 import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_dossier_given as dossier_given
+import tests.unit.support.test_nuisance_dossier_then as dossier_then
 import tests.unit.support.test_nuisance_readmission_dossier_given as given
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.docker_paths import image_dockerfile
@@ -23,12 +25,12 @@ from evals.holdout_kit.fix_check import check_fix
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import nuisance_confinement_args, user_args
+from evals.nuisance_dossier import NUISANCE_RULE
+from evals.nuisance_holdout_reference import holdout_fixture_file
 from evals.nuisance_readmission_docs import confinement_text, readmission_readme
 from evals.nuisance_readmission_dossier import (
-    NUISANCE_RULE,
     closure_roots,
     fix_check_modules,
-    holdout_fixture_file,
     holdout_references,
     readmission_dockerfiles,
     write_readmission_dossier,
@@ -44,6 +46,7 @@ SHAPES = [
     given.a_committed_server_with_fix_checks,
     given.a_committed_server_with_a_backend,
     given.a_committed_server_with_a_holdout_copy,
+    given.a_committed_twin_with_its_own_fix_check,
 ]
 
 
@@ -126,6 +129,17 @@ def test_a_holdout_copy_dossier_carries_its_holdout_reference_as_text(dossier_of
         for service in (*target.images, target.patched_image):
             assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service
     assert list((out / "reference").rglob("*.py")) == []
+
+
+def test_a_twin_with_its_own_fix_check_carries_its_holdout_reference_and_card(
+    dossier_of: DossierOf,
+):
+    server = given.a_committed_twin_with_its_own_fix_check()
+
+    out = dossier_of(server)
+
+    for target in dossier_given.its_holdout_targets(server):
+        dossier_then.it_carries_the_holdout_reference_of(out, target)
 
 
 @pytest.mark.parametrize(

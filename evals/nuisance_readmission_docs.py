@@ -1,9 +1,12 @@
-"""The rendered documents of a re-admission dossier: the run's confinement, rendered from the
-run's own launch builders and never retyped, and the README section on the re-admission tools."""
+"""The rendered documents of an admission dossier: the run's confinement, rendered from the
+run's own launch builders and never retyped (for one admitted server, or as the shape every
+server's launch takes before its record exists), and the README section on the re-admission
+tools."""
 
 import shlex
 from collections.abc import Sequence
 
+from evals.cve_planting_base import no_network_args
 from evals.holdout_kit.kit_backend_launch import lifecycle_of
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS
@@ -24,6 +27,15 @@ def confinement_text(server: AdmittedServer) -> str:
         options=options,
         backend=_backend_paragraph(server),
     )
+
+
+def admission_confinement_text() -> str:
+    options = "\n".join(f"- `{option}`" for option in _paired(nuisance_confinement_args()))
+    command = (
+        f"docker run -i --rm {shlex.join(nuisance_confinement_args())} <user> "
+        f"-w <working directory> {shlex.join(no_network_args())} <image> <launch>"
+    )
+    return _ADMISSION_CONFINEMENT.format(command=command, options=options)
 
 
 def _paired(args: list[str]) -> list[str]:
@@ -86,6 +98,27 @@ The confinement options, every server alike:
 
 {backend}"""
 
+_ADMISSION_CONFINEMENT = """\
+# The run's confinement
+
+A server with no backend is launched with this argv. `<user>` is `--user 65534:65534 -e
+HOME=/tmp` for the `unprivileged` user of `PlantingHost` (the default) and the invoking user's
+uid and gid for `host`, `<working directory>` is the host's `working_directory`, `<image>` the
+image tag and `<launch>` the record's `launch`:
+
+```
+{command}
+```
+
+The confinement options, every server alike:
+
+{options}
+
+A server with a backend joins its backend's closed network instead of running with no network,
+and its backend's containers run under the same memory bound. The benign probe launches a record
+exactly as the run does.
+"""
+
 _BACKEND = """\
 The server joins the closed network `{network}` of its `{key}` backend, which reaches the
 backend's containers and nothing else (no route to the host or the Internet). The backend's
@@ -99,13 +132,11 @@ This dossier also carries what a re-admission of this server needs, beside the f
 workshop above.
 
 - `admission_record.json`: the server's committed `AdmittedServer` record.
-- `nuisance-rule.md`: the admission rule the record is checked against.
-- `confinement.md`: the argv the run launches the server with and its confinement options.
+- `confinement.md`: here, the argv the run launches this server with and its confinement
+  options.
 - `evals/docker/`: the Dockerfiles of the run's image (`Dockerfile.{service}`), of the committed
   fix checks, of the holdout twin and of the backend, as the repository holds them.
 - `evals/nuisance_fix_checks/`: the server's committed fix-check modules.
-- `reference/`: the holdout fixture of each holdout-calibration flaw with its builder's source,
-  as text (it does not import outside the repository).
 
 {backend_line}
 

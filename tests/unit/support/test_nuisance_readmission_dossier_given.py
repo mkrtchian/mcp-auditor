@@ -1,6 +1,7 @@
 import hashlib
 from pathlib import Path
 
+import tests.unit.support.test_nuisance_dossier_given as dossier_given
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_readmission_dossier import (
@@ -28,6 +29,10 @@ def a_committed_server_with_a_holdout_copy() -> AdmittedServer:
     return next(
         server for server in the_committed_admission().servers if holdout_references(server)
     )
+
+
+def a_committed_twin_with_its_own_fix_check() -> AdmittedServer:
+    return dossier_given.a_twin_with_its_own_fix_check()
 
 
 def a_written_dossier(tmp_path: Path, server_package: str) -> Path:
