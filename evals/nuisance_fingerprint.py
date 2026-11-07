@@ -36,7 +36,7 @@ CONFINEMENT_SOURCE = Path(nuisance_confinement.__file__)
 # What a backend-less server with public names is launched through besides the confinement: the
 # holder's and the stand-in's images and the planting code that stands them.
 _SHARED_SERVICES = (cve_planting_base.SENTINEL_SERVICE, cve_planting_base.STAND_IN_SERVICE)
-PUBLIC_NAME_SOURCES = (
+_PUBLIC_NAME_SOURCES = (
     Path(cve_planting.__file__),
     Path(cve_planting_base.__file__),
     Path(cve_planting_spec.__file__),
@@ -114,7 +114,7 @@ def _serves_public_names(server: AdmittedServer) -> bool:
 
 def _public_name_launch(docker_directory: Path) -> tuple[Path, ...]:
     dockerfiles = (image_dockerfile(service, docker_directory) for service in _SHARED_SERVICES)
-    return (*dockerfiles, *PUBLIC_NAME_SOURCES)
+    return (*dockerfiles, *_PUBLIC_NAME_SOURCES)
 
 
 def _served(server: AdmittedServer, backends: Mapping[str, RegisteredBackend]) -> tuple[Path, ...]:
