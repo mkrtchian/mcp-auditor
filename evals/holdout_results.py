@@ -155,6 +155,7 @@ class HoldoutRunResult:
     concurrency: int
     throttled_requests: int
     partial: bool = False  # a run stopped by an exception, its finished entries only
+    second_pass: Sequence[str] = ()  # run only because their solo second pre-run pass was clean
 
 
 class RunInterrupted(Exception):

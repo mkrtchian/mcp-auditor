@@ -127,6 +127,7 @@ class HoldoutReport(BaseModel):
     ladder: dict[int, int]  # detected-run count -> number of targets reaching it
     targets: list[TargetLine]
     not_run: list[NotRunLine]
+    second_pass: list[str]
     incomplete_run_count: int
     incomplete_runs_by_cause: dict[str, int]  # a run missing steps of two causes counts twice
     total_cost: float
@@ -178,6 +179,7 @@ def build_report(run: HoldoutRunResult) -> HoldoutReport:
         ladder=dict(Counter(target.detected_runs for target in run.targets)),
         targets=[_target_line(target) for target in run.targets],
         not_run=[NotRunLine.of(target) for target in run.not_run],
+        second_pass=list(run.second_pass),
         incomplete_run_count=run.incomplete_run_count,
         incomplete_runs_by_cause=dict(
             Counter(

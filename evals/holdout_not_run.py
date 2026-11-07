@@ -1,6 +1,7 @@
 """The holdout report's not-run section: every target dropped with its reason, opened by the
 targets dropped during the run counted per cause against the targets launched, the N the rule
-starts from. The pre-run check's reasons carry per-target detail, so they get no count line."""
+starts from, and closed by the targets that ran only after a clean solo second pass of the pre-run
+check. The pre-run check's reasons carry per-target detail, so they get no count line."""
 
 from collections import Counter
 from collections.abc import Sequence
@@ -20,11 +21,20 @@ class NotRunLine(BaseModel):
         return cls(cve_id=target.cve_id, reason=target.reason, cause=target.cause)
 
 
-def not_run_section(not_run: Sequence[NotRunLine], audited_targets: int) -> list[str]:
-    if not not_run:
-        return ["## Not run", "- none", ""]
-    lines = [f"- {line.cve_id}: {line.reason}" for line in not_run]
-    return ["## Not run", *_dropped_during_the_run(not_run, audited_targets), *lines, ""]
+def not_run_section(
+    not_run: Sequence[NotRunLine], audited_targets: int, second_pass: Sequence[str]
+) -> list[str]:
+    lines = [f"- {line.cve_id}: {line.reason}" for line in not_run] or ["- none"]
+    second = [
+        f"- run after a clean solo second pass of the pre-run check: {', '.join(second_pass)}"
+    ]
+    return [
+        "## Not run",
+        *_dropped_during_the_run(not_run, audited_targets),
+        *lines,
+        *(second if second_pass else []),
+        "",
+    ]
 
 
 def _dropped_during_the_run(not_run: Sequence[NotRunLine], audited_targets: int) -> list[str]:

@@ -125,6 +125,23 @@ def test_render_markdown_shows_the_number_ladder_controls_and_cost():
     assert markdown.endswith("Total cost: $0.06")
 
 
+def test_render_markdown_names_the_targets_run_after_a_solo_second_pre_run_pass():
+    run = dataclasses.replace(_run_result(), second_pass=("CVE-B",))
+
+    markdown = render_markdown(build_report(run))
+
+    assert (
+        "- CVE-C: dead condition on the patched version\n"
+        "- run after a clean solo second pass of the pre-run check: CVE-B\n"
+    ) in markdown
+
+
+def test_render_markdown_names_no_second_pass_when_every_target_passed_the_first():
+    markdown = render_markdown(build_report(_run_result()))
+
+    assert "second pass" not in markdown
+
+
 def test_render_markdown_states_the_throttled_requests_after_the_incomplete_runs():
     run = dataclasses.replace(_run_result(), throttled_requests=12, concurrency=4)
 

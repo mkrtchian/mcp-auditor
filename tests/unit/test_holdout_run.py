@@ -7,6 +7,7 @@ import dataclasses
 import pytest
 
 import tests.unit.support.test_holdout_run_given as given
+import tests.unit.support.test_holdout_vetting_given as vetting
 from evals.cve_grammar import CVEStatus, MechanismClass
 from evals.cve_layout_check import LayoutCheck
 from evals.cve_replay import ReplayAttemptFailure, UncheckedReason
@@ -180,6 +181,19 @@ async def test_a_fallback_target_the_layout_breaks_is_kept():
     (assembled,) = result.targets
     assert assembled.ran_in_fallback is True
     assert result.not_run == []
+
+
+async def test_a_target_clean_on_its_solo_second_pre_run_pass_runs_and_is_named():
+    flaky = given.a_target(given.KUBERNETES)
+    audit = given.scripted({flaky.cve_id: given.three_detections()})
+    checks = vetting.ScriptedChecks(dead={flaky.cve_id: [["vulnerable: exploit 3 dead"], []]})
+    deps = dataclasses.replace(given.deps_auditing(audit), check=checks.check, layout=checks.layout)
+
+    result = await given.run([flaky], deps)
+
+    assert [t.cve_id for t in result.targets] == [flaky.cve_id]
+    assert result.not_run == []
+    assert result.second_pass == [flaky.cve_id]
 
 
 async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run():

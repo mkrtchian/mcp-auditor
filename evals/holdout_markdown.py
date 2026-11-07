@@ -24,7 +24,7 @@ def render_markdown(report: HoldoutReport) -> str:
             *_ladder_section(report),
             *_split_section(report),
             *_controls_section(report),
-            *not_run_section(report.not_run, len(report.targets)),
+            *not_run_section(report.not_run, len(report.targets), report.second_pass),
             *_health_section(report.targets),
             *_incomplete_runs_lines(report),
             *_throttled_lines(report),

@@ -1051,3 +1051,15 @@ Commit: the one that adds this entry. It also stands for commit `92da1df`, which
 **Fingerprint.** The grammar fingerprint stays `4208029a711b929723d0a0460a0fb986e94f15dbb865afa7078dffd54e5ac9b1`. The fixture fingerprints of CVE-2026-4270 and CVE-2025-11489 move, listed in the holdout log entry of the same day; no other fixture fingerprint moves.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument: which places two holdout fixtures keep and how they are read. No prompt, guard or default of the system under test moves, and no label. (2) It was raised by a review of the vesting against holdout rule v11, not by a measured value: no graded run exists. (3) Rule v11 gives a card's kept places and exploits to the calibration agent, and the cards' exploit calls and checks covered the kits' places only; one added exploit reached its place through `start_process`, which runs the same on the patched version, so the flaw did not carry that place. It reads no measured value. (4) It applies to the two targets `92da1df` changed, and to every layout place on them, kept or not.
+
+### 2026-11-07, the holdout pre-run check gives a target it would drop a solo second pass
+
+Commit: the one that adds this entry.
+
+**State.** No CVE acceptance baseline is stored, so none is deleted. No holdout or nuisance run exists. The honeypot ground truth is unchanged, and no label moves.
+
+**What changes.** The pre-run check of `run_holdout run` vets the targets in parallel, at the run's concurrency, and drops from N a target found dead on a version or broken by the layout. A target the parallel pass would drop is now vetted once more, alone, once every first pass has finished, and runs when that second pass finds nothing; otherwise it is dropped with the second pass's reason. The run result and its report name the targets that ran on their second pass.
+
+**Fingerprint.** The grammar fingerprint stays `4208029a711b929723d0a0460a0fb986e94f15dbb865afa7078dffd54e5ac9b1`. No fixture fingerprint moves: the change is in the run's orchestration, which no fingerprint hashes.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the holdout run's pre-run check. No prompt, guard or default of the system under test moves, no fixture and no label. (2) It was raised by the investigation of CVE-2026-82112, whose model-backed output and slow layout-check call can fail one pass of a sound fixture under a shared CPU, not by a measured value: no holdout run exists. (3) A sound fixture should not leave N because the check ran beside five others, and a broken one fails both passes, so the check still drops what it is meant to drop. The retry touches no audit, so it keeps no best of several audits. (4) It applies to every holdout target, on every holdout run.

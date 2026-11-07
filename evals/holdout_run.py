@@ -134,18 +134,21 @@ def _refuse_running_containers(deps: HoldoutDeps, tags: Sequence[str]) -> None:
 async def _run_surviving(
     targets: Sequence[CVETarget], deps: HoldoutDeps, ctx: _RunContext, tree: TreeState
 ) -> HoldoutRunResult:
-    not_run, surviving = await vet_all(targets, deps.check, deps.layout)
-    assembled, dropped, failure = await _run_all(surviving, deps, ctx)
-    all_not_run = [*not_run, *dropped]
+    pre_run = await vet_all(targets, deps.check, deps.layout)
+    assembled, dropped, failure = await _run_all(pre_run.surviving, deps, ctx)
+    all_not_run = [*pre_run.not_run, *dropped]
     if failure is not None:
         partial = _assemble_run(ctx, deps, assembled, all_not_run, tree)
-        raise RunInterrupted(dataclasses.replace(partial, partial=True), failure)
+        raise RunInterrupted(
+            dataclasses.replace(partial, partial=True, second_pass=pre_run.second_pass), failure
+        )
     if not assembled:
         raise Refused(
             "holdout run refused",
             ["no target survived the pre-run check", *(entry.reason for entry in all_not_run)],
         )
-    return _assemble_run(ctx, deps, assembled, all_not_run, tree)
+    result = _assemble_run(ctx, deps, assembled, all_not_run, tree)
+    return dataclasses.replace(result, second_pass=pre_run.second_pass)
 
 
 def _refuse_tracing() -> None:
