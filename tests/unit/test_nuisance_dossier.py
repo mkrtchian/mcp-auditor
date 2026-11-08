@@ -54,6 +54,12 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
     assert "doris" not in (out / "fixture_format.md").read_text()
 
 
+def test_the_grammar_classes_send_a_flaw_outside_them_to_null(tmp_path: Path):
+    out = given.a_written_dossier(tmp_path)
+
+    then.grammar_classes_send_an_unclassed_flaw_to_null(out)
+
+
 def test_a_backend_dossier_imports_closed(tmp_path: Path):
     out = given.a_written_dossier(tmp_path, backend="doris")
 
