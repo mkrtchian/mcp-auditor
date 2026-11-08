@@ -11,13 +11,15 @@ the measured form (`path_form`), escaped as the body's media type escapes it. Ev
 carries its captured headers, the connection and framing ones apart, with a `Content-Length` of
 the stand-in's own, every route but a captured `HEAD` framed by the body it serves.
 
-A `POST` route written for an AWS service may carry the action it answers, which the stand-in
-reads from the request: the full `X-Amz-Target` value for the JSON protocol (for example
-`secretsmanager.GetSecretValue`), the bare `Action` field of a form body for the query protocol
-(for example `DescribeDBInstances`). A request whose action no route names gets the action-less
-route of its target, else the default, as the real service answers an action it does not know
-with an error. The capture command records no action: those routes are written by hand from
-the services' published examples, since a real capture would need signed requests.
+A `POST` route written by hand may carry the action it answers, which the stand-in reads from
+the request. For an AWS service it is the full `X-Amz-Target` value for the JSON protocol (for
+example `secretsmanager.GetSecretValue`), the bare `Action` field of a form body for the query
+protocol (for example `DescribeDBInstances`). For a GraphQL API it is the operation name the
+`query` of a JSON body declares (for example `IssueList` for `api.github.com`). A request whose
+action no route names gets the action-less route of its target, else the default, as the real
+service answers an action it does not know with an error. The capture command records no
+action: those routes are written by hand from the services' published examples, since a real
+capture would need signed or authenticated requests.
 
 A `POST` route may instead carry a form field: a request whose
 `application/x-www-form-urlencoded` body carries that field gets the route, else the
@@ -73,7 +75,7 @@ class StandInRoute(BaseModel):
     @model_validator(mode="after")
     def _an_action_or_a_form_field_keys_a_post_only(self) -> Self:
         if self.action is not None and self.method != "POST":
-            raise ValueError("only a POST route carries an AWS action")
+            raise ValueError("only a POST route carries an action")
         if self.form_field is not None and self.method != "POST":
             raise ValueError("only a POST route carries a form field")
         if self.action is not None and self.form_field is not None:

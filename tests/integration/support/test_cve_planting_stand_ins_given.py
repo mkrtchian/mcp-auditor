@@ -101,6 +101,30 @@ RESULTS_HEADERS = (("Content-Type", "text/html"),)
 _FORM_CONTENT = (("Content-Type", "application/x-www-form-urlencoded"),)
 SEARCH_REQUEST = Sent(_FORM_CONTENT, "q=wikipedia&kl=fr-fr")
 FIELDLESS_SEARCH_REQUEST = Sent(_FORM_CONTENT, "kl=fr-fr")
+# A GraphQL API's routes, chosen by the operation name the JSON body's query declares.
+GRAPHQL_TARGET = "/graphql"
+ISSUES_OPERATION = "IssueList"
+ISSUES_BODY = '{"data": {"repository": {"name": "fict"}}}'
+_JSON_CONTENT = (("Content-Type", "application/json; charset=utf-8"),)
+ISSUES_HEADERS = _JSON_CONTENT
+GRAPHQL_FALLBACK_BODY = '{"data": {"viewer": {"login": "fict"}}}'
+GRAPHQL_FALLBACK_HEADERS = (("Content-Type", "application/json"), ("X-Fallback", "graphql"))
+# Shaped like gh's: the fragments come before the operation.
+ISSUES_REQUEST = Sent(
+    _JSON_CONTENT,
+    json.dumps(
+        {
+            "query": "fragment issue on Issue {\n\tnumber\n}\n\t"
+            "query IssueList($owner: String!) { repository(owner: $owner) { name } }"
+        }
+    ),
+)
+OTHER_OPERATION_REQUEST = Sent(
+    _JSON_CONTENT, json.dumps({"query": "query ViewerLogin { viewer { login } }"})
+)
+ANONYMOUS_OPERATION_REQUEST = Sent(
+    _JSON_CONTENT, json.dumps({"query": "query { viewer { login } }"})
+)
 _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
 # The stand-in image's Python as the target: http.client sends the target as given and follows
 # no redirect, and the default context verifies TLS against the default paths, which
@@ -179,9 +203,11 @@ def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -
             _route("http", PLAIN_BODY, [["Content-Type", "text/plain"]]),
             _route("https", SECURE_BODY, [list(header) for header in SECURE_HEADERS]),
             _head_only_route(),
-            _post_route(SECRET_ACTION, SECRET_BODY, SECRET_HEADERS),
-            _post_route(INSTANCES_ACTION, INSTANCES_BODY, INSTANCES_HEADERS),
+            _post_route("/", SECRET_ACTION, SECRET_BODY, SECRET_HEADERS),
+            _post_route("/", INSTANCES_ACTION, INSTANCES_BODY, INSTANCES_HEADERS),
             _form_route(),
+            _post_route(GRAPHQL_TARGET, ISSUES_OPERATION, ISSUES_BODY, ISSUES_HEADERS),
+            _post_route(GRAPHQL_TARGET, None, GRAPHQL_FALLBACK_BODY, GRAPHQL_FALLBACK_HEADERS),
         ],
         "defaults": [_redirect_to_https(), secure_default],
     }
@@ -216,16 +242,20 @@ def _head_only_route() -> dict[str, object]:
     }
 
 
-def _post_route(action: str, body: str, headers: Sequence[tuple[str, str]]) -> dict[str, object]:
-    return {
+def _post_route(
+    target: str, action: str | None, body: str, headers: Sequence[tuple[str, str]]
+) -> dict[str, object]:
+    route: dict[str, object] = {
         "scheme": "https",
         "method": "POST",
-        "target": "/",
-        "action": action,
+        "target": target,
         "status": 200,
         "headers": [list(header) for header in headers],
         "body": body,
     }
+    if action is not None:
+        route["action"] = action
+    return route
 
 
 def _form_route() -> dict[str, object]:

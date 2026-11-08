@@ -111,6 +111,21 @@ def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
     then.answered_with(unknown, 404, given.MISSING_BODY)
 
 
+def test_a_planted_stand_in_answers_a_graphql_post_by_its_operation_name(tmp_path: Path):
+    directory = given.a_stand_ins_directory(tmp_path)
+    url = f"https://{given.STAND_IN_HOST}{given.GRAPHQL_TARGET}"
+
+    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
+        named = given.fetch_as_target(args, url, "POST", given.ISSUES_REQUEST)
+        other = given.fetch_as_target(args, url, "POST", given.OTHER_OPERATION_REQUEST)
+        anonymous = given.fetch_as_target(args, url, "POST", given.ANONYMOUS_OPERATION_REQUEST)
+
+    then.answered_by_its_route(named, given.ISSUES_HEADERS, given.ISSUES_BODY)
+    fallback = (given.GRAPHQL_FALLBACK_HEADERS, given.GRAPHQL_FALLBACK_BODY)
+    then.answered_by_its_route(other, *fallback)
+    then.answered_by_its_route(anonymous, *fallback)
+
+
 def test_a_planted_stand_in_answers_a_form_post_by_the_field_it_carries(tmp_path: Path):
     directory = given.a_stand_ins_directory(tmp_path)
     url = f"https://{given.STAND_IN_HOST}{given.FORM_TARGET}"

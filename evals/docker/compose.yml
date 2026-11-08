@@ -98,7 +98,7 @@ services:
       context: .
       dockerfile: Dockerfile.stand-in
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "177de01aa7e4a4a11984d0e6975a4d162409285c0a80d4156c1a8e2a89ae0f16"
+        org.mcp-auditor.dockerfile-fingerprint: "811e65dd2cd9f7e9965e3cbaf6e46e501b100a1c10cd66238ed9a9242e1e8e5e"
     image: mcp-auditor-cve-stand-in:local
 
   # Holdout targets (transplanted; see evals/holdout_targets.py).
