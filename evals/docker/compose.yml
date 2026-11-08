@@ -931,7 +931,7 @@ services:
       context: .
       dockerfile: Dockerfile.biome
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "6037040418a370e9a71d16bc5340f7332fb1b69857e4a94084525bf853c1843f"
+        org.mcp-auditor.dockerfile-fingerprint: "f8f52d96ff2c32dedd2e2528a502afca0d90a6efa9fc5fb42bac1b3c57da8fd4"
     image: mcp-auditor-nuisance-biome:local
     profiles: ["nuisance"]
 

@@ -1,5 +1,6 @@
-# Nuisance run image of biome: a copy of Dockerfile.holdout-2026-3680-biome-patched, instructions unchanged,
-# pinning the admission's patched version, commit 335e1727147efeef011f1ff8b05dd751d8a660be.
+# Nuisance run image of biome: Dockerfile.holdout-2026-3680-biome-patched with one addition (the
+# checkout handed to the run user), pinning the admission's patched version, commit
+# 335e1727147efeef011f1ff8b05dd751d8a660be.
 
 # Patched biome-mcp-server (first fixed version of CVE-2026-3680): the fix swaps exec() for
 # execFile("biome", args) with a `--` option terminator, so `paths`/`configPath` are passed as
@@ -17,12 +18,19 @@ RUN git clone https://github.com/RyuzakiShinji/biome-mcp-server.git server
 WORKDIR /opt/server
 RUN git fetch origin pull/1/head && git checkout 335e1727147efeef011f1ff8b05dd751d8a660be
 
+# The server's documented install (README "2. Install Dependencies": npm install). It brings the
+# real @biomejs/biome, resolved by the server's package-lock.json to 1.9.4.
 RUN npm install
 
-# Same benign biome stub: on the patched server execFile invokes `biome` with the paths as
-# literal arguments, so the stub exits cleanly and the benign call stays clean.
-RUN printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/biome && chmod +x /usr/local/bin/biome
+# The real @biomejs/biome 1.9.4 on PATH, as on the holdout images: the server runs the bare
+# command `biome`, and execFile hands it the paths as literal arguments after `--`.
+ENV PATH="/opt/server/node_modules/.bin:${PATH}"
 
-# Absolute paths: the kit launch passes `-w <workdir>`, overriding WORKDIR, so the entrypoint
+# The README has the user clone the repository and run the server from their own checkout, so
+# the run user (uid 65534) owns the checkout's top-level files and directory, the ones biome
+# lints and formats in place (`biome format --write`); node_modules and .git stay root-owned.
+RUN chown 65534:65534 /opt/server /opt/server/*.ts /opt/server/*.json /opt/server/*.md
+
+# Absolute paths: the launch passes `-w <workdir>`, overriding WORKDIR, so the entrypoint
 # must not rely on the current directory to find tsx or the server source.
 ENTRYPOINT ["/opt/server/node_modules/.bin/tsx", "/opt/server/biome-mcp-server.ts"]

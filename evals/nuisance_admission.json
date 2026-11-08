@@ -5220,12 +5220,24 @@
             {
               "vulnerable_name": "biome-lint",
               "patched_name": "biome-lint",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "biome-format",
               "patched_name": "biome-format",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -5239,7 +5251,9 @@
                 "paths": [
                   "."
                 ]
-              }
+              },
+              "expect": "No fixes applied",
+              "before": []
             },
             {
               "tool": "biome-format",
@@ -5247,7 +5261,9 @@
                 "paths": [
                   "."
                 ]
-              }
+              },
+              "expect": "Formatted",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -5261,7 +5277,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -5285,32 +5302,95 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-3680",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-3680",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-3680",
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-3680",
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-3680",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-3680",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "https://github.com/RyuzakiShinji/biome-mcp-server",
           "flaw": "CVE-2026-3680",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B read the declared function (run Biome lint/format on the caller's files) as the effect itself; the declared contract is to run a fixed Biome operation on caller-supplied paths, not to execute an arbitrary shell command, so the exec() injection is a bug, not the contract."
-        },
-        {
-          "server_package": "https://github.com/RyuzakiShinji/biome-mcp-server",
-          "flaw": "CVE-2026-3680",
-          "field": "fix_check.source",
-          "value": "holdout_calibration",
-          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+          "field": "benign_calls",
+          "value": "record A's: the committed calls on '.', biome-lint expecting 'No fixes applied' and biome-format expecting 'Formatted'",
+          "reason": "an expect holds the fixed words of the software's own output and leaves out what varies with the files it reads: record A takes the fixed tail and the fixed leading word of Biome's run summary, where record B's 'Checked 3 files' and 'Formatted 3 files' also hold the count of files in the checkout; the arguments are the same in both records."
         }
       ],
-      "patched_version": "335e1727147efeef011f1ff8b05dd751d8a660be"
+      "patched_version": "335e1727147efeef011f1ff8b05dd751d8a660be",
+      "stand_ins": [],
+      "seeds": [],
+      "software_releases": [
+        {
+          "software": "@biomejs/biome",
+          "release": "1.9.4",
+          "day": null,
+          "source": "Copied from the holdout calibration card of CVE-2026-3680, whose calibration this flaw's fix check reuses: \"The server README names the tool \\\"Biome\\\" (biomejs.dev) and installs the project with `npm install`; package.json pins devDependency \\\"@biomejs/biome\\\": \\\"^1.9.4\\\" and package-lock.json resolves version 1.9.4 (registry.npmjs.org/@biomejs/biome/-/biome-1.9.4.tgz). `biome --version` in the image prints \\\"Version: 1.9.4\\\".\" Checked again at 335e1727: package-lock.json lines 21-23 resolve node_modules/@biomejs/biome to 1.9.4, and the run image prints \"Version: 1.9.4\"."
+        }
+      ]
     },
     {
       "server_package": "npm:@nor2/heim-mcp",
