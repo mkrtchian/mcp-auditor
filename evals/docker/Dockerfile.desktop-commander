@@ -1,23 +1,37 @@
-# Nuisance run image of desktop-commander: a copy of Dockerfile.holdout-2025-11489-desktop-commander-patched, its instructions unchanged but for the seeding the run adds before its entrypoint,
-# pinning the admission's patched version, @wonderwhy-er/desktop-commander 0.2.33.
-# The baked config keeps the holdout's allowedDirectories, the layout path /srv/app.
-
-# CVE-2025-11489 patched image: @wonderwhy-er/desktop-commander@0.2.33 (first patch; commit
-# a1177ec / PR #321 resolves symlinks with fs.realpath BEFORE isPathAllowed, so an in-scope symlink
-# to an out-of-scope target is rejected). Same base and config as the vulnerable image: only the
-# package version differs, isolating the symlink fix.
+# Nuisance run image of desktop-commander, pinning the admission's patched version,
+# @wonderwhy-er/desktop-commander 0.2.33. A copy of Dockerfile.holdout-2025-11489-desktop-commander-patched
+# (same base, same install, same config file) with: the build failing when the ripgrep binary
+# start_search spawns is missing; the Chrome build the server's puppeteer launches for write_pdf;
+# and the allowed directory holding the package's own README.md, owned by the run's account.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
+# --ignore-scripts skips the package's postinstall (install telemetry and a ripgrep check); the
+# ripgrep binary comes with the @vscode/ripgrep platform package, checked below.
 RUN npm install -g --ignore-scripts @wonderwhy-er/desktop-commander@0.2.33 \
- && test -f /usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js
+ && test -f /usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js \
+ && "$(node -e "console.log(require('/usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/node_modules/@vscode/ripgrep').rgPath)")" --version
 
+# write_pdf renders through md-to-pdf's puppeteer, which launches the Chrome for Testing build it
+# pins (puppeteer-core revisions.js) from $HOME/.cache/puppeteer; the server's own download at
+# start needs a network the run does not have. Installed with the server's @puppeteer/browsers,
+# its system libraries included (--install-deps), under HOME=/tmp as the launch sets it.
+RUN apt-get update && apt-get install -y --no-install-recommends unzip \
+ && HOME=/tmp node /usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/node_modules/@puppeteer/browsers/lib/main-cli.js \
+      install chrome@156.0.8078.47 --path /tmp/.cache/puppeteer --install-deps \
+ && rm -rf /var/lib/apt/lists/* \
+ && chmod -R a+rX /tmp/.cache
+
+# getDefaultConfig() of 0.2.33 with allowedDirectories set to /srv/app
+# (an empty list fails open). HOME=/tmp under the run's launch.
 RUN mkdir -p /tmp/.claude-server-commander \
- && printf '%s' '{"allowedDirectories":["/srv/app"],"blockedCommands":[],"telemetryEnabled":false,"pendingWelcomeOnboarding":false,"fileReadLineLimit":100000,"fileWriteLineLimit":50}' \
+ && printf '%s' '{"blockedCommands":["mkfs","format","mount","umount","fdisk","dd","parted","diskpart","sudo","su","passwd","adduser","useradd","usermod","groupadd","chsh","visudo","shutdown","reboot","halt","poweroff","init","iptables","firewall","netsh","sfc","bcdedit","reg","net","sc","runas","cipher","takeown"],"allowedDirectories":["/srv/app"],"telemetryEnabled":true,"fileWriteLineLimit":50,"fileReadLineLimit":1000,"pendingWelcomeOnboarding":true}' \
       > /tmp/.claude-server-commander/config.json \
  && chmod -R 0777 /tmp/.claude-server-commander
 
-# The allowed directory the baked config names, with one plain file for the benign read: the
-# holdout mounted its layout tree there, the nuisance run mounts nothing.
-RUN mkdir -p /srv/app && printf '# app\n' > /srv/app/README.md
+# The allowed directory holds the project's published README.md, taken whole from the installed
+# package 0.2.33, and is writable by the run's account (uid 65534), as the server's write tools need.
+RUN mkdir -p /srv/app \
+ && cp /usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/README.md /srv/app/README.md \
+ && chown -R 65534:65534 /srv/app
 
-ENTRYPOINT ["node", "/usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js", "--no-onboarding"]
+ENTRYPOINT ["node", "/usr/local/lib/node_modules/@wonderwhy-er/desktop-commander/dist/index.js"]
