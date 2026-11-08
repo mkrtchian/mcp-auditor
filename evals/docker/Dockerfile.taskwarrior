@@ -1,14 +1,13 @@
-# Nuisance run image of taskwarrior: a copy of Dockerfile.holdout-2026-5833-taskwarrior-patched, its instructions unchanged but for the seeding the run adds before its entrypoint,
+# Nuisance run image of taskwarrior: Dockerfile.holdout-2026-5833-taskwarrior-patched with
+# TaskWarrior pinned at the holdout card's release and its data set up at TaskWarrior's defaults,
 # pinning the admission's patched version, commit 1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2 (ARG COMMIT).
-
-# Patched mcp-server-taskwarrior, pinned to the first fix commit 1ee3d282 (PR #9 head).
-# The handler now calls execFileSync('task', [identifier, 'done'], ...): no shell, each
-# argument is passed literally, so shell metacharacters are inert. Same base and taskwarrior
-# as the vulnerable image; only the server source commit differs.
+# The handler calls execFileSync('task', [...]): no shell, each argument passed literally.
 FROM node:22-bookworm@sha256:18a6d90fd60542269850c80ca03b29b1d9b14d6b221ac7ee8e35b0d33ef904bd
 
+# TaskWarrior from the Debian channel taskwarrior.org/download names (apt-get install taskwarrior),
+# pinned at the bookworm package of release 2.6.2.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      taskwarrior git curl ca-certificates \
+      taskwarrior=2.6.2+dfsg-1 git curl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 ARG COMMIT=1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2
@@ -18,14 +17,14 @@ RUN git clone https://github.com/awwaiid/mcp-server-taskwarrior /opt/mcp \
  && npm install \
  && npm run build
 
-RUN mkdir -p /opt/task/data \
- && printf 'data.location=/opt/task/data\nconfirmation=off\nverbose=nothing\ngc=off\n' > /opt/task/.taskrc \
- && chmod -R 0777 /opt/task
-ENV TASKRC=/opt/task/.taskrc
-ENV TASKDATA=/opt/task/data
-
-# One pending task, so the benign calls of get_next_tasks (task exits 1 on an empty list) and
-# mark_task_done (task 1) have a task to answer on.
-RUN task add "water the plants" && chmod -R 0777 /opt/task
+# The run's HOME is /tmp. On first use task asks whether it may create ~/.taskrc and ~/.task
+# (taskwarrior.org/download, Quick Setup): answering yes lets task generate both at its defaults.
+# The two tasks are the ones Taskwarrior's 30-Second Tutorial adds (taskwarrior.org/docs/30second),
+# taken from the source the ARG line pins. A build argument stays out of the server's environment.
+# The files go to uid 65534, the run's user.
+ARG TUTORIAL_SAMPLE=GothenburgBitFactory/tw.org@a9276b01f6d0a98577ed8ac3331b1336dd653d2c:content/docs/30second.md
+RUN echo yes | HOME=/tmp task add Read Taskwarrior documents later \
+ && HOME=/tmp task add priority:H Pay bills \
+ && chown -R 65534:65534 /tmp/.taskrc /tmp/.task
 
 ENTRYPOINT ["node", "/opt/mcp/dist/index.js"]

@@ -886,7 +886,7 @@ services:
       context: .
       dockerfile: Dockerfile.taskwarrior
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "2a6b4eed00b97ddac9797d50b6fe5a5a3f3b44c9eb83423dacfa554a49ff5bc7"
+        org.mcp-auditor.dockerfile-fingerprint: "12f61655d98611a1b13255980011d432a9b105406caa19de04264ff545351e64"
     image: mcp-auditor-nuisance-taskwarrior:local
     profiles: ["nuisance"]
 

@@ -3856,17 +3856,35 @@
             {
               "vulnerable_name": "get_next_tasks",
               "patched_name": "get_next_tasks",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "mark_task_done",
               "patched_name": "mark_task_done",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "add_task",
               "patched_name": "add_task",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -3876,19 +3894,25 @@
           "benign_calls": [
             {
               "tool": "get_next_tasks",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Pay bills",
+              "before": []
             },
             {
               "tool": "mark_task_done",
               "arguments": {
                 "identifier": "1"
-              }
+              },
+              "expect": "Completed task",
+              "before": []
             },
             {
               "tool": "add_task",
               "arguments": {
                 "description": "buy milk"
-              }
+              },
+              "expect": "Created task",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -3902,7 +3926,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -3926,32 +3951,122 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "set_aside": "its record was written before its work, under an instruction since corrected that told an agent stopped by a safety classifier to write its record at once"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-5833",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-5833",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-5833",
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-5833",
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-5833",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-5833",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "npm:mcp-server-taskwarrior",
           "flaw": "CVE-2026-5833",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "the tool descriptions declare task management (list, complete, add tasks), not command execution, so by the rule's description test the declared function is not the effect of the command_execution class and the injection is a bug, not the contract. Record B over-called declared_function_is_effect true on the CLI wrapper."
+          "field": "benign_calls",
+          "value": "record A's: the committed arguments, no prerequisite, get_next_tasks expecting 'Pay bills', mark_task_done 'Completed task', add_task 'Created task'",
+          "reason": "the benign calls follow the retained seed: get_next_tasks expects 'Pay bills', a task of the published sample the retained fixture seeds, where record B expected 'Description', a column label of the report, on the written task its seed held; both records expect TaskWarrior's own completion and creation messages for the two other tools."
         },
         {
           "server_package": "npm:mcp-server-taskwarrior",
-          "flaw": "CVE-2026-5833",
-          "field": "fix_check.source",
-          "value": "holdout_calibration",
-          "reason": "the counted flaw is the taskwarrior holdout twin's own calibrated command_execution flaw at the same patched commit 1ee3d282, so its fix_check recopies the holdout calibration and taskwarrior carries no committed vulnerable fixture or FixCheckTarget. No registry release carries the fix, so the patched artifact is the fix commit, as the holdout pins it."
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: the two tasks TaskWarrior's 30-Second Tutorial adds, and the .taskrc and data directory task generates itself at its defaults on first use",
+          "reason": "a published sample of the software comes before a written value, and a file the software generates before a file written for the fixture: record A seeds the two tasks of TaskWarrior's published tutorial and lets task generate its configuration, where record B wrote a task of its own ('water the plants') and an rc keeping confirmation=off, a setting the server does not need to start."
         }
       ],
-      "patched_version": "1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2"
+      "patched_version": "1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "The two tasks TaskWarrior's 30-Second Tutorial adds ('task add Read Taskwarrior documents later', 'task add priority:H Pay bills'), added with task at build time under HOME=/tmp",
+          "kind": "published_sample",
+          "citation": "https://taskwarrior.org/docs/30second/ (source GothenburgBitFactory/tw.org content/docs/30second.md): 'First add two tasks.' The tutorial's later steps (task 2 done, task 1 delete) demonstrate commands on that data and leave it empty, so the sample seeded is the data it adds; no other sample is published by TaskWarrior's documentation, and the server's README examples come second in the source order.",
+          "pin": "a9276b01f6d0a98577ed8ac3331b1336dd653d2c"
+        },
+        {
+          "item": "/tmp/.taskrc and /tmp/.task, generated by task 2.6.2 itself at build time when it is answered yes to its first-run question (data.location=/tmp/.task, every other setting at its default, a header with the build date)",
+          "kind": "generated",
+          "citation": "https://taskwarrior.org/download/ Quick Setup: 'On startup, task will check to see if it can find the configuration file and task directory, and if not found, will ask you whether it may create both.'",
+          "pin": "2.6.2+dfsg-1"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "TaskWarrior",
+          "release": "2.6.2",
+          "day": "2026-11-05",
+          "source": "Copied from the holdout calibration card of CVE-2026-5833, whose calibration this flaw's fix check reuses: the mcp-server-taskwarrior README names no version ('Make sure you have TaskWarrior (`task`) installed and configured on your system.') and links https://taskwarrior.org/; taskwarrior.org/download lists the Debian install 'sudo apt-get install taskwarrior'; the node:22-bookworm (Debian 12) channel carries 2.6.2 (package 2.6.2+dfsg-1, `task --version` -> 2.6.2, checked in a build on 2026-11-07). The proposed Dockerfile pins taskwarrior=2.6.2+dfsg-1."
+        }
+      ]
     },
     {
       "server_package": "https://github.com/A-G-U-P-T-A/wireshark-mcp",
