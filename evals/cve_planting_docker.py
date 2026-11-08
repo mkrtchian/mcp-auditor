@@ -210,45 +210,36 @@ def _probe_read(target_args: Sequence[str], url: str) -> str | None:
     # The entrypoint is absolute because an env place named PATH travels in `target_args`, and
     # `-Y off` because a planted `http_proxy` travels too: busybox `wget` would honour it, the
     # target's client does not.
+    probe = [*target_args, "--entrypoint", "/bin/wget", SENTINEL_IMAGE, "-Y", "off", "-qO-"]
     try:
-        result = subprocess.run(
-            [
-                "docker",
-                "run",
-                "--rm",
-                "--label",
-                LABEL,
-                *target_args,
-                "--entrypoint",
-                "/bin/wget",
-                SENTINEL_IMAGE,
-                "-Y",
-                "off",
-                "-qO-",
-                "-T",
-                f"{_SENTINEL_FETCH_TIMEOUT:g}",
-                url,
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=_PROBE_RUN_TIMEOUT,
-        )
+        result = _run_probe([*probe, "-T", f"{_SENTINEL_FETCH_TIMEOUT:g}", url])
     except (OSError, subprocess.TimeoutExpired):
         return None
     return result.stdout if result.returncode == 0 else None
 
 
 def _probe_connect(target_args: Sequence[str], host: str, port: int) -> bool:
-    command = ["docker", "run", "--rm", "--label", LABEL, *target_args, "--entrypoint", "/bin/nc"]
-    command += [SENTINEL_IMAGE, "-z", "-w", f"{_SENTINEL_FETCH_TIMEOUT:g}", host, str(port)]
+    probe = [*target_args, "--entrypoint", "/bin/nc", SENTINEL_IMAGE]
     try:
-        result = subprocess.run(
-            command, check=False, capture_output=True, timeout=_PROBE_RUN_TIMEOUT
-        )
+        result = _run_probe([*probe, "-z", "-w", f"{_SENTINEL_FETCH_TIMEOUT:g}", host, str(port)])
     except (OSError, subprocess.TimeoutExpired):
         return False
     return result.returncode == 0
+
+
+def _run_probe(run_args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+    # Named, so a container the timeout leaves running once its client is killed is removed.
+    name = f"{LABEL}-probe-{secrets.token_hex(6)}"
+    try:
+        return subprocess.run(
+            ["docker", "run", "--rm", "--label", LABEL, "--name", name, *run_args],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=_PROBE_RUN_TIMEOUT,
+        )
+    finally:
+        _best_effort("docker", "rm", "-f", name)
 
 
 def _stand_in_stderr(name: str) -> str:

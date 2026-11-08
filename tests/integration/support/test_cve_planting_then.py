@@ -15,6 +15,14 @@ def no_container_it_started_outlives(docker: RecordingPlanting) -> None:
     assert not [name for name in docker.containers if _exists("container", name)]
 
 
+def no_container_carries(label: str) -> None:
+    result = subprocess.run(
+        ["docker", "ps", "-a", "--filter", f"label={label}", "-q"],
+        capture_output=True, text=True, check=True,
+    )  # fmt: skip
+    assert result.stdout.split() == []
+
+
 def _exists(kind: str, name: str) -> bool:
     result = subprocess.run(["docker", kind, "inspect", name], capture_output=True, text=True)
     return result.returncode == 0

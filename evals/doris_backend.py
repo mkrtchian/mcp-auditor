@@ -18,6 +18,7 @@ exercises); the generic orphan sweep documented in `cve_environments` reaps anyt
 `mcp-auditor-cve`, the sentinels included.
 """
 
+import secrets
 import subprocess
 import threading
 import time
@@ -180,11 +181,15 @@ def _doris_names(*ps_command: str) -> list[str]:
 
 
 def _doris_sql(sql: str) -> subprocess.CompletedProcess[str]:
-    return _doris_run(
-        "docker", "run", "--rm", "--label", LABEL, "--network", DORIS_BRIDGE, MYSQL_CLIENT_IMAGE,
-        "mysql", f"-h{DORIS_CONTAINER}", "-P9030", "-uroot", "--batch", "-e", sql,
-        check=False, timeout=60,
-    )  # fmt: skip
+    name = f"{LABEL}-probe-{secrets.token_hex(6)}"
+    try:
+        return _doris_run(
+            "docker", "run", "--rm", "--label", LABEL, "--name", name, "--network", DORIS_BRIDGE,
+            MYSQL_CLIENT_IMAGE, "mysql", f"-h{DORIS_CONTAINER}", "-P9030", "-uroot", "--batch",
+            "-e", sql, check=False, timeout=60,
+        )  # fmt: skip
+    finally:
+        doris_rm(name)
 
 
 def _doris_run(

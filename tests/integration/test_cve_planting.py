@@ -14,6 +14,7 @@ import pytest
 
 import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
+from evals import cve_planting_docker
 from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_layout import owned_layout
 from evals.cve_planting import DockerPlanting, PlantingFailed, planted
@@ -182,3 +183,15 @@ def test_the_adapter_hands_over_and_removes_a_tree_holding_a_dangling_absolute_l
         assert (root.stat().st_uid, root.stat().st_gid) == (UNPRIVILEGED_UID, UNPRIVILEGED_GID)
 
     assert not root.parent.exists()
+
+
+def test_a_probe_killed_past_its_run_timeout_leaves_no_container(monkeypatch: pytest.MonkeyPatch):
+    # Below `wget`'s 5 s bound, above a container's start-up of about 2.5 s.
+    monkeypatch.setattr(cve_planting_docker, "_PROBE_RUN_TIMEOUT", 4.0)
+
+    with given.a_listener_that_accepts_and_never_answers() as listener:
+        target_args, label = given.labelled_probe_args(listener.network)
+        body = cve_planting_docker._probe_read(target_args, f"http://{listener.name}/")  # pyright: ignore[reportPrivateUsage]
+
+        assert body is None
+        then.no_container_carries(label)

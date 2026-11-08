@@ -1,8 +1,11 @@
+import secrets
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+from evals.closed_network import create_closed_network
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting import (
     RANDOM_NONCES,
@@ -35,6 +38,39 @@ def missing_prerequisite() -> str | None:
     if not DockerRuntime().available():
         return "CVE planting needs Docker"
     return None
+
+
+@dataclass(frozen=True)
+class SilentListener:
+    network: str
+    name: str
+
+
+@contextmanager
+def a_listener_that_accepts_and_never_answers() -> Generator[SilentListener]:
+    """On a closed network of its own: `sleep` holds `nc`'s stdin open, since busybox `nc`
+    half-closes the connection on stdin's end-of-file, which would end the probe at once."""
+    listener = SilentListener(f"{LABEL}-{secrets.token_hex(6)}", f"{LABEL}-{secrets.token_hex(6)}")
+    create_closed_network(listener.network)
+    try:
+        subprocess.run(
+            [
+                "docker", "run", "-d", "--rm", "--label", LABEL, "--name", listener.name,
+                "--network", listener.network, "--entrypoint", "/bin/sh", SENTINEL_IMAGE,
+                "-c", "sleep 3600 | nc -l -p 80",
+            ],
+            check=True, capture_output=True, timeout=_READ_TIMEOUT,
+        )  # fmt: skip
+        yield listener
+    finally:
+        subprocess.run(["docker", "rm", "-f", listener.name], capture_output=True)
+        subprocess.run(["docker", "network", "rm", listener.network], capture_output=True)
+
+
+def labelled_probe_args(network: str) -> tuple[list[str], str]:
+    """Target arguments carrying a label of the test's own, and that `key=value` label."""
+    label = f"mcp-auditor-probe-test={secrets.token_hex(6)}"
+    return ["--network", network, "--label", label], label
 
 
 def host_search_domain_reaches_a_plain_container() -> bool:
