@@ -2,8 +2,8 @@
 
 A light HTTP responder standing in for the Jenkins controller that the tools of
 hekmon8/Jenkins-server-mcp (`get_build_log`, `get_build_status`, `trigger_build`) call through
-`JENKINS_URL`. It answers the legitimate build endpoints with a fixed benign body. Like the CKAN
-responder it is cheap to stand and a singleton on a fixed address: stood once and reused across a
+`JENKINS_URL`. It answers the legitimate build endpoints with a fixed benign body. Like the other
+responders it is cheap to stand and a singleton on a fixed address: stood once and reused across a
 server's concurrent nuisance runs, reaped by the generic orphan sweep, so no lock is held across
 the yield. The singleton carries no witness nonce, so it has no sentinel route and serves the
 run-phase benign calls only: a fix-check stands its own container of the same image with

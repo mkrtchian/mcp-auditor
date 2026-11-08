@@ -1,7 +1,7 @@
 """The ContextForge REST responder backend's lifecycle.
 
 A light HTTP responder that answers a benign body so a patched IBM ContextForge MCP Gateway's
-benign REST tool call answers without error. Like the CKAN responder it is cheap to stand and a
+benign REST tool call answers without error. Like the other responders it is cheap to stand and a
 singleton on a fixed address: stood once and reused across a server's concurrent nuisance runs,
 reaped by the generic orphan sweep, so no lock is held across the yield.
 

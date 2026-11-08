@@ -8,7 +8,7 @@ fetched and its nonce surfaces: reach = internal_fetch. 0.4.112 parses the host 
 and rejects it, so no nonce surfaces. Either MQA tool surfacing counts; both are counted tools, so
 both are exercised.
 
-The benign MQA call reaching the live responder is a run-time concern recorded in the admission, not
+The benign MQA call reaching the CKAN backend is a run-time concern recorded in the admission, not
 a fix-check one, so this fixture stands only the kit ssrf_env sentinel and carries no benign call.
 """
 

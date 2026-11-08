@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_gate_session_given as given
-from evals.ckan_backend import CKAN_RESPONDER_IMAGE
+from evals.nuisance_backends import built_backend_tags
 from evals.nuisance_gate_session import run_gate
 from evals.nuisance_images import image_tag
 from tests.fakes import FakeContainerSweep
@@ -22,7 +22,7 @@ async def test_the_gate_removes_the_server_and_built_backend_containers_left_run
     await run_gate(given.options([server]), given.a_harness(tmp_path, audit, containers=containers))
 
     assert containers.removed == ["leftover_server", "leftover_responder"]
-    assert containers.listed_tags == [[image_tag(server.service), CKAN_RESPONDER_IMAGE]]
+    assert containers.listed_tags == [[image_tag(server.service), *built_backend_tags([server])]]
 
 
 async def test_a_gate_that_raises_still_removes_the_containers_left_running(tmp_path: Path):

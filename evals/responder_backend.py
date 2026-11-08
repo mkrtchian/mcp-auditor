@@ -1,4 +1,4 @@
-"""The lifecycle shared by the light HTTP responder backends (CKAN, ContextForge).
+"""The lifecycle shared by the light HTTP responder backends (ContextForge, n8n, Atlassian, ...).
 
 A responder is a singleton container on a fixed public-range IP of its own closed labeled bridge
 (no route to the host or the Internet), stood once and reused across a server's concurrent nuisance

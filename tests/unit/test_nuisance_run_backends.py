@@ -17,7 +17,7 @@ async def test_the_rebuild_builds_the_backend_service_with_the_server_service():
 
     await run_given.run([server], given.deps_on(host, server))
 
-    assert host.rebuilt == ["filesystem-patched", "ckan-responder"]
+    assert host.rebuilt == ["filesystem-patched", *given.CKAN_SERVICES]
 
 
 async def test_every_built_service_of_the_backend_is_rebuilt():

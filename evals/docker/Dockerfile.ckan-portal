@@ -1,0 +1,100 @@
+# The CKAN portal the server's CKAN tools call: CKAN 2.12.1 (ckan/ckan-base, the image CKAN's
+# Docker Compose install, github.com/ckan/ckan-docker, builds on), configured with the values of
+# ckan-docker's .env.example, otherwise at the image's defaults (plugins image_view text_view
+# datatables_view datastore envvars, site URL http://localhost:5000). The one setting changed is
+# the one the server's documentation gives for ckan_datastore_search_sql ("only available on CKAN
+# portals with DataStore enabled and SQL access exposed"): ckan.datastore.sqlsearch.enabled.
+# No COPY/ADD: the loader is written inline.
+FROM ckan/ckan-base:2.12.1@sha256:da036b38a31f1e35c87ba1b099dd78d53c02e6585beafdac2cfe963571499c1c
+
+# `ckan generate fake-data` (CKAN's "Creating test data", doc/maintaining/getting-started.rst)
+# needs CKAN's test factories, so it installs what its error message says
+# ("pip install -r dev-requirements.txt"): the file of the CKAN 2.12.1 source tree, at its pins.
+USER root
+RUN pip install --no-cache-dir -r /srv/app/src/ckan/dev-requirements.txt
+
+# Loads, once, what CKAN's documentation gives: an organization and a group from `ckan generate
+# fake-data` (getting-started.rst, "Creating test data"; the names the benign calls need are
+# written, my_organization and my_group, the rest generated), the dataset of "Example: Importing
+# datasets with the CKAN API" (doc/api/index.rst) in them, and the DataStore table of "Test the
+# set-up" (doc/maintaining/datastore.rst) on a resource of that dataset. The resource id and a tag
+# are written (3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01, my_tag): the id CKAN generates is random, and
+# neither the documentation's dataset nor the generated data carries a tag.
+# The sources of the documented dataset and DataStore table, pinned. A build argument stays out of
+# the container's environment.
+ARG API_GUIDE_EXAMPLE=ckan/ckan@3e9afe078125182454c36c8adfc96f545d119553:doc/api/index.rst
+ARG DATASTORE_TEST=ckan/ckan@3e9afe078125182454c36c8adfc96f545d119553:doc/maintaining/datastore.rst
+RUN cat > /srv/app/load_example.py <<'PY'
+import json
+import os
+import subprocess
+import urllib.error
+import urllib.request
+
+INI = os.environ.get("CKAN_INI", "/srv/app/ckan.ini")
+API = "http://localhost:5000/api/3/action/"
+
+
+def call(action, data=None, token=None):
+    headers = {"Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = token
+    body = json.dumps(data).encode() if data is not None else None
+    request = urllib.request.Request(API + action, data=body, headers=headers)
+    try:
+        with urllib.request.urlopen(request) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        return json.load(error)
+
+
+def ckan(*args):
+    return subprocess.run(["ckan", "-c", INI, *args], check=True, capture_output=True, text=True).stdout
+
+
+if call("package_show?id=my_dataset_name").get("success"):
+    raise SystemExit(0)
+token = ckan("user", "token", "add", os.environ["CKAN_SYSADMIN_NAME"], "import").strip().splitlines()[-1].strip()
+organization = json.loads(ckan("generate", "fake-data", "organization", "--name=my_organization").strip().splitlines()[-1])
+group = json.loads(ckan("generate", "fake-data", "group", "--name=my_group").strip().splitlines()[-1])
+dataset = call(
+    "package_create",
+    {
+        "name": "my_dataset_name",
+        "notes": "A long description of my dataset",
+        "owner_org": organization["id"],
+        "groups": [{"id": group["id"]}],
+        "tags": [{"name": "my_tag"}],
+    },
+    token,
+)
+assert dataset["success"], dataset
+table = call(
+    "datastore_create",
+    {
+        "resource": {"package_id": dataset["result"]["id"], "id": "3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01"},
+        "fields": [{"id": "a"}, {"id": "b"}],
+        "records": [{"a": 1, "b": "xyz"}, {"a": 2, "b": "zzz"}],
+    },
+    token,
+)
+assert table["success"], table
+PY
+USER ckan
+
+# The source of the .env.example values below, pinned. A build argument stays out of the
+# container's environment.
+ARG ENV_EXAMPLE=ckan/ckan-docker@7dcd4c1f3da14c9701870980d483d1d3de93d98c:.env.example
+# ckan-docker .env.example values; the database, Solr and Redis hosts are the backend's network
+# aliases db, solr and redis, as in ckan-docker's compose file.
+ENV CKAN_SQLALCHEMY_URL=postgresql://ckandbuser:ckandbpassword@db/ckandb \
+    CKAN_DATASTORE_WRITE_URL=postgresql://ckandbuser:ckandbpassword@db/datastore \
+    CKAN_DATASTORE_READ_URL=postgresql://datastore_ro:datastore@db/datastore \
+    CKAN_SOLR_URL=http://solr:8983/solr/ckan \
+    CKAN_REDIS_URL=redis://redis:6379/1 \
+    CKAN_SITE_ID=default \
+    CKAN_SYSADMIN_NAME=ckan_admin \
+    CKAN_SYSADMIN_PASSWORD=test1234 \
+    CKAN_SYSADMIN_EMAIL=your_email@example.com \
+    CKAN_STORAGE_PATH=/var/lib/ckan \
+    CKAN__DATASTORE__SQLSEARCH__ENABLED=true

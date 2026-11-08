@@ -2,7 +2,7 @@
 
 A light HTTP responder standing in for the Atlassian Server/DC instance an mcp-atlassian
 deployment points `JIRA_URL` and `CONFLUENCE_URL` at, serving a project and a space pair named
-ALLOWED and SECRET. Like the CKAN responder it is cheap to stand and a singleton on a fixed
+ALLOWED and SECRET. Like the other responders it is cheap to stand and a singleton on a fixed
 address: stood once and reused across a server's concurrent nuisance runs, reaped by the generic
 orphan sweep, so no lock is held across the yield. The singleton carries no witness nonce, so it
 serves the run-phase benign calls only: a fix-check stands its own container of the same image

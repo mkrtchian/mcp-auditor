@@ -6,11 +6,11 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_calibrate_command_given as given
-from evals import nuisance_calibrate_command, run_nuisance
-from evals.ckan_backend import CKAN_RESPONDER_IMAGE
+from evals import cve_targets, nuisance_calibrate_command, run_nuisance
 from evals.closed_network import ClosedNetworkUnsupported
 from evals.holdout_kit import kit_launch
 from evals.nuisance_admission import NuisanceAdmission
+from evals.nuisance_backends import BACKENDS
 from evals.nuisance_calibrate_command import calibrate_fixtures, fix_check_mismatches
 from evals.nuisance_commands import CRASHED_EXIT
 from tests.fakes import FakeContainerSweep
@@ -128,7 +128,8 @@ def test_calibrate_removes_the_kit_and_built_backend_containers_left_running(
 
     assert containers.removed == ["leftover_kit", "leftover_responder"]
     kit_tags = [kit_launch.image_tag(service) for service in ("vuln", "patched", "server-patched")]
-    assert containers.listed_tags == [[*kit_tags, CKAN_RESPONDER_IMAGE]]
+    ckan_tags = [cve_targets.image_tag(service) for service in BACKENDS["ckan"].built_services]
+    assert containers.listed_tags == [[*kit_tags, *ckan_tags]]
 
 
 def _calibrating_with(

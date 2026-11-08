@@ -272,7 +272,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "5f5a484143da0262d5bb4261e316773ee88d0959073d0c7d5e5597347a8f9985"
+        org.mcp-auditor.dockerfile-fingerprint: "c750d3434a4a7a41b6e0f4abff18c16ba1bc4457f9f3eb1a777af532affe9481"
     image: mcp-auditor-cve-holdout-2026-5323-a11y:local
 
   holdout-2026-5323-a11y-patched:
@@ -280,7 +280,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "3dc320c4ef44d7159ca539e06cb31db26d7a3bb853e07e9b7f519146e680a863"
+        org.mcp-auditor.dockerfile-fingerprint: "aab52a0e22b017acb094928b20b8f995e07f8e2801d92a82d1362ec4fe547665"
     image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
 
   # SSRF target: every CKAN tool fetches its caller-supplied server_url with no validation
@@ -1289,13 +1289,49 @@ services:
   # Nuisance backends: the images the backend fixtures build (the responders and Neo4j), tagged
   # as their backend modules tag them, rebuilt by the nuisance run with its server images.
 
-  ckan-responder:
+  ckan-db:
     build:
       context: .
-      dockerfile: Dockerfile.ckan-responder
+      dockerfile: Dockerfile.ckan-db
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "658c7cd2b47394cee05064a2039af30627f175f8416de662115f068ce75de592"
-    image: mcp-auditor-cve-ckan-responder:local
+        org.mcp-auditor.dockerfile-fingerprint: "c977145255449c50c48f39491fb55b6e8fdc4691adc71872742278d9039ede03"
+    image: mcp-auditor-cve-ckan-db:local
+    profiles: ["nuisance"]
+
+  ckan-solr:
+    build:
+      context: .
+      dockerfile: Dockerfile.ckan-solr
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "aa7172b6d552b62b091c99906359996211fb2528c9944e13994f743276258baf"
+    image: mcp-auditor-cve-ckan-solr:local
+    profiles: ["nuisance"]
+
+  ckan-redis:
+    build:
+      context: .
+      dockerfile: Dockerfile.ckan-redis
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "7205423f1935a2e60f38b50cfdc714ca1e6f877058f74d13f772e3679be48b73"
+    image: mcp-auditor-cve-ckan-redis:local
+    profiles: ["nuisance"]
+
+  ckan-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile.ckan-portal
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "462cefc0434b0bbaf728379e7ddadebc99a0de0c32dda10b766e55db9725e471"
+    image: mcp-auditor-cve-ckan-portal:local
+    profiles: ["nuisance"]
+
+  ckan-front:
+    build:
+      context: .
+      dockerfile: Dockerfile.ckan-front
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "32c40cca21af2671920600f492dd2734629ffe063bc16b1748fa53efc90e79b7"
+    image: mcp-auditor-cve-ckan-front:local
     profiles: ["nuisance"]
 
   contextforge-responder:

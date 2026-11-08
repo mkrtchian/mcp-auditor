@@ -1,0 +1,32 @@
+# The HTTPS front of the CKAN portal, under the real names the server's CKAN tools call:
+# www.dati.gov.it serves CKAN under /opendata (the server's portals.json api_url
+# https://www.dati.gov.it/opendata, to which the server rewrites every dati.gov.it alias), the
+# CKAN demo site at its root. As on both real hosts, plain HTTP redirects to HTTPS. Each name's
+# leaf and key (evals/stand_ins/tls/<host>.pem, <host>-key.pem) are mounted per launch under
+# /etc/nginx/tls, never built in. nginx-unprivileged runs as uid 101 and binds 80 and 443 with no
+# capability (a container's net.ipv4.ip_unprivileged_port_start is 0).
+FROM nginxinc/nginx-unprivileged:stable-alpine@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
+RUN cat > /etc/nginx/conf.d/default.conf <<'CONF'
+server {
+    listen 80 default_server;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name www.dati.gov.it;
+    ssl_certificate /etc/nginx/tls/www.dati.gov.it.pem;
+    ssl_certificate_key /etc/nginx/tls/www.dati.gov.it-key.pem;
+    location /opendata/ {
+        proxy_pass http://ckan:5000/;
+    }
+}
+server {
+    listen 443 ssl;
+    server_name demo.ckan.org;
+    ssl_certificate /etc/nginx/tls/demo.ckan.org.pem;
+    ssl_certificate_key /etc/nginx/tls/demo.ckan.org-key.pem;
+    location / {
+        proxy_pass http://ckan:5000;
+    }
+}
+CONF

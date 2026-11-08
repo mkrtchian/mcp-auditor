@@ -87,7 +87,7 @@ async def test_a_running_responder_container_is_removed_and_the_vet_goes_on():
     assert "stale_responder" in host.removed
     assert "stale_responder" not in host.running_at_rebuild
     assert result.surviving == [server]
-    assert host.rebuilt == ["filesystem-patched", "ckan-responder"]
+    assert host.rebuilt == ["filesystem-patched", *backends.CKAN_SERVICES]
 
 
 async def test_the_server_and_backend_containers_left_at_the_end_are_removed():

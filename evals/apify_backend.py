@@ -3,7 +3,7 @@
 A light TLS responder standing in for the documentation host the `fetch-apify-docs` tool of
 @apify/actors-mcp-server fetches from. It serves a fixed benign page on `docs.apify.com` and, on
 the suffix host `docs.apify.com.<name>` that the vulnerable `startsWith` allowlist lets through,
-a page carrying `WITNESS_NONCE` when it is set. Like the CKAN responder it is cheap to stand and
+a page carrying `WITNESS_NONCE` when it is set. Like the other responders it is cheap to stand and
 a singleton on a fixed address: stood once and reused across a server's concurrent nuisance
 runs, reaped by the generic orphan sweep, so no lock is held across the yield. The singleton
 carries no witness nonce, so it serves the run-phase benign call only: a fix-check stands its

@@ -1,0 +1,3 @@
+# The CKAN backend's Solr: the ckan/ckan-solr image of CKAN 2.12 (Solr 9), as ckan-docker runs it.
+# Runs as the image's solr user.
+FROM ckan/ckan-solr:2.12-solr9@sha256:c8208fdf5effd2bf692169d73cc53a1bdfe07988412810ace26cdb7a7b01373f

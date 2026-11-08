@@ -746,7 +746,200 @@
             {
               "vulnerable_name": "ckan_package_search",
               "patched_name": "ckan_package_search",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_package_show",
+              "patched_name": "ckan_package_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_find_relevant_datasets",
+              "patched_name": "ckan_find_relevant_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_list_resources",
+              "patched_name": "ckan_list_resources",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_list",
+              "patched_name": "ckan_organization_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_show",
+              "patched_name": "ckan_organization_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_search",
+              "patched_name": "ckan_organization_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search",
+              "patched_name": "ckan_datastore_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search_sql",
+              "patched_name": "ckan_datastore_search_sql",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_tag_list",
+              "patched_name": "ckan_tag_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_list",
+              "patched_name": "ckan_group_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_show",
+              "patched_name": "ckan_group_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_search",
+              "patched_name": "ckan_group_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_analyze_datasets",
+              "patched_name": "ckan_analyze_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_catalog_stats",
+              "patched_name": "ckan_catalog_stats",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_status_show",
+              "patched_name": "ckan_status_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality",
+              "patched_name": "ckan_get_mqa_quality",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality_details",
+              "patched_name": "ckan_get_mqa_quality_details",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -758,9 +951,159 @@
               "tool": "ckan_package_search",
               "arguments": {
                 "server_url": "https://www.dati.gov.it",
-                "q": "water",
+                "q": "*:*",
                 "rows": 1
-              }
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_package_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_find_relevant_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "query": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_list_resources",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "Total Resources",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_organization"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "organization"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_datastore_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "resource_id": "3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01"
+              },
+              "expect": "zzz",
+              "before": []
+            },
+            {
+              "tool": "ckan_datastore_search_sql",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "sql": "SELECT a, b FROM \"3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01\" LIMIT 10"
+              },
+              "expect": "zzz",
+              "before": []
+            },
+            {
+              "tool": "ckan_tag_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_tag",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_group",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_group"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "group"
+              },
+              "expect": "Groups Found",
+              "before": []
+            },
+            {
+              "tool": "ckan_analyze_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "q": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_catalog_stats",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_status_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "2.12.1",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "Dimension Scores",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality_details",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "formatMediaTypeMachineInterpretable",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -769,12 +1112,30 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-90ada6424f74d00b2b5e695ce19ca340",
             "exploit_calls": [
-              "ckan_package_search"
+              "ckan_package_search",
+              "ckan_package_show",
+              "ckan_find_relevant_datasets",
+              "ckan_list_resources",
+              "ckan_organization_list",
+              "ckan_organization_show",
+              "ckan_organization_search",
+              "ckan_datastore_search",
+              "ckan_datastore_search_sql",
+              "ckan_tag_list",
+              "ckan_group_list",
+              "ckan_group_show",
+              "ckan_group_search",
+              "ckan_analyze_datasets",
+              "ckan_catalog_stats",
+              "ckan_status_show",
+              "ckan_get_mqa_quality",
+              "ckan_get_mqa_quality_details"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -783,12 +1144,24 @@
             {
               "vulnerable_name": "ckan_get_mqa_quality",
               "patched_name": "ckan_get_mqa_quality",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "ckan_get_mqa_quality_details",
               "patched_name": "ckan_get_mqa_quality_details",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -800,15 +1173,19 @@
               "tool": "ckan_get_mqa_quality",
               "arguments": {
                 "server_url": "https://www.dati.gov.it/opendata",
-                "dataset_id": "test-dataset"
-              }
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "Dimension Scores",
+              "before": []
             },
             {
               "tool": "ckan_get_mqa_quality_details",
               "arguments": {
                 "server_url": "https://www.dati.gov.it/opendata",
-                "dataset_id": "test-dataset"
-              }
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "formatMediaTypeMachineInterpretable",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -823,7 +1200,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -832,17 +1210,211 @@
             {
               "vulnerable_name": "ckan_package_search",
               "patched_name": "ckan_package_search",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "ckan_datastore_search_sql",
               "patched_name": "ckan_datastore_search_sql",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "sparql_query",
               "patched_name": "sparql_query",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_package_show",
+              "patched_name": "ckan_package_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_find_relevant_datasets",
+              "patched_name": "ckan_find_relevant_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_list_resources",
+              "patched_name": "ckan_list_resources",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_list",
+              "patched_name": "ckan_organization_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_show",
+              "patched_name": "ckan_organization_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_search",
+              "patched_name": "ckan_organization_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search",
+              "patched_name": "ckan_datastore_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_tag_list",
+              "patched_name": "ckan_tag_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_list",
+              "patched_name": "ckan_group_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_show",
+              "patched_name": "ckan_group_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_search",
+              "patched_name": "ckan_group_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_analyze_datasets",
+              "patched_name": "ckan_analyze_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_catalog_stats",
+              "patched_name": "ckan_catalog_stats",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_status_show",
+              "patched_name": "ckan_status_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality",
+              "patched_name": "ckan_get_mqa_quality",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality_details",
+              "patched_name": "ckan_get_mqa_quality_details",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": null,
@@ -854,8 +1426,149 @@
               "tool": "ckan_package_search",
               "arguments": {
                 "server_url": "https://demo.ckan.org",
-                "q": "water"
-              }
+                "q": "*:*"
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_package_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_find_relevant_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "query": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_list_resources",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "Total Resources",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_organization"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "organization"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_datastore_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "resource_id": "3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01"
+              },
+              "expect": "zzz",
+              "before": []
+            },
+            {
+              "tool": "ckan_tag_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_tag",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_group",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_group"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "group"
+              },
+              "expect": "Groups Found",
+              "before": []
+            },
+            {
+              "tool": "ckan_analyze_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "q": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_catalog_stats",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_status_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "2.12.1",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "Dimension Scores",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality_details",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "formatMediaTypeMachineInterpretable",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -869,7 +1582,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -878,17 +1592,211 @@
             {
               "vulnerable_name": "ckan_package_search",
               "patched_name": "ckan_package_search",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "ckan_datastore_search_sql",
               "patched_name": "ckan_datastore_search_sql",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "sparql_query",
               "patched_name": "sparql_query",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_package_show",
+              "patched_name": "ckan_package_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_find_relevant_datasets",
+              "patched_name": "ckan_find_relevant_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_list_resources",
+              "patched_name": "ckan_list_resources",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_list",
+              "patched_name": "ckan_organization_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_show",
+              "patched_name": "ckan_organization_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_search",
+              "patched_name": "ckan_organization_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search",
+              "patched_name": "ckan_datastore_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_tag_list",
+              "patched_name": "ckan_tag_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_list",
+              "patched_name": "ckan_group_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_show",
+              "patched_name": "ckan_group_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_search",
+              "patched_name": "ckan_group_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_analyze_datasets",
+              "patched_name": "ckan_analyze_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_catalog_stats",
+              "patched_name": "ckan_catalog_stats",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_status_show",
+              "patched_name": "ckan_status_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality",
+              "patched_name": "ckan_get_mqa_quality",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality_details",
+              "patched_name": "ckan_get_mqa_quality_details",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": null,
@@ -900,8 +1808,149 @@
               "tool": "ckan_package_search",
               "arguments": {
                 "server_url": "https://demo.ckan.org",
-                "q": "water"
-              }
+                "q": "*:*"
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_package_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_find_relevant_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "query": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_list_resources",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "Total Resources",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_organization"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "organization"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_datastore_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "resource_id": "3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01"
+              },
+              "expect": "zzz",
+              "before": []
+            },
+            {
+              "tool": "ckan_tag_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_tag",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_group",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_group"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "group"
+              },
+              "expect": "Groups Found",
+              "before": []
+            },
+            {
+              "tool": "ckan_analyze_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "q": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_catalog_stats",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_status_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "2.12.1",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "Dimension Scores",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality_details",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "formatMediaTypeMachineInterpretable",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -915,7 +1964,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -924,17 +1974,211 @@
             {
               "vulnerable_name": "ckan_package_search",
               "patched_name": "ckan_package_search",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "ckan_datastore_search_sql",
               "patched_name": "ckan_datastore_search_sql",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "sparql_query",
               "patched_name": "sparql_query",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_package_show",
+              "patched_name": "ckan_package_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_find_relevant_datasets",
+              "patched_name": "ckan_find_relevant_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_list_resources",
+              "patched_name": "ckan_list_resources",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_list",
+              "patched_name": "ckan_organization_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_show",
+              "patched_name": "ckan_organization_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_search",
+              "patched_name": "ckan_organization_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search",
+              "patched_name": "ckan_datastore_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_tag_list",
+              "patched_name": "ckan_tag_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_list",
+              "patched_name": "ckan_group_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_show",
+              "patched_name": "ckan_group_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_search",
+              "patched_name": "ckan_group_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_analyze_datasets",
+              "patched_name": "ckan_analyze_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_catalog_stats",
+              "patched_name": "ckan_catalog_stats",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_status_show",
+              "patched_name": "ckan_status_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality",
+              "patched_name": "ckan_get_mqa_quality",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality_details",
+              "patched_name": "ckan_get_mqa_quality_details",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": null,
@@ -946,8 +2190,149 @@
               "tool": "ckan_package_search",
               "arguments": {
                 "server_url": "https://demo.ckan.org",
-                "q": "water"
-              }
+                "q": "*:*"
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_package_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_find_relevant_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "query": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_list_resources",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "Total Resources",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_organization"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "organization"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_datastore_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "resource_id": "3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01"
+              },
+              "expect": "zzz",
+              "before": []
+            },
+            {
+              "tool": "ckan_tag_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_tag",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_group",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_group"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "group"
+              },
+              "expect": "Groups Found",
+              "before": []
+            },
+            {
+              "tool": "ckan_analyze_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "q": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_catalog_stats",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_status_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "2.12.1",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "Dimension Scores",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality_details",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "formatMediaTypeMachineInterpretable",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -961,7 +2346,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -970,17 +2356,200 @@
             {
               "vulnerable_name": "ckan_package_search",
               "patched_name": "ckan_package_search",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "ckan_datastore_search",
               "patched_name": "ckan_datastore_search",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "ckan_package_show",
               "patched_name": "ckan_package_show",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_find_relevant_datasets",
+              "patched_name": "ckan_find_relevant_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_list_resources",
+              "patched_name": "ckan_list_resources",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_list",
+              "patched_name": "ckan_organization_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_show",
+              "patched_name": "ckan_organization_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_organization_search",
+              "patched_name": "ckan_organization_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_datastore_search_sql",
+              "patched_name": "ckan_datastore_search_sql",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_tag_list",
+              "patched_name": "ckan_tag_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_list",
+              "patched_name": "ckan_group_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_show",
+              "patched_name": "ckan_group_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_group_search",
+              "patched_name": "ckan_group_search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_analyze_datasets",
+              "patched_name": "ckan_analyze_datasets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_catalog_stats",
+              "patched_name": "ckan_catalog_stats",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_status_show",
+              "patched_name": "ckan_status_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality",
+              "patched_name": "ckan_get_mqa_quality",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "ckan_get_mqa_quality_details",
+              "patched_name": "ckan_get_mqa_quality_details",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": null,
@@ -992,8 +2561,140 @@
               "tool": "ckan_package_search",
               "arguments": {
                 "server_url": "https://demo.ckan.org",
-                "q": "water"
-              }
+                "q": "*:*"
+              },
+              "expect": "A long description of my dataset",
+              "before": []
+            },
+            {
+              "tool": "ckan_find_relevant_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "query": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_list_resources",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_dataset_name"
+              },
+              "expect": "Total Resources",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_organization"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_organization_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "organization"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_datastore_search_sql",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "sql": "SELECT a, b FROM \"3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01\" LIMIT 10"
+              },
+              "expect": "zzz",
+              "before": []
+            },
+            {
+              "tool": "ckan_tag_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_tag",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_list",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_group",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "id": "my_group"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_group_search",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "pattern": "group"
+              },
+              "expect": "Groups Found",
+              "before": []
+            },
+            {
+              "tool": "ckan_analyze_datasets",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "q": "description"
+              },
+              "expect": "my_dataset_name",
+              "before": []
+            },
+            {
+              "tool": "ckan_catalog_stats",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "my_organization",
+              "before": []
+            },
+            {
+              "tool": "ckan_status_show",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata"
+              },
+              "expect": "2.12.1",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "Dimension Scores",
+              "before": []
+            },
+            {
+              "tool": "ckan_get_mqa_quality_details",
+              "arguments": {
+                "server_url": "https://www.dati.gov.it/opendata",
+                "dataset_id": "my_dataset_name"
+              },
+              "expect": "formatMediaTypeMachineInterpretable",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -1007,7 +2708,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -1022,7 +2724,7 @@
       "service": "ckan",
       "backend": {
         "provisioner": "ckan",
-        "image": "mcp-auditor-cve-ckan-responder:local",
+        "image": "mcp-auditor-cve-ckan-portal:local",
         "network": "mcp-auditor-cve-ckan-bridge"
       },
       "agents": [
@@ -1035,12 +2737,192 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
+          "flaw": "CVE-2026-73844",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73844",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73844",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-73844",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-73844",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73845",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73845",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73845",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
           "flaw": "CVE-2026-73845",
           "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-73845",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-33060",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-33060",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-33060",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-33060",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-33060",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-53509",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-53509",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-53509",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-53509",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-53509",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61612",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61612",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61612",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-61612",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-61612",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73846",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73846",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73846",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-73846",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-73846",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
           "agreed": false
         }
       ],
@@ -1048,40 +2930,210 @@
         {
           "server_package": "npm:@aborruso/ckan-mcp-server",
           "flaw": "CVE-2026-73844",
-          "field": "tools",
-          "value": "ckan_package_search",
-          "reason": "the counted carrier is ckan_package_search (the committed fix-check reproduces the SSRF through it); ckan_datastore_search_sql and ckan_package_show are not counted"
+          "field": "declared_function_is_effect",
+          "value": "true for every tool that takes server_url, false for ckan_get_mqa_quality and ckan_get_mqa_quality_details",
+          "reason": "the declared function is read as the record B reading: a tool that takes server_url declares that it fetches the portal its argument names, so its declared function is the effect of the internal_fetch class, while the two MQA tools declare that they report a dataset's quality from the EU portal's fixed MQA service, which the server_url argument does not name, so theirs is not"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-73844",
+          "field": "benign_calls",
+          "value": "record A's calls, one per listed tool, on the seeded names of the real CKAN 2.12.1 portal (my_dataset_name, my_organization, my_group, my_tag and the DataStore resource 3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01), each with the expected text the real portal or the data.europa.eu capture answers",
+          "reason": "record A's fixture is retained: its calls name what CKAN's documentation and its own fake-data generator give, which the retained loader seeds, where record B's name a real dati.gov.it dataset and its organization, loaded from that portal's answers; a call naming a dataset the portal does not hold, as the committed test-dataset did, answers with an error"
         },
         {
           "server_package": "npm:@aborruso/ckan-mcp-server",
           "flaw": "CVE-2026-73845",
           "field": "benign_calls",
-          "value": "ckan_get_mqa_quality, ckan_get_mqa_quality_details on dati.gov.it",
-          "reason": "record B: the MQA benign targets ckan_get_mqa_quality on dati.gov.it (record A targeted the wrong tool and a rejected domain); ckan_get_mqa_quality_details is added as the second counted tool's benign"
+          "value": "record A's calls, one per listed tool, on the seeded names of the real CKAN 2.12.1 portal (my_dataset_name, my_organization, my_group, my_tag and the DataStore resource 3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01), each with the expected text the real portal or the data.europa.eu capture answers",
+          "reason": "record A's fixture is retained: its calls name what CKAN's documentation and its own fake-data generator give, which the retained loader seeds, where record B's name a real dati.gov.it dataset and its organization, loaded from that portal's answers; a call naming a dataset the portal does not hold, as the committed test-dataset did, answers with an error"
         },
         {
           "server_package": "npm:@aborruso/ckan-mcp-server",
           "flaw": "CVE-2026-33060",
-          "field": "effect_class",
-          "value": "null",
-          "reason": "real class internal_fetch, dropped as declared-function-is-effect; effect_class recorded null so the flaw does not count (its tool is not a false-alarm candidate)"
+          "field": "declared_function_is_effect",
+          "value": "true for every tool that takes server_url, false for ckan_get_mqa_quality and ckan_get_mqa_quality_details",
+          "reason": "the declared function is read as the record B reading: a tool that takes server_url declares that it fetches the portal its argument names, so its declared function is the effect of the internal_fetch class, while the two MQA tools declare that they report a dataset's quality from the EU portal's fixed MQA service, which the server_url argument does not name, so theirs is not"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-33060",
+          "field": "benign_calls",
+          "value": "record A's calls, one per listed tool, on the seeded names of the real CKAN 2.12.1 portal (my_dataset_name, my_organization, my_group, my_tag and the DataStore resource 3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01), each with the expected text the real portal or the data.europa.eu capture answers",
+          "reason": "record A's fixture is retained: its calls name what CKAN's documentation and its own fake-data generator give, which the retained loader seeds, where record B's name a real dati.gov.it dataset and its organization, loaded from that portal's answers; a call naming a dataset the portal does not hold, as the committed test-dataset did, answers with an error"
         },
         {
           "server_package": "npm:@aborruso/ckan-mcp-server",
           "flaw": "CVE-2026-53509",
-          "field": "effect_class",
-          "value": "null",
-          "reason": "real class internal_fetch, dropped as declared-function-is-effect; effect_class recorded null so the flaw does not count (its tool is not a false-alarm candidate)"
+          "field": "declared_function_is_effect",
+          "value": "true for every tool that takes server_url, false for ckan_get_mqa_quality and ckan_get_mqa_quality_details",
+          "reason": "the declared function is read as the record B reading: a tool that takes server_url declares that it fetches the portal its argument names, so its declared function is the effect of the internal_fetch class, while the two MQA tools declare that they report a dataset's quality from the EU portal's fixed MQA service, which the server_url argument does not name, so theirs is not"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-53509",
+          "field": "benign_calls",
+          "value": "record A's calls, one per listed tool, on the seeded names of the real CKAN 2.12.1 portal (my_dataset_name, my_organization, my_group, my_tag and the DataStore resource 3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01), each with the expected text the real portal or the data.europa.eu capture answers",
+          "reason": "record A's fixture is retained: its calls name what CKAN's documentation and its own fake-data generator give, which the retained loader seeds, where record B's name a real dati.gov.it dataset and its organization, loaded from that portal's answers; a call naming a dataset the portal does not hold, as the committed test-dataset did, answers with an error"
         },
         {
           "server_package": "npm:@aborruso/ckan-mcp-server",
           "flaw": "CVE-2026-61612",
-          "field": "effect_class",
-          "value": "null",
-          "reason": "real class internal_fetch, dropped as declared-function-is-effect; effect_class recorded null so the flaw does not count (its tool is not a false-alarm candidate)"
+          "field": "declared_function_is_effect",
+          "value": "true for every tool that takes server_url, false for ckan_get_mqa_quality and ckan_get_mqa_quality_details",
+          "reason": "the declared function is read as the record B reading: a tool that takes server_url declares that it fetches the portal its argument names, so its declared function is the effect of the internal_fetch class, while the two MQA tools declare that they report a dataset's quality from the EU portal's fixed MQA service, which the server_url argument does not name, so theirs is not"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-61612",
+          "field": "benign_calls",
+          "value": "record A's calls, one per listed tool, on the seeded names of the real CKAN 2.12.1 portal (my_dataset_name, my_organization, my_group, my_tag and the DataStore resource 3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01), each with the expected text the real portal or the data.europa.eu capture answers",
+          "reason": "record A's fixture is retained: its calls name what CKAN's documentation and its own fake-data generator give, which the retained loader seeds, where record B's name a real dati.gov.it dataset and its organization, loaded from that portal's answers; a call naming a dataset the portal does not hold, as the committed test-dataset did, answers with an error"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-73846",
+          "field": "declared_function_is_effect",
+          "value": "true for every tool that takes server_url, false for ckan_get_mqa_quality and ckan_get_mqa_quality_details",
+          "reason": "the declared function is read as the record B reading: a tool that takes server_url declares that it fetches the portal its argument names, so its declared function is the effect of the internal_fetch class, while the two MQA tools declare that they report a dataset's quality from the EU portal's fixed MQA service, which the server_url argument does not name, so theirs is not"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": "CVE-2026-73846",
+          "field": "benign_calls",
+          "value": "record A's calls, one per listed tool, on the seeded names of the real CKAN 2.12.1 portal (my_dataset_name, my_organization, my_group, my_tag and the DataStore resource 3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01), each with the expected text the real portal or the data.europa.eu capture answers",
+          "reason": "record A's fixture is retained: its calls name what CKAN's documentation and its own fake-data generator give, which the retained loader seeds, where record B's name a real dati.gov.it dataset and its organization, loaded from that portal's answers; a call naming a dataset the portal does not hold, as the committed test-dataset did, answers with an error"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": null,
+          "field": "host",
+          "value": "unprivileged, working directory /, network through the ckan backend, no public names",
+          "reason": "the names the server reaches are served by its backend, the CKAN front and the data.europa.eu stand-in on the backend's bridge, and the backend's launch carries their address entries and the trust setting, so the host declares no public name: public names are served through a holder only for a server with no backend, and a trust setting with no public name is refused at load"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record A's capture of data.europa.eu's MQA cache and metrics answers, its dataset identifier replaced by the seeded dataset's name",
+          "reason": "record A's capture answers for the dataset the retained loader seeds, the server deriving the MQA identifier from the dataset's name, where record B's answers for the real dati.gov.it dataset its own seed loads; the stand-in follows the retained seed"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: an organization and a group generated by ckan generate fake-data, the dataset of CKAN's API guide example, the DataStore table of CKAN's DataStore set-up test, the written names the benign calls use and ckan-docker's example configuration",
+          "reason": "generated and documented data is preferred to a real portal's records chosen for how the tools answer them, which record B loaded from dati.gov.it"
+        },
+        {
+          "server_package": "npm:@aborruso/ckan-mcp-server",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "record A's two: CKAN 2.12.1 installed as ckan-docker installs it, with its PostgreSQL, Solr, Redis and nginx images by digest, and data.europa.eu's MQA API as captured",
+          "reason": "record A records the software the retained fixture runs, where record B lists the stack's images one by one, the stock nginx image where the retained front runs nginx-unprivileged, and a SPARQL endpoint the run does not stand, no benign call of a counted tool reaching it"
         }
       ],
-      "patched_version": "0.4.112"
+      "patched_version": "0.4.112",
+      "stand_ins": [
+        {
+          "replaces": "data.europa.eu, the EU open data portal's MQA API (piveau metrics: GET /api/mqa/cache/datasets/<id> and GET /api/hub/repo/datasets/<id>/metrics), which ckan_get_mqa_quality and ckan_get_mqa_quality_details call at fixed https URLs after dati.gov.it's package_show.",
+          "reason": "A remote public service: the fixture network is closed (no route to the Internet), and the MQA scores are produced by the EU portal's own pipeline (harvesting dati.gov.it, checking every distribution URL over the Internet, computing DQV metrics in piveau's hub, metrics, triplestore and search stack), which cannot run inside the confinement with its data. Only data.europa.eu is a stand-in: CKAN, the software behind dati.gov.it and demo.ckan.org, runs for real in the backend. The stand-in is the generic replay image (mcp-auditor-cve-stand-in:local, evals/docker/Dockerfile.stand-in), started by evals/ckan_backend.py at 203.0.113.3 on the closed bridge, the server reaching it through --add-host data.europa.eu:203.0.113.3, its leaf from the fixture authority (evals/stand_ins/tls/data.europa.eu.pem).",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/data.europa.eu.json",
+          "outputs": [
+            {
+              "request": "https GET /api/mqa/cache/datasets/my_dataset_name",
+              "source": "capture",
+              "citation": "evals/stand_ins/data.europa.eu.json routes[0]: data.europa.eu's answer to GET https://data.europa.eu/api/mqa/cache/datasets/0001739 (the MQA result of dati.gov.it's dataset enti-pubblici-vigilati-2015, identifier 0001739), captured 2026-11-07T21:31:56Z from 143.204.194.58 by evals.capture_stand_in, status 200, application/json, body and headers as captured.",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "0001739",
+                  "replacement": "my_dataset_name"
+                }
+              ]
+            },
+            {
+              "request": "https GET /api/hub/repo/datasets/my_dataset_name/metrics",
+              "source": "capture",
+              "citation": "evals/stand_ins/data.europa.eu.json routes[1]: data.europa.eu's answer to GET https://data.europa.eu/api/hub/repo/datasets/0001739/metrics, captured 2026-11-07T21:31:56Z, status 200, application/ld+json (the DQV @graph), body and headers as captured.",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "0001739",
+                  "replacement": "my_dataset_name"
+                }
+              ]
+            },
+            {
+              "request": "http (any method and target)",
+              "source": "capture",
+              "citation": "evals/stand_ins/data.europa.eu.json defaults[http]: the real host's answer to a generated path, captured 2026-11-07 (CloudFront 301 to https).",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "https (any other method and target, including the MQA ids the server tries after a 404: <id>~~1, <id>~~2)",
+              "source": "capture",
+              "citation": "evals/stand_ins/data.europa.eu.json defaults[https]: the real host's 404 HTML page for a generated path, captured 2026-11-07, which the server reads as 'not found' (quality.ts continues to the next candidate on 404).",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "Organization from `ckan -c ckan.ini generate fake-data organization` (CKAN 2.12.1, doc/maintaining/getting-started.rst 'Creating test data'): title, description and image generated by CKAN's test factories (Faker); only its name is written, my_organization (passed as --name=my_organization), the name ckan_organization_show's benign call uses.",
+          "kind": "generated",
+          "citation": "CKAN documentation, doc/maintaining/getting-started.rst ('Creating test data') and ckan/cli/generate.py fake_data at tag ckan-2.12.1; loader /srv/app/load_example.py in evals/docker/Dockerfile.ckan-portal",
+          "pin": "ckan/ckan-base:2.12.1@sha256:da036b38a31f1e35c87ba1b099dd78d53c02e6585beafdac2cfe963571499c1c"
+        },
+        {
+          "item": "Group from `ckan generate fake-data group` (same command, group category of its _factories table): title and description generated; name written, my_group (--name=my_group), the name ckan_group_show's benign call uses.",
+          "kind": "generated",
+          "citation": "ckan/cli/generate.py _factories['group'] and doc/maintaining/cli.rst ('ckan generate fake-data') at ckan-2.12.1",
+          "pin": "ckan/ckan-base:2.12.1@sha256:da036b38a31f1e35c87ba1b099dd78d53c02e6585beafdac2cfe963571499c1c"
+        },
+        {
+          "item": "Dataset {'name': 'my_dataset_name', 'notes': 'A long description of my dataset', 'owner_org': <the organization above>}, the dict of CKAN's API guide example, created with package_create; the group above and the tag my_tag are added to it.",
+          "kind": "project_document",
+          "citation": "CKAN documentation doc/api/index.rst, 'Example: Importing datasets with the CKAN API' (dataset_dict), at tag ckan-2.12.1",
+          "pin": "ckan/ckan@3e9afe078125182454c36c8adfc96f545d119553:doc/api/index.rst"
+        },
+        {
+          "item": "DataStore table of the DataStore set-up test: datastore_create with resource {package_id: my_dataset_name's id}, fields a and b, records {a:1, b:'xyz'} and {a:2, b:'zzz'}.",
+          "kind": "project_document",
+          "citation": "CKAN documentation doc/maintaining/datastore.rst, '3. Test the set-up' (the datastore_create curl example), at tag ckan-2.12.1",
+          "pin": "ckan/ckan@3e9afe078125182454c36c8adfc96f545d119553:doc/maintaining/datastore.rst"
+        },
+        {
+          "item": "Written values: the resource id of that DataStore table, 3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01 (CKAN requires a UUID and generates a random one, which no benign call could name; the datastore benign calls use it), the tag my_tag (neither the documentation's dataset nor the generated data carries a tag; ckan_tag_list's benign call needs one), and the names my_organization and my_group above.",
+          "kind": "written",
+          "citation": "written for the fixture in evals/docker/Dockerfile.ckan-portal (load_example.py)",
+          "pin": null
+        },
+        {
+          "item": "CKAN deployment configuration from ckan-docker's .env.example (database roles ckandbuser/datastore_ro and their passwords, CKAN_SITE_ID default, the sysadmin ckan_admin with its example password and email) and its PostgreSQL init scripts 10_create_ckandb.sh and 20_create_datastore.sh, taken whole; the sysadmin only serves the loader (an API token), nothing a benign call reads.",
+          "kind": "project_document",
+          "citation": "github.com/ckan/ckan-docker, .env.example and postgresql/docker-entrypoint-initdb.d/, branch master fetched 2026-11-07",
+          "pin": "ckan/ckan-docker@7dcd4c1f3da14c9701870980d483d1d3de93d98c"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "CKAN",
+          "release": "2.12.1",
+          "day": "2026-11-07",
+          "source": "The server's documentation names CKAN portals at no version. CKAN 2.12.1 is the latest CKAN release on 2026-11-07: Docker Hub ckan/ckan-base tags 2.12.1 and 2.12 updated 2026-10-28 (digest sha256:da036b38a31f1e35c87ba1b099dd78d53c02e6585beafdac2cfe963571499c1c, CKAN_REF=ckan-2.12.1), release page github.com/ckan/ckan/releases/tag/ckan-2.12.1 (HTTP 200). Installed as CKAN's Docker Compose install (ckan-docker) does: ckan/ckan-base:2.12.1, ckan/ckan-solr:2.12-solr9 (sha256:c8208fdf5effd2bf692169d73cc53a1bdfe07988412810ace26cdb7a7b01373f), postgres:16-alpine (sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139), redis:6 (sha256:a08354a6199cf1008897c893e1a679e6cf7ee803ee9f34a50b991b8200a0e8dc), fronted by nginx-unprivileged stable-alpine 1.30.6 (sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03)."
+        },
+        {
+          "software": "data.europa.eu MQA API (piveau metrics, as served by data.europa.eu)",
+          "release": "as served on 2026-11-07 (cache answer metricsVersion 2.0.0)",
+          "day": "2026-11-07",
+          "source": "A remote service with no installable release here: its answers are the capture evals/stand_ins/data.europa.eu.json, captured 2026-11-07T21:31:56Z from data.europa.eu (143.204.194.58)."
+        }
+      ]
     },
     {
       "server_package": "PyPI:mcp-contextforge-gateway",

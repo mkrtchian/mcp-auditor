@@ -1,0 +1,31 @@
+# The CKAN backend's PostgreSQL, as ckan-docker (github.com/ckan/ckan-docker, the Docker Compose
+# install CKAN's documentation points to) builds it: postgres:16-alpine with its two init scripts
+# (postgresql/docker-entrypoint-initdb.d/10_create_ckandb.sh and 20_create_datastore.sh), written
+# inline since the fingerprint hashes instructions only (no COPY/ADD). Runs as the image's
+# postgres user (uid 70), so the entrypoint needs no capability to drop privileges.
+FROM postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
+# The source of the two init scripts, pinned. A build argument stays out of the container's
+# environment.
+ARG INIT_SCRIPTS=ckan/ckan-docker@7dcd4c1f3da14c9701870980d483d1d3de93d98c:postgresql/docker-entrypoint-initdb.d
+RUN cat > /docker-entrypoint-initdb.d/10_create_ckandb.sh <<'SH' && cat > /docker-entrypoint-initdb.d/20_create_datastore.sh <<'SH2' && chmod 0755 /docker-entrypoint-initdb.d/*.sh
+#!/bin/bash
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    CREATE ROLE "$CKAN_DB_USER" NOSUPERUSER CREATEDB CREATEROLE LOGIN PASSWORD '$CKAN_DB_PASSWORD';
+    CREATE DATABASE "$CKAN_DB" OWNER "$CKAN_DB_USER" ENCODING 'utf-8';
+EOSQL
+SH
+#!/bin/bash
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    CREATE ROLE "$DATASTORE_READONLY_USER" NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '$DATASTORE_READONLY_PASSWORD';
+    CREATE DATABASE "$DATASTORE_DB" OWNER "$CKAN_DB_USER" ENCODING 'utf-8';
+EOSQL
+SH2
+# ckan-docker .env.example values.
+ENV POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres POSTGRES_DB=postgres \
+    CKAN_DB_USER=ckandbuser CKAN_DB_PASSWORD=ckandbpassword CKAN_DB=ckandb \
+    DATASTORE_READONLY_USER=datastore_ro DATASTORE_READONLY_PASSWORD=datastore DATASTORE_DB=datastore
+USER postgres

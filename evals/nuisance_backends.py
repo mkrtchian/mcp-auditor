@@ -34,7 +34,7 @@ from evals import (
 from evals.apify_backend import API_HOST, APIFY_BRIDGE, APIFY_RESPONDER_IMAGE
 from evals.atlassian_backend import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
 from evals.backend_lifecycle import BackendLifecycle
-from evals.ckan_backend import CKAN_BRIDGE, CKAN_RESPONDER_IMAGE
+from evals.ckan_backend import CKAN_BRIDGE, CKAN_IMAGE, CKAN_PARTS, MOUNTED_FILES
 from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
 from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.cve_targets import image_tag
@@ -75,17 +75,18 @@ def _responder(
 
 
 _API_STAND_IN_FILES = stand_in_files(API_HOST)
+_CKAN_SERVICES = tuple(part.service for part in CKAN_PARTS)
 
 BACKENDS: dict[str, RegisteredBackend] = {
     "doris": RegisteredBackend(
         doris_backend.LIFECYCLE, DORIS_BRIDGE, DORIS_IMAGE, (), _served(doris_backend.__file__)
     ),
-    "ckan": _responder(
+    "ckan": RegisteredBackend(
         ckan_backend.LIFECYCLE,
-        ckan_backend.__file__,
         CKAN_BRIDGE,
-        CKAN_RESPONDER_IMAGE,
-        "ckan-responder",
+        CKAN_IMAGE,
+        _CKAN_SERVICES,
+        (*_served(ckan_backend.__file__, *_CKAN_SERVICES), *MOUNTED_FILES),
     ),
     "contextforge": _responder(
         contextforge_backend.LIFECYCLE,

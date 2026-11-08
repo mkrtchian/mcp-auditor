@@ -3,7 +3,7 @@ import pytest
 import tests.unit.support.test_backend_lifecycle_given as given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals import doris_backend, neo4j_backend
+from evals import ckan_backend, doris_backend, neo4j_backend
 from evals.cve_planting_base import LABEL, resolver_args
 from evals.holdout_kit.kit_backend_launch import backend_launch, lifecycle_of
 from evals.nuisance_backends import BACKENDS
@@ -130,8 +130,13 @@ def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolve
     [
         doris_backend.doris_cluster_run_args(),
         neo4j_backend.database_run_args(),
+        *(part.run_args() for part in ckan_backend.CKAN_PARTS),
     ],
-    ids=["doris cluster", "neo4j database"],
+    ids=[
+        "doris cluster",
+        "neo4j database",
+        *(part.container for part in ckan_backend.CKAN_PARTS),
+    ],
 )
 def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_resolver_option(
     args: list[str],
