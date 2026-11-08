@@ -913,7 +913,7 @@ services:
       context: .
       dockerfile: Dockerfile.godot-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "240feb1fa65c14aeacf8a691c0d046706f6a5238d9566fcc66873dc8b8c8fb8a"
+        org.mcp-auditor.dockerfile-fingerprint: "6d5dec2811429065f5b2c5f3c4238c7c3db90f4a3ef71862e28189443d1cd75a"
     image: mcp-auditor-nuisance-godot-mcp:local
     profiles: ["nuisance"]
 

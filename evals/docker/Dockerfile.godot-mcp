@@ -1,29 +1,45 @@
-# Nuisance run image of godot-mcp: a copy of Dockerfile.holdout-2026-25546-godot-mcp-patched, with the godot stub's behaviour kept (its comments on the holdout's exploit dropped), the holdout's exploit project fixtures under /p left out, and the seeding the run adds before its entrypoint,
-# pinning the admission's patched version, commit 21c785d923cfdb471ea60323c13807d62dfecc5a (abbreviated 21c785d below).
+# Run image of godot-mcp: patched @coding-solo/godot-mcp built from the real source at the fix
+# merge commit 21c785d923cfdb471ea60323c13807d62dfecc5a (first patched release 0.1.1;
+# executeOperation uses execFile() with an argument array, no shell), driving the real Godot
+# 4.4.1-stable, installed from the official release (godotengine.org/download, the server
+# README's prerequisite) where the server's automatic detection finds it. The projects are the
+# Godot documentation's tutorial samples, "Your first 2D game" and "Your first 3D game", taken
+# whole from godot-demo-projects at a pinned commit, imported by Godot itself at build time.
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
-# Patched @coding-solo/godot-mcp, built from the real source at the fix merge commit 21c785d
-# (first patched release 0.1.1; executeOperation uses execFile() with an argument array, no
-# shell).
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
-
-RUN apk add --no-cache git
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git ca-certificates wget unzip \
+      libfontconfig1 libfreetype6 libx11-6 libxcursor1 libxinerama1 libxi6 \
+      libxrandr2 libxext6 libgl1 libglu1-mesa libasound2 libpulse0 libudev1 \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 RUN git clone https://github.com/Coding-Solo/godot-mcp.git . \
- && git checkout 21c785d
+ && git checkout 21c785d923cfdb471ea60323c13807d62dfecc5a
 RUN npm install && npm run build
 
-# The Godot CLI the server calls, stubbed: it answers the server's `--version` check and exits
-# cleanly on every headless run.
-RUN printf '#!/bin/sh\nif [ "$1" = "--version" ]; then\n  echo "4.4.1.stable.official"\nfi\nexit 0\n' > /usr/local/bin/godot \
- && chmod +x /usr/local/bin/godot
+# Godot 4.4.1-stable, official linux x86_64 build, checked against the release's SHA512-SUMS.txt.
+RUN wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -O /tmp/godot.zip \
+ && echo "ef4e76880a514257175544952c61191106fdef3095b909bafed9fcbeb230c3e5533920a0f3012882dd4bbde83028a67549825794e2d2c3cf76eba7918b71370e  /tmp/godot.zip" | sha512sum -c - \
+ && unzip -q /tmp/godot.zip -d /tmp/godot \
+ && mv /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 /usr/local/bin/godot \
+ && chmod 0755 /usr/local/bin/godot \
+ && rm -rf /tmp/godot.zip /tmp/godot
 
-# A neutral Godot project for the benign calls: the project file the server checks, a scene
-# and a texture, since the stub godot writes nothing and each tool checks its paths exist.
-RUN mkdir -p /opt/project \
- && printf '[application]\nconfig/name="demo"\nconfig/features=PackedStringArray("4.4")\n' > /opt/project/project.godot \
- && printf '[gd_scene format=3]\n\n[node name="Root" type="Node2D"]\n' > /opt/project/scene.tscn \
- && node -e 'require("fs").writeFileSync("/opt/project/sprite.png", Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFUlEQVR4nGP8//8/AzbAhFV00EoAAFbUAw037MyjAAAAAElFTkSuQmCC", "base64"))'
+# godot-demo-projects at de00da353cd773b8831e74e16f251ec40335df70, the last commit before the
+# demos moved to Godot 4.5 (14fcc0e): 2d/dodge_the_creeps and 3d/squash_the_creeps whole.
+RUN git init -q /tmp/demos \
+ && git -C /tmp/demos fetch -q --depth 1 https://github.com/godotengine/godot-demo-projects.git de00da353cd773b8831e74e16f251ec40335df70 \
+ && git -C /tmp/demos checkout -q FETCH_HEAD \
+ && mv /tmp/demos/2d/dodge_the_creeps /opt/dodge_the_creeps \
+ && mv /tmp/demos/3d/squash_the_creeps /opt/squash_the_creeps \
+ && rm -rf /tmp/demos /root/.cache
 
-ENV GODOT_PATH=/usr/local/bin/godot
+# Godot's own import of each project, so that its resources load headless; then the projects
+# belong to the run's uid, which the tools write as.
+RUN HOME=/tmp/import godot --headless --import --path /opt/dodge_the_creeps \
+ && HOME=/tmp/import godot --headless --import --path /opt/squash_the_creeps \
+ && rm -rf /tmp/import \
+ && chown -R 65534:65534 /opt/dodge_the_creeps /opt/squash_the_creeps
+
 ENTRYPOINT ["node", "/app/build/index.js"]
