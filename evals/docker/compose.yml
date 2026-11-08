@@ -1183,7 +1183,7 @@ services:
       context: .
       dockerfile: Dockerfile.adb-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ff055bcb40fd65985dd53db1bac3f5aaaf635374c2bfbf1cd67465913e91b426"
+        org.mcp-auditor.dockerfile-fingerprint: "3977a37c3fe9b83b3888b149886b6e6f04b7281c09473309e7e4c9f2b56caf8e"
     image: mcp-auditor-nuisance-adb-mcp:local
     profiles: ["nuisance"]
 

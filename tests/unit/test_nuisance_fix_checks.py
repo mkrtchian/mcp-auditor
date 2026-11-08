@@ -71,10 +71,10 @@ async def test_every_exploit_reads_as_aimed_and_no_benign_call_does(target: FixC
 
 
 @pytest.mark.parametrize("target", FIX_CHECK_TARGETS, ids=lambda t: t.flaw)
-async def test_the_exploits_call_exactly_the_flaws_counted_tools(target: FixCheckTarget):
+async def test_the_exploits_call_exactly_the_flaws_tools(target: FixCheckTarget):
     exchanges = await given.recorded(target, *target.exploits)
 
-    assert {name for name, _, _ in exchanges} == given.counted_tools(target)
+    assert {name for name, _, _ in exchanges} == given.reached_tools(target)
 
 
 @pytest.mark.parametrize("target", FIX_CHECK_TARGETS, ids=lambda t: t.flaw)

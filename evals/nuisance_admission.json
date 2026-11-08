@@ -7432,22 +7432,46 @@
             {
               "vulnerable_name": "adb_install",
               "patched_name": "adb_install",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "adb_logcat",
               "patched_name": "adb_logcat",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "adb_pull",
               "patched_name": "adb_pull",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "adb_push",
               "patched_name": "adb_push",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the proposed run image (real adb 37.0.1, device stand-in answering OKAY to the sync SEND as adbd does): adb_push -> error 'Error: /tmp/adb-mcp-<n>-note.txt: 1 file pushed, 0 skipped. 0.1 MB/s (5 bytes in 0.000s)'. Arguments tried: remotePath /sdcard/note.txt, /data/local/tmp/note.txt and the directory /sdcard/Download/, with device omitted and device emulator-5554, fileBase64 aGVsbG8=; every one errors the same way (adb itself exits 0). Source: adb client/line_printer.cpp at android-17.0.0_r1, line 67 'fwrite(s.data(), 1, s.size(), stderr);' (the transfer summary goes to stderr); adb-mcp 0.1.1 src/index.ts (npm tarball sha1 2c5890dcacad6f99aaf7833451e5832c818b2ccf) line 205 'if (stderrText && !stdout.includes(\"List of devices attached\") && !stdout.includes(\"Success\")) {' and line 225 'text: `Error: ${stderrText}`' with isError: true. adb push writes nothing on stdout on success, so no argument the description allows avoids the error."
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -7459,27 +7483,35 @@
               "tool": "adb_install",
               "arguments": {
                 "apkPath": "/tmp/app.apk"
-              }
+              },
+              "expect": "Performing Streamed Install",
+              "before": []
             },
             {
               "tool": "adb_logcat",
               "arguments": {
                 "lines": 10
-              }
+              },
+              "expect": "I/ActivityManager",
+              "before": []
             },
             {
               "tool": "adb_pull",
               "arguments": {
-                "remotePath": "/sdcard/build.prop",
+                "remotePath": "/system/build.prop",
                 "asBase64": true
-              }
+              },
+              "expect": "CnJvLmJ1aWxkLnZlcnNpb24ucmVsZWFzZT0xNwpy",
+              "before": []
             },
             {
               "tool": "adb_push",
               "arguments": {
                 "remotePath": "/sdcard/note.txt",
                 "fileBase64": "aGVsbG8="
-              }
+              },
+              "expect": "1 file pushed",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -7496,7 +7528,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -7520,22 +7553,68 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2025-59834",
-          "field": "backend_need",
-          "agreed": false
-        },
-        {
-          "flaw": "CVE-2025-59834",
-          "field": "patched_source",
-          "agreed": false
-        },
-        {
-          "flaw": "CVE-2025-59834",
           "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-59834",
+          "field": "real_software",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-59834",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-59834",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-59834",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
           "agreed": false
         }
       ],
@@ -7545,31 +7624,160 @@
           "flaw": "CVE-2025-59834",
           "field": "tools",
           "value": "adb_install, adb_logcat, adb_pull, adb_push",
-          "reason": "adb_shell is excluded from this flaw's tools entirely: its declared function is to run an arbitrary shell command on the device, i.e. command execution is itself what adb_shell is for, and a FlawRecord carries one declared_function_is_effect boolean for its whole tools list, so a runner cannot share a flaw with non-runner bounded tools without forcing that boolean to lie about one side or the other (records A and B both exploited adb_shell alongside a bounded tool). adb_devices takes no device argument, so it is not reachable by this CVE's mechanism at all. Of the remaining device-taking tools, inspect_ui and dump_image (record A's second exploit target, and a plan candidate) were tried against the built images and do not surface: both discard every intermediate command's stdout and re-read a local temp file that only a real adb pull populates, and the device-only injection breaks that real pull, so the file never exists and the tool returns an ENOENT error with no witness. adb_install, adb_logcat, adb_push and adb_pull (asBase64=false) all route through a helper or return value that captures and returns combined stdout, confirmed surfacing on the vulnerable image and clean on 0.1.1."
+          "reason": "both records list these four tools and add adb_shell, whose declared function, running a shell command, is the effect of the flaw's class; adb_shell stays out of the flaw's tools, as it has been since its admission, since a tool whose declared function is the effect does not count whether it is listed or not. inspect_ui, which the advisory names, and dump_image, which builds the same interpolated adb command, reach the flaw through their device argument, but neither record writes their fields or plays a benign call for them, so they do not count and are left out."
         },
         {
           "server_package": "npm:adb-mcp",
           "flaw": "CVE-2025-59834",
-          "field": "backend_need",
-          "value": "fixture",
-          "reason": "record A said none, record B said fixture. Settled to fixture on the ios-simulator precedent: a stub adb CLI is baked into both images standing in for the real Android Debug Bridge binary (the server's own in-image dependency, not a provisioned backend), which is what backend_need=fixture names; backend stays null since no registered provisioner answers it."
+          "field": "real_software",
+          "value": "adb_push: answers false, software_error",
+          "reason": "a tool's verdict is established on the real software: record A runs the real adb of Platform-Tools 37.0.1, which writes its push summary on stderr, and adb-mcp 0.1.1 returns an error whenever stderr is not empty and stdout lacks its two success markers, so every push the description allows errors, three paths tried; record B's true was established on a fake adb client that writes the summary on stdout."
         },
         {
           "server_package": "npm:adb-mcp",
           "flaw": "CVE-2025-59834",
-          "field": "patched_source",
-          "value": "advisory",
-          "reason": "record A said advisory, record B said fix_commit. Settled to advisory: npm publishes adb-mcp 0.1.1 (2026-03-16) and that release carries the fix (runAdb uses execFile with an argv array), so a registry-published release carries the fix and the patched image installs adb-mcp@0.1.1 from npm. The GHSA-54j7-grvr-9xwg advisory citing fix commit 041729c does not change that a published registry release exists; the repo convention reserves fix_commit for a flaw whose fix is only at a git ref with no registry release (kanban, gitlab, sylphxltd)."
+          "field": "benign_calls",
+          "value": "adb_install: {apkPath: /tmp/app.apk}, expect 'Performing Streamed Install'; adb_logcat: {lines: 10}, expect 'I/ActivityManager'; adb_pull: {remotePath: /system/build.prop, asBase64: true}, expect the base64 of the line ro.build.version.release=17; before [] for each",
+          "reason": "the benign calls follow the retained fixture: adb_pull reads /system/build.prop, a file of every Android system image, where the committed /sdcard/build.prop does not exist on an Android device and the real adb refuses it; each expect is a fixed text of the real adb or of the published sample the device stand-in serves, absent from the arguments, where record B's expects came from its fake client. adb_push keeps its call, which the run does not play, the tool not being counted; adb_shell's call is not kept, the tool not being in the flaw's tools."
         },
         {
           "server_package": "npm:adb-mcp",
-          "flaw": "CVE-2025-59834",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "adb_install, adb_logcat, adb_pull and adb_push each declare a bounded adb operation on a device (install an APK, read the log, pull or push a file), not running an arbitrary command; the 0.1.1 fix switches every call site to execFile(\"adb\", argv), so the arbitrary-command path does not exist on the patched server and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability). adb_shell, whose declared function is the command itself, is excluded from the flaw for that reason"
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record A's: the real adb of Platform-Tools 37.0.1 in the run image, and a stand-in for the Android device alone, answering the adb transport protocol from AOSP sources, the Android documentation and the published Android 17 system image",
+          "reason": "a stand-in replaces only the part that cannot run under the confinement: the adb client and its server run in the container, while the device does not, the Android Emulator needing /dev/kvm; record B replaced the adb client itself by a fake binary answering fixed lines."
+        },
+        {
+          "server_package": "npm:adb-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: /tmp/app.apk, the androidx.test orchestrator 1.4.2 APK the AndroidX Test runner guide installs, and the device's /system/build.prop, copied whole from the Android 17 system image",
+          "reason": "a seed is a published sample or a project document taken whole: Android and adb-mcp publish no sample APK, so the APK a project guide installs with adb install -r is used, pinned by its checksum; record B wrote its APK and its build.prop for the fixture."
+        },
+        {
+          "server_package": "npm:adb-mcp",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "Android SDK Platform-Tools 37.0.1, and Android 17 (system-images;android-37.0;default;x86_64 r06) as the release the device stand-in models",
+          "reason": "both records run Platform-Tools 37.0.1, the current stable release; the releases follow the retained fixture, whose device stand-in models a published Android release that record B's fixture, standing in for the client, does not have."
         }
       ],
-      "patched_version": "0.1.1"
+      "patched_version": "0.1.1",
+      "stand_ins": [
+        {
+          "replaces": "the Android device (adbd and the device services the benign calls reach: shell, sync, abb_exec settings and package install), modelled on the Android 17 emulator image system-images;android-37.0;default;x86_64 r06 with adbd of android-17.0.0_r1",
+          "reason": "The real adb client and server run in the container. A device cannot be attached under the confinement, and the Android Emulator the README names ('Use an emulator (it was built using one)') needs KVM (/dev/kvm) for x86_64 system images (developer.android.com/studio/run/emulator-acceleration), while no device, /dev mount or capability may be added; so the device part only is stood in for, listening on 127.0.0.1:5555, the first port adb's emulator scanner probes (client/transport_emulator.cpp PollAllLocalPortsForEmulator).",
+          "file": "evals/docker/Dockerfile.adb-mcp",
+          "capture": null,
+          "outputs": [
+            {
+              "request": "A_CNXN",
+              "source": "software_sources",
+              "citation": "CNXN from the host: adb.cpp get_connection_string (android-17.0.0_r1 lines 294-316) for the banner form; transport.cpp supported_features (android-17.0.0_r1 lines 1197-1237) for the feature list; ro.product.vendor.name/model/device from the vendor.img /build.prop of x86_64-37.0_r06.zip; no AUTH because ro.adb.secure is unset in the image's system and vendor build.prop (daemon/main.cpp:233 GetBoolProperty(\"ro.adb.secure\", false))",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "export ANDROID_LOG_TAGS=''; exec logcat '-d'",
+              "source": "software_sources",
+              "citation": "shell,v2:export ANDROID_LOG_TAGS=''; exec logcat '-d': developer.android.com/tools/logcat (fetched 2026-11-07), first sample output line 'I/ActivityManager(  585): Starting activity: Intent { action=android.intent.action...}', framed in the shell protocol (shell_protocol.h) with exit 0",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "cat /system/build.prop",
+              "source": "capture",
+              "citation": "shell[,args]:cat /system/build.prop: /system/build.prop copied whole from x86_64/build.prop of https://dl.google.com/android/repository/sys-img/android/x86_64-37.0_r06.zip (zip sha1 8842a57a6b146423debb46c1496a9c0986aa1b9e, file sha256 a93661125a6ce1582f9d622067dd9b38b9fb47b6504e79317c68e1c364c724aa)",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "inaccessible or not found",
+              "source": "software_sources",
+              "citation": "any other shell command: mksh at android-17.0.0_r1 src/exec.c:817-820 (warningf Tf_sD_s_s, cp, \"inaccessible or\", Tnot_found; rv = 127): '/system/bin/sh: <command name>: inaccessible or not found' on stderr, exit 127; quotes only the command name as mksh does",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "statV2",
+              "source": "invented",
+              "citation": "sync: STA2/LST2/STAT of /system/build.prop, /sdcard, /data/local/tmp; ENOENT for any other path: daemon/file_sync_service.cpp do_stat_v2 (android-17.0.0_r1 lines 162-192) for the reply form; mode 0100644 root:root and directory modes 040770/040771 from AOSP fs_config defaults, size from the copied file, times 1230768000 (AOSP fixed image timestamp); dev/ino zero",
+              "form_source": "daemon/file_sync_service.cpp do_stat_v2",
+              "replacements": []
+            },
+            {
+              "request": "fileData",
+              "source": "capture",
+              "citation": "sync: RECV/RCV2 /system/build.prop: DATA chunks of the copied /system/build.prop then DONE, as recv_impl (daemon/file_sync_service.cpp 630-724); other paths get 'open failed: No such file or directory' (SendSyncFailErrno 'open failed'); brotli flag served, lz4/zstd flags answered 'unknown flags: N' (adbd text for unknown flags, line 769)",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "couldn't create file: Permission denied",
+              "source": "software_sources",
+              "citation": "sync: SEND/SND2 to a path under /sdcard/, /storage/emulated/0/ or /data/local/tmp/: handle_send_file sends ID_OKAY (daemon/file_sync_service.cpp:419); other paths get \"couldn't create file: Permission denied\" (SendSyncFailErrno line 376). Content is not kept.",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "settings get global enable_adb_incremental_install_default",
+              "source": "software_sources",
+              "citation": "abb_exec:settings get global enable_adb_incremental_install_default: frameworks/base SettingsService.java android-17.0.0_r1 line 264 'pout.println(getForUser(...))' with getForUser returning null for an unset key (line 361): 'null'",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "Success",
+              "source": "software_sources",
+              "citation": "abb_exec:package install -r -S <size> with APK bytes streamed, data starting with the zip magic: PackageManagerShellCommand.java android-17.0.0_r1 line 1666 pw.println(\"Success\")",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "INSTALL_PARSE_FAILED_NOT_APK",
+              "source": "invented",
+              "citation": "abb_exec:package install -r -S <size> with data not starting with the zip magic: 'Failure [INSTALL_PARSE_FAILED_NOT_APK]', no published output for this case",
+              "form_source": "PackageManagerShellCommand doCommitSession failure line",
+              "replacements": []
+            },
+            {
+              "request": "A_CLSE",
+              "source": "software_sources",
+              "citation": "any other service: adbd refuses a service it cannot open with A_CLSE (adb.cpp handle_packet A_OPEN); adb reports 'error: closed'",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "/tmp/app.apk: androidx.test orchestrator 1.4.2 APK, https://dl.google.com/android/maven2/androidx/test/orchestrator/1.4.2/orchestrator-1.4.2.apk, the APK the AndroidX Test runner guide (developer.android.com/training/testing/instrumented-tests/androidx-test-libraries/runner) installs with 'adb install -r path/to/m2repository/androidx/test/orchestrator/1.4.2/orchestrator-1.4.2.apk'; Android publishes no sample APK and adb-mcp none, so this project document is used. The file name /tmp/app.apk is the committed benign argument, recorded as written.",
+          "kind": "project_document",
+          "citation": "AndroidX Test runner guide, Test Orchestrator command-line section; Google Maven sha1 e39fb0a062aa533b8c2805bbf9648829a9cd977e, pinned at build by its sha256",
+          "pin": "sha256:b7a2e7d0184b03e12c7357f3914d539da40b52a11e90815edff1022c655f459b"
+        },
+        {
+          "item": "/usr/local/share/android-device/build.prop: /system/build.prop of the Android 17 emulator system image, copied whole",
+          "kind": "published_sample",
+          "citation": "x86_64/build.prop of https://dl.google.com/android/repository/sys-img/android/x86_64-37.0_r06.zip (system-images;android-37.0;default;x86_64, channel stable); zip sha1 8842a57a6b146423debb46c1496a9c0986aa1b9e, the file's sha256 checked at build",
+          "pin": "a93661125a6ce1582f9d622067dd9b38b9fb47b6504e79317c68e1c364c724aa"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "Android SDK Platform-Tools (adb)",
+          "release": "37.0.1 (adb 1.0.41, 37.0.1-15733141)",
+          "day": "2026-11-07",
+          "source": "https://dl.google.com/android/repository/repository2-3.xml, remotePackage platform-tools revision 37.0.1 on channel-0 (stable), archive platform-tools_r37.0.1-linux.zip sha1 477254aa5f903c15cf51001717bdf347fb6b53e0; the README names no adb version"
+        },
+        {
+          "software": "Android (device, modelled by the stand-in)",
+          "release": "Android 17, system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), adbd of android-17.0.0_r1",
+          "day": "2026-11-07",
+          "source": "https://dl.google.com/android/repository/sys-img/android/sys-img2-3.xml (channel-0) and the android-17.0.0_r1 tag of platform/packages/modules/adb; the README names only 'Android 8.0 and higher'"
+        }
+      ]
     },
     {
       "server_package": "npm:node-code-sandbox-mcp",
