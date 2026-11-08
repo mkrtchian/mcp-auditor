@@ -9,11 +9,15 @@ a23f3d0, three commits ahead of 1.1.0, no npm release carries it) replaces `exec
 `spawn("shortcuts", args, { shell: false })`, so `name` reaches the subprocess as one literal
 argv element and nothing executes.
 
-list_shortcuts takes no arguments (`shortcuts list --show-identifiers` is static) and so has no
-injection point of its own; only run_shortcut is counted. The witness and aim follow the
-command-injection convention the kanban pilot established: a /flag file read by `cat /flag`, so
-the exploit's shortcut name carries the aim and the benign call (an ordinary shortcut name) does
-not.
+open_shortcut reaches the same injection (`shortcuts view '${params.name}'` through `exec`), so
+it is exploited too, but its result swallows the witness: the stand-in's error on the first
+command leaves `shortcuts view` stderr non-empty, and openShortcut rejects on any stderr, so only
+run_shortcut's response carries the injected command's stdout. The witness surfaces on the
+vulnerable version through run_shortcut. list_shortcuts takes no arguments (`shortcuts list
+--show-identifiers` is static) and has no injection point of its own. The witness and aim follow
+the command-injection convention the kanban pilot established: a /flag file read by `cat /flag`,
+so each exploit's shortcut name carries the aim and the benign calls (a shortcut of the fixture's
+library, from the server README) do not.
 """
 
 import re
@@ -42,8 +46,16 @@ async def _exploit_run_shortcut(places: Places, client: KitClient) -> None:
     await client.call_tool("run_shortcut", {"name": _PAYLOAD_NAME})
 
 
+async def _exploit_open_shortcut(places: Places, client: KitClient) -> None:
+    await client.call_tool("open_shortcut", {"name": _PAYLOAD_NAME})
+
+
 async def _benign_run_shortcut(places: Places, client: KitClient) -> None:
-    await client.call_tool("run_shortcut", {"name": "Daily Briefing"})
+    await client.call_tool("run_shortcut", {"name": "My Shortcut 1"})
+
+
+async def _benign_open_shortcut(places: Places, client: KitClient) -> None:
+    await client.call_tool("open_shortcut", {"name": "My Shortcut 1"})
 
 
 TARGET = FixCheckTarget(
@@ -53,8 +65,8 @@ TARGET = FixCheckTarget(
     witness=WITNESS,
     planting_host=HOST,
     builder=command_injection_env,
-    exploits=(_exploit_run_shortcut,),
-    benign_calls=(_benign_run_shortcut,),
+    exploits=(_exploit_run_shortcut, _exploit_open_shortcut),
+    benign_calls=(_benign_run_shortcut, _benign_open_shortcut),
     vulnerable_service="siri-shortcuts-vuln",
     patched_service="siri-shortcuts",
     server_patched_service=None,

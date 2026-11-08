@@ -1066,7 +1066,7 @@ services:
       context: .
       dockerfile: Dockerfile.siri-shortcuts
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9d4bf8c00e60093e096a28d319ecec864bc9b8df099a2296f749d593c918db6b"
+        org.mcp-auditor.dockerfile-fingerprint: "f83f1770a9815f43be2ad7b7275dd598dc723258dd4fda35f0de853950ac1b7f"
     image: mcp-auditor-nuisance-siri-shortcuts:local
     profiles: ["nuisance"]
 

@@ -1,25 +1,46 @@
-# mcp-server-siri-shortcuts v1.1.0 (git tag 1.1.0) - vulnerable to CVE-2026-0758: shortcuts.ts's
-# runShortcut builds `shortcuts run '${params.name}' ... | cat` and runs it with the shell `exec`,
-# interpolating the caller's shortcut name into a single-quoted argument without escaping, so a
-# name that closes the quote injects arbitrary shell commands whose output is reflected in the
-# tool's own response.
-# No COPY/ADD: the fingerprint hashes instructions only, so the `shortcuts` stub is inlined by RUN.
+# syntax=docker/dockerfile:1
+# mcp-server-siri-shortcuts v1.1.0 (git tag 1.1.0, commit 9ee97a7), vulnerable to CVE-2026-0758:
+# shortcuts.ts builds the `shortcuts run` command line from the caller's shortcut name and runs it
+# with the shell `exec`. The fix check alone uses this image.
+# The repository's own package-lock.json is kept: without it the build fails (zod-to-json-schema
+# and zod resolve to releases this commit's TypeScript does not compile against, TS2589).
 FROM node:20@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
-RUN git clone --depth 1 --branch 1.1.0 \
-      https://github.com/dvcrn/mcp-server-siri-shortcuts.git /app
+RUN git clone https://github.com/dvcrn/mcp-server-siri-shortcuts.git /app \
+ && cd /app && git checkout 9ee97a73cfb7c9b0dbf8567c4fa7f2ab0730b13f
 WORKDIR /app
 RUN npm install && npm run build
 
-# A stubbed `shortcuts` CLI on PATH: the real binary is macOS-only (Shortcuts.app), so the
-# benign call answers with no external backend. `run` echoes a plausible confirmation line;
-# every other subcommand (and the startup `list --show-identifiers`) exits 0 with no output.
-RUN printf '%s\n' \
-  '#!/bin/sh' \
-  'if [ "$1" = "run" ]; then' \
-  '  echo "Shortcut ran: $2"' \
-  'fi' \
-  'exit 0' \
-  > /usr/local/bin/shortcuts \
- && chmod +x /usr/local/bin/shortcuts
+# The macOS `shortcuts` CLI (macOS Golden Gate 27.2) runs only on macOS, so this program stands in
+# for it and for the Mac whose Shortcuts library holds the two shortcuts of the server README's
+# list_shortcuts example ("My Shortcut 1", "My Shortcut 2", README.md at a23f3d0).
+# - `list --show-identifiers`: one "Name (UUID)" line per shortcut, the line of shortcuts.test.ts:209
+#   at a23f3d0 with the name replaced and, on the second line, the identifier replaced.
+# - `list`: one name per line (Apple Shortcuts User Guide, "Run shortcuts from the command line").
+# - `run` or `view` of a shortcut of the library, by name or identifier: exit 0 and no output (the
+#   guide: exit 0 on a successful run, output only when the shortcut ends with an output action).
+# - anything else: exit 1 with the error macOS 27.0 prints for a shortcut it cannot find (the
+#   capture in rfizzle/hearth docs/research/2026-10-19-shortcuts-spike.md at 4f2e3f78).
+RUN cat > /usr/local/bin/shortcuts <<'EOF' && chmod 755 /usr/local/bin/shortcuts
+#!/bin/sh
+if [ "$1" = "list" ] && [ "$#" -eq 2 ] && [ "$2" = "--show-identifiers" ]; then
+  echo 'My Shortcut 1 (D9DBF774-F5CF-4E2E-9418-392951F0C770)'
+  echo 'My Shortcut 2 (A6E5F3C2-7B41-4D8E-9C0A-2F1B3D4E5A60)'
+  exit 0
+fi
+if [ "$1" = "list" ] && [ "$#" -eq 1 ]; then
+  echo 'My Shortcut 1'
+  echo 'My Shortcut 2'
+  exit 0
+fi
+if [ "$1" = "run" ] || [ "$1" = "view" ]; then
+  case "$2" in
+    'My Shortcut 1'|'My Shortcut 2'|D9DBF774-F5CF-4E2E-9418-392951F0C770|A6E5F3C2-7B41-4D8E-9C0A-2F1B3D4E5A60)
+      exit 0
+      ;;
+  esac
+fi
+echo 'Error: The operation couldn’t be completed. Couldn’t find shortcut' >&2
+exit 1
+EOF
 
 ENTRYPOINT ["node", "/app/dist/index.js"]

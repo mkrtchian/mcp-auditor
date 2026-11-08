@@ -6927,7 +6927,24 @@
             {
               "vulnerable_name": "run_shortcut",
               "patched_name": "run_shortcut",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "open_shortcut",
+              "patched_name": "open_shortcut",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -6938,8 +6955,18 @@
             {
               "tool": "run_shortcut",
               "arguments": {
-                "name": "Daily Briefing"
-              }
+                "name": "My Shortcut 1"
+              },
+              "expect": "Ran shortcut",
+              "before": []
+            },
+            {
+              "tool": "open_shortcut",
+              "arguments": {
+                "name": "My Shortcut 1"
+              },
+              "expect": "Opened shortcut",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -6948,12 +6975,14 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "run_shortcut"
+              "run_shortcut",
+              "open_shortcut"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -6976,26 +7005,180 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-0758",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-0758",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-0758",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-0758",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-0758",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-0758",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
       "settlements": [
         {
           "server_package": "npm:mcp-server-siri-shortcuts",
           "flaw": "CVE-2026-0758",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "records A and B agree dfie false; the declared contract is to run a named shortcut, and the patched spawn(..., { shell: false }) call takes the name as one literal argv element, so the shell-injection path does not exist on the patched server (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+          "field": "benign_calls",
+          "value": "record B's: run_shortcut and open_shortcut on 'My Shortcut 1', no prerequisite, expecting the server's own 'Ran shortcut' and 'Opened shortcut'",
+          "reason": "the benign calls follow the retained seed and stand-in: they name a shortcut of the library the retained fixture seeds and expect the message the server builds itself when the program exits 0 with no output, where record A named the entry of its own seed and expected 'shortcut output', the text its stand-in printed for a run."
         },
         {
           "server_package": "npm:mcp-server-siri-shortcuts",
-          "flaw": "CVE-2026-0758",
-          "field": "tools",
-          "value": "run_shortcut",
-          "reason": "list_shortcuts dropped from the counted tools: record A adds it, but it takes no arguments (shortcuts list --show-identifiers is static) and has no injection point of its own; the validated fix-check surfaces the witness through run_shortcut alone"
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record B's: a run or view of a library shortcut exits 0 with no output, any other request exits 1 with the real program's not-found error",
+          "reason": "a source of the software or a capture of it comes before the server's tests: record B answers a run from Apple's Shortcuts guide (exit 0, output only when the shortcut ends with an output action) and an unknown shortcut from a capture of the real program, where record A answered with 'shortcut output' and 'shortcut failed', the values the server's tests feed to a mocked spawn."
+        },
+        {
+          "server_package": "npm:mcp-server-siri-shortcuts",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the two shortcuts of the server README's list_shortcuts example, 'My Shortcut 1' and 'My Shortcut 2'",
+          "reason": "a published sample comes before a project document: Apple publishes no sample library, and the server README's list_shortcuts example is the first published sample holding one, where record A seeded the single entry of an identifier-parsing case of the server's tests."
         }
       ],
-      "patched_version": "a23f3d00"
+      "patched_version": "a23f3d00",
+      "backend": null,
+      "stand_ins": [
+        {
+          "replaces": "The macOS `shortcuts` command-line program and the Mac (its Shortcuts library) it runs on, invoked by the server as `shortcuts list --show-identifiers`, `shortcuts view <name>` and `shortcuts run <name> --input-path <path>`.",
+          "reason": "`shortcuts` is a proprietary binary that ships only with macOS (/usr/bin/shortcuts, macOS 12 and later) and runs only on a Mac with the Shortcuts app; it has no Linux build and cannot run in the server's Linux container or as a backend container. Apple publishes no emulator. The stand-in is a program at the same path interface (argv in, stdout/stderr and exit status out).",
+          "file": "evals/docker/Dockerfile.siri-shortcuts",
+          "capture": null,
+          "outputs": [
+            {
+              "request": "list --show-identifiers",
+              "source": "server_tests",
+              "citation": "shortcuts.test.ts:209 at a23f3d0, the first `list --show-identifiers` line the server's tests give: 'Simple Shortcut (D9DBF774-F5CF-4E2E-9418-392951F0C770)' (form 'Name (UUID)', also shortcuts.ts:143). Apple's guide and no capture give this output. One line per library shortcut, exit 0.",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "the name 'Simple Shortcut', on line 1",
+                  "replacement": "My Shortcut 1"
+                },
+                {
+                  "original": "the name 'Simple Shortcut', on line 2",
+                  "replacement": "My Shortcut 2"
+                },
+                {
+                  "original": "the identifier D9DBF774-F5CF-4E2E-9418-392951F0C770, on line 2",
+                  "replacement": "A6E5F3C2-7B41-4D8E-9C0A-2F1B3D4E5A60, a fixed value written for the second shortcut, since two shortcuts never share an identifier"
+                }
+              ]
+            },
+            {
+              "request": "list",
+              "source": "software_sources",
+              "citation": "Apple Shortcuts User Guide for Mac, 'Run shortcuts from the command line' (support.apple.com/guide/shortcuts-mac/apd455c82f02, macOS 27 edition, read 2026-11-07): 'You can list all the shortcuts available using shortcuts list.' One name per line, exit 0. The server never sends this request.",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "run",
+              "source": "software_sources",
+              "citation": "run <a library shortcut, by name or identifier> [--input-path <path>]: Apple Shortcuts User Guide for Mac, 'Run shortcuts from the command line': 'The shortcuts command will exit 0 on a successful run or 1 on error', and output is written only 'If your shortcut ends with an action that produces text, images, or some other file'. The sample shortcuts carry no output action, so: no output, exit 0.",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "view",
+              "source": "software_sources",
+              "citation": "view <a library shortcut, by name or identifier>: Apple Shortcuts User Guide for Mac, same page: 'You can open a shortcut in the editor using shortcuts view'; the guide gives no text output. No output, exit 0.",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "Couldn\u2019t find shortcut",
+              "source": "capture",
+              "citation": "any other request (a name or identifier not in the library, another subcommand or argument shape): capture of the real program on macOS 27.0 in rfizzle/hearth docs/research/2026-10-19-shortcuts-spike.md at commit 4f2e3f78e70dc7910fe7a79813913984fb062425, line 16: `shortcuts run <missing>` -> exit 1, stderr 'Error: The operation couldn\u2019t be completed. Couldn\u2019t find shortcut', nothing on stdout. A third-party capture of the real software, not one made here (no Mac is available); no Apple source gives the text. Used as the error for an input the program does not recognize.",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "The Shortcuts library of the modelled Mac: the two shortcuts 'My Shortcut 1' and 'My Shortcut 2', taken whole from the server README's list_shortcuts example ({\"shortcuts\": [{\"name\": \"My Shortcut 1\"}, {\"name\": \"My Shortcut 2\"}]}), held by the stand-in program. Apple publishes no sample library for Shortcuts (a fresh Mac lists none, per the capture cited for the stand-in; the guide has users add shortcuts from the Gallery or create their own), so the server's sample is the first that holds one.",
+          "kind": "published_sample",
+          "citation": "https://github.com/dvcrn/mcp-server-siri-shortcuts/blob/a23f3d003700a57d6cca7a176034fbb41243049d/README.md (Tools, list_shortcuts, 'Returns')",
+          "pin": "a23f3d003700a57d6cca7a176034fbb41243049d"
+        },
+        {
+          "item": "The identifiers of the two library shortcuts, which the real program generates: 'D9DBF774-F5CF-4E2E-9418-392951F0C770' copied from shortcuts.test.ts:209 at a23f3d0, and 'A6E5F3C2-7B41-4D8E-9C0A-2F1B3D4E5A60' written for the second one.",
+          "kind": "written",
+          "citation": "shortcuts.test.ts:209 at a23f3d0 for the first; the second written for the fixture",
+          "pin": "a23f3d003700a57d6cca7a176034fbb41243049d"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "macOS `shortcuts` command-line program (Shortcuts app, part of macOS)",
+          "release": "macOS Golden Gate 27.2",
+          "day": "2026-11-07",
+          "source": "The server's README names no version ('Uses the macOS `shortcuts` CLI command under the hood'); Apple security releases page https://support.apple.com/en-us/100100, read 2026-11-07: 'The latest version of macOS is 27.2.' The program cannot run here; the stand-in models it from Apple's macOS 27 guide and a macOS 27.0 capture."
+        }
+      ]
     },
     {
       "server_package": "npm:serverless",
