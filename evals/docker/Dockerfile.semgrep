@@ -1,27 +1,45 @@
 # mcp-server-semgrep (CVE-2026-7446), patched npm release 1.0.1. Every external call now uses
-# execFile() with an argv array and file I/O uses fs.promises, so shell metacharacters in a path
-# argument are passed verbatim and never reach a shell. Doubles as the nuisance run image. No
-# COPY/ADD from the build context; the stub and the package are installed by RUN. The server
-# declares @modelcontextprotocol/sdk as a devDependency, so it is installed explicitly (pinned to
-# the lockfile's 1.32.2) on top of the prod deps.
+# execFile() with an argv array and file I/O uses fs.promises. Doubles as the nuisance run image.
+# The real Semgrep CLI runs in the container, installed as the server's own Dockerfile (v1.0.1)
+# installs it: ca-certificates and git from apt, uv, Python 3.12, `uv tool install semgrep==1.161.0`.
+# No local COPY/ADD.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
-RUN printf '%s\n' '#!/bin/sh' \
-  'if [ "$1" = "--version" ]; then echo "1.110.0"; exit 0; fi' \
-  'echo "{\"results\":[]}"' \
-  'exit 0' > /usr/local/bin/semgrep && chmod +x /usr/local/bin/semgrep
+COPY --from=ghcr.io/astral-sh/uv:0.13.7@sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490 /uv /uvx /usr/local/bin/
 
-RUN mkdir -p /pkg /work \
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates git \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN UV_PYTHON_INSTALL_DIR=/opt/uv/python UV_TOOL_DIR=/opt/uv/tools UV_TOOL_BIN_DIR=/usr/local/bin \
+    uv python install 3.12 \
+ && UV_PYTHON_INSTALL_DIR=/opt/uv/python UV_TOOL_DIR=/opt/uv/tools UV_TOOL_BIN_DIR=/usr/local/bin \
+    uv tool install --python 3.12 "semgrep==1.161.0" \
+ && semgrep --version \
+ && rm -rf /root/.cache
+
+RUN mkdir -p /pkg \
  && cd /tmp \
  && npm pack mcp-server-semgrep@1.0.1 \
  && tar xzf mcp-server-semgrep-1.0.1.tgz -C /pkg --strip-components=1 \
  && rm -f mcp-server-semgrep-1.0.1.tgz \
- && cd /pkg && npm install --omit=dev --ignore-scripts \
- && npm install --ignore-scripts @modelcontextprotocol/sdk@1.32.2
+ && cd /pkg && npm install --omit=dev --omit=optional --ignore-scripts \
+ && rm -rf /root/.npm
 
-RUN printf '{"results":[{"check_id":"demo.rule","path":"/work/a.js","start":{"line":1,"col":1},"end":{"line":1,"col":2},"extra":{"severity":"INFO","message":"demo finding","metadata":{"language":"javascript"}}}]}' > /work/results.json \
- && cp /work/results.json /work/old.json \
- && cp /work/results.json /work/new.json \
- && chmod -R 0777 /work
+# Semgrep CE quick-start sample app.py, whole (semgrep.dev/docs/getting-started/quickstart-ce).
+RUN printf '%s\n' '# app.py' 'import os' '' 'user_input = input("Enter a Directory: ")' 'os.system("ls " + user_input)' > /tmp/app.py \
+ && echo '79b6dea6be9daa021b8aea7445e6318959c2c2689667f2473f828186dee886a7  /tmp/app.py' | sha256sum -c -
+
+# The rule the quick-start finding names, from semgrep/semgrep-rules.
+ADD --checksum=sha256:279e17c553ccfae54e058f02b5ed59e7c50665b49d4eb57f767b4aa1e6d818e6 https://raw.githubusercontent.com/semgrep/semgrep-rules/16b9e6d45f10649f6a531ec4838ed9924372c3bc/python/lang/security/audit/dangerous-system-call-audit.yaml /tmp/dangerous-system-call-audit.yaml
+
+# Scan results generated at build time by the real Semgrep; file names from the server's USAGE.md.
+RUN chmod 0644 /tmp/app.py /tmp/dangerous-system-call-audit.yaml \
+ && semgrep scan --json --config /tmp/dangerous-system-call-audit.yaml /tmp/app.py > /tmp/results.json \
+ && cp /tmp/results.json /tmp/old-results.json \
+ && cp /tmp/results.json /tmp/new-results.json \
+ && chmod 0644 /tmp/results.json /tmp/old-results.json /tmp/new-results.json \
+ && rm -rf /root/.semgrep /root/.cache
 
 ENTRYPOINT ["node", "/pkg/build/index.js"]

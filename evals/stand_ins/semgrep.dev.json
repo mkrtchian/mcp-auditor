@@ -1,0 +1,195 @@
+{
+  "host": "semgrep.dev",
+  "address": "13.227.231.63",
+  "source": "capture",
+  "captured_at": "2026-11-07T20:00:19Z",
+  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/semgrep.dev.json https://semgrep.dev/api/check-version",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/api/check-version",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "780"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Sat, 07 Nov 2026 19:50:02 GMT"
+        ],
+        [
+          "x-robots-tag",
+          "noindex"
+        ],
+        [
+          "Server",
+          "gunicorn"
+        ],
+        [
+          "Vary",
+          "Accept-Encoding"
+        ],
+        [
+          "X-Cache",
+          "Hit from cloudfront"
+        ],
+        [
+          "Via",
+          "1.1 750fcac1e49f772091c252c82203aa50.cloudfront.net (CloudFront)"
+        ],
+        [
+          "X-Amz-Cf-Pop",
+          "CDG50-P5"
+        ],
+        [
+          "X-Amz-Cf-Id",
+          "STnDlaYkjztBLv9GB7asXNJe-iH40PwtJoF7LclkciFVYWlQDW89sA=="
+        ],
+        [
+          "Age",
+          "617"
+        ]
+      ],
+      "body": "{\"latest\":\"1.183.0\",\"versions\":{\"minimum\":\"1.76.0\",\"stable\":\"1.183.0\"},\"banners\":[{\"message\":\"A new version of Semgrep is available. See https://semgrep.dev/docs/upgrading\",\"hide_version\":\"1.183.0\"},{\"message\":\"Versions prior to 1.76.0 are no longer supported by Semgrep.dev, please upgrade.\",\"hide_version\":\"1.76.0\"},{\"message\":\"Versions prior to 1.76.0 will cease to work soon, please upgrade.\",\"show_version\":\"1.76.0\",\"hide_version\":\"1.76.0\"},{\"message\":\"Too many findings? Try Semgrep Pro for more powerful queries and less noise.\",\"show_version\":\"1.88.0\",\"url\":\"https://sg.run/false-positives\",\"identifier\":\"too_many_findings\"}],\"no_findings_msg\":\"If Semgrep missed a finding, please send us feedback to let us know!\\nSee https://semgrep.dev/docs/reporting-false-negatives/\"}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/cd90f448a1c5ae0c",
+      "status": 301,
+      "headers": [
+        [
+          "Server",
+          "CloudFront"
+        ],
+        [
+          "Date",
+          "Sat, 07 Nov 2026 20:00:19 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html"
+        ],
+        [
+          "Content-Length",
+          "167"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Location",
+          "https://semgrep.dev/cd90f448a1c5ae0c"
+        ],
+        [
+          "X-Cache",
+          "Redirect from cloudfront"
+        ],
+        [
+          "Via",
+          "1.1 316c114eb8fab49aece19f163fecc6aa.cloudfront.net (CloudFront)"
+        ],
+        [
+          "X-Amz-Cf-Pop",
+          "CDG50-P5"
+        ],
+        [
+          "X-Amz-Cf-Id",
+          "XJ7nE6ZUg4tDSkTqABkwlBIw0VhJyEuL-6T-GbqaRPcETlTZJOBWZA=="
+        ]
+      ],
+      "body": "<html>\r\n<head><title>301 Moved Permanently</title></head>\r\n<body>\r\n<center><h1>301 Moved Permanently</h1></center>\r\n<hr><center>CloudFront</center>\r\n</body>\r\n</html>\r\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/cd90f448a1c5ae0c",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "text/html; charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "25848"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Content-Security-Policy",
+          "default-src 'self' https: data: blob: wss://api.nango.dev/; script-src 'self' 'wasm-unsafe-eval' 'nonce-GGLYstVfxx69l4deL+xyjQ==' 'strict-dynamic' https://edge.fullstory.com https://rs.fullstory.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: w3.org/svg/2000 https://*.google-analytics.com https://*.googletagmanager.com https://rs.fullstory.com https://cdn.brandfetch.io https://*.linkedin.com https://*.google.com https://www.googleadservices.com/ https://*.twitter.com https://t.co https://www.facebook.com; font-src 'self' data:; connect-src 'self' https://snjdw73vnmhs.statuspage.io  https://api.corp.r2c.dev https://*.api.corp.r2c.dev/ https://api.corp.semgrep.dev https://*.api.corp.semgrep.dev/ https://api.dev3.corp.semgrep.dev https://impersonation.dev2.corp.semgrep.dev/ https://impersonation.dev3.corp.semgrep.dev/ https://impersonation.staging.corp.semgrep.dev/ https://impersonation.prod.corp.semgrep.dev/ https://raw.githubusercontent.com/returntocorp/semgrep-interfaces/ https://raw.githubusercontent.com/semgrep/semgrep-interfaces/ https://browser-intake-datadoghq.com https://*.ff-cdn.datadoghq.com *.github.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://edge.fullstory.com https://rs.fullstory.com https://px.ads.linkedin.com https://*.google.com https://api.cr-relay.com https://js.zi-scripts.com https://*.mktoresp.com https://visitor.reactful.com https://api.vector.co https://cdn.dreamdata.cloud https://api.brandfetch.io https://*.getwarmly.com https://ws.zoominfo.com wss://api.nango.dev/; frame-ancestors 'self'; frame-src 'self' *.stripe.com *.statuspage.io https://semgrep.chilipiper.com https://www.youtube.com/ https://www.googletagmanager.com https://*.doubleclick.net https://stats.g.doubleclick.net https://sara.corp.semgrep.dev https://login.semgrep.com; base-uri 'self'; object-src 'none'; worker-src 'self' blob:; child-src 'self' blob:; report-to default;"
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate"
+        ],
+        [
+          "Referrer-Policy",
+          "no-referrer-when-downgrade"
+        ],
+        [
+          "Report-To",
+          "{\"group\":\"default\",\"max_age\":31536000,\"endpoints\":[{\"url\":\"https://r2cdev.report-uri.com/a/d/g\"}],\"include_subdomains\":true}"
+        ],
+        [
+          "X-XSS-Protection",
+          "1; mode=block"
+        ],
+        [
+          "Vary",
+          "Accept-Encoding"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000; includeSubDomains"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ],
+        [
+          "X-Frame-Options",
+          "SAMEORIGIN"
+        ],
+        [
+          "date",
+          "Sat, 07 Nov 2026 20:00:19 GMT"
+        ],
+        [
+          "X-Cache",
+          "Miss from cloudfront"
+        ],
+        [
+          "Via",
+          "1.1 750fcac1e49f772091c252c82203aa50.cloudfront.net (CloudFront)"
+        ],
+        [
+          "X-Amz-Cf-Pop",
+          "CDG50-P5"
+        ],
+        [
+          "X-Amz-Cf-Id",
+          "m6MEOAThYbt6aDh18RDz7Eu_Yt8rENDJ2C0mJDr1YIgWB4tAwKmOyw=="
+        ]
+      ],
+      "body": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <script nonce=\"GGLYstVfxx69l4deL+xyjQ==\">(()=>{const _=[{id:\"deploymentAuthorizedActions\",pathTemplate:\"/api/agent/deployments/:orgId/authorized_actions\",method:\"GET\",bodyTemplate:void 0,queryKeyTemplate:[\"DeploymentService\",\"GetDeploymentAuthorizedActions\",{request:{deploymentId:\":orgId\"}}],isInfiniteQuery:!1,priorityRoutes:[]},{id:\"findingCounts-sast\",pathTemplate:\"/api/agent/deployments/:orgId/issue_counts\",method:\"POST\",bodyTemplate:{issueType:\"ISSUE_TYPE_SAST\",issueTypes:[\"ISSUE_TYPE_SAST\"],filter:{tab:\"ISSUE_TAB_OPEN\",onPrimaryBranch:!0}},queryKeyTemplate:[\"IssuesService\",\"GetIssueCounts\",{request:{deploymentId:\":orgId\",issueType:\"ISSUE_TYPE_SAST\",issueTypes:[\"ISSUE_TYPE_SAST\"],filter:{tab:\"ISSUE_TAB_OPEN\",onPrimaryBranch:!0}}}],isInfiniteQuery:!1,priorityRoutes:[],enabled:()=>{try{return localStorage.getItem(\"semgrep-menu-open\")!==\"false\"&&localStorage.getItem(\"semgrep-duplo-enabled\")!==\"true\"}catch{return!1}}},{id:\"findingCounts-sast-duplo\",pathTemplate:\"/api/agent/deployments/:orgId/issue_counts\",method:\"POST\",bodyTemplate:{issueType:\"ISSUE_TYPE_SAST\",issueTypes:[\"ISSUE_TYPE_SAST\",\"ISSUE_TYPE_AI_SAST\"],filter:{tab:\"ISSUE_TAB_OPEN\",onPrimaryBranch:!0}},queryKeyTemplate:[\"IssuesService\",\"GetIssueCounts\",{request:{deploymentId:\":orgId\",issueType:\"ISSUE_TYPE_SAST\",issueTypes:[\"ISSUE_TYPE_SAST\",\"ISSUE_TYPE_AI_SAST\"],filter:{tab:\"ISSUE_TAB_OPEN\",onPrimaryBranch:!0}}}],isInfiniteQuery:!1,priorityRoutes:[],enabled:()=>{try{return localStorage.getItem(\"semgrep-menu-open\")!==\"false\"&&localStorage.getItem(\"semgrep-duplo-enabled\")===\"true\"}catch{return!1}}},{id:\"findingCounts-sca\",pathTemplate:\"/api/agent/deployments/:orgId/issue_counts\",method:\"POST\",bodyTemplate:{issueType:\"ISSUE_TYPE_SCA\",issueTypes:[\"ISSUE_TYPE_SCA\"],filter:{tab:\"ISSUE_TAB_OPEN\",onPrimaryBranch:!0}},queryKeyTemplate:[\"IssuesService\",\"GetIssueCounts\",{request:{deploymentId:\":orgId\",issueType:\"ISSUE_TYPE_SCA\",issueTypes:[\"ISSUE_TYPE_SCA\"],filter:{tab:\"ISSUE_TAB_OPEN\",onPrimaryBranch:!0}}}],isInfiniteQuery:!1,priorityRoutes:[],enabled:()=>{try{return localStorage.getItem(\"semgrep-menu-open\")!==\"false\"}catch{return!1}}},{id:\"findingCounts-secrets\",pathTemplate:\"/api/agent/deployments/:orgId/issue_counts\",method:\"POST\",bodyTemplate:{issueType:\"ISSUE_TYPE_SECRETS\",issueTypes:[\"ISSUE_TYPE_SECRETS\"],filter:{tab:\"ISSUE_TAB_OPEN\"}},queryKeyTemplate:[\"IssuesService\",\"GetIssueCounts\",{request:{deploymentId:\":orgId\",issueType:\"ISSUE_TYPE_SECRETS\",issueTypes:[\"ISSUE_TYPE_SECRETS\"],filter:{tab:\"ISSUE_TAB_OPEN\"}}}],isInfiniteQuery:!1,priorityRoutes:[],enabled:()=>{try{return localStorage.getItem(\"semgrep-menu-open\")!==\"false\"}catch{return!1}}},{id:\"savedViews\",pathTemplate:\"/api/deployments/:orgId/findings_saved_views?\",method:\"GET\",bodyTemplate:void 0,queryKeyTemplate:()=>{let e={};try{e=JSON.parse(localStorage.getItem(\"deployment_data\")||\"{}\")}catch{}const t=e.id;return[\"FindingsSavedViewsService\",\"ListFindingsSavedViews\",{request:{deploymentId:typeof t==\"string\"||typeof t==\"number\"?String(t):\"\"}}]},isInfiniteQuery:!1,priorityRoutes:[\"/orgs/:orgId/findings\"],onSuccess:e=>{const t=e,s=[];let r=t.savedViews?.find(u=>u.issueType===\"ISSUE_TYPE_SAST\")?.issuesFilter??null;if(r){const u={};for(const[n,o]of Object.entries(r))Array.isArray(o)&&o.length===0||o===\"\"||o===0||(u[n]=o);r=u}r!=null&&(r.onPrimaryBranch!==void 0||Array.isArray(r.refs)&&r.refs.length>0||Array.isArray(r.repositoryRefIds)&&r.repositoryRefIds.length>0||r.backlogType===\"ISSUE_BACKLOG_TYPE_PREPROD\")||(r={...r??{},onPrimaryBranch:!0});const T=localStorage.getItem(\"semgrep-duplo-enabled\")===\"true\";return s.push({id:\"searchFindingsGrouped-sast\",params:{savedFilter:r??null,isDuplo:T}}),T?s.push({id:\"findingCounts-sast-priority-duplo\",params:{savedFilter:r??null}}):s.push({id:\"findingCounts-sast-priority\",params:{savedFilter:r??null}}),s}},{id:\"findingCounts-sast-priority\",pathTemplate:\"/api/agent/deployments/:orgId/issue_counts\",method:\"POST\",bodyTemplate:e=>{const t={aiVerdicts:[\"VERDICT_TRUE_POSITIVE\",\"VERDICT_NO_VERDICT\"],tab:\"ISSUE_TAB_OPEN\",confidences:[\"CONFIDENCE_HIGH\"],severities:[\"SEVERITY_CRITICAL\",\"SEVERITY_HIGH\"],onPrimaryBranch:!0,repositoryDeploymentStatuses:[\"DEPLOYMENT_STATUS_DEPLOYED\"]},s=e.savedFilter??t;return{issueType:\"ISSUE_TYPE_SAST\",issueTypes:[\"ISSUE_TYPE_SAST\"],filter:s}},queryKeyTemplate:e=>{const t={aiVerdicts:[\"VERDICT_TRUE_POSITIVE\",\"VERDICT_NO_VERDICT\"],tab:\"ISSUE_TAB_OPEN\",confidences:[\"CONFIDENCE_HIGH\"],severities:[\"SEVERITY_CRITICAL\",\"SEVERITY_HIGH\"],onPrimaryBranch:!0,repositoryDeploymentStatuses:[\"DEPLOYMENT_STATUS_DEPLOYED\"]},s=e.savedFilter??t;return[\"IssuesService\",\"GetIssueCounts\",{request:{deploymentId:\":orgId\",issueType:\"ISSUE_TYPE_SAST\",issueTypes:[\"ISSUE_TYPE_SAST\"],filter:s}}]},isInfiniteQuery:!1,priorityRoutes:[],enabled:()=>!1},{id:\"findingCounts-sast-priority-duplo\",pathTemplate:\"/api/agent/deployments/:orgId/issue_counts\",method:\"POST\",bodyTemplate:e=>{const t={aiVerdicts:[\"VERDICT_TRUE_POSITIVE\",\"VERDICT_NO_VERDICT\"],tab:\"ISSUE_TAB_OPEN\",confidences:[\"CONFIDENCE_HIGH\"],severities:[\"SEVERITY_CRITICAL\",\"SEVERITY_HIGH\"],onPrimaryBranch:!0,repositoryDeploymentStatuses:[\"DEPLOYMENT_STATUS_DEPLOYED\"]},s=e.savedFilter??t;return{issueType:\"ISSUE_TYPE_SAST\",issueTypes:[\"ISSUE_TYPE_SAST\",\"ISSUE_TYPE_AI_SAST\"],filter:s}},queryKeyTemplate:e=>{const t={aiVerdicts:[\"VERDICT_TRUE_POSITIVE\",\"VERDICT_NO_VERDICT\"],tab:\"ISSUE_TAB_OPEN\",confidences:[\"CONFIDENCE_HIGH\"],severities:[\"SEVERITY_CRITICAL\",\"SEVERITY_HIGH\"],onPrimaryBranch:!0,repositoryDeploymentStatuses:[\"DEPLOYMENT_STATUS_DEPLOYED\"]},s=e.savedFilter??t;return[\"IssuesService\",\"GetIssueCounts\",{request:{deploymentId:\":orgId\",issueType:\"ISSUE_TYPE_SAST\",issueTypes:[\"ISSUE_TYPE_SAST\",\"ISSUE_TYPE_AI_SAST\"],filter:s}}]},isInfiniteQuery:!1,priorityRoutes:[],enabled:()=>!1},{id:\"searchFindingsGrouped-sast\",pathTemplate:\"/api/findings/v1/deployments/:orgId/grouped/search\",method:\"POST\",bodyTemplate:e=>{const t={aiVerdicts:[\"VERDICT_TRUE_POSITIVE\",\"VERDICT_NO_VERDICT\"],tab:\"ISSUE_TAB_OPEN\",confidences:[\"CONFIDENCE_HIGH\"],severities:[\"SEVERITY_CRITICAL\",\"SEVERITY_HIGH\"],onPrimaryBranch:!0,repositoryDeploymentStatuses:[\"DEPLOYMENT_STATUS_DEPLOYED\"]},s=e.savedFilter??t;return{common:{issueTypes:e.isDuplo?[\"ISSUE_TYPE_SAST\",\"ISSUE_TYPE_AI_SAST\"]:[\"ISSUE_TYPE_SAST\"],limit:10,cursor:\"\",filter:s},sortBy:\"SORT_BY_SEVERITY\",findingsPerGroup:5}},queryKeyTemplate:e=>{const t={aiVerdicts:[\"VERDICT_TRUE_POSITIVE\",\"VERDICT_NO_VERDICT\"],tab:\"ISSUE_TAB_OPEN\",confidences:[\"CONFIDENCE_HIGH\"],severities:[\"SEVERITY_CRITICAL\",\"SEVERITY_HIGH\"],onPrimaryBranch:!0,repositoryDeploymentStatuses:[\"DEPLOYMENT_STATUS_DEPLOYED\"]},s=e.savedFilter??t,i=e.isDuplo?[\"ISSUE_TYPE_SAST\",\"ISSUE_TYPE_AI_SAST\"]:[\"ISSUE_TYPE_SAST\"];return searchFindingsGroupedKey(\":orgId\",{common:{issueTypes:i,limit:10,cursor:\"\",filter:s},sortBy:\"SORT_BY_SEVERITY\",findingsPerGroup:5})},isInfiniteQuery:!0,priorityRoutes:[],enabled:()=>!1}],R=(e,t)=>{const s=e.replace(/\\*\\*/g,\"<<<GLOBSTAR>>>\").replace(/\\*/g,\"[^/]*\").replace(/<<<GLOBSTAR>>>/g,\".*\");return new RegExp(`^${s}$`).test(t)},b=(e,t)=>e.some(s=>R(s,t)),m=localStorage.getItem(\"access_token\"),f=localStorage.getItem(\"deployment_data\");if(!m||!f)return;let E;try{E=JSON.parse(f)}catch{return}if(!E||!E.id)return;const l=E.id,C=window.location.pathname,P={Authorization:`Bearer ${m}`,\"Content-Type\":\"application/json\",Accept:\"application/json\"},h=typeof Object.hasOwn==\"function\"?(e,t)=>Object.hasOwn(e,t):(e,t)=>Object.prototype.hasOwnProperty.call(e,t),Y=Number(l),S=e=>{if(typeof e==\"string\")return e===\":orgId\"?Y:e.replace(/:orgId/g,l);if(Array.isArray(e))return e.map(S);if(e&&typeof e==\"object\"){const t={};for(const s in e)h(e,s)&&(t[s]=S(e[s]));return t}return e},A=[],y=[];_.forEach(e=>{if(e.enabled&&typeof e.enabled==\"function\")try{if(!e.enabled())return}catch{return}b(e.priorityRoutes,C)?A.push(e):y.push(e)});const I={};window.__prefetchPromises=I;const p=(e,t)=>{if(typeof e==\"string\"){let s=e;for(const[i,r]of Object.entries(t))s=s.replaceAll(`:${i}`,String(r));return s}if(Array.isArray(e))return e.map(s=>p(s,t));if(e&&typeof e==\"object\"){const s={};for(const i in e)h(e,i)&&(s[i]=p(e[i],t));return s}return e},d=(e,t={})=>{let s,i,r;try{let n=typeof e.pathTemplate==\"function\"?e.pathTemplate(t):e.pathTemplate,o=typeof e.queryKeyTemplate==\"function\"?e.queryKeyTemplate(t):e.queryKeyTemplate,a=e.bodyTemplate?typeof e.bodyTemplate==\"function\"?e.bodyTemplate(t):e.bodyTemplate:void 0;if(Object.keys(t).length>0&&(n=p(n,t),o=p(o,t),a&&(a=p(a,t))),s=String(S(n)),i=S(o),r=a?S(a):void 0,typeof i==\"string\")try{i=JSON.parse(i)}catch{return}if(!Array.isArray(i))return}catch{return}const c={method:e.method,headers:P,credentials:\"same-origin\",priority:\"high\"};r&&(c.body=JSON.stringify(r));let T=fetch(s,c).then(n=>n.json());e.onSuccess&&typeof e.onSuccess==\"function\"&&(T=T.then(n=>{if(n==null)return n;try{const o=e.onSuccess(n,{headers:P,replaceOrgId:S,prefetchPromises:I,orgId:l});return Promise.resolve(o).then(a=>(Array.isArray(a)&&a.forEach(g=>{const O=_.find(U=>U.id===g.id);O&&d(O,g.params||{})}),n)).catch(a=>n)}catch{return n}}));const u=JSON.stringify(i);I[u]={promise:T,queryKey:i,isInfiniteQuery:e.isInfiniteQuery,startTime:performance.now()}};A.forEach(e=>d(e)),y.length>0&&setTimeout(()=>{y.forEach(e=>d(e))},0)})();\n</script>\n\n    <meta charset=\"utf-8\" />\n    <title>Semgrep</title>\n    <link rel=\"icon\" href=\"/favicon.ico?v1\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <meta name=\"theme-color\" content=\"#000000\" />\n    <link rel=\"apple-touch-icon\" href=\"/logo192.png\" />\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <meta property=\"csp-nonce\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <script type=\"module\" crossorigin src=\"/static/index-D_KSwkGu.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\"></script>\n    <link rel=\"modulepreload\" crossorigin href=\"/static/rolldown-runtime-DAXXjFlN.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/datadog-CggBgYvE.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/fontawesome-BfZmat9C.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/mantine-C2BRZOiY.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/binary-encoding-VKAc8E6h.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/timestamp-B_tbKzFc.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/common-D--A0-Hb.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/deployment-BwgTx8cH.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/authParams-C1cCFaVB.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/getSafeRedirect-85KmkeQT.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/lib-De-ajXdY.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/auth-DErkdGh8.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/storage-BAhPflLd.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/guardianCampaignContext-D4YP4nw_.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/authUtils-K-ezcy1M.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/secrets-BP9_jzRj.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/compiler-runtime-BneAAsBx.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/es-toolkit-DycxbSSJ.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/QueryClientProvider-6WW_1_CD.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useQuery-6a5iWuqU.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useInfiniteQuery-CtLuKigf.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useMutation-eWmTl9Iy.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/isApiError-B7Bu9G2C.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/appQueryClient-BF_8Yvas.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/utils-ixoNYQn_.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/with-selector-BXL7FHvh.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useStore-1buK_ZDl.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/tiny-invariant-C3zCT6lm.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/react-router-Bj-qv1m0.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/ClientOnly-CIs_uJ4S.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/link-BJNZuqqm.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/dispatch-DkFTFunk.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/ExternalLink-bpE5ghUD.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/dist-B5cHH3I3.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/Icon-DyA85W8b.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/auth_client-BULNoLMx.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useAuth-Dt2j48pB.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/captureError-BoqIn0_I.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/object-assign-B-LFTPUJ.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/Helmet-CC18kGvD.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/RobotsNoIndex-x80PTDEV.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/squares-C3m9MKZl.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/react-D8JGW0kA.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/Text-VmNu8vXz.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/entitlements_client-H70pAE15.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useOrg-Ch6OVtxb.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useOrgId-vbtmsiC8.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useUser-BO0WVbjf.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/useUser-BN8EGtDJ.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/immer-Dt3xzOG5.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/common-Cr5s6nhI.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/user_client-C9fC47wd.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/slugifyOrgNameBeforeCreation-Bf98N6DB.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/restrictProps-CqIwhQk2.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"modulepreload\" crossorigin href=\"/static/auth-C85XsHph.js\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"stylesheet\" crossorigin href=\"/static/mantine-CYrSP-oP.css\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"stylesheet\" crossorigin href=\"/static/ExternalLink-ByUvNio_.css\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"stylesheet\" crossorigin href=\"/static/Icon-CXrXxwGF.css\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"stylesheet\" crossorigin href=\"/static/Text-Xq0nkuwg.css\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n    <link rel=\"stylesheet\" crossorigin href=\"/static/index-CJX6p6xl.css\" nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n  </head>\n  <body>\n    <script nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n      // required for react-joyride\n      if (global === undefined) {\n        var global = window;\n      }\n    </script>\n\n    <script nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n      // Credentials in the page URL must not reach the third-party tags below,\n      // which capture the page URL on load, before the app runs.\n      //\n      // The CLI login nonce is read from localStorage once stored (see\n      // getCLILoginToken), so store it now and drop it from the URL. If storage\n      // is unavailable, leave it for the app to read.\n      try {\n        var pageParams = new URLSearchParams(window.location.search);\n        var cliToken = pageParams.get(\"cli-token\");\n        if (cliToken) {\n          if (!localStorage.getItem(\"cli-token\")) {\n            localStorage.setItem(\"cli-token\", cliToken);\n          }\n          pageParams.delete(\"cli-token\");\n          var cleanSearch = pageParams.toString();\n          history.replaceState(\n            history.state,\n            \"\",\n            window.location.pathname +\n              (cleanSearch ? \"?\" + cleanSearch : \"\") +\n              window.location.hash\n          );\n        }\n      } catch (e) {}\n\n      // The SAML callback URL carries a bearer token that only the app can\n      // strip. On that page (and if the CLI nonce couldn't be moved), hold\n      // third-party tags until the app calls window.loadDeferredTags() with\n      // the credential gone, and send only our origin as the Referer for\n      // third-party requests; the server's Referrer-Policy sends the full URL.\n      var isSensitiveAuthPage =\n        window.location.pathname.indexOf(\"/auth/saml/finish\") === 0 ||\n        new URLSearchParams(window.location.search).has(\"cli-token\");\n      if (isSensitiveAuthPage) {\n        var referrerPolicy = document.createElement(\"meta\");\n        referrerPolicy.name = \"referrer\";\n        referrerPolicy.content = \"strict-origin-when-cross-origin\";\n        document.head.appendChild(referrerPolicy);\n      }\n\n      var deferredTags = [];\n      function loadTag(load) {\n        isSensitiveAuthPage ? deferredTags.push(load) : load();\n      }\n      window.loadDeferredTags = function () {\n        var tags = deferredTags;\n        deferredTags = [];\n        tags.forEach(function (load) {\n          load();\n        });\n      };\n    </script>\n\n    <!-- Google Tag Manager -->\n    <script nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n      loadTag(function () {\n        (function (w, d, s, l, i) {\n          w[l] = w[l] || [];\n          w[l].push({ \"gtm.start\": new Date().getTime(), event: \"gtm.js\" });\n          var f = d.getElementsByTagName(s)[0],\n            j = d.createElement(s),\n            dl = l != \"dataLayer\" ? \"&l=\" + l : \"\";\n          j.async = true;\n          j.defer = true;\n          j.src = \"https://www.googletagmanager.com/gtm.js?id=\" + i + dl;\n          var n = d.querySelector(\"[nonce]\");\n          n && j.setAttribute(\"nonce\", n.nonce || n.getAttribute(\"nonce\"));\n          f.parentNode.insertBefore(j, f);\n        })(window, document, \"script\", \"dataLayer\", \"GTM-WSN4QTD\");\n      });\n    </script>\n    <!-- End Google Tag Manager -->\n\n    <!-- Sign in with Google client -->\n    <!-- nosemgrep -->\n    <script src=\"https://accounts.google.com/gsi/client\" async defer nonce=\"GGLYstVfxx69l4deL+xyjQ==\"></script>\n    <!-- End Sign in with Google client -->\n    <!-- Fullstory -->\n    <script nonce=\"GGLYstVfxx69l4deL+xyjQ==\">\n      loadTag(function () {\n        var hostname =\n          window.location && window.location.hostname !== \"localhost\"\n            ? window.location.hostname\n            : \"semgrep.dev\";\n        window[\"_fs_host\"] = hostname + \"/fs\";\n        window[\"_fs_script\"] = hostname + \"/fs/s/fs.js\";\n        window[\"_fs_org\"] = \"S99QT\";\n        window[\"_fs_namespace\"] = \"FS\";\n        !(function (m, n, e, t, l, o, g, y) {\n          var s,\n            f,\n            a = (function (h) {\n              return (\n                !(h in m) ||\n                (m.console &&\n                  m.console.log &&\n                  m.console.log(\n                    'FullStory namespace conflict. Please set window[\"_fs_namespace\"].'\n                  ),\n                !1)\n              );\n            })(e);\n          function p(b) {\n            var h,\n              d = [];\n            function j() {\n              h &&\n                (d.forEach(function (b) {\n                  var d;\n                  try {\n                    d = b[h[0]] && b[h[0]](h[1]);\n                  } catch (h) {\n                    return void (b[3] && b[3](h));\n                  }\n                  d && d.then ? d.then(b[2], b[3]) : b[2] && b[2](d);\n                }),\n                (d.length = 0));\n            }\n            function r(b) {\n              return function (d) {\n                h || ((h = [b, d]), j());\n              };\n            }\n            return (\n              b(r(0), r(1)),\n              {\n                then: function (b, h) {\n                  return p(function (r, i) {\n                    (d.push([b, h, r, i]), j());\n                  });\n                },\n              }\n            );\n          }\n          a &&\n            ((g = m[e] =\n              (function () {\n                var b = function (b, d, j, r) {\n                  function i(i, c) {\n                    h(b, d, j, i, c, r);\n                  }\n                  r = r || 2;\n                  var c,\n                    u = /Async$/;\n                  return u.test(b)\n                    ? ((b = b.replace(u, \"\")),\n                      \"function\" == typeof Promise ? new Promise(i) : p(i))\n                    : h(b, d, j, c, c, r);\n                };\n                function h(h, d, j, r, i, c) {\n                  return b._api\n                    ? b._api(h, d, j, r, i, c)\n                    : (b.q && b.q.push([h, d, j, r, i, c]), null);\n                }\n                return ((b.q = []), b);\n              })()),\n            (y = function (b) {\n              function h(h) {\n                \"function\" == typeof h[4] && h[4](new Error(b));\n              }\n              var d = g.q;\n              if (d) {\n                for (var j = 0; j < d.length; j++) h(d[j]);\n                ((d.length = 0), (d.push = h));\n              }\n            }),\n            (function () {\n              (((o = n.createElement(t)).async = !0),\n                (o.crossOrigin = \"anonymous\"),\n                (o.src = \"https://\" + l),\n                (o.onerror = function () {\n                  y(\"Error loading \" + l);\n                }));\n              var b = n.getElementsByTagName(t)[0];\n              b && b.parentNode\n                ? b.parentNode.insertBefore(o, b)\n                : n.head.appendChild(o);\n            })(),\n            (function () {\n              function b() {}\n              function h(b, h, d) {\n                g(b, h, d, 1);\n              }\n              function d(b, d, j) {\n                h(\"setProperties\", { type: b, properties: d }, j);\n              }\n              function j(b, h) {\n                d(\"user\", b, h);\n              }\n              function r(b, h, d) {\n                (j(\n                  {\n                    uid: b,\n                  },\n                  d\n                ),\n                  h && j(h, d));\n              }\n              ((g.identify = r),\n                (g.setUserVars = j),\n                (g.identifyAccount = b),\n                (g.clearUserCookie = b),\n                (g.setVars = d),\n                (g.event = function (b, d, j) {\n                  h(\n                    \"trackEvent\",\n                    {\n                      name: b,\n                      properties: d,\n                    },\n                    j\n                  );\n                }),\n                (g.anonymize = function () {\n                  r(!1);\n                }),\n                (g.shutdown = function () {\n                  h(\"shutdown\");\n                }),\n                (g.restart = function () {\n                  h(\"restart\");\n                }),\n                (g.log = function (b, d) {\n                  h(\"log\", { level: b, msg: d });\n                }),\n                (g.consent = function (b) {\n                  h(\"setIdentity\", { consent: !arguments.length || b });\n                }));\n            })(),\n            (s = \"fetch\"),\n            (f = \"XMLHttpRequest\"),\n            (g._w = {}),\n            (g._w[f] = m[f]),\n            (g._w[s] = m[s]),\n            m[s] &&\n              (m[s] = function () {\n                return g._w[s].apply(this, arguments);\n              }),\n            (g._v = \"2.0.0\"));\n        })(window, document, window._fs_namespace, \"script\", window._fs_script);\n      });\n    </script>\n    <!-- End Fullstory -->\n    <!-- Google Tag Manager (noscript) -->\n    <noscript>\n      <iframe\n        src=\"https://www.googletagmanager.com/ns.html?id=GTM-WSN4QTD\"\n        height=\"0\"\n        width=\"0\"\n        style=\"display: none; visibility: hidden\"\n      ></iframe>\n    </noscript>\n    <!-- End Google Tag Manager (noscript) -->\n    <noscript>You need to enable JavaScript to run this app.</noscript>\n    <div id=\"root\"></div>\n  </body>\n</html>\n",
+      "path_form": null
+    }
+  ]
+}

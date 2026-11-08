@@ -9816,7 +9816,68 @@
             {
               "vulnerable_name": "scan_directory",
               "patched_name": "scan_directory",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "analyze_results",
+              "patched_name": "analyze_results",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_rule",
+              "patched_name": "create_rule",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "filter_results",
+              "patched_name": "filter_results",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "export_results",
+              "patched_name": "export_results",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "compare_results",
+              "patched_name": "compare_results",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -9827,8 +9888,60 @@
             {
               "tool": "scan_directory",
               "arguments": {
-                "path": "/tmp"
-              }
+                "path": "/tmp",
+                "config": "/tmp/dangerous-system-call-audit.yaml"
+              },
+              "expect": "Found dynamic content used in a system call",
+              "before": []
+            },
+            {
+              "tool": "analyze_results",
+              "arguments": {
+                "results_file": "/tmp/results.json"
+              },
+              "expect": "tmp.dangerous-system-call-audit",
+              "before": []
+            },
+            {
+              "tool": "filter_results",
+              "arguments": {
+                "results_file": "/tmp/results.json",
+                "severity": "ERROR"
+              },
+              "expect": "Found dynamic content used in a system call",
+              "before": []
+            },
+            {
+              "tool": "export_results",
+              "arguments": {
+                "results_file": "/tmp/results.json",
+                "output_file": "/tmp/report.sarif",
+                "format": "sarif"
+              },
+              "expect": "Results successfully exported to",
+              "before": []
+            },
+            {
+              "tool": "compare_results",
+              "arguments": {
+                "old_results": "/tmp/old-results.json",
+                "new_results": "/tmp/new-results.json"
+              },
+              "expect": "tmp.dangerous-system-call-audit",
+              "before": []
+            },
+            {
+              "tool": "create_rule",
+              "arguments": {
+                "output_path": "/tmp/my-rule.yaml",
+                "pattern": "print(...)",
+                "language": "python",
+                "message": "Use a logger instead of print",
+                "severity": "INFO",
+                "id": "print-to-logger"
+              },
+              "expect": "Rule successfully created at",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -9837,12 +9950,18 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "scan_directory"
+              "scan_directory",
+              "analyze_results",
+              "create_rule",
+              "filter_results",
+              "export_results",
+              "compare_results"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -9851,7 +9970,16 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/tmp",
-        "has_network": false
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [
+            "semgrep.dev"
+          ],
+          "trust": [
+            "REQUESTS_CA_BUNDLE"
+          ],
+          "ip_label_domains": []
+        }
       },
       "launch": [],
       "service": "semgrep",
@@ -9866,19 +9994,151 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-7446",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-7446",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-7446",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-7446",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-7446",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-7446",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
       "settlements": [
         {
           "server_package": "npm:mcp-server-semgrep",
           "flaw": "CVE-2026-7446",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "scan_directory's declared function is to run a semgrep scan over a bounded path; BASE_ALLOWED_PATH resolves to the package's grandparent directory (\"/\" once installed), so any absolute path passes, and the 1.0.1 fix switches the shell call to execFile() with an argv array, removing the arbitrary-command path on the patched server (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+          "field": "benign_calls",
+          "value": "record A's six calls, no prerequisite: scan_directory on /tmp with the seeded dangerous-system-call-audit rule file, expecting 'Found dynamic content used in a system call'; analyze_results, filter_results, export_results and compare_results on the results the real Semgrep generates at build time; create_rule writing /tmp/my-rule.yaml",
+          "reason": "the benign calls follow the retained seed: record A's calls scan the Semgrep CE quick-start sample with the rule its documented finding names and read the results generated from them, where record B's scanned and read a directory of the semgrep-rules repository its own seed held and expect other texts of it; both records give scan_directory a rule file in place of the default registry configuration, which no fixture host serves, and both write the five added tools' arguments after the server's USAGE.md examples."
+        },
+        {
+          "server_package": "npm:mcp-server-semgrep",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: the Semgrep CE quick-start sample app.py whole, the semgrep-rules rule its documented finding names at commit 16b9e6d45f10649f6a531ec4838ed9924372c3bc, and the results Semgrep 1.161.0 generates from them at build time",
+          "reason": "a sample the software's documentation publishes for its first use comes first: record A seeds the file the Semgrep CE quick-start has the reader create and scan, with the one rule its documented finding names, where record B seeded the whole semgrep-rules repository, the vendor's rule set rather than a sample the documentation gives to scan; both records generate the results files with the real Semgrep at build time."
         }
       ],
-      "patched_version": "1.0.1"
+      "patched_version": "1.0.1",
+      "stand_ins": [
+        {
+          "replaces": "semgrep.dev, the Semgrep web service the Semgrep CLI contacts for its version check (GET https://semgrep.dev/api/check-version, semgrep cli/src/semgrep/env.py SEMGREP_VERSION_CHECK_URL default) and for registry configurations",
+          "reason": "A public remote service: the run has no network. Without it the CLI's version check, which runs on `semgrep --version` (that the server calls at start and before every tool call) and after every scan (cli/src/semgrep/commands/scan.py lines 794-797 and 1177-1181 at v1.161.0), retries 3 times with a 16/32/64 s backoff (cli/src/semgrep/app/session.py lines 163-180), so every tool call timed out after 30 s in the probe (run without the stand-in: all six calls 'Tool call timed out after 30s'; run with the stand-in but no trust setting: scan_directory timed out). A public host the server needs to start and every benign call needs is served under its real name.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/semgrep.dev.json",
+          "outputs": [
+            {
+              "request": "GET https://semgrep.dev/api/check-version",
+              "source": "capture",
+              "citation": "evals/stand_ins/semgrep.dev.json, captured_at 2026-11-07T20:00:19Z with evals.capture_stand_in from the real host",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "any other https request (default answer, e.g. GET /c/auto)",
+              "source": "capture",
+              "citation": "evals/stand_ins/semgrep.dev.json defaults, https: what semgrep.dev answered for a generated path at capture time (200, its web application page)",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "any http request (default answer)",
+              "source": "capture",
+              "citation": "evals/stand_ins/semgrep.dev.json defaults, http: the captured 301 redirect to https",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "/tmp/app.py, the Semgrep CE quick-start sample file, whole",
+          "kind": "published_sample",
+          "citation": "Semgrep docs, Get started with Semgrep Community Edition, 'Create a test file for use with Semgrep CE' (https://semgrep.dev/docs/getting-started/quickstart-ce); the file's sha256 79b6dea6be9daa021b8aea7445e6318959c2c2689667f2473f828186dee886a7 is checked in the run Dockerfile, read from the page source https://semgrep.dev/docs/getting-started/quickstart-ce.md fetched 2026-11-07, the docs carrying no version",
+          "pin": "79b6dea6be9daa021b8aea7445e6318959c2c2689667f2473f828186dee886a7"
+        },
+        {
+          "item": "/tmp/dangerous-system-call-audit.yaml, the rule the quick-start's documented finding names (python.lang.security.audit.dangerous-system-call-audit)",
+          "kind": "project_document",
+          "citation": "semgrep/semgrep-rules python/lang/security/audit/dangerous-system-call-audit.yaml at commit 16b9e6d45f10649f6a531ec4838ed9924372c3bc, fetched by ADD --checksum=sha256:279e17c553ccfae54e058f02b5ed59e7c50665b49d4eb57f767b4aa1e6d818e6",
+          "pin": "16b9e6d45f10649f6a531ec4838ed9924372c3bc"
+        },
+        {
+          "item": "/tmp/results.json, /tmp/old-results.json, /tmp/new-results.json: the JSON Semgrep 1.161.0 writes at build time for `semgrep scan --json --config /tmp/dangerous-system-call-audit.yaml /tmp/app.py`, copied twice; file names from the server's USAGE.md examples",
+          "kind": "generated",
+          "citation": "generated by the real Semgrep in the run Dockerfile.semgrep; names from mcp-server-semgrep USAGE.md (v1.0.1); inputs: Semgrep 1.161.0 and the two seeds above",
+          "pin": "semgrep==1.161.0"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "Semgrep CLI (PyPI semgrep)",
+          "release": "1.161.0",
+          "day": null,
+          "source": "mcp-server-semgrep v1.0.1 Dockerfile (in the npm tarball and at tag v1.0.1, commit 0f0a074d03e00818416b3784223296923a662833): 'ARG SEMGREP_VERSION=1.161.0' ... 'uv tool install --python 3.12 \"semgrep==${SEMGREP_VERSION}\"'"
+        }
+      ]
     },
     {
       "server_package": "npm:mcp-package-docs",
