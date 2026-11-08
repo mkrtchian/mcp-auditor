@@ -1,12 +1,136 @@
-# Vulnerable (command injection in the ui_* tools via unescaped shell interpolation): ios-simulator-mcp 1.3.2. The simulator CLIs idb and xcrun simctl are macOS-proprietary binaries
-# a Linux container cannot run, so stub CLIs are baked in (the siri-shortcuts / github-kanban
-# precedent: a stub of the macOS-only CLI the injection merely has to execute). getBootedDevice
-# parses 'xcrun simctl list devices' for a Booted line, so the xcrun stub prints one; idb answers
-# any 'idb ui ...' benignly. No COPY/ADD from the build context; the install and the stubs are RUN.
+# Vulnerable image of the fix check: ios-simulator-mcp 1.3.2 (shell-interpolated idb and xcrun calls).
+# The idb client (fb-idb) runs here, installed with pip as the server's TROUBLESHOOTING.md says.
+# What cannot run on Linux is replaced at the interface the server or the client speaks to it:
+# xcrun simctl (Xcode, macOS only) by a CLI, and idb_companion (macOS only, next to the simulator)
+# by a gRPC server on idb's own service definition, on the companion's default port 10882 of the
+# loopback interface, which `idb connect` registers at build time.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 RUN npm install -g ios-simulator-mcp@1.3.2
-RUN printf '%s\n' '#!/bin/sh' \
-  'if [ "$1" = "simctl" ] && [ "$2" = "list" ]; then echo "    iPhone 15 (ABCDEF12-3456-7890-ABCD-EF1234567890) (Booted)"; fi' \
-  'exit 0' > /usr/local/bin/xcrun && chmod +x /usr/local/bin/xcrun
-RUN printf '%s\n' '#!/bin/sh' 'echo "{}"' 'exit 0' > /usr/local/bin/idb && chmod +x /usr/local/bin/idb
-ENTRYPOINT ["ios-simulator-mcp"]
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 python3-venv \
+ && rm -rf /var/lib/apt/lists/*
+ADD --checksum=sha256:df8f0babb02acb347b3da601439a2f009f3b0f74713c40c606e84c2f1294d82b \
+  https://files.pythonhosted.org/packages/py3/f/fb-idb/fb_idb-1.7.7-py3-none-any.whl /opt/wheels/
+RUN python3 -m venv /opt/idb \
+ && /opt/idb/bin/pip install --no-cache-dir /opt/wheels/fb_idb-1.7.7-py3-none-any.whl \
+ && ln -s /opt/idb/bin/idb /usr/local/bin/idb \
+ && rm -rf /opt/wheels
+RUN cat > /usr/local/bin/xcrun <<'EOF' && chmod 755 /usr/local/bin/xcrun
+#!/bin/sh
+U=0B3311FA-234C-4665-950F-37544F690B61
+if [ "$#" -eq 3 ] && [ "$1" = simctl ] && [ "$2" = list ] && [ "$3" = devices ]; then
+  printf '%s\n' '== Devices ==' '-- iOS 27.2 --' "    iPhone 17 Pro ($U) (Booted) "
+  exit 0
+fi
+if [ "$1" = simctl ] && [ "$2" = io ] && [ "$3" = "$U" ] && [ "$4" = screenshot ]; then
+  echo 'Wrote screenshot to:' >&2
+  exit 0
+fi
+echo 'Invalid device' >&2
+exit 1
+EOF
+RUN mkdir -p /opt/companion && cat > /opt/companion/serve.py <<'EOF'
+import asyncio
+
+import grpclib.const
+import grpclib.exceptions
+import grpclib.server
+import idb.grpc.idb_grpc as idb_grpc
+import idb.grpc.idb_pb2 as pb
+
+UDID = "0B3311FA-234C-4665-950F-37544F690B61"
+
+NESTED = '[{"AXFrame":"{{0, 0}, {402, 874}}","AXUniqueId":null,"frame":{"y":0,"x":0,"width":402,"height":874},"role_description":"application","AXLabel":"Settings","content_required":false,"type":"Application","title":null,"help":null,"custom_actions":[],"AXValue":null,"enabled":true,"role":"AXApplication","subrole":null,"children":[{"AXFrame":"{{20, 264}, {362, 44}}","AXUniqueId":"com.apple.settings.general","frame":{"y":264,"x":20,"width":362,"height":44},"role_description":"button","AXLabel":"General","content_required":false,"type":"Button","title":null,"help":null,"custom_actions":[],"AXValue":"","enabled":true,"role":"AXButton","subrole":null,"children":[]},{"AXFrame":"{{20, 308}, {362, 44}}","AXUniqueId":null,"frame":{"y":308,"x":20,"width":362,"height":44},"role_description":"button","AXLabel":"Accessibility","content_required":false,"type":"Button","title":null,"help":null,"custom_actions":[],"AXValue":"","enabled":true,"role":"AXButton","subrole":null,"children":[]}]}]'
+
+POINT = """{
+  "AXLabel": null,
+  "AXUniqueId": null,
+  "title": null,
+  "frame": {
+    "y": 0,
+    "height": 874,
+    "width": 401.99999999999994,
+    "x": 0
+  },
+  "pid": 12327,
+  "subrole": null,
+  "traits": [
+    "Scrollable"
+  ],
+  "help": null,
+  "AXValue": null,
+  "role": "AXGroup",
+  "type": "Group",
+  "enabled": true,
+  "AXFrame": "{{0, 0}, {401.99999999999994, 874}}",
+  "content_required": false,
+  "role_description": "Group",
+  "custom_actions": []
+}"""
+
+Info = pb.AccessibilityInfoRequest
+
+
+class Companion(idb_grpc.CompanionServiceBase):
+    async def connect(self, stream):
+        await stream.recv_message()
+        await stream.send_message(
+            pb.ConnectResponse(companion=pb.CompanionInfo(udid=UDID, is_local=False))
+        )
+
+    async def accessibility_info(self, stream):
+        request = await stream.recv_message()
+        plain = not (request.marker or request.match or request.keys or request.profile)
+        has_point = request.HasField("point")
+        if plain and not has_point and request.format == Info.NESTED:
+            answer = NESTED
+        elif plain and has_point and request.format == Info.LEGACY:
+            answer = POINT
+        else:
+            raise grpclib.exceptions.GRPCError(grpclib.const.Status.UNIMPLEMENTED, "Method not implemented")
+        await stream.send_message(pb.AccessibilityInfoResponse(json=answer))
+
+    async def hid(self, stream):
+        async for _ in stream:
+            pass
+        await stream.send_message(pb.HIDResponse())
+
+    def __mapping__(self):
+        served = ("connect", "accessibility_info", "hid")
+        return {
+            path: handler
+            for path, handler in super().__mapping__().items()
+            if path.rsplit("/", 1)[1] in served
+        }
+
+
+Companion.__abstractmethods__ = frozenset()
+
+
+async def main():
+    server = grpclib.server.Server([Companion()])
+    await server.start("127.0.0.1", 10882)
+    await server.wait_closed()
+
+
+asyncio.run(main())
+EOF
+RUN cat > /usr/local/bin/ios-simulator-mcp-with-companion <<'EOF' && chmod 755 /usr/local/bin/ios-simulator-mcp-with-companion
+#!/bin/sh
+/opt/idb/bin/python /opt/companion/serve.py </dev/null >/dev/null 2>&1 &
+/opt/idb/bin/python -c 'import socket, time
+for _ in range(200):
+    try:
+        socket.create_connection(("127.0.0.1", 10882), 0.2).close()
+        break
+    except OSError:
+        time.sleep(0.05)'
+exec ios-simulator-mcp "$@"
+EOF
+RUN mkdir -p /tmp/idb \
+ && { /opt/idb/bin/python /opt/companion/serve.py & pid=$!; } \
+ && sleep 2 \
+ && idb connect 127.0.0.1 10882 \
+ && kill "$pid" \
+ && chown -R 65534:65534 /tmp/idb
+ENTRYPOINT ["ios-simulator-mcp-with-companion"]
