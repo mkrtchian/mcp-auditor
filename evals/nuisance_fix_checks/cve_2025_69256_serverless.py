@@ -7,7 +7,8 @@ workspace root that closes the quote (`" ; cat /flag; echo "`) breaks out into a
 whose stdout (`cat /flag`) is captured as if it were `find` output: the server treats each
 resulting line as a discovered config file path and echoes it back as `configFile`/
 `configFilePath` in the tool's own response, so the /flag nonce surfaces there. The patched build
-(4.29.3) quotes workspaceRoots safely, so the same payload yields no match and no nonce.
+(4.29.3) checks that each workspaceRoots entry is a directory and runs `find` through `execFile`,
+with no shell, so the same payload yields no match and no nonce.
 
 The npm package `serverless@<version>` is a thin installer stub: `run.js`/`binary.js` are
 byte-identical across every release and always fetch the current build from a single,

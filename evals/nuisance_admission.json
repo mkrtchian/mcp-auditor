@@ -8137,7 +8137,13 @@
             {
               "vulnerable_name": "list-projects",
               "patched_name": "list-projects",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -8152,7 +8158,9 @@
                   "/tmp"
                 ],
                 "userConfirmed": true
-              }
+              },
+              "expect": "\"serviceName\": \"aws-node\"",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -8166,7 +8174,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -8189,19 +8198,121 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-69256",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-69256",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-69256",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-69256",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-69256",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-69256",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
       "settlements": [
         {
           "server_package": "npm:serverless",
           "flaw": "CVE-2025-69256",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "the secondary blind record was incomplete for this server, so the primary record's dfie judgement stands on the source read: list-projects's declared function is to enumerate serverless-framework, CloudFormation and SAM projects under the given workspace roots, unrelated to the unescaped shell command the advisory names, so the flaw does not declare the effect it exploits"
+          "field": "benign_calls",
+          "value": "record A's: the committed arguments, no prerequisite, expecting '\"serviceName\": \"aws-node\"'",
+          "reason": "the benign call follows the retained seed: it expects the service name list-projects reads from the aws-node template the retained fixture seeds, where record B expected 'serverless-http-api', the service name of the aws-node-http-api template its own seed held; both records keep the committed arguments and call nothing first."
+        },
+        {
+          "server_package": "npm:serverless",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: the aws-node template of serverless/examples at 424fe6f7, whole, the release cache the installer generates, and the pin file holding frameworkVersion alone",
+          "reason": "when the documentation names several samples, the first: record A seeds aws-node, the template behind 'AWS / Node.js / Starter', the first entry of the template menu the Framework's getting-started guide shows, where record B seeded aws-node-http-api, the first entry of the list the 4.29.3 CLI's onboarding command offers, a list in the code rather than in the documentation; both records seed the template whole at the same commit and write the same one-line pin file."
         }
       ],
-      "patched_version": "4.29.3"
+      "patched_version": "4.29.3",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "serverless/examples aws-node (the 'AWS / Node.js / Starter' template, first in the template menu of docs/sf/getting-started.md at sf-core@4.29.3): .gitignore, README.md, handler.js, serverless.yml, whole and unedited, at /tmp/aws-node",
+          "kind": "published_sample",
+          "citation": "https://github.com/serverless/examples/tree/424fe6f7737bd45aeea4e5b40d7beda3422ffa54/aws-node (README front matter: 'AWS NodeJS Example', framework v4, priority 1); getting-started.md, section 'Creating A New Project'",
+          "pin": "424fe6f7737bd45aeea4e5b40d7beda3422ffa54"
+        },
+        {
+          "item": "Framework release cache under /tmp/.serverless (release 4.29.3 and the installer's version list), downloaded by the installer at build time by `serverless --version`",
+          "kind": "generated",
+          "citation": "binary-installer/src/version.go at sf-core@4.29.3 (GetFrameworkVersion, downloadFrameworkVersion)",
+          "pin": "frameworkVersion: \"4.29.3\""
+        },
+        {
+          "item": "/tmp/serverless.yml with the single line frameworkVersion: \"4.29.3\" (written value: the record's patched version)",
+          "kind": "written",
+          "citation": "docs/sf/getting-started.md at sf-core@4.29.3, 'Pinning to a Specific Version': the Framework release that runs is selected by frameworkVersion in the serverless.yml of the working directory; the run's working directory is /tmp (its host). The sample's own frameworkVersion '4' would select the newest 4.x, not the patched version, so the pin cannot come from it.",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "GNU findutils (find)",
+          "release": "4.11.0",
+          "day": "2026-11-07",
+          "source": "https://ftp.gnu.org/gnu/findutils/ lists findutils-4.11.0.tar.xz (2026-07-11) as the latest release; the server's sources (project-finder.js, execFile('find', ...)) and docs name no version or channel. Tarball sha256 bfd19cb06cc71f3352d567e90284d8cdac02ac89774bbeadf0b533b0c11432fd, signature by James Youngman verified with gpgv against https://ftp.gnu.org/gnu/gnu-keyring.gpg"
+        }
+      ]
     },
     {
       "server_package": "https://github.com/ryanjoachim/mcp-rtfm",

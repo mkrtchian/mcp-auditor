@@ -1,19 +1,48 @@
-# npm:serverless 4.29.3, the first release carrying the CVE-2025-69256 fix (list-projects quotes
-# each workspaceRoots entry safely before shelling it into `find`). Also the run image.
+# npm:serverless 4.29.3, the first release carrying the CVE-2025-69256 fix (list-projects runs
+# `find` through execFile on a validated workspaceRoots entry). Also the run image.
 #
-# Same installer-stub caveat as Dockerfile.serverless-vuln: the npm semver does not select the
-# downloaded Framework binary, `frameworkVersion` in serverless.yml does, and the kit launch's
-# working directory is /tmp, so the pin lives at /tmp/serverless.yml. Baked and resolved once here
-# at build time (HOME=/tmp) so the pinned release is cached and no network is needed at launch.
+# The npm package is an installer stub: the Framework release that runs is the one
+# `frameworkVersion` in the serverless.yml of the working directory selects (getting-started,
+# "Pinning to a Specific Version"). The run's working directory is /tmp, so the pin lives at
+# /tmp/serverless.yml, resolved once here at build time (HOME=/tmp, as the run sets it) so the
+# release is cached and no network is needed at launch.
 FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
-ENV CI=true
+
+# GNU findutils, the program list-projects runs, at the latest release GNU published
+# (4.11.0, 2026-07-11), built with its documented ./configure && make && make install
+# (prefix /usr/local, ahead of /usr/bin on PATH).
+ADD --checksum=sha256:bfd19cb06cc71f3352d567e90284d8cdac02ac89774bbeadf0b533b0c11432fd \
+    https://ftp.gnu.org/gnu/findutils/findutils-4.11.0.tar.xz /usr/local/src/
+RUN cd /usr/local/src \
+ && tar xf findutils-4.11.0.tar.xz \
+ && cd findutils-4.11.0 \
+ && ./configure \
+ && make \
+ && make install \
+ && cd / \
+ && rm -rf /usr/local/src/findutils-4.11.0 /usr/local/src/findutils-4.11.0.tar.xz \
+ && find --version
+
 WORKDIR /app
 RUN npm init -y >/dev/null 2>&1 \
  && npm install serverless@4.29.3 >/dev/null 2>&1
 ENV HOME=/tmp
 WORKDIR /tmp
-RUN printf 'service: fixture\nframeworkVersion: "4.29.3"\nprovider:\n  name: aws\n' \
-      > /tmp/serverless.yml \
+
+# The Framework's first getting-started template (AWS / Node.js / Starter), serverless/examples
+# aws-node at commit 424fe6f7737bd45aeea4e5b40d7beda3422ffa54, seeded whole.
+ADD --checksum=sha256:4130e1910c963050a1855709008318c8943abcbab2cf2864f40009de80f7445a \
+    https://raw.githubusercontent.com/serverless/examples/424fe6f7737bd45aeea4e5b40d7beda3422ffa54/aws-node/.gitignore /tmp/aws-node/.gitignore
+ADD --checksum=sha256:7cd6931f3fa85447d9a38112ac0c8ecbcf01bedf1ee277ef91622f61013addff \
+    https://raw.githubusercontent.com/serverless/examples/424fe6f7737bd45aeea4e5b40d7beda3422ffa54/aws-node/README.md /tmp/aws-node/README.md
+ADD --checksum=sha256:b05b8eba38defe52e98ad623db2eb710e42dda9d134a654fe152cdfb0772067f \
+    https://raw.githubusercontent.com/serverless/examples/424fe6f7737bd45aeea4e5b40d7beda3422ffa54/aws-node/handler.js /tmp/aws-node/handler.js
+ADD --checksum=sha256:2696495dd594127e295b2525ef1251503aab64c03d3b99dda8f27e7360091d60 \
+    https://raw.githubusercontent.com/serverless/examples/424fe6f7737bd45aeea4e5b40d7beda3422ffa54/aws-node/serverless.yml /tmp/aws-node/serverless.yml
+
+# The version pin, written: the one key the installer reads.
+RUN printf 'frameworkVersion: "4.29.3"\n' > /tmp/serverless.yml \
  && /app/node_modules/.bin/serverless --version \
+ && chmod -R a+rX /tmp/aws-node \
  && chmod -R a+rwX /tmp/.serverless /tmp/serverless.yml
-ENTRYPOINT ["/app/node_modules/.bin/serverless", "mcp", "--transport", "stdio"]
+ENTRYPOINT ["/app/node_modules/.bin/serverless", "mcp"]

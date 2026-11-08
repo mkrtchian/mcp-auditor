@@ -1075,7 +1075,7 @@ services:
       context: .
       dockerfile: Dockerfile.serverless
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "09ec2efb7319ae7a016f7e2597566a673f003d596b30478ef020c50ff4f2b0bd"
+        org.mcp-auditor.dockerfile-fingerprint: "3f7eec45e22627f4d361a61882227ce431e70e3a5e41d34356748b4a40b09bb8"
     image: mcp-auditor-nuisance-serverless:local
     profiles: ["nuisance"]
 
