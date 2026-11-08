@@ -1,4 +1,3 @@
-import json
 from collections.abc import Iterable
 from ipaddress import IPv4Address, ip_address
 from pathlib import Path
@@ -6,24 +5,43 @@ from pathlib import Path
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 
-from evals.apify_backend import API_HOST
 from evals.cve_targets import CVE_TARGETS
 from evals.holdout_targets import HOLDOUT_TARGETS
+from evals.nuisance_backends import BACKENDS
+from evals.public_stand_ins import STAND_INS_DIRECTORY
+from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 
 def declared_stand_in_hosts() -> set[str]:
     targets = (*CVE_TARGETS, *HOLDOUT_TARGETS)
     declared = {host for target in targets for host in target.planting_host.public_names.stand_ins}
-    return declared | {API_HOST}
+    admitted = {
+        host
+        for server in the_committed_admission().servers
+        for host in server.host.public_names.stand_ins
+    }
+    backend_captures = {path.stem for path in _backend_served_in(STAND_INS_DIRECTORY, ".json")}
+    return declared | admitted | backend_captures
 
 
-def committed_https_hosts(directory: Path) -> set[str]:
-    hosts: set[str] = set()
-    for capture in directory.glob("*.json"):
-        routes = json.loads(capture.read_text())["routes"]
-        if any(route["scheme"] == "https" for route in routes):
-            hosts.add(capture.stem)
-    return hosts
+def authority_hosts(directory: Path) -> set[str]:
+    """Every captured host, plus every name a backend serves under TLS from a fixture leaf."""
+    captured = {capture.stem for capture in directory.glob("*.json")}
+    leaves = {
+        path.stem
+        for path in _backend_served_in(directory / "tls", ".pem")
+        if path.name != "fixture-authority.pem" and not path.name.endswith("-key.pem")
+    }
+    return captured | leaves
+
+
+def _backend_served_in(directory: Path, suffix: str) -> set[Path]:
+    return {
+        path
+        for backend in BACKENDS.values()
+        for path in backend.served
+        if path.parent == directory and path.suffix == suffix
+    }
 
 
 def is_ip_literal(host: str) -> bool:

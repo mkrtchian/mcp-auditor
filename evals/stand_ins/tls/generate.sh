@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Makes the fixture authority and one leaf per HTTPS stand-in host:
+# Makes the fixture authority and one leaf per host given:
 #   evals/stand_ins/tls/generate.sh [--out DIR] HOST...
 # DIR defaults to this script's directory. The authority's critical name constraints permit each
 # host given and exclude its subdomains (an IPv4-literal host: that one address), so it signs for
-# nothing else: give every HTTPS stand-in host at once. Each run makes a new authority and every
-# leaf from it, and removes the TLS files of a host it was not given. The keys are fixture
-# material, trusted only by fixture containers told to trust this authority.
+# nothing else: give at once every captured stand-in host and every name a backend serves from a
+# fixture leaf. Each run makes a new authority and every leaf from it, and removes the TLS files
+# of a host it was not given. The keys are fixture material, trusted only by fixture containers
+# told to trust this authority.
 set -euo pipefail
 
 out="$(cd "$(dirname "$0")" && pwd)"

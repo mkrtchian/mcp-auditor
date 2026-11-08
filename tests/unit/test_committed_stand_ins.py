@@ -17,8 +17,8 @@ def test_the_committed_captures_are_exactly_the_declared_stand_ins():
     assert captured == given.declared_stand_in_hosts()
 
 
-def test_the_committed_authority_signs_for_exactly_the_https_stand_in_hosts():
-    hosts = given.committed_https_hosts(STAND_INS_DIRECTORY)
+def test_the_committed_authority_signs_for_exactly_the_stand_in_hosts():
+    hosts = given.authority_hosts(STAND_INS_DIRECTORY)
 
     critical, permitted, excluded = given.committed_authority_constraints(STAND_INS_DIRECTORY)
 
@@ -28,7 +28,7 @@ def test_the_committed_authority_signs_for_exactly_the_https_stand_in_hosts():
 
 
 def test_the_committed_authority_permits_an_ip_literal_host_as_its_single_address():
-    hosts = given.committed_https_hosts(STAND_INS_DIRECTORY)
+    hosts = given.authority_hosts(STAND_INS_DIRECTORY)
 
     _, permitted, excluded = given.committed_authority_constraints(STAND_INS_DIRECTORY)
 
@@ -37,8 +37,8 @@ def test_the_committed_authority_permits_an_ip_literal_host_as_its_single_addres
     assert not any("/" in name for name in excluded)
 
 
-def test_every_committed_leaf_names_an_https_stand_in_host():
-    hosts = given.committed_https_hosts(STAND_INS_DIRECTORY)
+def test_every_committed_leaf_names_a_stand_in_host():
+    hosts = given.authority_hosts(STAND_INS_DIRECTORY)
 
     leaves = given.committed_leaf_names(STAND_INS_DIRECTORY)
 
