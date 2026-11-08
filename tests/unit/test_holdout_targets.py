@@ -71,6 +71,14 @@ def test_no_acceptance_or_holdout_target_bakes_its_work_directory():
         assert not target.planting_host.baked_work, target.cve_id
 
 
+# The stand-in's answering logic is inlined in `Dockerfile.stand-in`, so only the images part of the
+# fixture fingerprint, which hashes each image's Dockerfile instructions, covers it.
+def test_every_target_declaring_stand_ins_lists_the_stand_in_image():
+    for target in (*CVE_TARGETS, *HOLDOUT_TARGETS):
+        if target.planting_host.public_names.stand_ins:
+            assert STAND_IN_SERVICE in target.images, target.cve_id
+
+
 # The image's own `/work` would sit under the per-launch tmpfs the planting layer mounts there, so a
 # target that needs a writable project bakes it elsewhere.
 def test_no_acceptance_or_holdout_image_names_a_path_under_work():
