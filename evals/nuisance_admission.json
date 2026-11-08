@@ -2451,7 +2451,7 @@
               "real_software": {
                 "answers": false,
                 "cause": "software_error",
-                "evidence": "Source lines and a run. The tool always runs `timeout <timeout> getevent -lrt` on the device (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a line 702: remoteShellArgs('timeout', String(timeout), 'getevent', '-lrt')). getevent never exits by itself when no event count is given: AOSP system/core toolbox/getevent.c at a3b721a32242006b59cb12bd62c9133632af3a2d line 655 `while(1) {` polls forever, its only return on success being line 683 `if(event_count && --event_count == 0)` (event_count is set only by -c, which the server never passes). So the device's toybox timeout always ends it and exits 124: external/toybox toys/other/timeout.c at 59a869a838cfadbf6bc41cb400471ca9d2cae9b5 line 85 `toys.exitval = (nextsig==9) ? 137 : 124;` (no --preserve-status is passed, line 106). The device advertises shell_v2 (every Android release since 7.0), so adb returns the remote exit status, and the patched server runs adb through execFile, which rejects on a non-zero exit; the tool then answers isError (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a lines 706-709, `\u76d1\u63a7\u8f93\u5165\u4e8b\u4ef6\u5931\u8d25: ...`; src/adb.ts lines 59-70). Arguments tried: timeout 1 (the committed call), and by source every value the schema allows (integer 1..300) plus deviceId/useUsb/useEmulator, which only select the device and change nothing. Run: real adb 37.0.1 against the device transport answering this request as the sources give it (no output, exit 124 after the timeout): `adb shell 'timeout' '1' 'getevent' '-lrt'` exits 124, and the probe on the run image prints `monitor-events [listed] -> error \"\u76d1\u63a7\u8f93\u5165\u4e8b\u4ef6\u5931\u8d25: ADB Command Error: Command failed: /opt/android/platform-tools/adb shell 'timeout' '1' 'getevent' '-lrt'\\n\"`."
+                "evidence": "Source lines and a run. The tool always runs `timeout <timeout> getevent -lrt` on the device (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a line 702: remoteShellArgs('timeout', String(timeout), 'getevent', '-lrt')). getevent never exits by itself when no event count is given: AOSP system/core toolbox/getevent.c at a3b721a32242006b59cb12bd62c9133632af3a2d line 655 `while(1) {` polls forever, its only return on success being line 683 `if(event_count && --event_count == 0)` (event_count is set only by -c, which the server never passes). So the device's toybox timeout always ends it and exits 124: external/toybox toys/other/timeout.c at 59a869a838cfadbf6bc41cb400471ca9d2cae9b5 line 85 `toys.exitval = (nextsig==9) ? 137 : 124;` (no --preserve-status is passed, line 106). The device advertises shell_v2 (every Android release since 7.0), so adb returns the remote exit status, and the patched server runs adb through execFile, which rejects on a non-zero exit; the tool then answers isError (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a lines 706-709, `监控输入事件失败: ...`; src/adb.ts lines 59-70). Arguments tried: timeout 1 (the committed call), and by source every value the schema allows (integer 1..300) plus deviceId/useUsb/useEmulator, which only select the device and change nothing. Run: real adb 37.0.1 against the device transport answering this request as the sources give it (no output, exit 124 after the timeout): `adb shell 'timeout' '1' 'getevent' '-lrt'` exits 124, and the probe on the run image prints `monitor-events [listed] -> error \"监控输入事件失败: ADB Command Error: Command failed: /opt/android/platform-tools/adb shell 'timeout' '1' 'getevent' '-lrt'\\n\"`."
               },
               "declared_function_is_effect": false
             },
@@ -2660,7 +2660,7 @@
               "arguments": {
                 "buffer": "main"
               },
-              "expect": "\u7f13\u51b2\u533a\u7684\u65e5\u5fd7",
+              "expect": "缓冲区的日志",
               "before": []
             },
             {
@@ -2669,7 +2669,7 @@
                 "packageName": "com.example.helloworld",
                 "lines": 50
               },
-              "expect": "\u7684\u660e\u663e\u5d29\u6e83\u4fe1\u606f",
+              "expect": "的明显崩溃信息",
               "before": [
                 {
                   "tool": "install-apk",
@@ -3175,7 +3175,7 @@
           "software": "Android SDK Platform-Tools (adb, Android Debug Bridge)",
           "release": "37.0.1",
           "day": "2026-11-05",
-          "source": "Copied from the holdout calibration card of CVE-2026-19978, whose calibration this flaw's fix check reuses: the server README at the patched commit (lines 106-110) names the software and no version ('\u5b89\u88c5 ADB: \u4e0b\u8f7d Android SDK Platform Tools ... \u4f7f\u7528 `adb version` \u9a8c\u8bc1\u5b89\u88c5'); 37.0.1 was the stable release (channel-0 of dl.google.com/android/repository/repository2-3.xml, 'Platform-Tools 37.0.1 (July 2026)' on developer.android.com/tools/releases/platform-tools) on 2026-11-05. The run image installs https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip (sha256 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1)."
+          "source": "Copied from the holdout calibration card of CVE-2026-19978, whose calibration this flaw's fix check reuses: the server README at the patched commit (lines 106-110) names the software and no version ('安装 ADB: 下载 Android SDK Platform Tools ... 使用 `adb version` 验证安装'); 37.0.1 was the stable release (channel-0 of dl.google.com/android/repository/repository2-3.xml, 'Platform-Tools 37.0.1 (July 2026)' on developer.android.com/tools/releases/platform-tools) on 2026-11-05. The run image installs https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip (sha256 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1)."
         }
       ]
     },
@@ -8095,9 +8095,9 @@
               "replacements": []
             },
             {
-              "request": "Couldn\u2019t find shortcut",
+              "request": "Couldn’t find shortcut",
               "source": "capture",
-              "citation": "any other request (a name or identifier not in the library, another subcommand or argument shape): capture of the real program on macOS 27.0 in rfizzle/hearth docs/research/2026-10-19-shortcuts-spike.md at commit 4f2e3f78e70dc7910fe7a79813913984fb062425, line 16: `shortcuts run <missing>` -> exit 1, stderr 'Error: The operation couldn\u2019t be completed. Couldn\u2019t find shortcut', nothing on stdout. A third-party capture of the real software, not one made here (no Mac is available); no Apple source gives the text. Used as the error for an input the program does not recognize.",
+              "citation": "any other request (a name or identifier not in the library, another subcommand or argument shape): capture of the real program on macOS 27.0 in rfizzle/hearth docs/research/2026-10-19-shortcuts-spike.md at commit 4f2e3f78e70dc7910fe7a79813913984fb062425, line 16: `shortcuts run <missing>` -> exit 1, stderr 'Error: The operation couldn’t be completed. Couldn’t find shortcut', nothing on stdout. A third-party capture of the real software, not one made here (no Mac is available); no Apple source gives the text. Used as the error for an input the program does not recognize.",
               "form_source": null,
               "replacements": []
             }
@@ -10681,7 +10681,57 @@
             {
               "vulnerable_name": "sandbox_stop",
               "patched_name": "sandbox_stop",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "sandbox_initialize",
+              "patched_name": "sandbox_initialize",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "sandbox_exec",
+              "patched_name": "sandbox_exec",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "run_js",
+              "patched_name": "run_js",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "run_js_ephemeral",
+              "patched_name": "run_js_ephemeral",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             }
           ],
           "effect_class": "command_execution",
@@ -10693,7 +10743,46 @@
               "tool": "sandbox_stop",
               "arguments": {
                 "container_id": "mycontainer123"
-              }
+              },
+              "expect": "removed.",
+              "before": []
+            },
+            {
+              "tool": "sandbox_initialize",
+              "arguments": {
+                "image": "node:lts-slim"
+              },
+              "expect": "js-sbx-",
+              "before": []
+            },
+            {
+              "tool": "sandbox_exec",
+              "arguments": {
+                "container_id": "js-sbx-3f2b8c1a-5d4e-4f6a-9b7c-2e1d0a9f8b6c",
+                "commands": [
+                  "uname -s"
+                ]
+              },
+              "expect": "Linux",
+              "before": []
+            },
+            {
+              "tool": "run_js",
+              "arguments": {
+                "container_id": "js-sbx-3f2b8c1a-5d4e-4f6a-9b7c-2e1d0a9f8b6c",
+                "code": "console.log(process.platform)"
+              },
+              "expect": "Node.js process output:\nlinux",
+              "before": []
+            },
+            {
+              "tool": "run_js_ephemeral",
+              "arguments": {
+                "image": "node:lts-slim",
+                "code": "console.log(process.platform)"
+              },
+              "expect": "Node.js process output:\nlinux",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -10702,12 +10791,17 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "sandbox_stop"
+              "sandbox_stop",
+              "sandbox_initialize",
+              "sandbox_exec",
+              "run_js",
+              "run_js_ephemeral"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -10731,32 +10825,253 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2025-53372",
-          "field": "backend_need",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53372",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53372",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53372",
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-53372",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53372",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "npm:node-code-sandbox-mcp",
           "flaw": "CVE-2025-53372",
-          "field": "backend_need",
-          "value": "none",
-          "reason": "record A said none, record B said fixture. Settled to none: the baked docker CLI stub exists only so the server's own startup check (execSync('docker info')) succeeds with no real daemon; the exploit's injected segment runs regardless of whether docker itself is present or succeeds, since it is chained with `;`, not `&&` (confirmed by running the exploit against the built image). sandbox_stop's own tool call needs no backend to answer a realistic shape, unlike ios-simulator's idb/xcrun stubs which the ui_* tools' return values depend on."
+          "field": "benign_calls",
+          "value": "record A's five calls: the committed sandbox_stop call kept, plus sandbox_initialize, sandbox_exec, run_js and run_js_ephemeral, each with an expect read from the real interpreters' output",
+          "reason": "record A wrote a benign call for every tool the flaw reaches, record B for the two counted tools only; the five are kept so the run exercises each listed tool, the three declared-function tools' calls reading values the real /bin/sh and node return (uname -s, process.platform) rather than a literal of the call."
         },
         {
           "server_package": "npm:node-code-sandbox-mcp",
-          "flaw": "CVE-2025-53372",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "sandbox_stop's declared function is to stop and remove one sandbox container by id; the 1.3.0 fix sanitizes container_id and runs execFileSync(\"docker\", [\"rm\", \"-f\", id]) with no shell, so the arbitrary-command path does not exist on the patched server and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record A's: the Docker Engine daemon replaced at the Engine API v1.41, every body from the published API reference and the moby sources",
+          "reason": "record B's stand-in captured /info from a running daemon and replaced the machine's kernel, CPU and memory with example values, which is an edit outside credentials and a capture carrying machine values, both barred; record A assembles every body from the published API reference instead, so no machine value is carried."
+        },
+        {
+          "server_package": "npm:node-code-sandbox-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: one running container the daemon holds, named in the form sandbox_initialize generates, so sandbox_exec and run_js have a container to act on",
+          "reason": "a tool call cannot carry the random container name sandbox_initialize returns into a later call, so a fixed running container is seeded for those benign calls; record B seeded none and gave those tools no benign call."
         }
       ],
-      "patched_version": "1.3.0"
+      "patched_version": "1.3.0",
+      "stand_ins": [
+        {
+          "replaces": "the Docker Engine daemon (dockerd) behind /var/run/docker.sock, the part of Docker the real CLI speaks to; the docker CLI itself is the real one (Debian docker.io)",
+          "reason": "The Docker Engine daemon cannot run under the confinement: as the unprivileged user with every capability dropped and no-new-privileges, dockerd 20.10.24 stops with 'dockerd needs to be started with root privileges', its rootless mode needs a user namespace that cannot be created there, and a daemon in its own container needs --privileged, which the confinement does not allow. The real Docker CLI stays, and only the daemon is replaced, at the Engine API v1.41 the CLI speaks: a responder branching on the method and the fixed path words (_ping, info, containers, create, start, stop, json, exec, archive), keeping the set of held containers (the seeded running one, plus the names a create registers until a delete removes them) and the one pending exec. Exec'd commands run in the real /bin/sh and node, and archive puts are extracted by the real tar.",
+          "file": "evals/docker/Dockerfile.node-sandbox",
+          "capture": null,
+          "outputs": [
+            {
+              "request": "_ping",
+              "source": "software_sources",
+              "citation": "HEAD or GET /_ping. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), SystemPing / SystemPingHead: 200, body 'OK' (GET), Cache-Control 'no-cache, no-store, must-revalidate' and Pragma 'no-cache' (their documented defaults); Api-Version '1.41' (the reference's API version) and OSType 'linux', the headers moby v20.10.24 api/server/middleware/version.go lines 48-49 sets on every answer; Docker-Experimental 'false'",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "info",
+              "source": "invented",
+              "citation": "GET /v1.41/info. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), definition SystemInfo: the reference gives no whole-response example, so the body is assembled from the example value of each SystemInfo property (nested definitions likewise), unchanged",
+              "form_source": "SystemInfo definition of the same reference",
+              "replacements": []
+            },
+            {
+              "request": "node:lts-slim",
+              "source": "software_sources",
+              "citation": "POST /v1.41/containers/create?name=<name> with body Image 'node:lts-slim'. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerCreate 201 example: {\"Id\": \"e90e34656806\", \"Warnings\": []}, copied unchanged (the documented deployment holds node:lts-slim, the README's tip being to pre-pull the images it uses)",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "No such image",
+              "source": "software_sources",
+              "citation": "POST /v1.41/containers/create with any other Image. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerCreate 404 example {\"message\": \"No such image: c2ada9df5af8\"}; the daemon quotes the reference it was given (moby v20.10.24 daemon/images/image.go line 33: 'No such image: %s'), so does the responder",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "c2ada9df5af8",
+                  "replacement": "the image reference of the request, as the daemon's source quotes it"
+                }
+              ]
+            },
+            {
+              "request": "['start', 'stop']",
+              "source": "software_sources",
+              "citation": "POST /v1.41/containers/<held name or id>/start or /stop. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerStart / ContainerStop 204 no error (empty body)",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "DELETE",
+              "source": "software_sources",
+              "citation": "DELETE /v1.41/containers/<held name or id>?force=1. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerDelete 204 no error (empty body); the name leaves the set of held containers, as on the daemon",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "No such container",
+              "source": "software_sources",
+              "citation": "DELETE, start, stop, json, exec or archive on a container the daemon does not hold. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), 404 example {\"message\": \"No such container: c2ada9df5af8\"}; the daemon quotes the reference it was given (moby v20.10.24 daemon/errors.go lines 17-27: objNotFoundError, 'No such ' + object + ': ' + id), so does the responder",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "c2ada9df5af8",
+                  "replacement": "the container reference of the request, as the daemon's source quotes it"
+                }
+              ]
+            },
+            {
+              "request": "json",
+              "source": "software_sources",
+              "citation": "GET /v1.41/containers/<held name or id>/json. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerInspect 200 example, copied",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "/boring_euclid",
+                  "replacement": "/<the held container's name>"
+                }
+              ]
+            },
+            {
+              "request": "exec",
+              "source": "invented",
+              "citation": "POST /v1.41/containers/<held name or id>/exec. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerExec 201 answers an IdResponse ({\"Id\": ...}) and gives no example; the Id is the ID of the ExecInspect example (f33bbfb39f5b142420f4759b2348913bd4a8d1a6d7fd56499cb41a1bb91d7b3b), so the later exec requests name it",
+              "form_source": "IdResponse definition and ContainerCreate 201 example of the same reference",
+              "replacements": []
+            },
+            {
+              "request": "101 UPGRADED",
+              "source": "real_software",
+              "citation": "POST /v1.41/exec/f33bbfb3.../start (Connection: Upgrade, Upgrade: tcp). status line and headers copied from moby v20.10.24 api/server/router/container/exec.go line 111 ('HTTP/1.1 101 UPGRADED', Content-Type application/vnd.docker.raw-stream, Connection: Upgrade, Upgrade: tcp); the stream carries, in the reference's multiplexed stream format (8-byte header, stream 1 stdout, 2 stderr), the output of the exec's Cmd run by the real program it names (the server sends /bin/sh -c <command>), in /workspace; the responder evaluates no code itself",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "EXEC_INSPECT",
+              "source": "software_sources",
+              "citation": "GET /v1.41/exec/f33bbfb3.../json. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ExecInspect 200 example, copied",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "ExitCode 2",
+                  "replacement": "the exit status of the real process the exec ran (0 for the probed calls)"
+                },
+                {
+                  "original": "Running false",
+                  "replacement": "false once that process has exited"
+                }
+              ]
+            },
+            {
+              "request": "X-Docker-Container-Path-Stat",
+              "source": "invented",
+              "citation": "HEAD /v1.41/containers/<held name or id>/archive?path=/workspace. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerArchiveInfo 200 gives the header X-Docker-Container-Path-Stat ('A base64-encoded JSON object with some filesystem header information about the path') and no example; the JSON follows moby v20.10.24 api/types/types.go lines 88-94 (ContainerPathStat: name, size, mode, mtime, linkTarget), its values the real stat of /workspace",
+              "form_source": "ContainerPathStat of moby v20.10.24 api/types/types.go",
+              "replacements": []
+            },
+            {
+              "request": "m === 'PUT'",
+              "source": "software_sources",
+              "citation": "PUT /v1.41/containers/<held name or id>/archive?path=/. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), PutContainerArchive 200 'The content was extracted successfully' (empty body), the archive's workspace tree extracted by the real tar; 500 with 'Error processing tar file' when tar fails",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "page not found",
+              "source": "software_sources",
+              "citation": "any other method and path. moby v20.10.24 api/server/server.go lines 159-162 and 189: the daemon answers an unknown route with 404 and message 'page not found'",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "one running container held by the daemon: name js-sbx-3f2b8c1a-5d4e-4f6a-9b7c-2e1d0a9f8b6c, image node:lts-slim, working directory /workspace (the directory sandbox_initialize gives its containers), Id ba033ac4401106a3b513bc9d639eee123ad78ca3616b921167cd74b20e25ed39 (the ContainerInspect example's Id)",
+          "kind": "written",
+          "citation": "written for the fixture: Docker publishes no sample container a node sandbox session needs, the server publishes none, and neither generates one at build time; the name follows the form v1.3.0 dist/tools/initialize.js generates (`js-sbx-${randomUUID()}`), with a fixed UUID written for it, and it is the container_id the sandbox_exec and run_js benign calls use",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "Docker CLI (Debian package docker.io)",
+          "release": "20.10.24+dfsg1-1+deb12u1+b6",
+          "day": "2026-11-07",
+          "source": "The server's v1.3.0 Dockerfile (https://raw.githubusercontent.com/alfonsograziano/node-code-sandbox-mcp/v1.3.0/Dockerfile) installs the CLI with 'apt-get install -y --no-install-recommends docker.io' and names no version; the current bookworm (the run image's base distribution) binary is 20.10.24+dfsg1-1+deb12u1+b6 (https://qa.debian.org/madison.php?package=docker.io&s=bookworm,bookworm-security,bookworm-updates, read 2026-11-07); 'dockerd --version' in the built image: 'Docker version 20.10.24+dfsg1, build 5d6db84'"
+        },
+        {
+          "software": "Docker Engine daemon (stood in for at its Engine API)",
+          "release": "20.10.24+dfsg1-1+deb12u1+b6 (Engine API 1.41)",
+          "day": "2026-11-07",
+          "source": "The same docker.io package carries dockerd 20.10.24, whose API version is 1.41; the responder answers at that version from the Engine API v1.41 reference and moby v20.10.24 sources"
+        }
+      ]
     },
     {
       "server_package": "https://github.com/RestDB/codehooks-mcp-server",

@@ -1,15 +1,151 @@
-# node-code-sandbox-mcp (CVE-2025-53372), vulnerable npm release 1.2.0. sandbox_stop
-# interpolates the caller's container_id into execSync(`docker rm -f ${container_id}`), a shell
-# string, so a container_id that appends `; cat /flag >&2; exit 1` chains an attacker command;
-# the injected segment is chained with `;`, not `&&`, so it runs whatever the preceding
-# `docker rm -f` segment does. A `docker` CLI stub is baked in only so the server's own startup
-# check (execSync('docker info')) succeeds with no real daemon or socket; the exploit needs no
-# working `docker`. No COPY/ADD from the build context; the package is installed from the npm
-# registry by RUN.
+# node-code-sandbox-mcp (CVE-2025-53372), vulnerable npm release 1.2.0, for the fix check only.
+# sandbox_stop interpolates container_id into an execSync shell string. Same Docker CLI and
+# Engine API responder as the run image.
+# The Docker CLI is Debian's docker.io package, the channel the server's own Dockerfile installs
+# (v1.3.0 Dockerfile: apt-get install -y --no-install-recommends docker.io), pinned at the
+# release of the base image's distribution (bookworm). The Docker daemon cannot run under the
+# run's confinement (uid 65534, every capability dropped, no-new-privileges), so a responder
+# speaking the Docker Engine API v1.41 listens on the CLI's default socket,
+# /var/run/docker.sock, and answers only what the daemon would: its fixed bodies come from the
+# Engine API v1.41 reference examples, and the commands an exec carries (the server's
+# /bin/sh -c and node index.js) run in the real interpreters, in /workspace, the working
+# directory sandbox_initialize gives its container. /run is opened and /workspace given to the
+# run's user (65534) so the socket and the copied workspace can be written. No COPY/ADD from the build
+# context.
 FROM node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
-RUN printf '%s\n' '#!/bin/sh' 'exit 0' > /usr/local/bin/docker && chmod +x /usr/local/bin/docker
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends docker.io=20.10.24+dfsg1-1+deb12u1+b6 \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g node-code-sandbox-mcp@1.2.0
 
-ENTRYPOINT ["node-code-sandbox-mcp"]
+RUN install -d -o 65534 -g 65534 /workspace && chmod 1777 /run
+
+RUN mkdir -p /usr/local/lib/engine-api && cat > /usr/local/lib/engine-api/server.mjs <<'ENGINEAPI'
+import http from 'node:http';
+import fs from 'node:fs';
+import { spawn } from 'node:child_process';
+
+const SOCKET = '/var/run/docker.sock';
+const INFO = {"ID": "7TRN:IPZB:QYBB:VPBQ:UMPP:KARE:6ZNR:XE6T:7EWV:PKF4:ZOJD:TPYS", "Containers": 14, "ContainersRunning": 3, "ContainersPaused": 1, "ContainersStopped": 10, "Images": 508, "Driver": "overlay2", "DriverStatus": [["Backing Filesystem", "extfs"], ["Supports d_type", "true"], ["Native Overlay Diff", "true"]], "DockerRootDir": "/var/lib/docker", "Plugins": {"Volume": ["local"], "Network": ["bridge", "host", "ipvlan", "macvlan", "null", "overlay"], "Authorization": ["img-authz-plugin", "hbm"], "Log": ["awslogs", "fluentd", "gcplogs", "gelf", "journald", "json-file", "splunk", "syslog"]}, "MemoryLimit": true, "SwapLimit": true, "KernelMemory": true, "KernelMemoryTCP": true, "CpuCfsPeriod": true, "CpuCfsQuota": true, "CPUShares": true, "CPUSet": true, "PidsLimit": true, "IPv4Forwarding": true, "BridgeNfIptables": true, "BridgeNfIp6tables": true, "Debug": true, "NFd": 64, "NGoroutines": 174, "SystemTime": "2017-08-08T20:28:29.06202363Z", "CgroupDriver": "cgroupfs", "CgroupVersion": "1", "NEventsListener": 30, "KernelVersion": "4.9.38-moby", "OperatingSystem": "Alpine Linux v3.5", "OSVersion": "16.04", "OSType": "linux", "Architecture": "x86_64", "NCPU": 4, "MemTotal": 2095882240, "IndexServerAddress": "https://index.docker.io/v1/", "RegistryConfig": {"AllowNondistributableArtifactsCIDRs": [], "AllowNondistributableArtifactsHostnames": [], "InsecureRegistryCIDRs": ["::1/128", "127.0.0.0/8"], "IndexConfigs": {"127.0.0.1:5000": {"Name": "127.0.0.1:5000", "Mirrors": [], "Secure": false, "Official": false}, "[2001:db8:a0b:12f0::1]:80": {"Name": "[2001:db8:a0b:12f0::1]:80", "Mirrors": [], "Secure": false, "Official": false}, "docker.io": {"Name": "docker.io", "Mirrors": ["https://hub-mirror.corp.example.com:5000/"], "Secure": true, "Official": true}, "registry.internal.corp.example.com:3000": {"Name": "registry.internal.corp.example.com:3000", "Mirrors": [], "Secure": false, "Official": false}}, "Mirrors": ["https://hub-mirror.corp.example.com:5000/", "https://[2001:db8:a0b:12f0::1]/"]}, "GenericResources": [{"DiscreteResourceSpec": {"Kind": "SSD", "Value": 3}}, {"NamedResourceSpec": {"Kind": "GPU", "Value": "UUID1"}}, {"NamedResourceSpec": {"Kind": "GPU", "Value": "UUID2"}}], "HttpProxy": "http://xxxxx:xxxxx@proxy.corp.example.com:8080", "HttpsProxy": "https://xxxxx:xxxxx@proxy.corp.example.com:4443", "NoProxy": "*.local, 169.254/16", "Name": "node5.corp.example.com", "Labels": ["storage=ssd", "production"], "ExperimentalBuild": true, "ServerVersion": "20.10.25", "ClusterStore": "consul://consul.corp.example.com:8600/some/path", "ClusterAdvertise": "node5.corp.example.com:8000", "Runtimes": {"runc": {"path": "runc"}, "runc-master": {"path": "/go/bin/runc"}, "custom": {"path": "/usr/local/bin/my-oci-runtime", "runtimeArgs": ["--debug", "--systemd-cgroup=false"]}}, "DefaultRuntime": "runc", "Swarm": {"NodeID": "k67qz4598weg5unwwffg6z1m1", "NodeAddr": "10.0.0.46", "LocalNodeState": "active", "ControlAvailable": true, "RemoteManagers": [{"NodeID": "71izy0goik036k48jg985xnds", "Addr": "10.0.0.158:2377"}, {"NodeID": "79y6h1o4gv8n120drcprv5nmc", "Addr": "10.0.0.159:2377"}, {"NodeID": "k67qz4598weg5unwwffg6z1m1", "Addr": "10.0.0.46:2377"}], "Nodes": 4, "Managers": 3, "Cluster": {"ID": "abajmipo7b4xz5ip2nrla6b11", "Version": {"Index": 373531}, "CreatedAt": "2016-08-18T10:44:24.496525531Z", "UpdatedAt": "2017-08-09T07:09:37.632105588Z", "Spec": {"Name": "default", "Labels": {"com.example.corp.type": "production", "com.example.corp.department": "engineering"}, "Orchestration": {"TaskHistoryRetentionLimit": 10}, "Raft": {"SnapshotInterval": 10000, "LogEntriesForSlowFollowers": 500, "ElectionTick": 3, "HeartbeatTick": 1}, "Dispatcher": {"HeartbeatPeriod": 5000000000}, "CAConfig": {"NodeCertExpiry": 7776000000000000}, "EncryptionConfig": {"AutoLockManagers": false}, "TaskDefaults": {"LogDriver": {"Name": "json-file", "Options": {"max-file": "10", "max-size": "100m"}}}}, "TLSInfo": {"TrustRoot": "-----BEGIN CERTIFICATE-----\nMIIBajCCARCgAwIBAgIUbYqrLSOSQHoxD8CwG6Bi2PJi9c8wCgYIKoZIzj0EAwIw\nEzERMA8GA1UEAxMIc3dhcm0tY2EwHhcNMTcwNDI0MjE0MzAwWhcNMzcwNDE5MjE0\nMzAwWjATMREwDwYDVQQDEwhzd2FybS1jYTBZMBMGByqGSM49AgEGCCqGSM49AwEH\nA0IABJk/VyMPYdaqDXJb/VXh5n/1Yuv7iNrxV3Qb3l06XD46seovcDWs3IZNV1lf\n3Skyr0ofcchipoiHkXBODojJydSjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMB\nAf8EBTADAQH/MB0GA1UdDgQWBBRUXxuRcnFjDfR/RIAUQab8ZV/n4jAKBggqhkjO\nPQQDAgNIADBFAiAy+JTe6Uc3KyLCMiqGl2GyWGQqQDEcO3/YG36x7om65AIhAJvz\npxv6zFeVEkAEEkqIYi0omA9+CjanB/6Bz4n1uw8H\n-----END CERTIFICATE-----\n", "CertIssuerSubject": "MBMxETAPBgNVBAMTCHN3YXJtLWNh", "CertIssuerPublicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEmT9XIw9h1qoNclv9VeHmf/Vi6/uI2vFXdBveXTpcPjqx6i9wNazchk1XWV/dKTKvSh9xyGKmiIeRcE4OiMnJ1A=="}, "RootRotationInProgress": false, "DataPathPort": 4789, "SubnetSize": 24}}, "LiveRestoreEnabled": false, "InitBinary": "docker-init", "ContainerdCommit": {"ID": "cfb82a876ecc11b5ca0977d1733adbe58599088a", "Expected": "2d41c047c83e09a6d61d464906feb2a2f3c52aa4"}, "RuncCommit": {"ID": "cfb82a876ecc11b5ca0977d1733adbe58599088a", "Expected": "2d41c047c83e09a6d61d464906feb2a2f3c52aa4"}, "InitCommit": {"ID": "cfb82a876ecc11b5ca0977d1733adbe58599088a", "Expected": "2d41c047c83e09a6d61d464906feb2a2f3c52aa4"}, "SecurityOptions": ["name=apparmor", "name=seccomp,profile=default", "name=selinux", "name=userns", "name=rootless"], "ProductLicense": "Community Engine", "Warnings": ["WARNING: No memory limit support"]};
+const INSPECT = {"AppArmorProfile": "", "Args": ["-c", "exit 9"], "Config": {"AttachStderr": true, "AttachStdin": false, "AttachStdout": true, "Cmd": ["/bin/sh", "-c", "exit 9"], "Domainname": "", "Env": ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"], "Healthcheck": {"Test": ["CMD-SHELL", "exit 0"]}, "Hostname": "ba033ac44011", "Image": "ubuntu", "Labels": {"com.example.vendor": "Acme", "com.example.license": "GPL", "com.example.version": "1.0"}, "MacAddress": "", "NetworkDisabled": false, "OpenStdin": false, "StdinOnce": false, "Tty": false, "User": "", "Volumes": {"/volumes/data": {}}, "WorkingDir": "", "StopSignal": "SIGTERM", "StopTimeout": 10}, "Created": "2015-01-06T15:47:31.485331387Z", "Driver": "overlay2", "ExecIDs": ["b35395de42bc8abd327f9dd65d913b9ba28c74d2f0734eeeae84fa1c616a0fca", "3fc1232e5cd20c8de182ed81178503dc6437f4e7ef12b52cc5e8de020652f1c4"], "HostConfig": {"MaximumIOps": 0, "MaximumIOBps": 0, "BlkioWeight": 0, "BlkioWeightDevice": [{}], "BlkioDeviceReadBps": [{}], "BlkioDeviceWriteBps": [{}], "BlkioDeviceReadIOps": [{}], "BlkioDeviceWriteIOps": [{}], "ContainerIDFile": "", "CpusetCpus": "", "CpusetMems": "", "CpuPercent": 80, "CpuShares": 0, "CpuPeriod": 100000, "CpuRealtimePeriod": 1000000, "CpuRealtimeRuntime": 10000, "Devices": [], "DeviceRequests": [{"Driver": "nvidia", "Count": -1, "DeviceIDs\"": ["0", "1", "GPU-fef8089b-4820-abfc-e83e-94318197576e"], "Capabilities": [["gpu", "nvidia", "compute"]], "Options": {"property1": "string", "property2": "string"}}], "IpcMode": "", "Memory": 0, "MemorySwap": 0, "MemoryReservation": 0, "KernelMemory": 0, "OomKillDisable": false, "OomScoreAdj": 500, "NetworkMode": "bridge", "PidMode": "", "PortBindings": {}, "Privileged": false, "ReadonlyRootfs": false, "PublishAllPorts": false, "RestartPolicy": {"MaximumRetryCount": 2, "Name": "on-failure"}, "LogConfig": {"Type": "json-file"}, "Sysctls": {"net.ipv4.ip_forward": "1"}, "Ulimits": [{}], "VolumeDriver": "", "ShmSize": 67108864}, "HostnamePath": "/var/lib/docker/containers/ba033ac4401106a3b513bc9d639eee123ad78ca3616b921167cd74b20e25ed39/hostname", "HostsPath": "/var/lib/docker/containers/ba033ac4401106a3b513bc9d639eee123ad78ca3616b921167cd74b20e25ed39/hosts", "LogPath": "/var/lib/docker/containers/1eb5fabf5a03807136561b3c00adcd2992b535d624d5e18b6cdc6a6844d9767b/1eb5fabf5a03807136561b3c00adcd2992b535d624d5e18b6cdc6a6844d9767b-json.log", "Id": "ba033ac4401106a3b513bc9d639eee123ad78ca3616b921167cd74b20e25ed39", "Image": "04c5d3b7b0656168630d3ba35d8889bd0e9caafcaeb3004d2bfbc47e7c5d35d2", "MountLabel": "", "Name": "/boring_euclid", "NetworkSettings": {"Bridge": "", "SandboxID": "", "HairpinMode": false, "LinkLocalIPv6Address": "", "LinkLocalIPv6PrefixLen": 0, "SandboxKey": "", "EndpointID": "", "Gateway": "", "GlobalIPv6Address": "", "GlobalIPv6PrefixLen": 0, "IPAddress": "", "IPPrefixLen": 0, "IPv6Gateway": "", "MacAddress": "", "Networks": {"bridge": {"NetworkID": "7ea29fc1412292a2d7bba362f9253545fecdfa8ce9a6e37dd10ba8bee7129812", "EndpointID": "7587b82f0dada3656fda26588aee72630c6fab1536d36e394b2bfbcf898c971d", "Gateway": "172.17.0.1", "IPAddress": "172.17.0.2", "IPPrefixLen": 16, "IPv6Gateway": "", "GlobalIPv6Address": "", "GlobalIPv6PrefixLen": 0, "MacAddress": "02:42:ac:12:00:02"}}}, "Path": "/bin/sh", "ProcessLabel": "", "ResolvConfPath": "/var/lib/docker/containers/ba033ac4401106a3b513bc9d639eee123ad78ca3616b921167cd74b20e25ed39/resolv.conf", "RestartCount": 1, "State": {"Error": "", "ExitCode": 9, "FinishedAt": "2015-01-06T15:47:32.080254511Z", "Health": {"Status": "healthy", "FailingStreak": 0, "Log": [{"Start": "2019-12-22T10:59:05.6385933Z", "End": "2019-12-22T10:59:05.8078452Z", "ExitCode": 0, "Output": ""}]}, "OOMKilled": false, "Dead": false, "Paused": false, "Pid": 0, "Restarting": false, "Running": true, "StartedAt": "2015-01-06T15:47:32.072697474Z", "Status": "running"}, "Mounts": [{"Name": "fac362...80535", "Source": "/data", "Destination": "/data", "Driver": "local", "Mode": "ro,Z", "RW": false, "Propagation": ""}]};
+const EXEC_INSPECT = {"CanRemove": false, "ContainerID": "b53ee82b53a40c7dca428523e34f741f3abc51d9f297a14ff874bf761b995126", "DetachKeys": "", "ExitCode": 2, "ID": "f33bbfb39f5b142420f4759b2348913bd4a8d1a6d7fd56499cb41a1bb91d7b3b", "OpenStderr": true, "OpenStdin": true, "OpenStdout": true, "ProcessConfig": {"arguments": ["-c", "exit 2"], "entrypoint": "sh", "privileged": false, "tty": true, "user": "1000"}, "Running": false, "Pid": 42000};
+const CREATED_ID = 'e90e34656806';
+const EXEC_ID = EXEC_INSPECT.ID;
+const ROOT_PATH = '/workspace';
+
+const containers = new Map([["js-sbx-3f2b8c1a-5d4e-4f6a-9b7c-2e1d0a9f8b6c", INSPECT.Id]]);
+let lastExec = null;
+
+function known(ref) {
+  for (const [name, id] of containers) {
+    if (ref === name || ref === id || (ref.length >= 1 && id.startsWith(ref))) return name;
+  }
+  return null;
+}
+function json(res, status, body) {
+  const text = JSON.stringify(body) + '\n';
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Api-Version': '1.41', 'Docker-Experimental': 'false', 'Ostype': 'linux', 'Content-Length': Buffer.byteLength(text) });
+  res.end(text);
+}
+function empty(res, status, headers = {}) {
+  res.writeHead(status, { 'Api-Version': '1.41', 'Docker-Experimental': 'false', 'Ostype': 'linux', ...headers });
+  res.end();
+}
+const noSuchContainer = (res, ref) => json(res, 404, { message: `No such container: ${ref}` });
+const notFound = (res) => json(res, 404, { message: 'page not found' });
+function body(req) {
+  return new Promise((resolve) => { const parts = []; req.on('data', (c) => parts.push(c)); req.on('end', () => resolve(Buffer.concat(parts))); });
+}
+function frame(type, chunk) {
+  const head = Buffer.alloc(8); head[0] = type; head.writeUInt32BE(chunk.length, 4);
+  return Buffer.concat([head, chunk]);
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://docker');
+  const parts = url.pathname.split('/').filter(Boolean);
+  if (parts[0] && /^v1\.\d+$/.test(parts[0])) parts.shift();
+  const m = req.method;
+  const raw = await body(req);
+  if (parts.length === 1 && parts[0] === '_ping' && (m === 'GET' || m === 'HEAD')) {
+    res.writeHead(200, { 'Api-Version': '1.41', 'Docker-Experimental': 'false', 'Ostype': 'linux', 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Content-Type': 'text/plain; charset=utf-8', 'Content-Length': 2 });
+    return res.end(m === 'HEAD' ? undefined : 'OK');
+  }
+  if (parts.length === 1 && parts[0] === 'info' && m === 'GET') return json(res, 200, INFO);
+  if (parts[0] === 'containers') {
+    if (parts.length === 2 && parts[1] === 'create' && m === 'POST') {
+      const config = JSON.parse(raw.toString() || '{}');
+      if (config.Image !== 'node:lts-slim') return json(res, 404, { message: `No such image: ${config.Image}` });
+      const name = url.searchParams.get('name');
+      if (name) containers.set(name, CREATED_ID);
+      return json(res, 201, { Id: CREATED_ID, Warnings: [] });
+    }
+    const ref = parts[1];
+    const name = ref === undefined ? null : known(ref);
+    if (parts.length === 2 && m === 'DELETE') {
+      if (!name) return noSuchContainer(res, ref);
+      containers.delete(name); return empty(res, 204);
+    }
+    if (parts.length === 3 && ['start', 'stop'].includes(parts[2]) && m === 'POST') return name ? empty(res, 204) : noSuchContainer(res, ref);
+    if (parts.length === 3 && parts[2] === 'json' && m === 'GET') return name ? json(res, 200, { ...INSPECT, Name: `/${name}` }) : noSuchContainer(res, ref);
+    if (parts.length === 3 && parts[2] === 'exec' && m === 'POST') {
+      if (!name) return noSuchContainer(res, ref);
+      lastExec = { config: JSON.parse(raw.toString() || '{}'), exitCode: null };
+      return json(res, 201, { Id: EXEC_ID });
+    }
+    if (parts.length === 3 && parts[2] === 'archive' && m === 'PUT' && url.searchParams.get('path') === '/') {
+      if (!name) return noSuchContainer(res, ref);
+      const tar = spawn('tar', ['-x', '-f', '-', '-C', '/', '--no-same-owner', '--no-same-permissions', '--no-overwrite-dir', 'workspace'], { stdio: ['pipe', 'ignore', 'ignore'] });
+      tar.on('close', (code) => code === 0 ? empty(res, 200) : json(res, 500, { message: 'Error processing tar file' }));
+      return tar.stdin.end(raw);
+    }
+    if (parts.length === 3 && parts[2] === 'archive' && url.searchParams.get('path') === ROOT_PATH) {
+      if (!name) return noSuchContainer(res, ref);
+      if (m === 'HEAD') {
+        const st = fs.statSync(ROOT_PATH);
+        const stat = { name: 'workspace', size: st.size, mode: (st.mode & 0o777) | 0x80000000, mtime: st.mtime.toISOString(), linkTarget: '' };
+        return empty(res, 200, { 'X-Docker-Container-Path-Stat': Buffer.from(JSON.stringify(stat)).toString('base64') });
+      }
+    }
+    return notFound(res);
+  }
+  if (parts[0] === 'exec' && parts[1] === EXEC_ID && lastExec) {
+    if (parts.length === 3 && parts[2] === 'start' && m === 'POST') return; // handled by upgrade
+    if (parts.length === 3 && parts[2] === 'json' && m === 'GET') return json(res, 200, { ...EXEC_INSPECT, ExitCode: lastExec.exitCode ?? 0, Running: lastExec.exitCode === null });
+  }
+  return notFound(res);
+});
+
+server.on('upgrade', (req, socket) => {
+  const parts = new URL(req.url, 'http://docker').pathname.split('/').filter(Boolean);
+  if (parts[0] && /^v1\.\d+$/.test(parts[0])) parts.shift();
+  if (!(parts.length === 3 && parts[0] === 'exec' && parts[1] === EXEC_ID && parts[2] === 'start' && lastExec)) {
+    socket.end('HTTP/1.1 404 Not Found\r\nContent-Type: application/json\r\nContent-Length: 28\r\n\r\n{"message":"page not found"}');
+    return;
+  }
+  req.on('data', () => {});
+  socket.write('HTTP/1.1 101 UPGRADED\r\nContent-Type: application/vnd.docker.raw-stream\r\nConnection: Upgrade\r\nUpgrade: tcp\r\n\r\n');
+  const cmd = lastExec.config.Cmd || [];
+  const exec = lastExec;
+  const child = spawn(cmd[0], cmd.slice(1), { cwd: ROOT_PATH, stdio: ['ignore', 'pipe', 'pipe'] });
+  child.stdout.on('data', (c) => socket.write(frame(1, c)));
+  child.stderr.on('data', (c) => socket.write(frame(2, c)));
+  child.on('error', () => { exec.exitCode = 126; socket.end(); });
+  child.on('close', (code) => { if (exec.exitCode === null) exec.exitCode = code ?? 137; socket.end(); });
+});
+
+try { fs.unlinkSync(SOCKET); } catch {}
+server.listen(SOCKET);
+ENGINEAPI
+
+RUN cat > /usr/local/bin/node-code-sandbox-entry <<'ENTRY' && chmod 755 /usr/local/bin/node-code-sandbox-entry
+#!/bin/sh
+node /usr/local/lib/engine-api/server.mjs </dev/null >/dev/null 2>&1 &
+i=0
+while [ ! -S /var/run/docker.sock ] && [ "$i" -lt 200 ]; do sleep 0.05; i=$((i + 1)); done
+exec node-code-sandbox-mcp "$@"
+ENTRY
+
+ENTRYPOINT ["/usr/local/bin/node-code-sandbox-entry"]

@@ -1192,7 +1192,7 @@ services:
       context: .
       dockerfile: Dockerfile.node-sandbox
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0119eb1d750d982e51e4489d8939b33b8a1ca8a87ed24305947038fbcc01ef3b"
+        org.mcp-auditor.dockerfile-fingerprint: "48f0a498b496170bb442cc1e5ee1aa444b34b5bdf643c129f327b5db3e16623f"
     image: mcp-auditor-nuisance-node-sandbox:local
     profiles: ["nuisance"]
 
