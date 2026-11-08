@@ -14,6 +14,7 @@ from evals.cve_images import (
 from evals.cve_planting_base import SENTINEL_SERVICE
 from evals.cve_targets import CVE_TARGETS
 from evals.docker_paths import DOCKER_DIRECTORY
+from evals.fixture_sources import unsourced_copies
 
 COMPOSE_SERVICES: dict[str, Any] = yaml.safe_load(COMPOSE_FILE.read_text())["services"]
 
@@ -40,13 +41,9 @@ def test_every_service_a_target_or_the_sentinel_names_is_a_compose_service():
     "dockerfile", sorted(DOCKER_DIRECTORY.glob("Dockerfile.*")), ids=lambda path: path.name
 )
 def test_no_dockerfile_copies_from_the_build_context(dockerfile: Path):
-    copying = [
-        line
-        for line in dockerfile_instructions(dockerfile)
-        if line.split()[0].upper() in {"COPY", "ADD"}
-    ]
+    unsourced = unsourced_copies(dockerfile_instructions(dockerfile))
 
-    assert copying == [], f"{dockerfile.name}: the fingerprint would miss the copied source"
+    assert unsourced == [], f"{dockerfile.name}: the fingerprint would miss {unsourced}"
 
 
 @pytest.mark.parametrize(

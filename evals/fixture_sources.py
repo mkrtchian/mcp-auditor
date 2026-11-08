@@ -13,22 +13,44 @@ from evals.nuisance_admission_records import SeedRecord
 
 _HTTP_CHECKSUM = re.compile(r"--checksum=sha256:[0-9a-f]{64}")
 _GIT_CHECKSUM = re.compile(r"--checksum=[0-9a-f]{40}")
+_PINNED_IMAGE = re.compile(r"[^@\s]+@sha256:[0-9a-f]{64}")
 
 
 def unsourced_copies(instructions: Sequence[str]) -> list[str]:
-    """A local COPY or ADD brings in content the fingerprint does not hash, and a remote ADD
-    without a checksum in Docker's documented form brings in content nothing pins."""
+    """A local COPY or ADD brings in content the fingerprint does not hash, a COPY from an image
+    not pinned by digest content nothing pins, and a remote ADD without a checksum in Docker's
+    documented form content nothing pins either."""
     problems: list[str] = []
+    stages: set[str] = set()
     for instruction in _joined(instructions):
         words = instruction.split()
         keyword = words[0].upper()
         flags = [word for word in words[1:] if word.startswith("--")]
-        if keyword == "COPY" and not any(flag.startswith("--from=") for flag in flags):
-            problems.append(f"local COPY: {instruction}")
+        if keyword == "FROM":
+            stages |= _declared_stage(words)
+        if keyword == "COPY":
+            problems.append(_copy_problem(flags, stages, instruction))
         if keyword == "ADD":
             sources = [word for word in words[1:] if not word.startswith("--")][:-1]
             problems += [_add_problem(source, flags, instruction) for source in sources]
     return [problem for problem in problems if problem]
+
+
+def _declared_stage(words: Sequence[str]) -> set[str]:
+    operands = [word for word in words[1:] if not word.startswith("--")]
+    if len(operands) == 3 and operands[1].upper() == "AS":
+        return {operands[2].lower()}
+    return set()
+
+
+def _copy_problem(flags: Sequence[str], stages: Collection[str], instruction: str) -> str:
+    sources = [flag.removeprefix("--from=") for flag in flags if flag.startswith("--from=")]
+    if not sources:
+        return f"local COPY: {instruction}"
+    source = sources[0]
+    if source.lower() in stages or _PINNED_IMAGE.fullmatch(source):
+        return ""
+    return f"COPY from neither an earlier stage nor an image pinned by digest: {instruction}"
 
 
 def _joined(instructions: Sequence[str]) -> list[str]:

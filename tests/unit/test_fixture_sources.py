@@ -21,12 +21,19 @@ _REPOSITORY = "https://github.com/example/project.git#v1.0.0"
 @pytest.mark.parametrize(
     "instructions",
     [
-        ["COPY --from=build /app /app"],
+        [f"FROM node:22@sha256:{_SHA256} AS build", "COPY --from=build /app /app"],
+        [f"COPY --from=node:22@sha256:{_SHA256} /usr/local/bin/node /usr/local/bin/"],
         [f"ADD --checksum=sha256:{_SHA256} {_ARCHIVE} /opt/"],
         [f"ADD --checksum={_COMMIT} {_REPOSITORY} /src"],
         ["ADD \\", f"--checksum=sha256:{_SHA256} \\", f"{_ARCHIVE} /opt/"],
     ],
-    ids=["copy from a stage", "http with sha256", "git with a commit", "continued lines"],
+    ids=[
+        "copy from a stage",
+        "copy from an image pinned by digest",
+        "http with sha256",
+        "git with a commit",
+        "continued lines",
+    ],
 )
 def test_a_copy_from_a_stage_or_a_checksummed_remote_add_passes(instructions: list[str]):
     assert unsourced_copies(instructions) == []
@@ -44,6 +51,9 @@ def test_a_copy_from_a_stage_or_a_checksummed_remote_add_passes(instructions: li
         [f"ADD --checksum={_COMMIT[:12]} {_REPOSITORY} /src"],
         [f"ADD --checksum=sha256:{_SHA256} {_REPOSITORY} /src"],
         [f"ADD --checksum={_COMMIT} {_ARCHIVE} /opt/"],
+        ["COPY --from=node:22 /usr/local/bin/node /usr/local/bin/"],
+        ["COPY --from=build /app /app"],
+        ["COPY --from=build /app /app", f"FROM node:22@sha256:{_SHA256} AS build"],
     ],
     ids=[
         "local copy",
@@ -55,6 +65,9 @@ def test_a_copy_from_a_stage_or_a_checksummed_remote_add_passes(instructions: li
         "git with an abbreviated commit",
         "git with a sha256 checksum",
         "http with a commit checksum",
+        "copy from an image without a digest",
+        "copy from an undeclared stage",
+        "copy from a stage declared later",
     ],
 )
 def test_a_local_copy_or_an_unpinned_remote_add_is_refused(instructions: list[str]):
