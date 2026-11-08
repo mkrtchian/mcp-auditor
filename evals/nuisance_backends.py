@@ -20,7 +20,6 @@ from evals import (
     atlassian_backend,
     ckan_backend,
     closed_network,
-    contextforge_backend,
     doris_backend,
     facebook_ads_backend,
     figma_backend,
@@ -35,7 +34,6 @@ from evals.apify_backend import API_HOST, APIFY_BRIDGE, APIFY_RESPONDER_IMAGE
 from evals.atlassian_backend import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
 from evals.backend_lifecycle import BackendLifecycle
 from evals.ckan_backend import CKAN_BRIDGE, CKAN_IMAGE, CKAN_PARTS, MOUNTED_FILES
-from evals.contextforge_backend import CONTEXTFORGE_BRIDGE, CONTEXTFORGE_RESPONDER_IMAGE
 from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.cve_targets import image_tag
 from evals.docker_paths import image_dockerfile
@@ -87,13 +85,6 @@ BACKENDS: dict[str, RegisteredBackend] = {
         CKAN_IMAGE,
         _CKAN_SERVICES,
         (*_served(ckan_backend.__file__, *_CKAN_SERVICES), *MOUNTED_FILES),
-    ),
-    "contextforge": _responder(
-        contextforge_backend.LIFECYCLE,
-        contextforge_backend.__file__,
-        CONTEXTFORGE_BRIDGE,
-        CONTEXTFORGE_RESPONDER_IMAGE,
-        "contextforge-responder",
     ),
     "n8n": _responder(
         n8n_backend.LIFECYCLE,

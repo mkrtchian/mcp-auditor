@@ -2,7 +2,7 @@
 
 A light HTTP responder standing in for the external n8n instance a patched n8n-mcp deployment
 points `N8N_API_URL` at, so the patched server's benign workflow trigger answers without error.
-Like the ContextForge responder it is cheap to stand and a singleton on a fixed address:
+Like the other responders it is cheap to stand and a singleton on a fixed address:
 stood once and reused across a server's concurrent nuisance runs, reaped by the generic orphan
 sweep, so no lock is held across the yield.
 
@@ -26,7 +26,7 @@ from evals.responder_backend import Responder, remove
 N8N_RESPONDER_IMAGE = "mcp-auditor-cve-n8n-responder:local"
 N8N_RESPONDER_CONTAINER = "mcp-auditor-cve-n8n-responder"
 N8N_BRIDGE = "mcp-auditor-cve-n8n-bridge"  # server <-> responder, static IPs
-_N8N_SUBNET = "192.0.2.0/24"  # TEST-NET-1: overlaps neither the CKAN nor the ContextForge subnet
+_N8N_SUBNET = "192.0.2.0/24"  # TEST-NET-1: overlaps no other backend's subnet
 N8N_RESPONDER_IP = "192.0.2.2"  # the N8N_API_URL host
 
 # The responder is a singleton on a fixed IP, so a caller does not hold this across its yield: a

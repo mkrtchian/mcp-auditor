@@ -4,14 +4,14 @@ mcpgateway validates a REST tool's URL against its SSRF guard only at tool creat
 (tools/call) the affected range (<= 1.0.6, the vulnerable build) fetches the URL with no
 re-validation, so a DNS-rebinding host that resolves public at creation and internal at invocation
 makes the gateway fetch that internal address and return its body: reach = internal_fetch. The
-image's entrypoint registers one REST tool per planted endpoint and flips /etc/hosts from the
+entrypoint of the two fix-check images (Dockerfile.contextforge-vuln and -patched, the run image
+carrying none of it) registers one REST tool per planted endpoint and flips /etc/hosts from the
 public to the internal sentinel address, so invoking the tool surfaces the sentinel nonce. 1.0.7
 re-resolves and pins the host at invocation and blocks the link-local metadata address, so no nonce
 surfaces.
 
-The benign REST tool reaching the live responder is a run-time concern recorded in the admission,
-not a fix-check one, so this fixture stands only the contextforge_env sentinel and carries no
-benign call.
+The benign REST tool fetching httpbin.org is a run-time concern recorded in the admission, not a
+fix-check one, so this fixture stands only the contextforge_env sentinel and carries no benign call.
 """
 
 import json
@@ -134,7 +134,7 @@ TARGET = FixCheckTarget(
     exploits=(_exploit_rest_invoke,),
     benign_calls=(),
     vulnerable_service="contextforge-vuln",
-    patched_service="contextforge",
+    patched_service="contextforge-patched",
     server_patched_service=None,
 )
 

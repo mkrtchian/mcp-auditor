@@ -1,3 +1,5 @@
+from evals.cve_images import dockerfile_instructions
+from evals.docker_paths import image_dockerfile
 from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
 from evals.holdout_kit.kit_client import KitTool
 from evals.holdout_kit.kit_driver import Exchange, KitRecorder
@@ -46,3 +48,8 @@ async def recorded(target: FixCheckTarget, *calls: FixCheckExploit) -> list[Exch
     for call in calls:
         await call(places, recorder)
     return recorder.exchanges
+
+
+def build_arguments(service: str) -> set[str]:
+    instructions = dockerfile_instructions(image_dockerfile(service))
+    return {line for line in instructions if line.split()[0].upper() == "ARG"}

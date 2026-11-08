@@ -99,7 +99,13 @@ def test_every_version_of_a_fix_check_has_its_dockerfile(target: FixCheckTarget)
 
 
 @pytest.mark.parametrize("target", FIX_CHECK_TARGETS, ids=lambda t: t.flaw)
-def test_the_last_patched_version_is_the_image_the_run_audits(target: FixCheckTarget):
+def test_the_last_patched_version_is_the_image_the_run_audits_or_its_release(
+    target: FixCheckTarget,
+):
+    # A `<service>-patched` image carries what only the fix check reads, which the run image may
+    # not, on the run's release: every build argument it pins is one the run Dockerfile pins.
     last_patched = target.server_patched_service or target.patched_service
+    service = given.admitted_server(target).service
 
-    assert last_patched == given.admitted_server(target).service
+    assert last_patched in (service, f"{service}-patched")
+    assert given.build_arguments(last_patched) <= given.build_arguments(service)

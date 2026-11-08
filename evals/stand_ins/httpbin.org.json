@@ -1,0 +1,123 @@
+{
+  "host": "httpbin.org",
+  "address": "44.209.237.184",
+  "source": "capture",
+  "captured_at": "2026-11-07T21:21:31Z",
+  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/httpbin.org.json https://httpbin.org/json",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/json",
+      "status": 200,
+      "headers": [
+        [
+          "access-control-allow-credentials",
+          "true"
+        ],
+        [
+          "access-control-allow-origin",
+          "*"
+        ],
+        [
+          "access-control-expose-headers",
+          "Retry-After, RateLimit, RateLimit-Policy"
+        ],
+        [
+          "content-length",
+          "429"
+        ],
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-content-type-options",
+          "nosniff"
+        ],
+        [
+          "date",
+          "Sat, 07 Nov 2026 21:21:32 GMT"
+        ]
+      ],
+      "body": "{\n  \"slideshow\": {\n    \"author\": \"Yours Truly\", \n    \"date\": \"date of publication\", \n    \"slides\": [\n      {\n        \"title\": \"Wake up to WonderWidgets!\", \n        \"type\": \"all\"\n      }, \n      {\n        \"items\": [\n          \"Why <em>WonderWidgets</em> are great\", \n          \"Who <em>buys</em> WonderWidgets\"\n        ], \n        \"title\": \"Overview\", \n        \"type\": \"all\"\n      }\n    ], \n    \"title\": \"Sample Slide Show\"\n  }\n}\n"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/a0929678e7798e15",
+      "status": 404,
+      "headers": [
+        [
+          "access-control-allow-credentials",
+          "true"
+        ],
+        [
+          "access-control-allow-origin",
+          "*"
+        ],
+        [
+          "access-control-expose-headers",
+          "Retry-After, RateLimit, RateLimit-Policy"
+        ],
+        [
+          "content-length",
+          "233"
+        ],
+        [
+          "content-type",
+          "text/html"
+        ],
+        [
+          "x-content-type-options",
+          "nosniff"
+        ],
+        [
+          "date",
+          "Sat, 07 Nov 2026 21:21:32 GMT"
+        ]
+      ],
+      "body": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again.</p>\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/a0929678e7798e15",
+      "status": 404,
+      "headers": [
+        [
+          "access-control-allow-credentials",
+          "true"
+        ],
+        [
+          "access-control-allow-origin",
+          "*"
+        ],
+        [
+          "access-control-expose-headers",
+          "Retry-After, RateLimit, RateLimit-Policy"
+        ],
+        [
+          "content-length",
+          "233"
+        ],
+        [
+          "content-type",
+          "text/html"
+        ],
+        [
+          "x-content-type-options",
+          "nosniff"
+        ],
+        [
+          "date",
+          "Sat, 07 Nov 2026 21:21:32 GMT"
+        ]
+      ],
+      "body": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again.</p>\n",
+      "path_form": null
+    }
+  ]
+}

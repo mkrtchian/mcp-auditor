@@ -3145,7 +3145,13 @@
             {
               "vulnerable_name": "fetch-report",
               "patched_name": "fetch-report",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -3155,7 +3161,9 @@
           "benign_calls": [
             {
               "tool": "fetch-report",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Sample Slide Show",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -3169,7 +3177,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -3178,15 +3187,20 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/tmp",
-        "has_network": true
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [
+            "httpbin.org"
+          ],
+          "trust": [
+            "SSL_CERT_FILE"
+          ],
+          "ip_label_domains": []
+        }
       },
       "launch": [],
       "service": "contextforge",
-      "backend": {
-        "provisioner": "contextforge",
-        "image": "mcp-auditor-cve-contextforge-responder:local",
-        "network": "mcp-auditor-cve-contextforge-bridge"
-      },
+      "backend": null,
       "agents": [
         {
           "role": "admitter",
@@ -3197,19 +3211,173 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-18905",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-18905",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-18905",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-18905",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-18905",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-18905",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        }
+      ],
       "settlements": [
         {
           "server_package": "PyPI:mcp-contextforge-gateway",
+          "flaw": "CVE-2026-18905",
+          "field": "benign_calls",
+          "value": "record A's call: fetch-report with no argument, expecting the title Sample Slide Show of the document httpbin.org answers on its /json route",
+          "reason": "the rule serves a public host a benign call needs under its real name, from a capture of the live service when one can be taken, so the REST tool's upstream is httpbin.org reached over HTTPS, the scheme the gateway's own tests register it with; record A's call reads a fixed document the capture holds, where record B's targets the /get route of a self-built httpbin over plain HTTP, its expected text being the URL the gateway requested"
+        },
+        {
+          "server_package": "PyPI:mcp-contextforge-gateway",
           "flaw": null,
-          "field": "runs_over_stdio",
-          "value": "true",
-          "reason": "record A rebuilt the gateway as an HTTP service and concluded false; the holdout twin exposes it over MCP stdio via contextforge_ssrf_env, so stdio is the settled value, and the counted tool, benign and exploit are taken from that stdio fixture (record A ran it as HTTP, so its tools and benign are empty)"
+          "field": "host",
+          "value": "unprivileged, working directory /tmp, no network, httpbin.org served under its real name through the holder with SSL_CERT_FILE trust",
+          "reason": "a server with no backend runs with no network, and a public host it calls is served through the holder under its real name, its TLS trusted through the setting the client reads; record B kept the committed host with its network, behind a backend serving httpbin under a network alias, which the rule's preference for a capture of the public service over a self-built deployment sets aside"
+        },
+        {
+          "server_package": "PyPI:mcp-contextforge-gateway",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record A's capture-backed stand-in for httpbin.org, its /json route and its default captured from the live service",
+          "reason": "the real software is a public service that publishes no release, so the first source in the rule's order, a capture of the live service served under its real name, stands for it; record B ran its own build of the httpbin repository as a backend and recorded no stand-in"
+        },
+        {
+          "server_package": "PyPI:mcp-contextforge-gateway",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's five: the REST tool registration (written, its name the one the admission records), its description from httpbin's own summary of /json, the virtual server name demo-server from the gateway's documentation, the secrets the gateway's own generator writes at build time, and the database and admin user the gateway's bootstrap creates",
+          "reason": "record A's seeds follow the upstream the settled benign call reads, each document pinned by commit in the run Dockerfile, where record B's describe the /get route of the backend it built"
+        },
+        {
+          "server_package": "PyPI:mcp-contextforge-gateway",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "httpbin.org as deployed and captured on 2026-11-07, which publishes no version",
+          "reason": "the run replays the capture of the live service, so the release recorded is that deployment on the capture's day, where record B recorded the httpbin repository's head commit it built and the run does not use"
         }
       ],
-      "patched_version": "1.0.7"
+      "patched_version": "1.0.7",
+      "stand_ins": [
+        {
+          "replaces": "httpbin.org, the public HTTP request and response service that the gateway's documentation registers as a REST tool upstream, reached by fetch-report at https://httpbin.org/json",
+          "reason": "httpbin.org is a public deployment on the Internet, which the run's closed network does not reach. The gateway 1.0.7 resolves the host and pins the request to that address at invocation, so the stand-in sits at the captured global address of httpbin.org, which its SSRF guard accepts, and serves TLS under the name httpbin.org from a leaf of the fixture authority, which the gateway trusts through SSL_CERT_FILE.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/httpbin.org.json",
+          "outputs": [
+            {
+              "request": "GET https://httpbin.org/json",
+              "source": "capture",
+              "citation": "httpbin.org, live answer captured 2026-11-07T21:21:31Z by evals.capture_stand_in (route https GET /json, status 200, application/json)"
+            },
+            {
+              "request": "any other request, on http or https",
+              "source": "capture",
+              "citation": "httpbin.org's live answer to a generated path it does not have, captured 2026-11-07T21:21:31Z (defaults, status 404, text/html 'Not Found' page, path_form null: it does not quote the request)"
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "REST tool registration fetch_report (exposed as fetch-report): integration_type REST, request_type GET, url https://httpbin.org/json; the name is the tool name the admission records",
+          "kind": "written",
+          "citation": "url: httpbin.org as the gateway documents a REST upstream, docs/docs/development/release-management.md section 12.2 at tag v1.0.7, route /json from https://httpbin.org/spec.json",
+          "pin": null
+        },
+        {
+          "item": "tool description 'Returns a simple JSON document.'",
+          "kind": "project_document",
+          "citation": "httpbin.org API description, https://httpbin.org/spec.json, paths./json.get.summary, the docstring of httpbin's /json view (httpbin/core.py)",
+          "pin": "postmanlabs/httpbin@9c38edc39e695d7757cad0e081b85238976ef53d:httpbin/core.py"
+        },
+        {
+          "item": "virtual server name 'demo-server' grouping the tool, visibility public",
+          "kind": "project_document",
+          "citation": "ContextForge docs/docs/testing/basic.md, section 7 'Create a Virtual Server' (name demo-server); visibility public is written, as the committed fixture had it, so the minted admin token lists it",
+          "pin": "IBM/mcp-context-forge@c4f1ba919554c2ac639387521ed0332feed3583e:docs/docs/testing/basic.md"
+        },
+        {
+          "item": "JWT_SECRET_KEY, AUTH_ENCRYPTION_SECRET, BASIC_AUTH_PASSWORD, PLATFORM_ADMIN_PASSWORD in /opt/mcpgw/.env, loaded by the entrypoint into the gateway's environment",
+          "kind": "generated",
+          "citation": "generated at image build time by the gateway's own generator, python -m mcpgateway.scripts.init_secrets --output, as mcpgateway/config.py 1.0.7 instructs for the jwt_secret_key and auth_encryption_secret placeholders",
+          "pin": "GATEWAY_VERSION=1.0.7"
+        },
+        {
+          "item": "the gateway's SQLite database (default DATABASE_URL sqlite:///./mcp.db in the working directory /tmp) and its platform admin admin@example.com, created by the gateway's own bootstrap at start",
+          "kind": "generated",
+          "citation": "mcpgateway/config.py 1.0.7 defaults database_url and platform_admin_email; the lifespan runs bootstrap_db (mcpgateway_skip_migrations default false)",
+          "pin": "GATEWAY_VERSION=1.0.7"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "httpbin.org (Postman's hosted httpbin service)",
+          "release": "the deployment live on 2026-11-07, captured 2026-11-07T21:21Z; it publishes no version (spec.json info.version is empty)",
+          "day": "2026-11-07",
+          "source": "https://httpbin.org/spec.json (info: title httpbin.org, version '') and the capture evals/stand_ins/httpbin.org.json"
+        }
+      ]
     },
     {
       "server_package": "PyPI:doris-mcp-server",
