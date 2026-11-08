@@ -1,15 +1,26 @@
-# Nuisance run image of android: a copy of Dockerfile.holdout-2026-19978-android-patched, its instructions unchanged but for the adb stub the run adds before its command,
-# pinning the admission's patched version, commit 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a.
-
-# CVE-2026-19978 patched build: jiantao88/android-mcp-server at the fix commit 14e2bf2
-# (createAdbExecutor runs adb through execFile with an argument vector and validates the
-# package/permission/deviceId inputs, so caller input can no longer become host shell syntax).
-# Same base and toolchain as the vulnerable image; only the checked-out commit differs.
+# Nuisance run image of android (rule v4): jiantao88/android-mcp-server at its patched version,
+# the fix commit 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a, driving the real adb client of Android
+# SDK Platform-Tools. Only the Android device, which cannot run under the confinement, is replaced:
+# a device-side adb transport on the local emulator port answers the adb client over the adb wire
+# protocol. Starting point: Dockerfile.holdout-2026-19978-android-patched (same base, Platform-Tools
+# release and server build); the device transport is extended from its connection-only form.
 FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
+# git fetches the pinned commit; curl and unzip fetch and unpack Platform-Tools and the sample APK.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates adb curl \
+ && apt-get install -y --no-install-recommends git ca-certificates curl unzip \
  && rm -rf /var/lib/apt/lists/*
+
+# Real Android SDK Platform-Tools (adb), release 37.0.1, installed as the server README prescribes
+# (download the Android SDK Platform Tools); the release and day are the holdout card's
+# (37.0.1, the stable channel-0 release on 2026-11-05). sha256 as pinned by the holdout twin.
+ARG PLATFORM_TOOLS_SHA256=d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1
+RUN curl -fsSL -o /tmp/platform-tools.zip \
+      https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip \
+    && echo "${PLATFORM_TOOLS_SHA256}  /tmp/platform-tools.zip" | sha256sum -c - \
+    && unzip -q /tmp/platform-tools.zip -d /opt/android \
+    && rm /tmp/platform-tools.zip
+ENV PATH=/opt/android/platform-tools:$PATH
 
 WORKDIR /app
 RUN git clone https://github.com/jiantao88/android-mcp-server.git . \
@@ -17,11 +28,329 @@ RUN git clone https://github.com/jiantao88/android-mcp-server.git . \
  && npm install --no-audit --no-fund \
  && npm run build
 
-# A device stand-in for the nuisance run: every counted tool drives a connected Android device
-# through adb, and no device or emulator runs under the confinement. The stub answers each adb
-# invocation with the fixed line `ok` and exit 0, never echoing its arguments. The launch passes it as the server's adb path;
-# the server's code, and the real adb, are unchanged.
-RUN printf '#!/bin/sh\necho ok\nexit 0\n' > /usr/local/bin/adb-device-stub \
- && chmod +x /usr/local/bin/adb-device-stub
+# Published sample APK, taken whole: helloworld5.apk (package com.example.helloworld, launcher
+# activity com.example.helloworld.MainActivity), the first APK of the adb project's own test data,
+# platform/packages/modules/adb fastdeploy/testdata at commit
+# 1cf2f017d312f73b3dc53bda85ef2610e35a80e9 (gitiles serves it base64-encoded; the decoded file's
+# sha256 is pinned).
+ARG SAMPLE_APK_SHA256=de53a65342eb58a400b2be54f842d0256fe906b7688d89f89c9efd5e4013c905
+RUN curl -fsSL 'https://android.googlesource.com/platform/packages/modules/adb/+/1cf2f017d312f73b3dc53bda85ef2610e35a80e9/fastdeploy/testdata/helloworld5.apk?format=TEXT' \
+      | base64 -d > /opt/helloworld5.apk \
+    && echo "${SAMPLE_APK_SHA256}  /opt/helloworld5.apk" | sha256sum -c - \
+    && chmod 0644 /opt/helloworld5.apk
 
-CMD ["node", "/app/build/index.js", "/usr/bin/adb"]
+# Device-side adb transport (replaces the Android device only). Wire protocol per the AOSP adb
+# protocol doc (packages/modules/adb docs/dev/protocol.md, shell v2 and sync framing per
+# adb's shell_protocol.h and file_sync_protocol.h); device identity copied from the adb
+# documentation example (developer.android.com/tools/adb). Each answer's source is recorded in
+# the admission's stand_ins record. It runs no command: it answers fixed words at fixed positions
+# of the request from a table, and keeps the device state a real device keeps (installed
+# packages, started app, pushed files).
+RUN cat > /usr/local/lib/adbd.js <<'JS'
+const net = require("net");
+const C = (s) => Buffer.from(s).readUInt32LE(0);
+const A_CNXN = C("CNXN"), A_OPEN = C("OPEN"), A_OKAY = C("OKAY"), A_WRTE = C("WRTE"), A_CLSE = C("CLSE");
+const BANNER = Buffer.from("device::ro.product.name=sdk_google_phone_x86;ro.product.model=Android_SDK_built_for_x86;ro.product.device=generic_x86;features=shell_v2,cmd,stat_v2\0");
+const CHUNK = 4096;
+
+const DUMPSYS_INPUT = "INPUT MANAGER (dumpsys input)\n\nEvent Hub State:\n  BuiltInKeyboardId: -2\n  Devices:\n    -1: Virtual\n      Classes: 0x40000023\n      Path: \n      Descriptor: a718a782d34bc767f4689c232d64d527998ea7fd\n      Location:\n      ControllerNumber: 0\n      UniqueId: \n      Identifier: bus=0x0000, vendor=0x0000, product=0x0000, version=0x0000\n      KeyLayoutFile: /system/usr/keylayout/Generic.kl\n      KeyCharacterMapFile: /system/usr/keychars/Virtual.kcm\n      ConfigurationFile:\n      HaveKeyboardLayoutOverlay: false\n    1: msm8974-taiko-mtp-snd-card Headset Jack\n      Classes: 0x00000080\n      Path: /dev/input/event5\n      Descriptor: c8e3782483b4837ead6602e20483c46ff801112c\n      Location: ALSA\n      ControllerNumber: 0\n      UniqueId:\n      Identifier: bus=0x0000, vendor=0x0000, product=0x0000, version=0x0000\n      KeyLayoutFile:\n      KeyCharacterMapFile:\n      ConfigurationFile:\n      HaveKeyboardLayoutOverlay: false\n    2: msm8974-taiko-mtp-snd-card Button Jack\n      Classes: 0x00000001\n      Path: /dev/input/event4\n      Descriptor: 96fe62b244c555351ec576b282232e787fb42bab\n      Location: ALSA\n      ControllerNumber: 0\n      UniqueId:\n      Identifier: bus=0x0000, vendor=0x0000, product=0x0000, version=0x0000\n      KeyLayoutFile: /system/usr/keylayout/msm8974-taiko-mtp-snd-card_Button_Jack.kl\n      KeyCharacterMapFile: /system/usr/keychars/msm8974-taiko-mtp-snd-card_Button_Jack.kcm\n      ConfigurationFile:\n      HaveKeyboardLayoutOverlay: false\n    3: hs_detect\n      Classes: 0x00000081\n      Path: /dev/input/event3\n      Descriptor: 485d69228e24f5e46da1598745890b214130dbc4\n      Location:\n      ControllerNumber: 0\n      UniqueId:\n      Identifier: bus=0x0000, vendor=0x0001, product=0x0001, version=0x0001\n      KeyLayoutFile: /system/usr/keylayout/hs_detect.kl\n      KeyCharacterMapFile: /system/usr/keychars/hs_detect.kcm\n      ConfigurationFile:\n      HaveKeyboardLayoutOverlay: false\n...\n";
+const DUMPSYS_MEMINFO_APP = "** MEMINFO in pid 18227 [com.example.helloworld] **\n                   Pss  Private  Private  Swapped     Heap     Heap     Heap\n                 Total    Dirty    Clean    Dirty     Size    Alloc     Free\n                ------   ------   ------   ------   ------   ------   ------\n  Native Heap    10468    10408        0        0    20480    14462     6017\n  Dalvik Heap    34340    33816        0        0    62436    53883     8553\n Dalvik Other      972      972        0        0\n        Stack     1144     1144        0        0\n      Gfx dev    35300    35300        0        0\n    Other dev        5        0        4        0\n     .so mmap     1943      504      188        0\n    .apk mmap      598        0      136        0\n    .ttf mmap      134        0       68        0\n    .dex mmap     3908        0     3904        0\n    .oat mmap     1344        0       56        0\n    .art mmap     2037     1784       28        0\n   Other mmap       30        4        0        0\n   EGL mtrack    73072    73072        0        0\n    GL mtrack    51044    51044        0        0\n      Unknown      185      184        0        0\n        TOTAL   216524   208232     4384        0    82916    68345    14570\n\n Dalvik Details\n        .Heap     6568     6568        0        0\n         .LOS    24771    24404        0        0\n          .GC      500      500        0        0\n    .JITCache      428      428        0        0\n      .Zygote     1093      936        0        0\n   .NonMoving     1908     1908        0        0\n .IndirectRef       44       44        0        0\n\n Objects\n               Views:       90         ViewRootImpl:        1\n         AppContexts:        4           Activities:        1\n              Assets:        2        AssetManagers:        2\n       Local Binders:       21        Proxy Binders:       28\n       Parcel memory:       18         Parcel count:       74\n    Death Recipients:        2      OpenSSL Sockets:        2\n";
+const SYSTEM_PACKAGES = ["android", "com.android.camera2", "com.android.contacts", "com.android.deskclock", "com.android.dialer", "com.android.launcher3", "com.android.messaging", "com.android.providers.contacts", "com.android.settings", "com.android.shell", "com.android.systemui"];
+const APP = "com.example.helloworld";
+const APP_APK_SIZE = "1998764";
+const APP_COMPONENTS = ["com.example.helloworld/.MainActivity", "com.example.helloworld/com.example.helloworld.MainActivity"];
+
+const OUT = {
+  activityContainers:
+    "ACTIVITY MANAGER CONTAINERS (dumpsys activity containers)\n" +
+    "#0 ROOT type=undefined mode=fullscreen override-mode=undefined requested-bounds=[0,0][0,0] bounds=[0,0][1080,1920]\n" +
+    " #0 Display 0 name=\"Built-in Screen\" type=undefined mode=fullscreen override-mode=fullscreen requested-bounds=[0,0][0,0] bounds=[0,0][1080,1920]\n" +
+    " \n",
+  windowWindows:
+    "WINDOW MANAGER WINDOWS (dumpsys window windows)\n" +
+    "  Window #0 Window{3c1a5e2 u0 StatusBar}:\n" +
+    "    mDisplayId=0 rootTaskId=1 mSession=Session{1b2f6c3 1452:u0a10086} mClient=android.os.BinderProxy@4e7d0a1\n" +
+    "    mOwnerUid=10086 showForAllUsers=true package=com.android.systemui appop=NONE\n" +
+    "    mAttrs={(0,0)(fillx63) gr=TOP CENTER_VERTICAL sim={adjust=pan} ty=STATUS_BAR fmt=TRANSLUCENT}\n" +
+    "\n" +
+    "  mGlobalConfiguration={1.0 ?mcc?mnc [en_US] ldltr sw411dp w411dp h659dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 1920) mAppBounds=Rect(0, 63 - 1080, 1794) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6}\n" +
+    "  mHasPermanentDpad=false\n" +
+    "  mTopFocusedDisplayId=0\n",
+  surfaceFlinger:
+    "Build configuration: [sf PRESENT_TIME_OFFSET=0 FORCE_HWC_FOR_RBG_TO_YUV=0 MAX_VIRT_DISPLAY_DIM=0 RUNNING_WITHOUT_SYNC_FRAMEWORK=0 NUM_FRAMEBUFFER_SURFACE_BUFFERS=3]\n" +
+    "\n" +
+    "Display identification data:\n" +
+    "\n" +
+    "Wide-Color information:\n" +
+    "Device supports wide color: 0\n" +
+    "DisplayColorSetting: Managed\n" +
+    "\n" +
+    "Sync configuration: [using: EGL_ANDROID_native_fence_sync EGL_KHR_wait_sync]\n" +
+    "\n",
+  display:
+    "DISPLAY MANAGER (dumpsys display)\n" +
+    "  mSafeMode=false\n" +
+    "  mPendingTraversal=false\n" +
+    "  mViewports=[DisplayViewport{type=INTERNAL, valid=true, isActive=true, displayId=0, uniqueId='local:0', physicalPort=0, orientation=0, logicalFrame=Rect(0, 0 - 1080, 1920), physicalFrame=Rect(0, 0 - 1080, 1920), deviceWidth=1080, deviceHeight=1920}]\n" +
+    "\n" +
+    "Display Devices: size=1\n" +
+    "  DisplayDeviceInfo{\"Built-in Screen\": uniqueId=\"local:0\", 1080 x 1920, modeId 1, defaultModeId 1, density 420, 420.0 x 420.0 dpi, appVsyncOff 1000000, presDeadline 16666666, touch INTERNAL, rotation 0, type INTERNAL, state ON, FLAG_DEFAULT_DISPLAY, FLAG_ROTATES_WITH_CONTENT, FLAG_SECURE, FLAG_SUPPORTS_PROTECTED_BUFFERS}\n",
+  battery:
+    "Current Battery Service state:\n" +
+    "  AC powered: true\n" +
+    "  USB powered: false\n" +
+    "  Wireless powered: false\n" +
+    "  Max charging current: 0\n" +
+    "  Max charging voltage: 0\n" +
+    "  Charge counter: 10000\n" +
+    "  status: 2\n" +
+    "  health: 2\n" +
+    "  present: true\n" +
+    "  level: 100\n" +
+    "  scale: 100\n" +
+    "  voltage: 5000\n" +
+    "  temperature: 250\n" +
+    "  technology: Li-ion\n",
+  connectivity:
+    "NetworkProviders for:\n" +
+    "  1: PhoneSwitcherNetworkRequstListener\n" +
+    "  2: TelephonyNetworkFactory[0]\n" +
+    "\n" +
+    "Active default network: 100\n" +
+    "\n" +
+    "Current Networks:\n" +
+    "  NetworkAgentInfo{network{100}  handle{432902426637}  ni{MOBILE[LTE] CONNECTED extra: }  Score(70 ; KeepConnected : 0 ; Policies : TRANSPORT_PRIMARY&EVER_USER_SELECTED)  everValidated{true}  lastValidated{true}  created{true}  destroyed{false}  lingering{false}}\n" +
+    "\n",
+  services: "Currently running services:\n  Locksmith\n  Valet\n",
+  cpuinfoHead:
+    "Load: 0.52 / 0.61 / 0.48\n" +
+    "CPU usage from 21183ms to 6146ms ago (2026-11-05 09:41:02.118 to 2026-11-05 09:41:17.155):\n" +
+    "  3.4% 1452/system_server: 2.2% user + 1.2% kernel / faults: 812 minor\n" +
+    "  1.3% 589/surfaceflinger: 0.6% user + 0.7% kernel\n" +
+    "  0.9% 1718/com.android.systemui: 0.6% user + 0.3% kernel / faults: 95 minor\n",
+  cpuinfoApp: "  1.1% 4211/com.example.helloworld: 0.7% user + 0.4% kernel / faults: 230 minor\n",
+  cpuinfoTail: "6.9% TOTAL: 4.1% user + 2.6% kernel + 0.1% iowait + 0.1% softirq\n",
+};
+
+const state = { installed: new Set(SYSTEM_PACKAGES), running: new Set(), files: new Map() };
+const DIRS = new Set(["/", "/sdcard", "/sdcard/", "/data/local/tmp", "/data/local/tmp/"]);
+
+function words(cmd) {
+  const out = [];
+  const re = /'((?:[^']|'\\'')*)'|(\S+)/g;
+  let m;
+  while ((m = re.exec(cmd)) !== null) out.push(m[1] !== undefined ? m[1].replace(/'\\''/g, "'") : m[2]);
+  return out;
+}
+const eq = (a, b) => a.length === b.length && a.every((x, i) => b[i] === null || x === b[i]);
+const ok = (stdout = "") => ({ stdout, stderr: "", code: 0 });
+const fail = (stdout, stderr, code) => ({ stdout, stderr, code });
+
+function shellCommand(cmd) {
+  const LOGCAT = "export ANDROID_LOG_TAGS=''; exec logcat ";
+  if (cmd.startsWith(LOGCAT)) {
+    const w = words(cmd.slice(LOGCAT.length));
+    if (eq(w, ["-c"]) || eq(w, ["-b", null, "-c"])) return ok();
+    if (eq(w, ["-d", "-v", "threadtime", "*:E", "-n", null]) && /^[0-9]+$/.test(w[5])) return ok();
+  }
+  const w = words(cmd);
+  if (eq(w, ["pm", "list", "packages"])) return ok([...state.installed].map((p) => "package:" + p + "\n").join(""));
+  if (w.length === 3 && w[0] === "input" && w[1] === "text") return ok();
+  if ((w.length === 2 || (w.length === 3 && w[1] === "-p")) && w[0] === "screencap") return ok();
+  if (eq(w, ["pm", "clear", null])) return state.installed.has(w[2]) ? ok("Success\n") : fail("", "Failed\n", 1);
+  if (w.length === 4 && w[0] === "pm" && (w[1] === "grant" || w[1] === "revoke")) {
+    if (!state.installed.has(w[2])) return fail("", "Exception occurred while executing '" + w[1] + "':\njava.lang.IllegalArgumentException: Unknown package: " + w[2] + "\n", 255);
+    if (w[2] === "com.android.camera2" && w[3] === "android.permission.CAMERA") return ok();
+    return fail("", "Exception occurred while executing '" + w[1] + "':\njava.lang.SecurityException: Package " + w[2] + " has not requested permission " + w[3] + "\n", 255);
+  }
+  if (w[0] === "pm" && w[1] === "reset-permissions") return ok();
+  if (w[0] === "rm" && w.length >= 2) {
+    const flags = w.slice(1, -1), path = w[w.length - 1];
+    if (flags.every((f) => f === "-r" || f === "-f")) {
+      if (state.files.has(path)) { state.files.delete(path); return ok(); }
+      if (flags.includes("-f")) return ok();
+      return fail("", "rm: " + path + ": No such file or directory\n", 1);
+    }
+  }
+  if (eq(w, ["monkey", "-p", null, "-c", "android.intent.category.LAUNCHER", "1"])) {
+    const err = "args: [" + w.slice(1).join(", ") + "]\n" + w.slice(1).map((a) => " arg: \"" + a + "\"\n").join("");
+    if (state.installed.has(w[2]) && w[2] === APP) { state.running.add(APP); return fail("Events injected: 1\n", err, 0); }
+    return fail("** No activities found to run, monkey aborted.\n", err, 252);
+  }
+  if (eq(w, ["am", "start", "-n", null])) {
+    const short = w[3].replace(/^([^/]+)\/\1\./, "$1/.");
+    if (APP_COMPONENTS.includes(w[3]) && state.installed.has(APP)) { state.running.add(APP); return ok("Starting: Intent { cmp=" + short + " }\n"); }
+    return fail("Starting: Intent { cmp=" + short + " }\nError type 3\nError: Activity class {" + short + "} does not exist.\n", "", 1);
+  }
+  if (eq(w, ["dumpsys", "activity", "containers"])) return ok(OUT.activityContainers);
+  if (eq(w, ["dumpsys", "window", "windows"])) return ok(OUT.windowWindows);
+  if (eq(w, ["dumpsys", "SurfaceFlinger"])) return ok(OUT.surfaceFlinger);
+  if (eq(w, ["dumpsys", "input"])) return ok(DUMPSYS_INPUT);
+  if (eq(w, ["dumpsys", "display"])) return ok(OUT.display);
+  if (eq(w, ["dumpsys", "battery"])) return ok(OUT.battery);
+  if (eq(w, ["dumpsys", "connectivity"])) return ok(OUT.connectivity);
+  if (eq(w, ["dumpsys", "-l"])) return ok(OUT.services);
+  if (eq(w, ["dumpsys", "cpuinfo"])) return ok(OUT.cpuinfoHead + (state.running.has(APP) ? OUT.cpuinfoApp : "") + OUT.cpuinfoTail);
+  if (eq(w, ["dumpsys", "meminfo", null])) return state.running.has(w[2]) && w[2] === APP ? ok(DUMPSYS_MEMINFO_APP) : ok("No process found for: " + w[2] + "\n");
+  if (eq(w, ["timeout", null, "getevent", "-lrt"]) && /^[0-9]+$/.test(w[1])) return { stdout: "", stderr: "", code: 124, delay: Math.min(parseInt(w[1], 10), 300) * 1000 };
+  if (eq(w, ["cmd", "package", "uninstall", null]) || eq(w, ["cmd", "package", "uninstall", "-k", null])) {
+    const pkg = w[w.length - 1];
+    if (pkg === APP && state.installed.has(pkg)) { state.installed.delete(pkg); state.running.delete(pkg); return ok("Success\n"); }
+    return fail("Failure [DELETE_FAILED_INTERNAL_ERROR]\n", "", 1);
+  }
+  return fail("", "/system/bin/sh: " + (w[0] || "") + ": inaccessible or not found\n", 127);
+}
+
+function u32(n) { const b = Buffer.alloc(4); b.writeUInt32LE(n >>> 0); return b; }
+function u64(n) { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n)); return b; }
+function syncMsg(id, n, data = Buffer.alloc(0)) { return Buffer.concat([Buffer.from(id), u32(n), data]); }
+function statOf(path) {
+  if (DIRS.has(path)) return { mode: 0o040771, size: 4096 };
+  if (state.files.has(path)) return { mode: 0o100660, size: state.files.get(path).length };
+  return null;
+}
+
+function pack(cmd, a0, a1, data) {
+  const h = Buffer.alloc(24);
+  let s = 0; for (const b of data) s = (s + b) >>> 0;
+  h.writeUInt32LE(cmd >>> 0, 0); h.writeUInt32LE(a0 >>> 0, 4); h.writeUInt32LE(a1 >>> 0, 8);
+  h.writeUInt32LE(data.length, 12); h.writeUInt32LE(s, 16); h.writeUInt32LE((cmd ^ 0xffffffff) >>> 0, 20);
+  return Buffer.concat([h, data]);
+}
+
+let nextId = 1;
+net.createServer((sock) => {
+  let buf = Buffer.alloc(0);
+  const streams = new Map();
+  function open(remote, onData) {
+    const s = { id: nextId++, remote, queue: [], waiting: false, closing: false, onData };
+    streams.set(s.id, s);
+    sock.write(pack(A_OKAY, s.id, remote, Buffer.alloc(0)));
+    return s;
+  }
+  function pump(s) {
+    if (s.waiting) return;
+    if (s.queue.length) { s.waiting = true; sock.write(pack(A_WRTE, s.id, s.remote, s.queue.shift())); return; }
+    if (s.closing) { streams.delete(s.id); sock.write(pack(A_CLSE, s.id, s.remote, Buffer.alloc(0))); }
+  }
+  function send(s, data) { for (let i = 0; i < data.length; i += CHUNK) s.queue.push(data.subarray(i, i + CHUNK)); pump(s); }
+  function close(s) { s.closing = true; pump(s); }
+  function v2(id, data) { const d = Buffer.from(data); return Buffer.concat([Buffer.from([id]), u32(d.length), d]); }
+  function runShell(s, cmd, v2mode) {
+    const r = shellCommand(cmd);
+    const finish = () => {
+      if (v2mode) {
+        const parts = [];
+        if (r.stdout) parts.push(v2(1, r.stdout));
+        if (r.stderr) parts.push(v2(2, r.stderr));
+        parts.push(v2(3, Buffer.from([r.code & 0xff])));
+        send(s, Buffer.concat(parts));
+      } else send(s, Buffer.from(r.stdout + r.stderr));
+      close(s);
+    };
+    if (r.delay) setTimeout(finish, r.delay); else finish();
+  }
+  function installStream(s, svc) {
+    const m = /^exec:cmd package 'install'((?: '-[grdt]')*) -S ([0-9]+)$/.exec(svc);
+    if (!m) { close(s); return; }
+    let left = parseInt(m[2], 10);
+    const done = () => {
+      if (m[2] === APP_APK_SIZE) { state.installed.add(APP); send(s, Buffer.from("Success\n")); }
+      else send(s, Buffer.from("Failure [INSTALL_FAILED_INVALID_APK]\n"));
+      close(s);
+    };
+    s.onData = (d) => { left -= d.length; if (left <= 0) { s.onData = () => {}; done(); } };
+    if (left === 0) done();
+  }
+  function syncStream(s) {
+    let sb = Buffer.alloc(0);
+    let recvTo = null, sendPath = null, sendBufs = [];
+    s.onData = (d) => {
+      sb = Buffer.concat([sb, d]);
+      while (sb.length >= 8) {
+        const id = sb.subarray(0, 4).toString("latin1"), n = sb.readUInt32LE(4);
+        const hasBody = !["DONE", "QUIT"].includes(id);
+        if (hasBody && sb.length < 8 + n) break;
+        const body = hasBody ? sb.subarray(8, 8 + n) : Buffer.alloc(0);
+        sb = sb.subarray(hasBody ? 8 + n : 8);
+        if (id === "STAT") {
+          const st = statOf(body.toString());
+          send(s, Buffer.concat([Buffer.from("STAT"), u32(st ? st.mode : 0), u32(st ? st.size : 0), u32(st ? 1762335662 : 0)]));
+        } else if (id === "STA2" || id === "LST2") {
+          const st = statOf(body.toString());
+          send(s, Buffer.concat([Buffer.from(id), u32(st ? 0 : 2), u64(0), u64(0), u32(st ? st.mode : 0), u32(st ? 1 : 0), u32(st ? 1023 : 0), u32(st ? 1023 : 0), u64(st ? st.size : 0), u64(st ? 1762335662 : 0), u64(st ? 1762335662 : 0), u64(st ? 1762335662 : 0)]));
+        } else if (id === "LIST") {
+          send(s, Buffer.concat([Buffer.from("DONE"), u32(0), u32(0), u32(0), u32(0)]));
+        } else if (id === "SEND") {
+          const spec = body.toString(); sendPath = spec.slice(0, spec.lastIndexOf(",")); sendBufs = [];
+        } else if (id === "DATA" && sendPath !== null) {
+          sendBufs.push(Buffer.from(body));
+        } else if (id === "DONE" && sendPath !== null) {
+          state.files.set(sendPath, Buffer.concat(sendBufs)); sendPath = null; sendBufs = [];
+          send(s, syncMsg("OKAY", 0));
+        } else if (id === "RECV") {
+          const path = body.toString();
+          if (state.files.has(path)) {
+            const data = state.files.get(path);
+            const parts = [];
+            for (let i = 0; i < data.length; i += 65536) { const c = data.subarray(i, i + 65536); parts.push(syncMsg("DATA", c.length, c)); }
+            parts.push(syncMsg("DONE", 0));
+            send(s, Buffer.concat(parts));
+          } else {
+            const msg = Buffer.from("No such file or directory"); send(s, syncMsg("FAIL", msg.length, msg));
+          }
+        } else if (id === "QUIT") { close(s); return; }
+        else { const msg = Buffer.from("unknown command"); send(s, syncMsg("FAIL", msg.length, msg)); close(s); return; }
+      }
+    };
+  }
+  sock.on("data", (d) => {
+    buf = Buffer.concat([buf, d]);
+    while (buf.length >= 24) {
+      const cmd = buf.readUInt32LE(0), a0 = buf.readUInt32LE(4), a1 = buf.readUInt32LE(8), dlen = buf.readUInt32LE(12);
+      if (buf.length < 24 + dlen) break;
+      const data = buf.subarray(24, 24 + dlen);
+      buf = buf.subarray(24 + dlen);
+      if (cmd === A_CNXN) sock.write(pack(A_CNXN, 0x01000001, 256 * 1024, BANNER));
+      else if (cmd === A_OPEN) {
+        const svc = data.toString().replace(/\0+$/, "");
+        const s = open(a0, () => {});
+        let m;
+        if ((m = /^shell,v2(?:,[^:]*)?:(.*)$/s.exec(svc))) runShell(s, m[1], true);
+        else if ((m = /^shell:(.*)$/s.exec(svc))) runShell(s, m[1], false);
+        else if (svc === "sync:") syncStream(s);
+        else if (svc.startsWith("exec:cmd package 'install'")) installStream(s, svc);
+        else close(s);
+      } else if (cmd === A_OKAY) {
+        const s = streams.get(a1);
+        if (s) { s.waiting = false; pump(s); }
+      } else if (cmd === A_WRTE) {
+        const s = streams.get(a1);
+        sock.write(pack(A_OKAY, a1, a0, Buffer.alloc(0)));
+        if (s) s.onData(Buffer.from(data));
+      } else if (cmd === A_CLSE) {
+        const s = streams.get(a1);
+        if (s) streams.delete(a1);
+      }
+    }
+  });
+  sock.on("error", () => {});
+}).listen(parseInt(process.argv[2] || "5555", 10), "127.0.0.1");
+JS
+
+RUN cat > /usr/local/bin/startup <<'SH'
+#!/bin/sh
+node /usr/local/lib/adbd.js 5555 &
+until node -e 'require("net").connect(5555,"127.0.0.1").on("connect",function(){process.exit(0)}).on("error",function(){process.exit(1)})' 2>/dev/null; do sleep 0.2; done
+adb start-server >/dev/null 2>&1
+i=0
+until adb devices 2>/dev/null | grep -qE 'emulator-5554[[:space:]]+device'; do
+  i=$((i+1)); [ "$i" -ge 60 ] && break; sleep 0.25
+done
+exec "$@"
+SH
+RUN chmod +x /usr/local/bin/startup
+
+ENTRYPOINT ["/usr/local/bin/startup"]
+# The MCP stdio server; argv[2] is the adb path the README documents.
+CMD ["node", "/app/build/index.js", "/opt/android/platform-tools/adb"]

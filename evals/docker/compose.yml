@@ -859,7 +859,7 @@ services:
       context: .
       dockerfile: Dockerfile.android
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "8d22b4b879f089173f9ae14dfaf72e0cf1bbc18fcc7779e5a8394489e040ffa1"
+        org.mcp-auditor.dockerfile-fingerprint: "eb5fa4b57c19f03bd712098ed71350dd0cd8447ef9aa0768f83dcd24527e8316"
     image: mcp-auditor-nuisance-android:local
     profiles: ["nuisance"]
 
