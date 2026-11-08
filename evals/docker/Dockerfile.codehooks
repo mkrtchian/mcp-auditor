@@ -1,23 +1,37 @@
-# codehooks-mcp-server (CVE-2025-53100), patched git tag v0.2.2 (GHSA-fhq6-jf5q-qxvq's named
-# fix; package.json still reads 0.1.0, as it does at v0.2.1, since the package is private and
-# never published to npm). query_collection now builds an argv array and runs
-# child_process.execFile('coho', [...]), so the collection argument travels as one literal
-# token and no shell re-parses it. Doubles as the nuisance run image. No COPY/ADD from the
-# build context; the repository is fetched by RUN from the pinned tag.
+# codehooks-mcp-server (CVE-2025-53100), patched git tag v0.2.2 (commit 62f918a6, the merge of
+# GHSA-fhq6-jf5q-qxvq's fix 83db1d1b; package.json reads 0.1.0 at both tags, the package is
+# private and never published to npm). query_collection builds an argv array and runs
+# child_process.execFile('coho', [...]), so no shell re-parses an argument. Doubles as the
+# nuisance run image. No COPY/ADD from the build context; the repository is fetched by RUN from
+# the pinned tag and checked against its commit.
+# The real Codehooks CLI runs in the container, installed as the server's own Dockerfile
+# installs it (`npm install -g codehooks`), pinned at the stable release of the build day. The
+# Codehooks.io platform it calls cannot run under the confinement: the run serves its hosts
+# under their real names from captures (host.public_names), and the CLI trusts their
+# certificate through NODE_EXTRA_CA_CERTS.
+# The server's lock file is kept, so `npm install` honours it: the documented install command
+# uses the project's package-lock.json.
 FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates \
+ && apt-get install -y --no-install-recommends git ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
+RUN npm install -g codehooks@1.3.3
+# deploy_code runs `npm install` on a package.json that depends on codehooks-js before `coho deploy`
+# compiles it: the npm cache of the run user (HOME=/tmp) holds codehooks-js, the stable release of
+# the build day, and its dependencies, since the run reaches no registry and npm falls back to its
+# cache when the registry cannot be reached.
+RUN mkdir /tmp/codehooks-js-cache && cd /tmp/codehooks-js-cache && npm init -y >/dev/null \
+ && HOME=/tmp npm install codehooks-js@1.4.14 \
+ && cd / && rm -rf /tmp/codehooks-js-cache && chown -R 65534:65534 /tmp/.npm
 WORKDIR /app
 RUN git clone --depth 1 --branch v0.2.2 https://github.com/RestDB/codehooks-mcp-server.git /app \
+ && test "$(git -C /app rev-parse HEAD)" = 62f918a6fde6a8c700521b542b85315c70f05794 \
  && npm install \
  && chmod -R a+rX /app
 
-RUN printf '%s\n' '#!/bin/sh' 'printf "[]\n"' 'exit 0' > /usr/local/bin/coho \
- && chmod 755 /usr/local/bin/coho
-
-ENV CODEHOOKS_PROJECT_NAME=demo \
+ENV NODE_ENV=production \
+    CODEHOOKS_PROJECT_NAME=petsdb-5544 \
     CODEHOOKS_SPACE=dev \
-    CODEHOOKS_ADMIN_TOKEN=dummy-admin-token-000
+    CODEHOOKS_ADMIN_TOKEN=7c1e4b9a-3d2f-4a86-b0e5-91f2c6d8a437
 
 ENTRYPOINT ["node", "/app/build/index.js"]

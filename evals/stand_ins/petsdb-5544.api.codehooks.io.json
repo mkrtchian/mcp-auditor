@@ -1,0 +1,876 @@
+{
+ "host": "petsdb-5544.api.codehooks.io",
+ "address": "188.166.132.82",
+ "source": "capture",
+ "captured_at": "2026-11-07T20:13:00Z",
+ "command": "python -m evals.capture_stand_in --out evals/stand_ins/petsdb-5544.api.codehooks.io.json https://petsdb-5544.api.codehooks.io/dev (defaults and address from the public host); routes: the answers of the Codehooks local development stack (ghcr.io/restdb/flexnes, codehooks-apigateway, codehooks-coderunner, pinned by digest) to the requests the codehooks CLI 1.3.3 sends for the tool calls listed in the record, recorded on 2026-11-07, plus the routes written from the codehooks.io File API documentation and invented routes",
+ "request_headers": [],
+ "routes": [
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/pets?q=%7B%7D&h=%7B%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"4b-WSMuu+JR+QhzOfO/XuGQOuQStxM\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "{\"name\":\"pets\",\"created\":\"2026-11-07T20:13:42.754Z\",\"count\":0,\"indexes\":{}}"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/_dbmetadata?q=%7B%22_id%22:%7B%22$in%22:[%22collections%22,%22counters%22]%7D%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:43 GMT"
+    ]
+   ],
+   "body": "[{\"collections\":[[\"_hooks\",{\"name\":\"_hooks\",\"created\":\"2026-11-07T20:02:44.743Z\",\"count\":0,\"indexes\":{}}],[\"_defaultkvspace\",{\"name\":\"_defaultkvspace\",\"created\":\"2026-11-07T20:02:51.513Z\",\"count\":0,\"indexes\":{},\"type\":\"key-val\"}],[\"_blobs\",{\"name\":\"_blobs\",\"created\":\"2026-11-07T20:04:44.521Z\",\"count\":0,\"indexes\":{}}],[\"_syslog\",{\"name\":\"_syslog\",\"created\":\"2026-11-07T20:11:01.690Z\",\"count\":0,\"indexes\":{}}],[\"pets\",{\"name\":\"pets\",\"created\":\"2026-11-07T20:13:42.754Z\",\"count\":0,\"indexes\":{}}]],\"_id\":\"collections\"},\n{\"collections\":{\"_dbmetadata\":2,\"_hooks\":2,\"_syslog\":1},\"queues\":{},\"kvspaces\":{},\"indexes\":{},\"total\":5,\"blobsize\":0,\"verified\":true,\"_id\":\"counters\"}]\n"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/dev/_A_D_M_indexes",
+   "status": 201,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "text/plain; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"2f-ar1sXbQHiRwSo9ud2ehAX0IIUyM\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:43 GMT"
+    ]
+   ],
+   "body": "{\"message\":\"Indexing started\",\"index\":[\"name\"]}"
+  },
+  {
+   "scheme": "https",
+   "method": "DELETE",
+   "target": "/dev/_A_D_M_indexes",
+   "status": 201,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:44 GMT"
+    ]
+   ],
+   "body": "[\"name\"]"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/person?q=%7B%7D&h=%7B%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"a4-J6kXWv/yvRdFXVugWlR/vsESyzk\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:45 GMT"
+    ]
+   ],
+   "body": "{\"name\":\"person\",\"created\":\"2026-11-07T20:13:45.071Z\",\"count\":0,\"indexes\":{},\"schema\":{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}}"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/mycollection?q=%7B%7D&h=%7B%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"53-7glz64R8PxMK0k+PPFOzvVSPlaY\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:45 GMT"
+    ]
+   ],
+   "body": "{\"name\":\"mycollection\",\"created\":\"2026-11-07T20:13:45.560Z\",\"count\":0,\"indexes\":{}}"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/temperature?q=%7B%7D&h=%7B%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"73-OaV0ZzlpOjLLpaOKKwuM+xCF/EU\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:46 GMT"
+    ]
+   ],
+   "body": "{\"name\":\"temperature\",\"created\":\"2026-11-07T20:13:46.235Z\",\"count\":0,\"indexes\":{},\"cap\":{\"max\":10000,\"delay\":1000}}"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/stocks?q=%7B%7D&h=%7B%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"4d-WLEh5IW+W2VFY8V450fm3H2sIYA\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:46 GMT"
+    ]
+   ],
+   "body": "{\"name\":\"stocks\",\"created\":\"2026-11-07T20:13:46.699Z\",\"count\":0,\"indexes\":{}}"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/dev/_A_D_M_restore/mydata",
+   "status": 201,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:47 GMT"
+    ]
+   ],
+   "body": "[{\"name\":\"Polly\",\"type\":\"Parrot\",\"_id\":\"6aef867b440a0e006a94a161\"}]"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/mydata?q=%7B%7D&h=%7B%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:47 GMT"
+    ]
+   ],
+   "body": "[{\"name\":\"Polly\",\"type\":\"Parrot\",\"_id\":\"6aef867b440a0e006a94a161\"}]\n"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_export/mydata",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:48 GMT"
+    ]
+   ],
+   "body": "[{\"name\":\"Polly\",\"type\":\"Parrot\",\"_id\":\"6aef867b440a0e006a94a161\"}]\n"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/dev/_A_D_M_keys",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"24-Zh8iaaMyCRPJYFgXi3HjXMDT1PM\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:48 GMT"
+    ]
+   ],
+   "body": "{\"key\":\"my-value-one\",\"value\":\"foo\"}"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_keys?key=my-value-one",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"24-Zh8iaaMyCRPJYFgXi3HjXMDT1PM\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:49 GMT"
+    ]
+   ],
+   "body": "{\"key\":\"my-value-one\",\"value\":\"foo\"}"
+  },
+  {
+   "scheme": "https",
+   "method": "DELETE",
+   "target": "/dev/_A_D_M_keys",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "ETag",
+     "W/\"16-ve7Bwv+UbADE/gxNd5QZd6KDAUQ\""
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:50 GMT"
+    ]
+   ],
+   "body": "{\"key\":\"my-value-one\"}"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/logs?q=%7B%7D&h=%7B%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:15:51 GMT"
+    ]
+   ],
+   "body": "0"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_logs?dbname=dev&tail=10",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-cache"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "text/event-stream; charset=utf-8"
+    ],
+    [
+     "Access-Control-Allow-Origin",
+     "*"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:06:24 GMT"
+    ]
+   ],
+   "body": "id: 42\nevent: logend\ndata: \nretry: 10000\n\n"
+  },
+  {
+   "scheme": "https",
+   "method": "GET",
+   "target": "/dev/_A_D_M_query/_blobs?q=%7B%22path%22:%7B%22$regex%22:%22.%22%7D%7D&h=%7B%7D",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "[\n{\"path\":\"/robots.txt\",\"size\":114,\"date\":\"2023-09-29T12:12:10.000Z\",\"_id\":\"6516f3b26c816e0015ca7b60\"},\n{\"path\":\"/upload/dummy.pdf\",\"size\":1234,\"date\":\"2023-09-29T16:22:10.499Z\",\"_id\":\"6516f9b26c816e0015ce7b6d\"},\n{\"path\":\"/upload/logo.pdf\",\"size\":259096,\"date\":\"2023-09-30T11:48:18.003Z\",\"_id\":\"6517155cd8c8a40071d6bc79\"},\n{\"path\":\"/upload/report.html\",\"size\":1320,\"date\":\"2023-09-30T12:46:31.640Z\",\"_id\":\"65180b50d8fc2b01b3b2515e\"}\n]"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/dev/_A_D_M_deploy",
+   "status": 201,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "{\"success\":true}"
+  }
+ ],
+ "defaults": [
+  {
+   "scheme": "http",
+   "probed_target": "/f29bed72f7b1e97b",
+   "status": 308,
+   "headers": [
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:02 GMT"
+    ],
+    [
+     "Content-Type",
+     "text/html"
+    ],
+    [
+     "Content-Length",
+     "164"
+    ],
+    [
+     "Connection",
+     "keep-alive"
+    ],
+    [
+     "Location",
+     "https://petsdb-5544.api.codehooks.io/f29bed72f7b1e97b"
+    ]
+   ],
+   "body": "<html>\r\n<head><title>308 Permanent Redirect</title></head>\r\n<body>\r\n<center><h1>308 Permanent Redirect</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n",
+   "path_form": null
+  },
+  {
+   "scheme": "https",
+   "probed_target": "/f29bed72f7b1e97b",
+   "status": 404,
+   "headers": [
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:02 GMT"
+    ],
+    [
+     "Content-Type",
+     "text/html; charset=utf-8"
+    ],
+    [
+     "Content-Length",
+     "9"
+    ],
+    [
+     "Connection",
+     "keep-alive"
+    ],
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "ETag",
+     "W/\"9-R1yEhnOj95+nePAcK9WnIdTEFwc\""
+    ],
+    [
+     "Strict-Transport-Security",
+     "max-age=15724800; includeSubDomains"
+    ]
+   ],
+   "body": "Not found",
+   "path_form": null
+  }
+ ]
+}

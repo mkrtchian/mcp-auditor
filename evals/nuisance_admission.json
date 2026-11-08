@@ -11083,7 +11083,222 @@
             {
               "vulnerable_name": "query_collection",
               "patched_name": "query_collection",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "deploy_code",
+              "patched_name": "deploy_code",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "file_upload",
+              "patched_name": "file_upload",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "file_delete",
+              "patched_name": "file_delete",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "file_list",
+              "patched_name": "file_list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_index",
+              "patched_name": "create_index",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "drop_index",
+              "patched_name": "drop_index",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_collection",
+              "patched_name": "create_collection",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "drop_collection",
+              "patched_name": "drop_collection",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "add_schema",
+              "patched_name": "add_schema",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "remove_schema",
+              "patched_name": "remove_schema",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "cap_collection",
+              "patched_name": "cap_collection",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "uncap_collection",
+              "patched_name": "uncap_collection",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "import",
+              "patched_name": "import",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "export",
+              "patched_name": "export",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kv_get",
+              "patched_name": "kv_get",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kv_set",
+              "patched_name": "kv_set",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kv_del",
+              "patched_name": "kv_del",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "logs",
+              "patched_name": "logs",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "collection",
+              "patched_name": "collection",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -11096,21 +11311,266 @@
               "arguments": {
                 "collection": "mydata",
                 "limit": 5
-              }
+              },
+              "expect": "\"Parrot\"",
+              "before": [
+                {
+                  "tool": "import",
+                  "arguments": {
+                    "collection": "mydata",
+                    "content": "[{\"name\": \"Polly\", \"type\": \"Parrot\"}]"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "deploy_code",
+              "arguments": {
+                "files": [
+                  {
+                    "path": "index.js",
+                    "content": "import { app } from 'codehooks-js';\n\napp.get('/hello', (req, res) => {\n  res.json({ message: 'Hello, world!' });\n});\n\n// MANDATORY: bind to serverless runtime\nexport default app.init();\n"
+                  }
+                ]
+              },
+              "expect": "Deployed Codehook successfully",
+              "before": []
+            },
+            {
+              "tool": "file_upload",
+              "arguments": {
+                "target": "/upload/report.html",
+                "content": "Hello World!"
+              },
+              "expect": "Uploading: ",
+              "before": []
+            },
+            {
+              "tool": "file_delete",
+              "arguments": {
+                "filename": "/upload/report.html"
+              },
+              "expect": "Deleting: ",
+              "before": [
+                {
+                  "tool": "file_upload",
+                  "arguments": {
+                    "target": "/upload/report.html",
+                    "content": "Hello World!"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "file_list",
+              "arguments": {},
+              "expect": "/robots.txt",
+              "before": []
+            },
+            {
+              "tool": "create_index",
+              "arguments": {
+                "collection": "pets",
+                "index": "name"
+              },
+              "expect": "Index creation started",
+              "before": [
+                {
+                  "tool": "create_collection",
+                  "arguments": {
+                    "collection": "pets"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "drop_index",
+              "arguments": {
+                "collection": "pets",
+                "index": "name"
+              },
+              "expect": "Removed index for",
+              "before": [
+                {
+                  "tool": "create_collection",
+                  "arguments": {
+                    "collection": "pets"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_collection",
+              "arguments": {
+                "collection": "pets"
+              },
+              "expect": "Collection created successfully",
+              "before": []
+            },
+            {
+              "tool": "drop_collection",
+              "arguments": {
+                "collection": "logs"
+              },
+              "expect": "Dropped collection",
+              "before": []
+            },
+            {
+              "tool": "add_schema",
+              "arguments": {
+                "collection": "person",
+                "schema": "{\"type\": \"object\", \"properties\": {\"name\": {\"type\": \"string\"}}, \"required\": [\"name\"]}"
+              },
+              "expect": "Schema added successfully",
+              "before": []
+            },
+            {
+              "tool": "remove_schema",
+              "arguments": {
+                "collection": "mycollection"
+              },
+              "expect": "Schema removed successfully",
+              "before": []
+            },
+            {
+              "tool": "cap_collection",
+              "arguments": {
+                "collection": "temperature",
+                "cap": 10000
+              },
+              "expect": "Collection capped successfully",
+              "before": []
+            },
+            {
+              "tool": "uncap_collection",
+              "arguments": {
+                "collection": "stocks"
+              },
+              "expect": "Collection uncapped successfully",
+              "before": []
+            },
+            {
+              "tool": "import",
+              "arguments": {
+                "collection": "mydata",
+                "content": "[{\"name\": \"Polly\", \"type\": \"Parrot\"}]"
+              },
+              "expect": "Finished import",
+              "before": []
+            },
+            {
+              "tool": "export",
+              "arguments": {
+                "collection": "mydata"
+              },
+              "expect": "\"Parrot\"",
+              "before": [
+                {
+                  "tool": "import",
+                  "arguments": {
+                    "collection": "mydata",
+                    "content": "[{\"name\": \"Polly\", \"type\": \"Parrot\"}]"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "kv_get",
+              "arguments": {
+                "key": "my-value-one"
+              },
+              "expect": "\"value\"",
+              "before": [
+                {
+                  "tool": "kv_set",
+                  "arguments": {
+                    "key": "my-value-one",
+                    "val": "foo"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "kv_set",
+              "arguments": {
+                "key": "my-value-one",
+                "val": "foo"
+              },
+              "expect": "Key set successfully",
+              "before": []
+            },
+            {
+              "tool": "kv_del",
+              "arguments": {
+                "key": "my-value-one"
+              },
+              "expect": "Key deleted successfully",
+              "before": [
+                {
+                  "tool": "kv_set",
+                  "arguments": {
+                    "key": "my-value-one",
+                    "val": "foo"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "logs",
+              "arguments": {
+                "tail": 10
+              },
+              "expect": "Space:",
+              "before": []
+            },
+            {
+              "tool": "collection",
+              "arguments": {
+                "json": true
+              },
+              "expect": "\"Collection\"",
+              "before": [
+                {
+                  "tool": "create_collection",
+                  "arguments": {
+                    "collection": "pets"
+                  }
+                }
+              ]
             }
           ],
-          "backend_need": "none",
+          "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "query_collection"
+              "query_collection",
+              "file_upload",
+              "file_delete",
+              "file_list",
+              "create_index",
+              "drop_index",
+              "create_collection",
+              "drop_collection",
+              "add_schema",
+              "remove_schema",
+              "cap_collection",
+              "uncap_collection",
+              "import",
+              "export",
+              "kv_get",
+              "kv_set",
+              "kv_del",
+              "logs",
+              "collection",
+              "deploy_code"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -11119,7 +11579,17 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/",
-        "has_network": false
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [
+            "petsdb-5544.api.codehooks.io",
+            "petsdb-5544.meta.codehooks.io"
+          ],
+          "trust": [
+            "NODE_EXTRA_CA_CERTS"
+          ],
+          "ip_label_domains": []
+        }
       },
       "launch": [],
       "service": "codehooks",
@@ -11134,17 +11604,72 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2025-53100",
           "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53100",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53100",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53100",
+          "field": "benign_calls",
           "agreed": false
         },
         {
           "flaw": "CVE-2025-53100",
-          "field": "patched_source",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53100",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
           "agreed": false
         }
       ],
@@ -11152,26 +11677,216 @@
         {
           "server_package": "https://github.com/RestDB/codehooks-mcp-server",
           "flaw": "CVE-2025-53100",
-          "field": "tools",
-          "value": "query_collection",
-          "reason": "record A counted query_collection alone; record B widened the flaw to all 21 tools, reasoning that each funnels a caller-controlled field into the same exec-built coho command line. Settled to record A's single tool: record B's 21-tool list is an extrapolation from a source diff, not a per-tool exploit run, and the suite counts tools whose injection is actually confirmed (the ios-simulator precedent: four ui_* tools were considered, two counted). query_collection's own injection and clean benign call are confirmed against the built images; the other 20 are left uncounted rather than claimed on an unexercised analogy."
+          "field": "benign_calls",
+          "value": "record A's twenty calls, one per listed tool, each a well-formed invocation written from the tool's description and the Codehooks CLI documentation examples, with a distinct collection, key or path so no two requests share a method and target, a before call seeding data where the answer would otherwise be empty, and an expect that is a fixed word of the real CLI's success output",
+          "reason": "record A's calls are driven by the real Codehooks CLI against the captured answers of the vendor's local development stack, each argument taken from the CLI documentation's own example for that command, where record B's differ on several tools; both records agree the calls must not share a request target, since the stand-in keys a route on method and target alone, so each uses its own collection or key name"
         },
         {
           "server_package": "https://github.com/RestDB/codehooks-mcp-server",
-          "flaw": "CVE-2025-53100",
-          "field": "patched_source",
-          "value": "fix_commit",
-          "reason": "record A said fix_commit, record B said advisory. Settled to fix_commit: codehooks-mcp-server (server_package the github repo RestDB/codehooks-mcp-server) is never published to any package registry (package.json reads 0.1.0 at both the vulnerable and patched git tags), so the fix exists only as git tag v0.2.2, which the patched image builds by cloning that tag. The repo convention records a git tag no registry release carries as fix_commit, regardless of the GHSA naming '0.2.2'."
+          "flaw": null,
+          "field": "host",
+          "value": "unprivileged, working directory /, no network, the two Codehooks hosts served under their real names through the holder with NODE_EXTRA_CA_CERTS trust",
+          "reason": "the server has no backend: the Codehooks platform is a hosted service the CLI reaches with an account token, so the two public hosts the CLI calls are served under their real names from captures through the holder, and a host declaring a trust setting with a backend and a network, as record B wrote, would be refused at load because a server with no backend runs with no network"
         },
         {
           "server_package": "https://github.com/RestDB/codehooks-mcp-server",
-          "flaw": "CVE-2025-53100",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "query_collection's declared function is to query one Codehooks collection; the v0.2.2 fix rewrites the call onto execFile with an argv array, so the arbitrary-command path does not exist on the patched server and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record A's two capture-backed stand-ins for petsdb-5544.api.codehooks.io and petsdb-5544.meta.codehooks.io, served under their real names",
+          "reason": "record A replaces only the two platform hosts the CLI calls, keeping the CLI itself real, where record B stood in the hosts under a localhost name behind a registered backend; the real-name form is required because the launch serves public names through the holder and the CLI addresses the hosts by their real names"
+        },
+        {
+          "server_package": "https://github.com/RestDB/codehooks-mcp-server",
+          "flaw": null,
+          "field": "seeds",
+          "value": "none",
+          "reason": "the Codehooks software publishes no playable sample dataset, so no seed is planted: the data the benign calls read is written by their own before calls and answered from the captures, where record B seeded the vendor's local deployment, a backend this fixture does not run"
+        },
+        {
+          "server_package": "https://github.com/RestDB/codehooks-mcp-server",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "record A's three: the Codehooks CLI 1.3.3, codehooks-js 1.4.14, and the Codehooks local development stack by digest as the source of the captured answers",
+          "reason": "record A records the software the run drives and the stack the captures were taken from, where record B additionally listed the stack's Redis and MongoDB images; those are not pulled by the run, which replays the captures, so they are left out"
         }
       ],
-      "patched_version": "0.2.2"
+      "patched_version": "0.2.2",
+      "stand_ins": [
+        {
+          "replaces": "the Codehooks.io admin API host https://petsdb-5544.api.codehooks.io (the coho CLI's query, index, collection, schema, cap, import, export, key-value, log, file-list and deploy requests)",
+          "reason": "Codehooks.io is a hosted platform reached with an account's admin token; the vendor's local development stack runs here but is reached by the CLI only through the undocumented COHO_APIGW_URL endpoint override over plain HTTP, lacks the blob store and the deploy route, and is several containers beside a server whose record has no backend. The CLI itself runs in the container; only the platform's host is replaced, under its real name.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/petsdb-5544.api.codehooks.io.json",
+          "outputs": [
+            {
+              "request": "GET /dev/_A_D_M_query/pets?q=%7B%7D&h=%7B%7D",
+              "source": "capture",
+              "citation": "create_collection: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_query/_dbmetadata?q=%7B%22_id%22:%7B%22$in%22:[%22collections%22,%22counters%22]%7D%7D",
+              "source": "capture",
+              "citation": "collection: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "POST /dev/_A_D_M_indexes",
+              "source": "capture",
+              "citation": "create_index: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "DELETE /dev/_A_D_M_indexes",
+              "source": "capture",
+              "citation": "drop_index: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_query/person?q=%7B%7D&h=%7B%7D",
+              "source": "capture",
+              "citation": "add_schema: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_query/mycollection?q=%7B%7D&h=%7B%7D",
+              "source": "capture",
+              "citation": "remove_schema: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_query/temperature?q=%7B%7D&h=%7B%7D",
+              "source": "capture",
+              "citation": "cap_collection: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_query/stocks?q=%7B%7D&h=%7B%7D",
+              "source": "capture",
+              "citation": "uncap_collection: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "POST /dev/_A_D_M_restore/mydata",
+              "source": "capture",
+              "citation": "import: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_query/mydata?q=%7B%7D&h=%7B%7D",
+              "source": "capture",
+              "citation": "query_collection: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_export/mydata",
+              "source": "capture",
+              "citation": "export: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "POST /dev/_A_D_M_keys",
+              "source": "capture",
+              "citation": "kv_set: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_keys?key=my-value-one",
+              "source": "capture",
+              "citation": "kv_get: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "DELETE /dev/_A_D_M_keys",
+              "source": "capture",
+              "citation": "kv_del: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_query/logs?q=%7B%7D&h=%7B%7D",
+              "source": "capture",
+              "citation": "drop_collection: the Codehooks local development stack (ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32e..., flexnes@sha256:6081fdbd9edf..., codehooks-coderunner@sha256:4cfca47d62a6...) driven by the codehooks CLI 1.3.3 in the run image, recorded by a forwarding proxy on 2026-11-07"
+            },
+            {
+              "request": "GET /dev/_A_D_M_logs?dbname=dev&tail=10",
+              "source": "capture",
+              "citation": "logs: the same local gateway's event-stream answer, fetched with curl from inside the closed network on 2026-11-07 (the forwarding proxy cannot relay a stream)"
+            },
+            {
+              "request": "GET /dev/_A_D_M_query/_blobs?q=%7B%22path%22:%7B%22$regex%22:%22.%22%7D%7D&h=%7B%7D",
+              "source": "software_sources",
+              "citation": "file_list: https://codehooks.io/docs/fileapi, list(path), 'Example output shows folders and files', the four records copied whole (headers: the local gateway's JSON answer headers)"
+            },
+            {
+              "request": "POST /dev/_A_D_M_deploy",
+              "source": "invented",
+              "citation": "deploy_code: no source holds the answer: the cloud needs an account and the local gateway crashes on this route (deploy.js ReferenceError, 2026-11-07)",
+              "form_source": "codehooks CLI 1.3.3 dist/cmds/31-deploy.js: a JSON object, read for an error field only, in the form of the CLI's own --json success object {success: true}"
+            },
+            {
+              "request": "any other request (default, https 404 'Not found'; http 308 to https)",
+              "source": "capture",
+              "citation": "python -m evals.capture_stand_in against https://petsdb-5544.api.codehooks.io on 2026-11-07T20:13:00Z (address 188.166.132.82)"
+            }
+          ]
+        },
+        {
+          "replaces": "the Codehooks.io file host https://petsdb-5544.meta.codehooks.io (file upload and delete, deploy source upload)",
+          "reason": "Codehooks.io is a hosted platform reached with an account's admin token; the vendor's local development stack runs here but is reached by the CLI only through the undocumented COHO_APIGW_URL endpoint override over plain HTTP, lacks the blob store and the deploy route, and is several containers beside a server whose record has no backend. The CLI itself runs in the container; only the platform's host is replaced, under its real name.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/petsdb-5544.meta.codehooks.io.json",
+          "outputs": [
+            {
+              "request": "POST /dev/blob/%2Fupload%2Freport.html",
+              "source": "invented",
+              "citation": "file_upload: the local stack has no blob store (its gateway answers 400, 'request to http://undefined:8910/... failed') and the cloud needs an account; the CLI reads the status only (29-upload-file.js)",
+              "form_source": "https://codehooks.io/docs/fileapi example listing record (size, date, _id), without its path so that it holds no part of the request"
+            },
+            {
+              "request": "DELETE /dev/blob/%2Fupload%2Freport.html",
+              "source": "invented",
+              "citation": "file_delete: the local stack has no blob store and the cloud needs an account; the CLI reads the status only (29.1-delete-file.js)",
+              "form_source": "https://codehooks.io/docs/fileapi example listing record, without its path"
+            },
+            {
+              "request": "DELETE /dev/src/*",
+              "source": "invented",
+              "citation": "deploy_code source upload: the CLI ignores these bodies and their status (31-deploy.js deleteSourceCode, uploadSourceCode); no source holds them",
+              "form_source": "an empty JSON object, the form of the local gateway's JSON answers"
+            },
+            {
+              "request": "POST /dev/src/index.js",
+              "source": "invented",
+              "citation": "deploy_code source upload: the CLI ignores these bodies and their status (31-deploy.js deleteSourceCode, uploadSourceCode); no source holds them",
+              "form_source": "an empty JSON object, the form of the local gateway's JSON answers"
+            },
+            {
+              "request": "POST /dev/src/package.json",
+              "source": "invented",
+              "citation": "deploy_code source upload: the CLI ignores these bodies and their status (31-deploy.js deleteSourceCode, uploadSourceCode); no source holds them",
+              "form_source": "an empty JSON object, the form of the local gateway's JSON answers"
+            },
+            {
+              "request": "POST /dev/src/package-lock.json",
+              "source": "invented",
+              "citation": "deploy_code source upload: the CLI ignores these bodies and their status (31-deploy.js deleteSourceCode, uploadSourceCode); no source holds them",
+              "form_source": "an empty JSON object, the form of the local gateway's JSON answers"
+            },
+            {
+              "request": "any other request (default, https 404 'Not found'; http 308 to https)",
+              "source": "capture",
+              "citation": "python -m evals.capture_stand_in against https://petsdb-5544.meta.codehooks.io on 2026-11-07T20:13:02Z; the file is written (source software_sources) at the fixed global address 188.166.132.81, since the public host resolves to the api host's address and the holder serves one name per address"
+            }
+          ]
+        }
+      ],
+      "seeds": [],
+      "software_releases": [
+        {
+          "software": "codehooks (Codehooks CLI, coho)",
+          "release": "1.3.3",
+          "day": "2026-11-07",
+          "source": "https://registry.npmjs.org/codehooks dist-tags.latest 1.3.3 (published 2026-08-31); the server's own Dockerfile at v0.2.2 installs it with 'npm install -g codehooks', no version"
+        },
+        {
+          "software": "codehooks-js (installed by deploy_code's npm install)",
+          "release": "1.4.14",
+          "day": "2026-11-07",
+          "source": "https://registry.npmjs.org/codehooks-js dist-tags.latest 1.4.14 (published 2026-11-07); deploy_code writes a package.json depending on codehooks-js 'latest' (src/index.ts at v0.2.2)"
+        },
+        {
+          "software": "Codehooks platform, local development stack (source of the api host's captured answers; the run does not pull it)",
+          "release": "ghcr.io/restdb/flexnes@sha256:6081fdbd9edff0c09205797cbe7a851728bd589b0f98ea6b2bf2e867afa21c19, ghcr.io/restdb/codehooks-apigateway@sha256:a996b736a32ed729175f25193f9c26b085c226744242ddeb3d0bf6d34e8e5a4b, ghcr.io/restdb/codehooks-coderunner@sha256:4cfca47d62a62c61c688929f3b310ef5530c7efa68d529651793b229e760c738, with mongo:7@sha256:8bb4442761a63a8dda452744082cdac9644b429807eb977b42324a63cef59ca4 and redis:7-alpine@sha256:c5d34a98396a4775e223c74e929162c35c5a2182901ba26b50ade939941ce14b",
+          "day": "2026-11-07",
+          "source": "https://codehooks.io/docs/local-development-with-docker and https://codehooks.io/download/docker-compose.yml (sha256 3e4a3a04a85f851f81a36b59af5eb69e855182947b319930548d92daf8cab246, images at :latest, resolved to these digests on 2026-11-07)"
+        }
+      ]
     },
     {
       "server_package": "https://github.com/UsamaK98/python-notebook-mcp",

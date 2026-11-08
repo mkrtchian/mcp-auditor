@@ -1,0 +1,344 @@
+{
+ "host": "petsdb-5544.meta.codehooks.io",
+ "address": "188.166.132.81",
+ "source": "software_sources",
+ "captured_at": null,
+ "command": "written from the codehooks CLI 1.3.3 sources (dist/cmds/29-upload-file.js, 29.1-delete-file.js, 31-deploy.js: the meta host's answers are read for their status only) and the codehooks.io File API documentation (https://codehooks.io/docs/fileapi, its example listing record); defaults as the public host answered on 2026-11-07 (https 404 'Not found', http 308 to https); a fixed global address beside the api host's",
+ "request_headers": [],
+ "routes": [
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/dev/blob/%2Fupload%2Freport.html",
+   "status": 201,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "{\"size\":1320,\"date\":\"2023-09-30T12:46:31.640Z\",\"_id\":\"65180b50d8fc2b01b3b2515e\"}"
+  },
+  {
+   "scheme": "https",
+   "method": "DELETE",
+   "target": "/dev/blob/%2Fupload%2Freport.html",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "{\"size\":1320,\"date\":\"2023-09-30T12:46:31.640Z\",\"_id\":\"65180b50d8fc2b01b3b2515e\"}"
+  },
+  {
+   "scheme": "https",
+   "method": "DELETE",
+   "target": "/dev/src/*",
+   "status": 200,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "{}"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/dev/src/index.js",
+   "status": 201,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "{}"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/dev/src/package.json",
+   "status": 201,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "{}"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/dev/src/package-lock.json",
+   "status": 201,
+   "headers": [
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:42 GMT"
+    ]
+   ],
+   "body": "{}"
+  }
+ ],
+ "defaults": [
+  {
+   "scheme": "http",
+   "probed_target": "/6351b4a4742e5a4e",
+   "status": 308,
+   "headers": [
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:03 GMT"
+    ],
+    [
+     "Content-Type",
+     "text/html"
+    ],
+    [
+     "Content-Length",
+     "164"
+    ],
+    [
+     "Connection",
+     "keep-alive"
+    ],
+    [
+     "Location",
+     "https://petsdb-5544.meta.codehooks.io/6351b4a4742e5a4e"
+    ]
+   ],
+   "body": "<html>\r\n<head><title>308 Permanent Redirect</title></head>\r\n<body>\r\n<center><h1>308 Permanent Redirect</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n",
+   "path_form": null
+  },
+  {
+   "scheme": "https",
+   "probed_target": "/6351b4a4742e5a4e",
+   "status": 404,
+   "headers": [
+    [
+     "Date",
+     "Sat, 07 Nov 2026 20:13:03 GMT"
+    ],
+    [
+     "Content-Type",
+     "text/html; charset=utf-8"
+    ],
+    [
+     "Content-Length",
+     "9"
+    ],
+    [
+     "Connection",
+     "keep-alive"
+    ],
+    [
+     "Surrogate-Control",
+     "no-store"
+    ],
+    [
+     "Cache-Control",
+     "no-store, no-cache, must-revalidate, proxy-revalidate"
+    ],
+    [
+     "Pragma",
+     "no-cache"
+    ],
+    [
+     "Expires",
+     "0"
+    ],
+    [
+     "Vary",
+     "Origin"
+    ],
+    [
+     "Access-Control-Allow-Credentials",
+     "true"
+    ],
+    [
+     "ETag",
+     "W/\"9-R1yEhnOj95+nePAcK9WnIdTEFwc\""
+    ],
+    [
+     "Strict-Transport-Security",
+     "max-age=15724800; includeSubDomains"
+    ]
+   ],
+   "body": "Not found",
+   "path_form": null
+  }
+ ]
+}
