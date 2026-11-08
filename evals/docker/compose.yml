@@ -850,7 +850,7 @@ services:
       context: .
       dockerfile: Dockerfile.nmap
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "2bdeead337cced7802e1c39b079b0bdf86c3ee98cef9e6574a619d238376b96b"
+        org.mcp-auditor.dockerfile-fingerprint: "fb8984aa3ac6d11ad861042ba42d723da037d0432ba49b598b3a707f247ce9be"
     image: mcp-auditor-nuisance-nmap:local
     profiles: ["nuisance"]
 

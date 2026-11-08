@@ -2080,7 +2080,13 @@
             {
               "vulnerable_name": "run_nmap_scan",
               "patched_name": "run_nmap_scan",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -2093,7 +2099,9 @@
               "arguments": {
                 "target": "127.0.0.1",
                 "scanType": "quick"
-              }
+              },
+              "expect": "Nmap scan report for",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -2107,7 +2115,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -2131,19 +2140,93 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "set_aside": "its record was written before its work, under an instruction since corrected that told an agent stopped by a safety classifier to write its record at once"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
-      "settlements": [
+      "agreement": [
         {
-          "server_package": "npm:mcp-nmap-server",
+          "flaw": "CVE-2026-3484",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-3484",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-3484",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-3484",
+          "field": "benign_calls",
+          "agreed": true
+        },
+        {
           "flaw": "CVE-2026-3484",
           "field": "fix_check.source",
-          "value": "holdout_calibration",
-          "reason": "the counted flaw is the nmap holdout twin's own calibrated command_execution flaw at the same patched commit 30a6b9e, so its fix_check recopies the holdout calibration and nmap carries no committed vulnerable fixture or FixCheckTarget. No npm release carries the fix, so the patched artifact is the fix commit, as the holdout pins it."
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-3484",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
-      "patched_version": "30a6b9e1c7fa6146f51e28d6ab83a2568d9a3488"
+      "settlements": [],
+      "patched_version": "30a6b9e1c7fa6146f51e28d6ab83a2568d9a3488",
+      "stand_ins": [],
+      "seeds": [],
+      "software_releases": [
+        {
+          "software": "Nmap",
+          "release": "7.993",
+          "day": "2026-10-23",
+          "source": "Copied from the holdout calibration card of CVE-2026-3484, whose calibration this flaw's fix check reuses: the mcp-nmap-server README names no nmap version and no distribution channel (Prerequisites: 'NMAP installed and accessible from Windows command line'), so the current stable project release applies; nmap.org/changelog.html 'Nmap 7.993 [2026-10-23]' (still the latest entry on 2026-11-07) and nmap.org/download.html 'Latest stable Nmap release tarball: nmap-7.993.tar.bz2'. The run image builds it from https://nmap.org/dist/nmap-7.993.tar.bz2, sha256 270e55f04915bfcecb5db8feb959d4c5ba86a48c094520a4f1c07571e1c79c59 (nmap.org/dist/sigs/nmap-7.993.tar.bz2.digest.txt), by the documented source install (nmap.org/book/install.html)."
+        }
+      ]
     },
     {
       "server_package": "https://github.com/jiantao88/android-mcp-server",
