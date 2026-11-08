@@ -27,7 +27,6 @@ from evals import (
     gitlab_backend,
     googleapis_backend,
     jenkins_backend,
-    mysql_backend,
     n8n_backend,
     neo4j_backend,
     responder_backend,
@@ -46,7 +45,6 @@ from evals.figma_backend import FIGMA_BRIDGE, FIGMA_RESPONDER_IMAGE
 from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
-from evals.mysql_backend import MYSQL_BRIDGE, MYSQL_IMAGE
 from evals.n8n_backend import N8N_BRIDGE, N8N_RESPONDER_IMAGE
 from evals.neo4j_backend import NEO4J_BRIDGE, NEO4J_IMAGE
 from evals.public_stand_ins import stand_in_files
@@ -81,9 +79,6 @@ _API_STAND_IN_FILES = stand_in_files(API_HOST)
 BACKENDS: dict[str, RegisteredBackend] = {
     "doris": RegisteredBackend(
         doris_backend.LIFECYCLE, DORIS_BRIDGE, DORIS_IMAGE, (), _served(doris_backend.__file__)
-    ),
-    "mysql": RegisteredBackend(
-        mysql_backend.LIFECYCLE, MYSQL_BRIDGE, MYSQL_IMAGE, (), _served(mysql_backend.__file__)
     ),
     "ckan": _responder(
         ckan_backend.LIFECYCLE,

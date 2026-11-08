@@ -1,8 +1,8 @@
 """The images of a nuisance run and their containers. A running server container is refused, as
 it may be an audit in progress. A running built backend container is removed before the rebuild,
 since a responder is a stateless stand-in its provisioner starts again from the fresh image. Both
-are swept at the end. The pulled backends (Doris, the `mysql` backend's) are persistent by design
-and left alone. A backend-less server with public names launches a holder and stand-ins, whose
+are swept at the end. The pulled backend (the Doris cluster) is persistent by design and left
+alone. A backend-less server with public names launches a holder and stand-ins, whose
 images the run rebuilds but never sweeps by tag: the launch removes its own containers, and a
 calibration may run containers of the same images."""
 

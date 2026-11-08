@@ -958,7 +958,7 @@ services:
       context: .
       dockerfile: Dockerfile.mysql
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "511aea3f9fcdb2107e9f5bcabcaaf5592191cb0becc6838dc2e1a27e5a46e711"
+        org.mcp-auditor.dockerfile-fingerprint: "3d7de7f47935b9a7847f3587d6701622aefbcad8d4a0a180988738ace94ab0a4"
     image: mcp-auditor-nuisance-mysql:local
     profiles: ["nuisance"]
 

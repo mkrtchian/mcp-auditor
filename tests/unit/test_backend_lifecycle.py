@@ -3,7 +3,7 @@ import pytest
 import tests.unit.support.test_backend_lifecycle_given as given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals import doris_backend, mysql_backend, neo4j_backend
+from evals import doris_backend, neo4j_backend
 from evals.cve_planting_base import LABEL, resolver_args
 from evals.holdout_kit.kit_backend_launch import backend_launch, lifecycle_of
 from evals.nuisance_backends import BACKENDS
@@ -125,23 +125,13 @@ def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolve
     assert count(args, resolver_args()) == 1
 
 
-MYSQL_ENGINE_ARGS = mysql_backend.backend_container_run_args(
-    mysql_backend.MYSQL_CONTAINER, mysql_backend.MYSQL_HOST, [mysql_backend.MYSQL_IMAGE]
-)
-MOTO_STUB_ARGS = mysql_backend.backend_container_run_args(
-    mysql_backend.MOTO_CONTAINER, mysql_backend.MOTO_HOST, ["moto"]
-)
-
-
 @pytest.mark.parametrize(
     "args",
     [
         doris_backend.doris_cluster_run_args(),
-        MYSQL_ENGINE_ARGS,
-        MOTO_STUB_ARGS,
         neo4j_backend.database_run_args(),
     ],
-    ids=["doris cluster", "mysql engine", "moto stub", "neo4j database"],
+    ids=["doris cluster", "neo4j database"],
 )
 def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_resolver_option(
     args: list[str],
@@ -154,11 +144,9 @@ def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_res
     ("args", "alias"),
     [
         (doris_backend.doris_cluster_run_args(), "doris"),
-        (MYSQL_ENGINE_ARGS, "mysql"),
-        (MOTO_STUB_ARGS, "moto"),
         (neo4j_backend.database_run_args(), "neo4j"),
     ],
-    ids=["doris cluster", "mysql engine", "moto stub", "neo4j database"],
+    ids=["doris cluster", "neo4j database"],
 )
 def test_every_built_backend_container_answers_on_its_alias(args: list[str], alias: str):
     assert carries(args, ["--network-alias", alias])

@@ -3,7 +3,6 @@ import pytest
 import tests.unit.support.test_backend_hostnames_given as given
 from evals import neo4j_backend
 from evals.doris_backend import DORIS_HOST, DORIS_SERVER_LAUNCH
-from evals.mysql_backend import MOTO_ENDPOINT, MYSQL_HOST
 from evals.nuisance_admission import AdmittedServer
 
 _AUDIT_WORDS = ("mcp-auditor", "mcpaudit")
@@ -16,12 +15,8 @@ def test_the_doris_server_is_launched_at_the_clusters_alias():
     assert DORIS_SERVER_LAUNCH[DORIS_SERVER_LAUNCH.index("--db-host") + 1] == DORIS_HOST
 
 
-def test_the_mysql_benign_call_reaches_the_engines_alias():
-    assert given.the_benign_argument("mysql", "db_endpoint") == MYSQL_HOST
-
-
-def test_the_mysql_run_image_points_at_the_stubs_alias():
-    assert given.dockerfile_env("mysql")["AWS_ENDPOINT_URL"] == MOTO_ENDPOINT
+def test_the_mysql_benign_call_reaches_the_engine_in_its_own_image():
+    assert given.the_benign_argument("mysql", "db_endpoint") == "127.0.0.1"
 
 
 @pytest.mark.parametrize("name", ["neo4j", "neo4j-vuln"])
