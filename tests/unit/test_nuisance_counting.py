@@ -46,18 +46,80 @@ def test_a_passing_flaw_is_counted():
 
 
 def test_an_effect_is_function_flaw_contributes_no_tool():
-    flaw = admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0")
-    flaw = flaw.model_copy(update={"declared_function_is_effect": True})
+    flaw = given.a_flaw_whose_declared_function_is_effect(
+        "CVE-2025-0001", _READ, [given.a_tool_whose_declared_function_is_effect("probe", None)]
+    )
     server = admission.a_server([flaw])
 
     assert counted_tools(server) == {}
 
 
-def test_a_tool_recorded_as_its_effect_under_a_flaw_recorded_otherwise_stays_counted():
-    tool = given.a_probe_whose_declared_function_is_effect(True)
-    flaw = admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])
+def test_a_tool_recorded_as_its_effect_under_a_flaw_recorded_otherwise_is_left_out_of_the_count():
+    tool = given.a_tool_whose_declared_function_is_effect("probe", True)
+    server = admission.a_server(
+        [admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])]
+    )
 
-    assert set(counted_tools(admission.a_server([flaw]))) == {"probe"}
+    assert counted_tools(server) == {}
+    assert declared_function_tools(server) == {"probe": VALID_CATEGORIES[_READ]}
+
+
+def test_the_declared_function_is_read_per_tool():
+    flaw = admission.a_flaw_record(
+        "CVE-2025-0001",
+        _READ,
+        "1.2.0",
+        tools=[
+            given.a_tool_whose_declared_function_is_effect("fetch", True),
+            given.a_tool_whose_declared_function_is_effect("probe", False),
+        ],
+    )
+    server = admission.a_server([flaw])
+
+    assert set(counted_tools(server)) == {"probe"}
+    assert set(declared_function_tools(server)) == {"fetch"}
+
+
+def test_a_tool_recording_no_declared_function_follows_its_flaws_record():
+    tool = given.a_tool_whose_declared_function_is_effect("probe", None)
+    otherwise = admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])
+    as_effect = given.a_flaw_whose_declared_function_is_effect("CVE-2025-0001", _READ, [tool])
+
+    assert flaw_counted_tools(otherwise) == {"probe"}
+    assert flaw_counted_tools(as_effect) == frozenset()
+    assert set(declared_function_tools(admission.a_server([as_effect]))) == {"probe"}
+
+
+def test_tools_recorded_otherwise_under_a_flaw_recorded_as_its_effect_are_all_counted():
+    flaw = given.a_flaw_whose_declared_function_is_effect(
+        "CVE-2025-0001",
+        _READ,
+        [
+            given.a_tool_whose_declared_function_is_effect("probe", False),
+            given.a_tool_whose_declared_function_is_effect("query", False),
+        ],
+    )
+    server = admission.a_server([flaw])
+
+    assert set(counted_tools(server)) == {"probe", "query"}
+    assert declared_function_tools(server) == {}
+
+
+def test_a_removed_tool_is_never_counted_whatever_its_declared_function():
+    flaw = admission.a_flaw_record(
+        "CVE-2025-0001",
+        _READ,
+        "1.2.0",
+        tools=[
+            admission.a_tool("probe", "probe", "unchanged"),
+            given.a_removed_tool_whose_declared_function_is_effect("fetch", True),
+            given.a_removed_tool_whose_declared_function_is_effect("query", False),
+        ],
+    )
+    server = admission.a_server([flaw])
+
+    assert set(counted_tools(server)) == {"probe"}
+    assert declared_function_tools(server) == {}
 
 
 def test_a_tool_of_two_classes_takes_the_union_of_their_categories():
@@ -102,8 +164,9 @@ def test_a_flaw_whose_backend_the_fixture_provides_keeps_its_tool():
 
 
 def test_an_effect_is_function_flaw_has_no_counted_tool():
-    flaw = admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0")
-    flaw = flaw.model_copy(update={"declared_function_is_effect": True})
+    flaw = given.a_flaw_whose_declared_function_is_effect(
+        "CVE-2025-0001", _READ, [given.a_tool_whose_declared_function_is_effect("probe", None)]
+    )
 
     assert flaw_counted_tools(flaw) == frozenset()
 
@@ -165,7 +228,7 @@ def test_the_tools_of_a_flaw_keep_a_tool_whose_real_software_does_not_answer():
 
 def test_the_declared_function_tools_are_a_counted_flaws_tools_recorded_as_its_effect():
     flaw = given.a_flaw_whose_declared_function_is_effect(
-        "CVE-2025-0001", _READ, [admission.a_tool("probe", "probe", "unchanged")]
+        "CVE-2025-0001", _READ, [given.a_tool_whose_declared_function_is_effect("probe", True)]
     )
 
     assert declared_function_tools(admission.a_server([flaw])) == {"probe": VALID_CATEGORIES[_READ]}
@@ -173,10 +236,10 @@ def test_the_declared_function_tools_are_a_counted_flaws_tools_recorded_as_its_e
 
 def test_a_declared_function_tool_two_flaws_reach_takes_the_union_of_their_categories():
     read_flaw = given.a_flaw_whose_declared_function_is_effect(
-        "CVE-2025-0001", _READ, [admission.a_tool("probe", "probe", "unchanged")]
+        "CVE-2025-0001", _READ, [given.a_tool_whose_declared_function_is_effect("probe", True)]
     )
     exec_flaw = given.a_flaw_whose_declared_function_is_effect(
-        "PYSEC-2025-1", _EXEC, [admission.a_tool("probe", "probe", "unchanged")]
+        "PYSEC-2025-1", _EXEC, [given.a_tool_whose_declared_function_is_effect("probe", True)]
     )
 
     assert declared_function_tools(admission.a_server([read_flaw, exec_flaw])) == {
@@ -189,9 +252,9 @@ def test_the_declared_function_tools_skip_a_removed_tool_and_one_whose_software_
         "CVE-2025-0001",
         _READ,
         [
-            admission.a_tool("probe", "probe", "unchanged"),
+            given.a_tool_whose_declared_function_is_effect("probe", True),
             admission.a_tool("gone", None, "removed"),
-            given.a_silent_tool("capture"),
+            given.a_silent_tool("capture", declared_function_is_effect=True),
         ],
     )
 
@@ -200,7 +263,7 @@ def test_the_declared_function_tools_skip_a_removed_tool_and_one_whose_software_
 
 def test_a_flaw_with_an_external_backend_has_no_declared_function_tool():
     flaw = given.a_flaw_whose_declared_function_is_effect(
-        "CVE-2025-0001", _READ, [admission.a_tool("probe", "probe", "unchanged")]
+        "CVE-2025-0001", _READ, [given.a_tool_whose_declared_function_is_effect("probe", True)]
     )
     flaw = flaw.model_copy(update={"backend_need": "external"})
 
@@ -209,7 +272,10 @@ def test_a_flaw_with_an_external_backend_has_no_declared_function_tool():
 
 def test_a_flaw_recorded_otherwise_has_no_declared_function_tool():
     flaw = admission.a_flaw_record(
-        "CVE-2025-0001", _READ, "1.2.0", tools=[admission.a_tool("probe", "probe", "unchanged")]
+        "CVE-2025-0001",
+        _READ,
+        "1.2.0",
+        tools=[admission.a_tool("probe", "probe", "unchanged")],
     )
 
     assert declared_function_tools(admission.a_server([flaw])) == {}

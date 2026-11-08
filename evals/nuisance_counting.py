@@ -6,12 +6,14 @@ pinnable, all settled upstream) and its fix check passes on every patched versio
 control that does not rest on a stand-in relaying the flaw's effect. A counted tool is one such
 flaw reaches that still exists on the patched version, whose real software can answer it (a tool
 with no such record yet stays counted), whose backend is not one the fixture cannot provide and
-whose declared function is not the effect of its class. The categories come from
-`cve_grammar.VALID_CATEGORIES`, read, never redefined here.
+whose declared function is not the effect of its class. The declared function is read per tool,
+from the tool's own record, falling back to the flaw's for a tool that records none. The
+categories come from `cve_grammar.VALID_CATEGORIES`, read, never redefined here.
 
-The declared-function tools are the ones a counted flaw's declared function alone leaves out: the
-tools it would count were its function not its effect, with the same categories. The run reports
-the FAILs on them beside the raw count, and nothing compares or gates on them.
+The declared-function tools are the ones a counted flaw reaches that their declared function
+alone leaves out: the tools it would count were their function not its effect, with the same
+categories. The run reports the FAILs on them beside the raw count, and nothing compares or gates
+on them.
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from evals.cve_grammar import VALID_CATEGORIES
 from evals.cve_units import JudgeCategory
 
 if TYPE_CHECKING:
-    from evals.nuisance_admission import AdmittedServer, FlawRecord
+    from evals.nuisance_admission import AdmittedServer, FlawRecord, ToolRecord
 
 
 def counted_flaws(server: AdmittedServer) -> list[FlawRecord]:
@@ -37,9 +39,8 @@ def counted_tools(server: AdmittedServer) -> dict[str, frozenset[JudgeCategory]]
 
 def declared_function_tools(server: AdmittedServer) -> dict[str, frozenset[JudgeCategory]]:
     return _categories_per_tool(
-        (flaw, _reachable_tools(flaw))
+        (flaw, _reachable_tools(flaw, declared_function_is_effect=True))
         for flaw in counted_flaws(server)
-        if flaw.declared_function_is_effect
     )
 
 
@@ -56,20 +57,25 @@ def _categories_per_tool(
 
 
 def flaw_counted_tools(flaw: FlawRecord) -> frozenset[str]:
-    if flaw.declared_function_is_effect:
-        return frozenset()
-    return _reachable_tools(flaw)
+    return _reachable_tools(flaw, declared_function_is_effect=False)
 
 
-def _reachable_tools(flaw: FlawRecord) -> frozenset[str]:
+def _reachable_tools(flaw: FlawRecord, *, declared_function_is_effect: bool) -> frozenset[str]:
     if flaw.effect_class is None or flaw.backend_need == "external":
         return frozenset()
-    answering = {
+    selected = {
         tool.patched_name
         for tool in flaw.tools
-        if tool.real_software is None or tool.real_software.answers
+        if (tool.real_software is None or tool.real_software.answers)
+        and _declared_function_is_effect(tool, flaw) == declared_function_is_effect
     }
-    return flaw_tools(flaw) & answering
+    return flaw_tools(flaw) & selected
+
+
+def _declared_function_is_effect(tool: ToolRecord, flaw: FlawRecord) -> bool:
+    if tool.declared_function_is_effect is not None:
+        return tool.declared_function_is_effect
+    return flaw.declared_function_is_effect
 
 
 def flaw_tools(flaw: FlawRecord) -> frozenset[str]:

@@ -8,20 +8,27 @@ def a_fix_check(**overrides: object) -> FixCheckRecord:
     return admission.a_passing_fix_check().model_copy(update=overrides)
 
 
-def a_silent_tool(name: str) -> ToolRecord:
+def a_silent_tool(name: str, *, declared_function_is_effect: bool = False) -> ToolRecord:
     verdict = RealSoftwareRecord(
         answers=False, cause="container_unrepairable", evidence="needs NET_RAW"
     )
-    return admission.a_tool(name, name, "unchanged").model_copy(update={"real_software": verdict})
+    return admission.a_tool(name, name, "unchanged").model_copy(
+        update={
+            "real_software": verdict,
+            "declared_function_is_effect": declared_function_is_effect,
+        }
+    )
 
 
-def a_probe_whose_declared_function_is_effect(is_effect: bool) -> ToolRecord:
-    return ToolRecord(
-        vulnerable_name="probe",
-        patched_name="probe",
-        status="unchanged",
-        real_software=RealSoftwareRecord(answers=True),
-        declared_function_is_effect=is_effect,
+def a_tool_whose_declared_function_is_effect(name: str, is_effect: bool | None) -> ToolRecord:
+    return admission.a_tool(name, name, "unchanged").model_copy(
+        update={"declared_function_is_effect": is_effect}
+    )
+
+
+def a_removed_tool_whose_declared_function_is_effect(name: str, is_effect: bool) -> ToolRecord:
+    return admission.a_tool(name, None, "removed").model_copy(
+        update={"declared_function_is_effect": is_effect}
     )
 
 

@@ -35,7 +35,7 @@ class ToolRecord(BaseModel):
     patched_name: str | None
     status: Literal["unchanged", "renamed", "removed"]
     real_software: RealSoftwareRecord | None = None
-    # Recorded for the re-admission: the counter still reads FlawRecord.declared_function_is_effect.
+    # The counter reads it, falling back to FlawRecord.declared_function_is_effect when None.
     declared_function_is_effect: bool | None = None
 
 

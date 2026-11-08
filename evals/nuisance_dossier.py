@@ -206,8 +206,8 @@ admission.
 - `ToolRecord.declared_function_is_effect`: for every tool of the flaw in the patched version,
   whether its declared function, read from the tool's description alone, is the effect of the
   flaw's class. Its agreement field is named `declared_function`.
-  `FlawRecord.declared_function_is_effect` stays: it is the record the count reads until the
-  per-tool one supersedes it.
+  `FlawRecord.declared_function_is_effect` stays: the count reads the per-tool field and falls
+  back to the flaw's for a tool that records none.
 - `AdmittedServer.software_releases`: each real software the counted tools drive, with its
   release, the day that release was the current stable one when its documentation names no
   version (`null` when it does), and the line of documentation or the release page that gives
