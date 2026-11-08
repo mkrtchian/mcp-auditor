@@ -16,10 +16,10 @@ RUN pip install --no-cache-dir "praisonai==4.6.33" "mcp>=1.20.0,<2"
 # Seeds, taken whole from the sources the two ARG lines pin: /agents.yaml is the README's first
 # agents.yaml sample (Using YAML (No Code), Example 1), in the working directory where
 # workflow.show resolves it; /tmp/.praison/rules/python.md is the rules page's python.md
-# example, without its Python comment markers, in the rules directory rules.show reads
+# rule file as it lives on disk, taken whole, in the rules directory rules.show reads
 # (~/.praison/rules, HOME=/tmp). A build argument stays out of the server's environment.
 ARG AGENTS_SAMPLE=MervinPraison/PraisonAI@a72e156c4d01ef06c64529d302c21381d6485716:README.md#L405-L417
-ARG RULES_DOCUMENT=MervinPraison/PraisonAIDocs@bba9a51a6669db7b12004785539c051b9d3e109e:docs/features/rules.mdx#L386-L392
+ARG RULES_DOCUMENT=MervinPraison/PraisonAIDocs@bba9a51a6669db7b12004785539c051b9d3e109e:docs/features/rules.mdx#L344-L348
 RUN printf '%s\n' \
     'framework: praisonai' \
     'topic: "Write a blog post about AI"' \
@@ -39,11 +39,10 @@ RUN printf '%s\n' \
 RUN mkdir -p /tmp/.praison/rules \
  && printf '%s\n' \
     '---' \
-    'description: Python style' \
-    'globs: ["**/*.py"]' \
     'activation: glob' \
+    'globs: ["**/*.py"]' \
     '---' \
-    'Use type hints on every function.' \
+    'Use type hints on every function and method.' \
     > /tmp/.praison/rules/python.md \
  && chmod -R a+rX /tmp/.praison
 

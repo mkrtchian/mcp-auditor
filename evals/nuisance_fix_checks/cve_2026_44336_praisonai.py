@@ -13,8 +13,8 @@ server exposes its tools under the "praisonai." prefix (confirmed against the re
 4.6.40 packages over stdio; the un-paginated first page of tools/list does not include it, the
 name only shows up once the client follows nextCursor).
 
-The benign call reads the seeded python.md, the rules page's rules-directory example, which every
-version accepts as a bare name inside ~/.praison/rules.
+The benign call reads the seeded python.md, the rules page's python.md rule file as it lives on
+disk, which every version accepts as a bare name inside ~/.praison/rules.
 
 rules.create and rules.delete are not counted: neither surfaces a witness (create writes,
 delete removes), and delete would destroy the planted witness rather than read it.

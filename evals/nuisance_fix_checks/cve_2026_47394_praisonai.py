@@ -13,9 +13,9 @@ The exploit's file_path is the absolute-path marker itself (the aim); the benign
 /agents.yaml in the working directory /: 4.6.40 resolves it inside the working directory and
 4.6.33 opens it relative to it, so both versions answer with the sample's text.
 
-praisonai.workflow.validate and praisonai.deploy.validate are settled out of this flaw's tools
-(see evals/nuisance_admission.json): both are validity oracles that never disclose file content
-at any version, so no nonce witness can surface through them.
+praisonai.workflow.validate and praisonai.deploy.validate, which the advisory also names and which
+open the caller's path on the vulnerable version, are left out of this flaw's tools: no admission
+record writes their fields or plays a benign call for them (docs/nuisance-log.md).
 """
 
 import re

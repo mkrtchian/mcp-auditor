@@ -994,7 +994,7 @@ services:
       context: .
       dockerfile: Dockerfile.praisonai
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "baf187fb8e9def3770b48b7ebe334526948de741bd541d12e090552b95e3fab9"
+        org.mcp-auditor.dockerfile-fingerprint: "e92d7e787107f4f0bd45e06466c16a30dac743fdc13822631e94852574189e68"
     image: mcp-auditor-nuisance-praisonai:local
     profiles: ["nuisance"]
 

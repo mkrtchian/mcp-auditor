@@ -4872,7 +4872,13 @@
             {
               "vulnerable_name": "praisonai.workflow.show",
               "patched_name": "praisonai.workflow.show",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -4884,7 +4890,9 @@
               "tool": "praisonai.workflow.show",
               "arguments": {
                 "file_path": "agents.yaml"
-              }
+              },
+              "expect": "role: Research Analyst",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -4898,7 +4906,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -4907,7 +4916,13 @@
             {
               "vulnerable_name": "praisonai.rules.show",
               "patched_name": "praisonai.rules.show",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -4919,7 +4934,9 @@
               "tool": "praisonai.rules.show",
               "arguments": {
                 "rule_name": "python.md"
-              }
+              },
+              "expect": "activation: glob",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -4933,7 +4950,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -4957,41 +4975,117 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-47394",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-47394",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-47394",
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-47394",
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-47394",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44336",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44336",
+          "field": "real_software",
+          "agreed": true
         },
         {
           "flaw": "CVE-2026-44336",
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44336",
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-44336",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "PyPI:praisonai",
+          "flaw": null,
+          "field": "seeds",
+          "value": "/agents.yaml, the README's first agents.yaml sample (lines 405-417), and /tmp/.praison/rules/python.md, lines 344-348 of the rules page taken whole",
+          "reason": "a seed is a published sample taken whole, without editing it: both records seed the same agents.yaml sample, but the committed python.md was the rules page's Python example at lines 386-392 with its comment markers removed, an edit of the source, which record B kept; the rules page's first python.md given as a file on disk, lines 344-348 of the same pinned page, is taken whole instead, as record A proposed."
+        },
+        {
+          "server_package": "PyPI:praisonai",
           "flaw": "CVE-2026-47394",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B over-marked dfie true; praisonai.workflow.show shows a workflow entry, the uncontained absolute-path read is the flaw, not the declared function"
+          "field": "benign_calls",
+          "value": "workflow.show: {file_path: agents.yaml}, expect 'role: Research Analyst', before []",
+          "reason": "both records make the same call with no prerequisite and each expects a fixed line of the seeded sample, absent from the arguments; record B's line is kept, the agents.yaml seed being the same in both records."
         },
         {
           "server_package": "PyPI:praisonai",
           "flaw": "CVE-2026-44336",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B over-marked dfie true; rules.show shows a rule entry under ~/.praison/rules/, the traversal out of that directory is the flaw, not the declared function"
-        },
-        {
-          "server_package": "PyPI:praisonai",
-          "flaw": "CVE-2026-44336",
-          "field": "tools",
-          "value": "praisonai.rules.show",
-          "reason": "of the rules.* handlers only rules.show is a read that returns content; rules.create and rules.delete are the write/delete side of the traversal (no surfacing witness, and delete would destroy a planted witness) and are not counted"
+          "field": "benign_calls",
+          "value": "rules.show: {rule_name: python.md}, expect 'activation: glob', before []",
+          "reason": "the expect follows the retained seed: both records make the same call with no prerequisite, but record B's expect, 'Use type hints on every function.', is a line of the replaced seed and does not occur in the rule file taken whole, while record A's, 'activation: glob', is a line of that file, absent from the arguments."
         },
         {
           "server_package": "PyPI:praisonai",
@@ -5013,13 +5107,6 @@
           "field": "counted",
           "value": "false",
           "reason": "command_execution, dfie true, out of the nonce grammar; not counted"
-        },
-        {
-          "server_package": "PyPI:praisonai",
-          "flaw": "CVE-2026-47394",
-          "field": "tools",
-          "value": "praisonai.workflow.show",
-          "reason": "only praisonai.workflow.show is counted: it returns yaml_path.read_text() with no containment on the vulnerable version; praisonai.workflow.validate and praisonai.deploy.validate never disclose file content at any version (they are validity oracles: success echoes the caller's own path, missing keys list key names, YAML errors give only filename/line/column), so no nonce witness can surface through them and they fall outside the disclosure grammar (no oracle class is added this batch)"
         }
       ],
       "patched_version": "4.6.40",
@@ -5027,16 +5114,18 @@
         {
           "item": "/agents.yaml",
           "kind": "published_sample",
-          "citation": "PraisonAI README.md, section Using YAML (No Code), Example 1: Two Agents Working Together, lines 405-417",
+          "citation": "PraisonAI README.md, section Using YAML (No Code), Example 1: Two Agents Working Together, lines 405-417, taken whole; seeded in the working directory / where workflow.show resolves a bare file name",
           "pin": "a72e156c4d01ef06c64529d302c21381d6485716"
         },
         {
           "item": "/tmp/.praison/rules/python.md",
           "kind": "project_document",
-          "citation": "PraisonAIDocs docs/features/rules.mdx, Path-Scoped Rules in Action, .praisonai/rules/python.md, lines 386-392, comment markers dropped, seeded in the server's default rules directory ~/.praison/rules",
+          "citation": "PraisonAIDocs docs/features/rules.mdx, section How path-scoped rules activate, the python.md rule file as it lives on disk, lines 344-348, taken whole; seeded in the server's default rules directory ~/.praison/rules (HOME=/tmp)",
           "pin": "bba9a51a6669db7b12004785539c051b9d3e109e"
         }
-      ]
+      ],
+      "stand_ins": [],
+      "software_releases": []
     },
     {
       "server_package": "PyPI:mcp-atlassian",
