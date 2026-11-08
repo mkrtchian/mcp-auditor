@@ -949,7 +949,7 @@ services:
       context: .
       dockerfile: Dockerfile.magento2
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a1a8bb0521ef9d94c1f5b60ab67db56cfc00338505d7e543a7f247e3a68d318e"
+        org.mcp-auditor.dockerfile-fingerprint: "7be5608fc5183b828dd039d428cfd7bf3f5fa72dc1c79c9b55de05a2e0eb9201"
     image: mcp-auditor-nuisance-magento2:local
     profiles: ["nuisance"]
 

@@ -1,18 +1,77 @@
-# Nuisance run image of magento2: a copy of Dockerfile.holdout-2026-5603-magento2-patched, its instructions unchanged but for the magerun2 stub and the Magento skeleton the run adds before its entrypoint,
-# pinning the admission's patched version, commit aa1ffcc0aea1b212c69787391783af27df15ae9d.
-
-# Patched version of @elgentos/magento2-dev-mcp: the fix commit for CVE-2026-5603
-# (aa1ffcc0aea1b212c69787391783af27df15ae9d, PR #5), which is NOT published on npm, so it is
-# built from the public source at that exact commit. The fix routes local execution through
-# execFile(magerunBin, args) instead of exec(shellString), removing the shell injection.
+# Run image of magento2: patched @elgentos/magento2-dev-mcp at commit aa1ffcc0aea1b212c69787391783af27df15ae9d
+# (tag 1.0.3, not published on npm, so built from the public source at that exact commit).
+# The server drives n98-magerun2 (and PHP) against the Magento 2 installation in its working
+# directory, so that software runs here: n98-magerun2 10.1.0 and PHP 8.2 (Debian bookworm), and
+# Magento Open Source 2.4.7-p10 (the newest release line Adobe documents for PHP 8.2), installed
+# from its GitHub repository with Composer, with its published sample data, on MariaDB 10.11 and
+# OpenSearch, as Adobe's installation guide sets them up.
 FROM node:20.18-bookworm-slim@sha256:ffc11dbf16dd0abcbb7b837410601b4d5592db2d03741e13a4a5336ab74d7ccb
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates php-cli git \
+    && apt-get install -y --no-install-recommends curl ca-certificates git unzip \
+       php-cli php-bcmath php-curl php-gd php-intl php-mbstring php-mysql php-soap php-xml php-zip \
+       mariadb-server mariadb-client \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://files.magerun.net/n98-magerun2.phar -o /usr/local/bin/magerun2 \
+# n98-magerun2 10.1.0, its release phar pinned by sha256.
+ARG MAGERUN2_SHA256=76c931312f3ab6a5a5e1dbd40544cf43f9ecab176bca6a3597ebf4a3413fe270
+RUN curl -fsSL https://github.com/netz98/n98-magerun2/releases/download/10.1.0/n98-magerun2.phar \
+        -o /usr/local/bin/magerun2 \
+    && echo "${MAGERUN2_SHA256}  /usr/local/bin/magerun2" | sha256sum -c - \
     && chmod +x /usr/local/bin/magerun2
+
+# Composer 2.11.1 (getcomposer.org), pinned by its published sha256.
+RUN curl -fsSL https://getcomposer.org/download/2.11.1/composer.phar -o /usr/local/bin/composer \
+    && echo "6f1b891e1d4927d62740276c540fb490e47689e19e102c49e8da849794882f8c  /usr/local/bin/composer" | sha256sum -c - \
+    && chmod +x /usr/local/bin/composer
+
+# OpenSearch 3.9.0, the vendor's core distribution (opensearch-min), pinned by its published sha512.
+RUN curl -fsSL https://artifacts.opensearch.org/releases/core/opensearch/3.9.0/opensearch-min-3.9.0-linux-x64.tar.gz -o /tmp/os.tgz \
+    && echo "adb28c45a873946211e203bbf92ba8d618183c9aff4aede66aa04b6ff40c0a4a04d35c77584743760409e8092821683bdc93ff2fb92f952791f6b7f27facb842  /tmp/os.tgz" | sha512sum -c - \
+    && mkdir /opt/opensearch && tar -xzf /tmp/os.tgz -C /opt/opensearch --strip-components=1 && rm /tmp/os.tgz \
+    && chown -R 65534:65534 /opt/opensearch
+# Disk-based allocation thresholds off, so the fixture does not depend on how full the host's disk
+# is: past the 90 % watermark OpenSearch blocks index creation and Magento's setup fails.
+RUN echo 'cluster.routing.allocation.disk.threshold_enabled: false' >> /opt/opensearch/config/opensearch.yml
+
+# Magento Open Source 2.4.7-p10 (commit 72561bf80652f57cc642a03e2c9a51d74a285b14) and its sample
+# data 2.4.7-p10 (magento/magento2-sample-data, commit 267f9a72068c3f0b5f81aa08694b955a1a253a1e),
+# deployed with the sample data's build-sample-data.php as its README says.
+RUN mkdir /opt/magento && cd /opt/magento && git init -q \
+    && git fetch -q --depth 1 https://github.com/magento/magento2.git 72561bf80652f57cc642a03e2c9a51d74a285b14 \
+    && git checkout -q FETCH_HEAD && rm -rf .git \
+    && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --no-progress \
+    && mkdir /opt/magento-sample-data && cd /opt/magento-sample-data && git init -q \
+    && git fetch -q --depth 1 https://github.com/magento/magento2-sample-data.git 267f9a72068c3f0b5f81aa08694b955a1a253a1e \
+    && git checkout -q FETCH_HEAD && rm -rf .git \
+    && php -f dev/tools/build-sample-data.php -- --ce-source=/opt/magento \
+    && chown -R 65534:65534 /opt/magento /opt/magento-sample-data
+
+# MariaDB and OpenSearch run as the run's user (uid 65534), so their data is owned by it. The
+# database and its user, then setup:install, follow Adobe's installation guide (the first sample
+# localhost installation), with the search host on the loopback.
+RUN rm -rf /var/lib/mysql && mkdir -p /var/lib/mysql /run/mysqld \
+    && chown 65534:65534 /var/lib/mysql /run/mysqld \
+    && setpriv --reuid=65534 --regid=65534 --clear-groups mariadb-install-db --datadir=/var/lib/mysql >/dev/null \
+    && (setpriv --reuid=65534 --regid=65534 --clear-groups mariadbd --datadir=/var/lib/mysql >/tmp/mariadb.log 2>&1 &) \
+    && (cd /tmp && HOME=/tmp setpriv --reuid=65534 --regid=65534 --clear-groups /opt/opensearch/bin/opensearch -d -p /tmp/opensearch.pid >/dev/null) \
+    && for i in $(seq 1 60); do mariadb-admin ping --silent 2>/dev/null && break; sleep 1; done \
+    && for i in $(seq 1 120); do curl -fs 'http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=1s' >/dev/null && break; sleep 1; done \
+    && mariadb -u root -e "CREATE DATABASE magento; CREATE USER 'magento'@'localhost' IDENTIFIED BY 'magento'; GRANT ALL ON magento.* TO 'magento'@'localhost'; FLUSH PRIVILEGES;" \
+    && cd /opt/magento && HOME=/tmp setpriv --reuid=65534 --regid=65534 --clear-groups php bin/magento setup:install \
+         --base-url=http://127.0.0.1/magento2/ \
+         --db-host=localhost --db-name=magento --db-user=magento --db-password=magento \
+         --admin-firstname=Magento --admin-lastname=User --admin-email=user@example.com \
+         --admin-user=admin --admin-password=admin123 --language=en_US \
+         --currency=USD --timezone=America/Chicago --use-rewrites=1 \
+         --search-engine=opensearch --opensearch-host=127.0.0.1 --opensearch-port=9200 \
+    && mariadb-admin -u root shutdown \
+    && kill "$(cat /tmp/opensearch.pid)" && sleep 10 \
+    && rm -rf /tmp/* /opt/opensearch/logs/*
+
+# Lucene refuses a lock file left in an image layer below the container's own (overlayfs
+# copy-up changes it under OpenSearch), so the stopped node's lock files are removed.
+RUN find /opt/opensearch/data -name '*.lock' -delete
 
 # Real source at the pinned fix commit, built with the project's own tsc.
 RUN git clone https://github.com/elgentos/magento2-dev-mcp.git /app \
@@ -21,17 +80,21 @@ RUN git clone https://github.com/elgentos/magento2-dev-mcp.git /app \
     && npm install \
     && npm run build
 
-# An installation stand-in for the nuisance run: every counted tool runs magerun2 or a PHP script
-# against a Magento root in the working directory, and no Magento installation runs here. The
-# stub answers each magerun2 invocation with exit 0, an empty JSON list when JSON is asked for
-# and the fixed line `ok` otherwise, never its arguments, and is selected through the server's MAGERUN2_COMMAND; the real magerun2 stays in the image.
-# The skeleton at /opt/magento carries the two files the PHP scripts load (an autoloader with an
-# empty component registrar, and a module list) and none of the server's Docker markers.
-RUN printf '#!/bin/sh\ncase " $* " in\n  *" --format=json "*) echo "[]" ;;\n  *) echo ok ;;\nesac\nexit 0\n' > /usr/local/bin/magerun2-stub \
- && chmod +x /usr/local/bin/magerun2-stub \
- && mkdir -p /opt/magento/vendor /opt/magento/app/etc \
- && printf '<?php\nnamespace Magento\\Framework\\Component;\nclass ComponentRegistrar {\n    const MODULE = "module";\n    public function getPaths($type) { return []; }\n}\n' > /opt/magento/vendor/autoload.php \
- && printf '<?php\nreturn ["modules" => []];\n' > /opt/magento/app/etc/config.php
-ENV MAGERUN2_COMMAND=/usr/local/bin/magerun2-stub
+# The installation's database and search engine start with the server, as the run's user, their
+# logs kept off the server's stdio.
+RUN cat > /usr/local/bin/magento-services <<'EOF' && chmod +x /usr/local/bin/magento-services
+#!/bin/sh
+mariadbd --datadir=/var/lib/mysql >/tmp/mariadb.log 2>&1 &
+(cd /tmp && /opt/opensearch/bin/opensearch -d -p /tmp/opensearch.pid >/dev/null 2>&1)
+for i in $(seq 1 60); do mariadb-admin ping --silent >/dev/null 2>&1 && break; sleep 1; done
+for i in $(seq 1 120); do curl -fs 'http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=1s' >/dev/null 2>&1 && break; sleep 1; done
+exec node /app/dist/index.js "$@"
+EOF
 
-ENTRYPOINT ["node", "/app/dist/index.js"]
+# The setup:install options above are those of Example 1 of the installation guide's sample
+# localhost installations (experienceleague.adobe.com, source AdobeDocs/commerce-operations.en),
+# taken from the source the ARG line pins. It stands last so the installation's layers keep their
+# cache. A build argument stays out of the server's environment.
+ARG INSTALL_EXAMPLE=AdobeDocs/commerce-operations.en@15520c8c25bb2168e5110a39c7ea9d9431546e72:help/installation/advanced.md#L265-L271
+
+ENTRYPOINT ["/usr/local/bin/magento-services"]

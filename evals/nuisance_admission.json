@@ -5514,147 +5514,321 @@
             {
               "vulnerable_name": "cache-clean",
               "patched_name": "cache-clean",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "cache-disable",
               "patched_name": "cache-disable",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "cache-enable",
               "patched_name": "cache-enable",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "cache-flush",
               "patched_name": "cache-flush",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "cache-status",
               "patched_name": "cache-status",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "cache-view",
               "patched_name": "cache-view",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "config-set",
               "patched_name": "config-set",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "config-show",
               "patched_name": "config-show",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "config-store-get",
               "patched_name": "config-store-get",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "config-store-set",
               "patched_name": "config-store-set",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "db-query",
               "patched_name": "db-query",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             },
             {
               "vulnerable_name": "dev-module-create",
               "patched_name": "dev-module-create",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "dev-module-list",
               "patched_name": "dev-module-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "dev-module-observer-list",
               "patched_name": "dev-module-observer-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the run image (real n98-magerun2 10.1.0 on Magento 2.4.7-p10): with {} (format table), with {format: csv} and with {format: csv, event: catalog_product_save_after} the probe printed `dev-module-observer-list [listed] -> error 'Tool call timed out after 30s'`; run by hand in the same confined container with stdin closed, `magerun2 dev:module:observer:list --format=csv` and the same with the event exit 255 after printing ' Please select an area: [[global] ]:' and a PHP fatal error. Source: n98-magerun2 at tag 10.1.0 (commit ca4be30b500444da206e232d928de8da41f7136c), src/N98/Magento/Command/Developer/Module/Observer/ListCommand.php lines 76-86: `$area = $input->getArgument('area');` ... `if ($area === null || !in_array($area, $this->areas)) {` ... `$areaIndex = select('<question>Please select an area:</question>', $choices);`. The server (src/index.ts line 490-491 at aa1ffcc) passes only `dev:module:observer:list --format=<format>` and, when given, the event as the first positional argument, never an area, so every argument set the description allows (format table/json/csv, event or none) reaches the interactive area prompt, which has no terminal under the server's execFile and fails or hangs past the server's 30 s timeout. Arguments tried: {}, {format: csv}, {format: csv, event: catalog_product_save_after}."
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "dev-plugin-list",
               "patched_name": "dev-plugin-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "dev-theme-list",
               "patched_name": "dev-theme-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "get-di-preferences",
               "patched_name": "get-di-preferences",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "setup-db-status",
               "patched_name": "setup-db-status",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "setup-di-compile",
               "patched_name": "setup-di-compile",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "setup-static-content-deploy",
               "patched_name": "setup-static-content-deploy",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "setup-upgrade",
               "patched_name": "setup-upgrade",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "sys-check",
               "patched_name": "sys-check",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "sys-cron-list",
               "patched_name": "sys-cron-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "sys-cron-run",
               "patched_name": "sys-cron-run",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "sys-info",
               "patched_name": "sys-info",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "sys-store-config-base-url-list",
               "patched_name": "sys-store-config-base-url-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "sys-store-list",
               "patched_name": "sys-store-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "sys-url-list",
               "patched_name": "sys-url-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the run image: with {} (format table) and with {format: csv} the probe printed `sys-url-list [listed] -> error 'Error executing magerun2 command. ... [RuntimeException] The \"--format\" option does not exist.'`. Source: n98-magerun2 at tag 10.1.0 (commit ca4be30b500444da206e232d928de8da41f7136c), src/N98/Magento/Command/System/Url/ListCommand.php lines 53-59 declare only the options add-categories, add-products, add-cmspages, add-all and the arguments stores and linetemplate, no --format; the server (src/index.ts line 1307 at aa1ffcc) always passes `--format=${format}` (format is an enum table/json/csv with a default), so every argument set the description allows (each format, with or without storeId) is rejected by magerun2. Arguments tried: {}, {format: csv}; json and a storeId add nothing, the rejected option being passed whatever they are."
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "sys-website-list",
               "patched_name": "sys-website-list",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -5664,7 +5838,9 @@
           "benign_calls": [
             {
               "tool": "cache-clean",
-              "arguments": {}
+              "arguments": {},
+              "expect": "config cache cleaned",
+              "before": []
             },
             {
               "tool": "cache-disable",
@@ -5672,7 +5848,9 @@
                 "types": [
                   "config"
                 ]
-              }
+              },
+              "expect": "cache types were disabled",
+              "before": []
             },
             {
               "tool": "cache-enable",
@@ -5680,132 +5858,217 @@
                 "types": [
                   "config"
                 ]
-              }
+              },
+              "expect": "cache types were enabled",
+              "before": []
             },
             {
               "tool": "cache-flush",
-              "arguments": {}
+              "arguments": {},
+              "expect": "config cache flushed",
+              "before": []
             },
             {
               "tool": "cache-status",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Current status:",
+              "before": []
             },
             {
               "tool": "cache-view",
               "arguments": {
-                "key": "config"
-              }
+                "key": "MAGE_VERSION"
+              },
+              "expect": "Cache entry for key",
+              "before": [
+                {
+                  "tool": "cache-status",
+                  "arguments": {}
+                }
+              ]
             },
             {
               "tool": "config-set",
               "arguments": {
                 "path": "general/locale/code",
                 "value": "en_US"
-              }
+              },
+              "expect": "Value was saved.",
+              "before": []
             },
             {
               "tool": "config-show",
-              "arguments": {}
+              "arguments": {},
+              "expect": "web/unsecure/base_url",
+              "before": []
             },
             {
               "tool": "config-store-get",
               "arguments": {
                 "path": "general/locale/code"
-              }
+              },
+              "expect": "Updated At",
+              "before": []
             },
             {
               "tool": "config-store-set",
               "arguments": {
                 "path": "general/locale/code",
                 "value": "en_US"
-              }
+              },
+              "expect": "Store configuration set successfully",
+              "before": []
             },
             {
               "tool": "db-query",
               "arguments": {
                 "query": "SELECT 1"
-              }
+              },
+              "expect": "Query results (table format)",
+              "before": []
             },
             {
               "tool": "dev-module-create",
               "arguments": {
                 "vendorNamespace": "Acme",
                 "moduleName": "Demo"
-              }
+              },
+              "expect": "registration.php",
+              "before": []
             },
             {
               "tool": "dev-module-list",
-              "arguments": {}
+              "arguments": {
+                "format": "csv"
+              },
+              "expect": "Magento_Catalog,",
+              "before": []
             },
             {
               "tool": "dev-module-observer-list",
-              "arguments": {}
+              "arguments": {},
+              "expect": null,
+              "before": []
             },
             {
               "tool": "dev-plugin-list",
               "arguments": {
                 "className": "Magento\\Catalog\\Model\\Product",
                 "methodName": "getName"
-              }
+              },
+              "expect": "Class hierarchy:",
+              "before": []
             },
             {
               "tool": "dev-theme-list",
-              "arguments": {}
+              "arguments": {
+                "format": "csv"
+              },
+              "expect": "Magento/luma",
+              "before": []
             },
             {
               "tool": "get-di-preferences",
-              "arguments": {}
+              "arguments": {},
+              "expect": "StoreRepositoryInterface",
+              "before": []
             },
             {
               "tool": "setup-db-status",
-              "arguments": {}
+              "arguments": {},
+              "expect": "All modules are up to date.",
+              "before": []
             },
             {
               "tool": "setup-di-compile",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Generated code and dependency injection configuration successfully.",
+              "before": []
             },
             {
               "tool": "setup-static-content-deploy",
-              "arguments": {}
+              "arguments": {
+                "force": true,
+                "languages": [
+                  "en_US"
+                ],
+                "themes": [
+                  "Magento/backend"
+                ]
+              },
+              "expect": "Deploy using quick strategy",
+              "before": []
             },
             {
               "tool": "setup-upgrade",
-              "arguments": {}
+              "arguments": {
+                "keepGenerated": true
+              },
+              "expect": "Schema creation/updates:",
+              "before": []
             },
             {
               "tool": "sys-check",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Secure BaseURL",
+              "before": []
             },
             {
               "tool": "sys-cron-list",
-              "arguments": {}
+              "arguments": {
+                "format": "csv"
+              },
+              "expect": "aggregate_sales_report_bestsellers_data",
+              "before": []
             },
             {
               "tool": "sys-cron-run",
-              "arguments": {}
+              "arguments": {
+                "job": "indexer_clean_all_changelogs"
+              },
+              "expect": "ClearChangelog::execute done",
+              "before": []
             },
             {
               "tool": "sys-info",
-              "arguments": {}
+              "arguments": {
+                "format": "csv"
+              },
+              "expect": "Search Engine",
+              "before": []
             },
             {
               "tool": "sys-store-config-base-url-list",
-              "arguments": {}
+              "arguments": {
+                "format": "csv"
+              },
+              "expect": "unsecure_baseurl",
+              "before": []
             },
             {
               "tool": "sys-store-list",
-              "arguments": {}
+              "arguments": {
+                "format": "csv"
+              },
+              "expect": "Default Store View",
+              "before": []
             },
             {
               "tool": "sys-url-list",
-              "arguments": {}
+              "arguments": {},
+              "expect": null,
+              "before": []
             },
             {
               "tool": "sys-website-list",
-              "arguments": {}
+              "arguments": {
+                "format": "csv"
+              },
+              "expect": "1,base",
+              "before": []
             }
           ],
-          "backend_need": "none",
+          "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
             "source": "holdout_calibration",
@@ -5816,7 +6079,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -5840,33 +6104,164 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-5603",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-5603",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-5603",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-5603",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-5603",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-5603",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        }
+      ],
       "settlements": [
         {
           "server_package": "npm:@elgentos/magento2-dev-mcp",
           "flaw": "CVE-2026-5603",
-          "field": "tools",
-          "value": "all 29 registerTool tools",
-          "reason": "every one of the server's 29 registerTool tools builds a template-string command passed to the single executeMagerun2Command shell sink, so all 29 reach the injection; the rule counts a flaw's tools as those a tools/call reaches it through and has no injectability test, so none is trimmed."
+          "field": "benign_calls",
+          "value": "record A's: format csv for the seven list tools, cache-view of the cache id MAGE_VERSION after a cache-status, sys-cron-run of the job indexer_clean_all_changelogs, setup-static-content-deploy forced for en_US and Magento/backend, setup-upgrade keeping the generated code, each expecting a text Magento, n98-magerun2 or the server prints on the run image",
+          "reason": "the benign calls follow the retained fixture: record A's calls run on its Magento 2.4.7-p10 installation, where record B's ran on its Magento 2.4.9 installation, which the retained releases rule out."
         },
         {
           "server_package": "npm:@elgentos/magento2-dev-mcp",
-          "flaw": "CVE-2026-5603",
-          "field": "patched_version",
-          "value": "aa1ffcc0aea1b212c69787391783af27df15ae9d",
-          "reason": "tag 1.0.3 points at this commit and is the holdout pin and the census first_patched; the immutable commit is recorded rather than the tag, and npm stops at 1.0.2 (still vulnerable)."
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: the Magento Open Source sample data 2.4.7-p10 taken whole at 267f9a72068c3f0b5f81aa08694b955a1a253a1e, the installation setup:install generates from Magento 2.4.7-p10 at 72561bf80652f57cc642a03e2c9a51d74a285b14, the database and search engine data, and the options of the installation guide's first sample localhost installation",
+          "reason": "the seeds follow the retained release: the sample data and the installation are the release the copied holdout card's PHP 8.2 allows, where record B seeded the 2.4.9 sample data and installation."
         },
         {
           "server_package": "npm:@elgentos/magento2-dev-mcp",
-          "flaw": "CVE-2026-5603",
-          "field": "fix_check.source",
-          "value": "holdout_calibration",
-          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it. The run image differs from the calibrated one only outside the server's code: it adds /usr/local/bin/magerun2-stub, selected through the server's MAGERUN2_COMMAND, and a PHP skeleton at /opt/magento, the working directory, since every counted tool runs against a Magento installation and none runs here; the real magerun2 stays in the image. The recopy still holds because the fix lives in the server's executeMagerun2Command (execFile(magerunBin, args) instead of a shell string), which is unchanged, and the arguments reach the binary, real or stub, without a shell either way."
+          "flaw": null,
+          "field": "software_releases",
+          "value": "record A's: n98-magerun2 10.1.0 and PHP 8.2 copied from the holdout card, Magento Open Source 2.4.7-p10, MariaDB 10.11, OpenSearch 3.9.0",
+          "reason": "a fixture whose flaw reuses a holdout twin's calibration copies the twin's card: the card records PHP 8.2 from Debian bookworm, and 2.4.7-p10 is the latest release of the newest Magento line Adobe documents for PHP 8.2, where record B ran Magento 2.4.9 on PHP 8.5 and MariaDB 11.8, departing from the card."
         }
       ],
-      "patched_version": "aa1ffcc0aea1b212c69787391783af27df15ae9d"
+      "patched_version": "aa1ffcc0aea1b212c69787391783af27df15ae9d",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "Magento Open Source sample data 2.4.7-p10 (magento/magento2-sample-data), deployed whole into the installation with its dev/tools/build-sample-data.php and installed by setup:install (240+ modules' data: about 2046 products, 40 categories, CMS pages, the Luma storefront data)",
+          "kind": "published_sample",
+          "citation": "https://github.com/magento/magento2-sample-data, README.md 'Deploy Sample Data from GitHub Repository' and 'Install Sample Data' (sample data is installed automatically when Magento is installed from the command line)",
+          "pin": "267f9a72068c3f0b5f81aa08694b955a1a253a1e"
+        },
+        {
+          "item": "The Magento installation itself: the code base and its Composer dependencies (composer install from the release's composer.lock), app/etc/env.php and config.php, the database schema and data, the admin URI, the crypt key, the store, website and store view, the cron and cache configuration, the OpenSearch index, all written by Magento's own setup:install at build time",
+          "kind": "generated",
+          "citation": "Adobe Commerce installation guide, 'Install the application' (bin/magento setup:install); github.com/magento/magento2",
+          "pin": "72561bf80652f57cc642a03e2c9a51d74a285b14"
+        },
+        {
+          "item": "MariaDB system tables in /var/lib/mysql, written by mariadb-install-db at build time; OpenSearch's node data written by the node on its first start (mariadb-server 10.11 from Debian bookworm, 10.11.19-MariaDB-0+deb12u1 at the build; opensearch-min 3.9.0 checked against its published sha512)",
+          "kind": "generated",
+          "citation": "MariaDB mariadb-install-db (Debian bookworm package mariadb-server 10.11); OpenSearch 3.9.0 default configuration",
+          "pin": "adb28c45a873946211e203bbf92ba8d618183c9aff4aede66aa04b6ff40c0a4a04d35c77584743760409e8092821683bdc93ff2fb92f952791f6b7f27facb842"
+        },
+        {
+          "item": "setup:install options and the database the installation uses: base URL http://127.0.0.1/magento2/, database magento with user magento and password magento on localhost, admin Magento User / user@example.com / admin / admin123, language en_US, currency USD, timezone America/Chicago, use-rewrites 1, search engine opensearch on port 9200; host 127.0.0.1 in place of the guide's os-host.example.com (written: the search engine runs on the container's loopback)",
+          "kind": "project_document",
+          "citation": "Adobe Commerce installation guide, 'Advanced on-premises installation', Sample localhost installations, first example (experienceleague.adobe.com/en/docs/commerce-operations/installation-guide/advanced). The database statements (CREATE DATABASE magento, CREATE USER 'magento'@'localhost' IDENTIFIED BY 'magento', GRANT ALL ON magento.*) are written to match that example's --db-name, --db-user and --db-password. Page read 2026-11-07, its source AdobeDocs/commerce-operations.en help/installation/advanced.md lines 265-271 at 15520c8c25bb2168e5110a39c7ea9d9431546e72; one identifier replaced (written): os-host.example.com -> 127.0.0.1.",
+          "pin": "15520c8c25bb2168e5110a39c7ea9d9431546e72"
+        },
+        {
+          "item": "Arguments the benign calls use that no source names: the cache id MAGE_VERSION (written by Magento on bootstrap), the cron job indexer_clean_all_changelogs (Magento_Indexer crontab.xml), the theme Magento/backend and locale en_US (from the installation), and the committed module names Acme/Demo",
+          "kind": "generated",
+          "citation": "taken from what the installation generates and lists (cache directory, sys:cron:list, dev:theme:list); Acme/Demo kept from the committed benign call",
+          "pin": "72561bf80652f57cc642a03e2c9a51d74a285b14"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "n98-magerun2",
+          "release": "10.1.0",
+          "day": "2026-11-05",
+          "source": "Copied from the holdout calibration card of CVE-2026-5603, whose calibration this flaw's fix check reuses: the server README names no magerun2 channel or version (it runs `magerun2`, overridable by MAGERUN2_COMMAND), so the latest release the project published, github.com/netz98/n98-magerun2/releases 10.1.0 (2026-10-07, still the latest on 2026-11-07). The run image downloads its release phar, sha256 76c931312f3ab6a5a5e1dbd40544cf43f9ecab176bca6a3597ebf4a3413fe270 (source commit ca4be30b500444da206e232d928de8da41f7136c)."
+        },
+        {
+          "software": "PHP (php-cli)",
+          "release": "8.2",
+          "day": "2023-06-10",
+          "source": "Copied from the holdout calibration card of CVE-2026-5603: php-cli of Debian 12 bookworm (php-defaults 2:8.2+93) on the node:20.18-bookworm-slim base, packages.debian.org/bookworm/php-cli; with the extensions Magento's composer.json requires (php-bcmath, -curl, -gd, -intl, -mbstring, -mysql, -soap, -xml, -zip)."
+        },
+        {
+          "software": "Magento Open Source",
+          "release": "2.4.7-p10",
+          "day": "2026-11-07",
+          "source": "The server documentation names no Magento version ('Valid Magento 2 installation in the working directory', src/cli.ts). github.com/magento/magento2/releases: 2.4.9 (2026-05-12) is the latest stable release, but its composer.json requires php ~8.3.0||~8.4.0||~8.5.0 and Adobe's system requirements page lists PHP 8.5 for 2.4.9 and PHP 8.4, 8.3 for 2.4.8-p5; the newest line documented for the card's PHP 8.2 is 2.4.7, whose latest release is 2.4.7-p10 (2026-05-12, tag commit 72561bf80652f57cc642a03e2c9a51d74a285b14, requirements 'PHP 8.3, 8.2', 'MariaDB 10.11, 11.8', 'OpenSearch 2, 3'). Chosen by the copied PHP release, not by any tool outcome."
+        },
+        {
+          "software": "MariaDB",
+          "release": "10.11 (Debian bookworm mariadb-server, 10.11.19-MariaDB-0+deb12u1 at the build)",
+          "day": null,
+          "source": "Adobe system requirements page for 2.4.7-p10 names MariaDB 10.11 (first of '10.11, 11.8'); installed from the base image's distribution channel, Debian bookworm, whose stable version is 10.11."
+        },
+        {
+          "software": "OpenSearch",
+          "release": "3.9.0",
+          "day": "2026-11-07",
+          "source": "Adobe system requirements for 2.4.7-p10 name 'OpenSearch 2, 3' (major lines only); the latest release published by the project, github.com/opensearch-project/OpenSearch/releases 3.9.0 (2026-09-29; 2.19.7 of 2026-10-20 is on the older line). Installed from the vendor's core distribution artifacts.opensearch.org/releases/core/opensearch/3.9.0/opensearch-min-3.9.0-linux-x64.tar.gz, sha512 published beside it."
+        }
+      ]
     },
     {
       "server_package": "PyPI:awslabs-mysql-mcp-server",
