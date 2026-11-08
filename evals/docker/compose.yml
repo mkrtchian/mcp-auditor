@@ -841,7 +841,7 @@ services:
       context: .
       dockerfile: Dockerfile.maigret
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0dafbc00cef3411ec4a6788013d1a090244e9350d68621557ef6e84bec7bd6fd"
+        org.mcp-auditor.dockerfile-fingerprint: "c884abac750034df90474228dad5e22825e15783f2f53a47de51c110544d51c1"
     image: mcp-auditor-nuisance-maigret:local
     profiles: ["nuisance"]
 
