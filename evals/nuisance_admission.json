@@ -177,7 +177,24 @@
             {
               "vulnerable_name": "execute_command",
               "patched_name": "execute_command",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "query",
+              "patched_name": "query",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -185,7 +202,7 @@
           "patched_source": "advisory",
           "launch_option": {
             "option": "config/mcp-config.json",
-            "value": "{\"enabled\":true,\"allowReads\":true,\"allowInsert\":true,\"allowUpdate\":true,\"allowDelete\":true,\"allowSchemaChange\":true,\"allowAdmin\":true,\"allowedUsers\":[\"*\"]}",
+            "value": "{\"enabled\":true,\"allowReads\":true,\"allowInsert\":true,\"allowUpdate\":true,\"allowDelete\":true,\"allowSchemaChange\":true,\"allowAdmin\":true,\"allowedUsers\":[\"root\"]}",
             "reason": "The MCP server must be enabled and the execute_command tool allowed so the polyglot js language path (PolyglotQueryEngine) is reachable; the GraalVM class-loader reflection pivot off the bound database object then reads a file outside the database scope.",
             "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp"
           },
@@ -193,22 +210,28 @@
             {
               "tool": "query",
               "arguments": {
-                "database": "mcp",
+                "database": "Imported",
                 "language": "sql",
-                "query": "SELECT 1 AS ok"
-              }
+                "query": "SELECT name FROM Brewery ORDER BY name LIMIT 1"
+              },
+              "expect": "(512) Brewing Company",
+              "before": []
             },
             {
               "tool": "execute_command",
               "arguments": {
-                "database": "mcp",
+                "database": "Imported",
                 "language": "sql",
-                "command": "SELECT 1 AS ok"
-              }
+                "command": "SELECT name FROM Brewery ORDER BY name LIMIT 1"
+              },
+              "expect": "(512) Brewing Company",
+              "before": []
             },
             {
               "tool": "list_databases",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Imported",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -217,12 +240,14 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-895c84e7eddc598a1b30d9e560a58dc6",
             "exploit_calls": [
-              "execute_command"
+              "execute_command",
+              "query"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -231,7 +256,13 @@
             {
               "vulnerable_name": "get_server_settings",
               "patched_name": "get_server_settings",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": null
             }
           ],
           "effect_class": null,
@@ -242,14 +273,18 @@
             {
               "tool": "query",
               "arguments": {
-                "database": "mcp",
+                "database": "Imported",
                 "language": "sql",
-                "query": "SELECT 1 AS ok"
-              }
+                "query": "SELECT name FROM Brewery ORDER BY name LIMIT 1"
+              },
+              "expect": "(512) Brewing Company",
+              "before": []
             },
             {
               "tool": "list_databases",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Imported",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -274,12 +309,24 @@
             {
               "vulnerable_name": "execute_command",
               "patched_name": "execute_command",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": null
             },
             {
               "vulnerable_name": "query",
               "patched_name": "query",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": null
             }
           ],
           "effect_class": null,
@@ -289,11 +336,15 @@
           "benign_calls": [
             {
               "tool": "list_databases",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Imported",
+              "before": []
             },
             {
               "tool": "server_status",
-              "arguments": {}
+              "arguments": {},
+              "expect": "ArcadeDB_0",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -316,7 +367,13 @@
             {
               "vulnerable_name": "set_server_setting",
               "patched_name": "set_server_setting",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": null
             }
           ],
           "effect_class": null,
@@ -326,11 +383,15 @@
           "benign_calls": [
             {
               "tool": "list_databases",
-              "arguments": {}
+              "arguments": {},
+              "expect": "Imported",
+              "before": []
             },
             {
               "tool": "server_status",
-              "arguments": {}
+              "arguments": {},
+              "expect": "ArcadeDB_0",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -368,16 +429,161 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "set_aside": "it saw the other agent's final summary before writing its own record"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-65831",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-65831",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-65831",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-65831",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-65831",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-65831",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-67357",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-67357",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-68578",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-68578",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-75845",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-75845",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
       "settlements": [
         {
           "server_package": "Maven:com.arcadedb:arcadedb-server",
           "flaw": "CVE-2026-65831",
           "field": "tools",
-          "value": "execute_command",
-          "reason": "query dropped from the counted tools: the validated fix-check reproduces the polyglot read-outside-scope only through execute_command (the documented MCP polyglot path), and query is not demonstrated to route the GraalVM pivot on 26.7.1"
+          "value": "execute_command, query",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: query's query argument is analyzed by the polyglot engine of its language argument, which evaluates the script before the idempotence check, and the advisory says the fix is applied in the engine so it covers every entry point, the MCP analyze path included; record B adds query on that ground, record A leaves it out without a reason, and the first admission's settlement, which left it out because the fix check reached the engine through execute_command only, no longer holds; neither record wrote an exploit through query, so the fix check's query exploit was written at assembly, record B's js script sent through query as its source reading describes, and calibrate plays it"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": "CVE-2026-65831",
+          "field": "benign_calls",
+          "value": "record B's calls on the Imported database: query and execute_command read the first brewery name, expecting (512) Brewing Company, and list_databases expects Imported; record B's second query call, a Cypher read of the first beer name, is not kept",
+          "reason": "record B's fixture is retained: it seeds the published sample ArcadeDB's Docker page names, the OpenBeer dataset taken whole and imported at start-up by the documented defaultDatabases option, so each benign call expects a text the sample or the server produces, where record A's database is created empty and its calls expect a key of the server's own answer; a tool takes one benign call across the counted flaws, so of record B's two calls of query the SQL one is kept, the first it lists"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": "CVE-2026-67357",
+          "field": "benign_calls",
+          "value": "record B's calls: query reads the first brewery name of the Imported database, expecting (512) Brewing Company, and list_databases expects Imported",
+          "reason": "record B's fixture is retained: it seeds the published sample ArcadeDB's Docker page names, the OpenBeer dataset taken whole and imported at start-up by the documented defaultDatabases option, so each benign call expects a text the sample or the server produces, where record A's database is created empty and its calls expect a key of the server's own answer"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": "CVE-2026-68578",
+          "field": "benign_calls",
+          "value": "record B's calls: list_databases expects Imported and server_status expects the server's default name ArcadeDB_0",
+          "reason": "record B's fixture is retained: it seeds the published sample ArcadeDB's Docker page names, the OpenBeer dataset taken whole and imported at start-up by the documented defaultDatabases option, so each benign call expects a text the sample or the server produces, where record A's database is created empty and its calls expect a key of the server's own answer"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": "CVE-2026-75845",
+          "field": "benign_calls",
+          "value": "record B's calls: list_databases expects Imported and server_status expects the server's default name ArcadeDB_0",
+          "reason": "record B's fixture is retained: it seeds the published sample ArcadeDB's Docker page names, the OpenBeer dataset taken whole and imported at start-up by the documented defaultDatabases option, so each benign call expects a text the sample or the server produces, where record A's database is created empty and its calls expect a key of the server's own answer"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the OpenBeer dataset, the database name Imported and the root password playwithdata of ArcadeDB's Docker quick start, and the written config/mcp-config.json with allowedUsers at its documented default",
+          "reason": "record B's fixture is retained: it seeds the published sample ArcadeDB's Docker page names, the OpenBeer dataset taken whole and imported at start-up by the documented defaultDatabases option, so each benign call expects a text the sample or the server produces, where record A's database is created empty and its calls expect a key of the server's own answer; the fixture sets only what the fix needs, so allowedUsers goes back from [\"*\"] to the documented default [\"root\"], which record A's calibration kept, the stdio session authenticating as root"
+        },
+        {
+          "server_package": "Maven:com.arcadedb:arcadedb-server",
+          "flaw": null,
+          "field": "declared_function_is_effect",
+          "value": "null for the tools of CVE-2026-67357, CVE-2026-68578 and CVE-2026-75845",
+          "reason": "a flaw with no effect class counts no tool, so the declared function of its tools bears on nothing and is not recorded; the records differ on it under CVE-2026-68578 only"
         },
         {
           "server_package": "Maven:com.arcadedb:arcadedb-server",
@@ -385,23 +591,37 @@
           "field": "patched_version",
           "value": "26.7.1",
           "reason": "26.8.1 is the maximum across the out-of-grammar flaws; the counted flaw CVE-2026-65831 is first fixed at 26.7.1, which is taken as the server's patched version"
-        },
-        {
-          "server_package": "Maven:com.arcadedb:arcadedb-server",
-          "flaw": "CVE-2026-68578",
-          "field": "declared_function_is_effect",
-          "value": "true",
-          "reason": "record B: the effect is an unauthorized write or DDL whose response echoes only data the caller sent, with read authorization still enforced, so it is declared-function-is-effect and out of the nonce grammar"
-        },
-        {
-          "server_package": "Maven:com.arcadedb:arcadedb-server",
-          "flaw": "CVE-2026-75845",
-          "field": "declared_function_is_effect",
-          "value": "true",
-          "reason": "record B: a non-root principal reaching an admin setting, declared-function-is-effect, out of grammar"
         }
       ],
-      "patched_version": "26.7.1"
+      "patched_version": "26.7.1",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "OpenBeer dataset (orientdb/OpenBeer.gz, the OrientDB OpenBeer export), fetched at build time and imported whole at start-up into the database 'Imported' through -Darcadedb.server.defaultDatabases=Imported[root]{import:file:///home/arcadedb/datasets/OpenBeer.gz}, the run's network being closed",
+          "kind": "published_sample",
+          "citation": "ArcadeDB documentation, Docker, 'Quick start with the OpenBeer database' (https://docs.arcadedb.com/arcadedb/how-to/operations/docker.html): '-Darcadedb.server.defaultDatabases=Imported[root]{import:https://github.com/ArcadeData/arcadedb-datasets/raw/main/orientdb/OpenBeer.gz}', the only sample that page names; ArcadeData/arcadedb-datasets at commit 6352075b2046178d6063ddbe102e50d117a436e0",
+          "pin": "65dae3b7f1db115666e63b4855dd6224064c8be531ee034e301d201309cc8c53"
+        },
+        {
+          "item": "Database name 'Imported' with its root binding (Imported[root])",
+          "kind": "project_document",
+          "citation": "the same documented Docker quick-start command (https://docs.arcadedb.com/arcadedb/how-to/operations/docker.html)",
+          "pin": null
+        },
+        {
+          "item": "Root password 'playwithdata' (-Darcadedb.server.rootPassword), mandatory for bin/mcp-stdio.sh",
+          "kind": "project_document",
+          "citation": "ArcadeDB documentation, Docker page: '--env ARCADEDB_SETTINGS=\"-Darcadedb.server.rootPassword=playwithdata\"'; MCP reference, Stdio: 'The root password is mandatory'",
+          "pin": null
+        },
+        {
+          "item": "config/mcp-config.json {\"enabled\":true,\"allowReads\":true,\"allowInsert\":true,\"allowUpdate\":true,\"allowDelete\":true,\"allowSchemaChange\":true,\"allowAdmin\":true,\"allowedUsers\":[\"root\"]}",
+          "kind": "written",
+          "citation": "the launch option of CVE-2026-65831; keys and the allowedUsers default from the MCP reference (https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html, Configuration)",
+          "pin": null
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "npm:@ooples/token-optimizer-mcp",

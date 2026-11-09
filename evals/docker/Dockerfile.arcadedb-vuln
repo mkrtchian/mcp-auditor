@@ -1,33 +1,26 @@
-# Vulnerable target for the nuisance fix-check of CVE-2026-65831: ArcadeDB 26.6.1, polyglot JS
-# over the MCP stdio server. execute_command forwards {language:"js", command:<script>} to
-# PolyglotQueryEngine, which runs the script under HostAccess.ALL, so a bound-object reflection
-# chain (database.getClass().getClassLoader().loadClass(...)) reaches java.io.* and reads any
-# host file outside the database scope.
-# No COPY/ADD: the fingerprint hashes instructions only, so the launch config and entrypoint are
-# inlined by RUN.
+# Vulnerable image: ArcadeDB 26.6.1, otherwise identical to the run image Dockerfile.arcadedb.
+# Launch: ArcadeDB's documented stdio launch (ARCADEDB_SETTINGS with the root password, then
+# bin/mcp-stdio.sh), with the documented Docker quick-start database: the OpenBeer dataset imported
+# as "Imported" (docs.arcadedb.com, how-to/operations/docker, "Quick start with the OpenBeer
+# database"). The network is closed at run time, so the dataset is fetched here, pinned by commit
+# and checksum, and imported from the local copy.
 FROM arcadedata/arcadedb:26.6.1@sha256:b89478bd698ebfb6301918ec6745818a02759515b7d00dd1c86c842470274f5b
 
 USER root
 
-RUN mkdir -p /home/arcadedb/config /home/arcadedb/databases /home/arcadedb/backups /home/arcadedb/log
+ADD --checksum=sha256:65dae3b7f1db115666e63b4855dd6224064c8be531ee034e301d201309cc8c53 \
+  https://github.com/ArcadeData/arcadedb-datasets/raw/6352075b2046178d6063ddbe102e50d117a436e0/orientdb/OpenBeer.gz \
+  /home/arcadedb/datasets/OpenBeer.gz
 
-# The MCP deployment that enables the server and allows execute_command to reach the polyglot
-# engine: this is a deployment choice, not the flaw. Identical on the patched image.
-RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["*"]}' \
+# MCP permissions (config/mcp-config.json): every tool class allowed, allowedUsers at its
+# documented default.
+RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["root"]}' \
   > /home/arcadedb/config/mcp-config.json
 
-# Launches the ArcadeDB MCP stdio server with a root password and one default database.
-RUN printf '%s\n' \
-  '#!/bin/sh' \
-  'SET="-Darcadedb.server.rootPassword=${ARCADE_ROOT_PW:-admin-secret-123} -Darcadedb.server.defaultDatabases=mcp[root]"' \
-  'if [ -n "$CLUSTER_TOKEN" ]; then' \
-  '  SET="$SET -Darcadedb.ha.clusterToken=$CLUSTER_TOKEN"' \
-  'fi' \
-  'export ARCADEDB_SETTINGS="$SET"' \
-  'exec /home/arcadedb/bin/mcp-stdio.sh' \
-  > /usr/local/bin/entrypoint-mcp.sh \
- && chmod +x /usr/local/bin/entrypoint-mcp.sh
+# The run's uid is not the image's arcadedb user: let it write the server's runtime directories.
+RUN chmod -R a+rwX /home/arcadedb
 
-RUN chmod -R 0777 /home/arcadedb/databases /home/arcadedb/backups /home/arcadedb/log /home/arcadedb/config
+ENV ARCADEDB_SETTINGS="-Darcadedb.server.rootPassword=playwithdata -Darcadedb.server.defaultDatabases=Imported[root]{import:file:///home/arcadedb/datasets/OpenBeer.gz}"
 
-ENTRYPOINT ["/usr/local/bin/entrypoint-mcp.sh"]
+ENTRYPOINT ["/__cacert_entrypoint.sh"]
+CMD ["/home/arcadedb/bin/mcp-stdio.sh"]

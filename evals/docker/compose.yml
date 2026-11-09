@@ -770,7 +770,7 @@ services:
       context: .
       dockerfile: Dockerfile.arcadedb
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "79d4a2990c317649f33b27e40bb35c30d6f430b54f980c37f6ff26b7dd717094"
+        org.mcp-auditor.dockerfile-fingerprint: "1768d8bbe08872ec420dd83a165a420321c74aaca1b95d72aca256a5d05cacab"
     image: mcp-auditor-nuisance-arcadedb:local
     profiles: ["nuisance"]
 
