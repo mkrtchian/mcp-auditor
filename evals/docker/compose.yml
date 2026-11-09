@@ -1058,7 +1058,7 @@ services:
       context: .
       dockerfile: Dockerfile.claude-faf
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a56e32f5eeabd0fbefee8a94c9884e4fd179065c57209d37b3433408bcf940a8"
+        org.mcp-auditor.dockerfile-fingerprint: "11ec09b421d60a0e4b35548e1fcb367af095f51015cda08d628a0553ae04eefd"
     image: mcp-auditor-nuisance-claude-faf:local
     profiles: ["nuisance"]
 

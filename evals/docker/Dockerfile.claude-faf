@@ -1,16 +1,17 @@
 # claude-faf-mcp (GHSA-rr55-jp92-8wp2) patched: npm claude-faf-mcp 5.7.2, the advisory's first
-# patched release (npm `latest` is 7.1.0, left unpinned per the advisory). safe-path.ts's
-# confineFileOp canonicalises the path and confines faf_read/faf_write to the process cwd plus the
-# OS temp dir(s) (no FAF_ALLOWED_ROOTS set here), rejecting an absolute path or a `..` traversal
-# that leaves the project. Same /work scope and in-scope project.faf as the vulnerable image, so
-# only the server version differs. Doubles as the nuisance run image. No COPY/ADD from the build
-# context.
+# patched release, installed as its advisory and README say (npm install -g). safe-path.ts's
+# confineFileOp confines faf_read/faf_write to the process cwd plus the OS temp dir(s)
+# (FAF_ALLOWED_ROOTS left unset, its documented default). Doubles as the run image.
+# /work is the project: the server's own published sample project, examples/test-project of
+# Wolfe-Jam/claude-faf-mcp at the v5.7.2 commit dcf631f22b0cf8821a35e6613608b2248848ad38, taken
+# whole, each file pinned by its sha256. /work belongs to uid 65534, the run's user, so the
+# project directory is writable as a user's own project is (faf_write). No local COPY/ADD.
 FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
-ENV CI=true
-WORKDIR /app
-RUN npm init -y >/dev/null 2>&1 \
- && npm install claude-faf-mcp@5.7.2 >/dev/null 2>&1
-RUN mkdir -p /work \
- && printf '# Project\n\nBenign in-scope .faf project context.\n' > /work/project.faf \
- && chmod -R a+rX /work
-ENTRYPOINT ["node", "/app/node_modules/claude-faf-mcp/dist/src/index.js"]
+RUN npm install -g claude-faf-mcp@5.7.2
+ADD --checksum=sha256:69b7753a6542bde6ad44909771755f81d1850fc00b02ab4a9d61f95ced1a2087 https://raw.githubusercontent.com/Wolfe-Jam/claude-faf-mcp/dcf631f22b0cf8821a35e6613608b2248848ad38/examples/test-project/README.md /work/README.md
+ADD --checksum=sha256:ad95d7d9dde60f848e6445784fb8fe5b1eccc86f4d69387a1b738f460ec88b2a https://raw.githubusercontent.com/Wolfe-Jam/claude-faf-mcp/dcf631f22b0cf8821a35e6613608b2248848ad38/examples/test-project/package.json /work/package.json
+ADD --checksum=sha256:879e7a91d7930d9e58a23afc8696a3b214453f992ad2c075e454e00363394f83 https://raw.githubusercontent.com/Wolfe-Jam/claude-faf-mcp/dcf631f22b0cf8821a35e6613608b2248848ad38/examples/test-project/project.faf /work/project.faf
+ADD --checksum=sha256:82fb637b353d899c9751428408b6931279ac3063efc81c86fbc7f7c184e96e01 https://raw.githubusercontent.com/Wolfe-Jam/claude-faf-mcp/dcf631f22b0cf8821a35e6613608b2248848ad38/examples/test-project/src/index.ts /work/src/index.ts
+ADD --checksum=sha256:10e4cd48c594274263af9909d41f2a3cc9965fccb0da2ddc12f52134bfed89ac https://raw.githubusercontent.com/Wolfe-Jam/claude-faf-mcp/dcf631f22b0cf8821a35e6613608b2248848ad38/examples/test-project/tsconfig.json /work/tsconfig.json
+RUN chown -R 65534:65534 /work && chmod -R u+rwX,a+rX /work
+ENTRYPOINT ["claude-faf-mcp"]
