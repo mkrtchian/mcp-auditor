@@ -47,15 +47,6 @@ def test_an_account_place_is_grouped_alone():
     assert grouped.not_plantable == []
 
 
-def test_an_account_place_on_a_host_user_launch_is_not_plantable():
-    account = given.account_place("acct")
-
-    grouped = survey_groups([account], given.host_user_host(), given.FakeNonces())
-
-    assert grouped.groups == []
-    assert grouped.not_plantable == [account]
-
-
 def test_an_ip_literal_inside_the_reserved_block_is_not_plantable():
     endpoint = given.endpoint_place("ep", host="10.255.255.5")
 

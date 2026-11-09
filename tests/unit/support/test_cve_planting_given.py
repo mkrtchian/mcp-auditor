@@ -36,10 +36,6 @@ def unprivileged_host(
     )
 
 
-def host_user_host(*, has_network: bool = False, working_directory: str = "/work") -> PlantingHost:
-    return PlantingHost(SymbolicUser.HOST, working_directory, has_network)
-
-
 def file_place(
     entry_id: str = "file-1",
     *,

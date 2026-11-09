@@ -85,7 +85,7 @@ TARGET = CVETarget(
     server_image=SERVICE,
     patched_image=PATCHED,
     planting_host=PlantingHost(
-        # Unprivileged (an account place needs a non-host user). The injection is independent of
+        # Unprivileged, as every launch, and the injection is independent of
         # the working directory, so the server runs from the layout checkout (/srv/app), the
         # directory the deployment layout prescribes. The checkout holds no docker-env marker, so
         # the patched server takes its local execFile path.

@@ -15,7 +15,6 @@ builder no longer emits them itself, it takes them from the `PlantedArgs` planti
 """
 
 import logging
-import os
 import secrets
 import tempfile
 from collections.abc import Mapping, Sequence
@@ -41,7 +40,6 @@ LAYOUT_ROOT = "srv"  # the layout root's name inside its outer directory
 
 class SymbolicUser(StrEnum):
     UNPRIVILEGED = "unprivileged"
-    HOST = "host"
 
 
 class LayoutMount(StrEnum):
@@ -247,10 +245,3 @@ def unprivileged_user_args() -> list[str]:
     # bounding set that root is disarmed, but an escape that lands as nobody on the host is
     # still better than one that lands as root.
     return ["--user", f"{UNPRIVILEGED_UID}:{UNPRIVILEGED_GID}", "-e", "HOME=/tmp"]
-
-
-def host_user_args() -> list[str]:
-    # The host user, kept for the holdout fixtures and nuisance hosts that still run as it until
-    # their campaign rewrites them. HOME is set because git needs a writable home for a uid
-    # absent from the image's passwd file.
-    return ["--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp"]

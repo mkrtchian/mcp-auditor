@@ -1,6 +1,5 @@
 import configparser
 import logging
-import os
 import re
 import tempfile
 from pathlib import Path
@@ -18,7 +17,6 @@ from evals.cve_planting import (
     PlantingFailed,
     PlantingSpec,
     planted,
-    planting_spec,
 )
 from evals.cve_planting_base import (
     confinement_args,
@@ -116,11 +114,6 @@ def test_two_locations_of_the_same_kind_take_two_distinct_values():
 
 
 # --- refusals (ValueError, never PlantingFailed) ----------------------------------------
-
-
-def test_an_account_place_on_a_host_user_launch_raises():
-    with pytest.raises(ValueError, match="account-1"):
-        planting_spec([given.account_place()], given.host_user_host(), given.FakeNonces())
 
 
 def test_two_hostname_places_raise():
@@ -314,14 +307,6 @@ def test_a_file_place_resolving_under_work_is_refused(path: str):
 
     with pytest.raises(ValueError, match="holds no place"):
         given.spec_of([given.file_place(path=path)], host=host)
-
-
-def test_a_host_user_launch_resolves_the_uid_only_at_planted():
-    host = given.host_user_host(working_directory="/work")
-    spec = given.spec_of([], host=host)
-
-    args = _args_in(spec)
-    assert args.user == ("--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp")
 
 
 def test_an_env_place_emits_a_docker_env_argument_with_the_nonce():

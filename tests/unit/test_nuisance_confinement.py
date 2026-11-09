@@ -1,5 +1,4 @@
 import dataclasses
-import os
 from pathlib import Path
 
 import pytest
@@ -80,15 +79,6 @@ def test_a_container_not_running_this_launch_does_not_match(inspected: str):
     assert not launch_matches(inspected, BACKEND_RUN)
 
 
-def test_a_host_user_runs_as_the_invoking_user():
-    assert user_args(SymbolicUser.HOST) == [
-        "--user",
-        f"{os.getuid()}:{os.getgid()}",
-        "-e",
-        "HOME=/tmp",
-    ]
-
-
 def test_an_unprivileged_user_runs_as_nobody():
     assert user_args(SymbolicUser.UNPRIVILEGED) == ["--user", "65534:65534", "-e", "HOME=/tmp"]
 
@@ -100,18 +90,13 @@ def test_the_single_container_run_ends_with_the_image_then_the_launch():
     assert args[-3:] == ["image:local", *LAUNCH]
 
 
-@pytest.mark.parametrize(
-    "host",
-    [HOST, PlantingHost(SymbolicUser.HOST, "/", has_network=False)],
-    ids=["unprivileged", "host user"],
-)
-def test_the_single_container_run_is_confined_bounded_and_without_network(host: PlantingHost):
-    args = single_container_run_args("image:local", host, LAUNCH)
+def test_the_single_container_run_is_confined_bounded_and_without_network():
+    args = single_container_run_args("image:local", HOST, LAUNCH)
 
     assert _holds(args, nuisance_confinement_args())
     assert _holds(args, no_network_args())
-    assert _holds(args, user_args(host.user))
-    assert _holds(args, ["-w", host.working_directory])
+    assert _holds(args, user_args(HOST.user))
+    assert _holds(args, ["-w", HOST.working_directory])
 
 
 def test_the_single_container_run_has_no_network_even_on_a_networked_host():

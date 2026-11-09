@@ -220,7 +220,9 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "tools filter": _replacing(tools_filter=frozenset({"kubectl_generic", "kubectl_get"})),
     "server image": _replacing(server_image="another-service"),
     "reaches": _replacing(reaches=frozenset({"arbitrary_read"})),
-    "planting host": _replacing(planting_host=PlantingHost(SymbolicUser.HOST, "/elsewhere", True)),
+    "planting host": _replacing(
+        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/elsewhere", True)
+    ),
     "a read-write layout": _changing_its_host(layout_mount=LayoutMount.READ_WRITE),
     "a baked /work": _changing_its_host(baked_work=True),
     "a fictional kept id added": _keeping_another_record(),

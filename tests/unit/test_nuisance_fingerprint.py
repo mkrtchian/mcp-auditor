@@ -139,7 +139,6 @@ def test_the_fingerprint_moves_when_the_launch_changes(tmp_path: Path):
 @pytest.mark.parametrize(
     "host",
     [
-        PlantingHost(SymbolicUser.HOST, "/", has_network=False),
         PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False),
         PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True),
     ],

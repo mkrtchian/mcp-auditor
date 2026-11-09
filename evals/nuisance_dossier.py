@@ -153,8 +153,7 @@ patched version.
   bakes it into its image. When set, it names the provisioner key, the pinned image tag the
   provisioner pulls, and the network the server joins.
 - `host`: the `PlantingHost` the agents fill.
-  - `user`: `host` or `unprivileged`, `unprivileged` unless the patched image breaks under uid
-    65534 and `HOME=/tmp`, the fix-check driver establishing it.
+  - `user`: `unprivileged`, the only user, uid 65534 with `HOME=/tmp`.
   - `working_directory`: `/` unless the image needs another.
   - `has_network`: true only for a server with a `backend`, whose provisioner's closed network
     joins it to the backend and to nothing else (no route to the host or the Internet). A server

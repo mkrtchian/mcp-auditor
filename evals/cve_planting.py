@@ -41,7 +41,6 @@ from evals.cve_planting_base import (
     SentinelIntent,
     SymbolicUser,
     confinement_args,
-    host_user_args,
     no_network_args,
     own_network_args,
     quiet,
@@ -69,9 +68,8 @@ from evals.cve_planting_stand_ins import (
 from evals.public_stand_ins import STAND_INS_DIRECTORY
 
 # re-exported for a one-name import by the audit, calibration, survey and replay callers.
-# The user and network helpers (host_user_args, no_network_args, own_network_args,
-# unprivileged_user_args) are imported above for `planted`'s own use only, so they stay off
-# this public surface.
+# The user and network helpers (no_network_args, own_network_args, unprivileged_user_args)
+# are imported above for `planted`'s own use only, so they stay off this public surface.
 __all__ = [
     "RANDOM_NONCES",
     "SENTINEL_IMAGE",
@@ -175,7 +173,7 @@ def _user_and_mounts(
         user, account_mounts = _account_user(spec.account, image_tag, docker, stack)
         mounts += account_mounts
     else:
-        user = _symbolic_user_args(spec.host.user)
+        user = tuple(unprivileged_user_args())
     for intent in spec.files:
         path = _write(docker, stack, intent.content)
         mounts += ["-v", f"{path}:{intent.container_path}:ro"]
@@ -274,10 +272,6 @@ def _write(docker: PlantingDocker, stack: ExitStack, content: str) -> str:
     path = docker.write_host_file(content, 0o644)
     stack.callback(quiet, docker.remove_host_file, path)
     return path
-
-
-def _symbolic_user_args(user: SymbolicUser) -> tuple[str, ...]:
-    return tuple(host_user_args() if user is SymbolicUser.HOST else unprivileged_user_args())
 
 
 def _passwd_line(account: AccountIntent) -> str:

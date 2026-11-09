@@ -100,9 +100,8 @@ _ADMISSION_CONFINEMENT = """\
 # The run's confinement
 
 A server with no backend is launched with this argv, shown for the `unprivileged` user of
-`PlantingHost` (the default): the `host` user takes the invoking user's uid and gid in `--user`
-instead. `<working directory>` is the host's `working_directory`, `<image>` the image tag and
-`<launch>` the record's `launch`:
+`PlantingHost`, the only user. `<working directory>` is the host's `working_directory`,
+`<image>` the image tag and `<launch>` the record's `launch`:
 
 ```
 {command}

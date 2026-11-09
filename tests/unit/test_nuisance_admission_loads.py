@@ -1,6 +1,5 @@
 import pytest
 
-from evals.cve_planting import SymbolicUser
 from evals.holdout_census import load_census
 from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer, load_admission
 from evals.nuisance_commands import WALK_RECORD_PATH
@@ -19,9 +18,3 @@ def test_the_committed_admission_loads():
 )
 def test_each_admitted_server_fingerprints_from_committed_files(server: AdmittedServer):
     nuisance_fixture_fingerprint(server)
-
-
-def test_no_admitted_server_runs_as_the_host_user():
-    servers = the_committed_admission().servers
-
-    assert [s.server_package for s in servers if s.host.user is SymbolicUser.HOST] == []

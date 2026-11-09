@@ -26,7 +26,6 @@ from evals.cve_planting_base import (
     PlantingHost,
     PlantingSpec,
     SentinelIntent,
-    SymbolicUser,
 )
 
 # The home of the account every launch runs as (matching the user arguments), the uid and
@@ -148,8 +147,6 @@ def _plant_env(place: Place, host: PlantingHost, nonces: NonceSource, draft: _Sp
 def _plant_account(
     place: Place, host: PlantingHost, nonces: NonceSource, draft: _SpecDraft
 ) -> None:
-    if host.user is SymbolicUser.HOST:
-        raise ValueError(f"{place.id}: an account place on a host-user launch")
     if draft.account is not None:
         raise ValueError(f"{place.id}: a second account place in one launch")
     name = nonces.account_name()

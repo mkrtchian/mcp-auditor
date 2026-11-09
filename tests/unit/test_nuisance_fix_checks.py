@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_fix_checks_given as given
-from evals.cve_planting import SymbolicUser
 from evals.cve_proofs import is_aimed
 from evals.docker_paths import image_dockerfile
 from evals.holdout_kit.fix_check import FixCheckTarget
@@ -46,10 +45,6 @@ def test_no_fix_check_module_imports_cve_environments():
         if (names := _cve_environments_imports(path.read_text(), str(path)))
     }
     assert offenders == {}
-
-
-def test_no_fix_check_runs_as_the_host_user():
-    assert [t.flaw for t in FIX_CHECK_TARGETS if t.planting_host.user is SymbolicUser.HOST] == []
 
 
 def test_every_counted_flaw_has_a_fix_check_target_unless_holdout_calibrated():

@@ -109,6 +109,16 @@ def test_load_admission_refuses_a_server_without_a_host(tmp_path: Path):
         load_admission(path, given.a_nuisance_census())
 
 
+def test_load_admission_refuses_the_host_user(tmp_path: Path):
+    path = given.written(tmp_path, given.an_admission())
+    document = json.loads(path.read_text())
+    document["servers"][0]["host"]["user"] = "host"
+    path.write_text(json.dumps(document))
+
+    with pytest.raises(ValueError):
+        load_admission(path, given.a_nuisance_census())
+
+
 def test_load_admission_on_a_missing_file_raises(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         load_admission(tmp_path / "absent.json", given.a_nuisance_census())

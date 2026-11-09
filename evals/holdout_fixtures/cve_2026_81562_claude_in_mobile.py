@@ -146,8 +146,8 @@ TARGET = CVETarget(
     images=(SERVICE, "sentinel"),
     server_image=SERVICE,
     patched_image=PATCHED,
-    # UNPRIVILEGED so process-account-identity can run under a seeded uid (a host-user launch
-    # rejects account places); the host-side injection is uid-independent. has_network=False: the
+    # UNPRIVILEGED, as every launch, so process-account-identity can run under a seeded uid;
+    # the host-side injection is uid-independent. has_network=False: the
     # three link-local endpoints are served inside the namespace holder on loopback. The working
     # directory is the layout checkout /srv/app, as Deployment layout prescribes.
     planting_host=PlantingHost(

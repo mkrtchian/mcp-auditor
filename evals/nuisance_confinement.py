@@ -25,7 +25,6 @@ from evals.cve_planting_base import (
     PlantingHost,
     SymbolicUser,
     confinement_args,
-    host_user_args,
     no_network_args,
     unprivileged_user_args,
 )
@@ -78,8 +77,6 @@ def launch_digest(run_args: Sequence[str]) -> str:
 
 def user_args(user: SymbolicUser) -> list[str]:
     match user:
-        case SymbolicUser.HOST:
-            return host_user_args()
         case SymbolicUser.UNPRIVILEGED:
             return unprivileged_user_args()
 

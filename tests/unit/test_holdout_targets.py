@@ -13,7 +13,7 @@ from evals.cve_places import (
     kept_records,
     load_places,
 )
-from evals.cve_planting import SymbolicUser, planting_spec
+from evals.cve_planting import planting_spec
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget
 from evals.holdout_targets import HOLDOUT_TARGETS
@@ -90,13 +90,6 @@ def test_no_acceptance_or_holdout_image_names_a_path_under_work():
 
     for service in sorted(services):
         assert given.the_instructions_naming_work_in(service) == [], service
-
-
-# Version 11 runs every target under the unprivileged account: the host uid is a
-# benchmark-machine value that must not reach the launch.
-def test_no_holdout_target_runs_as_the_host_user():
-    for target in HOLDOUT_TARGETS:
-        assert target.planting_host.user is not SymbolicUser.HOST, target.cve_id
 
 
 # Rule v11 starts a target in the checkout, or in the empty `/work` when it cannot write there.
