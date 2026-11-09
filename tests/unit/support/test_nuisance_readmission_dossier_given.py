@@ -1,8 +1,11 @@
 import hashlib
 from pathlib import Path
 
+import tests.unit.support.test_nuisance_admission_given as admission_given
+from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.honeypots import REPO_ROOT
-from evals.nuisance_admission import AdmittedServer
+from evals.nuisance_admission import AdmittedServer, FlawRecord
+from evals.nuisance_holdout_copies import copy_targets
 from evals.nuisance_readmission_dossier import (
     fix_check_modules,
     holdout_references,
@@ -12,6 +15,15 @@ from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
     the_committed_census,
 )
+
+A_DRAWN_TARGET = "CVE-2026-85787"
+ITS_SIBLING = "CVE-2026-87911"
+
+
+def the_copy_resolution() -> dict[str, str]:
+    return copy_targets(
+        [target.cve_id for target in HOLDOUT_TARGETS], the_committed_census().census.draw
+    )
 
 
 def a_committed_server_with_fix_checks() -> AdmittedServer:
@@ -25,9 +37,24 @@ def a_committed_server_with_a_backend() -> AdmittedServer:
 
 
 def a_committed_server_with_a_holdout_copy() -> AdmittedServer:
+    resolution = the_copy_resolution()
     return next(
-        server for server in the_committed_admission().servers if holdout_references(server)
+        server
+        for server in the_committed_admission().servers
+        if holdout_references(server, resolution)
     )
+
+
+def a_server_copying_a_drawn_target_and_its_sibling() -> AdmittedServer:
+    base = admission_given.an_admitted_server()
+    first = base.flaws[0]
+    flaws = [_copying(first, A_DRAWN_TARGET), _copying(first, ITS_SIBLING)]
+    return base.model_copy(update={"flaws": flaws})
+
+
+def _copying(flaw: FlawRecord, flaw_id: str) -> FlawRecord:
+    fix_check = flaw.fix_check.model_copy(update={"source": "holdout_calibration"})
+    return flaw.model_copy(update={"flaw": flaw_id, "fix_check": fix_check})
 
 
 def a_written_dossier(tmp_path: Path, server_package: str) -> Path:

@@ -1,8 +1,33 @@
 import tests.unit.support.test_nuisance_holdout_copies_given as given
-from evals.nuisance_holdout_copies import stale_holdout_copies
+from evals.nuisance_holdout_copies import copy_targets, stale_holdout_copies
 
 _CURRENT = {given.COPIED_FLAW: given.RECORDED}
 _MOVED = {given.COPIED_FLAW: "b" * 64}
+
+
+def test_each_drawn_id_points_at_itself():
+    draw = given.a_draw_whose_card_lists(given.DRAWN, given.SIBLING)
+
+    assert copy_targets([given.DRAWN], draw)[given.DRAWN] == given.DRAWN
+
+
+def test_a_sibling_points_at_its_drawn_target():
+    draw = given.a_draw_whose_card_lists(given.DRAWN, given.SIBLING)
+
+    assert copy_targets([given.DRAWN], draw) == {
+        given.DRAWN: given.DRAWN,
+        given.SIBLING: given.DRAWN,
+    }
+
+
+def test_a_card_whose_flaw_is_not_drawn_adds_nothing():
+    draw = given.a_draw_whose_card_lists(given.NOT_DRAWN, given.ITS_SIBLING)
+
+    assert copy_targets([given.DRAWN], draw) == {given.DRAWN: given.DRAWN}
+
+
+def test_no_draw_gives_the_drawn_ids_alone():
+    assert copy_targets([given.DRAWN], None) == {given.DRAWN: given.DRAWN}
 
 
 def test_a_copy_at_the_current_fingerprint_is_not_listed():

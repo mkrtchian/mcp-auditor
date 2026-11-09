@@ -14,6 +14,7 @@ clean: only the files it writes must be.
 import importlib
 import pkgutil
 import shutil
+from collections.abc import Mapping
 from pathlib import Path
 
 from evals import dossier_closure, nuisance_fix_checks, nuisance_readmission_docs
@@ -27,6 +28,7 @@ from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_dossier import write_dossier
 from evals.nuisance_fixtures import FIX_CHECK_TARGETS
+from evals.nuisance_holdout_copies import copy_targets
 from evals.nuisance_holdout_reference import holdout_targets_among
 from evals.nuisance_walk_record import NuisanceCensus
 
@@ -35,7 +37,10 @@ def write_readmission_dossier(
     nuisance_census: NuisanceCensus, admission: NuisanceAdmission, server_package: str, out: Path
 ) -> None:
     server = _admitted_server(admission, server_package)
-    dockerfiles = readmission_dockerfiles(server)
+    resolution = copy_targets(
+        [target.cve_id for target in HOLDOUT_TARGETS], nuisance_census.census.draw
+    )
+    dockerfiles = readmission_dockerfiles(server, resolution)
     closure = dossier_closure.import_closure(closure_roots(server))
     write_dossier(nuisance_census, server_package, out)
     (out / "admission_record.json").write_text(server.model_dump_json(indent=2))
@@ -58,13 +63,16 @@ def _admitted_server(admission: NuisanceAdmission, server_package: str) -> Admit
     )
 
 
-def readmission_dockerfiles(server: AdmittedServer) -> list[str]:
+def readmission_dockerfiles(server: AdmittedServer, resolution: Mapping[str, str]) -> list[str]:
     services = [server.service]
     for target in _fix_check_targets(server):
         services += [target.vulnerable_service, target.patched_service]
         if target.server_patched_service is not None:
             services.append(target.server_patched_service)
-    twins = [*holdout_references(server), *holdout_targets_among(f.flaw for f in server.flaws)]
+    twins = [
+        *holdout_references(server, resolution),
+        *holdout_targets_among(f.flaw for f in server.flaws),
+    ]
     for holdout in twins:
         services += [*holdout.images, holdout.patched_image]
     if server.backend is not None:
@@ -108,18 +116,19 @@ def closure_roots(server: AdmittedServer) -> list[str]:
     return roots
 
 
-def holdout_references(server: AdmittedServer) -> list[CVETarget]:
+def holdout_references(server: AdmittedServer, resolution: Mapping[str, str]) -> list[CVETarget]:
     by_identifier = {target.cve_id: target for target in HOLDOUT_TARGETS}
     calibrated = [
         flaw.flaw for flaw in server.flaws if flaw.fix_check.source == "holdout_calibration"
     ]
-    unknown = [flaw for flaw in calibrated if flaw not in by_identifier]
+    unknown = [flaw for flaw in calibrated if flaw not in resolution]
     if unknown:
         raise Refused(
             f"Refused: {server.server_package} has a holdout-calibration flaw with no target.",
-            [f"no HOLDOUT_TARGETS entry carries {flaw}" for flaw in unknown],
+            [f"no drawn holdout target carries {flaw}" for flaw in unknown],
         )
-    return [by_identifier[flaw] for flaw in calibrated]
+    drawn = dict.fromkeys(resolution[flaw] for flaw in calibrated)
+    return [by_identifier[target] for target in drawn]
 
 
 def _copy_dockerfiles(out: Path, services: list[str]) -> None:

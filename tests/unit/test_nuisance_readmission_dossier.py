@@ -87,7 +87,8 @@ def test_a_fix_check_dossier_carries_its_record_rule_dockerfiles_and_fix_checks(
     record = AdmittedServer.model_validate_json((out / "admission_record.json").read_text())
     assert record == server
     assert (out / "nuisance-rule.md").read_text() == NUISANCE_RULE.read_text()
-    for service in (*readmission_dockerfiles(server), SENTINEL_SERVICE, STAND_IN_SERVICE):
+    services = readmission_dockerfiles(server, given.the_copy_resolution())
+    for service in (*services, SENTINEL_SERVICE, STAND_IN_SERVICE):
         assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service
     for module in (
         *fix_check_modules(server),
@@ -120,7 +121,7 @@ def test_a_holdout_copy_dossier_carries_its_holdout_reference_as_text(dossier_of
 
     out = dossier_of(server)
 
-    for target in holdout_references(server):
+    for target in holdout_references(server, given.the_copy_resolution()):
         fixture = holdout_fixture_file(target.cve_id)
         reference = out / "reference" / "holdout_fixtures" / f"{fixture.name}.txt"
         text = reference.read_text()
@@ -210,14 +211,26 @@ def test_the_readme_keeps_the_agent_off_every_shared_backend():
 
 
 def test_every_holdout_calibration_flaw_resolves_to_one_target_and_one_fixture():
+    resolution = given.the_copy_resolution()
     for server in the_committed_admission().servers:
         calibrated = {
             flaw.flaw for flaw in server.flaws if flaw.fix_check.source == "holdout_calibration"
         }
-        targets = holdout_references(server)
-        assert {target.cve_id for target in targets} == calibrated, server.server_package
+        assert calibrated <= resolution.keys(), server.server_package
+        targets = holdout_references(server, resolution)
+        assert {target.cve_id for target in targets} == {resolution[flaw] for flaw in calibrated}, (
+            server.server_package
+        )
         for target in targets:
             assert holdout_fixture_file(target.cve_id).is_file()
+
+
+def test_a_copy_on_a_drawn_target_and_its_sibling_resolve_to_one_target():
+    server = given.a_server_copying_a_drawn_target_and_its_sibling()
+
+    targets = holdout_references(server, given.the_copy_resolution())
+
+    assert [target.cve_id for target in targets] == [given.A_DRAWN_TARGET]
 
 
 def test_a_holdout_calibration_flaw_no_target_carries_is_refused():
@@ -230,7 +243,7 @@ def test_a_holdout_calibration_flaw_no_target_carries_is_refused():
     )
 
     with pytest.raises(Refused):
-        holdout_references(server)
+        holdout_references(server, given.the_copy_resolution())
 
 
 def test_a_server_the_admission_does_not_hold_is_refused_before_writing(tmp_path: Path):

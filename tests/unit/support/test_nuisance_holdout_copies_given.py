@@ -1,12 +1,28 @@
 from typing import Literal
 
+import tests.unit.support.test_census_draw_given as draw_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
+from evals.census_draw import CalibrationCard, DrawRecord, Sibling
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 
 SERVER = admission_given.SERVER_PACKAGE
 COPIED_FLAW = admission_given.FIRST_FLAW
 RECORDED = "a" * 64
+
+DRAWN = "CVE-2030-0001"
+SIBLING = "CVE-2030-0002"
+NOT_DRAWN = "CVE-2030-0100"
+ITS_SIBLING = "CVE-2030-0101"
+
+
+def a_draw_whose_card_lists(flaw: str, sibling: str) -> DrawRecord:
+    return draw_given.a_draw_carrying(_a_card_listing(flaw, sibling))
+
+
+def _a_card_listing(flaw: str, sibling: str) -> CalibrationCard:
+    sibling_record = Sibling(flaw=sibling, mechanism="a path argument", reach="a tool call")
+    return draw_given.a_card(flaw).model_copy(update={"siblings": [sibling_record]})
 
 
 def a_server_copying_the_holdout_calibration_at(

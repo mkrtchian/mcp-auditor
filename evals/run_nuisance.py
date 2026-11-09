@@ -28,7 +28,7 @@ from rich.progress import Progress
 
 from evals import eval_display as display
 from evals.audit_progress import AuditProgress
-from evals.census_draw import governing_steps
+from evals.census_draw import DrawRecord, governing_steps
 from evals.concurrency import positive_int
 from evals.cve_baseline import fixture_fingerprint
 from evals.cve_places import HOLDOUT_PLACES, load_places
@@ -53,7 +53,7 @@ from evals.nuisance_commands import (
 )
 from evals.nuisance_dossier import write_dossier
 from evals.nuisance_gate_command import add_gate_arguments
-from evals.nuisance_holdout_copies import stale_holdout_copies
+from evals.nuisance_holdout_copies import copy_targets, stale_holdout_copies
 from evals.nuisance_markdown import render_markdown
 from evals.nuisance_population import RunPopulation, run_population
 from evals.nuisance_readmission_dossier import write_readmission_dossier
@@ -218,7 +218,7 @@ def _run(args: argparse.Namespace) -> int:
             nuisance_population(nuisance_census), admission, acceptance_servers(nuisance_census)
         )
     refuse_unrecorded(population.audited, "nuisance run refused")
-    _refuse_stale_holdout_copies(population.audited)
+    _refuse_stale_holdout_copies(population.audited, nuisance_census.census.draw)
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
@@ -267,9 +267,15 @@ def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
     )
 
 
-def _refuse_stale_holdout_copies(servers: Sequence[AdmittedServer]) -> None:
+def _refuse_stale_holdout_copies(
+    servers: Sequence[AdmittedServer], draw: DrawRecord | None
+) -> None:
     places = load_places(HOLDOUT_PLACES)
-    current = {target.cve_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS}
+    fingerprints = {
+        target.cve_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS
+    }
+    resolution = copy_targets([target.cve_id for target in HOLDOUT_TARGETS], draw)
+    current = {copy: fingerprints[drawn] for copy, drawn in resolution.items()}
     stale = stale_holdout_copies(servers, current)
     if stale:
         reason = (
