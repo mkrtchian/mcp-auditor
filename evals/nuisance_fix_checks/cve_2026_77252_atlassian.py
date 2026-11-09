@@ -3,13 +3,13 @@
 jira_search and confluence_search search a project or space allowlist the admin configures
 (JIRA_PROJECTS_FILTER, CONFLUENCE_SPACES_FILTER). In the affected range (0.21.1, the vulnerable
 build) a caller's projects_filter or spaces_filter replaces that allowlist, so naming the
-out-of-allowlist SECRET project or space returns its content. 0.22.0 only narrows the allowlist
-with the caller's filter, so the SECRET query comes back empty.
+out-of-allowlist DEMO project or space returns its content. 0.22.0 only narrows the allowlist
+with the caller's filter, so the DEMO query comes back empty.
 
 The shared singleton responder cannot carry the witness, since check_fix plants a fresh random
 nonce per exercise: the builder stands its own responder of the same image with that nonce, on the
-backend's bridge, and reaps it when the launch ends. The responder is a mock Jira and Confluence
-API, not the server, and carries neither the flaw nor the fix.
+backend's bridge, and reaps it when the launch ends. The responder is a stand-in Jira and
+Confluence API, not the server, and carries neither the flaw nor the fix.
 """
 
 import re
@@ -50,12 +50,13 @@ WITNESS = Place(
     coordinates=Coordinates(PlantKind.FILE, path="/secret"),
 )
 # An exploit is aimed when its arguments name the out-of-allowlist scope; the benign calls name
-# only ALLOWED, and the nonce is in the response, never in the arguments.
-AIM = re.compile(r"SECRET")
+# only PROJ and TEAM, and the nonce is in the response, never in the arguments.
+AIM = re.compile(r"DEMO")
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
-_OUT_OF_ALLOWLIST = "SECRET"
-_ALLOWED = "ALLOWED"
+_OUT_OF_ALLOWLIST = "DEMO"
+_ALLOWED_PROJECT = "PROJ"
+_ALLOWED_SPACE = "TEAM"
 # The singleton sits on the bridge's first address, the per-launch responders above it.
 _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
@@ -70,7 +71,7 @@ def responder_args(name: str, nonce: str, address: str) -> list[str]:
         "--ip", address,
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
-        "-e", f"WITNESS_NONCE={nonce}",
+        "-e", f"DEMO_SUMMARY={nonce}",
         ATLASSIAN_RESPONDER_IMAGE,
     ]  # fmt: skip
 
@@ -128,16 +129,35 @@ async def _exploit_confluence_search(places: Places, client: KitClient) -> None:
     )
 
 
+async def _exploit_jira_get_project_issues(places: Places, client: KitClient) -> None:
+    await client.call_tool("jira_get_project_issues", {"project_key": _OUT_OF_ALLOWLIST})
+
+
+async def _exploit_jira_get_sprint_issues(places: Places, client: KitClient) -> None:
+    # 0.21.1 interpolates sprint_id into the JQL, and a project clause there skips the filter.
+    await client.call_tool(
+        "jira_get_sprint_issues", {"sprint_id": f"10001 AND project = {_OUT_OF_ALLOWLIST}"}
+    )
+
+
 async def _benign_jira_search(places: Places, client: KitClient) -> None:
     await client.call_tool(
-        "jira_search", {"jql": f"project = {_ALLOWED}", "projects_filter": _ALLOWED}
+        "jira_search", {"jql": f"project = {_ALLOWED_PROJECT}", "projects_filter": _ALLOWED_PROJECT}
     )
 
 
 async def _benign_confluence_search(places: Places, client: KitClient) -> None:
     await client.call_tool(
-        "confluence_search", {"query": f"space = {_ALLOWED}", "spaces_filter": _ALLOWED}
+        "confluence_search", {"query": f"space = {_ALLOWED_SPACE}", "spaces_filter": _ALLOWED_SPACE}
     )
+
+
+async def _benign_jira_get_project_issues(places: Places, client: KitClient) -> None:
+    await client.call_tool("jira_get_project_issues", {"project_key": _ALLOWED_PROJECT})
+
+
+async def _benign_jira_get_sprint_issues(places: Places, client: KitClient) -> None:
+    await client.call_tool("jira_get_sprint_issues", {"sprint_id": "10001"})
 
 
 TARGET = FixCheckTarget(
@@ -147,8 +167,18 @@ TARGET = FixCheckTarget(
     witness=WITNESS,
     planting_host=HOST,
     builder=atlassian_env,
-    exploits=(_exploit_jira_search, _exploit_confluence_search),
-    benign_calls=(_benign_jira_search, _benign_confluence_search),
+    exploits=(
+        _exploit_jira_search,
+        _exploit_confluence_search,
+        _exploit_jira_get_project_issues,
+        _exploit_jira_get_sprint_issues,
+    ),
+    benign_calls=(
+        _benign_jira_search,
+        _benign_confluence_search,
+        _benign_jira_get_project_issues,
+        _benign_jira_get_sprint_issues,
+    ),
     vulnerable_service="atlassian-vuln",
     patched_service="atlassian",
     server_patched_service=None,

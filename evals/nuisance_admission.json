@@ -10087,12 +10087,46 @@
             {
               "vulnerable_name": "jira_search",
               "patched_name": "jira_search",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "confluence_search",
               "patched_name": "confluence_search",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "jira_get_project_issues",
+              "patched_name": "jira_get_project_issues",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "jira_get_sprint_issues",
+              "patched_name": "jira_get_sprint_issues",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -10103,16 +10137,36 @@
             {
               "tool": "jira_search",
               "arguments": {
-                "jql": "project = ALLOWED",
-                "projects_filter": "ALLOWED"
-              }
+                "jql": "project = PROJ",
+                "projects_filter": "PROJ"
+              },
+              "expect": "PROJ-19",
+              "before": []
             },
             {
               "tool": "confluence_search",
               "arguments": {
-                "query": "space = ALLOWED",
-                "spaces_filter": "ALLOWED"
-              }
+                "query": "space = TEAM",
+                "spaces_filter": "TEAM"
+              },
+              "expect": "Team Progress Meeting",
+              "before": []
+            },
+            {
+              "tool": "jira_get_project_issues",
+              "arguments": {
+                "project_key": "PROJ"
+              },
+              "expect": "PROJ-19",
+              "before": []
+            },
+            {
+              "tool": "jira_get_sprint_issues",
+              "arguments": {
+                "sprint_id": "10001"
+              },
+              "expect": "PROJ-19",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -10122,12 +10176,15 @@
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
               "jira_search",
-              "confluence_search"
+              "confluence_search",
+              "jira_get_project_issues",
+              "jira_get_sprint_issues"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -10155,22 +10212,103 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-77252",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-77252",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-77252",
           "field": "declared_function_is_effect",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-77252",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-77252",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-77252",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "PyPI:mcp-atlassian",
           "flaw": "CVE-2026-77252",
+          "field": "tools",
+          "value": "jira_search, confluence_search, jira_get_project_issues and jira_get_sprint_issues",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: jira_get_sprint_issues interpolates its sprint_id into the JQL it passes to the same search, whose check skips the configured project filter when the JQL names a project, as jira_get_project_issues's project_key does, and the fix routes both through the filter, so record A's addition of jira_get_sprint_issues is kept where record B added jira_get_project_issues alone"
+        },
+        {
+          "server_package": "PyPI:mcp-atlassian",
+          "flaw": "CVE-2026-77252",
           "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B over-marked dfie true; jira_search and confluence_search search a configured project/space allowlist, the caller projects_filter/spaces_filter overriding JIRA_PROJECTS_FILTER/CONFLUENCE_SPACES_FILTER to read an out-of-allowlist project is the access-control bypass, not the declared function"
+          "value": "false, for each of the four tools",
+          "reason": "projects_filter and spaces_filter choose Jira projects and Confluence spaces, they name no path, and each tool's description declares a search or a listing inside the project or space allowlist the server is configured with, a fixed operation its arguments parameterize: reading outside that allowlist is the flaw, not the declared function, where record B read the filter that overrides the configured one as a scope the argument names"
+        },
+        {
+          "server_package": "PyPI:mcp-atlassian",
+          "flaw": "CVE-2026-77252",
+          "field": "benign_calls",
+          "value": "one call per counted tool naming the configured project PROJ or space TEAM, the Jira calls expecting the first issue key of the served search example, PROJ-19, and the Confluence call the page title Team Progress Meeting",
+          "reason": "the keys follow the fixture retained, record A's, whose PROJ and TEAM are the first values of the server's own filter examples and of its test mocks, where record B named the project QA of the vendor's search example; the example's project key is the one identifier replaced, so the Jira calls expect the replaced key; record B wrote no call for jira_get_sprint_issues, which it did not list"
+        },
+        {
+          "server_package": "PyPI:mcp-atlassian",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record A's stand-in of the Jira and Confluence REST API, its Jira search output taken from the vendor's published search example with its project key replaced, its Confluence search output from the server's tests",
+          "reason": "a stand-in takes an output from the software's published sources before the server's tests: record B found the Jira Data Center REST API example of a project search, which replaces record A's Jira output copied from the server's test mocks, while record B's own stand-in kept, in the image the run builds, a branch only its fix check reads, which a run artifact may not carry"
         },
         {
           "server_package": "PyPI:mcp-atlassian",
@@ -10187,7 +10325,122 @@
           "reason": "the confluence_upload_attachment traversal flaws are dfie true (the declared function is to write the caller-named attachment path) and the dependency advisories are out of the nonce grammar; none is counted"
         }
       ],
-      "patched_version": "0.22.0"
+      "patched_version": "0.22.0",
+      "stand_ins": [
+        {
+          "replaces": "The Jira Software Data Center and Confluence Data Center REST API (GET /rest/api/2/search and GET /rest/api/search) at JIRA_URL and CONFLUENCE_URL",
+          "reason": "Both run under the confinement (atlassian/jira-software 11.3.13 and atlassian/confluence 11.0.1 were run with --cap-drop ALL, no-new-privileges, --memory 4g, as their run users, no network) but stay in their setup wizard: Jira's REST search answers 503 with / redirecting to SetupDatabase, Confluence's answers 404 with / on its license key page. A license needs an Atlassian account, so the whole HTTP backend is a stand-in, the backend's own container.",
+          "file": "evals/docker/Dockerfile.atlassian-responder",
+          "capture": null,
+          "outputs": [
+            {
+              "request": "\"PROJ\": PROJ_SEARCH",
+              "source": "software_sources",
+              "citation": "the response of 'Searching for issues and restricting the issue fields returned in the results', Jira Data Center REST API examples (https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples/), elision lines dropped, served for a JQL whose only project key is PROJ",
+              "replacements": [
+                {
+                  "original": "QA",
+                  "replacement": "PROJ"
+                }
+              ]
+            },
+            {
+              "request": "\"DEMO\": demo_search()",
+              "source": "software_sources",
+              "citation": "the same Jira Data Center REST API example, identifiers replaced, served for a JQL whose only project key is DEMO; a fix check's own container adds the witness as each issue's summary",
+              "replacements": [
+                {
+                  "original": "QA",
+                  "replacement": "DEMO"
+                },
+                {
+                  "original": "issue ids 10050, 10051, 10053, 10389",
+                  "replacement": "11050, 11051, 11053, 11389"
+                }
+              ]
+            },
+            {
+              "request": "return 200, JIRA_EMPTY",
+              "source": "invented",
+              "citation": "two distinct known project keys and no OR: no source gives an empty JQL result",
+              "form_source": "the Jira Data Center REST API example above (expand, startAt, maxResults, total 0, issues [])"
+            },
+            {
+              "request": "Error in the JQL Query",
+              "source": "invented",
+              "citation": "any other JQL (no project key, an unknown key, or an OR): no source gives the body of Jira's JQL error",
+              "form_source": "Jira Data Center REST API ErrorCollection schema (errorMessages, errors), HTTP 400 'Returned if there is a problem with the JQL query'"
+            },
+            {
+              "request": "\"TEAM\": TEAM_RESULT",
+              "source": "server_tests",
+              "citation": "MOCK_CQL_SEARCH_RESPONSE, tests/fixtures/confluence_mocks.py at mcp-atlassian tag v0.22.0, served for a CQL whose only space key is TEAM",
+              "replacements": [
+                {
+                  "original": "cqlQuery 'parent = 123456789'",
+                  "replacement": "the CQL received, as real Confluence returns it"
+                }
+              ]
+            },
+            {
+              "request": "\"DEMO\": demo_result()",
+              "source": "server_tests",
+              "citation": "MOCK_CQL_SEARCH_RESPONSE, tests/fixtures/confluence_mocks.py at mcp-atlassian tag v0.22.0, result item with identifiers replaced, served for a CQL whose only space key is DEMO; a fix check's own container replaces its title and excerpt with the witness",
+              "replacements": [
+                {
+                  "original": "123456789",
+                  "replacement": "123456790"
+                },
+                {
+                  "original": "TEAM",
+                  "replacement": "DEMO"
+                },
+                {
+                  "original": "Team Space",
+                  "replacement": "Demo Space"
+                },
+                {
+                  "original": "cqlQuery 'parent = 123456789'",
+                  "replacement": "the CQL received"
+                }
+              ]
+            },
+            {
+              "request": "if len(keys) == 1 else []",
+              "source": "invented",
+              "citation": "two distinct known space keys and no OR: no source gives an empty CQL result",
+              "form_source": "MOCK_CQL_SEARCH_RESPONSE, tests/fixtures/confluence_mocks.py at mcp-atlassian tag v0.22.0 (results [], size 0, totalSize 0)"
+            },
+            {
+              "request": "Could not parse cql",
+              "source": "invented",
+              "citation": "any other CQL: no source gives Confluence's CQL error body",
+              "form_source": "Confluence Data Center REST API RestError schema (statusCode, data, message)"
+            },
+            {
+              "request": "Not Found",
+              "source": "invented",
+              "citation": "any other route: no source",
+              "form_source": "Jira Data Center REST API ErrorCollection schema, HTTP 404"
+            }
+          ]
+        }
+      ],
+      "seeds": [],
+      "software_releases": [
+        {
+          "software": "Jira Software Data Center (atlassian/jira-software image)",
+          "release": "11.3.13",
+          "day": "2026-11-07",
+          "source": "The server's README names Jira Server/Data Center 8.14+ without a pinned version; the image tag latest on Docker Hub on 2026-11-07 is digest sha256:5ee1d0c989cbd1c53c67e95088fc24c471847b52e927a40d2b43d969088b62c6, JIRA_VERSION=11.3.13 in its environment. Run to establish the license gate; the fixture serves a stand-in, since it cannot leave setup without a license."
+        },
+        {
+          "software": "Confluence Data Center (atlassian/confluence image)",
+          "release": "11.0.1",
+          "day": "2026-11-07",
+          "source": "README names Confluence Server/Data Center 6.0+; tag latest on 2026-11-07, digest sha256:8231acf2ba0b0fda8916f78b452490a134d91117bec3f92c27290aa1d6db25bb, CONFLUENCE_VERSION=11.0.1. Same license gate; stand-in served."
+        }
+      ]
     },
     {
       "server_package": "npm:@apify/actors-mcp-server",

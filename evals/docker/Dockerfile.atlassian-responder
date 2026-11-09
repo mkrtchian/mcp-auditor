@@ -1,197 +1,183 @@
-# Mock Jira and Confluence Server/DC search API for the nuisance suite's atlassian backend, the
-# external Atlassian instance an mcp-atlassian deployment points JIRA_URL and CONFLUENCE_URL at.
-# It is NOT the server under test and carries none of its flaw. Two scopes, ALLOWED and SECRET:
-#   - GET /rest/api/2/search?jql=...  -> the issues whose project satisfies the JQL (jira.jql, the
-#     Server/DC path a local JIRA_URL selects)
-#   - GET /rest/api/search?cql=...    -> the pages whose space satisfies the CQL (confluence.cql)
-# Only a tiny boolean grammar is evaluated: project = X, space = X, IN (...), AND, OR and
-# parentheses. Any other clause counts as true and a trailing ORDER BY is ignored. The SECRET
-# issue and page carry WITNESS_NONCE when it is set, else a fixed non-secret summary, so a
-# per-launch container holds the fix-check witness and the shared singleton serves none.
-# Never spoken to over MCP stdio. No COPY/ADD: the fingerprint hashes instructions only, so the
-# responder is inlined.
+# syntax=docker/dockerfile:1
+# HTTP stand-in for the Jira and Confluence Server/DC REST API an mcp-atlassian deployment points
+# JIRA_URL and CONFLUENCE_URL at. Jira Software DC and Confluence DC run under the confinement but
+# stop at their setup wizard until a license key is entered, and a license needs an Atlassian
+# account, so the HTTP backend is a stand-in. It answers two routes:
+#   GET /rest/api/2/search?jql=...  (jira.jql, the Server/DC path)
+#   GET /rest/api/search?cql=...    (confluence.cql)
+# Outputs: the Jira search is the response of "Searching for issues and restricting the issue
+# fields returned in the results" in the Jira Data Center REST API examples
+# (https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples/), elision lines
+# dropped, its project key QA replaced by PROJ; the Confluence search is MOCK_CQL_SEARCH_RESPONSE
+# (tests/fixtures/confluence_mocks.py) of mcp-atlassian v0.22.0, copied. The DEMO project and
+# space are copies of the same outputs with identifiers replaced. The branch reads only the key
+# that follows each fixed word "project =" or "space =": one known key answers its items, two
+# distinct keys joined by AND answer the empty result, anything else the API's error form.
+# DEMO_SUMMARY, when set, gives the DEMO issues a summary and replaces the title and excerpt of
+# the DEMO page (a per-launch container only).
 FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
 
-RUN printf '%s\n' \
-  "import json" \
-  "import os" \
-  "from http.server import BaseHTTPRequestHandler, HTTPServer" \
-  "from urllib.parse import parse_qs, urlparse" \
-  "" \
-  "NONCE = os.environ.get('WITNESS_NONCE')" \
-  "NOTE = 'Incident notes ' + NONCE if NONCE else 'Quarterly planning notes'" \
-  "ISSUES = [('ALLOWED-1', 'ALLOWED', 'Roadmap review'), ('SECRET-1', 'SECRET', NOTE)]" \
-  "PAGES = [('1001', 'ALLOWED', 'Team handbook'), ('1002', 'SECRET', NOTE)]" \
-  "STOPS = ('AND', 'OR', 'ORDER')" \
-  "QUOTES = chr(34) + chr(39)" \
-  "" \
-  "" \
-  "def tokenize(query):" \
-  "    tokens, i = [], 0" \
-  "    while i < len(query):" \
-  "        c = query[i]" \
-  "        if c.isspace():" \
-  "            i += 1" \
-  "        elif c in '(),':" \
-  "            tokens.append(('p', c))" \
-  "            i += 1" \
-  "        elif c in QUOTES:" \
-  "            end = query.index(c, i + 1)" \
-  "            tokens.append(('s', query[i + 1:end]))" \
-  "            i = end + 1" \
-  "        else:" \
-  "            j = i" \
-  "            while j < len(query) and not query[j].isspace() and query[j] not in '(),' + QUOTES:" \
-  "                j += 1" \
-  "            tokens.append(('w', query[i:j]))" \
-  "            i = j" \
-  "    return tokens" \
-  "" \
-  "" \
-  "class Parser:" \
-  "    def __init__(self, tokens):" \
-  "        self.tokens = tokens" \
-  "        self.at = 0" \
-  "" \
-  "    def peek(self):" \
-  "        return self.tokens[self.at] if self.at < len(self.tokens) else ('end', '')" \
-  "" \
-  "    def next(self):" \
-  "        token = self.peek()" \
-  "        self.at += 1" \
-  "        return token" \
-  "" \
-  "    def keyword(self, *words):" \
-  "        kind, text = self.peek()" \
-  "        return kind == 'w' and text.upper() in words" \
-  "" \
-  "    def parse_or(self):" \
-  "        left = self.parse_and()" \
-  "        while self.keyword('OR'):" \
-  "            self.next()" \
-  "            left = ('or', left, self.parse_and())" \
-  "        return left" \
-  "" \
-  "    def parse_and(self):" \
-  "        left = self.parse_atom()" \
-  "        while self.keyword('AND'):" \
-  "            self.next()" \
-  "            left = ('and', left, self.parse_atom())" \
-  "        return left" \
-  "" \
-  "    def parse_atom(self):" \
-  "        if self.peek() == ('p', '('):" \
-  "            self.next()" \
-  "            inner = self.parse_or()" \
-  "            self.next()" \
-  "            return inner" \
-  "        field = self.next()[1].lower()" \
-  "        if field in ('project', 'space'):" \
-  "            scoped = self.parse_scope(field)" \
-  "            if scoped is not None:" \
-  "                return scoped" \
-  "        self.skip_clause()" \
-  "        return ('true',)" \
-  "" \
-  "    def parse_scope(self, field):" \
-  "        start = self.at" \
-  "        op = self.next()" \
-  "        if op == ('w', '='):" \
-  "            return ('in', field, [self.next()[1].upper()])" \
-  "        if op[0] == 'w' and op[1].upper() == 'IN' and self.peek() == ('p', '('):" \
-  "            self.next()" \
-  "            keys = []" \
-  "            while self.peek() != ('p', ')'):" \
-  "                kind, text = self.next()" \
-  "                if kind != 'p':" \
-  "                    keys.append(text.upper())" \
-  "            self.next()" \
-  "            return ('in', field, keys)" \
-  "        self.at = start" \
-  "        return None" \
-  "" \
-  "    def skip_clause(self):" \
-  "        while self.peek()[0] != 'end' and self.peek() != ('p', ')') and not self.keyword(*STOPS):" \
-  "            if self.next() == ('p', '('):" \
-  "                depth = 1" \
-  "                while depth and self.peek()[0] != 'end':" \
-  "                    token = self.next()" \
-  "                    depth += (token == ('p', '(')) - (token == ('p', ')'))" \
-  "" \
-  "" \
-  "def matches(tree, scopes):" \
-  "    if tree[0] == 'true':" \
-  "        return True" \
-  "    if tree[0] == 'in':" \
-  "        return scopes.get(tree[1]) in tree[2]" \
-  "    left, right = matches(tree[1], scopes), matches(tree[2], scopes)" \
-  "    return (left and right) if tree[0] == 'and' else (left or right)" \
-  "" \
-  "" \
-  "def accepts(query, scopes):" \
-  "    if not query.strip():" \
-  "        return True" \
-  "    parser = Parser(tokenize(query))" \
-  "    tree = parser.parse_or()" \
-  "    if parser.peek()[0] != 'end' and not parser.keyword('ORDER'):" \
-  "        raise ValueError('unsupported query')" \
-  "    return matches(tree, scopes)" \
-  "" \
-  "" \
-  "def issue(key, project, summary):" \
-  "    return {'id': key.split('-')[1], 'key': key, 'self': '/rest/api/2/issue/' + key," \
-  "            'fields': {'summary': summary, 'description': summary, 'project': {'key': project, 'name': project}," \
-  "                       'status': {'name': 'Open'}, 'issuetype': {'name': 'Task'}," \
-  "                       'created': '2024-01-01T10:00:00.000+0000', 'updated': '2024-01-02T10:00:00.000+0000'}}" \
-  "" \
-  "" \
-  "def page(identifier, space, title):" \
-  "    link = '/spaces/' + space + '/pages/' + identifier" \
-  "    return {'content': {'id': identifier, 'type': 'page', 'status': 'current', 'title': title," \
-  "                        'space': {'key': space, 'name': space}, '_links': {'webui': link}}," \
-  "            'title': title, 'excerpt': title, 'url': link, 'entityType': 'content'," \
-  "            'resultGlobalContainer': {'title': space, 'displayUrl': '/spaces/' + space}," \
-  "            'lastModified': '2024-01-01T08:00:00.000Z', 'score': 0.0}" \
-  "" \
-  "" \
-  "def search_jira(query):" \
-  "    found = [issue(*row) for row in ISSUES if accepts(query, {'project': row[1]})]" \
-  "    return {'startAt': 0, 'maxResults': 50, 'total': len(found), 'issues': found}" \
-  "" \
-  "" \
-  "def search_confluence(query):" \
-  "    found = [page(*row) for row in PAGES if accepts(query, {'space': row[1]})]" \
-  "    return {'results': found, 'start': 0, 'limit': 50, 'size': len(found), 'totalSize': len(found)," \
-  "            'cqlQuery': query, '_links': {}}" \
-  "" \
-  "" \
-  "class Handler(BaseHTTPRequestHandler):" \
-  "    def do_GET(self):" \
-  "        url = urlparse(self.path)" \
-  "        params = parse_qs(url.query)" \
-  "        try:" \
-  "            if url.path.rstrip('/') == '/rest/api/2/search':" \
-  "                self.reply(200, search_jira(params.get('jql', [''])[0]))" \
-  "            elif url.path.rstrip('/') == '/rest/api/search':" \
-  "                self.reply(200, search_confluence(params.get('cql', [''])[0]))" \
-  "            else:" \
-  "                self.reply(404, {'message': 'no route'})" \
-  "        except ValueError:" \
-  "            self.reply(400, {'message': 'unsupported query'})" \
-  "" \
-  "    def reply(self, code, payload):" \
-  "        body = json.dumps(payload).encode()" \
-  "        self.send_response(code)" \
-  "        self.send_header('Content-Type', 'application/json')" \
-  "        self.send_header('Content-Length', str(len(body)))" \
-  "        self.end_headers()" \
-  "        self.wfile.write(body)" \
-  "" \
-  "    def log_message(self, *args):" \
-  "        pass" \
-  "" \
-  "" \
-  "HTTPServer(('0.0.0.0', 80), Handler).serve_forever()" \
-  > /responder.py
+RUN cat > /responder.py <<'PY'
+import http.server
+import json
+import os
+import re
+import urllib.parse
+
+DEMO_SUMMARY = os.environ.get("DEMO_SUMMARY")
+JIRA = "http://localhost:8080/rest/api/2/issue/"
+
+
+def example_issue(identifier, key):
+    return {
+        "expand": "html",
+        "id": identifier,
+        "self": JIRA + key,
+        "key": key,
+        "transitions": JIRA + key + "/transitions",
+    }
+
+
+PROJ_SEARCH = {
+    "expand": "schema,names",
+    "startAt": 0,
+    "maxResults": 50,
+    "total": 18,
+    "issues": [
+        example_issue("10050", "PROJ-19"),
+        example_issue("10051", "PROJ-20"),
+        example_issue("10053", "PROJ-22"),
+        example_issue("10389", "PROJ-35"),
+    ],
+}
+JIRA_EMPTY = {"expand": "schema,names", "startAt": 0, "maxResults": 50, "total": 0, "issues": []}
+
+
+def demo_search():
+    text = json.dumps(PROJ_SEARCH).replace("PROJ", "DEMO").replace('"id": "10', '"id": "11')
+    search = json.loads(text)
+    if DEMO_SUMMARY:
+        for issue in search["issues"]:
+            issue["fields"] = {"summary": DEMO_SUMMARY}
+    return search
+
+
+SEARCHES = {"PROJ": PROJ_SEARCH, "DEMO": demo_search()}
+
+TEAM_RESULT = {
+    "content": {
+        "id": "123456789",
+        "type": "page",
+        "status": "current",
+        "title": "2024-01-01: Team Progress Meeting 01",
+        "childTypes": {},
+        "macroRenderedOutput": {},
+        "restrictions": {},
+        "_expandable": {
+            "container": "",
+            "metadata": "",
+            "extensions": "",
+            "operations": "",
+            "children": "",
+            "history": "/rest/api/content/123456789/history",
+            "ancestors": "",
+            "body": "",
+            "version": "",
+            "descendants": "",
+            "space": "/rest/api/space/TEAM",
+        },
+        "_links": {
+            "webui": "/spaces/TEAM/pages/123456789/2024-01-01+Team+Progress+Meeting+01",
+            "self": "https://example.atlassian.net/wiki/rest/api/content/123456789",
+            "tinyui": "/x/ABC123",
+        },
+    },
+    "title": "2024-01-01: Team Progress Meeting 01",
+    "excerpt": "\U0001f4c5 Date\n2024-01-01\n\U0001f465 Participants\nJohn Smith\nJane Doe\nBob Wilson\n!-@123456",
+    "url": "/spaces/TEAM/pages/123456789/2024-01-01+Team+Progress+Meeting+01",
+    "resultGlobalContainer": {"title": "Team Space", "displayUrl": "/spaces/TEAM"},
+    "breadcrumbs": [],
+    "entityType": "content",
+    "iconCssClass": "aui-icon content-type-page",
+    "lastModified": "2024-01-01T08:00:00.000Z",
+    "friendlyLastModified": "Jan 01, 2024",
+    "score": 0.0,
+}
+
+
+def demo_result():
+    text = json.dumps(TEAM_RESULT).replace("123456789", "123456790").replace("TEAM", "DEMO")
+    result = json.loads(text.replace("Team Space", "Demo Space"))
+    if DEMO_SUMMARY:
+        result["title"] = result["content"]["title"] = result["excerpt"] = DEMO_SUMMARY
+    return result
+
+
+RESULTS = {"TEAM": TEAM_RESULT, "DEMO": demo_result()}
+
+
+def known_keys(word, query, known):
+    if re.search(r"\bOR\b", query, re.IGNORECASE):
+        return None
+    keys = {k.upper() for k in re.findall(r"\b" + word + r'\s*=\s*"?([A-Za-z0-9_]+)"?', query, re.IGNORECASE)}
+    return keys if keys and keys <= set(known) else None
+
+
+def search_jira(jql):
+    keys = known_keys("project", jql, SEARCHES)
+    if keys is None:
+        return 400, {"errorMessages": ["Error in the JQL Query"], "errors": {}}
+    if len(keys) > 1:
+        return 200, JIRA_EMPTY
+    return 200, SEARCHES[keys.pop()]
+
+
+def search_confluence(cql):
+    keys = known_keys("space", cql, RESULTS)
+    if keys is None:
+        return 400, {"statusCode": 400, "data": {"authorized": False, "valid": False, "errors": [], "successful": False}, "message": "Could not parse cql"}
+    found = [RESULTS[keys.pop()]] if len(keys) == 1 else []
+    return 200, {
+        "results": found,
+        "start": 0,
+        "limit": 50,
+        "size": len(found),
+        "totalSize": len(found),
+        "cqlQuery": cql,
+        "searchDuration": 156,
+        "_links": {
+            "base": "https://example.atlassian.net/wiki",
+            "context": "/wiki",
+            "self": "https://example.atlassian.net/wiki/rest/api/search?cql=parent%3D123456789",
+        },
+    }
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        url = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(url.query)
+        path = url.path.rstrip("/")
+        if path == "/rest/api/2/search":
+            self.reply(*search_jira(params.get("jql", [""])[0]))
+        elif path == "/rest/api/search":
+            self.reply(*search_confluence(params.get("cql", [""])[0]))
+        else:
+            self.reply(404, {"errorMessages": ["Not Found"], "errors": {}})
+
+    def reply(self, code, payload):
+        body = json.dumps(payload).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json;charset=UTF-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args):
+        pass
+
+
+http.server.HTTPServer(("0.0.0.0", 80), Handler).serve_forever()
+PY
 
 ENTRYPOINT ["python", "/responder.py"]

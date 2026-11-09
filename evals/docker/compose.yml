@@ -1348,7 +1348,7 @@ services:
       context: .
       dockerfile: Dockerfile.atlassian-responder
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ea192969b9deb99cdf00bf012330c0fbd8e54d6f372b5ecbfea287071bccd179"
+        org.mcp-auditor.dockerfile-fingerprint: "17eea24a5ea00f6468d79fbe95a67fe13ba7b9bee9626e66041ee22d94411c0a"
     image: mcp-auditor-cve-atlassian-responder:local
     profiles: ["nuisance"]
 

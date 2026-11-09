@@ -1,12 +1,13 @@
 """The Jira and Confluence responder backend's lifecycle.
 
-A light HTTP responder standing in for the Atlassian Server/DC instance an mcp-atlassian
-deployment points `JIRA_URL` and `CONFLUENCE_URL` at, serving a project and a space pair named
-ALLOWED and SECRET. Like the other responders it is cheap to stand and a singleton on a fixed
-address: stood once and reused across a server's concurrent nuisance runs, reaped by the generic
-orphan sweep, so no lock is held across the yield. The singleton carries no witness nonce, so it
-serves the run-phase benign calls only: a fix-check stands its own container of the same image
-with `WITNESS_NONCE` set, on the bridge and subnet exported here.
+A light HTTP stand-in for the Atlassian Server/DC instance an mcp-atlassian deployment points
+`JIRA_URL` and `CONFLUENCE_URL` at, serving the project PROJ and the space TEAM the server is
+configured with, and a DEMO project and space outside those filters. Like the other responders it
+is cheap to stand and a singleton on a fixed address: stood once and reused across a server's
+concurrent nuisance runs, reaped by the generic orphan sweep, so no lock is held across the yield.
+The singleton serves the DEMO items as copied, so it serves the run-phase calls only: a fix-check
+stands its own container of the same image with `DEMO_SUMMARY` set, on the bridge and subnet
+exported here.
 
 The audited server reaches the responder as an outbound REST API, not over MCP stdio. Its
 configuration is `-e` arguments of the server's own `docker run` (`atlassian_env_args`), not the
@@ -58,10 +59,10 @@ def atlassian_env_args(responder_address: str) -> list[str]:
     environment = {
         "JIRA_URL": f"http://{responder_address}",
         "CONFLUENCE_URL": f"http://{responder_address}",
-        "JIRA_PERSONAL_TOKEN": "calib-token",
-        "CONFLUENCE_PERSONAL_TOKEN": "calib-token",
-        "JIRA_PROJECTS_FILTER": "ALLOWED",
-        "CONFLUENCE_SPACES_FILTER": "ALLOWED",
+        "JIRA_PERSONAL_TOKEN": "your_jira_personal_access_token",
+        "CONFLUENCE_PERSONAL_TOKEN": "your_confluence_personal_access_token",
+        "JIRA_PROJECTS_FILTER": "PROJ",
+        "CONFLUENCE_SPACES_FILTER": "TEAM",
     }
     return [argument for pair in environment.items() for argument in ("-e", "=".join(pair))]
 

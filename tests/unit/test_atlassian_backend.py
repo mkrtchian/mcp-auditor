@@ -9,8 +9,8 @@ def test_the_environment_points_at_the_responder_address_it_is_given():
     assert variables["CONFLUENCE_URL"] == "http://198.18.0.77"
 
 
-def test_both_clients_are_scoped_to_the_allowed_project_and_space():
+def test_both_clients_are_scoped_to_the_project_and_space_of_the_server_examples():
     variables = environment(atlassian_env_args("198.18.0.77"))
 
-    assert variables["JIRA_PROJECTS_FILTER"] == "ALLOWED"
-    assert variables["CONFLUENCE_SPACES_FILTER"] == "ALLOWED"
+    assert variables["JIRA_PROJECTS_FILTER"] == "PROJ"
+    assert variables["CONFLUENCE_SPACES_FILTER"] == "TEAM"

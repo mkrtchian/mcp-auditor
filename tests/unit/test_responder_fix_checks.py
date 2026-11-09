@@ -12,7 +12,7 @@ def test_each_responder_serves_its_witness_nonce_at_the_given_address_on_its_bri
 ):
     args = check.responder_args("name", "nonce-value", ADDRESS)
 
-    assert carries(args, ["-e", "WITNESS_NONCE=nonce-value"])
+    assert carries(args, ["-e", f"{check.witness_variable}=nonce-value"])
     assert value_after(args, "--ip") == ADDRESS
     assert value_after(args, "--network") == check.bridge
     assert args[-1] == check.responder_image

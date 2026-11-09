@@ -20,6 +20,7 @@ class ResponderFixCheck:
     responder_args: Callable[[str, str, str], list[str]]  # (name, nonce, address)
     server_args: Callable[[str, str], list[str]]  # (image, address)
     pointers: Callable[[str], list[str]]  # the server-specific entries for the address
+    witness_variable: str = "WITNESS_NONCE"  # the responder environment variable holding it
 
     @property
     def bridge(self) -> str:
@@ -44,6 +45,7 @@ RESPONDER_FIX_CHECKS = [
         atlassian.responder_args,
         atlassian.server_args,
         lambda address: [f"JIRA_URL=http://{address}", f"CONFLUENCE_URL=http://{address}"],
+        "DEMO_SUMMARY",
     ),
     ResponderFixCheck(
         facebook_ads.TARGET.flaw,
