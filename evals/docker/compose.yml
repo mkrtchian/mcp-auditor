@@ -1067,7 +1067,7 @@ services:
       context: .
       dockerfile: Dockerfile.grok-faf
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "bc593694b23f61ae759fbcc6c790c61fa495df9aff9f6e8b2468465904195acf"
+        org.mcp-auditor.dockerfile-fingerprint: "e27bc093162774ac8474445843bbd7158aedd5b7a8de89875d89922e3364fcb2"
     image: mcp-auditor-nuisance-grok-faf:local
     profiles: ["nuisance"]
 

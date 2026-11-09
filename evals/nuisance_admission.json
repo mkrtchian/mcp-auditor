@@ -13418,7 +13418,24 @@
             {
               "vulnerable_name": "faf_read",
               "patched_name": "faf_read",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "faf_write",
+              "patched_name": "faf_write",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -13430,7 +13447,18 @@
               "tool": "faf_read",
               "arguments": {
                 "path": "project.faf"
-              }
+              },
+              "expect": "human_context:",
+              "before": []
+            },
+            {
+              "tool": "faf_write",
+              "arguments": {
+                "path": "NOTES.md",
+                "content": "# Notes\n"
+              },
+              "expect": "Successfully wrote",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -13439,12 +13467,14 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "faf_read"
+              "faf_read",
+              "faf_write"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -13457,6 +13487,7 @@
       },
       "launch": [],
       "service": "grok-faf",
+      "backend": null,
       "agents": [
         {
           "role": "admitter",
@@ -13467,37 +13498,117 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "set_aside": "it saw the other agent's final summary before writing its own record"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
         }
       ],
       "agreement": [
         {
           "flaw": "GHSA-cc2g-gq8c-r332",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
           "field": "declared_function_is_effect",
           "agreed": true
         },
         {
-          "flaw": "GHSA-cc2g-gq8c-r332",
-          "field": "tools",
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
           "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
         }
       ],
       "settlements": [
         {
           "server_package": "npm:grok-faf-mcp",
           "flaw": "GHSA-cc2g-gq8c-r332",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "records A and B both marked dfie true; flipped to false on source, jointly with claude-faf: both records applied the test to the declared function (reading a file by path) instead of to the bounded scope. faf_read declares reading the .faf project file, and an absolute path such as /secret-cc2g.md escapes the .faf project scope (the process cwd), which is the flaw and not the contract (the unified read_outside_scope principle: a traversal out of a declared scope is the flaw, not the declared read)"
+          "field": "tools",
+          "value": "faf_read and faf_write counted; faf_score, refresh_faf, faf_get_orchestration_policy and refresh_blend not listed",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: at 1.5.2 faf_write resolves the path the caller chooses through the same prefix deny-list as faf_read, which lets an absolute path outside the project through, and the 1.5.3 fix confines both to the working directory and the temporary directory, a writer passing the faulty guard of a read flaw counting; record A listed faf_read alone, without a written reason for leaving faf_write out; faf_score, refresh_faf, faf_get_orchestration_policy and refresh_blend, which the advisory names as affected too and record B listed, are not listed, the patched version being still open to the same flaw through them: on 1.5.3 they read a .faf outside the project, its root confinement applying only when FAF_ALLOWED_ROOTS is set, which its documented default leaves unset, while faf_read refuses the same path; faf_score had been counted at assembly before a probe of the patched image showed this; faf_list, which neither the advisory nor the fix names, is not listed; no record wrote an exploit through faf_write, so it was written at assembly: it writes a file of its own under /var/tmp, outside both roots, and answers only the byte count and the resolved path, so it is aimed and does not itself surface the witness, acting outside the project on the vulnerable image and refused on the patched one, recorded, while faf_read's surfaces it"
         },
         {
           "server_package": "npm:grok-faf-mcp",
-          "flaw": "GHSA-cc2g-gq8c-r332",
-          "field": "exploit_argument_form",
-          "value": "absolute_path",
-          "reason": "on source at 1.5.2 a '..' traversal is already rejected by the literal-substring check in PathValidator.validate (normalized.includes('..')), so only an absolute path (e.g. /secret-cc2g.md) reaches outside the .faf scope; the fix-check exploit uses the absolute form, the only one that differentiates the vulnerable and patched images"
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record B's for the listed tools: faf_read of the generated project.faf and faf_write of NOTES.md in the project",
+          "reason": "record A wrote a call for faf_read alone, on the project.faf its fixture seeds; record B's fixture is retained and its calls for the two listed tools are kept"
+        },
+        {
+          "server_package": "npm:grok-faf-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the sample corpus the server's README names, taken whole with its layout, and the project.faf faf-cli generates in the project",
+          "reason": "the server's documentation names one sample for its tools, which comes first and is taken whole with its layout, where record A copied the package's own project.faf; the sample holds no project .faf, which faf_read's benign call reads in the working directory, so the one the server's documented CLI generates there is kept as generated"
         }
       ],
-      "patched_version": "1.5.3"
+      "patched_version": "1.5.3",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/work/pilot (bin/, fafm/ and md/, ten records in each of three forms): the pilot directory of the sample corpus the server's README names, seeded whole with its layout in /work, the project the server works in, owned by the run's account",
+          "kind": "published_sample",
+          "citation": "grok-faf-mcp 1.5.3 README.md: 'Sample corpus: xai-faf-proof/pilot (https://github.com/Wolfe-Jam/xai-faf-proof/tree/main/pilot) — 10 records ready to score.' Fetched by an ADD --checksum of https://github.com/Wolfe-Jam/xai-faf-proof/archive/5f3ecc232f02131166579ee15362a98c247c4b4a.tar.gz (sha256 ef03bd9c6de5e8462bf8592a6b0a87d6eca918975792bcddf17e0c396aa65af4)",
+          "pin": "5f3ecc232f02131166579ee15362a98c247c4b4a"
+        },
+        {
+          "item": "/work/project.faf, generated at image build by faf-cli, the server's dependency installed with it, running `faf auto` in /work",
+          "kind": "generated",
+          "citation": "grok-faf-mcp 1.5.3 README.md, 'Get the CLI': `npx faf-cli auto`; faf-cli is resolved by npm from the server's dependency range ^6.7.1 (6.16.0 at this admission's build)",
+          "pin": null
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "Go:github.com/googleapis/mcp-toolbox",

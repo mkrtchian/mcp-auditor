@@ -1,16 +1,24 @@
 # grok-faf-mcp (GHSA-cc2g-gq8c-r332) patched: npm grok-faf-mcp 1.5.3, the advisory's first
-# patched release (npm `latest` is 2.2.2, left unpinned per the advisory). safe-path.ts's
-# confineFileOp canonicalises the path and confines faf_read/faf_write to the process cwd plus the
-# OS temp dir(s) (no FAF_ALLOWED_ROOTS set here), rejecting an absolute path or a `..` traversal
-# that leaves the project. Same /work scope and in-scope project.faf as the vulnerable image, so
-# only the server version differs. Doubles as the nuisance run image. No COPY/ADD from the build
-# context.
+# patched release. safe-path.ts's confineFileOp confines faf_read/faf_write to the process cwd plus
+# the OS temp dir (FAF_ALLOWED_ROOTS left unset, its documented default). Doubles as the nuisance
+# run image. The project directory /work holds the sample corpus the server's README links
+# (Wolfe-Jam/xai-faf-proof pilot/, pinned by commit and checksum) and the project.faf that faf-cli
+# (installed with the server) generates there with `faf auto`, as the README's "Get the CLI" gives
+# it. /work belongs to the run's unprivileged account, as a user's own project directory does.
+# No COPY and no unpinned download.
 FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
-ENV CI=true
 WORKDIR /app
-RUN npm init -y >/dev/null 2>&1 \
- && npm install grok-faf-mcp@1.5.3 >/dev/null 2>&1
+RUN npm init -y \
+ && npm install grok-faf-mcp@1.5.3
+ADD --checksum=sha256:ef03bd9c6de5e8462bf8592a6b0a87d6eca918975792bcddf17e0c396aa65af4 \
+    https://github.com/Wolfe-Jam/xai-faf-proof/archive/5f3ecc232f02131166579ee15362a98c247c4b4a.tar.gz \
+    /opt/xai-faf-proof.tar.gz
 RUN mkdir -p /work \
- && printf '# Project\n\nBenign in-scope .faf project context.\n' > /work/project.faf \
- && chmod -R a+rX /work
+ && tar -xzf /opt/xai-faf-proof.tar.gz -C /work --strip-components=1 \
+      xai-faf-proof-5f3ecc232f02131166579ee15362a98c247c4b4a/pilot \
+ && rm /opt/xai-faf-proof.tar.gz \
+ && cd /work \
+ && /app/node_modules/.bin/faf auto </dev/null \
+ && test -f /work/project.faf \
+ && chown -R 65534:65534 /work
 ENTRYPOINT ["node", "/app/node_modules/grok-faf-mcp/dist/src/index.js"]
