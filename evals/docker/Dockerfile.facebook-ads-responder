@@ -1,34 +1,61 @@
-# TLS pagination responder for the nuisance suite's facebook_ads backend, the Graph API host that
-# the fetch_pagination_url tool of gomarble-ai/facebook-ads-mcp-server reaches by name. It is NOT
-# the server under test and carries none of its flaw. It serves two names, told apart by the Host
-# header, both as application/json because fetch_pagination_url calls response.json():
-#   - graph.facebook.com: a fixed benign pagination page, the run-phase benign call
-#   - attacker.example.test: a sentinel page carrying WITNESS_NONCE when it is set, else the same
-#     benign page, so a per-launch container holds the fix-check witness and the shared singleton
-#     serves none
-# The cert is a fixed self-signed pair embedded below (SANs graph.facebook.com and
-# attacker.example.test). The Python server trusts it through REQUESTS_CA_BUNDLE pointed at the
-# same public cert baked into the server image. Never spoken to over MCP stdio. No COPY/ADD: the
-# fingerprint hashes instructions only, so the cert is decoded from an inlined base64 blob.
+# graph.facebook.com stand-in for gomarble-ai/facebook-ads-mcp-server at 4e53875, served under the
+# host's real name on the backend's closed bridge. The Graph API is a remote Meta service behind
+# an account and a token, so it cannot run here.
+#   GET /v22.0/<id>/insights with an access_token query parameter: the first example response of
+#     Meta's Ads Insights API page (https://developers.facebook.com/docs/marketing-api/insights/,
+#     retrieved 2026-11-07, sha256 4aa6b9ffc52591722ca701686facef70d604f8428a7fd0c8bab7ec8d3f53ab72),
+#     copied unedited.
+#   GET /v22.0/<id>/insights without an access_token query parameter: the real Graph API's
+#     answer, captured 2026-11-07.
+#   any other request: the real Graph API's answer to an unsupported GET, captured 2026-11-07.
+# The captures sit in evals/stand_ins/facebook-ads-responder/graph.facebook.com.captures.json.
+# The certificate is the backend's fixed self-signed pair, trusted by the server through
+# REQUESTS_CA_BUNDLE.
 FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
 
 RUN echo 'LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURWVENDQWoyZ0F3SUJBZ0lVTjA3ckR4c3JMWk5PbzlFOXBRTlBxZ1pwQnhJd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0hURWJNQmtHQTFVRUF3d1NaM0poY0dndVptRmpaV0p2YjJzdVkyOXRNQ0FYRFRJMk1URXdNVEF6TlRneQpPVm9ZRHpJeE1qWXhNREE0TURNMU9ESTVXakFkTVJzd0dRWURWUVFEREJKbmNtRndhQzVtWVdObFltOXZheTVqCmIyMHdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFEYlFteEcwb0gvQWxoaXd3RWIKQWRNUzJWTmpzQzBnSHlFRzgzTWllMHdkSVc3eXVmTXgvbXlGQ3dYQ0I3K0tXTm5iSTcyaU9zcmZTNEdIOExRWApGMUtOcFF2S0tpOSttc25JRjhDcGhnS0ZUU2NucFBjb28wNTlwcEJUN0tMTkVZNndmWDN6MWVXdVdpVXFYRVJuCndCVGU5ZHdmN3FPanN4OWt6TCtNb3M3SWZtTkIxVGVnOTJmd2UwcDNiWXQxOXRqWGx5TU44NXNJemhYZ2craS8KcDFRT1N0WDg3RWZEN0ZoRERJdVZXb0Vlb1V6bk1KdXpCdjU5ckVxNGlqeE1CVzBEU2lYK3lscVR4VG8zdUtTWApRZzlxUGZBT09mcEdlTHlmQk5PS2JSTzVNMWZxTThiS0ZYWEdiN0p2cjdBa0J3NTkyenJmcnI4bVhMVFgxVEtOCnkxNVZBZ01CQUFHamdZb3dnWWN3SFFZRFZSME9CQllFRkZBZ3cxVEFwem9QcUFCUzk3a1N5TWNWQWN5Qk1COEcKQTFVZEl3UVlNQmFBRkZBZ3cxVEFwem9QcUFCUzk3a1N5TWNWQWN5Qk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpOQVlEVlIwUkJDMHdLNElTWjNKaGNHZ3VabUZqWldKdmIyc3VZMjl0Z2hWaGRIUmhZMnRsY2k1bGVHRnRjR3hsCkxuUmxjM1F3RFFZSktvWklodmNOQVFFTEJRQURnZ0VCQUhWWVB0bUozYzF2TU1Kb0NBQkZCM3RIcnMvdmg1UG4KbjBXc0NJejVJeXlNcld0UThndVRXS0NUTDZ0VTNuMnEzemg0U2REMmtNdWpUM3VuTi9tL20rZTY1Z0sraHZPQwpsdG1MTFp3R1JUa2tsWWtBNUZ2ZHFjZzdDQ29TNTZYU1dIdHdzZ1VhcTY0YXFSWXpwVHhMb1dHbGlBQmR2VjhUCjlaZ1FoNXU4ajVxc0pORVFiN3pJc1QrQ2RNVDRqWnpKZ0k5YnloblVCVWJIRXR5SlNseEtrSTk3YkMwVllQWHQKUkNjRTMvYU5JOGVVaHlUNG41aWxXWDVmSTByV0pZN1E3cmUvdXBoY1VEY2ZtNTJGNThsY0JtY0xtdlRSbHZUbwovQXdZRlNMakVNd0d5OG5VdHBMSFg1U2pTQzl4MUpsT0dwcU9ETzJPWm8rWTB5ajEyWFppUVVjPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==' | base64 -d > /cert.pem \
  && echo 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRRGJRbXhHMG9IL0FsaGkKd3dFYkFkTVMyVk5qc0MwZ0h5RUc4M01pZTB3ZElXN3l1Zk14L215RkN3WENCNytLV05uYkk3MmlPc3JmUzRHSAo4TFFYRjFLTnBRdktLaTkrbXNuSUY4Q3BoZ0tGVFNjbnBQY29vMDU5cHBCVDdLTE5FWTZ3ZlgzejFlV3VXaVVxClhFUm53QlRlOWR3ZjdxT2pzeDlrekwrTW9zN0lmbU5CMVRlZzkyZndlMHAzYll0MTl0alhseU1OODVzSXpoWGcKZytpL3AxUU9TdFg4N0VmRDdGaERESXVWV29FZW9Vem5NSnV6QnY1OXJFcTRpanhNQlcwRFNpWCt5bHFUeFRvMwp1S1NYUWc5cVBmQU9PZnBHZUx5ZkJOT0tiUk81TTFmcU04YktGWFhHYjdKdnI3QWtCdzU5MnpyZnJyOG1YTFRYCjFUS055MTVWQWdNQkFBRUNnZ0VBQ2Y0UE5yUVJ5aGdtaEl1OEVXbkdINUlKZDUzWUZLSnVqQ1ZNcmpuZHlHY1YKYWhqNDRTS2wrZk04WmpFWnRObWpSaFl0Sm9kVTV4UEhHYldwMDNLVDU5SXBoU05paWp2T0xlRU5QZnlXUVZKNApraGsxeldPUjZHNk9uZENIUTk3RXVMempZRmt6Y0R4NS9LSDdXUm9iS1dVZGpOUUFuNjJDWlFMaXlPdERqc1lFCkpCZU11VkxBYWs3M1k0dUV3amtsOG5odHRoeTl5MWVuYnoydzBNemxoOTBud2daZkgveUhZQWRxLzN5Z3NVT2kKeEZXVFBOSDduS3V6WDVOTm96QXhTS1BwTnZXYVcxY2RWWE9VZ2syWGtLS251TzlyYW1VQ1pxTjdxd3JML3p6OAp5dWtzc1AzdmJ0SXdNOFpVTkVGR091QmVHeHpENUs1cjFhaFh0YWVmSVFLQmdRRCtmOXpkak42NzUrYXRkZDVjCnFpS3lMM3FtV3QxTEVLOVEwV0psTjFoMWIzNlY1UWFpNUI3RTFkRzlCUCtLbDAzY3dEeWZoOGJSREZkVEJ1c2wKdER3b0xwMjQ0MGREVzlUOXdhcGs1L25TTUxYMk9FbkR1TWRSR0l2QWFVTGNrYnVqUGh4UHhXRGFpYlFNTkFTTQpaK2lvcjk0VFRPQlpDb1QzSGhnOWRBNGc0UUtCZ1FEY2pWNlp1d0ErdnVaZGxBeUNxbjZwQTZtSUtQZHIxdjg1CnVOUnBQYmgxcjhZMyttYXJvdDdBWmllZ1pROWZCVXRWN1VoUnd1Q29UQ3VoRkdraXc4VmZFcXRlQXdrWWQxaWoKeC90d09xUWN1RzRmNGsvQWRWdDM4Tm55RzF4bGVuc2NNeEc4SVhqdm1UK2t4M1pCMVgzR1hocmw2M3g2cnllUApGMjF0bkpmSDlRS0JnUUM0M2p5Y0d4WTR2TzNPRnc3ZGxTRDYrbzVIaFQyMnAzb1NaT2JxeTFkUWh4c1cyM1VFCm9selBjdHFXU2FrdkRWV2NBM0NHR2VVTU9jQzlLUXRyS2crQXlNdjlYK3VHUEpEdGU5N0F5ZG1wRzRVeVJCVWgKUFhwYnFFN3NDQXB2bXRVSWNiZXpJcGVHWi8wSDJFbHRqSlZ1NDhHWGw0Sm9hOEhHbUcvWFJCUjNRUUtCZ0Q4YQpWNm5HZmxCMWtEWFFDVEJObGNYSDNYYXV1ZlBwNU1aZ0lxNGwwYVFpY2FWTWlKbXRGT3laamRidmMxRnRrMXQzCmM0eXBKRndpeHd6a2FSeGdSUlZwb3d4WDgvOUREbUoxOG5QdTQwdXdYUm5VUjVzNk9MeDlkZTQyYzk0NUNBWk8KZWxHSWhqQ1BlVTB0SUtHL2NxZ1Ivc0l2K1VLazRMMnBKMDhJVWNrTkFvR0FXRitmdDlHVDZ0dUtJdUFOckNQQgpsaldHRVgxVTVUeTdWaGVtYUkrbXVrUW11UDcxVkJOMTBXVDkxa01xdlJuUnU1YmpMSDJxa0g1Wk56NThZYlNDClhuTlNNN1RVdVpHWUE0R0ZRcUQvdU0waU93cmVEdHcvcDVoSW1kd3dlRTQ5MnVTTmJmclgyL3duU0R0VnJvZ3gKOWVGQ3BvR3dQcElPNmFVc0xwTGM2VlE9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K' | base64 -d > /key.pem
 
-RUN printf '%s\n' \
-  "const https = require('https');" \
-  "const fs = require('fs');" \
-  "" \
-  "const NONCE = process.env.WITNESS_NONCE;" \
-  "const BENIGN = JSON.stringify({ data: [], paging: {} });" \
-  "const SENTINEL = NONCE ? JSON.stringify({ data: [{ note: NONCE }], paging: {} }) : BENIGN;" \
-  "" \
-  "https.createServer({ key: fs.readFileSync('/key.pem'), cert: fs.readFileSync('/cert.pem') }, (req, res) => {" \
-  "  const host = (req.headers.host || '').split(':')[0];" \
-  "  const body = host === 'graph.facebook.com' ? BENIGN : SENTINEL;" \
-  "  res.writeHead(200, { 'content-type': 'application/json' });" \
-  "  res.end(body);" \
-  "}).listen(443);" \
-  > /responder.js
+RUN mkdir -p /graph && cat > /graph/insights.json <<'EOF'
+{
+  "data": [
+    {
+      "account_id": "<AD_ACCOUNT_ID>",
+      "campaign_id": "<CAMPAIGN_ID>",
+      "date_start": "2025-03-14",
+      "date_stop": "2025-04-12",
+      "impressions": "361324",
+      "spend": "5339.5"
+    }
+  ],
+  "paging": {
+    "cursors": {
+    "before": "MAZDZD",
+    "after": "MAZDZD"
+    }
+  }
+}
+EOF
+
+RUN cat > /responder.js <<'EOF'
+const https = require('https');
+const fs = require('fs');
+
+const JSON_TYPE = 'application/json; charset=UTF-8';
+const INSIGHTS = [200, {}, fs.readFileSync('/graph/insights.json')];
+const NO_ACCESS_TOKEN = [403, {"x-ad-api-version-warning": "You are calling a deprecated version of the Ads API.", "www-authenticate": "OAuth \"Facebook Platform\" \"insufficient_scope\" \"(#200) Provide valid app ID\"", "facebook-api-version": "v22.0"}, "{\"error\":{\"message\":\"(#200) Provide valid app ID\",\"type\":\"OAuthException\",\"code\":200,\"fbtrace_id\":\"AaV3zhjVgiowgSuSh1be2dn\"}}"];
+const UNSUPPORTED = [400, {"www-authenticate": "OAuth \"Facebook Platform\" \"invalid_request\" \"Unsupported get request. Please read the Graph API documentation at https://developers.facebook.com/docs/graph-api\"", "facebook-api-version": "v21.0"}, "{\"error\":{\"message\":\"Unsupported get request. Please read the Graph API documentation at https:\\/\\/developers.facebook.com\\/docs\\/graph-api\",\"type\":\"GraphMethodException\",\"code\":100,\"error_subcode\":33,\"fbtrace_id\":\"AoiTl1CPTC9D32JK8zwBXIH\"}}"];
+
+https.createServer({ key: fs.readFileSync('/key.pem'), cert: fs.readFileSync('/cert.pem') }, (req, res) => {
+  const url = new URL(req.url, 'https://graph.facebook.com');
+  const parts = url.pathname.split('/').slice(1);
+  let answer = UNSUPPORTED;
+  if (req.method === 'GET' && parts.length === 3 && parts[0] === 'v22.0' && parts[2] === 'insights') {
+    answer = url.searchParams.has('access_token') ? INSIGHTS : NO_ACCESS_TOKEN;
+  }
+  res.writeHead(answer[0], { ...answer[1], 'content-type': JSON_TYPE });
+  res.end(answer[2]);
+}).listen(443);
+EOF
 
 ENTRYPOINT ["node", "/responder.js"]

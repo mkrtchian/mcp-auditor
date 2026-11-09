@@ -1,0 +1,52 @@
+{
+ "host": "graph.facebook.com",
+ "note": "Raw answers of the real Graph API, fetched with curl from the open Internet, kept as received (headers limited to the content-type and authentication ones that describe the answer).",
+ "captures": [
+  {
+   "request": "GET https://graph.facebook.com/v22.0/act_1234567890/insights?after=MAZDZD",
+   "captured_at": "2026-11-07T22:18:06Z",
+   "status": 403,
+   "headers": [
+    [
+     "x-ad-api-version-warning",
+     "You are calling a deprecated version of the Ads API."
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=UTF-8"
+    ],
+    [
+     "www-authenticate",
+     "OAuth \"Facebook Platform\" \"insufficient_scope\" \"(#200) Provide valid app ID\""
+    ],
+    [
+     "facebook-api-version",
+     "v22.0"
+    ]
+   ],
+   "body": "{\"error\":{\"message\":\"(#200) Provide valid app ID\",\"type\":\"OAuthException\",\"code\":200,\"fbtrace_id\":\"AaV3zhjVgiowgSuSh1be2dn\"}}",
+   "command": "curl -s --http1.1 -D - https://graph.facebook.com/v22.0/act_1234567890/insights?after=MAZDZD"
+  },
+  {
+   "request": "GET https://graph.facebook.com/",
+   "captured_at": "2026-11-07T22:18:06Z",
+   "status": 400,
+   "headers": [
+    [
+     "Content-Type",
+     "application/json; charset=UTF-8"
+    ],
+    [
+     "www-authenticate",
+     "OAuth \"Facebook Platform\" \"invalid_request\" \"Unsupported get request. Please read the Graph API documentation at https://developers.facebook.com/docs/graph-api\""
+    ],
+    [
+     "facebook-api-version",
+     "v21.0"
+    ]
+   ],
+   "body": "{\"error\":{\"message\":\"Unsupported get request. Please read the Graph API documentation at https:\\/\\/developers.facebook.com\\/docs\\/graph-api\",\"type\":\"GraphMethodException\",\"code\":100,\"error_subcode\":33,\"fbtrace_id\":\"AoiTl1CPTC9D32JK8zwBXIH\"}}",
+   "command": "curl -s --http1.1 -D - https://graph.facebook.com/"
+  }
+ ]
+}

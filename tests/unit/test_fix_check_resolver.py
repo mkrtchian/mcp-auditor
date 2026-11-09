@@ -26,9 +26,7 @@ _BUILDERS: dict[str, Callable[[], list[str]]] = {
     "apify-server": lambda: cve_2026_46341_apify.server_args("image", _ADDRESS),
     "jenkins-responder": lambda: cve_2026_10276_jenkins.responder_args("r", "n", _ADDRESS),
     "jenkins-server": lambda: cve_2026_10276_jenkins.server_args("image", _ADDRESS),
-    "facebook-ads-responder": lambda: cve_2026_19956_facebook_ads.responder_args(
-        "r", "n", _ADDRESS
-    ),
+    "facebook-ads-sentinel": lambda: cve_2026_19956_facebook_ads.sentinel_args("r", "n", _ADDRESS),
     "facebook-ads-server": lambda: cve_2026_19956_facebook_ads.server_args("image", _ADDRESS),
     "gitlab-responder": lambda: cve_2026_61462_gitlab.responder_args("r", "n", _ADDRESS),
     "gitlab-server": lambda: cve_2026_61462_gitlab.server_args("image", _ADDRESS),

@@ -2,7 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from evals.apify_backend import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
-from evals.facebook_ads_backend import FACEBOOK_ADS_ATTACKER_HOST, FACEBOOK_ADS_BENIGN_HOST
+from evals.facebook_ads_backend import FACEBOOK_ADS_BENIGN_HOST, FACEBOOK_ADS_RESPONDER_IP
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_fix_checks import cve_2026_10276_jenkins as jenkins
 from evals.nuisance_fix_checks import cve_2026_19956_facebook_ads as facebook_ads
@@ -55,12 +55,14 @@ RESPONDER_FIX_CHECKS = [
     ResponderFixCheck(
         facebook_ads.TARGET.flaw,
         "facebook_ads",
-        facebook_ads.responder_args,
+        facebook_ads.sentinel_args,
         facebook_ads.server_args,
+        # The graph host stays on the run's responder, the attacker host goes to the sentinel.
         lambda address: [
-            f"{FACEBOOK_ADS_BENIGN_HOST}:{address}",
-            f"{FACEBOOK_ADS_ATTACKER_HOST}:{address}",
+            f"{FACEBOOK_ADS_BENIGN_HOST}:{FACEBOOK_ADS_RESPONDER_IP}",
+            f"{facebook_ads.ATTACKER_HOST}:{address}",
         ],
+        image=facebook_ads.SENTINEL_IMAGE,
     ),
     ResponderFixCheck(
         gitlab.TARGET.flaw,
