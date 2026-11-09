@@ -18850,7 +18850,112 @@
             {
               "vulnerable_name": "read_file_tool",
               "patched_name": "read_file_tool",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "write_file_tool",
+              "patched_name": "write_file_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_directory_tool",
+              "patched_name": "list_directory_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_directory_tool",
+              "patched_name": "create_directory_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_file_tool",
+              "patched_name": "delete_file_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_directory_tool",
+              "patched_name": "delete_directory_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "move_file_tool",
+              "patched_name": "move_file_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "copy_file_tool",
+              "patched_name": "copy_file_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "search_files_tool",
+              "patched_name": "search_files_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_file_info_tool",
+              "patched_name": "get_file_info_tool",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -18859,10 +18964,89 @@
           "launch_option": null,
           "benign_calls": [
             {
+              "tool": "write_file_tool",
+              "arguments": {
+                "path": "/tmp/notes.txt",
+                "content": "Hello World"
+              },
+              "expect": "bytes_written",
+              "before": []
+            },
+            {
               "tool": "read_file_tool",
               "arguments": {
-                "path": "/tmp/benign.txt"
-              }
+                "path": "/tmp/notes.txt"
+              },
+              "expect": "Hello World",
+              "before": []
+            },
+            {
+              "tool": "list_directory_tool",
+              "arguments": {
+                "path": "/tmp"
+              },
+              "expect": "notes.txt",
+              "before": []
+            },
+            {
+              "tool": "search_files_tool",
+              "arguments": {
+                "directory": "/tmp",
+                "pattern": "*.txt"
+              },
+              "expect": "notes.txt",
+              "before": []
+            },
+            {
+              "tool": "get_file_info_tool",
+              "arguments": {
+                "path": "/tmp/notes.txt"
+              },
+              "expect": "permissions",
+              "before": []
+            },
+            {
+              "tool": "create_directory_tool",
+              "arguments": {
+                "path": "/tmp/projects"
+              },
+              "expect": "Directory created successfully",
+              "before": []
+            },
+            {
+              "tool": "copy_file_tool",
+              "arguments": {
+                "source": "/tmp/notes.txt",
+                "destination": "/tmp/projects/notes.txt"
+              },
+              "expect": "Copied successfully",
+              "before": []
+            },
+            {
+              "tool": "move_file_tool",
+              "arguments": {
+                "source": "/tmp/projects/notes.txt",
+                "destination": "/tmp/projects/archive.txt"
+              },
+              "expect": "Moved successfully",
+              "before": []
+            },
+            {
+              "tool": "delete_file_tool",
+              "arguments": {
+                "path": "/tmp/projects/archive.txt"
+              },
+              "expect": "File deleted successfully",
+              "before": []
+            },
+            {
+              "tool": "delete_directory_tool",
+              "arguments": {
+                "path": "/tmp/projects",
+                "recursive": true
+              },
+              "expect": "Directory deleted successfully",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -18871,12 +19055,22 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "read_file_tool"
+              "read_file_tool",
+              "get_file_info_tool",
+              "list_directory_tool",
+              "search_files_tool",
+              "write_file_tool",
+              "create_directory_tool",
+              "delete_file_tool",
+              "delete_directory_tool",
+              "move_file_tool",
+              "copy_file_tool"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -18900,13 +19094,43 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-7400",
           "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
         },
         {
           "flaw": null,
@@ -18914,8 +19138,23 @@
           "agreed": false
         },
         {
-          "flaw": "CVE-2026-7400",
-          "field": "benign_calls",
+          "flaw": null,
+          "field": "launch",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
           "agreed": false
         }
       ],
@@ -18924,32 +19163,56 @@
           "server_package": "https://github.com/geekgod382/filesystem-mcp-server",
           "flaw": "CVE-2026-7400",
           "field": "tools",
-          "value": "read_file_tool",
-          "reason": "records A and B both listed all ten tools of the server, but the check they share (is_path_allowed, with the textual-prefix startswith on an abspath-resolved path) is exploited only through read_file_tool in either fix-check script: no record calls write_file_tool, list_directory_tool, delete_file_tool or any other tool with a sibling-prefix path, so nothing confirms they also surface the escape. Narrower than both blind records, the counted tool is read_file_tool, the exploit-called one."
+          "value": "all ten tools counted",
+          "reason": "Both records list the server's ten tools, each reaching the one is_path_allowed guard with a path the caller chooses, and both write and play a benign call for each. A tool that passes the faulty guard of a read flaw with a caller-chosen path counts, so all ten count with declared_function_is_effect false. The first admission narrowed the count to read_file_tool for want of an exploit through the other nine; the re-admission writes one exploit per tool at assembly and plays each alone on both images: on the vulnerable version each passes the bypassed guard with an out-of-scope path, read_file_tool alone surfacing the witness and the nine others aimed without surfacing it, and on the patched version each is denied."
         },
         {
           "server_package": "https://github.com/geekgod382/filesystem-mcp-server",
           "flaw": null,
           "field": "host",
           "value": "unprivileged / / no network",
-          "reason": "record A planted with working_directory /, record B with /app. The server takes no scope argument and reads its scope from HOME (/tmp), and its entrypoint is the absolute /app/server.py, so the working directory changes nothing the exploit or the benign call reads. Settled to record A's host, matching the FixCheckTarget's PlantingHost and the nuisance run's plain single-container launch."
+          "reason": "Record A planted with working_directory /, record B with /app. The server takes no scope argument and reads its scope from HOME (/tmp), and its entrypoint is the absolute /app/server.py, so the working directory changes nothing the exploit or the benign call reads. Settled to record A's host, matching the fix check's planting host and a plain single-container launch."
         },
         {
           "server_package": "https://github.com/geekgod382/filesystem-mcp-server",
-          "flaw": "CVE-2026-7400",
+          "flaw": null,
           "field": "benign_calls",
-          "value": "read_file_tool on /tmp/benign.txt",
-          "reason": "neither record carries a benign call for read_file_tool: record A's cover list_directory_tool and get_file_info_tool, record B's read_file_tool reads a file its own earlier write_file_tool call created. With read_file_tool the only counted tool, the benign call is an in-scope read of /tmp/benign.txt, a file baked into both images under the declared scope (HOME=/tmp), so it needs no earlier call and does not depend on a write tool."
+          "value": "one in-scope call per tool, record B's notes.txt vocabulary",
+          "reason": "Both records wrote a benign call for each of the ten tools, record A reading a whole README.md seeded at /tmp/README.md, record B a notes.txt holding 'Hello World'. Record B's call names and seed are kept, and the ten calls are ordered into one flowing session that writes, reads, lists, searches and stats notes.txt, then creates /tmp/projects and copies, moves, deletes and removes within it, so each tool answers once with no error left behind. Written and played at assembly, where each record ran its calls in isolation."
+        },
+        {
+          "server_package": "https://github.com/geekgod382/filesystem-mcp-server",
+          "flaw": null,
+          "field": "seeds",
+          "value": "/tmp/notes.txt holding 'Hello World'",
+          "reason": "Record A seeds the whole README.md, record B a notes.txt holding 'Hello World', the README's own Example Usage. Under the reading that keeps the conforming seed writing the fewest values, record B's is kept. The /tmp/benign.txt the first admission baked, whose name and contents were written for the fixture, is dropped and the in-scope benign reads move to notes.txt."
+        },
+        {
+          "server_package": "https://github.com/geekgod382/filesystem-mcp-server",
+          "flaw": null,
+          "field": "launch",
+          "value": "mcp[cli]>=1.25,<2",
+          "reason": "The server's requirements.txt names mcp[cli]>=1.25 (README: '1.25 or higher'). Unbounded, pip resolves mcp 2.3.0, which drops the Server decorators both versions use (list_tools in v1.0.0's server.py, call_tool in v1.1.0's src/tools.py), so the server fails to start. The rule's loosest bound on the one package at fault is added (mcp<2), where the first admission pinned the exact ==1.25.0; every other dependency floats."
         },
         {
           "server_package": "https://github.com/geekgod382/filesystem-mcp-server",
           "flaw": "CVE-2026-7400",
           "field": "declared_function_is_effect",
           "value": "false",
-          "reason": "read_file_tool's declared function is to read a file inside the allowed home directory, and a sibling path sharing the directory's textual prefix (/tmproot/secret against /tmp) reads outside it, which is the flaw and not the contract, so by the unified read_outside_scope principle a traversal out of a declared scope is the flaw, not the declared read"
+          "reason": "Each tool's declared function is to act on a path inside the allowed home directory, and a sibling path sharing the directory's textual prefix (/tmproot/secret against /tmp) leaves it, which is the flaw and not the contract. By the unified read_outside_scope principle a traversal out of a declared scope is the flaw, not the declared operation, so the boolean is false for all ten tools."
         }
       ],
-      "patched_version": "v1.1.0"
+      "patched_version": "v1.1.0",
+      "seeds": [
+        {
+          "item": "/tmp/notes.txt: a file holding 'Hello World', the README's Example Usage example, placed under the declared home (HOME=/tmp) and owned by the run account so write_file_tool may overwrite it",
+          "kind": "project_document",
+          "citation": "https://github.com/geekgod382/filesystem-mcp-server/blob/45364545fc60dc80aadcd4379f08042d3d3d292e/README.md (Example Usage: 'Create a new file called notes.txt with the content \"Hello World\"')",
+          "pin": "45364545fc60dc80aadcd4379f08042d3d3d292e"
+        }
+      ],
+      "software_releases": [],
+      "stand_ins": []
     },
     {
       "server_package": "npm:faf-mcp",

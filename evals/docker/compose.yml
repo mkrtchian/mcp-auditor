@@ -1193,7 +1193,7 @@ services:
       context: .
       dockerfile: Dockerfile.geekgod-fs
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "8e0f3d9337f023d65e8f3d04b2e10803439868635bea861cf1707431db8706aa"
+        org.mcp-auditor.dockerfile-fingerprint: "6a5c4cec093eaba34283bc1b391a834534aebdd8dde18979a143db225cb1baf4"
     image: mcp-auditor-nuisance-geekgod-fs:local
     profiles: ["nuisance"]
 
