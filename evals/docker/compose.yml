@@ -1017,15 +1017,6 @@ services:
     image: mcp-auditor-nuisance-sylphxltd-filesystem:local
     profiles: ["nuisance"]
 
-  calc:
-    build:
-      context: .
-      dockerfile: Dockerfile.calc
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0498cfa3b9e80e21721bb853f6298b6fc7382ac2c618734b5c596025e9184bad"
-    image: mcp-auditor-nuisance-calc:local
-    profiles: ["nuisance"]
-
   siri-shortcuts:
     build:
       context: .
@@ -1105,15 +1096,6 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "5ef2cdaa9d649747a4968f4889c62904009239f2536617189f7f6c76802fef44"
     image: mcp-auditor-nuisance-agentic-flow:local
-    profiles: ["nuisance"]
-
-  rails-mcp:
-    build:
-      context: .
-      dockerfile: Dockerfile.rails-mcp
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "931b094cb253fae832bc18c6277e6f4158c61663ba6f71e7c11445c3dcde48cb"
-    image: mcp-auditor-nuisance-rails-mcp:local
     profiles: ["nuisance"]
 
   semgrep:
@@ -1222,15 +1204,6 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "5a825eed1241e05118766fc7654de2343d634ae90550bbac0754f288555a64c6"
     image: mcp-auditor-nuisance-fast-filesystem:local
-    profiles: ["nuisance"]
-
-  contextforge-sandbox:
-    build:
-      context: .
-      dockerfile: Dockerfile.contextforge-sandbox
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "debf9e060d5d9cad2234490a44e7d6b73df05c741437de202a3c2cafad888897"
-    image: mcp-auditor-nuisance-contextforge-sandbox:local
     profiles: ["nuisance"]
 
   facebook-ads:
