@@ -1,20 +1,69 @@
-# HTTP mock-GitLab responder for the nuisance suite's gitlab backend, the GitLab API that the
-# pipeline-job tools of @zereight/mcp-gitlab (get_pipeline_job_output, get_job_artifact_file, ...)
-# reach through GITLAB_API_URL on port 80. It is NOT the server under test and carries none of its
-# flaw. It answers:
-#   - any path ending /trace: a fixed benign job trace
-#   - any path under /artifacts: fixed benign artifact bytes
-#   - any other path: a fixed benign job description
-#   - a path containing /internal/: 404, unless WITNESS_NONCE is set, then the nonce in the trace
-#     body or the artifact body, so a per-launch container holds the fix-check witness and the
-#     shared singleton serves none
-# Routing is on the RAW request path, treating %2F as a literal character inside a segment, as a
-# real HTTP router does: the vulnerable server sends a traversal with real slashes (its raw jobId
-# reaches /internal/secret), while the patched server percent-encodes the jobId
-# (encodeGitLabPathSegment), so the request path arrives with %2Finternal%2F and never matches
-# /internal/. Decoding the path here would erase that distinction.
-# Never spoken to over MCP stdio: the audited server reaches it as an outbound HTTP request.
-# No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
+# Stand-in for the self-managed GitLab instance (GitLab CE) that the job tools of
+# @zereight/mcp-gitlab (execute_graphql, upload_markdown, get_pipeline_job, get_pipeline_job_output, list_job_artifacts,
+# download_job_artifacts, get_job_artifact_file, play/retry/cancel_pipeline_job) reach through
+# GITLAB_API_URL on port 80. GitLab itself cannot run under the confinement: the Omnibus image
+# needs root with CHOWN/DAC_OVERRIDE/SETUID/SETGID, which --cap-drop ALL removes. Every answer
+# comes from GitLab's own sources, pinned at tag v19.5.3-ee:
+#   - GET  /projects/1/jobs/8: doc/api/jobs.md "Retrieve a job by job ID" example response
+#   - GET  /projects/1/jobs/42/trace: spec/fixtures/trace/sample_trace, the log the jobs API
+#     spec serves through Workhorse
+#   - GET  /projects/1/jobs/42/artifacts/tree: doc/api/job_artifacts.md example response
+#   - GET  /projects/1/jobs/42/artifacts/<entry>: the entry of spec/fixtures/ci_build_artifacts.zip,
+#     the archive of the :artifacts job factory
+#   - GET  /projects/1/jobs/42/artifacts: that archive whole
+#   - POST /projects/1/jobs/1/{play,retry,cancel}: invented in the form of the doc/api/jobs.md
+#     example responses ("Run a job", "Retry a job", "Cancel a job"), whose "user": null the server
+#     rejects, with the user object of that page's "Retrieve a job by job ID" example, since GitLab
+#     answers these calls with the job's user (spec/requests/api/ci/jobs_spec.rb asserts the play
+#     answer carries the requesting user, Ci::RetryJobService gives the new job the current user);
+#     status 200 for play, 201 for retry and cancel, as that spec asserts
+#   - POST /projects/5/uploads: doc/api/project_markdown_uploads.md "Create an upload" example
+#     response, with the uploaded part's filename quoted where the example quotes its dk.png
+#     (alt without the extension, url, full_path, markdown), status 201
+#   - POST /api/graphql with the body {"query":<doc/api/graphql/getting_started.md "Get a specific
+#     project and the title of Issue #2" query, on one line>,"variables":{}}: gitlab.com's answer
+#     to that request (captured 2026-11-07); any other GraphQL body gets the 404 below
+#   - anything else: 404 {"error":"404 Not Found"}, gitlab.com's answer to an API path it does
+#     not route (captured 2026-11-07)
+# Routes match the method and the raw request target exactly. WITNESS_NONCE is set only by the
+# fix check's own per-launch container: it then serves the nonce on a /internal/ path (raw,
+# %2F not decoded, so the patched server's encoded job_id never reaches it). The run singleton
+# sets none and answers that path with the 404 above.
 FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
-
-ENTRYPOINT ["node", "-e", "const http=require('http');const n=process.env.WITNESS_NONCE;const TRACE='Running job\\nJob succeeded\\n';http.createServer((q,r)=>{q.resume();const raw=q.url.split('?')[0];const internal=raw.includes('/internal/');if(internal&&!n){r.writeHead(404,{'content-type':'text/plain'});return r.end('Not Found');}if(raw.endsWith('/trace')){r.writeHead(200,{'content-type':'text/plain'});return r.end(internal?n+'\\n':TRACE);}if(raw.includes('/artifacts')){r.writeHead(200,{'content-type':'text/plain'});return r.end(internal?n:'benign-artifact-bytes');}r.writeHead(200,{'content-type':'application/json'});r.end(JSON.stringify({id:1,status:'success'}));}).listen(80);"]
+ADD --checksum=sha256:c7f421244775924ea9d82d2a887a8608361e6d5568f83511c7d66f6160df85b6 https://gitlab.com/api/v4/projects/278964/repository/files/spec%2Ffixtures%2Ftrace%2Fsample_trace/raw?ref=v19.5.3-ee /srv/sample_trace
+ADD --checksum=sha256:86f91b74d257dc0772827a8b72fdba66bb649d1e381460649321fec6d5eb63b4 https://gitlab.com/api/v4/projects/278964/repository/files/spec%2Ffixtures%2Fci_build_artifacts.zip/raw?ref=v19.5.3-ee /srv/ci_build_artifacts.zip
+RUN unzip -p /srv/ci_build_artifacts.zip other_artifacts_0.1.2/doc_sample.txt > /srv/doc_sample.txt && test -s /srv/doc_sample.txt
+RUN cat > /srv/responder.js <<'EOF_JS'
+const http=require('http');const fs=require('fs');
+const n=process.env.WITNESS_NONCE;
+const JOB="{\"commit\":{\"author_email\":\"admin@example.com\",\"author_name\":\"Administrator\",\"created_at\":\"2015-12-24T16:51:14.000+01:00\",\"id\":\"0ff3ae198f8601a285adcf5c0fff204ee6fba5fd\",\"message\":\"Test the CI integration.\",\"short_id\":\"0ff3ae19\",\"title\":\"Test the CI integration.\"},\"coverage\":null,\"archived\":false,\"source\":\"push\",\"allow_failure\":false,\"created_at\":\"2015-12-24T15:51:21.880Z\",\"started_at\":\"2015-12-24T17:54:30.733Z\",\"finished_at\":\"2015-12-24T17:54:31.198Z\",\"erased_at\":null,\"duration\":0.465,\"queued_duration\":0.01,\"artifacts_expire_at\":\"2016-01-23T17:54:31.198Z\",\"tag_list\":[\"docker runner\",\"macos-10.15\"],\"id\":8,\"name\":\"rubocop\",\"pipeline\":{\"id\":6,\"project_id\":1,\"ref\":\"main\",\"sha\":\"0ff3ae198f8601a285adcf5c0fff204ee6fba5fd\",\"status\":\"pending\"},\"ref\":\"main\",\"artifacts\":[],\"runner\":null,\"runner_manager\":null,\"stage\":\"test\",\"status\":\"failed\",\"tag\":false,\"web_url\":\"https://example.com/foo/bar/-/jobs/8\",\"project\":{\"ci_job_token_scope_enabled\":false},\"user\":{\"id\":1,\"name\":\"Administrator\",\"username\":\"root\",\"state\":\"active\",\"avatar_url\":\"http://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80&d=identicon\",\"web_url\":\"http://gitlab.dev/root\",\"created_at\":\"2015-12-21T13:14:24.077Z\",\"bio\":null,\"location\":null,\"public_email\":\"\",\"linkedin\":\"\",\"twitter\":\"\",\"website_url\":\"\",\"organization\":\"\"}}";
+const TREE="[{\"name\":\"ci_build_artifacts.zip\",\"path\":\"ci_build_artifacts.zip\",\"type\":\"file\",\"size\":1024,\"mode\":\"100644\"},{\"name\":\"other_artifacts_0.1.2\",\"path\":\"other_artifacts_0.1.2/\",\"type\":\"directory\",\"mode\":\"040755\"}]";
+const PLAY="{\"commit\":{\"author_email\":\"admin@example.com\",\"author_name\":\"Administrator\",\"created_at\":\"2015-12-24T16:51:14.000+01:00\",\"id\":\"0ff3ae198f8601a285adcf5c0fff204ee6fba5fd\",\"message\":\"Test the CI integration.\",\"short_id\":\"0ff3ae19\",\"title\":\"Test the CI integration.\"},\"coverage\":null,\"archived\":false,\"source\":\"push\",\"allow_failure\":false,\"created_at\":\"2016-01-11T10:13:33.506Z\",\"started_at\":null,\"finished_at\":null,\"erased_at\":null,\"duration\":null,\"queued_duration\":0.01,\"id\":1,\"name\":\"rubocop\",\"ref\":\"main\",\"artifacts\":[],\"runner\":null,\"runner_manager\":null,\"stage\":\"test\",\"status\":\"pending\",\"tag\":false,\"web_url\":\"https://example.com/foo/bar/-/jobs/1\",\"project\":{\"ci_job_token_scope_enabled\":false},\"user\":{\"id\":1,\"name\":\"Administrator\",\"username\":\"root\",\"state\":\"active\",\"avatar_url\":\"http://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80&d=identicon\",\"web_url\":\"http://gitlab.dev/root\",\"created_at\":\"2015-12-21T13:14:24.077Z\",\"bio\":null,\"location\":null,\"public_email\":\"\",\"linkedin\":\"\",\"twitter\":\"\",\"website_url\":\"\",\"organization\":\"\"}}";
+const RETRY="{\"commit\":{\"author_email\":\"admin@example.com\",\"author_name\":\"Administrator\",\"created_at\":\"2015-12-24T16:51:14.000+01:00\",\"id\":\"0ff3ae198f8601a285adcf5c0fff204ee6fba5fd\",\"message\":\"Test the CI integration.\",\"short_id\":\"0ff3ae19\",\"title\":\"Test the CI integration.\"},\"coverage\":null,\"archived\":false,\"source\":\"push\",\"allow_failure\":false,\"created_at\":\"2016-01-11T10:13:33.506Z\",\"started_at\":null,\"finished_at\":null,\"erased_at\":null,\"duration\":null,\"queued_duration\":0.01,\"id\":1,\"name\":\"rubocop\",\"ref\":\"main\",\"artifacts\":[],\"runner\":null,\"runner_manager\":null,\"stage\":\"test\",\"status\":\"pending\",\"tag\":false,\"web_url\":\"https://example.com/foo/bar/-/jobs/1\",\"project\":{\"ci_job_token_scope_enabled\":false},\"user\":{\"id\":1,\"name\":\"Administrator\",\"username\":\"root\",\"state\":\"active\",\"avatar_url\":\"http://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80&d=identicon\",\"web_url\":\"http://gitlab.dev/root\",\"created_at\":\"2015-12-21T13:14:24.077Z\",\"bio\":null,\"location\":null,\"public_email\":\"\",\"linkedin\":\"\",\"twitter\":\"\",\"website_url\":\"\",\"organization\":\"\"}}";
+const CANCEL="{\"commit\":{\"author_email\":\"admin@example.com\",\"author_name\":\"Administrator\",\"created_at\":\"2015-12-24T16:51:14.000+01:00\",\"id\":\"0ff3ae198f8601a285adcf5c0fff204ee6fba5fd\",\"message\":\"Test the CI integration.\",\"short_id\":\"0ff3ae19\",\"title\":\"Test the CI integration.\"},\"coverage\":null,\"archived\":false,\"source\":\"push\",\"allow_failure\":false,\"created_at\":\"2016-01-11T10:13:33.506Z\",\"started_at\":\"2016-01-11T10:14:09.526Z\",\"finished_at\":null,\"erased_at\":null,\"duration\":8,\"queued_duration\":0.01,\"id\":1,\"name\":\"rubocop\",\"ref\":\"main\",\"artifacts\":[],\"runner\":null,\"runner_manager\":null,\"stage\":\"test\",\"status\":\"canceled\",\"tag\":false,\"web_url\":\"https://example.com/foo/bar/-/jobs/1\",\"project\":{\"ci_job_token_scope_enabled\":false},\"user\":{\"id\":1,\"name\":\"Administrator\",\"username\":\"root\",\"state\":\"active\",\"avatar_url\":\"http://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80&d=identicon\",\"web_url\":\"http://gitlab.dev/root\",\"created_at\":\"2015-12-21T13:14:24.077Z\",\"bio\":null,\"location\":null,\"public_email\":\"\",\"linkedin\":\"\",\"twitter\":\"\",\"website_url\":\"\",\"organization\":\"\"}}";
+const UPLOAD={id:5,alt:'dk',url:'/uploads/66dbcd21ec5d24ed6ea225176098d52b/dk.png',full_path:'/-/project/1234/uploads/66dbcd21ec5d24ed6ea225176098d52b/dk.png',markdown:'![dk](/uploads/66dbcd21ec5d24ed6ea225176098d52b/dk.png)'};
+const GRAPHQL_QUERY="{\"query\":\"query {project(fullPath: \\\"gitlab-org/graphql-sandbox\\\") {name issue(iid: \\\"2\\\") {title}}}\",\"variables\":{}}";
+const GRAPHQL_ANSWER="{\"data\":{\"project\":{\"name\":\"GraphQL Sandbox\",\"issue\":{\"title\":\"Bear-y good issue\"}}}}";
+const NOT_FOUND='{"error":"404 Not Found"}';
+const ROUTES={
+'GET /api/v4/projects/1/jobs/8':[200,'application/json',JOB],
+'GET /api/v4/projects/1/jobs/42/trace':[200,'text/plain',fs.readFileSync('/srv/sample_trace')],
+'GET /api/v4/projects/1/jobs/42/artifacts/tree':[200,'application/json',TREE],
+'GET /api/v4/projects/1/jobs/42/artifacts/other_artifacts_0.1.2/doc_sample.txt':[200,'text/plain',fs.readFileSync('/srv/doc_sample.txt')],
+'GET /api/v4/projects/1/jobs/42/artifacts':[200,'application/zip',fs.readFileSync('/srv/ci_build_artifacts.zip')],
+'POST /api/v4/projects/1/jobs/1/play':[200,'application/json',PLAY],
+'POST /api/v4/projects/1/jobs/1/retry':[201,'application/json',RETRY],
+'POST /api/v4/projects/1/jobs/1/cancel':[201,'application/json',CANCEL]
+};
+function upload(body){const m=/filename="([^"\r\n]+)"/.exec(body.toString('latin1'));if(!m)return null;const f=m[1];const alt=f.replace(/\.[^.]*$/,'');
+return JSON.stringify({id:UPLOAD.id,alt:alt,url:UPLOAD.url.replace('dk.png',f),full_path:UPLOAD.full_path.replace('dk.png',f),markdown:'!['+alt+']('+UPLOAD.url.replace('dk.png',f)+')'});}
+http.createServer((q,r)=>{const chunks=[];q.on('data',c=>chunks.push(c));q.on('end',()=>serve(q,r,Buffer.concat(chunks)));}).listen(80);
+function serve(q,r,body){const raw=q.url.split('?')[0];
+if(q.method==='POST'&&q.url==='/api/v4/projects/5/uploads'){const u=upload(body);if(u){r.writeHead(201,{'content-type':'application/json'});return r.end(u);}}
+if(q.method==='POST'&&q.url==='/api/graphql'&&body.toString('utf8')===GRAPHQL_QUERY){r.writeHead(200,{'content-type':'application/json; charset=utf-8'});return r.end(GRAPHQL_ANSWER);}
+if(n&&raw.includes('/internal/')&&(raw.endsWith('/trace')||raw.includes('/artifacts'))){r.writeHead(200,{'content-type':'text/plain'});return r.end(raw.endsWith('/trace')?n+'\n':n);}
+const hit=ROUTES[q.method+' '+q.url];
+if(!hit){process.stderr.write('miss '+q.method+' '+q.url+'\n');r.writeHead(404,{'content-type':'application/json'});return r.end(NOT_FOUND);}
+r.writeHead(hit[0],{'content-type':hit[1]});r.end(hit[2]);}
+EOF_JS
+ENTRYPOINT ["node", "/srv/responder.js"]

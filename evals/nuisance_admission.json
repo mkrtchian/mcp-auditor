@@ -12370,12 +12370,24 @@
             {
               "vulnerable_name": "get_pipeline_job_output",
               "patched_name": "get_pipeline_job_output",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "get_job_artifact_file",
               "patched_name": "get_job_artifact_file",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -12393,15 +12405,19 @@
               "arguments": {
                 "project_id": "1",
                 "job_id": "42"
-              }
+              },
+              "expect": "Job succeeded",
+              "before": []
             },
             {
               "tool": "get_job_artifact_file",
               "arguments": {
                 "project_id": "1",
                 "job_id": "42",
-                "artifact_path": "log.txt"
-              }
+                "artifact_path": "other_artifacts_0.1.2/doc_sample.txt"
+              },
+              "expect": "Lorem ipsum dolor sit amet",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -12416,7 +12432,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -12436,7 +12453,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -12456,7 +12474,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -12476,7 +12495,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -12496,7 +12516,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -12524,9 +12545,100 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-61462",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61462",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61462",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61462",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-61462",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61462",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61560",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61560",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "GHSA-5648-rgj9-v224",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "GHSA-5648-rgj9-v224",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        }
+      ],
       "settlements": [
         {
           "server_package": "npm:@zereight/mcp-gitlab",
@@ -12538,16 +12650,9 @@
         {
           "server_package": "npm:@zereight/mcp-gitlab",
           "flaw": "CVE-2026-61462",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "the numeric job_id is an argument of a fixed get-job-trace / get-artifact-file operation on the configured host; the traversal escaping /jobs/ to an internal path is a bypass of that bounded fetch, not the declared function"
-        },
-        {
-          "server_package": "npm:@zereight/mcp-gitlab",
-          "flaw": "CVE-2026-61462",
           "field": "counted_tools",
           "value": "get_pipeline_job_output, get_job_artifact_file",
-          "reason": "of the eight job_id handlers the fix encodes, only these two return the internal fetch's raw body (the job trace as text, the artifact file content), so the witness surfaces through them; get_pipeline_job, list_job_artifacts and the play/retry/cancel tools validate the response against a job or array schema that an internal endpoint fails, and download_job_artifacts returns only metadata, so none surfaces the witness (settled at calibration)"
+          "reason": "both records add get_pipeline_job, list_job_artifacts, download_job_artifacts, play_pipeline_job, retry_pipeline_job and cancel_pipeline_job, whose job_id the fix encodes too; they stay out of the flaw's tools and the count stays at the committed two, since the retained fix check exploits and calls only these two tools and neither record wrote an exploit or a fix-check benign call for the six."
         },
         {
           "server_package": "npm:@zereight/mcp-gitlab",
@@ -12576,9 +12681,173 @@
           "field": "counted",
           "value": "false",
           "reason": "safety-control bypasses not reaching one of the three graded effect classes over stdio; kept with a null class and logged"
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record A's: the gitlab backend responder answering at gitlab.example.com with GitLab 19.5.3's documented example responses and spec fixtures, a gitlab.com capture for one GraphQL query, and GitLab's 404 for any other request",
+          "reason": "the real software runs first, in the container or as a backend within the memory bound, and record B ran GitLab CE 19.5.3 with its Runner as that backend; the stand-in is kept as an accepted departure from that letter: the counted tools read job traces and artefacts, the stand-in serves outputs copied from GitLab 19.5.3's specification and documentation, branches on fixed words and returns GitLab's error otherwise, and the fix check passes on it, while the real GitLab CE would cost a new provisioner of several gigabytes and minutes of start-up for the same count."
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": null,
+          "field": "backend",
+          "value": "record A's: the gitlab responder backend, its singleton answering at the network alias gitlab.example.com that the run image's GITLAB_API_URL names",
+          "reason": "the backend follows the retained stand-in: the real software runs first, in the container or as a backend within the memory bound, and record B ran GitLab CE 19.5.3 with its Runner as that backend; the stand-in is kept as an accepted departure from that letter: the counted tools read job traces and artefacts, the stand-in serves outputs copied from GitLab 19.5.3's specification and documentation, branches on fixed words and returns GitLab's error otherwise, and the fix check passes on it, while the real GitLab CE would cost a new provisioner of several gigabytes and minutes of start-up for the same count."
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: the README's example token, GITLAB_API_URL at gitlab.example.com, and the project, job and artifact names of GitLab's documented example requests",
+          "reason": "the seeds follow the retained stand-in: record B's seeds (a project created from GitLab's Ruby on Rails template, the traces and artifacts its Runner generates, a written access token) go with its GitLab backend."
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "record A's: GitLab Community Edition 19.5.3, whose sources the stand-in's outputs are taken from",
+          "reason": "the release follows the retained stand-in: both records name GitLab CE 19.5.3, the current stable release on the day, and record B's GitLab Runner v19.5.3 goes with its backend."
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "CVE-2026-61462",
+          "field": "benign_calls",
+          "value": "record A's: get_pipeline_job_output and get_job_artifact_file on the job and artefact routes the stand-in serves, get_job_artifact_file reading the entry other_artifacts_0.1.2/doc_sample.txt of the archive GitLab's spec serves",
+          "reason": "the benign calls follow the retained stand-in: record B's expects come from the pipelines its GitLab backend runs, and the committed artifact_path log.txt names no entry of the archive the stand-in now serves."
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "CVE-2026-61560",
+          "field": "benign_calls",
+          "value": "none",
+          "reason": "both records add upload_markdown under this flaw; left out of its tools: the flaw keeps its null effect class, so it sets no version and its tools do not count, and the records' differing calls are not kept."
+        },
+        {
+          "server_package": "npm:@zereight/mcp-gitlab",
+          "flaw": "GHSA-5648-rgj9-v224",
+          "field": "benign_calls",
+          "value": "none",
+          "reason": "both records add execute_graphql and get_pipeline_job_output under this flaw; left out of its tools: the flaw keeps its null effect class, so it sets no version and its tools do not count (get_pipeline_job_output counts under CVE-2026-61462), and the records' differing calls are not kept."
         }
       ],
-      "patched_version": "2.1.38"
+      "patched_version": "2.1.38",
+      "stand_ins": [
+        {
+          "replaces": "the self-managed GitLab instance (GitLab CE) the server reaches through GITLAB_API_URL: its REST API under /api/v4 and its GraphQL API at /api/graphql",
+          "reason": "GitLab itself (the software the server drives) cannot run here: gitlab/gitlab-ce:19.5.3-ce.0 (sha256:6863d156...), the documented Docker install, started under the backend confinement (--cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --memory 4g --memory-swap 4g, closed network) exits 1 in gitlab-ctl reconfigure with 'Errno::EACCES: Permission denied @ rb_check_realpath_internal - /var/opt/gitlab/git-data/repositories', and runit's chpst, which starts every GitLab service under its own user, fails under the same options with 'chpst: fatal: unable to setgroups: permission denied' (run 2026-11-07). The Omnibus image must start as root and switch users, which needs CHOWN, DAC_OVERRIDE, SETUID and SETGID, all dropped by the confinement, so that failure is the container's and a stand-in for the HTTP backend repairs it (Admission, Stand-ins).",
+          "file": "evals/docker/Dockerfile.gitlab-responder",
+          "capture": null,
+          "outputs": [
+            {
+              "request": "GET /api/v4/projects/1/jobs/8",
+              "source": "software_sources",
+              "citation": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit b9b17a44ffb72a85fca47c5416a40a643c42996f), 'Retrieve a job by job ID' example response (request /projects/1/jobs/8), served as is",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "GET /api/v4/projects/1/jobs/42/trace",
+              "source": "software_sources",
+              "citation": "spec/fixtures/trace/sample_trace at v19.5.3-ee (sha256 c7f421244775924ea9d82d2a887a8608361e6d5568f83511c7d66f6160df85b6), the first log the jobs API spec serves for GET /projects/:id/jobs/:job_id/trace (spec/requests/api/ci/jobs_spec.rb, 'when log is in ObjectStorage', Workhorse streams that file); fetched by ADD --checksum, served whole as text/plain. The doc page gives no log body. The job id is GitLab's spec's own (any job), 42 kept from the committed call",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "GET /api/v4/projects/1/jobs/42/artifacts/tree",
+              "source": "software_sources",
+              "citation": "doc/api/job_artifacts.md at v19.5.3-ee, 'List all files in the artifacts archive' example response (request /projects/1/jobs/42/artifacts/tree), served as is",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "GET /api/v4/projects/1/jobs/42/artifacts/other_artifacts_0.1.2/doc_sample.txt",
+              "source": "software_sources",
+              "citation": "entry other_artifacts_0.1.2/doc_sample.txt of spec/fixtures/ci_build_artifacts.zip at v19.5.3-ee (sha256 86f91b74d257dc0772827a8b72fdba66bb649d1e381460649321fec6d5eb63b4), the archive of GitLab's :artifacts factory, which job_artifacts_spec.rb's GET /projects/:id/jobs/:job_id/artifacts/*artifact_path examples serve entries of; extracted at build time with unzip",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "GET /api/v4/projects/1/jobs/42/artifacts",
+              "source": "software_sources",
+              "citation": "spec/fixtures/ci_build_artifacts.zip at v19.5.3-ee whole (doc/api/job_artifacts.md 'Download job artifacts by job ID', example request /projects/1/jobs/42/artifacts), application/zip",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "POST /api/v4/projects/1/jobs/1/play",
+              "source": "invented",
+              "citation": "invented: the example's \"user\": null, which the server's GitLabPipelineJobSchema rejects ('user: Expected object, received null', probed), is replaced by the user object of the same page's 'Retrieve a job by job ID' example, since GitLab answers these calls with the job's user (spec/requests/api/ci/jobs_spec.rb line 1625 asserts json_response['user']['id'] for play; app/services/ci/retry_job_service.rb line 155 gives the new job user: current_user); contains no part of the request; status 200 as jobs_spec.rb line 1624 asserts",
+              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit b9b17a44ffb72a85fca47c5416a40a643c42996f), 'Run a job' example response (request /projects/1/jobs/1/play)",
+              "replacements": []
+            },
+            {
+              "request": "POST /api/v4/projects/1/jobs/1/retry",
+              "source": "invented",
+              "citation": "invented: the example's \"user\": null, which the server's GitLabPipelineJobSchema rejects ('user: Expected object, received null', probed), is replaced by the user object of the same page's 'Retrieve a job by job ID' example, since GitLab answers these calls with the job's user (spec/requests/api/ci/jobs_spec.rb line 1625 asserts json_response['user']['id'] for play; app/services/ci/retry_job_service.rb line 155 gives the new job user: current_user); contains no part of the request; status 201 as jobs_spec.rb line 1314 asserts",
+              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit b9b17a44ffb72a85fca47c5416a40a643c42996f), 'Retry a job' example response (request /projects/1/jobs/1/retry)",
+              "replacements": []
+            },
+            {
+              "request": "POST /api/v4/projects/1/jobs/1/cancel",
+              "source": "invented",
+              "citation": "invented: the example's \"user\": null, which the server's GitLabPipelineJobSchema rejects ('user: Expected object, received null', probed), is replaced by the user object of the same page's 'Retrieve a job by job ID' example, since GitLab answers these calls with the job's user (spec/requests/api/ci/jobs_spec.rb line 1625 asserts json_response['user']['id'] for play; app/services/ci/retry_job_service.rb line 155 gives the new job user: current_user); contains no part of the request; status 201 as jobs_spec.rb line 1219 asserts",
+              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit b9b17a44ffb72a85fca47c5416a40a643c42996f), 'Cancel a job' example response (request /projects/1/jobs/1/cancel)",
+              "replacements": []
+            },
+            {
+              "request": "POST /projects/5/uploads",
+              "source": "software_sources",
+              "citation": "doc/api/project_markdown_uploads.md at v19.5.3-ee, 'Create an upload' example response (request /projects/5/uploads, file dk.png): the uploaded part's filename is quoted where the example quotes dk.png (alt without the extension, url, full_path, markdown), as GitLab quotes it; status 201; no file content is ever returned",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "POST /api/graphql",
+              "source": "capture",
+              "citation": "gitlab.com answer to that exact request, captured 2026-11-07 with curl (HTTP 200, application/json; charset=utf-8, body {\"data\":{\"project\":{\"name\":\"GraphQL Sandbox\",\"issue\":{\"title\":\"Bear-y good issue\"}}}}); the query is doc/api/graphql/getting_started.md's 'Get a specific project and the title of Issue #2' example on one line. Matched on the whole body (a fixed text at a fixed position)",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "anything else",
+              "source": "capture",
+              "citation": "gitlab.com's answer to an API path it does not route (GET /api/v4/3f9c2a7d41e0b865 and GET /api/v4/projects/1/jobs/42/3f9c2a7d41e0b865, captured 2026-11-07 with curl): 404, application/json, {\"error\":\"404 Not Found\"}; the run singleton gives it to the fix check's internal path too, which only the fix check's own container (WITNESS_NONCE set) answers otherwise",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "GITLAB_PERSONAL_ACCESS_TOKEN=your_gitlab_token, passed to the server through the run image's ENV (the server exits at start without a credential, index.js line 1205)",
+          "kind": "project_document",
+          "citation": "@zereight/mcp-gitlab README.md, docker examples ('-e GITLAB_PERSONAL_ACCESS_TOKEN=your_gitlab_token'); GitLab cannot run to generate a token, and the stand-in, like the documented examples, does not check it",
+          "pin": "@zereight/mcp-gitlab@2.1.38"
+        },
+        {
+          "item": "GITLAB_API_URL=http://gitlab.example.com/api/v4, the backend's address",
+          "kind": "project_document",
+          "citation": "README.md GITLAB_API_URL row ('Your GitLab instance API URL'); host gitlab.example.com from GitLab's API documentation's example requests (doc/api/jobs.md 'https://gitlab.example.com/api/v4/...'), served as the stand-in singleton's network alias on the closed bridge",
+          "pin": "@zereight/mcp-gitlab@2.1.38"
+        },
+        {
+          "item": "benign-call names: project 1 / job 42 (trace, artifact entry) and the artifact entry other_artifacts_0.1.2/doc_sample.txt",
+          "kind": "project_document",
+          "citation": "the example requests of doc/api/job_artifacts.md and the entry list of spec/fixtures/ci_build_artifacts.zip; job 42 for the trace is the committed call's id, the spec's own being any job",
+          "pin": "v19.5.3-ee"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "GitLab Community Edition (self-managed GitLab instance, replaced by the stand-in; its outputs are taken from this release's sources)",
+          "release": "19.5.3 (docker gitlab/gitlab-ce:19.5.3-ce.0, sha256:6863d156a1a477bd6f69fc674b671d0163cd8b06bf63bb17cc4a4a803b78b27c; sources at tag v19.5.3-ee, commit b9b17a44ffb72a85fca47c5416a40a643c42996f)",
+          "day": "2026-11-07",
+          "source": "Docker Hub gitlab/gitlab-ce tags on 2026-11-07: 'latest' and 19.5.3-ce.0 share digest sha256:6863d156..., the newest stable release (GitLab's documented Docker install, 'Install GitLab in a Docker container', uses gitlab/gitlab-ce). The server's README names no GitLab version, and its default instance is gitlab.com (index.js line 1147). That release was run under the confinement and failed (see the stand-in's reason); the GraphQL capture comes from gitlab.com, which runs GitLab at its own current version."
+        }
+      ]
     },
     {
       "server_package": "npm:ios-simulator-mcp",

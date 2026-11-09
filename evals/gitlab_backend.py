@@ -1,16 +1,17 @@
 """The GitLab responder backend's lifecycle.
 
 A light HTTP responder standing in for the GitLab instance that the pipeline-job tools of the
-audited server call through `GITLAB_API_URL`. It answers the legitimate API endpoints with a fixed
-benign body. Like the Jenkins responder it is cheap to stand and a singleton on a fixed address:
-stood once and reused across a server's concurrent nuisance runs, reaped by the generic orphan
-sweep, so no lock is held across the yield. The singleton carries no witness nonce, so it has no
-sentinel route and serves the run-phase benign calls only: a fix-check stands its own container
-of the same image with `WITNESS_NONCE` set, which adds the sentinel route, on the bridge and subnet
-exported here.
+audited server call through `GITLAB_API_URL`. It answers the job endpoints with GitLab's own
+documented example responses and spec fixtures (see Dockerfile.gitlab-responder), and any other
+request with GitLab's 404. Like the Jenkins responder it is cheap to stand and a singleton on a
+fixed address: stood once and reused across a server's concurrent nuisance runs, reaped by the
+generic orphan sweep, so no lock is held across the yield. The singleton carries no witness
+nonce, so it has no sentinel route and serves the run-phase benign calls only: a fix-check stands
+its own container of the same image with `WITNESS_NONCE` set, which adds the sentinel route, on
+the bridge and subnet exported here.
 
-The audited server reaches the responder as an outbound HTTP request to a bare URL. Its
-`GITLAB_API_URL` is baked into the run image's own `ENV` at `GITLAB_RESPONDER_IP`, so
+The audited server reaches the responder as an outbound HTTP request. Its `GITLAB_API_URL` is
+baked into the run image's own `ENV` at the singleton's network alias `GITLAB_RESPONDER_ALIAS`, so
 `gitlab_server_args` carries no `-e` of its own. A fix-check that stands its responder on another
 address of the bridge overrides `GITLAB_API_URL` with a `-e` on the server's `docker run`, which
 wins over the baked `ENV`. The responder sits in the RFC 2544 benchmarking range on its own
@@ -34,6 +35,7 @@ GITLAB_RESPONDER_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.gitlab-responder"
 GITLAB_BRIDGE = "mcp-auditor-cve-gitlab-bridge"  # server <-> responder, static IPs
 GITLAB_SUBNET = "198.18.4.0/24"  # RFC 2544: overlaps no other responder's subnet
 GITLAB_RESPONDER_IP = "198.18.4.2"
+GITLAB_RESPONDER_ALIAS = "gitlab.example.com"  # the host of GITLAB_API_URL in the run image
 
 # The responder is a singleton on a fixed IP, so a caller does not hold this across its yield: a
 # server's concurrent runs share the one responder. A plain Lock serialises only the stand-up,
@@ -47,6 +49,7 @@ _RESPONDER = Responder(
     subnet=GITLAB_SUBNET,
     ip=GITLAB_RESPONDER_IP,
     dockerfile=GITLAB_RESPONDER_DOCKERFILE,
+    run_args=("--network-alias", GITLAB_RESPONDER_ALIAS),
 )
 
 

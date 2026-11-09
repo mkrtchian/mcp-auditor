@@ -1085,7 +1085,7 @@ services:
       context: .
       dockerfile: Dockerfile.gitlab
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "b17eee123735a5c745718a951305723e8cd8bd98fa1c946535b3c6991c89674f"
+        org.mcp-auditor.dockerfile-fingerprint: "faa098d406f95f23b84378dc6bff230d7b94f9493e9ccd0352d2cfd2620a2e14"
     image: mcp-auditor-nuisance-gitlab:local
     profiles: ["nuisance"]
 
@@ -1332,7 +1332,7 @@ services:
       context: .
       dockerfile: Dockerfile.gitlab-responder
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "61c8334d5c7b91609da6af67ac8a66f45553494245fc18e0f5d618c7a49d4aad"
+        org.mcp-auditor.dockerfile-fingerprint: "bd6259efcfb1cf3aa5e146e18e0fd8377be8359192697a165d186b0cd2001f25"
     image: mcp-auditor-cve-gitlab-responder:local
     profiles: ["nuisance"]
 

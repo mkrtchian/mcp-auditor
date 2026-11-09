@@ -10,10 +10,10 @@ tool, the only two whose response carries the internal body.
 
 The shared singleton responder cannot carry the witness, since check_fix plants a fresh random
 nonce per exercise: the builder stands its own responder of the same image with that nonce, on the
-backend's bridge, and reaps it when the launch ends. It serves the nonce on any `/internal/` path
-and a fixed benign body elsewhere. The server's `GITLAB_API_URL` is overridden to that responder
-with a `-e`, which wins over the image's baked `ENV`, while the baked token and toolsets stay. The
-responder is not the server and carries neither the flaw nor the fix.
+backend's bridge, and reaps it when the launch ends. It serves the nonce on an `/internal/` trace
+or artifact path and the singleton's answers elsewhere. The server's `GITLAB_API_URL` is
+overridden to that responder with a `-e`, which wins over the image's baked `ENV`, while the baked
+token and toolsets stay. The responder is not the server and carries neither the flaw nor the fix.
 """
 
 import re
@@ -140,7 +140,11 @@ async def _benign_job_output(places: Places, client: KitClient) -> None:
 async def _benign_artifact_file(places: Places, client: KitClient) -> None:
     await client.call_tool(
         "get_job_artifact_file",
-        {"project_id": "1", "job_id": "42", "artifact_path": "log.txt"},
+        {
+            "project_id": "1",
+            "job_id": "42",
+            "artifact_path": "other_artifacts_0.1.2/doc_sample.txt",
+        },
     )
 
 
