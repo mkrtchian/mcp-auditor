@@ -14723,7 +14723,7 @@
             {
               "request": "GET /api/v4/projects/1/jobs/8",
               "source": "software_sources",
-              "citation": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit b9b17a44ffb72a85fca47c5416a40a643c42996f), 'Retrieve a job by job ID' example response (request /projects/1/jobs/8), served as is",
+              "citation": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit 04dbc712e7a99aa9849a6af7d165c9438dcb1a10), 'Retrieve a job by job ID' example response (request /projects/1/jobs/8), served as is",
               "form_source": null,
               "replacements": []
             },
@@ -14759,21 +14759,21 @@
               "request": "POST /api/v4/projects/1/jobs/1/play",
               "source": "invented",
               "citation": "invented: the example's \"user\": null, which the server's GitLabPipelineJobSchema rejects ('user: Expected object, received null', probed), is replaced by the user object of the same page's 'Retrieve a job by job ID' example, since GitLab answers these calls with the job's user (spec/requests/api/ci/jobs_spec.rb line 1625 asserts json_response['user']['id'] for play; app/services/ci/retry_job_service.rb line 155 gives the new job user: current_user); contains no part of the request; status 200 as jobs_spec.rb line 1624 asserts",
-              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit b9b17a44ffb72a85fca47c5416a40a643c42996f), 'Run a job' example response (request /projects/1/jobs/1/play)",
+              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit 04dbc712e7a99aa9849a6af7d165c9438dcb1a10), 'Run a job' example response (request /projects/1/jobs/1/play)",
               "replacements": []
             },
             {
               "request": "POST /api/v4/projects/1/jobs/1/retry",
               "source": "invented",
               "citation": "invented: the example's \"user\": null, which the server's GitLabPipelineJobSchema rejects ('user: Expected object, received null', probed), is replaced by the user object of the same page's 'Retrieve a job by job ID' example, since GitLab answers these calls with the job's user (spec/requests/api/ci/jobs_spec.rb line 1625 asserts json_response['user']['id'] for play; app/services/ci/retry_job_service.rb line 155 gives the new job user: current_user); contains no part of the request; status 201 as jobs_spec.rb line 1314 asserts",
-              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit b9b17a44ffb72a85fca47c5416a40a643c42996f), 'Retry a job' example response (request /projects/1/jobs/1/retry)",
+              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit 04dbc712e7a99aa9849a6af7d165c9438dcb1a10), 'Retry a job' example response (request /projects/1/jobs/1/retry)",
               "replacements": []
             },
             {
               "request": "POST /api/v4/projects/1/jobs/1/cancel",
               "source": "invented",
               "citation": "invented: the example's \"user\": null, which the server's GitLabPipelineJobSchema rejects ('user: Expected object, received null', probed), is replaced by the user object of the same page's 'Retrieve a job by job ID' example, since GitLab answers these calls with the job's user (spec/requests/api/ci/jobs_spec.rb line 1625 asserts json_response['user']['id'] for play; app/services/ci/retry_job_service.rb line 155 gives the new job user: current_user); contains no part of the request; status 201 as jobs_spec.rb line 1219 asserts",
-              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit b9b17a44ffb72a85fca47c5416a40a643c42996f), 'Cancel a job' example response (request /projects/1/jobs/1/cancel)",
+              "form_source": "doc/api/jobs.md of gitlab-org/gitlab at tag v19.5.3-ee (commit 04dbc712e7a99aa9849a6af7d165c9438dcb1a10), 'Cancel a job' example response (request /projects/1/jobs/1/cancel)",
               "replacements": []
             },
             {
@@ -14823,7 +14823,7 @@
       "software_releases": [
         {
           "software": "GitLab Community Edition (self-managed GitLab instance, replaced by the stand-in; its outputs are taken from this release's sources)",
-          "release": "19.5.3 (docker gitlab/gitlab-ce:19.5.3-ce.0, sha256:6863d156a1a477bd6f69fc674b671d0163cd8b06bf63bb17cc4a4a803b78b27c; sources at tag v19.5.3-ee, commit b9b17a44ffb72a85fca47c5416a40a643c42996f)",
+          "release": "19.5.3 (docker gitlab/gitlab-ce:19.5.3-ce.0, sha256:6863d156a1a477bd6f69fc674b671d0163cd8b06bf63bb17cc4a4a803b78b27c; sources at tag v19.5.3-ee, commit 04dbc712e7a99aa9849a6af7d165c9438dcb1a10)",
           "day": "2026-11-07",
           "source": "Docker Hub gitlab/gitlab-ce tags on 2026-11-07: 'latest' and 19.5.3-ce.0 share digest sha256:6863d156..., the newest stable release (GitLab's documented Docker install, 'Install GitLab in a Docker container', uses gitlab/gitlab-ce). The server's README names no GitLab version, and its default instance is gitlab.com (index.js line 1147). That release was run under the confinement and failed (see the stand-in's reason); the GraphQL capture comes from gitlab.com, which runs GitLab at its own current version."
         }
@@ -16226,7 +16226,7 @@
           "software": "Go (go command: go doc, go list)",
           "release": "go1.27.3",
           "day": "2026-11-08",
-          "source": "go.dev lists go1.27.3 as the first stable release (archive go1.27.3.linux-amd64.tar.gz, sha256 65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40); the server's README names Go via `go doc` with no version or install channel, so the latest the project published is taken, installed per https://go.dev/doc/install"
+          "source": "go.dev lists go1.27.3 as the newest stable release (archive go1.27.3.linux-amd64.tar.gz, sha256 65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40); the server's README names Go via `go doc` with no version or install channel, so the latest the project published is taken, installed per https://go.dev/doc/install"
         },
         {
           "software": "CPython (python3, help())",
