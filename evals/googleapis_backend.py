@@ -1,12 +1,13 @@
 """The googleapis responder backend's lifecycle.
 
-A light HTTP responder standing in for the Google API the HTTP tool of the googleapis server calls
-through its base address. It serves the benign upstream only: a fixed JSON body on port 80 under the
-tool's base path. Like the Jenkins responder it is cheap to stand and a singleton on a fixed
-address: stood once and reused across a server's concurrent nuisance runs, reaped by the generic
-orphan sweep, so no lock is held across the yield. The singleton carries no witness nonce, so it
-serves the run-phase benign calls only: a fix-check stands its own witness container of the same
-image on the bridge and subnet exported here.
+A light HTTP responder standing in for the HTTP API the HTTP tool of the googleapis server calls
+through its base address, which the toolbox documentation does not name. On port 80 it answers the
+one user record the benign call reads, in the form of the toolbox's own HTTP tests, and anything
+else with the not-found answer of those tests. Like the Jenkins responder it is cheap to stand and a
+singleton on a fixed address: stood once and reused across a server's concurrent nuisance runs,
+reaped by the generic orphan sweep, so no lock is held across the yield. The singleton carries no
+witness nonce, so it serves the run-phase benign calls only: a fix-check stands its own witness
+container, of an image of its own, on the bridge and subnet exported here.
 
 The audited server reaches the responder as an outbound HTTP request to a bare URL. Its upstream
 address is baked into the run image's own `ENV` at `GOOGLEAPIS_RESPONDER_IP`, so

@@ -1,23 +1,33 @@
-# googleapis/mcp-toolbox run image for the nuisance suite, toolbox 1.10.0. The official toolbox image is
-# distroless (no shell, so no RUN) and COPY/ADD is forbidden here, so the pinned-digest base is a
-# glibc node-slim and the toolbox 1.10.0 binary is fetched by RUN from the release bucket (the version
-# frozen in the URL, as the npm/pip nuisance images freeze theirs). The HTTP tool is configured in
-# the documented tools.yaml form, inlined by RUN: a neutral "fetch a user record" description, the
-# base path /api/v1/users/ in the tool path (where CVE-2026-11720's escape climbs out), and the
-# upstream taken through ${UPSTREAM_URL:default} whose default the ENV below sets to the responder's
-# fixed address, so a fix-check's -e UPSTREAM_URL override wins over this baked default.
-# No COPY/ADD: the fingerprint hashes instructions only, so the binary and tools file are inlined.
+# googleapis/mcp-toolbox 1.10.0 over stdio. The official toolbox image is distroless (no shell, so
+# no RUN) and COPY/ADD is not used here, so the base is a digest-pinned glibc slim image and the
+# release binary is fetched from the channel the README names, checked against the SHA-256 the
+# v1.10.0 release page lists. The configuration is one HTTP source and one HTTP tool in the
+# documented format (docs/en/integrations/http/source.md, docs/en/integrations/http/tools/http-tool.md),
+# the source's baseUrl read from ${UPSTREAM_URL:default} and the ENV below setting it to the
+# address of the backend on the server's closed network.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates \
  && wget -O /usr/local/bin/toolbox https://storage.googleapis.com/mcp-toolbox-for-databases/v1.10.0/linux/amd64/toolbox \
+ && echo '7e15dba09e6f957f64ce5924a0aa06b12cdf83ab26119813b0fa40edab566dd4  /usr/local/bin/toolbox' | sha256sum -c - \
  && chmod +x /usr/local/bin/toolbox \
  && apt-get purge -y wget && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
-RUN printf '%s\n' \
-  'sources:' '  upstream:' '    kind: http' '    baseUrl: ${UPSTREAM_URL:http://198.18.3.2}' \
-  'tools:' '  fetch_record:' '    kind: http' '    source: upstream' '    method: GET' \
-  '    path: /api/v1/users/{{.resource}}' \
-  '    description: Fetch a user record under the users API by its identifier.' \
-  '    pathParams:' '      - name: resource' '        type: string' \
-  '        description: The user record identifier to fetch under the users API.' > /tools.yaml
+RUN cat > /tools.yaml <<'YAML'
+kind: source
+name: upstream
+type: http
+baseUrl: ${UPSTREAM_URL:http://198.18.3.2}
+---
+kind: tool
+name: fetch_record
+type: http
+source: upstream
+method: GET
+path: /api/v1/users/{{.resource}}
+description: Fetch a user record under the users API by its identifier.
+pathParams:
+  - name: resource
+    type: string
+    description: The user record identifier to fetch under the users API.
+YAML
 ENV UPSTREAM_URL=http://198.18.3.2
 ENTRYPOINT ["/usr/local/bin/toolbox", "--stdio", "--config", "/tools.yaml"]

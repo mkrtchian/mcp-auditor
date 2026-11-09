@@ -1,0 +1,6 @@
+# Fix-check-only copy of Dockerfile.googleapis-responder: the same two routes the run's backend
+# answers (GET /api/v1/users/1 and the 404 of any other request), plus the routes the committed
+# fix check of CVE-2026-11720 and CVE-2026-14540 plants its nonce at, all gated on WITNESS_NONCE.
+# The run never builds this image, so nothing of the fix check remains in what a run builds.
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+ENTRYPOINT ["node", "-e", "const http=require('http');const n=process.env.WITNESS_NONCE;const R=process.env.REDIRECT_TARGET;const benign='[{\"name\":\"Alice\"}]';http.createServer((q,r)=>{q.resume();let p=q.url.split('?')[0];try{p=decodeURIComponent(p);}catch(e){}if(n&&p.includes('/admin/secret')){r.writeHead(200,{'content-type':'text/plain'});return r.end(n);}if(n&&R&&p.endsWith('/redirect')){r.writeHead(302,{location:R});return r.end();}if(n&&p==='/sentinel'){r.writeHead(200,{'content-type':'text/plain'});return r.end(n);}if(q.method==='GET'&&q.url==='/api/v1/users/1'){r.writeHead(200,{'Content-Type':'text/plain; charset=utf-8'});return r.end(benign);}r.writeHead(404,{'Content-Type':'text/plain; charset=utf-8','X-Content-Type-Options':'nosniff'});r.end('404 page not found\\n');}).listen(80);"]

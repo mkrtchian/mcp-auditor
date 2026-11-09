@@ -5,7 +5,7 @@ from tests.unit.support.docker_argv import values_after
 LAUNCH_HOST = 123
 
 
-def test_the_responder_sits_on_both_bridges_and_redirects_to_its_private_address():
+def test_the_witness_responder_sits_on_both_bridges_and_redirects_to_its_private_address():
     args = googleapis.responder_args("name", "nonce-value", LAUNCH_HOST)
 
     assert "WITNESS_NONCE=nonce-value" in args
@@ -14,7 +14,8 @@ def test_the_responder_sits_on_both_bridges_and_redirects_to_its_private_address
         f"name={googleapis.INTERNAL_BRIDGE},ip=10.199.0.{LAUNCH_HOST}",
     ]
     assert f"REDIRECT_TARGET=http://10.199.0.{LAUNCH_HOST}/sentinel" in args
-    assert GOOGLEAPIS_RESPONDER_IMAGE in args
+    assert googleapis.WITNESS_RESPONDER_IMAGE in args
+    assert GOOGLEAPIS_RESPONDER_IMAGE not in args
 
 
 def test_the_server_reaches_its_own_responder_on_the_public_address_unprivileged():

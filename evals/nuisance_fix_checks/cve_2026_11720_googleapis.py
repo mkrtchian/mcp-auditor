@@ -9,9 +9,10 @@ build follows. The patched build (1.10.0) rejects the dot segments and blocks th
 private address.
 
 The shared singleton responder cannot carry the witness, since check_fix plants a fresh random
-nonce per exercise: the builder stands its own responder of the same image with that nonce, and
-reaps it when the launch ends. It serves the nonce on both witness routes and on the redirect's
-`/sentinel`, and a benign body elsewhere. It is not the server and carries neither flaw nor fix.
+nonce per exercise: the builder stands its own responder with that nonce, from an image of its own
+that the run never builds (`Dockerfile.googleapis-witness-responder`), and reaps it when the launch
+ends. It serves the nonce on both witness routes and on the redirect's `/sentinel`, and the run
+responder's two answers elsewhere. It is not the server and carries neither flaw nor fix.
 
 The patched build only lets a request through to a public-range address, so the benign call needs
 the responder on one, while the redirect has to land on a private one for the patched build to block
@@ -39,10 +40,10 @@ from evals.cve_planting import (
     unprivileged_user_args,
 )
 from evals.cve_planting_base import LABEL, own_network_args
+from evals.docker_paths import DOCKER_DIRECTORY
 from evals.googleapis_backend import (
     GOOGLEAPIS_BRIDGE,
     GOOGLEAPIS_LAUNCH_LOCK,
-    GOOGLEAPIS_RESPONDER_IMAGE,
     GOOGLEAPIS_SUBNET,
     ensure_googleapis_responder,
     googleapis_rm,
@@ -53,6 +54,9 @@ from evals.holdout_kit.kit_launch import Launch, LaunchShape
 
 INTERNAL_BRIDGE = "mcp-auditor-cve-googleapis-internal-bridge"
 INTERNAL_SUBNET = "10.199.0.0/24"
+# Its own image, so the run's responder carries none of the routes below.
+WITNESS_RESPONDER_IMAGE = "mcp-auditor-cve-googleapis-witness-responder:local"
+WITNESS_RESPONDER_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.googleapis-witness-responder"
 
 WITNESS = Place(
     id="googleapis-witness",
@@ -85,7 +89,7 @@ def responder_args(name: str, nonce: str, launch_host: int) -> list[str]:
         "--cap-add", "NET_BIND_SERVICE",
         "-e", f"WITNESS_NONCE={nonce}",
         "-e", f"REDIRECT_TARGET=http://{_address(INTERNAL_SUBNET, launch_host)}/sentinel",
-        GOOGLEAPIS_RESPONDER_IMAGE,
+        WITNESS_RESPONDER_IMAGE,
     ]  # fmt: skip
 
 
@@ -110,6 +114,7 @@ def googleapis_env(
     with GOOGLEAPIS_LAUNCH_LOCK:
         ensure_googleapis_responder()
         ensure_closed_network(INTERNAL_BRIDGE, "--subnet", INTERNAL_SUBNET)
+        _ensure_witness_responder_image()
     name = f"mcp-auditor-kit-googleapis-r-{secrets.token_hex(4)}"
     launch_host = _per_launch_host()
     try:
@@ -122,6 +127,18 @@ def googleapis_env(
         yield Launch(command="docker", args=server_args(image, launch_host))
     finally:
         googleapis_rm(name)
+
+
+def _ensure_witness_responder_image() -> None:
+    present = subprocess.run(
+        ["docker", "image", "inspect", WITNESS_RESPONDER_IMAGE], capture_output=True, check=False
+    )
+    if present.returncode != 0:
+        subprocess.run(
+            ["docker", "build", "-t", WITNESS_RESPONDER_IMAGE,
+             "-f", str(WITNESS_RESPONDER_DOCKERFILE), str(DOCKER_DIRECTORY)],
+            check=True, capture_output=True, timeout=600,
+        )  # fmt: skip
 
 
 def _per_launch_host() -> int:

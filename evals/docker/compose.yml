@@ -1076,7 +1076,7 @@ services:
       context: .
       dockerfile: Dockerfile.googleapis
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "4ca12a7f6ed5cd6c68db5c556d64b3c9aaa001b36fd015cf62e7035b5ed225ac"
+        org.mcp-auditor.dockerfile-fingerprint: "abad2ea0b1496745f24ca8c34f4915736574f32b78a9170bfb6d3b64ae497dee"
     image: mcp-auditor-nuisance-googleapis:local
     profiles: ["nuisance"]
 
@@ -1341,7 +1341,7 @@ services:
       context: .
       dockerfile: Dockerfile.googleapis-responder
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "f2467563776a0795f7ba000ecc14a14cba124bc1c0c4803f9e157ea921344d1c"
+        org.mcp-auditor.dockerfile-fingerprint: "0a664a790c685c5d1f1c0286b4553a59441c696a9d0318ff8130cc4077744ff6"
     image: mcp-auditor-cve-googleapis-responder:local
     profiles: ["nuisance"]
 

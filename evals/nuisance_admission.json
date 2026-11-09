@@ -11694,7 +11694,13 @@
             {
               "vulnerable_name": "fetch_record",
               "patched_name": "fetch_record",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -11706,7 +11712,9 @@
               "tool": "fetch_record",
               "arguments": {
                 "resource": "1"
-              }
+              },
+              "expect": "\"name\"",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -11720,7 +11728,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11729,7 +11738,13 @@
             {
               "vulnerable_name": "fetch_record",
               "patched_name": "fetch_record",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -11741,7 +11756,9 @@
               "tool": "fetch_record",
               "arguments": {
                 "resource": "1"
-              }
+              },
+              "expect": "\"name\"",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -11755,7 +11772,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11775,7 +11793,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11795,7 +11814,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11815,7 +11835,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11835,7 +11856,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11855,7 +11877,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11875,7 +11898,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11895,7 +11919,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11915,7 +11940,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11935,7 +11961,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11955,7 +11982,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11975,7 +12003,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -11995,7 +12024,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -12023,9 +12053,150 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-11720",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-11720",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-11720",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-11720",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-11720",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-11720",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-14540",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-14540",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-14540",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-14540",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-14540",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-14540",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-102242",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-102242",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-16481",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-16481",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-15829",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-15829",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-14538",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-14538",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        }
+      ],
       "settlements": [
         {
           "server_package": "Go:github.com/googleapis/mcp-toolbox",
@@ -12040,20 +12211,6 @@
           "field": "patched_version",
           "value": "1.10.0",
           "reason": "OSV gives first fixed 1.5.0 for CVE-2026-14540 (the SSRF redirect guard, #3448); the recorded patched_version is the 1.10.0 run image, the first version past every version-setting flaw of the server, which also carries this fix"
-        },
-        {
-          "server_package": "Go:github.com/googleapis/mcp-toolbox",
-          "flaw": "CVE-2026-11720",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "the HTTP tool's declared function is a bounded fetch under the /api/v1/users/ base path; the ../../../admin/secret escape out of that base path is a scope violation, not the declared read, so dfie is false"
-        },
-        {
-          "server_package": "Go:github.com/googleapis/mcp-toolbox",
-          "flaw": "CVE-2026-14540",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "the configured upstream is the bounded target; following its redirect off-origin to an internal address is the SSRF, not the declared fetch, so dfie is false"
         },
         {
           "server_package": "Go:github.com/googleapis/mcp-toolbox",
@@ -12103,9 +12260,105 @@
           "field": "server_package",
           "value": "Go:github.com/googleapis/mcp-toolbox",
           "reason": "CVE-2026-14541 is classified by the census under the spelling https://github.com/googleapis/mcp-toolbox; it is the same googleapis/mcp-toolbox server as this entry's Go module package, unified here"
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record B's: the HTTP API the toolbox's http source reaches, answered by the googleapis backend responder on port 80, GET /api/v1/users/1 with a body invented in the form of a user lookup of the toolbox's own HTTP tests and any other request with the not-found answer of those tests",
+          "reason": "the real software runs first and a stand-in follows the sources in order: the toolbox documentation names no API software for its http source (its example base URL is a placeholder host), so no program is there to run, and the toolbox's own tests, the first source in order that holds an answer, give the form of the user lookup and the not-found answer. Record A ran JSONPlaceholder 0.3.3, a third-party fake REST API that neither the toolbox's documentation nor its tests name, and is not kept."
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the /tools.yaml of the run image, one http source and the one http tool fetch_record, written in the documented format",
+          "reason": "the seeds follow the retained fixture: record A's JSONPlaceholder data.json goes with its backend, and its tools.yaml moved the tool's path and port to JSONPlaceholder's route, which the retained responder does not serve."
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "none",
+          "reason": "a release is recorded for the real software a fixture runs: the retained responder stands in for an API the documentation does not name, so no release applies, and record A's JSONPlaceholder 0.3.3 goes with its backend."
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": "CVE-2026-11720",
+          "field": "benign_calls",
+          "value": "record B's: fetch_record with resource 1, expecting the fixed key \"name\" of the responder's answer",
+          "reason": "the benign call follows the retained stand-in: both records make the same call, record A expecting a name from JSONPlaceholder's sample, which the retained responder does not serve."
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": "CVE-2026-14540",
+          "field": "benign_calls",
+          "value": "record B's: fetch_record with resource 1, expecting the fixed key \"name\" of the responder's answer",
+          "reason": "the benign call follows the retained stand-in: both records make the same call, record A expecting a name from JSONPlaceholder's sample, which the retained responder does not serve."
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": "CVE-2026-102242",
+          "field": "benign_calls",
+          "value": "none",
+          "reason": "both records add upload_object, download_object under this flaw; left out of its tools: no source gives this flaw a patched version and no fix check clears a release of it, so it is never fixed, sets no version and its tools do not count; their benign calls, which need a Google Cloud project and credentials, could not be played on the run's closed network either; the records' differing calls are not kept."
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": "CVE-2026-16481",
+          "field": "benign_calls",
+          "value": "none",
+          "reason": "both records add fhir_fetch_page under this flaw; left out of its tools: no source gives this flaw a patched version and no fix check clears a release of it, so it is never fixed, sets no version and its tools do not count; their benign calls, which need a Google Cloud project and credentials, could not be played on the run's closed network either; the records' differing calls are not kept."
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": "CVE-2026-15829",
+          "field": "benign_calls",
+          "value": "none",
+          "reason": "both records add forecast, analyze_contribution under this flaw; left out of its tools: no source gives this flaw a patched version and no fix check clears a release of it, so it is never fixed, sets no version and its tools do not count; their benign calls, which need a Google Cloud project and credentials, could not be played on the run's closed network either; the records' differing calls are not kept."
+        },
+        {
+          "server_package": "Go:github.com/googleapis/mcp-toolbox",
+          "flaw": "CVE-2026-14538",
+          "field": "benign_calls",
+          "value": "none",
+          "reason": "both records add execute_sql under this flaw; left out of its tools: no source gives this flaw a patched version and no fix check clears a release of it, so it is never fixed, sets no version and its tools do not count; their benign calls, which need a Google Cloud project and credentials, could not be played on the run's closed network either; the records' differing calls are not kept."
         }
       ],
-      "patched_version": "1.10.0"
+      "patched_version": "1.10.0",
+      "stand_ins": [
+        {
+          "replaces": "the HTTP API that the `upstream` http source of the toolbox reaches at its baseUrl (an operator's web API), on port 80 of the server's closed network",
+          "reason": "The toolbox documentation names no API software for the http source (docs/en/integrations/http/source.md gives the placeholder https://api.example.com/data) and its tests answer from an in-process httptest handler (multiTool), so there is no program to install and run; the API is replaced at the interface the toolbox speaks to it, plain HTTP, as a backend container within the memory bound. The toolbox itself, the software in the container, runs for real.",
+          "file": "evals/docker/Dockerfile.googleapis-responder",
+          "capture": null,
+          "outputs": [
+            {
+              "request": "GET /api/v1/users/1",
+              "source": "invented",
+              "citation": "no capture, documentation or test of the toolbox holds an answer for this path; body [{\"name\":\"Alice\"}], status 200, Content-Type text/plain; charset=utf-8 (the type Go sniffs for that body)",
+              "form_source": "tests/http/http_mcp_test.go of googleapis/mcp-toolbox v1.10.0 (commit 21f972ffd4db17e09087725bc4d72e1f61e4eef8), handleTool2, line 189: the answer of a GET that looks one user up by a key",
+              "replacements": []
+            },
+            {
+              "request": "404 page not found",
+              "source": "server_tests",
+              "citation": "any other request (any other method or path): tests/http/http_mcp_test.go of googleapis/mcp-toolbox v1.10.0 (commit 21f972ffd4db17e09087725bc4d72e1f61e4eef8), multiTool line 66: http.NotFound for an unknown path, i.e. Go net/http NotFound: status 404, body '404 page not found' and a newline, headers Content-Type text/plain; charset=utf-8 and X-Content-Type-Options nosniff",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "/tools.yaml of the run image: one http source `upstream` (baseUrl ${UPSTREAM_URL:http://198.18.3.2}, the ENV setting the backend's address) and one http tool `fetch_record` (GET /api/v1/users/{{.resource}}, its description and its pathParam `resource`)",
+          "kind": "written",
+          "citation": "values written for the fixture, in the documented format of docs/en/integrations/http/source.md and docs/en/integrations/http/tools/http-tool.md (v1.10.0); the toolbox publishes no sample configuration for the http source, and the tool name, path and descriptions are the committed ones, kept so the committed fix check stays valid",
+          "pin": "v1.10.0"
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "npm:@zereight/mcp-gitlab",
