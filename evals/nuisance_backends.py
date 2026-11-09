@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from evals import (
-    apify_backend,
     atlassian_backend,
     ckan_backend,
     closed_network,
@@ -30,11 +29,9 @@ from evals import (
     neo4j_backend,
     responder_backend,
 )
-from evals.apify_backend import API_HOST, APIFY_BRIDGE, APIFY_RESPONDER_IMAGE
 from evals.atlassian_backend import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
 from evals.backend_lifecycle import BackendLifecycle
 from evals.ckan_backend import CKAN_BRIDGE, CKAN_IMAGE, CKAN_PARTS, MOUNTED_FILES
-from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.cve_targets import image_tag
 from evals.docker_paths import image_dockerfile
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
@@ -45,7 +42,6 @@ from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMA
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
 from evals.n8n_backend import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
 from evals.neo4j_backend import NEO4J_BRIDGE, NEO4J_IMAGE
-from evals.public_stand_ins import stand_in_files
 
 if TYPE_CHECKING:
     from evals.nuisance_admission import AdmittedServer
@@ -72,7 +68,6 @@ def _responder(
     return RegisteredBackend(lifecycle, network, image, (service,), served)
 
 
-_API_STAND_IN_FILES = stand_in_files(API_HOST)
 _CKAN_SERVICES = tuple(part.service for part in CKAN_PARTS)
 
 BACKENDS: dict[str, RegisteredBackend] = {
@@ -99,18 +94,6 @@ BACKENDS: dict[str, RegisteredBackend] = {
         ATLASSIAN_BRIDGE,
         ATLASSIAN_RESPONDER_IMAGE,
         "atlassian-responder",
-    ),
-    "apify": RegisteredBackend(
-        apify_backend.LIFECYCLE,
-        APIFY_BRIDGE,
-        APIFY_RESPONDER_IMAGE,
-        ("apify-responder", STAND_IN_SERVICE),
-        (
-            *_served(apify_backend.__file__, "apify-responder", STAND_IN_SERVICE),
-            Path(responder_backend.__file__),
-            _API_STAND_IN_FILES.capture,
-            _API_STAND_IN_FILES.certificate,
-        ),
     ),
     "jenkins": _responder(
         jenkins_backend.LIFECYCLE,

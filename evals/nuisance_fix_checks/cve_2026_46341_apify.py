@@ -6,11 +6,12 @@ fetch-apify-docs only fetches documentation URLs from Apify and Crawlee. In the 
 reach = internal_fetch. 0.9.21 parses the URL and compares its hostname to a set, so the same URL
 is rejected before any fetch.
 
-The shared singleton responder cannot carry the witness, since check_fix plants a fresh random
-nonce per exercise: the builder stands its own responder of the same image with that nonce, on the
-backend's bridge, and reaps it when the launch ends. The responder serves the nonce on the suffix
-host and a fixed benign page on docs.apify.com. It is not the server and carries neither the flaw
-nor the fix.
+The run serves no suffix host, and check_fix plants a fresh random nonce per exercise: the builder
+stands its own responder with that nonce on the backend's bridge, pins the suffix host to it, and
+reaps it when the launch ends. The responder serves its own page carrying the nonce, never what it
+is sent. docs.apify.com is the backend's stand-in, replaying its capture. The responder's
+certificate is self-signed, so this launch alone turns off Node's certificate check
+(NODE_TLS_REJECT_UNAUTHORIZED=0). It is not the server and carries neither the flaw nor the fix.
 """
 
 import re
@@ -24,6 +25,7 @@ from evals.apify_backend import (
     APIFY_BENIGN_HOST,
     APIFY_BRIDGE,
     APIFY_LAUNCH_LOCK,
+    APIFY_RESPONDER_DOCKERFILE,
     APIFY_RESPONDER_IMAGE,
     APIFY_SUBNET,
     APIFY_SUFFIX_HOST,
@@ -84,7 +86,9 @@ def server_args(image: str, responder_address: str) -> list[str]:
         "run", "-i", "--rm",
         *confinement_args(),
         *own_network_args(APIFY_BRIDGE),
-        *apify_network_args(responder_address),
+        *apify_network_args(),
+        "--add-host", f"{APIFY_SUFFIX_HOST}:{responder_address}",
+        "-e", "NODE_TLS_REJECT_UNAUTHORIZED=0",
         *unprivileged_user_args(),
         "-w", HOST.working_directory,
         image,
@@ -98,6 +102,7 @@ def apify_env(
 ) -> Generator[Launch]:
     with APIFY_LAUNCH_LOCK:
         ensure_apify_responder()
+    _ensure_responder_image()
     name = f"mcp-auditor-kit-apify-r-{secrets.token_hex(4)}"
     address = _per_launch_address()
     try:
@@ -110,6 +115,18 @@ def apify_env(
         yield Launch(command="docker", args=server_args(image, address))
     finally:
         apify_rm(name)
+
+
+def _ensure_responder_image() -> None:
+    present = subprocess.run(
+        ["docker", "image", "inspect", APIFY_RESPONDER_IMAGE], capture_output=True, check=False
+    )
+    if present.returncode != 0:
+        subprocess.run(
+            ["docker", "build", "-t", APIFY_RESPONDER_IMAGE, "-f", str(APIFY_RESPONDER_DOCKERFILE),
+             str(APIFY_RESPONDER_DOCKERFILE.parent)],
+            check=True, capture_output=True, timeout=600.0,
+        )  # fmt: skip
 
 
 def _per_launch_address() -> str:
@@ -125,7 +142,7 @@ async def _exploit_suffix_host(places: Places, client: KitClient) -> None:
 
 
 async def _benign_documentation_page(places: Places, client: KitClient) -> None:
-    await client.call_tool(_TOOL, {"url": f"https://{APIFY_BENIGN_HOST}/platform/actors.md"})
+    await client.call_tool(_TOOL, {"url": f"https://{APIFY_BENIGN_HOST}/academy"})
 
 
 TARGET = FixCheckTarget(

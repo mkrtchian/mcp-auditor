@@ -1,0 +1,275 @@
+{
+  "host": "docs.apify.com",
+  "address": "13.249.228.107",
+  "source": "capture",
+  "captured_at": "2026-11-07T21:47:03Z",
+  "command": "uv run python -m evals.capture_stand_in --out proposed/evals/stand_ins/docs.apify.com.json https://docs.apify.com/academy.md",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/academy.md",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "text/markdown; charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "3170"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Sat, 07 Nov 2026 21:45:16 GMT"
+        ],
+        [
+          "X-Fastly-Request-ID",
+          "2eb844bb469f61bdfff37f798d1db7451b51099b"
+        ],
+        [
+          "Server",
+          "nginx"
+        ],
+        [
+          "x-origin-cache",
+          "HIT"
+        ],
+        [
+          "Last-Modified",
+          "Fri, 06 Nov 2026 14:09:56 GMT"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31556952"
+        ],
+        [
+          "ETag",
+          "\"6aeddfb4-c62\""
+        ],
+        [
+          "Expires",
+          "Sat, 07 Nov 2026 21:55:16 GMT"
+        ],
+        [
+          "Cache-Control",
+          "max-age=600"
+        ],
+        [
+          "x-proxy-cache",
+          "MISS"
+        ],
+        [
+          "X-GitHub-Request-Id",
+          "F05E:34F13B:18B9980:1AE93DC:6AEF9BEC"
+        ],
+        [
+          "x-github-edge-region",
+          "iad"
+        ],
+        [
+          "Accept-Ranges",
+          "bytes"
+        ],
+        [
+          "Via",
+          "1.1 varnish, 1.1 5ac16a07256e60b0c3eff017956643ee.cloudfront.net (CloudFront)"
+        ],
+        [
+          "X-Served-By",
+          "cache-iad-khef600052-IAD"
+        ],
+        [
+          "X-Frame-Options",
+          "SAMEORIGIN"
+        ],
+        [
+          "X-Cache-Hits",
+          "0"
+        ],
+        [
+          "X-Timer",
+          "S1794087916.341570,VS0,VE14"
+        ],
+        [
+          "Vary",
+          "Accept-Encoding"
+        ],
+        [
+          "X-Cache",
+          "Hit from cloudfront"
+        ],
+        [
+          "X-Amz-Cf-Pop",
+          "CDG50-P6"
+        ],
+        [
+          "X-Amz-Cf-Id",
+          "BUFikmGllx08UxmgwzMH3QA-5H-d1Mykmv4QS_z3jRqcjMvXkpe1hQ=="
+        ],
+        [
+          "Age",
+          "107"
+        ]
+      ],
+      "body": "---\ntitle: Apify Academy\nurl: https://docs.apify.com/academy.md\nparents:\n  - [Apify documentation](https://docs.apify.com/llms.txt)\n---\n\n> ## Documentation index\n> Fetch the complete documentation index at: https://docs.apify.com/llms.txt\n> Use this file to discover all available pages before exploring further.\n\n# Apify Academy\n\nLearn everything about web scraping and automation with our free courses that will turn you into an expert scraper developer.\n\n## Beginner courses\n\nhttps://docs.apify.com/academy/scraping-with-ai.md\n\n#### [Web scraping with AI](https://docs.apify.com/academy/scraping-with-ai.md)\n\n[Learn how to use AI to extract information from websites in this practical course, starting from the absolute basics.](https://docs.apify.com/academy/scraping-with-ai.md)\n\nhttps://docs.apify.com/academy/scraping-basics-javascript.md\n\n#### [Web scraping basics with JS](https://docs.apify.com/academy/scraping-basics-javascript.md)\n\n[Learn how to use JavaScript to extract information from websites in this practical course, starting from the absolute basics.](https://docs.apify.com/academy/scraping-basics-javascript.md)\n\nhttps://docs.apify.com/academy/scraping-basics-python.md\n\n#### [Web scraping basics with Python](https://docs.apify.com/academy/scraping-basics-python.md)\n\n[Learn how to use Python to extract information from websites in this practical course, starting from the absolute basics.](https://docs.apify.com/academy/scraping-basics-python.md)\n\nhttps://docs.apify.com/academy/apify-platform.md\n\n#### [Apify platform](https://docs.apify.com/academy/apify-platform.md)\n\n[The Apify platform is the best place to run your scrapers and automations in the cloud. Learn what an actor is, how to turn your program into an actor, and how to deploy it.](https://docs.apify.com/academy/apify-platform.md)\n\n## Advanced web scraping courses\n\nhttps://docs.apify.com/academy/api-scraping.md\n\n#### [API scraping](https://docs.apify.com/academy/api-scraping.md)\n\n[Learn all about how the professionals scrape various types of APIs with various configurations, parameters, and requirements.](https://docs.apify.com/academy/api-scraping.md)\n\nhttps://docs.apify.com/academy/puppeteer-playwright.md\n\n#### [Puppeteer and Playwright](https://docs.apify.com/academy/puppeteer-playwright.md)\n\n[Learn in-depth how to use two of the most popular Node.js libraries for controlling a headless browser - Puppeteer and Playwright.](https://docs.apify.com/academy/puppeteer-playwright.md)\n\nhttps://docs.apify.com/academy/anti-scraping.md\n\n#### [Anti-scraping protections](https://docs.apify.com/academy/anti-scraping.md)\n\n[Understand the various anti-scraping measures different sites use to prevent bots from accessing them, and how to appear more human to fix these issues.](https://docs.apify.com/academy/anti-scraping.md)\n\nhttps://docs.apify.com/academy/expert-scraping-with-apify.md\n\n#### [Expert scraping with Apify](https://docs.apify.com/academy/expert-scraping-with-apify.md)\n\n[After learning the basics of actors, learn to develop pro-level scrapers on the Apify platform with this advanced course.](https://docs.apify.com/academy/expert-scraping-with-apify.md)\n"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/e0dedf2794647f15",
+      "status": 301,
+      "headers": [
+        [
+          "Server",
+          "CloudFront"
+        ],
+        [
+          "Date",
+          "Sat, 07 Nov 2026 21:47:03 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html"
+        ],
+        [
+          "Content-Length",
+          "167"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Location",
+          "https://docs.apify.com/e0dedf2794647f15"
+        ],
+        [
+          "X-Cache",
+          "Redirect from cloudfront"
+        ],
+        [
+          "Via",
+          "1.1 5a846dcecbd8f1da6a7cd974344e91fa.cloudfront.net (CloudFront)"
+        ],
+        [
+          "X-Amz-Cf-Pop",
+          "CDG50-P6"
+        ],
+        [
+          "X-Amz-Cf-Id",
+          "law_w55Sogxg0vIx6eefb2s2velMjpj2_Zr3pIyYP7Y7-F5dHb_poA=="
+        ]
+      ],
+      "body": "<html>\r\n<head><title>301 Moved Permanently</title></head>\r\n<body>\r\n<center><h1>301 Moved Permanently</h1></center>\r\n<hr><center>CloudFront</center>\r\n</body>\r\n</html>\r\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/e0dedf2794647f15",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "text/html; charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "27022"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Sat, 07 Nov 2026 21:47:03 GMT"
+        ],
+        [
+          "Server",
+          "nginx"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31556952"
+        ],
+        [
+          "ETag",
+          "\"6aeddfb3-698e\""
+        ],
+        [
+          "x-proxy-cache",
+          "MISS"
+        ],
+        [
+          "X-GitHub-Request-Id",
+          "4F20:85859:B9B51C:EBD143:6AEF9C56"
+        ],
+        [
+          "x-github-edge-region",
+          "iad"
+        ],
+        [
+          "Accept-Ranges",
+          "bytes"
+        ],
+        [
+          "Via",
+          "1.1 varnish, 1.1 5ac16a07256e60b0c3eff017956643ee.cloudfront.net (CloudFront)"
+        ],
+        [
+          "X-Served-By",
+          "cache-iad-khef600037-IAD"
+        ],
+        [
+          "X-Fastly-Request-ID",
+          "feeaeeca3bd929ea5b208ff9658e88064bd1016f"
+        ],
+        [
+          "X-Cache-Hits",
+          "0"
+        ],
+        [
+          "X-Timer",
+          "S1794088023.317411,VS0,VE20"
+        ],
+        [
+          "Vary",
+          "Accept-Encoding"
+        ],
+        [
+          "X-Cache",
+          "Error from cloudfront"
+        ],
+        [
+          "X-Amz-Cf-Pop",
+          "CDG50-P6"
+        ],
+        [
+          "X-Amz-Cf-Id",
+          "eCW6sF6T5SqycVXLgJ1jvyrnlg_RjFrSIiU5bdCisUsKC7-g2h1Ktg=="
+        ],
+        [
+          "Age",
+          "0"
+        ]
+      ],
+      "body": "<!doctype html><html lang=en dir=ltr class=\"docs-wrapper plugin-docs plugin-id-platform docs-version-current\" data-has-hydrated=false><head><meta charset=UTF-8><meta name=generator content=\"Docusaurus v3.10.2\"><title data-rh=true>Apify Documentation</title><meta data-rh=true property=og:title content=\"Apify Documentation\"/><meta data-rh=true name=viewport content=\"width=device-width, initial-scale=1.0\"/><meta data-rh=true name=twitter:card content=summary_large_image /><meta data-rh=true property=og:image content=https://apify.com/og-image/docs-article /><meta data-rh=true name=twitter:image content=https://apify.com/og-image/docs-article /><meta data-rh=true property=og:url content=https://docs.apify.com/404.html /><meta data-rh=true property=og:locale content=en /><meta data-rh=true name=docusaurus_locale content=en /><meta data-rh=true name=docsearch:language content=en /><meta data-rh=true name=docusaurus_version content=latest /><meta data-rh=true name=docusaurus_tag content=default-latest /><meta data-rh=true name=docsearch:version content=latest /><meta data-rh=true name=docsearch:docusaurus_tag content=default-latest /><meta data-rh=true name=docsearch:section content=apify-docs /><meta data-rh=true name=docsearch:section_tag content=docs-platform-current /><link data-rh=true rel=canonical href=https://docs.apify.com/404.html /><link data-rh=true rel=alternate href=https://docs.apify.com/404.html hreflang=en /><link data-rh=true rel=alternate href=https://docs.apify.com/404.html hreflang=x-default /><link rel=search type=application/opensearchdescription+xml title=\"Apify Documentation\" href=/opensearch.xml><script src=https://cdn.cookielaw.org/scripttemplates/otSDKStub.js type=text/javascript charset=UTF-8 data-domain-script=7a8d334b-f744-4c02-9931-92861196dd3c></script><script type=text/javascript>function OptanonWrapper(){}</script><script src=https://cdn.jsdelivr.net/npm/@segment/analytics-consent-wrapper-onetrust@latest/dist/umd/analytics-onetrust.umd.js></script><script>!function(){var e=\"analytics\",t=window[e]=window[e]||[];if(!t.initialize)if(t.invoked)window.console&&console.error&&console.error(\"Segment snippet included twice.\");else{t.invoked=!0,t.methods=[\"trackSubmit\",\"trackClick\",\"trackLink\",\"trackForm\",\"pageview\",\"identify\",\"reset\",\"group\",\"track\",\"ready\",\"alias\",\"debug\",\"page\",\"screen\",\"once\",\"off\",\"on\",\"addSourceMiddleware\",\"addIntegrationMiddleware\",\"setAnonymousId\",\"addDestinationMiddleware\",\"register\"],t.factory=function(i){return function(){if(window[e].initialized)return window[e][i].apply(window[e],arguments);var n=Array.prototype.slice.call(arguments);if([\"track\",\"screen\",\"alias\",\"group\",\"page\",\"identify\"].indexOf(i)>-1){var a=document.querySelector(\"link[rel='canonical']\");n.push({__t:\"bpc\",c:a&&a.getAttribute(\"href\")||void 0,p:location.pathname,u:location.href,s:location.search,t:document.title,r:document.referrer})}return n.unshift(i),t.push(n),t}};for(var i=0;i<t.methods.length;i++){var n=t.methods[i];t[n]=t.factory(n)}t.load=function(i,n){var a=document.createElement(\"script\");a.type=\"text/javascript\",a.async=!0,a.setAttribute(\"data-global-segment-analytics-key\",e),a.src=\"https://cdn.segment.com/analytics.js/v1/\"+i+\"/analytics.min.js\";var r=document.getElementsByTagName(\"script\")[0];r.parentNode.insertBefore(a,r),t._loadOptions=n},t._writeKey=\"6q8VGDubmTSIhc4co1fNpLxsZ4IGczJ4\",t.SNIPPET_VERSION=\"5.2.0\",withOneTrust(t.load(\"6q8VGDubmTSIhc4co1fNpLxsZ4IGczJ4\",{integrations:{\"Segment.io\":{apiHost:\"analytics.apify.com/v1\"}}}))}}()</script><!-- Google Tag Manager --><script>!function(e,t,a,n,r){e[n]=e[n]||[],e[n].push({\"gtm.start\":new Date().getTime(),event:\"gtm.js\"});var g=t.getElementsByTagName(a)[0],m=t.createElement(a);m.async=!0,m.src=\"https://www.googletagmanager.com/gtm.js?id=\"+r+(\"dataLayer\"!=n?\"&l=\"+n:\"\"),g.parentNode.insertBefore(m,g)}(window,document,\"script\",\"dataLayer\",\"GTM-MNGXGGB\")</script><!-- End Google Tag Manager --><script async defer type=text/javascript id=hs-script-loader src=//js.hs-scripts.com/19497222.js></script><link rel=icon href=/img/favicon.ico type=image/x-icon size=48x48><link rel=icon href=/img/favicon.svg type=image/svg+xml sizes=any><script>window.intercomSettings={api_base:\"https://api-iam.intercom.io\",app_id:\"kod1r788\"}</script><script>!function(){var t=window,e=t.Intercom;if(\"function\"==typeof e)e(\"reattach_activator\"),e(\"update\",t.intercomSettings);else{var n=document,a=function(){a.c(arguments)};a.q=[],a.c=function(t){a.q.push(t)},t.Intercom=a;var c=function(){var t=n.createElement(\"script\");t.type=\"text/javascript\",t.async=!0,t.src=\"https://widget.intercom.io/widget/kod1r788\";var e=n.getElementsByTagName(\"script\")[0];e.parentNode.insertBefore(t,e)};\"complete\"===document.readyState?c():t.attachEvent?t.attachEvent(\"onload\",c):t.addEventListener(\"load\",c,!1)}}()</script><script src=/js/custom.js></script><script src=https://apify.com/ext/bootstrap.js async></script><script src=https://widget.kapa.ai/kapa-widget.bundle.js data-website-id=a9937f98-9c9d-44d9-a433-fec4cb1c114d data-project-name=Apify data-modal-title=\"Apify Docs Assistant\" data-project-color=#666666 data-button-hide=true data-project-logo=https://apify.com/img/apify-logo/logomark-32x32.svg data-modal-example-questions=\"How to run an Actor?,Create a version of an Actor?\" data-modal-override-open-id=ask-ai-input data-modal-override-open-class=search-input data-scale-factor=1.6 data-modal-size=800px async></script><link rel=stylesheet href=/assets/css/styles.e2fb7e83.css /><script src=/assets/js/runtime~main.6e596feb.js defer></script><script src=/assets/js/main.7ffc03c9.js defer></script></head><body><svg style=\"display: none;\"><defs>\n<symbol id=theme-svg-external-link viewBox=\"0 0 24 24\"><path fill=currentColor d=\"M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z\"/></symbol>\n</defs></svg>\n<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get(\"docusaurus-theme\")}catch(t){}}()||function(){try{return window.localStorage.getItem(\"theme\")}catch(t){}}();document.documentElement.setAttribute(\"data-theme\",t||(window.matchMedia(\"(prefers-color-scheme: dark)\").matches?\"dark\":\"light\")),document.documentElement.setAttribute(\"data-theme-choice\",t||\"system\")}(),function(){try{for(var[t,e]of new URLSearchParams(window.location.search).entries())if(t.startsWith(\"docusaurus-data-\")){var a=t.replace(\"docusaurus-data-\",\"data-\");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id=__docusaurus><link rel=preload as=image href=/img/apify_sdk.svg /><link rel=preload as=image href=/img/apify_sdk_white.svg /><style>html[data-theme=dark]{--color-neutral-text:#dfdfdf;--color-neutral-text-muted:#a3a3a3;--color-neutral-text-subtle:#888;--color-neutral-text-disabled:#454545;--color-neutral-text-on-primary:#161616;--color-neutral-icon-on-primary:#161616;--color-neutral-background:#020202;--color-neutral-background-muted:#0f0f0f;--color-neutral-background-subtle:#1d1d1d;--color-neutral-background-white:#f3f3f3;--color-neutral-card-background:#0f0f0f;--color-neutral-card-background-hover:#1d1d1d;--color-neutral-border:#2a2a2a;--color-neutral-separator-subtle:#1d1d1d;--color-neutral-hover:#313131;--color-neutral-on-surface:#6d717838;--color-neutral-disabled:#383838;--color-neutral-overflow:#2a2a2a;--color-neutral-icon:#d8d8d8;--color-neutral-icon-subtle:#6d6d6d;--color-neutral-icon-disabled:#454545;--color-neutral-field-border:#454545;--color-neutral-action-secondary:#2a2a2a;--color-neutral-action-secondary-hover:#454545;--color-neutral-action-secondary-active:#454545;--color-neutral-chip-background:#606060;--color-neutral-chip-background-hover:#7b7b7b;--color-neutral-chip-background-active:#959595;--color-neutral-chip-background-disabled:#959595;--color-neutral-large-tooltip-background:#2a2a2a;--color-neutral-large-tooltip-border:#383838;--color-neutral-small-tooltip-text:#fff;--color-neutral-small-tooltip-background:#2a2a2a;--color-neutral-small-tooltip-border:#383838;--color-neutral-overlay:#090909b3;--color-neutral-field-background:#0f0f0f;--color-neutral-text-placeholder:#7b7b7b;--color-primary-text:#6b9fff;--color-primary-text-interactive:#6b9fff;--color-primary-icon:#246dff;--color-primary-action:#528fff;--color-primary-action-hover:#7aa8ff;--color-primary-action-active:#246dff;--color-primary-field-border-active:#246dff;--color-primary-border-subtle:#1e52e0;--color-primary-background:#152447;--color-primary-background-subtle:#0f192f;--color-primary-background-hover:#1d41af;--color-primary-chip-background:#152447;--color-primary-chip-background-subtle:#0f192f;--color-primary-chip-background-hover:#1d41af;--color-primary-chip-text:#97bcff;--color-primary-shadow-active:#1e52e0;--color-primary-black-action:#fff;--color-primary-black-action-hover:#d2d3d6;--color-primary-black-action-active:#f4f4f5;--color-primary-black-background:#f4f4f5;--color-primary-black-background-hover:#edeeef;--color-primary-black-chip-text:#0a0a0b;--color-success-text:#3bb358;--color-success-icon:#23a64a;--color-success-background:#14441f;--color-success-background-hover:#00531e;--color-success-background-subtle:#09260f;--color-success-background-subtle-hover:#14441f;--color-success-background-subtle-active:#006e29;--color-success-chip-background:#14441f;--color-success-chip-background-hover:#00531e;--color-success-chip-text:#6ccd7c;--color-success-border:#068a35;--color-success-border-subtle:#006e29;--color-success-action:#23a64a;--color-success-action-hover:#3bb358;--color-success-action-active:#068a35;--color-warning-text:#f9ce4b;--color-warning-icon:#f9ce4b;--color-warning-background:#5d2e0e;--color-warning-background-hover:#6d3806;--color-warning-background-subtle:#301806;--color-warning-chip-background:#5d2e0e;--color-warning-chip-background-hover:#6d3806;--color-warning-chip-text:#ffd761;--color-warning-border:#a56909;--color-warning-border-subtle:#8a4f05;--color-warning-field-border:#cf9117;--color-danger-text:#ff7157;--color-danger-icon:#ef6045;--color-danger-background:#672523;--color-danger-background-hover:#812420;--color-danger-background-subtle:#381719;--color-danger-background-subtle-hover:#672523;--color-danger-background-subtle-active:#aa3229;--color-danger-chip-background:#672523;--color-danger-chip-background-hover:#812420;--color-danger-chip-text:#fe9e8a;--color-danger-border:#cf4436;--color-danger-border-subtle:#aa3229;--color-danger-field-border:#ef6045;--color-danger-action:#ef6045;--color-danger-action-hover:#ff7157;--color-danger-action-active:#cf4436;--color-special-free-plan-background:#9a4e2d;--color-special-starter-plan-background:#b87939;--color-special-scale-plan-background:#425484;--color-special-business-plan-background:#408288;--color-special-enterprise-plan-background:#48296f;--color-special-highlight:#152447;--color-third-party-anthropic:#d97757;--color-third-party-chat-gpt:#fff;--color-third-party-claude:#d97757;--color-third-party-codex:#7a9dff;--color-third-party-cursor:#fff;--color-third-party-discord:#5865f2;--color-third-party-github:#fff;--color-third-party-linkedin:#0a66c2;--color-third-party-make:#6d00cc;--color-third-party-n8n:#ea4b71;--color-third-party-perplexity:#20808d;--color-third-party-twitter:#fff;--color-third-party-youtube:red;--color-third-party-zapier:#ff4a00;--color-rose-light:#e88bb3;--color-rose-base:#b8487b;--color-rose-dark:#6f234f;--color-rose-text:#ed8bb5;--color-buttercup-light:#f9deaa;--color-buttercup-base:#e5b557;--color-buttercup-dark:#b87939;--color-buttercup-text:#ebbf6c;--color-paprika-light:#e26c7d;--color-paprika-base:#9e384b;--color-paprika-dark:#511d27;--color-paprika-text:#f67c8d;--color-teal-light:#aef0f5;--color-teal-base:#58bcc4;--color-teal-dark:#408288;--color-teal-text:#62c1c8;--color-indigo-light:#a8b7ed;--color-indigo-base:#6d85ca;--color-indigo-dark:#425484;--color-indigo-text:#a2b2eb;--color-slate-light:#c2c5dc;--color-slate-base:#8690bf;--color-slate-dark:#535c81;--color-slate-text:#afb2c9;--color-coral-light:#f3ccb0;--color-coral-base:#f08848;--color-coral-dark:#9a4e2d;--color-coral-text:#f9b27b;--color-lavender-light:#b482ed;--color-lavender-base:#8148c9;--color-lavender-dark:#48296f;--color-lavender-text:#be8af9;--color-bamboo-light:#7acaa9;--color-bamboo-base:#439274;--color-bamboo-dark:#305b4a;--color-bamboo-text:#65bc99}</style><div class=layout-wrapper style=margin:0;padding:0;box-sizing:border-box><div role=region aria-label=\"Skip to main content\"><a class=skipToContent_fXgn href=#__docusaurus_skipToContent_fallback>Skip to main content</a></div><nav aria-label=Main class=\"theme-layout-navbar navbar navbar--fixed-top\"><div style=width:100%;height:fit-content;align-items:center;display:flex;flex-direction:column><div class=\"navbar__inner \"><div class=navbar__container><div class=navbar__items><a href=https://docs.apify.com target=_self rel=\"noopener noreferrer\" class=navbar__brand><div class=navbar__logo><img src=/img/apify_sdk.svg alt=\"\" class=\"themedComponent_mlkZ themedComponent--light_NVdE\"/><img src=/img/apify_sdk_white.svg alt=\"\" class=\"themedComponent_mlkZ themedComponent--dark_xIcU\"/></div></a></div><div class=\"navbar__items navbar__items--center\"><div class=navbarSearchContainer_Bca1></div></div><div class=\"navbar__items navbar__items--right\"><a href=https://discord.com/invite/jyEM2PRvMU class=icon target=_blank rel=\"noopener noreferrer\"><svg width=20 height=20 viewBox=\"100 195 800 625\" xmlns=http://www.w3.org/2000/svg><path fill=currentColor d=\"M386 203h2l7 9c-128 36-186 92-186 92s15-8 41-20c76-34 136-43 161-45 4-1 8-1 12-1 43-6 92-7 143-2 67 8 139 28 213 68 0 0-56-53-176-90l9-11s97-2 199 74c0 0 102 185 102 412 0 0-60 103-216 108 0 0-26-30-47-57 93-26 128-84 128-84-29 19-57 32-81 41-36 15-70 25-103 31-68 12-130 9-183-1-40-8-75-19-104-30-16-7-34-15-52-24-2-2-4-3-6-4-1-1-2-1-3-2-13-7-20-12-20-12s34 56 124 83c-21 27-47 59-47 59-157-5-216-108-216-108 0-227 102-412 102-412 95-71 186-74 197-74m-18 264c-41 0-72 35-72 78s32 79 72 79 72-36 72-79c1-43-32-78-72-78m258 0c-40 0-72 35-72 78s32 79 72 79 72-36 72-79-32-78-72-78\"/></svg></a><a href=https://console.apify.com/sign-up class=getStarted_PjMY>Get started</a><button aria-label=\"Toggle navigation bar\" aria-expanded=false class=\"navbar__toggle clean-btn\" type=button><svg width=30 height=30 viewBox=\"0 0 30 30\" aria-hidden=true><path stroke=currentColor stroke-linecap=round stroke-miterlimit=10 stroke-width=2 d=\"M4 7h22M4 15h22M4 23h22\"/></svg></button></div></div></div><div class=\"navbar__inner navbar__inner--subnavbar\"><div class=navbar__container><div class=navbar__items><a href=https://docs.apify.com/get-started target=_self rel=dofollow class=\"navbar__item navbar__link\">Get started</a><a href=https://docs.apify.com/actors target=_self rel=dofollow class=\"navbar__item navbar__link\">Actors</a><a href=https://docs.apify.com/storage target=_self rel=dofollow class=\"navbar__item navbar__link\">Storage</a><a href=https://docs.apify.com/proxy target=_self rel=dofollow class=\"navbar__item navbar__link\">Proxy</a><a href=https://docs.apify.com/account target=_self rel=dofollow class=\"navbar__item navbar__link\">Account</a><a href=https://docs.apify.com/integrations target=_self rel=dofollow class=\"navbar__item navbar__link\">Integrations</a><a href=https://docs.apify.com/security target=_self rel=dofollow class=\"navbar__item navbar__link\">Security</a></div><div class=\"navbar__items navbar__items--center\"></div><div class=\"navbar__items navbar__items--right\"><a href=https://docs.apify.com/academy target=_self rel=dofollow class=\"navbar__item navbar__link\">Academy</a><div class=\"navbar__item dropdown dropdown--hoverable dropdown--right\"><a href=https://docs.apify.com/api target=_self rel=dofollow aria-haspopup=true aria-expanded=false role=button class=navbar__link>API</a><ul class=dropdown__menu><li><a href=https://docs.apify.com/api/v2 target=_self rel=dofollow class=dropdown__link>API reference</a><li><a href=https://docs.apify.com/api/client/js/docs target=_self rel=dofollow class=dropdown__link>Client for JavaScript</a><li><a href=https://docs.apify.com/api/client/python/docs target=_self rel=dofollow class=dropdown__link>Client for Python</a><li><a href=https://github.com/apify/apify-client-go target=_self rel=dofollow class=dropdown__link>Client for Go<svg width=12 height=12 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li><a href=https://github.com/apify/apify-client-php target=_self rel=dofollow class=dropdown__link>Client for PHP<svg width=12 height=12 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li><a href=https://github.com/apify/apify-client-java target=_self rel=dofollow class=dropdown__link>Client for Java<svg width=12 height=12 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li><a href=https://github.com/apify/apify-client-dotnet target=_self rel=dofollow class=dropdown__link>Client for .NET<svg width=12 height=12 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li><a href=https://github.com/apify/apify-client-rust target=_self rel=dofollow class=dropdown__link>Client for Rust<svg width=12 height=12 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div><div class=\"navbar__item dropdown dropdown--hoverable dropdown--right\"><a href=https://docs.apify.com/sdk target=_self rel=dofollow aria-haspopup=true aria-expanded=false role=button class=navbar__link>SDK</a><ul class=dropdown__menu><li><a href=https://docs.apify.com/sdk/js/docs/overview target=_self rel=dofollow class=dropdown__link>SDK for JavaScript</a><li><a href=https://docs.apify.com/sdk/python/docs/overview target=_self rel=dofollow class=dropdown__link>SDK for Python</a></ul></div><div class=\"navbar__item dropdown dropdown--hoverable dropdown--right\"><a href=https://docs.apify.com/cli target=_self rel=dofollow aria-haspopup=true aria-expanded=false role=button class=navbar__link>CLI</a><ul class=dropdown__menu><li><a href=https://docs.apify.com/cli/docs/installation target=_self rel=dofollow class=dropdown__link>Installation</a><li><a href=https://docs.apify.com/cli/docs/quick-start target=_self rel=dofollow class=dropdown__link>Quick start</a><li><a href=https://docs.apify.com/cli/docs/reference target=_self rel=dofollow class=dropdown__link>Command reference</a></ul></div><a href=https://docs.apify.com/agents target=_self rel=dofollow class=\"navbar__item navbar__link\">For AI agents</a></div></div></div></div><div role=presentation class=navbar-sidebar__backdrop></div></nav><div id=__docusaurus_skipToContent_fallback class=\"theme-layout-main main-wrapper mainWrapper_z2l0\"><main class=\"container margin-vert--xl\"><div class=row><div class=\"col col--6 col--offset-3\"><h1 class=hero__title>Page Not Found</h1><p>We could not find what you were looking for.<p>Please contact the owner of the site that linked you to the original URL and let them know their link is broken.</div></div></main></div><footer class=\"footer_wSZr light\"><div class=container_XRDn><div class=\"row top_soB1\"><div class=\"col col--2\"><div class=title_EaMO>Reference</div><ul class=clean-list><li class=footer__item><a href=https://docs.apify.com/api/v2 target=_self rel=dofollow class=footer__link-item>API Reference</a><li class=footer__item><a href=https://docs.apify.com/sdk/js/docs/overview target=_self rel=dofollow class=footer__link-item>SDK for JavaScript</a><li class=footer__item><a href=https://docs.apify.com/sdk/python/docs/overview target=_self rel=dofollow class=footer__link-item>SDK for Python</a><li class=footer__item><a href=https://docs.apify.com/api/client/js/docs target=_self rel=dofollow class=footer__link-item>Client for JavaScript</a><li class=footer__item><a href=https://docs.apify.com/api/client/python/docs target=_self rel=dofollow class=footer__link-item>Client for Python</a><li class=footer__item><a href=https://docs.apify.com/cli/docs target=_self rel=dofollow class=footer__link-item>CLI</a><li class=footer__item><a href=https://docs.apify.com/glossary target=_self rel=dofollow class=footer__link-item>Glossary</a></ul></div><div class=\"col col--2\"><div class=title_EaMO>Open source</div><ul class=clean-list><li class=footer__item><a href=https://crawlee.dev target=_blank rel=dofollow class=footer__link-item>Crawlee<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://github.com/apify/fingerprint-suite target=_blank rel=\"noopener noreferrer\" class=footer__link-item>Fingerprint Suite<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://github.com/apify/impit target=_blank rel=\"noopener noreferrer\" class=footer__link-item>impit<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://github.com/apify/mcpc target=_blank rel=\"noopener noreferrer\" class=footer__link-item>MCP CLI<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://whitepaper.actor target=_blank rel=\"noopener noreferrer\" class=footer__link-item>Actor whitepaper<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://github.com/apify/proxy-chain target=_blank rel=\"noopener noreferrer\" class=footer__link-item>proxy-chain<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div><div class=\"col col--2\"><div class=title_EaMO>Security</div><ul class=clean-list><li class=footer__item><a href=https://trust.apify.com target=_blank rel=\"noopener noreferrer\" class=footer__link-item>Trust Center<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div><div class=\"col col--2\"><div class=title_EaMO>Community</div><ul class=clean-list><li class=footer__item><a href=https://discord.com/invite/jyEM2PRvMU target=_blank rel=\"noopener noreferrer\" class=footer__link-item>Discord<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://x.com/apify target=_blank rel=\"noopener noreferrer\" class=footer__link-item>X<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://www.youtube.com/c/Apify target=_blank rel=\"noopener noreferrer\" class=footer__link-item>YouTube<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://github.com/apify target=_blank rel=\"noopener noreferrer\" class=footer__link-item>GitHub<svg width=13.5 height=13.5 aria-label=\"(opens in new tab)\" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div><div class=\"col col--2\"><div class=title_EaMO>For AI</div><ul class=clean-list><li class=footer__item><a href=https://docs.apify.com/llms.txt target=_self rel=dofollow class=footer__link-item>llms.txt</a><li class=footer__item><a href=https://docs.apify.com/llms-full.txt target=_self rel=dofollow class=footer__link-item>llms-full.txt</a><li class=footer__item><a href=https://docs.apify.com/api/openapi.json target=_self rel=dofollow class=footer__link-item>OpenAPI (JSON)</a><li class=footer__item><a href=https://docs.apify.com/api/openapi.yaml target=_self rel=dofollow class=footer__link-item>OpenAPI (YAML)</a></ul></div></div><div class=\"row bottom__bn4\"><div class=\"col col--6\"><a href=https://apify.com target=_blank rel=\"dofollow noreferrer\"><span class=logo_xg_J></span></a></div><div class=\"col col--6\"><div class=\"toggle_HIU5 toggle_NHi8\"><button class=\"clean-btn toggleButton_ezTW toggleButtonDisabled_E3zm\" type=button disabled title=\"Switch between dark and light mode (currently light mode)\" aria-label=\"Switch between dark and light mode (currently light mode)\"><span><svg viewBox=\"0 0 13 12\" fill=none xmlns=http://www.w3.org/2000/svg width=14 height=14 class=lightToggleIcon_kM7M><g clip-path=url(#clip0_833_8168)><path d=\"M6.59998 8.49999C7.98069 8.49999 9.09998 7.3807 9.09998 5.99999C9.09998 4.61928 7.98069 3.49999 6.59998 3.49999C5.21926 3.49999 4.09998 4.61928 4.09998 5.99999C4.09998 7.3807 5.21926 8.49999 6.59998 8.49999Z\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /><path d=\"M6.59985 0.5V1.5\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /><path d=\"M6.59985 10.5V11.5\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /><path d=\"M2.7099 2.11L3.4199 2.82\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /><path d=\"M9.77991 9.17999L10.4899 9.88999\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /><path d=\"M1.09998 6H2.09998\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /><path d=\"M11.0999 6H12.0999\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /><path d=\"M2.7099 9.88999L3.4199 9.17999\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /><path d=\"M9.77991 2.82L10.4899 2.11\" stroke=currentColor stroke-linecap=round stroke-linejoin=round /></g><defs><clipPath id=clip0_833_8168><rect width=12 height=12 fill=white transform=translate(0.599976) /></clipPath></defs></svg><svg viewBox=\"0 0 13 12\" width=14 height=14 class=darkToggleIcon_BL0U><path d=\"M10.7001 6.39501C10.6215 7.24611 10.3021 8.05721 9.77927 8.7334C9.25646 9.40959 8.55189 9.92291 7.748 10.2133C6.9441 10.5036 6.07414 10.5591 5.2399 10.3731C4.40565 10.187 3.64164 9.76728 3.03726 9.1629C2.43287 8.55851 2.01312 7.7945 1.8271 6.96026C1.64108 6.12602 1.6965 5.25605 1.98688 4.45216C2.27725 3.64826 2.79056 2.94369 3.46675 2.42088C4.14294 1.89808 4.95404 1.57866 5.80515 1.50001C5.30685 2.17414 5.06707 3.00473 5.12941 3.84071C5.19175 4.6767 5.55208 5.46254 6.14485 6.05531C6.73762 6.64808 7.52346 7.0084 8.35944 7.07074C9.19542 7.13308 10.026 6.8933 10.7001 6.39501Z\" stroke=currentColor fill=transparent stroke-linecap=round stroke-linejoin=round /></svg></span></button></div></div></div></div></footer></div></div>\n<!-- Google Tag Manager (noscript) -->\n    <noscript><iframe src=\"https://www.googletagmanager.com/ns.html?id=GTM-MNGXGGB\" height=0 width=0 style=display:none;visibility:hidden></iframe></noscript>\n    <!-- End Google Tag Manager (noscript) --></body>",
+      "path_form": null
+    }
+  ]
+}

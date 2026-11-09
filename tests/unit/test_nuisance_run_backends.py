@@ -20,15 +20,6 @@ async def test_the_rebuild_builds_the_backend_service_with_the_server_service():
     assert host.rebuilt == ["filesystem-patched", *given.CKAN_SERVICES]
 
 
-async def test_every_built_service_of_the_backend_is_rebuilt():
-    server = edits.with_the_registered_backend(run_given.a_server(), "apify")
-    host = given.DockerHost()
-
-    await run_given.run([server], given.deps_on(host, server))
-
-    assert host.rebuilt == ["filesystem-patched", "apify-responder", "stand-in"]
-
-
 async def test_a_backend_container_running_at_start_is_removed_before_the_rebuild():
     server = edits.on_the_ckan_backend(run_given.a_server())
     host = given.DockerHost({given.CKAN_TAG: ["stale_responder"]})
@@ -41,9 +32,9 @@ async def test_a_backend_container_running_at_start_is_removed_before_the_rebuil
 
 
 async def test_the_containers_of_every_built_image_of_the_backend_are_removed_before_the_rebuild():
-    server = edits.with_the_registered_backend(run_given.a_server(), "apify")
+    server = edits.on_the_ckan_backend(run_given.a_server())
     host = given.DockerHost(
-        {given.APIFY_TAG: ["stale_responder"], STAND_IN_IMAGE: ["stale_stand_in"]}
+        {given.CKAN_TAG: ["stale_responder"], STAND_IN_IMAGE: ["stale_stand_in"]}
     )
 
     await run_given.run([server], given.deps_on(host, server))

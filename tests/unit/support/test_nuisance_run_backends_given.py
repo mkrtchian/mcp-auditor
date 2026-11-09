@@ -11,7 +11,6 @@ SERVER_TAG = nuisance_images.image_tag("filesystem-patched")
 CKAN_TAG = BACKENDS["ckan"].image
 CKAN_SERVICES = list(BACKENDS["ckan"].built_services)
 DORIS_TAG = BACKENDS["doris"].image
-APIFY_TAG = BACKENDS["apify"].image
 
 
 class DockerHost:

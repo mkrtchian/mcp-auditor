@@ -10452,7 +10452,13 @@
             {
               "vulnerable_name": "fetch-apify-docs",
               "patched_name": "fetch-apify-docs",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -10463,8 +10469,10 @@
             {
               "tool": "fetch-apify-docs",
               "arguments": {
-                "url": "https://docs.apify.com/platform/actors.md"
-              }
+                "url": "https://docs.apify.com/academy"
+              },
+              "expect": "# Apify Academy",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -10478,7 +10486,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -10487,15 +10496,21 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/",
-        "has_network": true
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [
+            "api.apify.com",
+            "docs.apify.com"
+          ],
+          "trust": [
+            "NODE_EXTRA_CA_CERTS"
+          ],
+          "ip_label_domains": []
+        }
       },
       "launch": [],
       "service": "apify",
-      "backend": {
-        "provisioner": "apify",
-        "image": "mcp-auditor-cve-apify-responder:local",
-        "network": "mcp-auditor-cve-apify-bridge"
-      },
+      "backend": null,
       "agents": [
         {
           "role": "admitter",
@@ -10506,23 +10521,76 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-46341",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-46341",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-46341",
           "field": "declared_function_is_effect",
-          "agreed": false
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-46341",
+          "field": "benign_calls",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-46341",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-46341",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
       "settlements": [
-        {
-          "server_package": "npm:@apify/actors-mcp-server",
-          "flaw": "CVE-2026-46341",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B over-marked dfie true; fetch-apify-docs is declared to fetch Apify/Crawlee documentation, the suffix-host bypass of the startsWith allowlist to fetch an attacker-controlled host is the flaw, not the declared function"
-        },
         {
           "server_package": "npm:@apify/actors-mcp-server",
           "flaw": "CVE-2026-50143",
@@ -10538,7 +10606,69 @@
           "reason": "not counted: get-html-skeleton is dfie true (its declared function is to fetch and render the caller-named URL); removed at 0.9.12"
         }
       ],
-      "patched_version": "0.9.21"
+      "patched_version": "0.9.21",
+      "stand_ins": [
+        {
+          "replaces": "docs.apify.com, the Apify documentation site (Markdown pages built from apify/apify-docs, served through CloudFront) that fetch-apify-docs fetches",
+          "reason": "A remote public host: the run's networks reach no Internet, and the rule (Run conditions) serves a public host a benign call needs by a stand-in under its real name. The deployment itself (a CDN in front of GitHub Pages) is not distributed as software to run in a container; a local rebuild of the Docusaurus site from apify/apify-docs would be a reconstruction of the site, not its deployment, and would need the network at build.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/docs.apify.com.json",
+          "outputs": [
+            {
+              "request": "https GET /academy.md",
+              "source": "capture",
+              "citation": "Captured from https://docs.apify.com/academy.md on 2026-11-07T21:46:38Z with evals/capture_stand_in (200 text/markdown, Last-Modified Fri, 06 Nov 2026 14:09:56 GMT, ETag \"6aeddfb4-c62\"), stored whole"
+            },
+            {
+              "request": "https, any other request (default)",
+              "source": "capture",
+              "citation": "Captured default of the same capture: the real host's answer to a generated missing path, 404 text/html (Docusaurus 404 page), not quoting the path (path_form null)"
+            },
+            {
+              "request": "http, any request (default)",
+              "source": "capture",
+              "citation": "Captured default of the same capture: 301 from CloudFront to the https URL of the requested path (Location quoted as the real host does)"
+            }
+          ]
+        },
+        {
+          "replaces": "api.apify.com, the Apify API, which the server calls at start with the default tool set (getActorDefinition of apify/rag-web-browser in loadToolsFromInput)",
+          "reason": "A remote hosted platform reachable only with an Apify account the maintainer does not have; without it the server does not start (run 2026-11-07 with no network: the server retries getaddrinfo EAI_AGAIN api.apify.com from getActorDefinition and never answers initialize). The real API answers a token it does not know with 401, which the capture records and which lets the server start.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/api.apify.com.json",
+          "outputs": [
+            {
+              "request": "https GET /v2/actors/apify~rag-web-browser",
+              "source": "capture",
+              "citation": "evals/stand_ins/api.apify.com.json, captured 2026-11-04T07:36:55Z: 401 user-or-token-not-found"
+            },
+            {
+              "request": "https GET /v2/users/me",
+              "source": "capture",
+              "citation": "evals/stand_ins/api.apify.com.json, captured 2026-11-04T07:36:55Z: 401 user-or-token-not-found"
+            },
+            {
+              "request": "https, any other request (default)",
+              "source": "capture",
+              "citation": "evals/stand_ins/api.apify.com.json default: 404 page-not-found JSON"
+            },
+            {
+              "request": "http, any request (default)",
+              "source": "capture",
+              "citation": "evals/stand_ins/api.apify.com.json default: 301 HTML"
+            }
+          ]
+        }
+      ],
+      "seeds": [],
+      "software_releases": [
+        {
+          "software": "Apify documentation site docs.apify.com (built from github.com/apify/apify-docs)",
+          "release": "deployment of apify/apify-docs master at 3d136ca2cbeaa4768aa2386c3a90f3bddab90cc6 (committed 2026-11-06T14:01:37Z; the captured page carries Last-Modified Fri, 06 Nov 2026 14:09:56 GMT), as served on 2026-11-07",
+          "day": "2026-11-07",
+          "source": "The server names the host only (ALLOWED_DOC_DOMAINS in dist/const.js of 0.9.21: https://docs.apify.com), no version; the current state is the live site, captured 2026-11-07, and the latest commit of https://api.github.com/repos/apify/apify-docs/commits on that day"
+        }
+      ]
     },
     {
       "server_package": "https://github.com/hekmon8/Jenkins-server-mcp",

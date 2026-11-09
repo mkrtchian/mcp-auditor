@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from evals.apify_backend import APIFY_BENIGN_HOST, APIFY_SUFFIX_HOST
+from evals.apify_backend import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
 from evals.facebook_ads_backend import FACEBOOK_ADS_ATTACKER_HOST, FACEBOOK_ADS_BENIGN_HOST
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_fix_checks import cve_2026_10276_jenkins as jenkins
@@ -21,14 +21,17 @@ class ResponderFixCheck:
     server_args: Callable[[str, str], list[str]]  # (image, address)
     pointers: Callable[[str], list[str]]  # the server-specific entries for the address
     witness_variable: str = "WITNESS_NONCE"  # the responder environment variable holding it
+    # Set when the responder is not a registered backend, read in place of the registry entry.
+    network: str | None = None
+    image: str | None = None
 
     @property
     def bridge(self) -> str:
-        return BACKENDS[self.backend].network
+        return self.network if self.network is not None else BACKENDS[self.backend].network
 
     @property
     def responder_image(self) -> str:
-        return BACKENDS[self.backend].image
+        return self.image if self.image is not None else BACKENDS[self.backend].image
 
 
 RESPONDER_FIX_CHECKS = [
@@ -37,7 +40,9 @@ RESPONDER_FIX_CHECKS = [
         "apify",
         apify.responder_args,
         apify.server_args,
-        lambda address: [f"{APIFY_BENIGN_HOST}:{address}", f"{APIFY_SUFFIX_HOST}:{address}"],
+        lambda address: [f"{APIFY_SUFFIX_HOST}:{address}"],
+        network=APIFY_BRIDGE,
+        image=APIFY_RESPONDER_IMAGE,
     ),
     ResponderFixCheck(
         atlassian.TARGET.flaw,

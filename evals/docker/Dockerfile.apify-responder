@@ -1,33 +1,25 @@
-# TLS documentation responder for the nuisance suite's apify backend, the host that the
-# fetch-apify-docs tool of @apify/actors-mcp-server reaches by name. It is NOT the server under
-# test and carries none of its flaw. It serves two names, told apart by the Host header:
-#   - docs.apify.com: a fixed benign Markdown page, the run-phase benign call
-#   - docs.apify.com.example.test: a mirror page that carries WITNESS_NONCE when it is set, else
-#     the same fixed page, so a per-launch container holds the fix-check witness and the shared
-#     singleton serves none
-# The cert is self-signed at build with both names as SANs. The audited server runs with
-# NODE_TLS_REJECT_UNAUTHORIZED=0, so the cert is never verified. Never spoken to over MCP stdio.
+# TLS responder of the nuisance suite's CVE-2026-46341 fix check only: the suffix host
+# docs.apify.com.example.test, the place the fix check's witness sits. No run builds or serves it:
+# the run's docs.apify.com is the stand-in replaying evals/stand_ins/docs.apify.com.json. It serves
+# a page carrying WITNESS_NONCE for every request, and never what it is sent. The cert is
+# self-signed at build, and only the fix check's own launch skips its check.
 # No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
 FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
 
 RUN apk add --no-cache openssl \
  && openssl req -x509 -newkey rsa:2048 -nodes -days 36500 \
-      -keyout /key.pem -out /cert.pem -subj "/CN=docs.apify.com" \
-      -addext "subjectAltName=DNS:docs.apify.com,DNS:docs.apify.com.example.test"
+      -keyout /key.pem -out /cert.pem -subj "/CN=docs.apify.com.example.test" \
+      -addext "subjectAltName=DNS:docs.apify.com.example.test"
 
 RUN printf '%s\n' \
   "const https = require('https');" \
   "const fs = require('fs');" \
   "" \
-  "const NONCE = process.env.WITNESS_NONCE;" \
-  "const BENIGN = '# Apify documentation\n\nGetting started with Actors and the Apify platform.\n';" \
-  "const MIRROR = NONCE ? '# Mirror notes\n\n' + NONCE + '\n' : BENIGN;" \
+  "const PAGE = '# Mirror notes\n\n' + (process.env.WITNESS_NONCE || '') + '\n';" \
   "" \
   "https.createServer({ key: fs.readFileSync('/key.pem'), cert: fs.readFileSync('/cert.pem') }, (req, res) => {" \
-  "  const host = (req.headers.host || '').split(':')[0];" \
-  "  const body = host.startsWith('docs.apify.com.') ? MIRROR : BENIGN;" \
   "  res.writeHead(200, { 'content-type': 'text/markdown' });" \
-  "  res.end(body);" \
+  "  res.end(PAGE);" \
   "}).listen(443);" \
   > /responder.js
 

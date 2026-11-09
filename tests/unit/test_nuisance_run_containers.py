@@ -35,10 +35,10 @@ def test_servers_without_public_names_rebuild_no_shared_image():
 
 
 def test_the_stand_in_a_backend_also_builds_is_rebuilt_once():
-    apify = edits.with_the_registered_backend(run_given.a_server("npm:apify"), "apify")
+    ckan = edits.on_the_ckan_backend(run_given.a_server("npm:ckan"))
     served = admission_given.with_host(run_given.a_server("npm:served"), SERVED)
 
-    images = run_images([apify, served])
+    images = run_images([ckan, served])
 
     assert images.backend_services.count(STAND_IN_SERVICE) == 1
     assert SENTINEL_SERVICE in images.backend_services

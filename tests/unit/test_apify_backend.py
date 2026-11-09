@@ -4,22 +4,25 @@ from evals.apify_backend import (
     API_HOST,
     APIFY_BENIGN_HOST,
     APIFY_SUBNET,
-    APIFY_SUFFIX_HOST,
     apify_network_args,
 )
 from tests.unit.support.docker_argv import environment, values_after
 
 
-def test_the_documentation_hosts_resolve_to_the_responder_address_it_is_given():
-    aliases = values_after(apify_network_args("198.18.1.77"), "--add-host")
+def test_each_documentation_host_resolves_to_a_stand_in_on_the_backend_subnet():
+    pins = dict(alias.split(":", 1) for alias in values_after(apify_network_args(), "--add-host"))
 
-    [api_pin] = [alias for alias in aliases if alias.startswith(f"{API_HOST}:")]
-    assert sorted(aliases) == sorted(
-        [f"{APIFY_BENIGN_HOST}:198.18.1.77", f"{APIFY_SUFFIX_HOST}:198.18.1.77", api_pin]
-    )
-    stand_in_address = ipaddress.ip_address(api_pin.removeprefix(f"{API_HOST}:"))
-    assert stand_in_address in ipaddress.ip_network(APIFY_SUBNET)
+    assert set(pins) == {APIFY_BENIGN_HOST, API_HOST}
+    for address in pins.values():
+        assert ipaddress.ip_address(address) in ipaddress.ip_network(APIFY_SUBNET)
 
 
-def test_the_server_skips_verifying_the_self_signed_responder():
-    assert environment(apify_network_args("198.18.1.77"))["NODE_TLS_REJECT_UNAUTHORIZED"] == "0"
+def test_the_server_trusts_the_fixture_authority_instead_of_skipping_verification():
+    env = environment(apify_network_args())
+
+    assert "NODE_EXTRA_CA_CERTS" in env
+    assert "NODE_TLS_REJECT_UNAUTHORIZED" not in env
+
+
+def test_the_token_is_the_readme_placeholder():
+    assert environment(apify_network_args())["APIFY_TOKEN"] == "your-apify-token"
