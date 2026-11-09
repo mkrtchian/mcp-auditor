@@ -959,7 +959,7 @@ services:
       context: .
       dockerfile: Dockerfile.vibe-trading
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0b068d46cb55d5a20a9e22918e84ec914b7c5c9525cb2f58535d5359a4952ad2"
+        org.mcp-auditor.dockerfile-fingerprint: "b6e40ddeffd99f119e2ab357ee7029ede7c4ccd3484dde391b988f56611bdb38"
     image: mcp-auditor-nuisance-vibe-trading:local
     profiles: ["nuisance"]
 

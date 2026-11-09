@@ -10612,12 +10612,35 @@
             {
               "vulnerable_name": "get_run_result",
               "patched_name": "get_run_result",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "get_swarm_status",
               "patched_name": "get_swarm_status",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "retry_run",
+              "patched_name": "retry_run",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -10628,14 +10651,26 @@
             {
               "tool": "get_run_result",
               "arguments": {
-                "run_id": "seedrun"
-              }
+                "run_id": "swarm-20260619-125611-00000001"
+              },
+              "expect": "\"preset\": \"investment_committee\"",
+              "before": []
             },
             {
               "tool": "get_swarm_status",
               "arguments": {
-                "run_id": "seedrun"
-              }
+                "run_id": "swarm-20260619-125611-00000001"
+              },
+              "expect": "\"preset\": \"investment_committee\"",
+              "before": []
+            },
+            {
+              "tool": "retry_run",
+              "arguments": {
+                "run_id": "swarm-20260619-125611-00000001"
+              },
+              "expect": "\"preset\": \"investment_committee\"",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -10645,12 +10680,14 @@
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
               "get_run_result",
-              "get_swarm_status"
+              "get_swarm_status",
+              "retry_run"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -10674,12 +10711,67 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-58171",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
           "agreed": false
         }
       ],
@@ -10687,19 +10779,42 @@
         {
           "server_package": "PyPI:vibe-trading-ai",
           "flaw": "CVE-2026-58171",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B over-marked dfie true; get_run_result loads a run by bare identifier under the runs directory, the crafted-identifier traversal out of that directory is the flaw, not the declared function"
+          "field": "tools",
+          "value": "get_run_result, get_swarm_status and retry_run",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: retry_run passes its run_id to the same store.load_run whose unchecked join the advisory names, and the fix commit wraps that call in retry_run as in the two other tools, so retry_run is added (both records); no record wrote an exploit through retry_run, so its fix-check exploit, a retry of a run_id walking out of the runs directory, was written at assembly: the planted run names the witness as its preset, so on the vulnerable version the preset lookup's error quotes it, and played alone it surfaces the witness on the vulnerable image only"
         },
         {
           "server_package": "PyPI:vibe-trading-ai",
-          "flaw": "CVE-2026-58171",
-          "field": "tools",
-          "value": "get_run_result, get_swarm_status",
-          "reason": "get_run_result and get_swarm_status both load the run by bare identifier through the same traversal-vulnerable store.load_run and return _run_to_dict including final_report, so both surface the planted witness and both are counted; retry_run is not counted because it re-runs the loaded run and overwrites the planted witness"
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record A's: each of the three tools on the run the image generates, expecting its preset key",
+          "reason": "the calls follow the seeds retained, record A's run id, and record A's expected text names the key the server answers the preset under, where record B's names the preset alone; the fix check's own benign call through retry_run was written at assembly from these calls, no record having written one"
+        },
+        {
+          "server_package": "PyPI:vibe-trading-ai",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: the swarm run the server generates at build time from the README's swarm example, its random id replaced by an id written in the server's own format",
+          "reason": "both records generate the same run through the server's own code from the same README example and write one value, the run id; record A's id carries the form of a generated id, its date the 0.1.10 upload time, where record B's zeroes the time and the hex part"
         }
       ],
-      "patched_version": "0.1.10"
+      "patched_version": "0.1.10",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "One swarm run in the server's runs store (site-packages/.swarm/runs/<id>/run.json, tasks/*.json, empty artifacts/ and inboxes/), generated at image build time by the server's own code, src.swarm.presets.build_run_from_preset('investment_committee', {'topic': 'BTC outlook'}) and SwarmStore.create_run, from the swarm example of the package README; its agents, tasks, status (pending) and created_at are the server's own output, kept as they are.",
+          "kind": "generated",
+          "citation": "vibe-trading-ai 0.1.10 sdist README.md:633, 'vibe-trading --swarm-run investment_committee '{\"topic\":\"BTC outlook\"}'' (the only swarm run example the documentation gives); neither the server nor its repository at v0.1.10 publishes a sample swarm run (GitHub tree of tag v0.1.10 checked for run.json, sample, example, fixture and demo paths: none for swarm runs). Wheel sha256 ec2319ff18d6b5eb16cb0bbc6708ae43027bc0ff0a05aa63051e72825da18851, preset file src/swarm/presets/investment_committee.yaml in it.",
+          "pin": "vibe-trading-ai==0.1.10"
+        },
+        {
+          "item": "The run identifier swarm-20260619-125611-00000001, written in place of the random identifier build_run_from_preset generates (swarm-<UTC YYYYMMDD-HHMMSS>-<uuid4 hex[:8]>, src/swarm/presets.py:268-271), so the benign calls can name the run across rebuilds; date and time are those of the 0.1.10 wheel upload on PyPI (2026-06-19T12:56:11), the hex part a fixed value.",
+          "kind": "written",
+          "citation": "format: vibe-trading-ai 0.1.10 src/swarm/presets.py:268-271",
+          "pin": "vibe-trading-ai==0.1.10"
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "PyPI:praisonai",

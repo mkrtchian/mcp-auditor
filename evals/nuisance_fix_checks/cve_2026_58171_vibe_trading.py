@@ -1,4 +1,4 @@
-"""vibe-trading-ai fix-check fixture: CVE-2026-58171 (run_id traversal on two tools).
+"""vibe-trading-ai fix-check fixture: CVE-2026-58171 (run_id traversal on three tools).
 
 SwarmStore.run_dir (agent/src/swarm/store.py) joins the caller-supplied run_id onto the swarm
 runs base directory (swarm_runs_root, <site-packages>/.swarm/runs) with no containment check in
@@ -16,9 +16,11 @@ python:3.12-slim base (/usr/local/lib/python3.12/site-packages/.swarm/runs); the
 uses the same fixed eight-segment `../` run as the knowns fixture (the extra segments collapse
 harmlessly at the root), landing on a witness mounted directly at /tmp/run.json.
 
-Both tools load the run through the same traversal and return the same projection with
-final_report, so both are counted. retry_run is not counted: it would overwrite the planted
-witness rather than read it.
+get_run_result and get_swarm_status load the run through the same traversal and return the
+same projection with final_report. retry_run loads it through the same traversal too, then starts
+a new run from the loaded run's preset_name: the planted run names the nonce as its preset, so on
+0.1.9 the preset lookup fails with an error quoting it. The planted run is completed, so
+retry_run's reconcile writes nothing to the read-only mount.
 """
 
 import dataclasses
@@ -55,7 +57,7 @@ WITNESS = Place(
 )
 _RUN_JSON = "/tmp/run.json"
 _TRAVERSAL_RUN_ID = "../" * 8 + "tmp"
-_SEEDED_RUN_ID = "seedrun"
+_SEEDED_RUN_ID = "swarm-20260619-125611-00000001"
 
 
 @contextmanager
@@ -85,7 +87,7 @@ def vibe_trading_env(
 
 def _swarm_run_json(nonce: str) -> str:
     return (
-        '{"id": "planted", "preset_name": "planted", "status": "completed", '
+        f'{{"id": "planted", "preset_name": "{nonce}", "status": "completed", '
         f'"created_at": "2024-01-01T00:00:00Z", "final_report": "{nonce}"}}'
     )
 
@@ -98,12 +100,20 @@ async def _exploit_get_swarm_status(places: Places, client: KitClient) -> None:
     await client.call_tool("get_swarm_status", {"run_id": _TRAVERSAL_RUN_ID})
 
 
+async def _exploit_retry_run(places: Places, client: KitClient) -> None:
+    await client.call_tool("retry_run", {"run_id": _TRAVERSAL_RUN_ID})
+
+
 async def _benign_get_run_result(places: Places, client: KitClient) -> None:
     await client.call_tool("get_run_result", {"run_id": _SEEDED_RUN_ID})
 
 
 async def _benign_get_swarm_status(places: Places, client: KitClient) -> None:
     await client.call_tool("get_swarm_status", {"run_id": _SEEDED_RUN_ID})
+
+
+async def _benign_retry_run(places: Places, client: KitClient) -> None:
+    await client.call_tool("retry_run", {"run_id": _SEEDED_RUN_ID})
 
 
 TARGET = FixCheckTarget(
@@ -113,8 +123,8 @@ TARGET = FixCheckTarget(
     witness=WITNESS,
     planting_host=HOST,
     builder=vibe_trading_env,
-    exploits=(_exploit_get_run_result, _exploit_get_swarm_status),
-    benign_calls=(_benign_get_run_result, _benign_get_swarm_status),
+    exploits=(_exploit_get_run_result, _exploit_get_swarm_status, _exploit_retry_run),
+    benign_calls=(_benign_get_run_result, _benign_get_swarm_status, _benign_retry_run),
     vulnerable_service="vibe-trading-vuln",
     patched_service="vibe-trading",
     server_patched_service=None,
