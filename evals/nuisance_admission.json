@@ -6696,7 +6696,13 @@
             {
               "vulnerable_name": "n8n_test_workflow",
               "patched_name": "n8n_test_workflow",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -6707,12 +6713,13 @@
             {
               "tool": "n8n_test_workflow",
               "arguments": {
-                "workflowId": "calib",
+                "workflowId": "9i3iDZf5MpjlJ2sh",
                 "triggerType": "webhook",
-                "httpMethod": "GET",
-                "webhookPath": "calib",
+                "httpMethod": "POST",
                 "waitForResponse": true
-              }
+              },
+              "expect": "Workflow was started",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -6726,7 +6733,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -6735,7 +6743,156 @@
             {
               "vulnerable_name": "n8n_get_workflow",
               "patched_name": "n8n_get_workflow",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_test_workflow",
+              "patched_name": "n8n_test_workflow",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_list_workflows",
+              "patched_name": "n8n_list_workflows",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_validate_workflow",
+              "patched_name": "n8n_validate_workflow",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_autofix_workflow",
+              "patched_name": "n8n_autofix_workflow",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_executions",
+              "patched_name": "n8n_executions",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_deploy_template",
+              "patched_name": "n8n_deploy_template",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_manage_datatable",
+              "patched_name": "n8n_manage_datatable",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_manage_credentials",
+              "patched_name": "n8n_manage_credentials",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_audit_instance",
+              "patched_name": "n8n_audit_instance",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_create_workflow",
+              "patched_name": "n8n_create_workflow",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_update_full_workflow",
+              "patched_name": "n8n_update_full_workflow",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_update_partial_workflow",
+              "patched_name": "n8n_update_partial_workflow",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "n8n_delete_workflow",
+              "patched_name": "n8n_delete_workflow",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -6746,8 +6903,341 @@
             {
               "tool": "n8n_get_workflow",
               "arguments": {
-                "id": "calib"
-              }
+                "id": "DPzMzTIyDrYohiw4"
+              },
+              "expect": "Tutorial-workflow",
+              "before": []
+            },
+            {
+              "tool": "n8n_test_workflow",
+              "arguments": {
+                "workflowId": "9i3iDZf5MpjlJ2sh",
+                "triggerType": "webhook",
+                "httpMethod": "POST",
+                "waitForResponse": true
+              },
+              "expect": "Workflow was started",
+              "before": []
+            },
+            {
+              "tool": "n8n_list_workflows",
+              "arguments": {},
+              "expect": "\"workflows\"",
+              "before": []
+            },
+            {
+              "tool": "n8n_validate_workflow",
+              "arguments": {
+                "id": "DPzMzTIyDrYohiw4"
+              },
+              "expect": "Schedule Trigger",
+              "before": []
+            },
+            {
+              "tool": "n8n_autofix_workflow",
+              "arguments": {
+                "id": "DPzMzTIyDrYohiw4"
+              },
+              "expect": "Schedule Trigger",
+              "before": []
+            },
+            {
+              "tool": "n8n_executions",
+              "arguments": {
+                "action": "list"
+              },
+              "expect": "\"executions\"",
+              "before": []
+            },
+            {
+              "tool": "n8n_deploy_template",
+              "arguments": {
+                "templateId": 4846
+              },
+              "expect": "deployed successfully",
+              "before": []
+            },
+            {
+              "tool": "n8n_manage_datatable",
+              "arguments": {
+                "action": "listTables"
+              },
+              "expect": "\"tables\"",
+              "before": []
+            },
+            {
+              "tool": "n8n_manage_credentials",
+              "arguments": {
+                "action": "getSchema",
+                "type": "httpHeaderAuth"
+              },
+              "expect": "allowedHttpRequestDomains",
+              "before": []
+            },
+            {
+              "tool": "n8n_audit_instance",
+              "arguments": {},
+              "expect": "## Summary",
+              "before": []
+            },
+            {
+              "tool": "n8n_create_workflow",
+              "arguments": {
+                "name": "Extract from file example",
+                "nodes": [
+                  {
+                    "parameters": {
+                      "httpMethod": "POST",
+                      "path": "06696ea7-9dc7-464a-873b-3feb095b0874",
+                      "options": {
+                        "rawBody": true
+                      }
+                    },
+                    "type": "n8n-nodes-base.webhook",
+                    "typeVersion": 2,
+                    "position": [
+                      -380,
+                      -80
+                    ],
+                    "id": "dfbd51af-6050-47c5-a26c-74cba77f65f7",
+                    "name": "Webhook",
+                    "webhookId": "06696ea7-9dc7-464a-873b-3feb095b0874"
+                  },
+                  {
+                    "parameters": {
+                      "options": {
+                        "headerRow": false
+                      }
+                    },
+                    "type": "n8n-nodes-base.extractFromFile",
+                    "typeVersion": 1,
+                    "position": [
+                      -160,
+                      -80
+                    ],
+                    "id": "1b1e4643-8269-402b-83af-dfd90fd6a0b5",
+                    "name": "Extract from File"
+                  }
+                ],
+                "connections": {
+                  "Webhook": {
+                    "main": [
+                      [
+                        {
+                          "node": "Extract from File",
+                          "type": "main",
+                          "index": 0
+                        }
+                      ]
+                    ]
+                  }
+                }
+              },
+              "expect": "created successfully",
+              "before": []
+            },
+            {
+              "tool": "n8n_update_full_workflow",
+              "arguments": {
+                "id": "DPzMzTIyDrYohiw4",
+                "name": "Tutorial-workflow",
+                "nodes": [
+                  {
+                    "parameters": {
+                      "rule": {
+                        "interval": [
+                          {
+                            "field": "weeks",
+                            "triggerAtDay": [
+                              1
+                            ],
+                            "triggerAtHour": 9
+                          }
+                        ]
+                      }
+                    },
+                    "type": "n8n-nodes-base.scheduleTrigger",
+                    "typeVersion": 1.2,
+                    "position": [
+                      -680,
+                      100
+                    ],
+                    "id": "ef14445c-2f5f-4c78-96c8-66732feb7a8f",
+                    "name": "Schedule Trigger"
+                  },
+                  {
+                    "parameters": {
+                      "resource": "donkiSolarFlare",
+                      "additionalFields": {
+                        "startDate": "={{ $today.minus(7, 'days') }}"
+                      }
+                    },
+                    "type": "n8n-nodes-base.nasa",
+                    "typeVersion": 1,
+                    "position": [
+                      -460,
+                      100
+                    ],
+                    "id": "52c58b93-c780-4aff-a216-d67b28195a45",
+                    "name": "NASA",
+                    "credentials": {
+                      "nasaApi": {
+                        "id": "sSVnxV9AcBmBOYn8",
+                        "name": "NASA account"
+                      }
+                    }
+                  },
+                  {
+                    "parameters": {
+                      "conditions": {
+                        "options": {
+                          "caseSensitive": true,
+                          "leftValue": "",
+                          "typeValidation": "strict",
+                          "version": 2
+                        },
+                        "conditions": [
+                          {
+                            "id": "2f469c8e-12b3-4ee5-95fc-ff81508d0b43",
+                            "leftValue": "={{ $json.classType }}",
+                            "rightValue": "C",
+                            "operator": {
+                              "type": "string",
+                              "operation": "contains"
+                            }
+                          }
+                        ],
+                        "combinator": "and"
+                      },
+                      "options": {}
+                    },
+                    "type": "n8n-nodes-base.if",
+                    "typeVersion": 2.2,
+                    "position": [
+                      -240,
+                      100
+                    ],
+                    "id": "b54e3289-9ebb-451f-8bac-87edeeeced13",
+                    "name": "If"
+                  },
+                  {
+                    "parameters": {
+                      "resource": "request",
+                      "operation": "send",
+                      "binId": "1741914338605-0907339996192",
+                      "binContent": "=There was a solar flare of class {{$json[\"classType\"]}}",
+                      "requestOptions": {}
+                    },
+                    "type": "n8n-nodes-base.postBin",
+                    "typeVersion": 1,
+                    "position": [
+                      -20,
+                      0
+                    ],
+                    "id": "a8b602b6-17b1-4274-8d33-73344b6bb8fb",
+                    "name": "PostBin(true)"
+                  },
+                  {
+                    "parameters": {
+                      "resource": "request",
+                      "operation": "send",
+                      "binId": "1741914338605-0907339996192",
+                      "binContent": "=There was a solar flare of class {{$json[\"classType\"]}}",
+                      "requestOptions": {}
+                    },
+                    "type": "n8n-nodes-base.postBin",
+                    "typeVersion": 1,
+                    "position": [
+                      -20,
+                      200
+                    ],
+                    "id": "09c2c7a4-c229-430d-a5b0-8d7491515d9f",
+                    "name": "PostBin(false)"
+                  },
+                  {
+                    "parameters": {
+                      "content": "## Setup required\n\nYou need to create a NASA account and create credentials, and create a bin with Postbin and enter the ID - see [the documentation](https://docs.n8n.io/try-it-out/longer-introduction/)",
+                      "height": 120,
+                      "width": 600
+                    },
+                    "type": "n8n-nodes-base.stickyNote",
+                    "typeVersion": 1,
+                    "position": [
+                      -720,
+                      -60
+                    ],
+                    "id": "08e0b8f9-c90e-4c9c-a663-01aca805b9be",
+                    "name": "Sticky Note"
+                  }
+                ],
+                "connections": {
+                  "Schedule Trigger": {
+                    "main": [
+                      [
+                        {
+                          "node": "NASA",
+                          "type": "main",
+                          "index": 0
+                        }
+                      ]
+                    ]
+                  },
+                  "NASA": {
+                    "main": [
+                      [
+                        {
+                          "node": "If",
+                          "type": "main",
+                          "index": 0
+                        }
+                      ]
+                    ]
+                  },
+                  "If": {
+                    "main": [
+                      [
+                        {
+                          "node": "PostBin(true)",
+                          "type": "main",
+                          "index": 0
+                        }
+                      ],
+                      [
+                        {
+                          "node": "PostBin(false)",
+                          "type": "main",
+                          "index": 0
+                        }
+                      ]
+                    ]
+                  }
+                }
+              },
+              "expect": "updated successfully",
+              "before": []
+            },
+            {
+              "tool": "n8n_update_partial_workflow",
+              "arguments": {
+                "id": "DPzMzTIyDrYohiw4",
+                "operations": [
+                  {
+                    "type": "updateName",
+                    "name": "Tutorial-workflow"
+                  }
+                ],
+                "validateOnly": true
+              },
+              "expect": "Validation successful",
+              "before": []
+            },
+            {
+              "tool": "n8n_delete_workflow",
+              "arguments": {
+                "id": "DCotkGqkv0VfT6QT"
+              },
+              "expect": "Form with mutually exclusive branching",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -6756,20 +7246,34 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-n8n-cve202644694",
             "exploit_calls": [
-              "n8n_get_workflow"
+              "n8n_get_workflow",
+              "n8n_test_workflow",
+              "n8n_list_workflows",
+              "n8n_validate_workflow",
+              "n8n_autofix_workflow",
+              "n8n_executions",
+              "n8n_deploy_template",
+              "n8n_manage_datatable",
+              "n8n_manage_credentials",
+              "n8n_audit_instance",
+              "n8n_create_workflow",
+              "n8n_update_full_workflow",
+              "n8n_update_partial_workflow",
+              "n8n_delete_workflow"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
           "flaw": "CVE-2026-39974",
           "tools": [],
           "effect_class": "internal_fetch",
-          "patched_version": null,
-          "patched_source": "none",
+          "patched_version": "2.47.4",
+          "patched_source": "advisory",
           "launch_option": null,
           "benign_calls": [],
           "backend_need": "none",
@@ -6781,15 +7285,16 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
           "flaw": "CVE-2026-42449",
           "tools": [],
           "effect_class": "internal_fetch",
-          "patched_version": null,
-          "patched_source": "none",
+          "patched_version": "2.47.14",
+          "patched_source": "advisory",
           "launch_option": null,
           "benign_calls": [],
           "backend_need": "none",
@@ -6801,7 +7306,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -6956,7 +7462,7 @@
       "service": "n8n",
       "backend": {
         "provisioner": "n8n",
-        "image": "mcp-auditor-cve-n8n-responder:local",
+        "image": "mcp-auditor-cve-n8n-instance:local",
         "network": "mcp-auditor-cve-n8n-bridge"
       },
       "agents": [
@@ -6969,49 +7475,224 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "set_aside": "it saw the other agent's final summary before writing its own record"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
         }
       ],
       "agreement": [
         {
           "flaw": "GHSA-8g7g-hmwm-6rv2",
-          "field": "effect_class",
-          "agreed": false
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "field": "real_software",
+          "agreed": true
         },
         {
           "flaw": "GHSA-8g7g-hmwm-6rv2",
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "GHSA-8g7g-hmwm-6rv2",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44694",
+          "field": "tools",
           "agreed": false
         },
         {
           "flaw": "CVE-2026-44694",
-          "field": "fix_check.vulnerable_surfaces",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44694",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44694",
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-44694",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44694",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-39974",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-39974",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-42449",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-42449",
+          "field": "benign_calls",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "npm:n8n-mcp",
-          "flaw": "GHSA-8g7g-hmwm-6rv2",
-          "field": "effect_class",
-          "value": "internal_fetch",
-          "reason": "record B derived read_outside_scope from the path-traversal face of the webhook URL; record A's internal_fetch matches the holdout twin (GHSA-8g7g-hmwm-6rv2 is a redirect-following SSRF reaching an internal host, CWE-918), so internal_fetch is the settled class."
+          "flaw": "CVE-2026-44694",
+          "field": "tools",
+          "value": "n8n_get_workflow, n8n_test_workflow, n8n_list_workflows, n8n_validate_workflow, n8n_autofix_workflow, n8n_executions, n8n_deploy_template, n8n_manage_datatable, n8n_manage_credentials, n8n_audit_instance, n8n_create_workflow, n8n_update_full_workflow, n8n_update_partial_workflow, n8n_delete_workflow",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: every listed tool passes an argument into a request of the API client that follows a redirect on 2.50.1, where record A added n8n_list_workflows alone; n8n_health_check, which record B adds, takes no argument that reaches the client, and n8n_workflow_versions, which record B also adds, reaches the client only through an instance context the stdio server never sets, its rollback answering that the API is not configured, so both stay out"
         },
         {
           "server_package": "npm:n8n-mcp",
           "flaw": "GHSA-8g7g-hmwm-6rv2",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B read n8n_test_workflow's declared function (trigger a workflow over HTTP) as the effect itself; the declared contract is to trigger the caller's own workflow, not to fetch an internal host it is redirected to, so the SSRF is a bug, not the contract (re-verified in 4.8 from the real tool description)."
+          "field": "benign_calls",
+          "value": "record B's call: n8n_test_workflow on the documentation's Webhook node example (9i3iDZf5MpjlJ2sh) with its own POST method, expecting Workflow was started",
+          "reason": "record B's fixture is retained: its calls name the workflows the real n8n 2.46.6 holds once seeded with the n8n documentation's quickstart sample and its two workflow examples, each call answering with the text the real instance returns, where record A's name a workflow written for the fixture"
         },
         {
           "server_package": "npm:n8n-mcp",
           "flaw": "CVE-2026-44694",
-          "field": "fix_check.vulnerable_surfaces",
-          "value": "true",
-          "reason": "record A did not run the fix check and recorded vulnerable_surfaces false; record B reproduced it (the main axios client follows a 302 from its own stand-in and returns the sentinel via n8n_get_workflow on 2.50.1, dead on 2.50.2), so the flaw surfaces on the vulnerable version."
+          "field": "benign_calls",
+          "value": "record B's calls, one per listed tool, on the documentation's quickstart sample (DPzMzTIyDrYohiw4), its Webhook node example and its Form node example (DCotkGqkv0VfT6QT), each with the expected text the real instance answers",
+          "reason": "record B's fixture is retained: its calls name the workflows the real n8n 2.46.6 holds once seeded with the n8n documentation's quickstart sample and its two workflow examples, each call answering with the text the real instance returns, where record A's name a workflow written for the fixture"
+        },
+        {
+          "server_package": "npm:n8n-mcp",
+          "flaw": "CVE-2026-39974",
+          "field": "tools",
+          "value": "[]",
+          "reason": "a flaw counts tools only when an argument of a tool call reaches its faulty code: CVE-2026-39974 is reached through the instance URL a multi-tenant HTTP deployment takes from a request header, which no stdio tool call carries, so none of the sixteen tools record B lists under it is taken"
+        },
+        {
+          "server_package": "npm:n8n-mcp",
+          "flaw": "CVE-2026-39974",
+          "field": "benign_calls",
+          "value": "[]",
+          "reason": "the flaw keeps no tool, so it keeps no benign call"
+        },
+        {
+          "server_package": "npm:n8n-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the n8n documentation's quickstart sample taken whole, its Webhook node and Form node examples, the API key the instance issues, and the written owner account and activation",
+          "reason": "the seeds follow the retained fixture: a published sample taken whole, with the two documents of the same repository the benign calls need, each pinned by its checksum in the instance's Dockerfile, where record A seeded one workflow written for the fixture"
         }
       ],
-      "patched_version": "2.50.2"
+      "patched_version": "2.50.2",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "docs/_workflows/try-it-out/quickstart/tutorial.json (workflow 'Tutorial-workflow', id DPzMzTIyDrYohiw4), the n8n documentation's quickstart sample, taken whole and imported with `n8n import:workflow` at backend build time; used by n8n_get_workflow, n8n_validate_workflow, n8n_autofix_workflow, n8n_update_full_workflow and n8n_update_partial_workflow",
+          "kind": "published_sample",
+          "citation": "https://raw.githubusercontent.com/n8n-io/n8n-docs/b11d16fbe0fb27499bf7455af4bd07d1629a6b12/docs/_workflows/try-it-out/quickstart/tutorial.json",
+          "pin": "sha256:95e4305ac4ad07408d8edc3be41e5c3420d3a722499b93791d1bcf257cada240"
+        },
+        {
+          "item": "docs/_workflows/integrations/builtin/core-nodes/n8n-nodes-base.extractfromfile/webhook-example.json ('Extract from file example', id 9i3iDZf5MpjlJ2sh, a POST Webhook node), taken whole and imported at build time; the sample holds no webhook workflow, which n8n_test_workflow needs, so it comes from this project document; its nodes and connections are also the arguments of n8n_create_workflow",
+          "kind": "project_document",
+          "citation": "https://raw.githubusercontent.com/n8n-io/n8n-docs/b11d16fbe0fb27499bf7455af4bd07d1629a6b12/docs/_workflows/integrations/builtin/core-nodes/n8n-nodes-base.extractfromfile/webhook-example.json",
+          "pin": "sha256:cb129298b5063af9246a91d6b0fddba06c3b587d42b989bb7daef88f670b95b6"
+        },
+        {
+          "item": "docs/_workflows/integrations/builtin/core-nodes/n8n-nodes-base.form/mutually-exclusive-branching.json ('Form with mutually exclusive branching', id DCotkGqkv0VfT6QT), taken whole, imported at build time and again at each launch when missing, the workflow n8n_delete_workflow deletes",
+          "kind": "project_document",
+          "citation": "https://raw.githubusercontent.com/n8n-io/n8n-docs/b11d16fbe0fb27499bf7455af4bd07d1629a6b12/docs/_workflows/integrations/builtin/core-nodes/n8n-nodes-base.form/mutually-exclusive-branching.json",
+          "pin": "sha256:54164400ed9b584d4fa6406574e1f6f86d9eaf80970adc9ecefaece661aa12c5"
+        },
+        {
+          "item": "the API key n8n issues at the instance's first start (POST /rest/api-keys with every scope GET /rest/api-keys/scopes returns, expiresAt null), kept in the instance's data directory and passed to the server as N8N_API_KEY",
+          "kind": "generated",
+          "citation": "n8n 2.46.6 REST API, the owner's API key creation; n8n-mcp README: 'These tools require N8N_API_URL and N8N_API_KEY in your configuration.'",
+          "pin": "docker.n8n.io/n8nio/n8n:2.46.6@sha256:8602f5dfacbe2c931eeafd010de0e68182310e9f309921e780ab69182e92b3ae"
+        },
+        {
+          "item": "the owner account n8n requires before it issues an API key: email owner@example.com, first name Ada, last name Lovelace, password Analytical-Engine-1843 (POST /rest/owner/setup), and the API key label n8n-mcp",
+          "kind": "written",
+          "citation": "values written for the fixture (no sample or document gives an owner account); the example.com domain is reserved for documentation (RFC 2606)",
+          "pin": null
+        },
+        {
+          "item": "the activation of the Webhook node example (POST /api/v1/workflows/9i3iDZf5MpjlJ2sh/activate) at the instance's first start, since n8n import:workflow deactivates imported workflows and a webhook only answers for an active workflow",
+          "kind": "written",
+          "citation": "n8n public API, workflow activate route; n8n-mcp n8n_test_workflow description: 'Only workflows with these trigger types can be executed externally'",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "n8n",
+          "release": "2.46.6",
+          "day": "2026-11-07",
+          "source": "n8n-mcp's docker-compose.n8n.yml at v2.50.2 runs the instance as image n8nio/n8n:latest and names no version (the README's 'n8n 2.18.4' badge is the version of the n8n node packages the server bundles, n8n-nodes-base 2.18.3 in package.json, not of an instance). On 2026-11-07 registry.npmjs.org/-/package/n8n/dist-tags gives latest=2.46.6 and stable=2.46.6, and n8nio/n8n:latest and docker.n8n.io/n8nio/n8n:2.46.6 resolve to the same index digest sha256:8602f5dfacbe2c931eeafd010de0e68182310e9f309921e780ab69182e92b3ae, which Dockerfile.n8n-instance pins. The same release as the holdout card's (2.46.6, day 2026-11-05)."
+        }
+      ]
     },
     {
       "server_package": "npm:@coding-solo/godot-mcp",

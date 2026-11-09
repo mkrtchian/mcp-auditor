@@ -1,19 +1,15 @@
 # n8n-mcp 2.50.2: the shipped server the nuisance run audits, and the fix-check server-patched arm
 # for both counted flaws (the first release fixing CVE-2026-44694, the API client axios instance
 # now maxRedirects: 0; GHSA-8g7g was already fixed in 2.50.1). The real package is installed from
-# npm, unmodified.
+# npm, unmodified, and runs over stdio at its documented defaults.
 #
-# The run env points the server at the nuisance run responder (evals/n8n_backend.py, the benign
-# stand-in at 192.0.2.2); n8n_server_args passes no backend env because it is baked here. The
-# fix-check builder overrides N8N_API_URL with `docker run -e` to reach its own stand-in instead.
+# The image bakes no backend environment: the lifecycle (evals/n8n_backend.py) passes N8N_API_URL,
+# the address of the real n8n instance on the closed bridge, and N8N_API_KEY, the key that
+# instance issued at its first start, as `docker run -e` options of the server's launch.
 # No COPY/ADD: the fingerprint hashes instructions only.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
 RUN npm install -g n8n-mcp@2.50.2 \
     && npm cache clean --force
-
-ENV N8N_API_URL=http://192.0.2.2/
-ENV N8N_API_KEY=calibration-n8n-api-key
-ENV N8N_MCP_TELEMETRY_DISABLED=true
 
 ENTRYPOINT ["n8n-mcp"]

@@ -43,7 +43,7 @@ from evals.figma_backend import FIGMA_BRIDGE, FIGMA_RESPONDER_IMAGE
 from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
-from evals.n8n_backend import N8N_BRIDGE, N8N_RESPONDER_IMAGE
+from evals.n8n_backend import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
 from evals.neo4j_backend import NEO4J_BRIDGE, NEO4J_IMAGE
 from evals.public_stand_ins import stand_in_files
 
@@ -86,12 +86,12 @@ BACKENDS: dict[str, RegisteredBackend] = {
         _CKAN_SERVICES,
         (*_served(ckan_backend.__file__, *_CKAN_SERVICES), *MOUNTED_FILES),
     ),
-    "n8n": _responder(
+    "n8n": RegisteredBackend(
         n8n_backend.LIFECYCLE,
-        n8n_backend.__file__,
         N8N_BRIDGE,
-        N8N_RESPONDER_IMAGE,
-        "n8n-responder",
+        N8N_IMAGE,
+        (N8N_SERVICE,),
+        _served(n8n_backend.__file__, N8N_SERVICE),
     ),
     "atlassian": _responder(
         atlassian_backend.LIFECYCLE,

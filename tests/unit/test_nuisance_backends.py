@@ -13,10 +13,13 @@ from evals.docker_paths import DOCKER_DIRECTORY
 from evals.gitlab_backend import GITLAB_RESPONDER_IP
 from evals.googleapis_backend import GOOGLEAPIS_RESPONDER_IP
 from evals.jenkins_backend import JENKINS_RESPONDER_IP
+from evals.n8n_backend import N8N_IP, n8n_server_args, singleton_run_args
 from evals.neo4j_backend import NEO4J_HOST
 from evals.nuisance_backends import BACKENDS
+from evals.nuisance_confinement import memory_bound_args
 from evals.public_stand_ins import stand_in_files
 from tests.unit.support.docker_argv import (
+    carries,
     environment,
     mount_of,
     value_after,
@@ -100,3 +103,34 @@ def test_the_data_europa_eu_stand_in_replays_its_capture_under_its_leaf():
 
 def test_the_ckan_registry_entry_serves_every_file_its_lifecycle_mounts():
     assert set(MOUNTED_FILES) <= set(BACKENDS["ckan"].served)
+
+
+def test_the_n8n_server_reaches_the_instance_on_its_default_port_with_its_issued_key():
+    args = n8n_server_args("server-name", "image", given.a_host(), ["serve"])
+
+    assert environment(args)["N8N_API_URL"] == f"http://{N8N_IP}:5678/"
+    assert "N8N_API_KEY" in environment(args)
+
+
+def test_the_n8n_server_leaves_telemetry_at_its_documented_default():
+    args = n8n_server_args("server-name", "image", given.a_host(), ["serve"])
+
+    assert "N8N_MCP_TELEMETRY_DISABLED" not in environment(args)
+
+
+def test_the_n8n_instance_stands_confined_at_the_address_the_server_reaches_on_its_bridge():
+    args = singleton_run_args()
+
+    assert value_after(args, "--network") == BACKENDS["n8n"].network
+    assert value_after(args, "--ip") == N8N_IP
+    assert args[-1] == BACKENDS["n8n"].image
+    assert value_after(args, "--cap-drop") == "ALL"
+    assert "--cap-add" not in args
+    assert carries(args, memory_bound_args())
+
+
+def test_the_n8n_registry_entry_builds_the_instance_and_serves_its_dockerfile():
+    entry = BACKENDS["n8n"]
+
+    assert entry.built_services == ("n8n-instance",)
+    assert DOCKER_DIRECTORY / "Dockerfile.n8n-instance" in entry.served

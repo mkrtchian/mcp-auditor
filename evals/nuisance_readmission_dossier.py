@@ -90,7 +90,8 @@ def fix_check_modules(server: AdmittedServer) -> list[str]:
     modules: list[str] = []
     for info in pkgutil.iter_modules(nuisance_fix_checks.__path__):
         name = f"{nuisance_fix_checks.__name__}.{info.name}"
-        targets: tuple[FixCheckTarget, ...] = importlib.import_module(name).TARGETS
+        # A shared helper of the package (a builder two flaws use) defines no target.
+        targets: tuple[FixCheckTarget, ...] = getattr(importlib.import_module(name), "TARGETS", ())
         if any(target.flaw in flaws for target in targets):
             modules.append(name)
     return modules

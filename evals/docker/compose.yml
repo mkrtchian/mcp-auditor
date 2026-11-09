@@ -904,7 +904,7 @@ services:
       context: .
       dockerfile: Dockerfile.n8n
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "4a27347e10c49e92de34f47011a988129e01f46324ddb0a5517d993c0d778e67"
+        org.mcp-auditor.dockerfile-fingerprint: "d35cc44ec061aa09ab30b17c4b9d3c5c29fe8a8e79ed582b606cf17c3b9faae4"
     image: mcp-auditor-nuisance-n8n:local
     profiles: ["nuisance"]
 
@@ -1334,13 +1334,13 @@ services:
     image: mcp-auditor-cve-ckan-front:local
     profiles: ["nuisance"]
 
-  n8n-responder:
+  n8n-instance:
     build:
       context: .
-      dockerfile: Dockerfile.n8n-responder
+      dockerfile: Dockerfile.n8n-instance
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0bc40319ebc33229bdc6baf3c4dbae51834025f1bff8bedcc0ac321e517259ce"
-    image: mcp-auditor-cve-n8n-responder:local
+        org.mcp-auditor.dockerfile-fingerprint: "97050b9b523db8c6ac6be319c5df7c7a249cf02feaaf202adb82f80f32c50fc9"
+    image: mcp-auditor-cve-n8n-instance:local
     profiles: ["nuisance"]
 
   atlassian-responder:

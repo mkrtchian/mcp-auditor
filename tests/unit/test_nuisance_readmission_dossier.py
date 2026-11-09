@@ -159,6 +159,15 @@ def test_the_confinement_names_every_option_the_run_sets(server: AdmittedServer)
         assert server.backend.network in confinement
 
 
+def test_a_shared_helper_of_the_fix_check_package_is_no_flaws_fix_check_module():
+    n8n = next(s for s in the_committed_admission().servers if s.server_package == "npm:n8n-mcp")
+
+    assert fix_check_modules(n8n) == [
+        "evals.nuisance_fix_checks.cve_2026_44694_n8n",
+        "evals.nuisance_fix_checks.ghsa_8g7g_hmwm_6rv2_n8n",
+    ]
+
+
 def test_the_readme_builds_the_run_image_and_names_the_fix_check_modules():
     server = admission_given.an_admitted_server()
     modules = ["evals.nuisance_fix_checks.first", "evals.nuisance_fix_checks.second"]

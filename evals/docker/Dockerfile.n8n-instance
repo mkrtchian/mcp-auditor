@@ -1,0 +1,92 @@
+# syntax=docker/dockerfile:1.7
+# The n8n instance a patched n8n-mcp deployment points N8N_API_URL at: the real n8n, the
+# workflow-automation software n8n-mcp's docker-compose.n8n.yml names (n8nio/n8n:latest), pinned
+# at 2.46.6, the stable release on 2026-11-07 (npm dist-tags latest and stable, and the digest
+# docker.n8n.io and Docker Hub serve for both `2.46.6` and `latest`). It runs at its defaults,
+# listening on its default port 5678.
+#
+# Imported at build time with n8n's own CLI, each file taken whole from the n8n documentation
+# repository (n8n-io/n8n-docs) at commit b11d16fbe0fb27499bf7455af4bd07d1629a6b12:
+#   - docs/_workflows/try-it-out/quickstart/tutorial.json, the documentation's quickstart sample
+#     (workflow id DPzMzTIyDrYohiw4, "Tutorial-workflow");
+#   - .../n8n-nodes-base.extractfromfile/webhook-example.json, the Webhook node example
+#     (id 9i3iDZf5MpjlJ2sh, "Extract from file example"), the one active webhook workflow;
+#   - .../n8n-nodes-base.form/mutually-exclusive-branching.json, the Form node example
+#     (id DCotkGqkv0VfT6QT), imported again whenever it is missing.
+# At each start of a launch the lifecycle (evals/n8n_backend.py) runs /opt/n8n-setup/owner.mjs
+# through `docker exec`. On the instance's first start it sets up the owner account, has n8n
+# issue an API key and activates the webhook example through n8n's public API. It then imports
+# the Form node example again when it is missing, and prints the key.
+FROM docker.n8n.io/n8nio/n8n:2.46.6@sha256:8602f5dfacbe2c931eeafd010de0e68182310e9f309921e780ab69182e92b3ae
+
+ADD --chown=node:node --checksum=sha256:95e4305ac4ad07408d8edc3be41e5c3420d3a722499b93791d1bcf257cada240 \
+    https://raw.githubusercontent.com/n8n-io/n8n-docs/b11d16fbe0fb27499bf7455af4bd07d1629a6b12/docs/_workflows/try-it-out/quickstart/tutorial.json \
+    /home/node/import/tutorial.json
+ADD --chown=node:node --checksum=sha256:cb129298b5063af9246a91d6b0fddba06c3b587d42b989bb7daef88f670b95b6 \
+    https://raw.githubusercontent.com/n8n-io/n8n-docs/b11d16fbe0fb27499bf7455af4bd07d1629a6b12/docs/_workflows/integrations/builtin/core-nodes/n8n-nodes-base.extractfromfile/webhook-example.json \
+    /home/node/import/webhook-example.json
+ADD --chown=node:node --checksum=sha256:54164400ed9b584d4fa6406574e1f6f86d9eaf80970adc9ecefaece661aa12c5 \
+    https://raw.githubusercontent.com/n8n-io/n8n-docs/b11d16fbe0fb27499bf7455af4bd07d1629a6b12/docs/_workflows/integrations/builtin/core-nodes/n8n-nodes-base.form/mutually-exclusive-branching.json \
+    /home/node/import/mutually-exclusive-branching.json
+
+RUN n8n import:workflow --separate --input=/home/node/import
+
+USER root
+RUN mkdir -p /opt/n8n-setup && cat > /opt/n8n-setup/owner.mjs <<'JS'
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+
+const base = 'http://127.0.0.1:5678';
+const keyFile = '/home/node/.n8n/mcp-api-key';
+const owner = { email: 'owner@example.com', firstName: 'Ada', lastName: 'Lovelace', password: 'Analytical-Engine-1843' };
+const activate = ['9i3iDZf5MpjlJ2sh'];
+const keep = { DCotkGqkv0VfT6QT: '/home/node/import/mutually-exclusive-branching.json' };
+const json = { 'Content-Type': 'application/json' };
+
+async function call(path, init = {}) {
+  const response = await fetch(base + path, init);
+  const text = await response.text();
+  if (!response.ok) throw new Error(`${init.method || 'GET'} ${path}: ${response.status} ${text}`);
+  return { response, body: text ? JSON.parse(text) : null };
+}
+
+async function ready() {
+  for (let i = 0; i <= 180; i++) {
+    try {
+      if ((await fetch(base + '/healthz/readiness')).ok) return;
+    } catch {}
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  throw new Error('n8n did not become ready');
+}
+
+async function issueKey() {
+  await call('/rest/owner/setup', { method: 'POST', headers: json, body: JSON.stringify(owner) });
+  const login = await call('/rest/login', {
+    method: 'POST', headers: json,
+    body: JSON.stringify({ emailOrLdapLoginId: owner.email, password: owner.password }),
+  });
+  const cookie = login.response.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+  const session = { ...json, cookie };
+  const scopes = (await call('/rest/api-keys/scopes', { headers: session })).body.data;
+  const created = await call('/rest/api-keys', {
+    method: 'POST', headers: session,
+    body: JSON.stringify({ label: 'n8n-mcp', scopes, expiresAt: null }),
+  });
+  const key = created.body.data.rawApiKey;
+  for (const id of activate) {
+    await call(`/api/v1/workflows/${id}/activate`, { method: 'POST', headers: { ...json, 'X-N8N-API-KEY': key } });
+  }
+  writeFileSync(keyFile, key);
+  return key;
+}
+
+await ready();
+const key = existsSync(keyFile) ? readFileSync(keyFile, 'utf8') : await issueKey();
+for (const [id, file] of Object.entries(keep)) {
+  const found = await fetch(`${base}/api/v1/workflows/${id}`, { headers: { 'X-N8N-API-KEY': key } });
+  if (found.status === 404) execFileSync('n8n', ['import:workflow', `--input=${file}`], { stdio: 'ignore' });
+}
+process.stdout.write(key);
+JS
+USER node
