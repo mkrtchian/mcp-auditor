@@ -14,7 +14,6 @@ from evals.gitlab_backend import GITLAB_RESPONDER_IP
 from evals.googleapis_backend import GOOGLEAPIS_RESPONDER_IP
 from evals.jenkins_backend import JENKINS_RESPONDER_IP
 from evals.n8n_backend import N8N_IP, n8n_server_args, singleton_run_args
-from evals.neo4j_backend import NEO4J_HOST
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import memory_bound_args
 from evals.public_stand_ins import stand_in_files
@@ -32,7 +31,6 @@ _BAKED_ADDRESSES = {
     "jenkins": f"JENKINS_URL=http://{JENKINS_RESPONDER_IP}",
     "gitlab": f"GITLAB_API_URL=http://{GITLAB_RESPONDER_IP}/",
     "googleapis": f"UPSTREAM_URL=http://{GOOGLEAPIS_RESPONDER_IP}",
-    "neo4j": f"NEO4J_URI=bolt://{NEO4J_HOST}:",
 }
 
 

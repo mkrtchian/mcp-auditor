@@ -12,8 +12,9 @@ The SSRF originates in the Neo4j engine, so the fix check stands three container
 labeled bridge (no route to the host or the Internet): a sentinel serving the per-launch nonce under
 a stable network alias the engine resolves regardless of container name, a fresh Neo4j database
 (APOC unrestricted, file import off) under its own stable alias, and the server pointed at that
-alias by an `-e` override of its baked NEO4J_URI. None of the three carries both the flaw and the
-fix; the vulnerable and patched arms differ only in the server image.
+alias by `-e` (NEO4J_URI and its credentials), so the engine the patched run image starts for
+itself goes unused. None of the three carries both the flaw and the fix; the vulnerable and
+patched arms differ only in the server image.
 """
 
 import re

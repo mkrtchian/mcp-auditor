@@ -10483,7 +10483,13 @@
             {
               "vulnerable_name": "read_neo4j_cypher",
               "patched_name": "read_neo4j_cypher",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -10500,7 +10506,9 @@
               "tool": "read_neo4j_cypher",
               "arguments": {
                 "query": "RETURN 1 AS n"
-              }
+              },
+              "expect": "[{\"n\": 1}]",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -10514,7 +10522,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -10523,12 +10532,24 @@
             {
               "vulnerable_name": "read_neo4j_cypher",
               "patched_name": "read_neo4j_cypher",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "get_neo4j_schema",
               "patched_name": "get_neo4j_schema",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": null,
@@ -10545,13 +10566,17 @@
               "tool": "read_neo4j_cypher",
               "arguments": {
                 "query": "RETURN 1 AS n"
-              }
+              },
+              "expect": "[{\"n\": 1}]",
+              "before": []
             },
             {
               "tool": "get_neo4j_schema",
               "arguments": {
                 "sample_size": 100
-              }
+              },
+              "expect": "\"Movie\": {\"type\": \"node\"",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -10563,7 +10588,8 @@
             "vulnerable_surfaces": false,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -10572,17 +10598,13 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/",
-        "has_network": true
+        "has_network": false
       },
       "launch": [
         "--read-only"
       ],
       "service": "neo4j",
-      "backend": {
-        "provisioner": "neo4j",
-        "image": "mcp-auditor-cve-neo4j-backend:local",
-        "network": "mcp-auditor-cve-neo4j-bridge"
-      },
+      "backend": null,
       "agents": [
         {
           "role": "admitter",
@@ -10593,9 +10615,90 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-35402",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-35402",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-35402",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-35402",
+          "field": "benign_calls",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-35402",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-35402",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-10193",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-10193",
+          "field": "benign_calls",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
       "settlements": [
         {
           "server_package": "PyPI:mcp-neo4j-cypher",
@@ -10610,9 +10713,84 @@
           "field": "counted",
           "value": "false",
           "reason": "not counted: a DNS-rebinding / origin-validation flaw in the http/sse transport (CWE-346), unreachable over the stdio transport this suite admits and outside the three graded effect classes; kept with a null class and logged"
+        },
+        {
+          "server_package": "PyPI:mcp-neo4j-cypher",
+          "flaw": null,
+          "field": "backend",
+          "value": "null: Neo4j 5.26.1 runs in the run image",
+          "reason": "the real software runs in the server's container whenever the confinement allows it, before a backend is considered: Neo4j 5.26.1 and its bundled APOC start in the run image under the run's confinement, as they do in the holdout twin's image, so record B's fixture, which runs the engine there, is kept over record A's, which runs it as a separate backend container, and the committed neo4j backend leaves the server."
+        },
+        {
+          "server_package": "PyPI:mcp-neo4j-cypher",
+          "flaw": null,
+          "field": "host",
+          "value": "has_network false",
+          "reason": "a server with no backend runs with no network, and the admission refuses a network without a backend; the server reaches its engine on localhost, at its documented default address."
+        },
+        {
+          "server_package": "PyPI:mcp-neo4j-cypher",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: Neo4j's Movies example graph (published sample), the password 'password' (the README's), the memory sizing neo4j-admin generates for the 4g bound and the APOC setting NEO4J_PLUGINS makes (generated), and the hosts file the JVM reads without a network (written)",
+          "reason": "a seed is what the fixture writes for the server to read, and record B's are those of the retained fixture, where the engine sits in the server's container: record A's alias seed names a backend container the retained fixture does not have, and its database-name seed is the engine's own default, not a value the fixture writes."
+        },
+        {
+          "server_package": "PyPI:mcp-neo4j-cypher",
+          "flaw": "CVE-2025-10193",
+          "field": "tools",
+          "value": "read_neo4j_cypher, get_neo4j_schema",
+          "reason": "write_neo4j_cypher, which both records add under this flaw, is not registered under the admitted launch --read-only, so its benign call cannot be played on the run's launch; the flaw is not counted, so its absence removes no counted tool."
         }
       ],
-      "patched_version": "0.6.0"
+      "patched_version": "0.6.0",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "Neo4j's Movies example graph, loaded whole at image build time by cypher-shell from its published load script scripts/movies.cypher (neo4j-graph-examples/movies at commit 51cf90d18c1a7f74bce7a77083543697dfb0139d, checked by its sha256) (constraints movie_title and person_name, 38 Movie and 133 Person nodes with their relationships). Movies is the first dataset of Neo4j's 'Example datasets' page.",
+          "kind": "published_sample",
+          "citation": "https://neo4j.com/docs/getting-started/appendix/example-data/ (first row: Movies, ':guide movies'); https://github.com/neo4j-graph-examples/movies README.adoc ':use-load-script: scripts/movies.cypher'",
+          "pin": "7be04aba2193790e0051308e6aa8550236e651cae652ea7da44b7dc01f4c4e69"
+        },
+        {
+          "item": "Neo4j initial password 'password' for user neo4j (neo4j-admin dbms set-initial-password password), matching the server's default NEO4J_PASSWORD so no server variable is set.",
+          "kind": "project_document",
+          "citation": "mcp-neo4j-cypher README at tag mcp-neo4j-cypher-v0.6.0: Docker Compose example 'NEO4J_AUTH=neo4j/password'; environment table 'NEO4J_PASSWORD | password'",
+          "pin": "mcp-neo4j-cypher==0.6.0"
+        },
+        {
+          "item": "Neo4j memory settings server.memory.heap.initial_size=2g, server.memory.heap.max_size=2g, server.memory.pagecache.size=512m, server.jvm.additional=-XX:+ExitOnOutOfMemoryError, appended to neo4j.conf from the output of 'neo4j-admin server memory-recommendation --memory=4g' run at build time.",
+          "kind": "generated",
+          "citation": "Neo4j operations manual, neo4j-admin server memory-recommendation; output of the pinned neo4j:5.26.1 image",
+          "pin": "sha256:2ebf971c90529d900bdaf8125761a54a4f78203796756eef74c579143f9577c5"
+        },
+        {
+          "item": "APOC core plugin (apoc-5.26.1-core.jar of the neo4j:5.26.1 image) and dbms.security.procedures.unrestricted=apoc.*, set at build time as NEO4J_PLUGINS=[\"apoc\"] sets them at container start: the image's /startup/neo4j-plugins.json maps apoc to location /var/lib/neo4j/labs/apoc-*-core.jar and property dbms.security.procedures.unrestricted apoc.*.",
+          "kind": "generated",
+          "citation": "mcp-neo4j-cypher README v0.6.0 Prerequisites and Compose example 'NEO4J_PLUGINS=[\"apoc\"]'; /startup/neo4j-plugins.json of the neo4j:5.26.1 image",
+          "pin": "sha256:2ebf971c90529d900bdaf8125761a54a4f78203796756eef74c579143f9577c5"
+        },
+        {
+          "item": "Hosts file /tmp/hosts, one line mapping 127.0.0.1 to localhost and to the container's own hostname (generated by Docker at run time, read with hostname), written by the entrypoint; neo4j.conf line server.jvm.additional=-Djdk.net.hosts.file=/tmp/hosts points the JVM at it.",
+          "kind": "written",
+          "citation": "Written as a container repair: without a network the container hostname does not resolve and Neo4j 5.26.1 stops at start ('Configuration is invalid'); jdk.net.hosts.file is the JDK 17 system property for a resolver hosts file.",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "Neo4j (Community, official Docker image)",
+          "release": "5.26.1",
+          "day": null,
+          "source": "mcp-neo4j-cypher README at tag mcp-neo4j-cypher-v0.6.0, Docker Compose section: 'image: neo4j:5.26.1 # or another version'; same in servers/mcp-neo4j-cypher/docker-compose.yml. Pulled as neo4j:5.26.1@sha256:2ebf971c90529d900bdaf8125761a54a4f78203796756eef74c579143f9577c5, the digest the holdout twin pins."
+        },
+        {
+          "software": "APOC Core (Neo4j plugin)",
+          "release": "5.26.1",
+          "day": null,
+          "source": "The README names APOC as a prerequisite and installs it with NEO4J_PLUGINS=[\"apoc\"], which in the neo4j:5.26.1 image takes the bundled /var/lib/neo4j/labs/apoc-5.26.1-core.jar (/startup/neo4j-plugins.json); the version is fixed by the pinned Neo4j image."
+        }
+      ]
     },
     {
       "server_package": "npm:@sylphxltd/filesystem-mcp",

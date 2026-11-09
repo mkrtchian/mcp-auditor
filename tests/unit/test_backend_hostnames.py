@@ -1,7 +1,6 @@
 import pytest
 
 import tests.unit.support.test_backend_hostnames_given as given
-from evals import neo4j_backend
 from evals.doris_backend import DORIS_HOST, DORIS_SERVER_LAUNCH
 from evals.nuisance_admission import AdmittedServer
 
@@ -17,11 +16,6 @@ def test_the_doris_server_is_launched_at_the_clusters_alias():
 
 def test_the_mysql_benign_call_reaches_the_engine_in_its_own_image():
     assert given.the_benign_argument("mysql", "db_endpoint") == "127.0.0.1"
-
-
-@pytest.mark.parametrize("name", ["neo4j", "neo4j-vuln"])
-def test_the_neo4j_images_point_at_the_databases_alias(name: str):
-    assert given.dockerfile_env(name)["NEO4J_URI"] == neo4j_backend.NEO4J_URI
 
 
 @pytest.mark.parametrize("server", given.admitted_servers(), ids=lambda server: server.service)

@@ -26,7 +26,6 @@ from evals import (
     googleapis_backend,
     jenkins_backend,
     n8n_backend,
-    neo4j_backend,
     responder_backend,
 )
 from evals.atlassian_backend import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
@@ -41,7 +40,6 @@ from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
 from evals.n8n_backend import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
-from evals.neo4j_backend import NEO4J_BRIDGE, NEO4J_IMAGE
 
 if TYPE_CHECKING:
     from evals.nuisance_admission import AdmittedServer
@@ -115,13 +113,6 @@ BACKENDS: dict[str, RegisteredBackend] = {
         GOOGLEAPIS_BRIDGE,
         GOOGLEAPIS_RESPONDER_IMAGE,
         "googleapis-responder",
-    ),
-    "neo4j": RegisteredBackend(
-        neo4j_backend.LIFECYCLE,
-        NEO4J_BRIDGE,
-        NEO4J_IMAGE,
-        ("neo4j-backend",),
-        _served(neo4j_backend.__file__, "neo4j-backend"),
     ),
     "facebook_ads": _responder(
         facebook_ads_backend.LIFECYCLE,

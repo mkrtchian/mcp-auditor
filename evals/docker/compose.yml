@@ -14,9 +14,10 @@
 # them. SSRF holdout targets reuse the shared sentinel above, adding no sentinel of their own.
 # The nuisance block closes the file: one patched image per admitted server, tagged
 # mcp-auditor-nuisance-<service>:local, then the backend images the fixtures build (the
-# responders and Neo4j) under their backend modules' tags. Its services carry the nuisance
-# profile, so the build command above leaves them out, while the nuisance run names its services
-# and Compose enables the profile of a named service. Build the whole block by hand with:
+# responders, the CKAN stack and the n8n instance) under their backend modules' tags. Its services
+# carry the nuisance profile, so the build command above leaves them out, while the nuisance run
+# names its services and Compose enables the profile of a named service. Build the whole block
+# by hand with:
 #   docker compose -f evals/docker/compose.yml --profile nuisance build
 services:
   filesystem:
@@ -1003,7 +1004,7 @@ services:
       context: .
       dockerfile: Dockerfile.neo4j
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "09ea65e521fcf02e888091941f55805191a4e6e0a07f25e71da863d623fc2fdf"
+        org.mcp-auditor.dockerfile-fingerprint: "4c5634f9221e35ed67ae09b3ad8225513337b31adeeeb873292e943eb1ffd878"
     image: mcp-auditor-nuisance-neo4j:local
     profiles: ["nuisance"]
 
@@ -1250,8 +1251,9 @@ services:
     image: mcp-auditor-nuisance-figma:local
     profiles: ["nuisance"]
 
-  # Nuisance backends: the images the backend fixtures build (the responders and Neo4j), tagged
-  # as their backend modules tag them, rebuilt by the nuisance run with its server images.
+  # Nuisance backends: the images the backend fixtures build (the responders, the CKAN stack and
+  # the n8n instance), tagged as their backend modules tag them, rebuilt by the nuisance run with
+  # its server images.
 
   ckan-db:
     build:
@@ -1341,15 +1343,6 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "f2467563776a0795f7ba000ecc14a14cba124bc1c0c4803f9e157ea921344d1c"
     image: mcp-auditor-cve-googleapis-responder:local
-    profiles: ["nuisance"]
-
-  neo4j-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.neo4j-backend
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "be77fb211a89888f9466fe186e4d5aad7a5980111118cd546bef92b13b79197b"
-    image: mcp-auditor-cve-neo4j-backend:local
     profiles: ["nuisance"]
 
   facebook-ads-responder:

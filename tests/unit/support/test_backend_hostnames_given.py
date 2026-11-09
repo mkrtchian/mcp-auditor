@@ -23,10 +23,6 @@ def the_benign_argument(service: str, name: str) -> Any:
     return next(call.arguments[name] for call in calls if name in call.arguments)
 
 
-def dockerfile_env(name: str) -> dict[str, str]:
-    return _env_values(DOCKER_DIRECTORY / f"Dockerfile.{name}")
-
-
 def run_dockerfile_env(server: AdmittedServer) -> dict[str, str]:
     return _env_values(image_dockerfile(server.service, DOCKER_DIRECTORY))
 

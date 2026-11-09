@@ -1,10 +1,81 @@
-# Patched: mcp-neo4j-cypher 0.6.0, which replaces the <0.6.0 keyword-regex read_only gate with an
-# EXPLAIN query_type classification, so a write-mode CALL procedure (apoc.cypher.doIt) is classified
-# 'rw' and rejected under --read-only (CVE-2026-35402). Doubles as the nuisance run image.
-# The run path reaches the neo4j backend by its alias (neo4j_backend.NEO4J_HOST) over bolt from the
-# baked ENV; the fix-check overrides NEO4J_URI by -e. --read-only is appended by the launch.
-# Default transport is stdio. No COPY/ADD from the build context.
-FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
-RUN pip install --no-cache-dir "mcp-neo4j-cypher==0.6.0"
-ENV NEO4J_URI=bolt://neo4j:7687 NEO4J_USERNAME=neo4j NEO4J_PASSWORD=testpassword
-ENTRYPOINT ["mcp-neo4j-cypher"]
+# Run image of mcp-neo4j-cypher 0.6.0 (CVE-2026-35402 fixed: read_neo4j_cypher classifies the query
+# with EXPLAIN and rejects any query_type holding 'w'). The real Neo4j runs in this container, as in
+# the holdout twin (Dockerfile.holdout-2026-35402-neo4j-cypher-patched), at the release the server's
+# README Docker Compose example names (image neo4j:5.26.1, NEO4J_AUTH=neo4j/password,
+# NEO4J_PLUGINS=["apoc"]). The server runs at its documented defaults (NEO4J_URI
+# bolt://localhost:7687, NEO4J_USERNAME neo4j, NEO4J_PASSWORD password, NEO4J_DATABASE neo4j), so
+# no server variable is set here; --read-only comes from the launch.
+FROM neo4j:5.26.1@sha256:2ebf971c90529d900bdaf8125761a54a4f78203796756eef74c579143f9577c5
+
+# uv runs the README's install (uvx mcp-neo4j-cypher@0.6.0) and brings the CPython the base lacks.
+ARG UV_VERSION=0.13.7
+ARG UV_SHA256=287491da03f2a785c70fa75b13e1f849918c2f2b5415fe84876b8214eeb792f9
+RUN cd /tmp \
+ && wget -q "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-musl.tar.gz" \
+ && echo "${UV_SHA256}  uv-x86_64-unknown-linux-musl.tar.gz" | sha256sum -c - \
+ && tar xzf uv-x86_64-unknown-linux-musl.tar.gz -C /usr/local/bin --strip-components=1 \
+      uv-x86_64-unknown-linux-musl/uv uv-x86_64-unknown-linux-musl/uvx \
+ && rm uv-x86_64-unknown-linux-musl.tar.gz \
+ && uv --version
+
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv/python \
+    UV_TOOL_DIR=/opt/uv/tools \
+    UV_TOOL_BIN_DIR=/usr/local/bin \
+    UV_CACHE_DIR=/tmp/uvcache
+
+RUN uv tool install --python 3.12 "mcp-neo4j-cypher==0.6.0" \
+ && rm -rf /tmp/uvcache \
+ && chmod -R a+rX /opt/uv /usr/local/bin/mcp-neo4j-cypher
+
+# What NEO4J_PLUGINS=["apoc"] does at container start, done at build time (the run has no
+# network): the image's /startup/neo4j-plugins.json maps "apoc" to the bundled
+# /var/lib/neo4j/labs/apoc-*-core.jar and to dbms.security.procedures.unrestricted=apoc.*.
+RUN cp /var/lib/neo4j/labs/apoc-*-core.jar /var/lib/neo4j/plugins/ \
+ && echo 'dbms.security.procedures.unrestricted=apoc.*' >> /var/lib/neo4j/conf/neo4j.conf
+
+# NEO4J_AUTH=neo4j/password, as the README's Compose example and the server's default password.
+RUN neo4j-admin dbms set-initial-password password
+
+# Neo4j's first published example dataset, Movies (neo4j.com/docs/getting-started/appendix/example-data),
+# loaded whole from its load script (neo4j-graph-examples/movies, :use-load-script), pinned by commit
+# and checksum.
+ARG MOVIES_COMMIT=51cf90d18c1a7f74bce7a77083543697dfb0139d
+ARG MOVIES_SHA256=7be04aba2193790e0051308e6aa8550236e651cae652ea7da44b7dc01f4c4e69
+RUN cd /tmp \
+ && wget -q -O movies.cypher "https://raw.githubusercontent.com/neo4j-graph-examples/movies/${MOVIES_COMMIT}/scripts/movies.cypher" \
+ && echo "${MOVIES_SHA256}  movies.cypher" | sha256sum -c - \
+ && neo4j start \
+ && for _ in $(seq 1 120); do cypher-shell -u neo4j -p password 'RETURN 1' >/dev/null 2>&1 && break; sleep 1; done \
+ && cypher-shell -u neo4j -p password -f movies.cypher \
+ && neo4j stop \
+ && rm movies.cypher
+
+# Two container repairs, without which Neo4j stops at start under the confinement ("Configuration
+# is invalid"): its default memory sizing exceeds the 4g bound, so the sizing neo4j-admin computes
+# for 4g is applied; and under no network the container's hostname does not resolve, so the JVM
+# reads a hosts file the entrypoint writes for that hostname.
+RUN neo4j-admin server memory-recommendation --memory=4g | grep -E '^server\.' >> /var/lib/neo4j/conf/neo4j.conf \
+ && echo 'server.jvm.additional=-Djdk.net.hosts.file=/tmp/hosts' >> /var/lib/neo4j/conf/neo4j.conf
+
+RUN chmod -R 777 /data /logs /var/lib/neo4j && chmod 1777 /tmp
+
+# Neo4j starts first (its log off the stdio stream); the server starts once Bolt answers.
+RUN cat > /usr/local/bin/entrypoint.sh <<'EOF' \
+ && chmod +x /usr/local/bin/entrypoint.sh
+#!/bin/bash
+set -eu
+printf '127.0.0.1 localhost %s\n' "$(hostname)" > /tmp/hosts
+neo4j console >/tmp/neo4j.log 2>&1 &
+for _ in $(seq 1 110); do
+  if (exec 3<>/dev/tcp/127.0.0.1/7687) 2>/dev/null; then
+    exec 3>&-
+    exec 3<&-
+    break
+  fi
+  sleep 1
+done
+sleep 3
+exec /usr/local/bin/mcp-neo4j-cypher "$@"
+EOF
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
