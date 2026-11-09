@@ -19433,7 +19433,255 @@
             {
               "vulnerable_name": "git_add",
               "patched_name": "git_add",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_branch",
+              "patched_name": "git_branch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_checkout",
+              "patched_name": "git_checkout",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_cherry_pick",
+              "patched_name": "git_cherry_pick",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_clean",
+              "patched_name": "git_clean",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_clone",
+              "patched_name": "git_clone",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_commit",
+              "patched_name": "git_commit",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff",
+              "patched_name": "git_diff",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_fetch",
+              "patched_name": "git_fetch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_init",
+              "patched_name": "git_init",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_log",
+              "patched_name": "git_log",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_merge",
+              "patched_name": "git_merge",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_pull",
+              "patched_name": "git_pull",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_push",
+              "patched_name": "git_push",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_rebase",
+              "patched_name": "git_rebase",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_remote",
+              "patched_name": "git_remote",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_reset",
+              "patched_name": "git_reset",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_set_working_dir",
+              "patched_name": "git_set_working_dir",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_show",
+              "patched_name": "git_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_stash",
+              "patched_name": "git_stash",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_status",
+              "patched_name": "git_status",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_tag",
+              "patched_name": "git_tag",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_worktree",
+              "patched_name": "git_worktree",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -19444,11 +19692,214 @@
             {
               "tool": "git_add",
               "arguments": {
-                "path": "/tmp/benignrepo",
+                "path": "/tmp/repo-main",
                 "paths": [
                   "note.txt"
                 ]
-              }
+              },
+              "expect": "totalFiles",
+              "before": []
+            },
+            {
+              "tool": "git_branch",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "mode": "list"
+              },
+              "expect": "currentBranch",
+              "before": []
+            },
+            {
+              "tool": "git_checkout",
+              "arguments": {
+                "path": "/tmp/repo-checkout",
+                "target": "feature"
+              },
+              "expect": "branchCreated",
+              "before": []
+            },
+            {
+              "tool": "git_cherry_pick",
+              "arguments": {
+                "path": "/tmp/repo-cp",
+                "commits": [
+                  "feature"
+                ]
+              },
+              "expect": "conflictedFiles",
+              "before": []
+            },
+            {
+              "tool": "git_clean",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "dryRun": true
+              },
+              "expect": "filesRemoved",
+              "before": []
+            },
+            {
+              "tool": "git_clone",
+              "arguments": {
+                "url": "/tmp/repo-main",
+                "path": "/tmp/clone-dst"
+              },
+              "expect": "commitHash",
+              "before": []
+            },
+            {
+              "tool": "git_commit",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "message": "Snapshot of the tree",
+                "allowEmpty": true
+              },
+              "expect": "commitHash",
+              "before": []
+            },
+            {
+              "tool": "git_diff",
+              "arguments": {
+                "path": "/tmp/repo-main"
+              },
+              "expect": "filesChanged",
+              "before": []
+            },
+            {
+              "tool": "git_fetch",
+              "arguments": {
+                "path": "/tmp/repo-remote",
+                "remote": "origin"
+              },
+              "expect": "fetchedRefs",
+              "before": []
+            },
+            {
+              "tool": "git_init",
+              "arguments": {
+                "path": "/tmp/init-dst"
+              },
+              "expect": "isBare",
+              "before": []
+            },
+            {
+              "tool": "git_log",
+              "arguments": {
+                "path": "/tmp/repo-main"
+              },
+              "expect": "totalCount",
+              "before": []
+            },
+            {
+              "tool": "git_merge",
+              "arguments": {
+                "path": "/tmp/repo-merge",
+                "branch": "feature"
+              },
+              "expect": "mergedFiles",
+              "before": []
+            },
+            {
+              "tool": "git_pull",
+              "arguments": {
+                "path": "/tmp/repo-remote",
+                "remote": "origin",
+                "branch": "main"
+              },
+              "expect": "conflictedFiles",
+              "before": []
+            },
+            {
+              "tool": "git_push",
+              "arguments": {
+                "path": "/tmp/repo-remote",
+                "remote": "origin",
+                "branch": "main",
+                "dryRun": true
+              },
+              "expect": "pushedRefs",
+              "before": []
+            },
+            {
+              "tool": "git_rebase",
+              "arguments": {
+                "path": "/tmp/repo-rebase",
+                "mode": "start",
+                "upstream": "upstream"
+              },
+              "expect": "rebasedCommits",
+              "before": []
+            },
+            {
+              "tool": "git_remote",
+              "arguments": {
+                "path": "/tmp/repo-remote",
+                "mode": "list"
+              },
+              "expect": "\"remotes\"",
+              "before": []
+            },
+            {
+              "tool": "git_reset",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "mode": "soft",
+                "target": "HEAD"
+              },
+              "expect": "filesReset",
+              "before": []
+            },
+            {
+              "tool": "git_set_working_dir",
+              "arguments": {
+                "path": "/tmp/repo-main"
+              },
+              "expect": "recentCommits",
+              "before": []
+            },
+            {
+              "tool": "git_show",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "object": "HEAD"
+              },
+              "expect": "\"type\": \"commit\"",
+              "before": []
+            },
+            {
+              "tool": "git_stash",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "mode": "list"
+              },
+              "expect": "stashes",
+              "before": []
+            },
+            {
+              "tool": "git_status",
+              "arguments": {
+                "path": "/tmp/repo-main"
+              },
+              "expect": "conflictedFiles",
+              "before": []
+            },
+            {
+              "tool": "git_tag",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "mode": "list"
+              },
+              "expect": "\"tags\"",
+              "before": []
+            },
+            {
+              "tool": "git_worktree",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "mode": "list"
+              },
+              "expect": "worktrees",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -19457,12 +19908,35 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "git_add"
+              "git_add",
+              "git_branch",
+              "git_checkout",
+              "git_cherry_pick",
+              "git_clean",
+              "git_clone",
+              "git_commit",
+              "git_diff",
+              "git_fetch",
+              "git_init",
+              "git_log",
+              "git_merge",
+              "git_pull",
+              "git_push",
+              "git_rebase",
+              "git_remote",
+              "git_reset",
+              "git_show",
+              "git_stash",
+              "git_status",
+              "git_tag",
+              "git_worktree",
+              "git_set_working_dir"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -19471,7 +19945,35 @@
             {
               "vulnerable_name": "git_diff",
               "patched_name": "git_diff",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_log",
+              "patched_name": "git_log",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_show",
+              "patched_name": "git_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -19482,8 +19984,27 @@
             {
               "tool": "git_diff",
               "arguments": {
-                "path": "/tmp/benignrepo"
-              }
+                "path": "/tmp/repo-main"
+              },
+              "expect": "filesChanged",
+              "before": []
+            },
+            {
+              "tool": "git_log",
+              "arguments": {
+                "path": "/tmp/repo-main"
+              },
+              "expect": "totalCount",
+              "before": []
+            },
+            {
+              "tool": "git_show",
+              "arguments": {
+                "path": "/tmp/repo-main",
+                "object": "HEAD"
+              },
+              "expect": "\"type\": \"commit\"",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -19492,19 +20013,22 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "git_diff"
+              "git_diff",
+              "git_log",
+              "git_show"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
       "runs_over_stdio": true,
       "runs_under_docker": true,
       "host": {
-        "user": "host",
+        "user": "unprivileged",
         "working_directory": "/",
         "has_network": false
       },
@@ -19521,27 +20045,81 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8",
+          "set_aside": "it saw the other agent's final summary before writing its own record"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2025-53107",
           "field": "tools",
-          "agreed": false
+          "agreed": true
         },
         {
           "flaw": "CVE-2026-85626",
           "field": "tools",
-          "agreed": false
+          "agreed": true
         },
         {
-          "flaw": "CVE-2026-85626",
-          "field": "patched_version",
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
           "agreed": false
         },
         {
           "flaw": null,
-          "field": "patched_version",
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
           "agreed": false
         }
       ],
@@ -19550,46 +20128,83 @@
           "server_package": "npm:@cyanheads/git-mcp-server",
           "flaw": "CVE-2025-53107",
           "field": "tools",
-          "value": "git_add",
-          "reason": "record A's exploit calls git_add alone (files=\"$(cat /opt/secret/token >&2)\"), the command injection in git_add's files argument; record B's exploit instead calls git_init. Narrowed to git_add, the tool the canonical fix-check exploit actually calls, matching the parity test's requirement that flaw.tools equal the exploit-called set."
+          "value": "git_add and the 22 other git tools that run git through a shell string at 2.1.4",
+          "reason": "a tool counts when an argument it receives reaches the faulty code. Both records count git_add and the 22 other tools the fix commit moves from exec to execFile: up to 2.1.4 each builds a shell string with its path argument between double quotes (git -C \"<path>\"), git_clone its repository URL and git_init its initial branch, so a $(...) substitution runs; git_set_working_dir passes its path only to fs.stat and as a working directory and stores it as the session's directory, which the next call naming no path interpolates. The first admission narrowed the count to git_add, the one tool its exploit called; the re-admission writes one exploit per tool at assembly and plays each alone on the three versions: on 2.1.4 each surfaces the witness, git_set_working_dir's through a git_status on the directory it stored, and on 2.1.5 and 2.15.3 each path stays literal. git_clear_working_dir and git_wrapup_instructions run no git command and are not listed"
         },
         {
           "server_package": "npm:@cyanheads/git-mcp-server",
           "flaw": "CVE-2026-85626",
           "field": "tools",
-          "value": "git_diff",
-          "reason": "record A listed git_diff, git_log and git_show but its fix-check exploit calls only git_diff (the --no-index argument injection); record B's exploit also calls only git_diff despite listing the same three tools. Narrowed to git_diff, the tool the exploit actually calls."
+          "value": "git_diff, git_log and git_show",
+          "reason": "a tool counts when an argument it receives reaches the faulty code. The advisory names the ref and object arguments of the three tools, which reach git's own CLI with no leading-dash check up to 2.15.1, and both records list them. The first admission narrowed the count to git_diff, the one tool its exploit called; the re-admission writes the two other exploits at assembly and plays each alone on both versions: git_log's branch and git_show's object take -O<file>, which makes git read a file outside the repository as the diff's order file, so they are aimed without surfacing the witness, and 2.15.3 refuses a ref starting with \"-\" in all three"
         },
         {
           "server_package": "npm:@cyanheads/git-mcp-server",
           "flaw": "CVE-2026-85626",
           "field": "patched_version",
           "value": "2.15.3",
-          "reason": "record A gives 2.15.3 as CVE-2026-85626's first fix, record B gives 2.15.2. Settled to record A's 2.15.3."
-        },
-        {
-          "server_package": "npm:@cyanheads/git-mcp-server",
-          "flaw": null,
-          "field": "patched_version",
-          "value": "2.15.3",
-          "reason": "record A's server patched_version is 2.15.3 (the later of the two flaws' own fixes, CVE-2026-85626's), record B's is 2.15.2. Settled to 2.15.3, which also postdates CVE-2025-53107's own fix (2.1.5), so CVE-2026-85626 sets server_patched_surfaces null on the server's own patched version and CVE-2025-53107 sets it to its replay on the run image."
+          "reason": "both records keep 2.15.3, the release whose command builder refuses a ref starting with \"-\", and both note that OSV and NVD list 2.15.3 as the last affected version; the fix check reads no witness on 2.15.3 and the schema refuses the leading dash there, so the version stands"
         },
         {
           "server_package": "npm:@cyanheads/git-mcp-server",
           "flaw": "CVE-2025-53107",
           "field": "declared_function_is_effect",
           "value": "false",
-          "reason": "git_add's declared function is to stage named files for the next commit; it interpolates the files argument into a shell command unescaped, so a $(...) substitution runs an arbitrary command with no relation to staging, which is not the declared stage effect."
+          "reason": "each tool declares a fixed git operation on the repository or the refs its arguments name, not running a command an argument carries; the substitution runs through the shell string the tool builds, which is the flaw and not the declared operation"
         },
         {
           "server_package": "npm:@cyanheads/git-mcp-server",
           "flaw": "CVE-2026-85626",
           "field": "declared_function_is_effect",
           "value": "false",
-          "reason": "git_diff's declared function is to diff two revisions or paths within the repository; the --no-index option lets its paths argument reach git diff with no revision bound to the repository at all, so an arbitrary path entirely outside the repository is diffed and its content surfaces, which is not the declared diff effect."
+          "reason": "git_diff, git_log and git_show declare diffing, listing or showing revisions within the repository; an option smuggled through a ref or object argument that makes git read a path outside it is the flaw and not the declared operation"
+        },
+        {
+          "server_package": "npm:@cyanheads/git-mcp-server",
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record A's, one call per tool on the seeded trees",
+          "reason": "both records wrote a call for each of the 23 tools; record B's git_cherry_pick call had no commit to pick in its one-commit seed and expected nothing, where record A's trees give each call the state it needs (a feature branch to merge or cherry-pick, an upstream to rebase onto, a bare remote to fetch, pull and push) and each answers with a key of the tool's output. The calls the first admission made on /tmp/benignrepo, whose name and contents were written for the fixture, move to /tmp/repo-main"
+        },
+        {
+          "server_package": "npm:@cyanheads/git-mcp-server",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's git working trees generated at image build",
+          "reason": "neither git nor the server publishes a sample with the branches, tags and remote the calls need; record A generates seven trees and a bare remote with git itself, record B one repository with one commit, in which git_cherry_pick, merge and rebase have nothing to act on. Record A's trees are kept, the only conforming seed under which every counted tool answers"
+        },
+        {
+          "server_package": "npm:@cyanheads/git-mcp-server",
+          "flaw": null,
+          "field": "host",
+          "value": "user unprivileged, working directory /",
+          "reason": "the rule's confinement is the same for every server, its user included, and nothing passed to the server is taken from the machine that runs the suite; both records kept the committed host user, which passes that machine's uid to the server. The seeded trees belong to the unprivileged account and git trusts those directories only, where the committed image trusted every directory"
         }
       ],
-      "patched_version": "2.15.3"
+      "patched_version": "2.15.3",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "the git working trees /tmp/repo-main, /tmp/repo-merge, /tmp/repo-rebase, /tmp/repo-checkout, /tmp/repo-cp and /tmp/repo-remote and the bare remote /tmp/origin.git, owned by the run's unprivileged account",
+          "kind": "generated",
+          "citation": "created by git init, add, commit, branch, tag, remote and push at image build, by the git 2.39.5 the base image ships (Debian bookworm package 1:2.39.5-0+deb12u3)",
+          "pin": "node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da"
+        },
+        {
+          "item": "the written seed values: file names (README.md, note.txt, feature.txt) and their contents, commit messages (Initial import, Add feature file), branch names (main, feature, upstream), tag v1, remote origin, and the build-time git identity River Stone <river@example.invalid>",
+          "kind": "written",
+          "citation": "chosen for the fixture: neutral values carrying no host value, witness or reserved word, since neither git nor the server publishes a sample repository",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "git",
+          "release": "2.39.5 (Debian 12 bookworm package 1:2.39.5-0+deb12u3)",
+          "day": "2026-11-08",
+          "source": "the server's README (\"CLI provider ... Requires local git installation\") names no git version or channel; the git package of Debian 12 (bookworm), the distribution of the digest-pinned base node:22-bookworm-slim, packages.debian.org (1:2.39.5-0+deb12u3 in bookworm), dpkg-query and git --version in the built image: 1:2.39.5-0+deb12u3, 2.39.5"
+        }
+      ]
     },
     {
       "server_package": "npm:fast-filesystem-mcp",

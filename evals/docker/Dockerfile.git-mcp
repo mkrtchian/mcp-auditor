@@ -1,14 +1,18 @@
 # @cyanheads/git-mcp-server 2.15.3 (the server's shipped run image; CVE-2026-85626 is fixed as of
 # 2.15.2 per the maintainer, 2.15.3 repairs 2.15.2's flag allow-list regression; doubles as
-# CVE-2025-53107's server-patched arm since that flaw fixed earlier at 2.1.5).
+# CVE-2025-53107's server-patched arm since that flaw fixed earlier at 2.1.5). Drives the real
+# `git` CLI, which runs inside the container, so the fixture needs no stand-in and no backend.
 # No COPY/ADD from the build context; the server installs from npm by RUN.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
-# Trust every bind-mounted repo regardless of the uid the container runs as, so benign
-# read-only git calls do not trip git's dubious-ownership guard.
-RUN git config --system --add safe.directory '*'
+# Give the build-time commits an identity so git has an author/committer. These are git's own
+# configuration, not values the server returns through a flaw.
+RUN git config --system user.name 'River Stone' \
+ && git config --system user.email 'river@example.invalid' \
+ && git config --system init.defaultBranch main \
+ && git config --system core.fileMode false
 RUN npm install -g @cyanheads/git-mcp-server@2.15.3 \
  && npm cache clean --force \
  && mkdir -p /usr/local/lib/node_modules/@cyanheads/git-mcp-server/logs \
@@ -20,11 +24,43 @@ ENV MCP_TRANSPORT_TYPE=stdio \
     LOGS_DIR=/tmp \
     NODE_NO_WARNINGS=1 \
     GIT_SIGN_COMMITS=false
-# A world-writable throwaway git repo for the git_add benign call: staging into the
-# read-only /srv/app mount errors, so the benign stages a file here instead (the patched arm
-# must not error on the benign, or CVE-2025-53107 would not count).
-# The nuisance run's git_diff benign call reads it too, since the run mounts no /srv/app.
-RUN git init -q /tmp/benignrepo \
- && printf 'benign\n' > /tmp/benignrepo/note.txt \
- && chmod -R 0777 /tmp/benignrepo
+# Git working trees the tool calls read and write. Every repo, branch, tag, remote and file here
+# is produced by `git` itself at build time or is a neutral written name; none carries a value
+# from the build host or a reserved word. The trees belong to the run's unprivileged account
+# (65534), and git trusts these directories only (git-config(1), safe.directory).
+RUN set -eux; \
+  mkrepo() { \
+    d="$1"; git init -q -b main "$d"; \
+    printf '# Repository\n\nTracked content.\n' > "$d/README.md"; \
+    git -C "$d" add README.md; \
+    git -C "$d" commit -q -m 'Initial import'; \
+  }; \
+  # Main tree: read-only queries plus add/diff/commit/reset on it.
+  mkrepo /tmp/repo-main; \
+  printf 'untracked line\n' > /tmp/repo-main/note.txt; \
+  printf '# Repository\n\nTracked content, edited.\n' > /tmp/repo-main/README.md; \
+  git -C /tmp/repo-main branch feature; \
+  git -C /tmp/repo-main tag v1; \
+  # Merge tree: feature points at the same commit, so a merge reports up to date.
+  mkrepo /tmp/repo-merge; git -C /tmp/repo-merge branch feature; \
+  # Rebase tree: upstream points at the same commit, so a rebase reports up to date.
+  mkrepo /tmp/repo-rebase; git -C /tmp/repo-rebase branch upstream; \
+  # Checkout tree: a second branch to switch onto.
+  mkrepo /tmp/repo-checkout; git -C /tmp/repo-checkout branch feature; \
+  # Cherry-pick tree: a feature branch holds one extra commit to replay onto main.
+  mkrepo /tmp/repo-cp; \
+  git -C /tmp/repo-cp checkout -q -b feature; \
+  printf 'feature content\n' > /tmp/repo-cp/feature.txt; \
+  git -C /tmp/repo-cp add feature.txt; \
+  git -C /tmp/repo-cp commit -q -m 'Add feature file'; \
+  git -C /tmp/repo-cp checkout -q main; \
+  # Remote tree: a local bare remote so fetch/pull/push run with no network.
+  git init -q --bare /tmp/origin.git; \
+  mkrepo /tmp/repo-remote; \
+  git -C /tmp/repo-remote remote add origin /tmp/origin.git; \
+  git -C /tmp/repo-remote push -q -u origin main; \
+  for d in repo-main repo-merge repo-rebase repo-checkout repo-cp repo-remote origin.git; do \
+    chown -R 65534:65534 "/tmp/$d"; \
+    git config --system --add safe.directory "/tmp/$d"; \
+  done
 ENTRYPOINT ["git-mcp-server"]

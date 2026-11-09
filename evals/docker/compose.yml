@@ -1211,7 +1211,7 @@ services:
       context: .
       dockerfile: Dockerfile.git-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "62bef65adf65502be4a8fbf05ca25b6ec0eb6ed97e0286b8d547b511ecafffed"
+        org.mcp-auditor.dockerfile-fingerprint: "b991de8ad877a5d3829d160541c9f0e3d51cf79a43b14cdcfe03a6f0a414b274"
     image: mcp-auditor-nuisance-git-mcp:local
     profiles: ["nuisance"]
 
