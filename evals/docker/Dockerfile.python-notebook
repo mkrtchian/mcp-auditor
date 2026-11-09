@@ -1,27 +1,30 @@
 # python-notebook-mcp (CVE-2026-7810), patched commit ef20992 (fix: security, context managers,
 # and code quality improvements, closes issue #5 CWE-22 Path Traversal): resolve_path now
 # canonicalises with Path.resolve() and asserts the result sits inside the canonical workspace
-# root via relative_to(), raising PermissionError on an absolute path or a `../` traversal that
-# escapes it; the same commit replaces every stdout print() with stderr logging, so no shim is
-# needed here. Doubles as the nuisance run image.
-# A later hardening on this same PR (86d51fe, folded into merge commit 72c3239) swaps the
-# containment check for os.path.realpath() + os.path.commonpath() and adds an empty-input guard,
-# a Windows case-folding step and regression tests, answering review comments. ef20992's
-# relative_to() check is already component-wise, so it has no sibling-prefix false positive
-# (/workspace-evil is rejected). The witness sits at /srv/secret.ipynb, and calibration
-# confirmed ef20992 rejects it, so no fallback to 72c3239 is needed.
-# No COPY/ADD from the build context; the clone is a RUN fetch.
+# root via relative_to(), raising PermissionError on a path that escapes it; the same commit
+# replaces every stdout print() with stderr logging, so no shim is needed here.
+# The server drives no program, device or service outside itself (nbformat runs in-process), so
+# the image holds no stand-in. Dependencies are installed as the server's README and
+# install_unix.sh say (pip install -r requirements.txt) and left floating: requirements.txt names
+# fastmcp and nbformat, and mcp comes in through fastmcp. One upper bound, mcp<2: server.py imports
+# mcp.server.fastmcp, which mcp 2.x removed (its import raises "No module named
+# 'mcp.server.fastmcp'. This is mcp 2.x, ... pin 'mcp<2' to keep running v1 code"), so an
+# unbounded install leaves a server that cannot start.
+# No local COPY/ADD; the clone is a RUN fetch pinned by commit, the notebook a remote ADD pinned
+# by checksum.
 FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 RUN git clone https://github.com/UsamaK98/python-notebook-mcp.git . \
     && git checkout ef20992aa8f74b6fc14af8a9e519aea03d47b69c
-RUN pip install --no-cache-dir "mcp==1.30.0" "nbformat>=5.7.0"
-# The nuisance run's workspace, holding one neutral notebook for the benign calls of
-# initialize_workspace and read_notebook; world-writable as the fix check's workspace is. The fix
-# check mounts its own tree at /srv and does not use it.
-RUN mkdir -p /opt/workspace \
-    && python3 -c 'import nbformat; nbformat.write(nbformat.v4.new_notebook(cells=[nbformat.v4.new_markdown_cell("# Notes")]), "/opt/workspace/main.ipynb")' \
-    && chmod -R 0777 /opt/workspace
+RUN pip install --no-cache-dir -r requirements.txt "mcp<2"
+# The workspace directory (its path written for the image) holds one notebook, taken whole: the
+# v4 notebook tests/test4.ipynb the nbformat project publishes under its tests at tag v5.11.1
+# (commit 75f819f), the one its own API tests read (tests/test_api.py:54), with cell outputs.
+# World-writable so the run's account can create and edit notebooks there.
+ADD --checksum=sha256:5dc37eeddb491f410e21ad561c4811425bda0b04920f7e71e40c76bcc756f4be \
+    https://raw.githubusercontent.com/jupyter/nbformat/75f819f5b60bc6ffc72145c364132efe5b3c4b35/tests/test4.ipynb \
+    /opt/workspace/test4.ipynb
+RUN chmod -R a+rwX /opt/workspace
 ENTRYPOINT ["python3", "/app/server.py"]

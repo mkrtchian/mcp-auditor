@@ -1175,7 +1175,7 @@ services:
       context: .
       dockerfile: Dockerfile.python-notebook
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "db9b3c9118f86c1d0c9ad81584299d98febe229e01cedb617a62e283939ba192"
+        org.mcp-auditor.dockerfile-fingerprint: "d755f749700cab3691814f9e4060f1739c8b1b063814a13466443153e206d6a1"
     image: mcp-auditor-nuisance-python-notebook:local
     profiles: ["nuisance"]
 
