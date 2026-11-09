@@ -779,7 +779,7 @@ services:
       context: .
       dockerfile: Dockerfile.token-optimizer
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "2f72d29457f88e050f3ea68184ee2aa5a44dfeed3b0e3eb6616a6a795c93d44e"
+        org.mcp-auditor.dockerfile-fingerprint: "3705b17f4d24c638060260efbe694827c7e92adb7d0237974aef9e4fd238af15"
     image: mcp-auditor-nuisance-token-optimizer:local
     profiles: ["nuisance"]
 

@@ -633,7 +633,13 @@
             {
               "vulnerable_name": "smart_user",
               "patched_name": "smart_user",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -647,7 +653,9 @@
                 "operation": "get-user-info",
                 "username": "root",
                 "useCache": false
-              }
+              },
+              "expect": "\"shell\": \"/bin/bash\"",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -661,7 +669,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -674,7 +683,9 @@
           "benign_calls": [
             {
               "tool": "get_session_stats",
-              "arguments": {}
+              "arguments": {},
+              "expect": "\"Read\": {",
+              "before": []
             }
           ],
           "backend_need": "external",
@@ -712,9 +723,85 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-55157",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-55157",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-55157",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-55157",
+          "field": "benign_calls",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-55157",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-55157",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-55156",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-55156",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
       "settlements": [
         {
           "server_package": "npm:@ooples/token-optimizer-mcp",
@@ -729,9 +816,58 @@
           "field": "tools",
           "value": "",
           "reason": "dropped: the path traversal is in the dashboard HTTP server (started only by the separate daemon), not an MCP tool; the stdio server exposes no tool that reaches it, so there is no counted tool"
+        },
+        {
+          "server_package": "npm:@ooples/token-optimizer-mcp",
+          "flaw": "CVE-2026-55156",
+          "field": "benign_calls",
+          "value": "record B's: get_session_stats with no argument, expecting \"Read\": {",
+          "reason": "both records seed the session files the tool reads from the project's README and session log specification, and the benign call expects a text the server derives from them; record B expects the tool name Read of the specification's tool_call event, which the server counts from the seeded log, where record A expects the session id the server echoes from the seeded session file; record B's fixture is retained: it installs the server globally as the README says, on Node 24, the current LTS, where record A stays on Node 20, past its end of life"
+        },
+        {
+          "server_package": "npm:@ooples/token-optimizer-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the README's current-session.txt example with its // annotations removed and the six event lines of docs/SESSION_LOG_SPEC.md at tag v5.1.1, under $HOME/.claude-global/hooks/data, owned by the run's unprivileged account",
+          "reason": "the two records seed the same two project documents; record B also hands the data directory to the account the server runs under, as a user's own home data would be, and record B's fixture is retained: it installs the server globally as the README says, on Node 24, the current LTS, where record A stays on Node 20, past its end of life"
         }
       ],
-      "patched_version": "5.1.1"
+      "patched_version": "5.1.1",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/tmp/.claude-global/hooks/data/current-session.txt ($HOME/.claude-global/hooks/data/current-session.txt under the launch's HOME=/tmp): the README 'Session Tracking Files' format block, with its // annotations removed because the server JSON.parses the file; sessionId abc-123 kept as the README gives it",
+          "kind": "project_document",
+          "citation": "https://github.com/ooples/token-optimizer-mcp/blob/687b55460d752fa4ee011c58535c733191b831c8/README.md#session-tracking-files (tag v5.1.1, also shipped in the npm package @ooples/token-optimizer-mcp@5.1.1)",
+          "pin": null
+        },
+        {
+          "item": "/tmp/.claude-global/hooks/data/session-log-abc-123.jsonl: the six event lines of docs/SESSION_LOG_SPEC.md 'Event Types', whole; the file name is the one the server derives from the seeded sessionId (session-log-${sessionId}.jsonl)",
+          "kind": "project_document",
+          "citation": "https://github.com/ooples/token-optimizer-mcp/blob/687b55460d752fa4ee011c58535c733191b831c8/docs/SESSION_LOG_SPEC.md (tag v5.1.1)",
+          "pin": null
+        },
+        {
+          "item": "ownership of /tmp/.claude-global set to 65534:65534, the run user, as a user's own home data would be",
+          "kind": "written",
+          "citation": "the run's confinement (--user 65534:65534, HOME=/tmp)",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "getent (GNU C Library, Debian package libc-bin)",
+          "release": "2.41-12+deb13u4 (Debian 13.7 trixie)",
+          "day": "2026-11-08",
+          "source": "the server's documentation names no version or channel; the package of Debian stable (13.7, trixie), https://sources.debian.org/api/src/glibc/ (2.41-12+deb13u4 in trixie), installed through the digest-pinned base node:24-trixie, dpkg-query in the built image: libc-bin 2.41-12+deb13u4"
+        },
+        {
+          "software": "id (GNU coreutils, Debian package coreutils)",
+          "release": "9.7-3 (Debian 13.7 trixie)",
+          "day": "2026-11-08",
+          "source": "the server's documentation names no version or channel; the package of Debian stable (13.7, trixie), https://sources.debian.org/api/src/coreutils/ (9.7-3 in trixie), same pinned base, dpkg-query in the built image: coreutils 9.7-3"
+        }
+      ]
     },
     {
       "server_package": "PyPI:awslabs-aws-api-mcp-server",
