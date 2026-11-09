@@ -3834,7 +3834,24 @@
             {
               "vulnerable_name": "execute_module",
               "patched_name": "execute_module",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "run_recipe",
+              "patched_name": "run_recipe",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -3849,7 +3866,21 @@
                 "params": {
                   "text": "hello"
                 }
-              }
+              },
+              "expect": "HELLO",
+              "before": []
+            },
+            {
+              "tool": "run_recipe",
+              "arguments": {
+                "recipe_name": "json-to-csv",
+                "args": {
+                  "input": "[{\"name\": \"Alice\", \"age\": 30}, {\"name\": \"Bob\", \"age\": 25}]",
+                  "output": "/tmp/users.csv"
+                }
+              },
+              "expect": "data.json_to_csv",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -3858,12 +3889,14 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-bab9bc3686878c71babc74a7cf621764",
             "exploit_calls": [
-              "execute_module"
+              "execute_module",
+              "run_recipe"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -3872,7 +3905,24 @@
             {
               "vulnerable_name": "execute_module",
               "patched_name": "execute_module",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "run_recipe",
+              "patched_name": "run_recipe",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -3887,7 +3937,21 @@
                 "params": {
                   "text": "hello"
                 }
-              }
+              },
+              "expect": "HELLO",
+              "before": []
+            },
+            {
+              "tool": "run_recipe",
+              "arguments": {
+                "recipe_name": "json-to-csv",
+                "args": {
+                  "input": "[{\"name\": \"Alice\", \"age\": 30}, {\"name\": \"Bob\", \"age\": 25}]",
+                  "output": "/tmp/users.csv"
+                }
+              },
+              "expect": "data.json_to_csv",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -3896,12 +3960,14 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-76bea483fbb34a70a617912d5359a31e",
             "exploit_calls": [
-              "execute_module"
+              "execute_module",
+              "run_recipe"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -3910,7 +3976,13 @@
             {
               "vulnerable_name": "run_recipe",
               "patched_name": "run_recipe",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -3921,9 +3993,14 @@
             {
               "tool": "run_recipe",
               "arguments": {
-                "recipe_name": "nb08benign",
-                "args": {}
-              }
+                "recipe_name": "json-to-csv",
+                "args": {
+                  "input": "[{\"name\": \"Alice\", \"age\": 30}, {\"name\": \"Bob\", \"age\": 25}]",
+                  "output": "/tmp/users.csv"
+                }
+              },
+              "expect": "data.json_to_csv",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -3937,7 +4014,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -3946,7 +4024,24 @@
             {
               "vulnerable_name": "execute_module",
               "patched_name": "execute_module",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "run_recipe",
+              "patched_name": "run_recipe",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -3961,7 +4056,21 @@
                 "params": {
                   "text": "hello"
                 }
-              }
+              },
+              "expect": "HELLO",
+              "before": []
+            },
+            {
+              "tool": "run_recipe",
+              "arguments": {
+                "recipe_name": "json-to-csv",
+                "args": {
+                  "input": "[{\"name\": \"Alice\", \"age\": 30}, {\"name\": \"Bob\", \"age\": 25}]",
+                  "output": "/tmp/users.csv"
+                }
+              },
+              "expect": "data.json_to_csv",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -3970,12 +4079,14 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-0d2aba980616f56afb867f68ff80a187",
             "exploit_calls": [
-              "execute_module"
+              "execute_module",
+              "run_recipe"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": false,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -3984,7 +4095,24 @@
             {
               "vulnerable_name": "execute_module",
               "patched_name": "execute_module",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "run_recipe",
+              "patched_name": "run_recipe",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -3999,7 +4127,21 @@
                 "params": {
                   "text": "hello"
                 }
-              }
+              },
+              "expect": "HELLO",
+              "before": []
+            },
+            {
+              "tool": "run_recipe",
+              "arguments": {
+                "recipe_name": "json-to-csv",
+                "args": {
+                  "input": "[{\"name\": \"Alice\", \"age\": 30}, {\"name\": \"Bob\", \"age\": 25}]",
+                  "output": "/tmp/users.csv"
+                }
+              },
+              "expect": "data.json_to_csv",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -4008,12 +4150,14 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-5cb86ad9439a145dc834278640cb127d",
             "exploit_calls": [
-              "execute_module"
+              "execute_module",
+              "run_recipe"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         },
         {
@@ -4022,7 +4166,12 @@
             {
               "vulnerable_name": "execute_module",
               "patched_name": "execute_module",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              }
             }
           ],
           "effect_class": null,
@@ -4060,7 +4209,12 @@
             {
               "vulnerable_name": "execute_module",
               "patched_name": "execute_module",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              }
             }
           ],
           "effect_class": null,
@@ -4098,7 +4252,12 @@
             {
               "vulnerable_name": "execute_module",
               "patched_name": "execute_module",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              }
             }
           ],
           "effect_class": null,
@@ -4151,40 +4310,138 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
-      "agreement": [],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-55787",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-67424",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-67427",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-67428",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-73530",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        }
+      ],
       "settlements": [
         {
           "server_package": "PyPI:flyto-core",
           "flaw": null,
           "field": "backend_need",
           "value": "none",
-          "reason": "decision 1: the counted benign calls (execute_module string.uppercase, run_recipe nb08benign) are backend-free, so no run backend is provisioned and the server host needs no network at run time; the SSRF sentinel is a fix-check-only concern on the kit builders"
+          "reason": "the counted benign call (run_recipe on the shipped json-to-csv recipe) and execute_module's string.uppercase call run in-process, so no run backend is provisioned and the host needs no network; the SSRF sentinel is a fix-check-only concern on the kit builders"
         },
         {
           "server_package": "PyPI:flyto-core",
-          "flaw": "CVE-2026-55786",
+          "flaw": null,
           "field": "declared_function_is_effect",
-          "value": "true",
-          "reason": "dropped: command execution is execute_module's declared function"
+          "value": "true for execute_module under CVE-2026-55787, CVE-2026-67424, CVE-2026-67428 and CVE-2026-73530",
+          "reason": "the declared function is read per tool: execute_module's description declares fetching a URL its params carry and running JavaScript, so under the internal_fetch flaws its declared function is the effect of the class and it is not counted, while it stays in each flaw's tools (not removed) rather than dropped in data"
         },
         {
           "server_package": "PyPI:flyto-core",
-          "flaw": "CVE-2026-67429",
-          "field": "declared_function_is_effect",
-          "value": "true",
-          "reason": "dropped: declared-function-is-effect, out of the nonce grammar"
+          "flaw": null,
+          "field": "tools",
+          "value": "run_recipe is the single counted tool, listed under all five classed flaws (CVE-2026-55787, CVE-2026-67424, CVE-2026-67428, CVE-2026-73530 and CVE-2026-67427)",
+          "reason": "run_recipe reaches the four internal_fetch flaws through the recipes the package ships, so it is listed and counted under each; a counted tool needs no exploit of its own, the fix check verifying each flaw through execute_module, while run_recipe's own response carries only step statuses and output paths, not the fetched body, so it cannot itself surface those flaws' HTTP witnesses, recorded; it also counts under CVE-2026-67427, whose out-of-scope env witness surfaces in its output files, giving one counted tool in all"
         },
         {
           "server_package": "PyPI:flyto-core",
           "flaw": "CVE-2026-55786",
           "field": "effect_class",
           "value": "null",
-          "reason": "real class command_execution, dropped as declared-function-is-effect; effect_class recorded null so the flaw does not count (its tool is not a false-alarm candidate)"
+          "reason": "command execution is execute_module's declared function, so the flaw is recorded with no effect class, sets no version and counts no tool"
+        },
+        {
+          "server_package": "PyPI:flyto-core",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the recipes flyto-core 2.28.0 ships, installed whole from PyPI, the json-to-csv recipe the benign call runs among them",
+          "reason": "the shipped recipes are a published sample of the server, the first source the seeding rule prefers; record A wrote no seed entry, the fixture writing no recipe of its own, and record A's fixture is otherwise retained"
         }
       ],
-      "patched_version": "2.28.0"
+      "patched_version": "2.28.0",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "The recipes flyto-core 2.28.0 ships in its package (recipes/*.yaml, json-to-csv.yaml among them, the one the run_recipe benign call runs); the fixture writes no recipe of its own, the server is installed whole from PyPI",
+          "kind": "published_sample",
+          "citation": "flyto-core 2.28.0, https://pypi.org/project/flyto-core/2.28.0/",
+          "pin": "flyto-core==2.28.0"
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "npm:mcp-maigret",

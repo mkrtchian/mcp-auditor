@@ -824,7 +824,7 @@ services:
       context: .
       dockerfile: Dockerfile.flyto
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "aaed3338f0ded7b1792f46083b1ec55433338535e3dec487a5a6ca8fd9251169"
+        org.mcp-auditor.dockerfile-fingerprint: "b0c55511f841a6c5331e033bd88308411e5d5e4534e7c3772b7b9dd7c96f2f42"
     image: mcp-auditor-nuisance-flyto:local
     profiles: ["nuisance"]
 

