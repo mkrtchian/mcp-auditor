@@ -950,7 +950,7 @@ services:
       context: .
       dockerfile: Dockerfile.mcpvault
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "8b1c4ede8f02d55ca3adc0259796cc65e28b37c893820bcb08ea80aad04ef453"
+        org.mcp-auditor.dockerfile-fingerprint: "fe4444053b560aa30fd04a162d35e191d4c33d67057533788f03e14cfda45052"
     image: mcp-auditor-nuisance-mcpvault:local
     profiles: ["nuisance"]
 

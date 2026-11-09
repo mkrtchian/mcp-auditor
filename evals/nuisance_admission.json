@@ -10075,12 +10075,167 @@
             {
               "vulnerable_name": "read_note",
               "patched_name": "read_note",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "read_multiple_notes",
               "patched_name": "read_multiple_notes",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_frontmatter",
+              "patched_name": "get_frontmatter",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_notes_info",
+              "patched_name": "get_notes_info",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "manage_tags",
+              "patched_name": "manage_tags",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "search_notes",
+              "patched_name": "search_notes",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_directory",
+              "patched_name": "list_directory",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_all_tags",
+              "patched_name": "list_all_tags",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_vault_stats",
+              "patched_name": "get_vault_stats",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "patch_note",
+              "patched_name": "patch_note",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "move_note",
+              "patched_name": "move_note",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "move_file",
+              "patched_name": "move_file",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "write_note",
+              "patched_name": "write_note",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "update_frontmatter",
+              "patched_name": "update_frontmatter",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_note",
+              "patched_name": "delete_note",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -10091,16 +10246,172 @@
             {
               "tool": "read_note",
               "arguments": {
-                "path": "welcome.md"
-              }
+                "path": "Start here.md"
+              },
+              "expect": "welcome to Obsidian",
+              "before": []
             },
             {
               "tool": "read_multiple_notes",
               "arguments": {
                 "paths": [
-                  "welcome.md"
+                  "Vault is just a local folder.md"
                 ]
-              }
+              },
+              "expect": "a vault is a plain folder",
+              "before": []
+            },
+            {
+              "tool": "get_frontmatter",
+              "arguments": {
+                "path": "Start here.md"
+              },
+              "expect": "{}",
+              "before": []
+            },
+            {
+              "tool": "get_notes_info",
+              "arguments": {
+                "paths": [
+                  "Guides/Link notes.md"
+                ]
+              },
+              "expect": "hasFrontmatter",
+              "before": []
+            },
+            {
+              "tool": "manage_tags",
+              "arguments": {
+                "path": "Formatting/Task.md",
+                "operation": "list"
+              },
+              "expect": "\"success\": true",
+              "before": []
+            },
+            {
+              "tool": "search_notes",
+              "arguments": {
+                "query": "plain folder"
+              },
+              "expect": "Vault is just a local folder",
+              "before": []
+            },
+            {
+              "tool": "list_directory",
+              "arguments": {
+                "path": "/"
+              },
+              "expect": "Adventurer",
+              "before": []
+            },
+            {
+              "tool": "list_all_tags",
+              "arguments": {},
+              "expect": "\"tag\":\"tags\"",
+              "before": []
+            },
+            {
+              "tool": "get_vault_stats",
+              "arguments": {},
+              "expect": "\"folders\":3",
+              "before": []
+            },
+            {
+              "tool": "patch_note",
+              "arguments": {
+                "path": "Formatting/Highlighting.md",
+                "oldString": "==highlight text==",
+                "newString": "**highlight text**",
+                "replaceAll": true
+              },
+              "expect": "Successfully replaced",
+              "before": []
+            },
+            {
+              "tool": "move_note",
+              "arguments": {
+                "oldPath": "Formatting/Internal link.md",
+                "newPath": "Guides/Internal link.md"
+              },
+              "expect": "Successfully moved note",
+              "before": []
+            },
+            {
+              "tool": "move_file",
+              "arguments": {
+                "oldPath": "Formatting/Embeds.md",
+                "newPath": "Guides/Embeds.md",
+                "confirmOldPath": "Formatting/Embeds.md",
+                "confirmNewPath": "Guides/Embeds.md"
+              },
+              "expect": "Successfully moved",
+              "before": []
+            },
+            {
+              "tool": "write_note",
+              "arguments": {
+                "path": "meeting-notes.md",
+                "content": "# Team Meeting\n\n## Agenda\n- Project updates\n- Next milestones",
+                "frontmatter": {
+                  "title": "Team Meeting Notes",
+                  "date": "2023-12-01",
+                  "tags": [
+                    "meetings",
+                    "team"
+                  ]
+                },
+                "mode": "overwrite"
+              },
+              "expect": "Successfully wrote note",
+              "before": []
+            },
+            {
+              "tool": "update_frontmatter",
+              "arguments": {
+                "path": "meeting-notes.md",
+                "frontmatter": {
+                  "status": "completed",
+                  "updated": "2025-09-23"
+                },
+                "merge": true
+              },
+              "expect": "Successfully updated frontmatter for",
+              "before": [
+                {
+                  "tool": "write_note",
+                  "arguments": {
+                    "path": "meeting-notes.md",
+                    "content": "# Team Meeting\n\n## Agenda\n- Project updates\n- Next milestones",
+                    "frontmatter": {
+                      "title": "Team Meeting Notes",
+                      "date": "2023-12-01",
+                      "tags": [
+                        "meetings",
+                        "team"
+                      ]
+                    },
+                    "mode": "overwrite"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "delete_note",
+              "arguments": {
+                "path": "old-draft.md",
+                "confirmPath": "old-draft.md",
+                "trashMode": "local"
+              },
+              "expect": "Successfully moved note to vault trash",
+              "before": [
+                {
+                  "tool": "write_note",
+                  "arguments": {
+                    "path": "old-draft.md",
+                    "content": "# Draft\n"
+                  }
+                }
+              ]
             }
           ],
           "backend_need": "none",
@@ -10110,12 +10421,26 @@
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
               "read_note",
-              "read_multiple_notes"
+              "read_multiple_notes",
+              "get_frontmatter",
+              "get_notes_info",
+              "manage_tags",
+              "search_notes",
+              "list_directory",
+              "list_all_tags",
+              "get_vault_stats",
+              "patch_note",
+              "update_frontmatter",
+              "write_note",
+              "delete_note",
+              "move_note",
+              "move_file"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -10141,12 +10466,67 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-57442",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
           "agreed": false
         }
       ],
@@ -10154,9 +10534,23 @@
         {
           "server_package": "npm:@bitbonsai/mcpvault",
           "flaw": "CVE-2026-57442",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B over-marked dfie true; read_note serves a note under the vault, the root-anchored deny-list missing nested .git/.obsidian/node_modules metadata is a confinement gap, not reading a caller-named arbitrary file"
+          "field": "tools",
+          "value": "read_note and read_multiple_notes, plus get_frontmatter, get_notes_info, manage_tags, search_notes, list_directory, list_all_tags, get_vault_stats, patch_note, move_note and move_file (both records), plus write_note, update_frontmatter and delete_note (at assembly)",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: every path argument of these tools passes the root-anchored deny-list of 0.11.4, which lets a nested .git, .obsidian or node_modules segment through, and the vault-wide scans of search_notes, list_all_tags and get_vault_stats walk into nested restricted directories through the same filter, while the fix's any-segment check closes each; write_note, update_frontmatter and delete_note pass the same filter with a path the caller chooses, which both records show, and a tool that reaches the flaw stays listed and counts, so they are listed although both records left them out as writes that return nothing read; no record wrote an exploit for the thirteen added tools, so each was written at assembly: get_frontmatter, manage_tags and search_notes surface the nested note the fix check plants, the two moves surface it by reading the moved note back from its ordinary path, get_notes_info, list_directory, get_vault_stats, patch_note, update_frontmatter, write_note and delete_note answer only metadata, names or a fixed success text, and list_all_tags answers the nested note's tag lowercased, so these eight exploits are aimed and do not themselves surface the witness, recorded; list_all_tags and get_vault_stats take no path, so each exploit lists the nested directory first, and delete_note's deletes the note write_note's writes there"
+        },
+        {
+          "server_package": "npm:@bitbonsai/mcpvault",
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record A's, on notes of the seeded sample, except get_frontmatter's, record B's (no prerequisite, expecting {}), and write_note's, update_frontmatter's and delete_note's, written at assembly from the README examples of 0.11.5",
+          "reason": "record A's get_frontmatter expected a value its own prerequisite call wrote, which repeats the call's arguments, so record B's call reads the sample note as it is, whose frontmatter is empty; the three tools counted at assembly had no benign call in either record, so each was written from the README's request for the tool: write_note writes the README's note, update_frontmatter updates that note after its prerequisite writes it, delete_note moves to the vault trash a note its prerequisite writes, all three after every other call, so no other call reads what they change"
+        },
+        {
+          "server_package": "npm:@bitbonsai/mcpvault",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: Obsidian's Sandbox vault taken whole at a pinned commit, without the frontmatter its get_frontmatter prerequisite wrote, plus the README examples of 0.11.5 the writer calls pass and the values written for the calls that modify the vault",
+          "reason": "the server reads Obsidian vaults and publishes no sample vault, and Obsidian publishes its Sandbox vault, so that sample comes first, taken whole with its tree, owned by the run's account as a user owns their own vault so the note-editing tools answer; both records seed it, record A as one git tree pinned by its commit, record B file by file, and record A's form is retained"
         },
         {
           "server_package": "npm:@bitbonsai/mcpvault",
@@ -10166,7 +10560,47 @@
           "reason": "not counted: its bypasses are case variants (case-insensitive macOS/Windows only) and Windows trailing dot or space, neither reproducible on the Linux run filesystem"
         }
       ],
-      "patched_version": "0.11.5"
+      "patched_version": "0.11.5",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "Obsidian Sandbox vault (Sandbox/ of obsidianmd/obsidian-help, 31 notes in Adventurer/, Formatting/, Guides/ and the root), seeded whole as the vault /vault the launch names",
+          "kind": "published_sample",
+          "citation": "https://github.com/obsidianmd/obsidian-help/tree/24a31567c8a124aaaf95192fa49683bd35305dde/Sandbox ; Obsidian documents it as its sandbox vault ('This is a sandbox vault in which you can test various functionalities of Obsidian', Sandbox/Start here.md; en/Getting started/Sandbox vault.md). The server reads Obsidian vaults and publishes no sample vault of its own (repository tree at 8795716b90d1c4090a82a58647e030763513f17e).",
+          "pin": "24a31567c8a124aaaf95192fa49683bd35305dde"
+        },
+        {
+          "item": "write_note's request of the README (meeting-notes.md with its content and frontmatter, mode overwrite), update_frontmatter's frontmatter and merge (status completed, updated 2025-09-23), delete_note's request (old-draft.md, trashMode local), passed by the benign calls of those tools",
+          "kind": "project_document",
+          "citation": "README.md of @bitbonsai/mcpvault 0.11.5, as the npm package ships it, sections write_note, update_frontmatter and delete_note",
+          "pin": "@bitbonsai/mcpvault@0.11.5"
+        },
+        {
+          "item": "update_frontmatter's path meeting-notes.md, the README's write_note note in place of its research-note.md, and old-draft.md's content '# Draft' written by delete_note's prerequisite",
+          "kind": "written",
+          "citation": "written for the benign calls, so each writes or deletes a note its prerequisite creates",
+          "pin": null
+        },
+        {
+          "item": "patch_note newString '**highlight text**' (the sample's own phrase 'highlight text' in Markdown bold markup)",
+          "kind": "written",
+          "citation": "written for the benign call; the phrase comes from Sandbox/Formatting/Highlighting.md",
+          "pin": null
+        },
+        {
+          "item": "move destinations 'Guides/Internal link.md' (move_note) and 'Guides/Embeds.md' (move_file): the sample's own folder 'Guides' and note names",
+          "kind": "written",
+          "citation": "written for the benign calls from names of the sample",
+          "pin": null
+        },
+        {
+          "item": "search_notes query 'plain folder' (two words of the sample sentence 'a vault is a plain folder')",
+          "kind": "written",
+          "citation": "written for the benign call from Sandbox/Vault is just a local folder.md",
+          "pin": null
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "PyPI:vibe-trading-ai",
