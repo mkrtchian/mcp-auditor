@@ -936,6 +936,15 @@ services:
     image: mcp-auditor-nuisance-mysql:local
     profiles: ["nuisance"]
 
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ca2fdf3ceb033115927f6b1bba4fbbf247bde10651a4d1a9c9f35c1f426721fe"
+    image: mcp-auditor-nuisance-postgres:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .
