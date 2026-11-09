@@ -1,0 +1,19 @@
+# Fix-check-only twin of Dockerfile.sylphxltd-filesystem (CVE-2025-67366 patched arm): the same build, plus what only
+# the fix check reads: the symlinks its exploits name (leaklink to the file the witness is planted at, leakdir to the
+# directory that holds it) and that directory, owned by the run's account so the writing exploits act in it. The run
+# never builds it.
+FROM rust:1-slim-bookworm@sha256:24707e70a4f1e23d9a7b25202ec43126d28a52294b96aad5c670df1fd1f1d400
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+RUN git init -q /build && cd /build \
+ && git fetch -q --depth 1 https://github.com/SylphxAI/filesystem-mcp 71bfe911b870df56db6a5124e659855eeccbcdbe \
+ && git checkout -q FETCH_HEAD \
+ && test "$(git rev-parse HEAD)" = 71bfe911b870df56db6a5124e659855eeccbcdbe
+WORKDIR /build
+RUN cargo build --release -p filesystem-core -p filesystem-cli -p filesystem-mcp-server \
+ && test -f target/release/filesystem-cli && test -f target/release/filesystem-mcp-server
+RUN mkdir -p /opt/fs && cp /build/README.md /opt/fs/README.md && chown -R 65534:65534 /opt/fs
+RUN mkdir -p /zone && chown 65534:65534 /zone \
+ && ln -s /zone/secret /opt/fs/leaklink && ln -s /zone /opt/fs/leakdir
+WORKDIR /opt/fs
+ENTRYPOINT ["/build/target/release/filesystem-mcp-server"]

@@ -12101,7 +12101,139 @@
             {
               "vulnerable_name": "read_content",
               "patched_name": "read_content",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_files",
+              "patched_name": "list_files",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "stat_items",
+              "patched_name": "stat_items",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "write_content",
+              "patched_name": "write_content",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "search_files",
+              "patched_name": "search_files",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Runs on the proposed run image under the exact confinement (probe): with {path: '.', regex: 'Alpha'} and with {path: 'nested', regex: 'Beta', file_pattern: '*.txt'} the call answers 'error filesystem-cli returned unexpected JSON: {\"status\":\"ok\",...,\"results\":[...]}' (the engine found the matches, the transport rejects its envelope); with {path: '.'} and no regex it answers the LEGACY_ENGINE_DISABLED error. Source at SylphxAI/filesystem-mcp tag v0.7.1 (commit 71bfe911b870df56db6a5124e659855eeccbcdbe): crates/filesystem-cli/src/main.rs:33-39 SearchSuccessEnvelope carries status, engine, version, results and metrics but no 'result' field; crates/filesystem-mcp-server/src/cli_bridge.rs:9-13 CliLegacySuccess requires 'result', so cli_bridge.rs:122 fails to parse it, cli_bridge.rs:133 (CliError needs 'message') fails too, and cli_bridge.rs:139-140 returns the internal error 'filesystem-cli returned unexpected JSON'. A regex is what the description requires ('Search for a regex pattern'); without one, crates/filesystem-cli/src/legacy_runtime.rs:165 routes the call to the disabled legacy engine. Every argument the description allows therefore errors; the committed run image fails the same way."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "copy_items",
+              "patched_name": "copy_items",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the proposed run image under the exact confinement (probe): 'copy_items [listed] -> error \"Legacy TypeScript engine runtime is disabled for tool 'copy_items'. Use the Rust engine path or set FILESYSTEM_ALLOW_LEGACY_ENGINE=1.\"' with {operations: [{source: 'alpha.txt', destination: 'alpha-copy.txt'}]}; the committed run image gives the same error. Source at SylphxAI/filesystem-mcp tag v0.7.1 (commit 71bfe911b870df56db6a5124e659855eeccbcdbe): crates/filesystem-mcp-server/src/tool_routes.rs:19-26 routes delete_items, create_directories, chmod_items, chown_items, move_items, copy_items, replace_content and apply_diff to ToolRoute::LegacyOptIn; crates/filesystem-cli/src/legacy_runtime.rs:162-172 is_native_rust_engine_request returns false for them, and legacy_runtime.rs:53-77 (legacy_engine_allowed, handle_legacy_mcp_tool at 60-77) returns the LEGACY_ENGINE_DISABLED error unless FILESYSTEM_ALLOW_LEGACY_ENGINE is '1'. The error does not depend on the arguments: it is returned before they are read, so every argument the description allows fails. The setting is not documented (README.md, docs/ and CHANGELOG.md at the tag never name it; CHANGELOG 0.7.1 says 'TypeScript transport remains explicit opt-in'), the documented launcher bin/filesystem-mcp never sets it, and the project's own shipped-path test and release gate run with it empty (__tests__/engine/shippedPath.matrix.test.ts:57, scripts/release-gate.ts:119), so the server's documented default deployment answers every call of this tool with this error; it is a refusal of the server itself, not a container failure, and the launch rule keeps an option the server does not need to start at its default. Even set, the legacy route needs dist/legacy-engine-runtime.js, which only a bun build of the TypeScript sources produces."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "replace_content",
+              "patched_name": "replace_content",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the proposed run image under the exact confinement (probe): 'replace_content [listed] -> error \"Legacy TypeScript engine runtime is disabled for tool 'replace_content'. Use the Rust engine path or set FILESYSTEM_ALLOW_LEGACY_ENGINE=1.\"' with {paths: ['alpha.txt'], operations: [{search: 'two', replace: 'three'}]}; the committed run image gives the same error. Source at SylphxAI/filesystem-mcp tag v0.7.1 (commit 71bfe911b870df56db6a5124e659855eeccbcdbe): crates/filesystem-mcp-server/src/tool_routes.rs:19-26 routes delete_items, create_directories, chmod_items, chown_items, move_items, copy_items, replace_content and apply_diff to ToolRoute::LegacyOptIn; crates/filesystem-cli/src/legacy_runtime.rs:162-172 is_native_rust_engine_request returns false for them, and legacy_runtime.rs:53-77 (legacy_engine_allowed, handle_legacy_mcp_tool at 60-77) returns the LEGACY_ENGINE_DISABLED error unless FILESYSTEM_ALLOW_LEGACY_ENGINE is '1'. The error does not depend on the arguments: it is returned before they are read, so every argument the description allows fails. The setting is not documented (README.md, docs/ and CHANGELOG.md at the tag never name it; CHANGELOG 0.7.1 says 'TypeScript transport remains explicit opt-in'), the documented launcher bin/filesystem-mcp never sets it, and the project's own shipped-path test and release gate run with it empty (__tests__/engine/shippedPath.matrix.test.ts:57, scripts/release-gate.ts:119), so the server's documented default deployment answers every call of this tool with this error; it is a refusal of the server itself, not a container failure, and the launch rule keeps an option the server does not need to start at its default. Even set, the legacy route needs dist/legacy-engine-runtime.js, which only a bun build of the TypeScript sources produces."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_items",
+              "patched_name": "delete_items",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the proposed run image under the exact confinement (probe): 'delete_items [listed] -> error \"Legacy TypeScript engine runtime is disabled for tool 'delete_items'. Use the Rust engine path or set FILESYSTEM_ALLOW_LEGACY_ENGINE=1.\"' with {paths: ['notes.txt']}; the committed run image gives the same error. Source at SylphxAI/filesystem-mcp tag v0.7.1 (commit 71bfe911b870df56db6a5124e659855eeccbcdbe): crates/filesystem-mcp-server/src/tool_routes.rs:19-26 routes delete_items, create_directories, chmod_items, chown_items, move_items, copy_items, replace_content and apply_diff to ToolRoute::LegacyOptIn; crates/filesystem-cli/src/legacy_runtime.rs:162-172 is_native_rust_engine_request returns false for them, and legacy_runtime.rs:53-77 (legacy_engine_allowed, handle_legacy_mcp_tool at 60-77) returns the LEGACY_ENGINE_DISABLED error unless FILESYSTEM_ALLOW_LEGACY_ENGINE is '1'. The error does not depend on the arguments: it is returned before they are read, so every argument the description allows fails. The setting is not documented (README.md, docs/ and CHANGELOG.md at the tag never name it; CHANGELOG 0.7.1 says 'TypeScript transport remains explicit opt-in'), the documented launcher bin/filesystem-mcp never sets it, and the project's own shipped-path test and release gate run with it empty (__tests__/engine/shippedPath.matrix.test.ts:57, scripts/release-gate.ts:119), so the server's documented default deployment answers every call of this tool with this error; it is a refusal of the server itself, not a container failure, and the launch rule keeps an option the server does not need to start at its default. Even set, the legacy route needs dist/legacy-engine-runtime.js, which only a bun build of the TypeScript sources produces."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_directories",
+              "patched_name": "create_directories",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the proposed run image under the exact confinement (probe): 'create_directories [listed] -> error \"Legacy TypeScript engine runtime is disabled for tool 'create_directories'. Use the Rust engine path or set FILESYSTEM_ALLOW_LEGACY_ENGINE=1.\"' with {paths: ['docs']}; the committed run image gives the same error. Source at SylphxAI/filesystem-mcp tag v0.7.1 (commit 71bfe911b870df56db6a5124e659855eeccbcdbe): crates/filesystem-mcp-server/src/tool_routes.rs:19-26 routes delete_items, create_directories, chmod_items, chown_items, move_items, copy_items, replace_content and apply_diff to ToolRoute::LegacyOptIn; crates/filesystem-cli/src/legacy_runtime.rs:162-172 is_native_rust_engine_request returns false for them, and legacy_runtime.rs:53-77 (legacy_engine_allowed, handle_legacy_mcp_tool at 60-77) returns the LEGACY_ENGINE_DISABLED error unless FILESYSTEM_ALLOW_LEGACY_ENGINE is '1'. The error does not depend on the arguments: it is returned before they are read, so every argument the description allows fails. The setting is not documented (README.md, docs/ and CHANGELOG.md at the tag never name it; CHANGELOG 0.7.1 says 'TypeScript transport remains explicit opt-in'), the documented launcher bin/filesystem-mcp never sets it, and the project's own shipped-path test and release gate run with it empty (__tests__/engine/shippedPath.matrix.test.ts:57, scripts/release-gate.ts:119), so the server's documented default deployment answers every call of this tool with this error; it is a refusal of the server itself, not a container failure, and the launch rule keeps an option the server does not need to start at its default. Even set, the legacy route needs dist/legacy-engine-runtime.js, which only a bun build of the TypeScript sources produces."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "chmod_items",
+              "patched_name": "chmod_items",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the proposed run image under the exact confinement (probe): 'chmod_items [listed] -> error \"Legacy TypeScript engine runtime is disabled for tool 'chmod_items'. Use the Rust engine path or set FILESYSTEM_ALLOW_LEGACY_ENGINE=1.\"' with {paths: ['alpha.txt'], mode: '644'}; the committed run image gives the same error. Source at SylphxAI/filesystem-mcp tag v0.7.1 (commit 71bfe911b870df56db6a5124e659855eeccbcdbe): crates/filesystem-mcp-server/src/tool_routes.rs:19-26 routes delete_items, create_directories, chmod_items, chown_items, move_items, copy_items, replace_content and apply_diff to ToolRoute::LegacyOptIn; crates/filesystem-cli/src/legacy_runtime.rs:162-172 is_native_rust_engine_request returns false for them, and legacy_runtime.rs:53-77 (legacy_engine_allowed, handle_legacy_mcp_tool at 60-77) returns the LEGACY_ENGINE_DISABLED error unless FILESYSTEM_ALLOW_LEGACY_ENGINE is '1'. The error does not depend on the arguments: it is returned before they are read, so every argument the description allows fails. The setting is not documented (README.md, docs/ and CHANGELOG.md at the tag never name it; CHANGELOG 0.7.1 says 'TypeScript transport remains explicit opt-in'), the documented launcher bin/filesystem-mcp never sets it, and the project's own shipped-path test and release gate run with it empty (__tests__/engine/shippedPath.matrix.test.ts:57, scripts/release-gate.ts:119), so the server's documented default deployment answers every call of this tool with this error; it is a refusal of the server itself, not a container failure, and the launch rule keeps an option the server does not need to start at its default. Even set, the legacy route needs dist/legacy-engine-runtime.js, which only a bun build of the TypeScript sources produces."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "chown_items",
+              "patched_name": "chown_items",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the proposed run image under the exact confinement (probe): 'chown_items [listed] -> error \"Legacy TypeScript engine runtime is disabled for tool 'chown_items'. Use the Rust engine path or set FILESYSTEM_ALLOW_LEGACY_ENGINE=1.\"' with {paths: ['alpha.txt'], uid: 65534, gid: 65534}; the committed run image gives the same error. Source at SylphxAI/filesystem-mcp tag v0.7.1 (commit 71bfe911b870df56db6a5124e659855eeccbcdbe): crates/filesystem-mcp-server/src/tool_routes.rs:19-26 routes delete_items, create_directories, chmod_items, chown_items, move_items, copy_items, replace_content and apply_diff to ToolRoute::LegacyOptIn; crates/filesystem-cli/src/legacy_runtime.rs:162-172 is_native_rust_engine_request returns false for them, and legacy_runtime.rs:53-77 (legacy_engine_allowed, handle_legacy_mcp_tool at 60-77) returns the LEGACY_ENGINE_DISABLED error unless FILESYSTEM_ALLOW_LEGACY_ENGINE is '1'. The error does not depend on the arguments: it is returned before they are read, so every argument the description allows fails. The setting is not documented (README.md, docs/ and CHANGELOG.md at the tag never name it; CHANGELOG 0.7.1 says 'TypeScript transport remains explicit opt-in'), the documented launcher bin/filesystem-mcp never sets it, and the project's own shipped-path test and release gate run with it empty (__tests__/engine/shippedPath.matrix.test.ts:57, scripts/release-gate.ts:119), so the server's documented default deployment answers every call of this tool with this error; it is a refusal of the server itself, not a container failure, and the launch rule keeps an option the server does not need to start at its default. Even set, the legacy route needs dist/legacy-engine-runtime.js, which only a bun build of the TypeScript sources produces."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "move_items",
+              "patched_name": "move_items",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "software_error",
+                "evidence": "Run on the proposed run image under the exact confinement (probe): 'move_items [listed] -> error \"Legacy TypeScript engine runtime is disabled for tool 'move_items'. Use the Rust engine path or set FILESYSTEM_ALLOW_LEGACY_ENGINE=1.\"' with {operations: [{source: 'notes.txt', destination: 'docs.txt'}]}; the committed run image gives the same error. Source at SylphxAI/filesystem-mcp tag v0.7.1 (commit 71bfe911b870df56db6a5124e659855eeccbcdbe): crates/filesystem-mcp-server/src/tool_routes.rs:19-26 routes delete_items, create_directories, chmod_items, chown_items, move_items, copy_items, replace_content and apply_diff to ToolRoute::LegacyOptIn; crates/filesystem-cli/src/legacy_runtime.rs:162-172 is_native_rust_engine_request returns false for them, and legacy_runtime.rs:53-77 (legacy_engine_allowed, handle_legacy_mcp_tool at 60-77) returns the LEGACY_ENGINE_DISABLED error unless FILESYSTEM_ALLOW_LEGACY_ENGINE is '1'. The error does not depend on the arguments: it is returned before they are read, so every argument the description allows fails. The setting is not documented (README.md, docs/ and CHANGELOG.md at the tag never name it; CHANGELOG 0.7.1 says 'TypeScript transport remains explicit opt-in'), the documented launcher bin/filesystem-mcp never sets it, and the project's own shipped-path test and release gate run with it empty (__tests__/engine/shippedPath.matrix.test.ts:57, scripts/release-gate.ts:119), so the server's documented default deployment answers every call of this tool with this error; it is a refusal of the server itself, not a container failure, and the launch rule keeps an option the server does not need to start at its default. Even set, the legacy route needs dist/legacy-engine-runtime.js, which only a bun build of the TypeScript sources produces."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "edit_file",
+              "patched_name": null,
+              "status": "removed"
             }
           ],
           "effect_class": "read_outside_scope",
@@ -12113,9 +12245,42 @@
               "tool": "read_content",
               "arguments": {
                 "paths": [
-                  "hello.txt"
+                  "README.md"
                 ]
-              }
+              },
+              "expect": "# Filesystem MCP",
+              "before": []
+            },
+            {
+              "tool": "list_files",
+              "arguments": {
+                "path": "."
+              },
+              "expect": "README.md",
+              "before": []
+            },
+            {
+              "tool": "stat_items",
+              "arguments": {
+                "paths": [
+                  "README.md"
+                ]
+              },
+              "expect": "\"isFile\": true",
+              "before": []
+            },
+            {
+              "tool": "write_content",
+              "arguments": {
+                "items": [
+                  {
+                    "path": "notes.txt",
+                    "content": "Gamma line one\n"
+                  }
+                ]
+              },
+              "expect": "\"success\": true",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -12124,12 +12289,24 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "read_content"
+              "read_content",
+              "search_files",
+              "list_files",
+              "stat_items",
+              "copy_items",
+              "write_content",
+              "replace_content",
+              "chmod_items",
+              "chown_items",
+              "move_items",
+              "delete_items",
+              "create_directories"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -12142,6 +12319,7 @@
       },
       "launch": [],
       "service": "sylphxltd-filesystem",
+      "backend": null,
       "agents": [
         {
           "role": "admitter",
@@ -12152,12 +12330,67 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2025-67366",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
           "agreed": false
         }
       ],
@@ -12165,9 +12398,23 @@
         {
           "server_package": "npm:@sylphxltd/filesystem-mcp",
           "flaw": "CVE-2025-67366",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B over-marked dfie true; read_content's declared function is to read files within the bounded PROJECT_ROOT (the process cwd), and the symlink traversal that follows a link out of that root (the startsWith check precedes symlink resolution while fs.readFile follows it) is a bypass of that perimeter, not the declared function"
+          "field": "tools",
+          "value": "read_content, list_files, stat_items and write_content counted; search_files, copy_items, replace_content, delete_items, create_directories, chmod_items, chown_items and move_items listed with their real software not answering; edit_file listed as removed",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: every path argument of these tools passes the lexical resolvePath of 0.5.8 that the fix commit replaces, and the handler's fs call then follows a symlink under the root out of it; list_files and stat_items read through it (both records), and write_content writes through it with a path the caller chooses, a writer passing the faulty guard of a read flaw counting (record A); the seven tools v0.7.1 routes to its legacy engine and search_files answer every call with an error under the documented default setting, so they are listed and not counted (search_files, copy_items and replace_content both records, the other five record A); edit_file is gone from v0.7.1 (both records); no record wrote an exploit through any tool but read_content, so the other eleven exploits were written at assembly, each acting through a symlink of the fix-check root on the vulnerable version and refused on the patched one"
+        },
+        {
+          "server_package": "npm:@sylphxltd/filesystem-mcp",
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record B's calls of read_content, list_files and stat_items on the seeded README.md, with record A's write_content call",
+          "reason": "the calls follow the seed retained, record B's; write_content is counted on record A's reading and only record A wrote its call, a new file inside the root"
+        },
+        {
+          "server_package": "npm:@sylphxltd/filesystem-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the project's README.md at the pinned commit, copied whole into the root",
+          "reason": "a file shipped under a project's tests is a published sample only when its documentation presents it as an example, and nothing presents the golden test corpus record A seeded as one; the server publishes no sample project, so the root holds a document the project publishes, the README its own example reads through read_content"
         },
         {
           "server_package": "npm:@sylphxltd/filesystem-mcp",
@@ -12177,7 +12424,29 @@
           "reason": "the @sylphxltd/@sylphx npm line has no installable release carrying the fix (the published npm releases 0.7.0-0.7.2 wrap the JSON-RPC envelope into the strict Zod schema so every tool call errors; the git tag v0.6.0 carries the fix but was never published to npm); the patched arm is the Rust rewrite built from git tag v0.7.1 (fix commit 9943de5), whose resolve_path canonicalises and rejects a real path outside the root"
         }
       ],
-      "patched_version": "0.7.1"
+      "patched_version": "0.7.1",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/opt/fs/README.md: the server project's README.md, copied whole from the build checkout into the root (the launch's working directory)",
+          "kind": "project_document",
+          "citation": "https://github.com/SylphxAI/filesystem-mcp/blob/71bfe911b870df56db6a5124e659855eeccbcdbe/README.md (the repository README at tag v0.7.1, whose 'See it work' example reads README.md through read_content)",
+          "pin": "71bfe911b870df56db6a5124e659855eeccbcdbe"
+        },
+        {
+          "item": "ownership of /opt/fs set to 65534:65534, the run's account, so write_content can write in the root as in a user's own project",
+          "kind": "written",
+          "citation": "the run's confinement (--user 65534:65534); the README's Docker setup mounts the user's own project",
+          "pin": null
+        },
+        {
+          "item": "write_content's benign call: the file notes.txt with the content 'Gamma line one' and a newline, passed as call arguments only",
+          "kind": "written",
+          "citation": "written for the benign call, a new file inside the root",
+          "pin": null
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "https://github.com/611711Dark/mcp_calculate_server",

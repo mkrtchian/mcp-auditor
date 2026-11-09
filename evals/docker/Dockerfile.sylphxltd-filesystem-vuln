@@ -1,12 +1,14 @@
 # CVE-2025-67366 vulnerable: @sylphxltd/filesystem-mcp (lineage name @shtse8/filesystem-mcp) 0.5.8.
-# Symlink path traversal in read_content: resolvePath checks the raw path before symlink resolution,
-# but fs.readFile follows the link, so a symlink inside the root (cwd) reads outside it. Root =
-# process.cwd(); the baked WORKDIR is /opt/fs, and /opt/fs/leaklink -> /zone/secret (the planted
-# witness) escapes the scope. No COPY/ADD from the build context.
+# Symlink path traversal: resolvePath checks the raw path before symlink resolution, but every handler's fs call
+# follows the link, so a symlink inside the root (cwd) acts outside it. Root = process.cwd(), the baked WORKDIR
+# /opt/fs, seeded with the package's own README.md and owned by the run's account (65534) as the patched images'
+# root is. /opt/fs/leaklink -> /zone/secret (the planted witness) and /opt/fs/leakdir -> /zone escape the scope;
+# /zone belongs to the run's account so the writing exploits act in it. No COPY/ADD from the build context.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 RUN npm install -g @shtse8/filesystem-mcp@0.5.8
 RUN mkdir -p /opt/fs /zone \
- && printf 'benign file content\n' > /opt/fs/hello.txt \
- && ln -s /zone/secret /opt/fs/leaklink
+ && cp /usr/local/lib/node_modules/@shtse8/filesystem-mcp/README.md /opt/fs/README.md \
+ && chown -R 65534:65534 /opt/fs /zone \
+ && ln -s /zone/secret /opt/fs/leaklink && ln -s /zone /opt/fs/leakdir
 WORKDIR /opt/fs
 ENTRYPOINT ["filesystem-mcp"]

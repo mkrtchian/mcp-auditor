@@ -1013,7 +1013,7 @@ services:
       context: .
       dockerfile: Dockerfile.sylphxltd-filesystem
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "98b8f67fcb2e8a699fca7157f4bbe8f5037a29cbe74c59d3735983360333424e"
+        org.mcp-auditor.dockerfile-fingerprint: "e398a9e9dfe32f6d066c3b064811386e072e665d25fcab8e7e5d558843405b9a"
     image: mcp-auditor-nuisance-sylphxltd-filesystem:local
     profiles: ["nuisance"]
 
