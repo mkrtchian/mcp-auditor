@@ -782,15 +782,6 @@ services:
     image: mcp-auditor-nuisance-token-optimizer:local
     profiles: ["nuisance"]
 
-  claude-in-mobile:
-    build:
-      context: .
-      dockerfile: Dockerfile.claude-in-mobile
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "b9490fae38084007cdaa99dd76f81c2438d759983c3c6c27e90db1ee4eab3145"
-    image: mcp-auditor-nuisance-claude-in-mobile:local
-    profiles: ["nuisance"]
-
   aws-api-mcp:
     build:
       context: .
@@ -890,15 +881,6 @@ services:
     image: mcp-auditor-nuisance-taskwarrior:local
     profiles: ["nuisance"]
 
-  wireshark:
-    build:
-      context: .
-      dockerfile: Dockerfile.wireshark
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "c71d9809dd8b7c1882e60ffe8ae315abcd8d2853ebd5dd9203d5982a44689e2f"
-    image: mcp-auditor-nuisance-wireshark:local
-    profiles: ["nuisance"]
-
   n8n:
     build:
       context: .
@@ -933,15 +915,6 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "f8f52d96ff2c32dedd2e2528a502afca0d90a6efa9fc5fb42bac1b3c57da8fd4"
     image: mcp-auditor-nuisance-biome:local
-    profiles: ["nuisance"]
-
-  heim:
-    build:
-      context: .
-      dockerfile: Dockerfile.heim
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "328777b291d815c89b46a2767e86247fb571e2c7e76558d524fe085fd75fb593"
-    image: mcp-auditor-nuisance-heim:local
     profiles: ["nuisance"]
 
   magento2:
@@ -1032,15 +1005,6 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "09ea65e521fcf02e888091941f55805191a4e6e0a07f25e71da863d623fc2fdf"
     image: mcp-auditor-nuisance-neo4j:local
-    profiles: ["nuisance"]
-
-  gemini-bridge:
-    build:
-      context: .
-      dockerfile: Dockerfile.gemini-bridge
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "d7646442d643e2f0524156be1fe093acd68868566485dc6aeb8d590eb20a7f2e"
-    image: mcp-auditor-nuisance-gemini-bridge:local
     profiles: ["nuisance"]
 
   sylphxltd-filesystem:
