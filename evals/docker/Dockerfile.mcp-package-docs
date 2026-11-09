@@ -1,25 +1,52 @@
 # mcp-package-docs (CVE-2025-54073), patched npm release 0.1.28 (the advisory's first patched
-# version). describe_go_package / describe_python_package switch their go call sites to
-# child_process.execFile with an argument array, so shell metacharacters in the package name no
-# longer reach a shell. Doubles as the nuisance run image.
+# version).
 #
-# Same vscode-languageserver-protocol 3.17.5 pin as the vulnerable image (see that Dockerfile).
-# `turndown` is added because 0.1.28 imports it from rust-docs-integration.js but omits it from
-# its own dependencies (an unrelated packaging bug). Both pins work around load-time breaks
-# only, leaving the CVE fix as the sole behavioural difference between the two images. No
-# COPY/ADD from the build context.
+# The server shells out to `go` (describe_go_package, lookup_go_doc, search_package_docs) and
+# `python3` (describe_python_package, lookup_python_doc, search_package_docs). Its README names
+# no version and no install channel for either, so each is the latest stable release its project
+# published on the day of the re-admission, installed as that project documents: Go 1.27.3 from
+# the go.dev archive (https://go.dev/doc/install), CPython 3.15.2 built from the python.org
+# source release (https://docs.python.org/3/using/unix.html#building-python). No Go or Python
+# environment variable is set beyond the PATH entry the Go install page gives, so both run at
+# their defaults (GOPATH and GOCACHE resolve under HOME=/tmp).
+#
+# Two load-time workarounds, the only dependency changes: vscode-languageserver-protocol is held
+# at 3.17.5 (the version resolved at the package's release time), since its 3.18.x line drops the
+# `./node.js` subpath export build/lsp/typescript-lsp-client.js imports, and the server exits with
+# ERR_PACKAGE_PATH_NOT_EXPORTED before tools/list without it; `turndown` is added, unpinned,
+# because 0.1.28 imports it from rust-docs-integration.js but omits it from its own dependencies.
+# Every other dependency floats.
+#
+# A minimal Package.swift is baked at /opt/swift-project so describe_swift_package reaches its
+# local Swift documentation path (isSwiftPackageInstalledLocally needs a Package.swift naming the
+# package); no Swift toolchain is installed, the tool's normal remote path serving its benign call.
+# No COPY/ADD from the build context.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends golang-go ca-certificates \
+    && apt-get install -y --no-install-recommends ca-certificates curl xz-utils build-essential \
+       pkg-config libssl-dev zlib1g-dev libffi-dev libbz2-dev liblzma-dev libsqlite3-dev \
+       libreadline-dev libncurses-dev uuid-dev \
     && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSLo /tmp/go.tar.gz https://go.dev/dl/go1.27.3.linux-amd64.tar.gz \
+    && echo "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40  /tmp/go.tar.gz" | sha256sum -c - \
+    && tar -C /usr/local -xzf /tmp/go.tar.gz \
+    && rm /tmp/go.tar.gz
+RUN curl -fsSLo /tmp/python.tar.xz https://www.python.org/ftp/python/3.15.2/Python-3.15.2.tar.xz \
+    && echo "8b5536d280142ecf6cdfe15d12a21ba1c65e300bbf7b28a8d0cdb849575797de  /tmp/python.tar.xz" | sha256sum -c - \
+    && mkdir /tmp/python-src \
+    && tar -C /tmp/python-src --strip-components=1 -xJf /tmp/python.tar.xz \
+    && cd /tmp/python-src \
+    && ./configure \
+    && make -j"$(nproc)" \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/python-src /tmp/python.tar.xz
+ENV PATH=/usr/local/go/bin:$PATH
 WORKDIR /app
 RUN npm init -y >/dev/null 2>&1 \
     && npm pkg set overrides.vscode-languageserver-protocol=3.17.5 \
-    && npm install --omit=dev --no-audit --no-fund mcp-package-docs@0.1.28 turndown@7.2.0 \
+    && npm install --omit=dev --no-audit --no-fund mcp-package-docs@0.1.28 turndown \
     && npm cache clean --force
-ENV GOPROXY=off \
-    GOFLAGS=-mod=mod \
-    GOTOOLCHAIN=local \
-    GOCACHE=/tmp/.cache/go-build \
-    GOPATH=/tmp/go
+RUN mkdir -p /opt/swift-project \
+    && printf '// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: "fixture")\n' > /opt/swift-project/Package.swift
 ENTRYPOINT ["node", "/app/node_modules/mcp-package-docs/build/index.js"]

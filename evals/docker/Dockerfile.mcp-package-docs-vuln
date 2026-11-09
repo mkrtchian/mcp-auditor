@@ -1,26 +1,48 @@
-# mcp-package-docs (CVE-2025-54073), vulnerable npm release 0.1.23. describe_go_package /
-# describe_python_package concatenate the caller's package name into a shell string
-# (`go doc <package>`) run through child_process.exec, so a value such as
-# `nosuchpkg; cat /flag; true` chains an attacker command whose output the tool reflects.
-# golang-go is installed so the benign call (a real Go standard-library lookup) resolves
-# offline. No COPY/ADD from the build context; the package is installed from the npm registry
-# by RUN.
+# mcp-package-docs (CVE-2025-54073), vulnerable npm release 0.1.23. The counted tools
+# describe_go_package and its alias lookup_go_doc interpolate the package name into
+# `go list ... <package>` / `go doc <package>`, and describe_swift_package interpolates the
+# `symbol` argument into `swift doc generate <package> ... --symbol <symbol>` (reached when a
+# Package.swift under projectPath names the package), each run through child_process.exec, so a
+# value such as `nosuchpkg; cat /flag; true` chains an attacker command whose output the tool
+# reflects. (The Python tools the advisory also names stay open to the same flaw on the patched
+# release and are not counted.)
 #
-# vscode-languageserver-protocol is pinned to 3.17.5 (the version resolved at the package's
-# release time): its 3.18.x line drops the `./node.js` subpath export the server imports at
-# load time, which would crash the process before tools/list, an unrelated dependency break.
+# Built the same way as the run image (Dockerfile.mcp-package-docs), the server's version alone
+# differing: Go 1.27.3 from the go.dev archive and CPython 3.15.2 built from the python.org source
+# release, the latest stable releases on the day of the re-admission, with no Go or Python
+# environment variable beyond the PATH entry the Go install page gives. 0.1.23 does not import
+# `turndown`, so it is not added. A minimal Package.swift is baked at /opt/swift-project so
+# describe_swift_package reaches its local Swift documentation path (no Swift toolchain installed).
+#
+# vscode-languageserver-protocol is held at 3.17.5 (the version resolved at the package's release
+# time): its 3.18.x line drops the `./node.js` subpath export the server imports at load time,
+# which would crash the process before tools/list. No COPY/ADD from the build context.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends golang-go ca-certificates \
+    && apt-get install -y --no-install-recommends ca-certificates curl xz-utils build-essential \
+       pkg-config libssl-dev zlib1g-dev libffi-dev libbz2-dev liblzma-dev libsqlite3-dev \
+       libreadline-dev libncurses-dev uuid-dev \
     && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSLo /tmp/go.tar.gz https://go.dev/dl/go1.27.3.linux-amd64.tar.gz \
+    && echo "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40  /tmp/go.tar.gz" | sha256sum -c - \
+    && tar -C /usr/local -xzf /tmp/go.tar.gz \
+    && rm /tmp/go.tar.gz
+RUN curl -fsSLo /tmp/python.tar.xz https://www.python.org/ftp/python/3.15.2/Python-3.15.2.tar.xz \
+    && echo "8b5536d280142ecf6cdfe15d12a21ba1c65e300bbf7b28a8d0cdb849575797de  /tmp/python.tar.xz" | sha256sum -c - \
+    && mkdir /tmp/python-src \
+    && tar -C /tmp/python-src --strip-components=1 -xJf /tmp/python.tar.xz \
+    && cd /tmp/python-src \
+    && ./configure \
+    && make -j"$(nproc)" \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/python-src /tmp/python.tar.xz
+ENV PATH=/usr/local/go/bin:$PATH
 WORKDIR /app
 RUN npm init -y >/dev/null 2>&1 \
     && npm pkg set overrides.vscode-languageserver-protocol=3.17.5 \
     && npm install --omit=dev --no-audit --no-fund mcp-package-docs@0.1.23 \
     && npm cache clean --force
-ENV GOPROXY=off \
-    GOFLAGS=-mod=mod \
-    GOTOOLCHAIN=local \
-    GOCACHE=/tmp/.cache/go-build \
-    GOPATH=/tmp/go
+RUN mkdir -p /opt/swift-project \
+    && printf '// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: "fixture")\n' > /opt/swift-project/Package.swift
 ENTRYPOINT ["node", "/app/node_modules/mcp-package-docs/build/index.js"]

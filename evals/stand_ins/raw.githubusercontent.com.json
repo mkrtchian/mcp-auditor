@@ -1,0 +1,295 @@
+{
+  "host": "raw.githubusercontent.com",
+  "address": "185.199.109.133",
+  "source": "capture",
+  "captured_at": "2026-11-08T00:08:02Z",
+  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/raw.githubusercontent.com.json https://raw.githubusercontent.com/apple/swift-argument-parser/main/README.md",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/apple/swift-argument-parser/main/README.md",
+      "status": 200,
+      "headers": [
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Content-Length",
+          "5713"
+        ],
+        [
+          "Cache-Control",
+          "max-age=300"
+        ],
+        [
+          "Content-Security-Policy",
+          "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+        ],
+        [
+          "Content-Type",
+          "text/plain; charset=utf-8"
+        ],
+        [
+          "ETag",
+          "\"4783969ef95a87338d7f336742e3b135db2f6e939b0cf769a76da24c1c31b540\""
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ],
+        [
+          "X-Frame-Options",
+          "deny"
+        ],
+        [
+          "X-XSS-Protection",
+          "1; mode=block"
+        ],
+        [
+          "X-GitHub-Request-Id",
+          "571A:224E9C:C5EDC:18361E:6AEFBD62"
+        ],
+        [
+          "x-github-edge-region",
+          "switzerlandnorth"
+        ],
+        [
+          "Accept-Ranges",
+          "bytes"
+        ],
+        [
+          "Date",
+          "Sun, 08 Nov 2026 00:08:04 GMT"
+        ],
+        [
+          "Via",
+          "1.1 varnish"
+        ],
+        [
+          "X-Served-By",
+          "cache-par-lfpg1960025-PAR"
+        ],
+        [
+          "X-Cache",
+          "MISS"
+        ],
+        [
+          "X-Cache-Hits",
+          "0"
+        ],
+        [
+          "X-Timer",
+          "S1794096484.447216,VS0,VE180"
+        ],
+        [
+          "Vary",
+          "Authorization,Accept-Encoding"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Cross-Origin-Resource-Policy",
+          "cross-origin"
+        ],
+        [
+          "X-Fastly-Request-ID",
+          "cc4aa9120a788f4610b5a91c3d19cd581bca7894"
+        ],
+        [
+          "Expires",
+          "Sun, 08 Nov 2026 00:13:04 GMT"
+        ],
+        [
+          "Source-Age",
+          "0"
+        ]
+      ],
+      "body": "# Swift Argument Parser\n\n## Usage\n\nBegin by declaring a type that defines the information\nthat you need to collect from the command line.\nDecorate each stored property with one of `ArgumentParser`'s property wrappers,\nand then declare conformance to `ParsableCommand` and add the `@main` attribute.\n(Note, for `async` renditions of `run`, conform to `AsyncParsableCommand` rather\nthan `ParsableCommand`.)\nFinally, implement your command's logic in the `run()` method.\n\n```swift\nimport ArgumentParser\n\n@main\nstruct Repeat: ParsableCommand {\n    @Flag(help: \"Include a counter with each repetition.\")\n    var includeCounter = false\n\n    @Option(name: .shortAndLong, help: \"How many times to repeat 'phrase'.\")\n    var count: Int? = nil\n\n    @Argument(help: \"The phrase to repeat.\")\n    var phrase: String\n\n    mutating func run() throws {\n        let repeatCount = count ?? 2\n\n        for i in 1...repeatCount {\n            if includeCounter {\n                print(\"\\(i): \\(phrase)\")\n            } else {\n                print(phrase)\n            }\n        }\n    }\n}\n```\n\nThe `ArgumentParser` library parses the command-line arguments,\ninstantiates your command type, and then either executes your `run()` method\nor exits with a useful message.\n\n`ArgumentParser` uses your properties' names and type information,\nalong with the details you provide using property wrappers,\nto supply useful error messages and detailed help:\n\n```\n$ repeat hello --count 3\nhello\nhello\nhello\n$ repeat --count 3\nError: Missing expected argument 'phrase'.\nHelp:  <phrase>  The phrase to repeat.\nUsage: repeat [--count <count>] [--include-counter] <phrase>\n  See 'repeat --help' for more information.\n$ repeat --help\nUSAGE: repeat [--count <count>] [--include-counter] <phrase>\n\nARGUMENTS:\n  <phrase>                The phrase to repeat.\n\nOPTIONS:\n  --include-counter       Include a counter with each repetition.\n  -c, --count <count>     The number of times to repeat 'phrase'.\n  -h, --help              Show help for this command.\n```\n\n## Documentation\n\nFor guides, articles, and API documentation see the\n[library's documentation on the Web][docs] or in Xcode.\n\n- [ArgumentParser documentation][docs]\n- [Getting Started with ArgumentParser](https://swiftpackageindex.com/apple/swift-argument-parser/documentation/argumentparser/gettingstarted)\n- [`ParsableCommand` documentation](https://swiftpackageindex.com/apple/swift-argument-parser/documentation/argumentparser/parsablecommand)\n- [`AsyncParsableCommand` documentation](https://swiftpackageindex.com/apple/swift-argument-parser/documentation/argumentparser/asyncparsablecommand)\n\n[docs]: https://swiftpackageindex.com/apple/swift-argument-parser/documentation/argumentparser\n\n#### Examples\n\nThis repository includes a few examples of using the library:\n\n- [`repeat`](Examples/repeat/Repeat.swift) is the example shown above.\n- [`roll`](Examples/roll/main.swift) is a simple utility implemented as a straight-line script.\n- [`math`](Examples/math/Math.swift) is an annotated example of using nested commands and subcommands.\n- [`count-lines`](Examples/count-lines/CountLines.swift) uses `async`/`await` code in its implementation.\n- [`default-as-flag`](Examples/default-as-flag/DefaultAsFlag.swift) demonstrates hybrid options that can work both as flags and as options with values.\n\nYou can also see examples of `ArgumentParser` adoption among Swift project tools:\n\n- [`swift-format`](https://github.com/apple/swift-format/) uses some advanced features, like custom option values and hidden flags.\n- [`swift-package-manager`](https://github.com/apple/swift-package-manager/) includes a deep command hierarchy and extensive use of option groups.\n\n## Project Status\n\nThe Swift Argument Parser package is source-stable;\nversion numbers follow semantic versioning.\nSource-breaking changes to public API can only land in a new major version.\n\nThe public API of version 1.0.0 of the `swift-argument-parser` package\nconsists of non-underscored declarations that are marked public in the `ArgumentParser` module.\nInterfaces that aren't part of the public API may continue to change in any release,\nincluding the exact wording and formatting of the autogenerated help and error messages,\nas well as the package’s examples, tests, utilities, and documentation.\n\nFuture minor versions of the package may introduce changes to these rules as needed.\n\nWe want this package to quickly embrace Swift language and toolchain improvements that are relevant to its mandate.\nAccordingly, from time to time,\nwe expect that new versions of this package will require clients to upgrade to a more recent Swift toolchain release.\nRequiring a new Swift release will only require a minor version bump.\n\n## Adding `ArgumentParser` as a Dependency\n\nTo use the `ArgumentParser` library in a SwiftPM project,\nadd it to the dependencies for your package and your command-line executable target:\n\n```swift\nlet package = Package(\n    // name, platforms, products, etc.\n    dependencies: [\n        // other dependencies\n        .package(url: \"https://github.com/apple/swift-argument-parser\", from: \"1.7.0\"),\n    ],\n    targets: [\n        .executableTarget(name: \"<command-line-tool>\", dependencies: [\n            // other dependencies\n            .product(name: \"ArgumentParser\", package: \"swift-argument-parser\"),\n        ]),\n        // other targets\n    ]\n)\n```\n\n### Supported Versions\n\nThe minimum Swift version supported by swift-argument-parser releases are detailed below:\n\nswift-argument-parser | Minimum Swift Version\n----------------------|----------------------\n`0.0.1 ..< 0.2.0`     | 5.1\n`0.2.0 ..< 1.1.0`     | 5.2\n`1.1.0 ..< 1.3.0`     | 5.5\n`1.3.0 ..< 1.7.1`     | 5.7\n`1.8.0 ...`           | 6.0\n"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/c25aa15cc3c2bcb8",
+      "status": 301,
+      "headers": [
+        [
+          "Connection",
+          "close"
+        ],
+        [
+          "Content-Length",
+          "0"
+        ],
+        [
+          "Server",
+          "Varnish"
+        ],
+        [
+          "Retry-After",
+          "0"
+        ],
+        [
+          "Location",
+          "https://raw.githubusercontent.com/c25aa15cc3c2bcb8"
+        ],
+        [
+          "Accept-Ranges",
+          "bytes"
+        ],
+        [
+          "Date",
+          "Sun, 08 Nov 2026 00:08:04 GMT"
+        ],
+        [
+          "Via",
+          "1.1 varnish"
+        ],
+        [
+          "X-Served-By",
+          "cache-par-lfpg1960021-PAR"
+        ],
+        [
+          "X-Cache",
+          "HIT"
+        ],
+        [
+          "X-Cache-Hits",
+          "0"
+        ],
+        [
+          "X-Timer",
+          "S1794096485.652775,VS0,VE0"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Cross-Origin-Resource-Policy",
+          "cross-origin"
+        ],
+        [
+          "Expires",
+          "Sun, 08 Nov 2026 00:13:04 GMT"
+        ],
+        [
+          "Vary",
+          "Authorization,Accept-Encoding"
+        ]
+      ],
+      "body": "",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/c25aa15cc3c2bcb8",
+      "status": 404,
+      "headers": [
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Content-Length",
+          "14"
+        ],
+        [
+          "Content-Security-Policy",
+          "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ],
+        [
+          "X-Frame-Options",
+          "deny"
+        ],
+        [
+          "X-XSS-Protection",
+          "1; mode=block"
+        ],
+        [
+          "Content-Type",
+          "text/plain; charset=utf-8"
+        ],
+        [
+          "X-GitHub-Request-Id",
+          "83DA:29B0E9:C3E3A:181487:6AEFBD64"
+        ],
+        [
+          "x-github-edge-region",
+          "switzerlandnorth"
+        ],
+        [
+          "Accept-Ranges",
+          "bytes"
+        ],
+        [
+          "Date",
+          "Sun, 08 Nov 2026 00:08:04 GMT"
+        ],
+        [
+          "Via",
+          "1.1 varnish"
+        ],
+        [
+          "X-Served-By",
+          "cache-par-lfpg1960025-PAR"
+        ],
+        [
+          "X-Cache",
+          "MISS"
+        ],
+        [
+          "X-Cache-Hits",
+          "0"
+        ],
+        [
+          "X-Timer",
+          "S1794096485.664722,VS0,VE144"
+        ],
+        [
+          "Vary",
+          "Authorization,Accept-Encoding"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Cross-Origin-Resource-Policy",
+          "cross-origin"
+        ],
+        [
+          "X-Fastly-Request-ID",
+          "727c045a005b3cc9223b4fd4622287755dcec616"
+        ],
+        [
+          "Expires",
+          "Sun, 08 Nov 2026 00:13:04 GMT"
+        ],
+        [
+          "Source-Age",
+          "0"
+        ]
+      ],
+      "body": "404: Not Found",
+      "path_form": null
+    }
+  ]
+}
