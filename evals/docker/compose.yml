@@ -1202,7 +1202,7 @@ services:
       context: .
       dockerfile: Dockerfile.faf-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "d72da46542d5d9b0c7db085cbdc25fdd3a94c0dc06d7180ea5d98d8a4a58652c"
+        org.mcp-auditor.dockerfile-fingerprint: "4eabc3e4cbb30837a0561c57b057f8aad35c0d9e4c9e53e78f0efd55c6b7ea34"
     image: mcp-auditor-nuisance-faf-mcp:local
     profiles: ["nuisance"]
 

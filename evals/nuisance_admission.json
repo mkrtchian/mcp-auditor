@@ -19224,7 +19224,24 @@
             {
               "vulnerable_name": "faf_read",
               "patched_name": "faf_read",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "faf_write",
+              "patched_name": "faf_write",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -19235,8 +19252,19 @@
             {
               "tool": "faf_read",
               "arguments": {
-                "path": "/work/project.faf"
-              }
+                "path": "project.faf"
+              },
+              "expect": "human_context:",
+              "before": []
+            },
+            {
+              "tool": "faf_write",
+              "arguments": {
+                "path": "NOTES.md",
+                "content": "# Notes\n"
+              },
+              "expect": "Successfully wrote",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -19245,12 +19273,14 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "faf_read"
+              "faf_read",
+              "faf_write"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -19274,14 +19304,19 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
-        {
-          "flaw": "GHSA-j4r7-8ph4-43g3",
-          "field": "declared_function_is_effect",
-          "agreed": false
-        },
         {
           "flaw": "GHSA-j4r7-8ph4-43g3",
           "field": "tools",
@@ -19289,7 +19324,47 @@
         },
         {
           "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
           "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
           "agreed": false
         }
       ],
@@ -19297,26 +19372,56 @@
         {
           "server_package": "npm:faf-mcp",
           "flaw": "GHSA-j4r7-8ph4-43g3",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record A false, record B true. faf_read declares reading a file by path, and an absolute path such as /data/secret_outside_scope.txt escapes the .faf project scope (the process cwd), which is the flaw and not the contract, so by the rule's description test the declared function is not the effect (the unified read_outside_scope principle, as settled jointly for claude-faf and grok-faf: a traversal out of a declared scope is the flaw, not the declared read or write)"
-        },
-        {
-          "server_package": "npm:faf-mcp",
-          "flaw": "GHSA-j4r7-8ph4-43g3",
           "field": "tools",
-          "value": "faf_read",
-          "reason": "records A and B both named faf_read and faf_write, and both fix-check scripts exploit faf_read alone. faf_write is not counted, as for claude-faf and grok-faf: the content it writes is an argument the caller sent, so a write-then-read-back of an out-of-scope path can only surface what the exploit itself just wrote, which the grammar's anti-echo rule (evals.cve_proofs._surfaced_in) excludes, and no construction of faf_write alone proves the escape without echoing. Narrower than both blind records, the counted tool is faf_read."
+          "value": "faf_read and faf_write counted; the bundled faf-core tools behind getProjectPath and faf_git not listed",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: at 2.1.2 faf_write resolves the path the caller chooses through the same forbidden-prefix denylist as faf_read, which lets an absolute path outside the project through, and the 2.1.3 fix (safe-path.js's confineFileOp) confines both to the project root (cwd) and the OS temp dir, a writer passing the faulty guard of a read flaw counting; record A listed faf_read plus faf_write and some twenty bundled faf-core tools (faf_status, faf_score, faf_sync and the rest) and faf_git, record B listed faf_read and faf_write alone; the bundled faf-core tools are not listed because they resolve their path through the getProjectPath chokepoint, which the 2.1.3 patch confines to a root the server declares only when FAF_ALLOWED_ROOTS is set, left unset by its documented default, so on the patched version they still read a .faf outside the project while faf_read refuses the same path, and counting them would count alarms that can be true; faf_git is not listed for the same reason, its path argument (where it writes the project.faf it generates) going through the same getProjectPath chokepoint, which also removes the api.github.com stand-in record A built for it; no record wrote an exploit through faf_write, so it was written at assembly: it writes a file of its own under /var/tmp, outside both roots, and answers only the byte count and the resolved path, so it is aimed and does not itself surface the witness, acting outside the project on the vulnerable image and refused on the patched one, recorded, while faf_read's surfaces it"
         },
         {
           "server_package": "npm:faf-mcp",
           "flaw": null,
-          "field": "host",
-          "value": "unprivileged /work no network",
-          "reason": "record A planted with working_directory /work, record B with /project. The project scope of the faf tools is the process cwd, so the host has to name a directory the image provides: /work, baked with an in-scope project.faf in both images (the claude-faf and grok-faf layout). Settled to record A's host, matching the FixCheckTarget's PlantingHost."
+          "field": "benign_calls",
+          "value": "record B's for the listed tools: faf_read of the project.faf the package publishes and faf_write of NOTES.md in the project",
+          "reason": "record A wrote a call for faf_read alone, on the faf-cli example it seeded; record B's fixture is retained and its calls for the two listed tools are kept, each reading or writing inside the project root the description allows, not aimed at the flaw"
+        },
+        {
+          "server_package": "npm:faf-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the project.faf the faf-mcp package itself publishes, copied whole from the installed package",
+          "reason": "record A seeded the project with the faf-cli examples/react-dashboard.faf and examples/README.md and installed faf-cli to generate them, where record B used the one .faf document the server's own package distributes; faf-cli is driven by none of the two counted tools, so it is not installed, and the package's own project.faf is the in-scope file faf_read's benign call reads in the working directory, taken whole and pinned by the server's npm release"
+        },
+        {
+          "server_package": "npm:faf-mcp",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "none",
+          "reason": "record A served api.github.com under its real name for faf_git's GitHub REST calls; faf_git is not listed, so no counted tool drives a host outside the server, and the fixture serves no stand-in"
+        },
+        {
+          "server_package": "npm:faf-mcp",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "none",
+          "reason": "record A recorded the GitHub REST API driven by faf_git; faf_git is not listed, so no counted tool drives software outside the server, and no release is recorded, as record B held"
         }
       ],
-      "patched_version": "2.1.3"
+      "patched_version": "2.1.3",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/work/project.faf: the project.faf the faf-mcp package itself publishes (package.json lists it under `files`), copied whole from the installed package at image build, the project the server works in, owned by the run's account",
+          "kind": "project_document",
+          "citation": "project.faf of npm:faf-mcp 2.1.3 (https://registry.npmjs.org/faf-mcp/-/faf-mcp-2.1.3.tgz, package/project.faf, sha256 d1a7eaaccbb8665b57a5e5cca4cc2706de235caa14478169c4e3d0a3d9d8bcf7), copied in the image from /usr/local/lib/node_modules/faf-mcp/project.faf. Neither the server nor its README publishes a sample project, and the server generates no file in the project at build time, so the first source of Seeding that holds a .faf is a document the project publishes, the only .faf document the server distributes.",
+          "pin": "faf-mcp@2.1.3"
+        },
+        {
+          "item": "faf_write's benign call path NOTES.md and its content (a Markdown heading), passed by the call, not seeded",
+          "kind": "written",
+          "citation": "written for the benign call",
+          "pin": null
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "npm:@cyanheads/git-mcp-server",

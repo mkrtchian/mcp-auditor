@@ -1,13 +1,17 @@
-"""faf-mcp fix-check fixture: GHSA-j4r7-8ph4-43g3 (`faf_read` reads outside the `.faf` project
-scope).
+"""faf-mcp fix-check fixture: GHSA-j4r7-8ph4-43g3 (`faf_read` and `faf_write` act outside the
+`.faf` project scope).
 
-Same fileHandler family as grok-faf-mcp and claude-faf-mcp. At 2.1.2 `faf_read` resolves a
-caller-supplied `path` with only a forbidden-prefix denylist, so an absolute path elsewhere
-escapes the project (the cwd). The 2.1.3 fix (`safe-path.js`'s `confineFileOp`) canonicalises
-the path and confines it to the project root plus the OS temp dir. The image bakes `/work` as
-the project with an in-scope `project.faf`, and the witness sits at a top-level absolute path
-outside both the project and the temp dirs. `faf_write` is not counted, for the reason given
-in the claude-faf module: it echoes the content the caller sent, never an out-of-scope read.
+Same fileHandler family as grok-faf-mcp and claude-faf-mcp. At 2.1.2 `faf_read` and `faf_write`
+resolve a caller-supplied `path` behind only a forbidden-prefix denylist (`/etc`, `/sys`, `/proc`,
+`/private/etc`) and a literal `..`-substring check, so only an absolute path elsewhere escapes
+the project (the cwd). The 2.1.3 fix (`safe-path.js`'s `confineFileOp`) canonicalises the path
+and confines both to the project root (cwd) plus the OS temp dir. Both images bake `/work` as the
+project with the `project.faf` the faf-mcp package itself publishes, and the witness sits at a
+top-level absolute path outside the project and the temp dir.
+
+faf_read returns the witness it reads. faf_write answers only the byte count and the resolved
+path, so its exploit is aimed without surfacing the witness: it writes a file of its own under
+`/var/tmp`, outside both roots and writable by the run's account, never the planted witness.
 """
 
 import re
@@ -19,9 +23,7 @@ from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import command_injection_env
 
-WITNESS_PATH = "/data/secret_outside_scope.txt"
-
-AIM = re.compile(re.escape(WITNESS_PATH))
+AIM = re.compile(r"^/secret-j4r7|^/var/tmp/")
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/work", has_network=False)
 
 WITNESS = Place(
@@ -29,16 +31,27 @@ WITNESS = Place(
     family="fix_check",
     reachable_by=frozenset({"arbitrary_read"}),
     kind=PlantKind.FILE,
-    coordinates=Coordinates(PlantKind.FILE, path=WITNESS_PATH),
+    coordinates=Coordinates(PlantKind.FILE, path="/secret-j4r7.md"),
 )
 
+_OUTSIDE = "/secret-j4r7.md"
+_NOTES = "# Notes\n"
 
-async def _exploit(places: Places, client: KitClient) -> None:
-    await client.call_tool("faf_read", {"path": WITNESS_PATH})
+
+async def _read_exploit(places: Places, client: KitClient) -> None:
+    await client.call_tool("faf_read", {"path": _OUTSIDE})
 
 
-async def _benign(places: Places, client: KitClient) -> None:
-    await client.call_tool("faf_read", {"path": "/work/project.faf"})
+async def _write_exploit(places: Places, client: KitClient) -> None:
+    await client.call_tool("faf_write", {"path": "/var/tmp/NOTES.md", "content": _NOTES})
+
+
+async def _benign_read(places: Places, client: KitClient) -> None:
+    await client.call_tool("faf_read", {"path": "project.faf"})
+
+
+async def _benign_write(places: Places, client: KitClient) -> None:
+    await client.call_tool("faf_write", {"path": "NOTES.md", "content": _NOTES})
 
 
 TARGET = FixCheckTarget(
@@ -48,8 +61,14 @@ TARGET = FixCheckTarget(
     witness=WITNESS,
     planting_host=HOST,
     builder=command_injection_env,
-    exploits=(_exploit,),
-    benign_calls=(_benign,),
+    exploits=(
+        _read_exploit,
+        _write_exploit,
+    ),
+    benign_calls=(
+        _benign_read,
+        _benign_write,
+    ),
     vulnerable_service="faf-mcp-vuln",
     patched_service="faf-mcp",
     server_patched_service=None,
