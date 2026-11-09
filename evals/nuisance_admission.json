@@ -12981,7 +12981,35 @@
             {
               "vulnerable_name": "read_doc",
               "patched_name": "read_doc",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "update_doc",
+              "patched_name": "update_doc",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "refresh_documentation",
+              "patched_name": "refresh_documentation",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
             }
           ],
           "effect_class": "read_outside_scope",
@@ -12994,7 +13022,32 @@
               "arguments": {
                 "projectPath": "/work",
                 "docFile": "techStack.md"
-              }
+              },
+              "expect": "## Detected Frameworks",
+              "before": []
+            },
+            {
+              "tool": "update_doc",
+              "arguments": {
+                "projectPath": "/work",
+                "docFile": "techStack.md",
+                "searchContent": "[Why this domain is critical to the project]",
+                "replaceContent": "The tech stack documentation provides essential context for development. See [[workflowDetails]] for implementation steps."
+              },
+              "expect": "Documentation updated",
+              "before": []
+            },
+            {
+              "tool": "refresh_documentation",
+              "arguments": {
+                "projectPath": "/work",
+                "options": {
+                  "mode": "analyze",
+                  "docFile": "techStack.md"
+                }
+              },
+              "expect": "Handoff document refreshed",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -13003,12 +13056,15 @@
             "source": "fix_check",
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
-              "read_doc"
+              "read_doc",
+              "update_doc",
+              "refresh_documentation"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -13031,37 +13087,131 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-7728",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
           "field": "declared_function_is_effect",
           "agreed": false
         },
         {
-          "flaw": "CVE-2026-7728",
-          "field": "tools",
+          "flaw": null,
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "https://github.com/ryanjoachim/mcp-rtfm",
           "flaw": "CVE-2026-7728",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record A false, record B true. read_doc's declared function is to read a documentation file by name from the project's .handoff_docs directory, and a docFile such as ../secret.md escapes that documents directory, which is the flaw and not the contract, so by the rule's description test the declared function is not the effect (the unified read_outside_scope principle: a traversal out of a declared scope is the flaw, not the declared read)"
+          "field": "tools",
+          "value": "update_doc counted; read_doc and refresh_documentation listed with their declared function the effect; get_related_docs and get_doc_content not listed",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: update_doc reads and writes the file its docFile names, a writer passing the faulty guard of a read flaw with a path the caller chooses counting (both records); read_doc and refresh_documentation reach the flaw too and stay listed, their declared function being the effect; both records counted get_related_docs, but on the vulnerable commit dc98019 the function it calls, findRelatedDocs, returns before its faulty read unless its docFile is already a key of the loaded metadata, and the server writes only base-name keys, so the tool cannot reach the flaw through the MCP interface and is not listed, a different case from a tool lacking a record's exploit, the fix commit's validateDocFile on its docFile guarding a read that was never reachable; get_doc_content, which record B listed as removed from the advisory's 0.1.0, is not a tool of dc98019 (its reading was merged into read_doc at commit 39a2911), so it is not listed; no record wrote an exploit through update_doc or refresh_documentation, so these two were written at assembly: read_doc's exploit surfaces the witness on the vulnerable image only, and update_doc's and refresh_documentation's act on a file of the server's sample project above the documents directory and answer a confirmation and file names, so they are aimed on the vulnerable version and refused on the patched one without surfacing the witness"
         },
         {
           "server_package": "https://github.com/ryanjoachim/mcp-rtfm",
-          "flaw": "CVE-2026-7728",
-          "field": "tools",
-          "value": "read_doc",
-          "reason": "read_doc is the counted tool; record B's get_doc_content is not a tool of the vulnerable commit dc98019 (it was merged into read_doc at commit 39a2911, and the server's only read tool there is read_doc), and update_doc, get_related_docs and refresh_documentation reach the same unchecked docFile but return no out-of-scope content, so the escaped read surfaces only through read_doc"
+          "flaw": null,
+          "field": "declared_function_is_effect",
+          "value": "true for read_doc and refresh_documentation, false for update_doc",
+          "reason": "the declared function is read per tool, and a directory an argument names is not a root the server declares: read_doc declares reading the documentation file its docFile names in the project its projectPath names, and refresh_documentation declares scanning the codebase at projectPath and re-analysing the document its docFile names, both a reading of what their arguments name, the documents directory sitting under projectPath (both records); update_doc declares modifying a file, by replacement or targeted diff, and answers a confirmation, so it does not declare reading a path and returning it, a writer passing the faulty guard of a read flaw not declaring the read (record B, record A reading it true); the first admission's flaw-level false, which treated the documents directory as a declared root, no longer holds"
+        },
+        {
+          "server_package": "https://github.com/ryanjoachim/mcp-rtfm",
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record B's: read_doc and update_doc on the generated techStack.md, refresh_documentation in analyze mode on techStack.md",
+          "reason": "record B's refresh_documentation call runs the mode its docFile belongs to, where record A's ran sync mode on the whole project; read_doc's and update_doc's calls are the same in both records; get_related_docs, not listed, has no benign call; the fix check's own benign call of update_doc was written at assembly from these calls, the records having played only read_doc's"
+        },
+        {
+          "server_package": "https://github.com/ryanjoachim/mcp-rtfm",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "record B's: git 2.56.0, built from git's release tarball",
+          "reason": "the server's documentation names git, which refresh_documentation and get_project_info run, with no version or install channel, so git runs at the latest release git publishes, built with git's own install steps, where record A took the packaged git of the base image's Debian 12, a release the server's documentation does not name"
+        },
+        {
+          "server_package": "https://github.com/ryanjoachim/mcp-rtfm",
+          "flaw": null,
+          "field": "seeds",
+          "value": "the sample project and its documents, both recorded as generated",
+          "reason": "the project is not a file copied from the repository but the output of the server's own createFixtureProject helper run unmodified at build time, and its documents are what the server writes for the README's Quick Start call, so both are generated; the two records, which agree on the seed, recorded the sample project as a published sample, while a file shipped under a project's tests is a published sample only when its documentation presents it as an example"
         }
       ],
-      "patched_version": "e6f0686"
+      "patched_version": "e6f0686",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/work/package.json, /work/src/index.ts, /work/src/utils.ts: the server's sample project, written whole by its own createFixtureProject (tests/helpers/fixture-project.ts), compiled with the repository's TypeScript and run unmodified at build time, then moved to /work",
+          "kind": "generated",
+          "citation": "https://github.com/ryanjoachim/mcp-rtfm/blob/e6f0686fc36012f78236e7fed172c81444904b0b/tests/helpers/fixture-project.ts",
+          "pin": "e6f0686fc36012f78236e7fed172c81444904b0b"
+        },
+        {
+          "item": "/work/.handoff_docs/{codebaseDetails,errorHandling,handoff_notes,integrationGuides,techStack,workflowDetails}.md and /work/.handoff_docs/.rtfm-state/{metadata,search-index}.json, generated by the server at build time from the sample with the README Quick Start call analyze_project {projectPath /work, options {mode analyze, initDocs true}}, made through the server's own test client (tests/fixtures/mcp-client.ts)",
+          "kind": "generated",
+          "citation": "https://github.com/ryanjoachim/mcp-rtfm/blob/e6f0686fc36012f78236e7fed172c81444904b0b/README.md (Quick Start); src/handlers/analyze-handlers.ts at e6f0686",
+          "pin": "e6f0686fc36012f78236e7fed172c81444904b0b"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "git",
+          "release": "2.56.0",
+          "day": "2026-11-08",
+          "source": "The server's README (Git Integration) and tests (tests/helpers/fixture-project.ts createGitFixture) name git without version or install channel, so the latest release git publishes: https://mirrors.edge.kernel.org/pub/software/scm/git/ lists git-2.56.0.tar.xz (28-Sep-2026) as the newest, sha256 26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3 from its sha256sums.asc; built with git's INSTALL steps (make prefix=/usr/local all install)."
+        }
+      ]
     },
     {
       "server_package": "npm:claude-faf-mcp",

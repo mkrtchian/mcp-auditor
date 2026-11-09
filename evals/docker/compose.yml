@@ -1049,7 +1049,7 @@ services:
       context: .
       dockerfile: Dockerfile.mcp-rtfm
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "60b35288fee3d4e1301605475908f8870d3fab1b63939f4a6cae6bd1ff51c55c"
+        org.mcp-auditor.dockerfile-fingerprint: "1d8e48322b79137382b1f7e4729df72a462822a5b79440626330e00b54082796"
     image: mcp-auditor-nuisance-mcp-rtfm:local
     profiles: ["nuisance"]
 
