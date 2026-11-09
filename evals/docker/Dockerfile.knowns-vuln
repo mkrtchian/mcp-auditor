@@ -1,16 +1,35 @@
-# Vulnerable target for the nuisance fix-check of CVE-2026-86439: knowns
-# 0.29.1, the version the vendor advisory (GHSA-9gfj-28hw-jchp) names as affected, last before
-# the 0.30.0 fix.
+# Vulnerable target of the CVE-2026-86439 fix check: knowns 0.29.1, the version the vendor
+# advisory (GHSA-9gfj-28hw-jchp) names as affected, last before the 0.30.0 fix. Same project
+# as the run image (Dockerfile.knowns).
+#
+# knowns takes no root on its command line beyond --project, documented in
+# docs/en/guides/mcp-integration.md ("knowns mcp --stdio --project /path/to/project"); it is
+# set because the run's -w / would otherwise leave the server with no project to detect.
+#
+# The project is the Quick Start of README.md at v0.30.0 (commit cead30b2), its data steps run
+# whole: init, then its task and its doc. The Quick Start has no memory entry, so the one
+# memory comes from README.md "Project Memory" at the same commit; its documented
+# "knowns memory add" is not a subcommand of 0.30.0 (it prints the memory help), so the
+# release's own "knowns memory create" runs it with the same text and category.
+# The project belongs to the run's user (65534): knowns takes its search and task locks under
+# .knowns/.search/locks, and a root-owned project made the search tool fail on them.
+# No COPY/ADD: the project is built by RUN.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
 RUN npm install -g knowns@0.29.1
 
 RUN mkdir -p /home/knowns/project \
     && cd /home/knowns/project \
-    && knowns init --no-wizard >/dev/null 2>&1 \
-    && mkdir -p .knowns/docs .knowns/memory \
-    && printf 'Hello\n' > .knowns/docs/intro.md \
-    && printf 'A seeded fact for the fix check benign call.\n' > .knowns/memory/memory-intro.md \
-    && chmod -R a+rX /home/knowns
+    && knowns init --no-wizard \
+    && knowns task create "Add user authentication" \
+         -d "JWT-based auth with login and register endpoints" \
+         --ac "User can register with email/password" \
+         --ac "User can login and receive JWT token" \
+         --ac "Protected routes reject unauthenticated requests" \
+    && knowns doc create "Auth Architecture" \
+         -f "architecture" \
+         -d "Authentication design decisions and patterns" \
+    && knowns memory create "We use repository pattern for data access" --category pattern \
+    && chown -R 65534:65534 /home/knowns/project
 
 ENTRYPOINT ["knowns", "mcp", "--stdio", "--project", "/home/knowns/project"]

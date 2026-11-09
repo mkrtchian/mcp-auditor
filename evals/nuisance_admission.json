@@ -9795,12 +9795,35 @@
             {
               "vulnerable_name": "docs",
               "patched_name": "docs",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "memory",
               "patched_name": "memory",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "search",
+              "patched_name": "search",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -9812,15 +9835,30 @@
               "tool": "docs",
               "arguments": {
                 "action": "get",
-                "path": "intro"
-              }
+                "path": "architecture/auth-architecture"
+              },
+              "expect": "Authentication design decisions and patterns",
+              "before": []
             },
             {
               "tool": "memory",
               "arguments": {
-                "action": "get",
-                "id": "intro"
-              }
+                "action": "list",
+                "includeAll": true
+              },
+              "expect": "We use repository pattern for data access",
+              "before": []
+            },
+            {
+              "tool": "search",
+              "arguments": {
+                "action": "search",
+                "query": "authentication",
+                "mode": "keyword",
+                "type": "doc"
+              },
+              "expect": "Auth Architecture",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -9830,12 +9868,14 @@
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
               "docs",
-              "memory"
+              "memory",
+              "search"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -9859,12 +9899,67 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-86439",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
           "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
           "agreed": false
         }
       ],
@@ -9872,9 +9967,23 @@
         {
           "server_package": "npm:knowns",
           "flaw": "CVE-2026-86439",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "record B over-marked dfie true; the docs/memory tools serve notes under the docs root, the traversal out of that root is the flaw, not the declared function (the read_note/ckan shape)"
+          "field": "tools",
+          "value": "docs, memory and search; templates, validate and tasks not added",
+          "reason": "a tool counts when an argument it receives reaches the faulty code: search's ref argument, resolved as a doc or memory reference, reaches the DocStore.Get and MemoryStore lookups the advisory names, and the fix's containment inside those stores covers it, so search is added (record B); templates' name reaches the template store, which the fix commit also hardens but which the advisory, scoped to the doc and memory stores, does not name, so it is not added (record A added it); validate and tasks reach DocStore.Get only through a path stored earlier, not through an argument of the call, so neither is added; no record wrote an exploit through search, so its fix-check exploit, a resolve call whose doc reference walks out of the docs root, was written at assembly: its response carries only the resolved doc's path, title and whether it was found, not the file's content, so it is aimed and does not itself surface the witness, recorded"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record B's: docs get on the README Quick Start doc, memory list with includeAll expecting the README's Project Memory example, search in keyword mode on the Quick Start doc",
+          "reason": "the calls follow the seeds retained: the memory entry is the README's own example, where record A's came from the memory-system guide, and the added counted tool search gets its call, record A's templates call going with the tool it was written for"
+        },
+        {
+          "server_package": "npm:knowns",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: the README Quick Start of knowns 0.30.0 taken whole (its task and its doc), the README's Project Memory example, the project generated by knowns init",
+          "reason": "the documentation's sample comes first and is taken whole: record B runs every data step of the README Quick Start, task included, and takes the one memory entry from the same README, where record A took the doc alone, a memory example from another guide and a template scaffold under a name no document gives"
         },
         {
           "server_package": "npm:knowns",
@@ -9926,7 +10035,35 @@
           "reason": "subsumed by CVE-2026-86439: no distinct get_doc tool exists (doc access is unified behind the single docs tool), and CVE-2026-30633 is an informal pre-vendor gist disclosure of the same DocStore.Get traversal the vendor advisory CVE-2026-86439 covers; counting it would score the same traversal on the same tool twice, so it is left out of the counted set like the withdrawn GHSA-qjrq-cvv4-3g9w"
         }
       ],
-      "patched_version": "0.30.0"
+      "patched_version": "0.30.0",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "Project store created by 'knowns init --no-wizard' in /home/knowns/project (.knowns/config.json, .knowns/.gitignore and the store directories, KNOWNS.md, CLAUDE.md, AGENTS.md), run at build time by knowns 0.30.0 itself; --no-wizard is the non-interactive form the release documents in its own init output, the first step of the README.md Quick Start. Kept as generated.",
+          "kind": "generated",
+          "citation": "README.md Quick Start, 'knowns init'; internal/cli/init.go line 397 at v0.30.0 (commit cead30b2c3a34f66c0c40cb692ed51e588e63bd7)",
+          "pin": "knowns@0.30.0"
+        },
+        {
+          "item": "The README.md Quick Start sample, its data steps whole: the task 'Add user authentication' with its description and three acceptance criteria, and the doc 'Auth Architecture' in folder architecture with its description, created by the documented 'knowns task create' and 'knowns doc create' commands verbatim. Its other steps (knowns --version, knowns doctor, npx knowns init, knowns browser --open, knowns update, the MCP setup pointer) create no project data.",
+          "kind": "published_sample",
+          "citation": "https://github.com/knowns-dev/knowns/blob/v0.30.0/README.md#quick-start (lines 150-189, tag v0.30.0, commit cead30b2c3a34f66c0c40cb692ed51e588e63bd7)",
+          "pin": "knowns@0.30.0"
+        },
+        {
+          "item": "The memory entry 'We use repository pattern for data access', category pattern, from README.md 'Project Memory', since the Quick Start holds no memory and init generates none. Its documented command 'knowns memory add' is not a subcommand of 0.30.0 (it prints the memory help), so the release's 'knowns memory create' runs it with the same title and category; knowns assigns the id and status (proposed) itself.",
+          "kind": "project_document",
+          "citation": "https://github.com/knowns-dev/knowns/blob/v0.30.0/README.md (Project Memory, line 227, tag v0.30.0, commit cead30b2c3a34f66c0c40cb692ed51e588e63bd7)",
+          "pin": "knowns@0.30.0"
+        },
+        {
+          "item": "The project directory /home/knowns/project, kept from the first admission's fixture, passed as --project; knowns derives the project name 'project' from it.",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        }
+      ],
+      "software_releases": []
     },
     {
       "server_package": "npm:@bitbonsai/mcpvault",

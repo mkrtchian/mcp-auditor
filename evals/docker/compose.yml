@@ -941,7 +941,7 @@ services:
       context: .
       dockerfile: Dockerfile.knowns
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "37c201af04c0060dda3bfa17cad533dcaea3e131111448523c6c1ac970df55ab"
+        org.mcp-auditor.dockerfile-fingerprint: "6a695a5b5a68e67b5403d5d1393f56018ebcea8cc5db4b16addbb2c6ee446d03"
     image: mcp-auditor-nuisance-knowns:local
     profiles: ["nuisance"]
 
