@@ -1,7 +1,20 @@
-# agentic-flow (CVE-2026-58195), patched npm release 2.0.14 (PR #170 rewrites every call site to
-# execFileSync('npx', argv, { shell: false }), so shell metacharacters in a tool parameter no
-# longer reach a shell. Doubles as the nuisance run image. No COPY/ADD from the build context.
+# agentic-flow, patched npm release 2.0.14 (PR #170 rewrites every call site to
+# execFileSync('npx', argv, { shell: false })). Doubles as the nuisance run image. No local
+# COPY/ADD. The programs the tools call through npx are installed at build time: agentdb (the
+# agentdb_* tools) at its current release, agent-booster at the 0.2.2 the server names in its
+# call, and the default embedding model agentdb loads, pinned by revision and checksum. npx
+# resolves a versioned spec such as agent-booster@0.2.2 from the registry, which the run does not
+# serve, unless the working directory's own tree holds it: agent-booster is installed there.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
-RUN npm install -g agentic-flow@2.0.14 && npm cache clean --force
-ENV npm_config_offline=true
+RUN npm install -g agentic-flow@2.0.14 agentdb@3.7.0 && npm cache clean --force
+ADD --chmod=755 --checksum=sha256:759c3cd2b7fe7e93933ad23c4c9181b7396442a2ed746ec7c1d46192c469c46e https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/onnx/model.onnx /usr/local/lib/node_modules/agentdb/node_modules/@huggingface/transformers/.cache/Xenova/all-MiniLM-L6-v2/onnx/model.onnx
+ADD --chmod=755 --checksum=sha256:7135149f7cffa1a573466c6e4d8423ed73b62fd2332c575bf738a0d033f70df7 https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/config.json /usr/local/lib/node_modules/agentdb/node_modules/@huggingface/transformers/.cache/Xenova/all-MiniLM-L6-v2/config.json
+ADD --chmod=755 --checksum=sha256:9261e7d79b44c8195c1cada2b453e55b00aeb81e907a6664974b4d7776172ab3 https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/tokenizer_config.json /usr/local/lib/node_modules/agentdb/node_modules/@huggingface/transformers/.cache/Xenova/all-MiniLM-L6-v2/tokenizer_config.json
+ADD --chmod=755 --checksum=sha256:da0e79933b9ed51798a3ae27893d3c5fa4a201126cef75586296df9b4d2c62a0 https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/tokenizer.json /usr/local/lib/node_modules/agentdb/node_modules/@huggingface/transformers/.cache/Xenova/all-MiniLM-L6-v2/tokenizer.json
+USER 65534:65534
+RUN cd /tmp && HOME=/tmp npm install --no-save --no-package-lock agent-booster@0.2.2 \
+    && HOME=/tmp npm cache clean --force
+RUN printf '%s' 'fn add(a: i32, b: i32) { a + b }' > /tmp/add.rs \
+ && printf '%s' 'fn add(a: i32, b: i32) { a + b }' > /tmp/sum.rs
+USER root
 ENTRYPOINT ["node", "/usr/local/lib/node_modules/agentic-flow/dist/mcp/standalone-stdio.js"]
