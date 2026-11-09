@@ -12608,6 +12608,72 @@
                 "evidence": null
               },
               "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_pipeline_job",
+              "patched_name": "get_pipeline_job",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_job_artifacts",
+              "patched_name": "list_job_artifacts",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "download_job_artifacts",
+              "patched_name": "download_job_artifacts",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "play_pipeline_job",
+              "patched_name": "play_pipeline_job",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "retry_pipeline_job",
+              "patched_name": "retry_pipeline_job",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "cancel_pipeline_job",
+              "patched_name": "cancel_pipeline_job",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -12638,6 +12704,61 @@
               },
               "expect": "Lorem ipsum dolor sit amet",
               "before": []
+            },
+            {
+              "tool": "get_pipeline_job",
+              "arguments": {
+                "project_id": "1",
+                "job_id": "8"
+              },
+              "expect": "\"name\":\"rubocop\"",
+              "before": []
+            },
+            {
+              "tool": "list_job_artifacts",
+              "arguments": {
+                "project_id": "1",
+                "job_id": "42"
+              },
+              "expect": "other_artifacts_0.1.2",
+              "before": []
+            },
+            {
+              "tool": "download_job_artifacts",
+              "arguments": {
+                "project_id": "1",
+                "job_id": "42",
+                "local_path": "/tmp"
+              },
+              "expect": "\"success\":true",
+              "before": []
+            },
+            {
+              "tool": "play_pipeline_job",
+              "arguments": {
+                "project_id": "1",
+                "job_id": "1"
+              },
+              "expect": "(rubocop). Status: pending",
+              "before": []
+            },
+            {
+              "tool": "retry_pipeline_job",
+              "arguments": {
+                "project_id": "1",
+                "job_id": "1"
+              },
+              "expect": "(rubocop). Status: pending",
+              "before": []
+            },
+            {
+              "tool": "cancel_pipeline_job",
+              "arguments": {
+                "project_id": "1",
+                "job_id": "1"
+              },
+              "expect": "(rubocop). Status: canceled",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -12647,7 +12768,13 @@
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
               "get_pipeline_job_output",
-              "get_job_artifact_file"
+              "get_job_artifact_file",
+              "get_pipeline_job",
+              "list_job_artifacts",
+              "download_job_artifacts",
+              "play_pipeline_job",
+              "retry_pipeline_job",
+              "cancel_pipeline_job"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
@@ -12871,8 +12998,8 @@
           "server_package": "npm:@zereight/mcp-gitlab",
           "flaw": "CVE-2026-61462",
           "field": "counted_tools",
-          "value": "get_pipeline_job_output, get_job_artifact_file",
-          "reason": "both records add get_pipeline_job, list_job_artifacts, download_job_artifacts, play_pipeline_job, retry_pipeline_job and cancel_pipeline_job, whose job_id the fix encodes too; they stay out of the flaw's tools and the count stays at the committed two, since the retained fix check exploits and calls only these two tools and neither record wrote an exploit or a fix-check benign call for the six."
+          "value": "get_pipeline_job_output, get_job_artifact_file, get_pipeline_job, list_job_artifacts, download_job_artifacts, play_pipeline_job, retry_pipeline_job, cancel_pipeline_job",
+          "reason": "both records count get_pipeline_job_output and get_job_artifact_file and add get_pipeline_job, list_job_artifacts, download_job_artifacts, play_pipeline_job, retry_pipeline_job and cancel_pipeline_job, each a tool a tools/call reaches the flaw through, whose raw job_id the fix encodes: all eight count. Neither record wrote an exploit or a fix-check benign call for the six, so their exploits (and the benign calls for the four no record probed) were written at assembly, not by a record, from record A's traversal and benign job ids; the fix check's responder answers the witness on the traversed internal path in the form each tool returns, so seven surface it on the vulnerable build, download_job_artifacts, which streams the answer to disk, erroring there once its fetch has passed and reading the encoded job as not found on the patched build; none surfaces on the patched build, and calibrate plays all eight."
         },
         {
           "server_package": "npm:@zereight/mcp-gitlab",
@@ -12934,8 +13061,8 @@
           "server_package": "npm:@zereight/mcp-gitlab",
           "flaw": "CVE-2026-61462",
           "field": "benign_calls",
-          "value": "record A's: get_pipeline_job_output and get_job_artifact_file on the job and artefact routes the stand-in serves, get_job_artifact_file reading the entry other_artifacts_0.1.2/doc_sample.txt of the archive GitLab's spec serves",
-          "reason": "the benign calls follow the retained stand-in: record B's expects come from the pipelines its GitLab backend runs, and the committed artifact_path log.txt names no entry of the archive the stand-in now serves."
+          "value": "record A's: get_pipeline_job_output, get_job_artifact_file, get_pipeline_job, list_job_artifacts, download_job_artifacts, play_pipeline_job, retry_pipeline_job and cancel_pipeline_job on the job and artefact routes the stand-in serves, get_job_artifact_file reading the entry other_artifacts_0.1.2/doc_sample.txt of the archive GitLab's spec serves",
+          "reason": "the benign calls follow the retained stand-in: record B's expects come from the pipelines its GitLab backend runs, and the committed artifact_path log.txt names no entry of the archive the stand-in now serves. The six benign calls for the tools the first count left out take record A's arguments against the stand-in's documented job routes (project 1, jobs 8, 42 and 1)."
         },
         {
           "server_package": "npm:@zereight/mcp-gitlab",

@@ -1332,7 +1332,7 @@ services:
       context: .
       dockerfile: Dockerfile.gitlab-responder
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "bd6259efcfb1cf3aa5e146e18e0fd8377be8359192697a165d186b0cd2001f25"
+        org.mcp-auditor.dockerfile-fingerprint: "58df6a783c94c16bd80f412317572a6ace517d6e88c59f3dc4bf878c99ecc77a"
     image: mcp-auditor-cve-gitlab-responder:local
     profiles: ["nuisance"]
 
