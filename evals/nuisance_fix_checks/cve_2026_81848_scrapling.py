@@ -9,9 +9,10 @@ never published to PyPI) adds `_require_web_url`, which allowlists the http/http
 `browse_url` in both tool implementations, rejecting `file://` before it reaches the fetcher.
 
 Both tools are a general-purpose web fetcher with no bounded scope of their own, so the benign
-call needs a web target to fetch. A loopback `http.server` is baked into both images (the
-`adb-mcp` baked-stub precedent) rather than giving the launch real network egress, so the fixture
-stays deterministic and closed (`has_network=False`).
+call needs a web target to fetch: example.com, the host the server's README names in its usage
+examples, served under its real name by the stand-in from its capture
+(`evals/stand_ins/example.com.json`) on the holder's closed network, rather than a site written
+for the fixture and baked into the images (`has_network=False`, no egress).
 """
 
 import re
@@ -28,6 +29,7 @@ from evals.cve_planting import (
     confinement_args,
     planted,
 )
+from evals.cve_planting_base import PublicNames
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import Launch, LaunchShape
@@ -36,7 +38,12 @@ WITNESS_ID = "scrapling-81848-file"
 FILE_PATH = "/opt/app-data/credentials.txt"
 
 AIM = re.compile(r"file://")
-HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
+HOST = PlantingHost(
+    SymbolicUser.UNPRIVILEGED,
+    "/",
+    has_network=False,
+    public_names=PublicNames(stand_ins=("example.com",), trust=("SSL_CERT_FILE",)),
+)
 
 WITNESS = Place(
     id=WITNESS_ID,
@@ -52,8 +59,9 @@ def fetch_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
     """No scope argument (a FastMCP stdio server) and no `/srv` layout: the witness file is
-    bind-mounted directly by `planted()`. The benign web target (loopback:8080) is baked into the
-    image, so the launch needs no network and no sentinel."""
+    bind-mounted directly by `planted()`. The web page the benign calls fetch is example.com,
+    served under its real name by the stand-in `planted()` starts from its capture, with the
+    fixture authority trusted through SSL_CERT_FILE (curl_cffi reads it)."""
     with planted(spec, image, DockerPlanting()) as args:
         yield Launch(
             command="docker",
@@ -75,13 +83,13 @@ async def exploit_pattern(places: Places, client: KitClient) -> None:
 
 
 async def benign_page(places: Places, client: KitClient) -> None:
-    await client.call_tool("s_fetch_page", {"url": "http://127.0.0.1:8080/", "mode": "basic"})
+    await client.call_tool("s_fetch_page", {"url": "https://example.com/", "mode": "basic"})
 
 
 async def benign_pattern(places: Places, client: KitClient) -> None:
     await client.call_tool(
         "s_fetch_pattern",
-        {"url": "http://127.0.0.1:8080/", "search_pattern": "benign", "mode": "basic"},
+        {"url": "https://example.com/", "search_pattern": "permission", "mode": "basic"},
     )
 
 

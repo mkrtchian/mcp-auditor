@@ -1184,7 +1184,7 @@ services:
       context: .
       dockerfile: Dockerfile.scrapling
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "0edd1d2f55a857e60948d518d7a6c2d0f7dd82894f4e9305c6eab13b91a72b91"
+        org.mcp-auditor.dockerfile-fingerprint: "568292d92b7e73585133da191a388335b45269b6c11d4428559a27fdc0d6bb11"
     image: mcp-auditor-nuisance-scrapling:local
     profiles: ["nuisance"]
 

@@ -18641,12 +18641,24 @@
             {
               "vulnerable_name": "s_fetch_page",
               "patched_name": "s_fetch_page",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "s_fetch_pattern",
               "patched_name": "s_fetch_pattern",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "read_outside_scope",
@@ -18657,20 +18669,24 @@
             {
               "tool": "s_fetch_page",
               "arguments": {
-                "url": "http://127.0.0.1:8080/",
+                "url": "https://example.com/",
                 "mode": "basic"
-              }
+              },
+              "expect": "This domain is for use in documentation examples",
+              "before": []
             },
             {
               "tool": "s_fetch_pattern",
               "arguments": {
-                "url": "http://127.0.0.1:8080/",
-                "search_pattern": "benign",
+                "url": "https://example.com/",
+                "search_pattern": "permission",
                 "mode": "basic"
-              }
+              },
+              "expect": "This domain is for use in documentation examples",
+              "before": []
             }
           ],
-          "backend_need": "fixture",
+          "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
             "source": "fix_check",
@@ -18682,7 +18698,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -18691,7 +18708,16 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/",
-        "has_network": false
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [
+            "example.com"
+          ],
+          "trust": [
+            "SSL_CERT_FILE"
+          ],
+          "ip_label_domains": []
+        }
       },
       "launch": [],
       "service": "scrapling",
@@ -18706,32 +18732,113 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-81848",
-          "field": "backend_need",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "PyPI:scrapling-fetch-mcp",
-          "flaw": "CVE-2026-81848",
-          "field": "backend_need",
-          "value": "fixture",
-          "reason": "record A said fixture (a baked loopback http.server on 127.0.0.1:8080, has_network=False), record B said none (a real fetch of https://example.com over a bridge with has_network=True). Settled to record A's fixture: both tools are a general-purpose fetcher with no bounded scope, so patched_surfaces=false can only be trusted once the benign call is deterministic and the launch stays closed; a real outbound fetch to a third-party host makes patched_benign_errored depend on that host's availability and plants no fixture at all under the admission's own backend_need vocabulary (fixture vs none vs external), where a baked in-image dependency with no separate service is exactly the adb-mcp precedent. This also corrects the plan's premise that backend_need is none for every server but adb-mcp: 0.2.4 rejects file:// outright, so the benign call cannot itself be file://, and a deterministic closed benign target needs something to fetch, which only a backend_need of fixture records."
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record B's call, search_pattern 'permission'",
+          "reason": "both records drop the loopback http.server the committed images baked and fetch https://example.com/ in basic mode instead, the host the server's README names in its usage examples, served under its real name by the stand-in from its capture; record A searched 'domain', record B 'permission', each a word of the captured page, and the expect is a part of the same captured sentence. Record B's call is kept with the rest of record B's fixture."
         },
         {
           "server_package": "PyPI:scrapling-fetch-mcp",
-          "flaw": "CVE-2026-81848",
-          "field": "declared_function_is_effect",
-          "value": "false",
-          "reason": "s_fetch_page/s_fetch_pattern's declared function is to fetch a caller-given http/https URL; the 0.2.4 fix allowlists the scheme ahead of browse_url, so the file:// path does not exist on the patched build and a read_outside_scope finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability), and on the vulnerable build the arbitrary scheme (not the http/https fetch itself) is what crosses outside the fetcher's intended web scope"
+          "flaw": null,
+          "field": "software_releases",
+          "value": "record B's, the example.com capture alone",
+          "reason": "record A ran 'scrapling install' in the run image, pulling the stealth browsers and recording a Chromium release; record B left them absent. No benign call uses a stealth mode and basic mode, which both tool descriptions say to start with, drives curl_cffi in-process only, so the base mode default is kept and no browser release is recorded."
         }
       ],
-      "patched_version": "0.2.4"
+      "patched_version": "0.2.4",
+      "stand_ins": [
+        {
+          "replaces": "example.com, the public web site the benign calls fetch (the host the server's README names in its usage examples, 'Fetch the docs at https://example.com/api'), served under its real name on the namespace holder's closed network by the shared stand-in image (mcp-auditor-cve-stand-in:local) replaying the capture of the real host",
+          "reason": "A public remote web site, run by its operator (Cloudflare-served) and not distributable: it cannot run in the container or as a backend, and the run's network reaches neither the host nor the Internet (Run conditions), so the rule's public-host clause applies: a stand-in under its real name, trusted through the fixture authority.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/example.com.json",
+          "outputs": [
+            {
+              "request": "GET https://example.com/",
+              "source": "capture",
+              "citation": "evals/stand_ins/example.com.json, route (https, GET, /), captured from the real host 2026-11-04T07:36:45Z by evals.capture_stand_in (its 'command' field); status 200, body the 'Example Domain' page, replayed as captured (Date frozen at the capture, framing headers dropped by the replay)",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [],
+      "software_releases": [
+        {
+          "software": "example.com (the public web site the benign calls fetch, served from its capture)",
+          "release": "the live site as captured 2026-11-04T07:36:45Z in evals/stand_ins/example.com.json (no published version)",
+          "day": "2026-11-08",
+          "source": "scrapling-fetch-mcp 0.2.4 README.md (sdist sha256 0e19f4aa5fd572b1b6832fcdaa637d1151ce55cb9d33157eb637638ce119213d), usage example 'Fetch the docs at https://example.com/api'; the site publishes no version, so the capture of the current site stands for the release of today"
+        }
+      ]
     },
     {
       "server_package": "https://github.com/geekgod382/filesystem-mcp-server",
