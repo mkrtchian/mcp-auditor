@@ -16408,7 +16408,13 @@
             {
               "vulnerable_name": "git-changes-commit-message",
               "patched_name": "git-changes-commit-message",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -16420,7 +16426,9 @@
               "tool": "git-changes-commit-message",
               "arguments": {
                 "autoCommitPath": "/opt/repo"
-              }
+              },
+              "expect": "Hello! How can I assist you today?",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -16434,16 +16442,26 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
       "runs_over_stdio": true,
       "runs_under_docker": true,
       "host": {
-        "user": "host",
+        "user": "unprivileged",
         "working_directory": "/",
-        "has_network": false
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [
+            "api.openai.com"
+          ],
+          "trust": [
+            "NODE_EXTRA_CA_CERTS"
+          ],
+          "ip_label_domains": []
+        }
       },
       "launch": [],
       "service": "auto-commit",
@@ -16458,32 +16476,178 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
+          "flaw": "CVE-2026-4198",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
           "flaw": null,
           "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
           "agreed": false
         }
       ],
       "settlements": [
         {
           "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
-          "flaw": null,
-          "field": "host",
-          "value": "host",
-          "reason": "record A planted as the host user (working_directory /), since the git operations read the host-built /srv checkout and need the host uid, the filesystem/git-launch precedent; record B planted unprivileged with working_directory /app. Settled to record A's host, user host and working_directory /, kept consistent between this entry's host field and the FixCheckTarget's PlantingHost"
-        },
-        {
-          "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
           "flaw": "CVE-2026-4198",
           "field": "declared_function_is_effect",
           "value": "false",
-          "reason": "git-changes-commit-message's declared function is to generate a commit message from the git changes of a directory; the fix commit (f7d992c830c5f2ec5749852e66c0195e3ed7fe30, an unmerged fork PR, the only place the fix exists) replaces exec with execFile(\"git\", argv, { cwd }) and drops the shell `cd` call entirely, so the arbitrary-command path does not exist on the patched build and a command_execution finding there would be a false alarm (the guard-rail limb of the unified dfie principle: the fix removes the capability)"
+          "reason": "git-changes-commit-message's declared function is to generate a commit message from the git changes of a directory, not to run a command of the caller's choice; the argument only names the directory git reads. The fix commit (f7d992c830c5f2ec5749852e66c0195e3ed7fe30, an unmerged fork pull request, the only place the fix exists) replaces exec with execFile(\"git\", argv, { cwd }), so the argument no longer reaches a shell and a command_execution finding on the patched build would be a false alarm"
+        },
+        {
+          "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record B's expect, 'Hello! How can I assist you today?'",
+          "reason": "both records make the same call on /opt/repo; record A expected a part of the assistant message the api.openai.com stand-in serves, record B the whole message, which the server writes into the commit line it returns only when the API call succeeded"
+        },
+        {
+          "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
+          "flaw": null,
+          "field": "host",
+          "value": "user unprivileged, working directory /",
+          "reason": "the rule's confinement is the same for every server, its user included, and nothing passed to the server is taken from the machine that runs the suite; record A kept the committed host user, which passes that machine's uid to the server, record B moved to the unprivileged account. The repository the benign call reads is owned by that account and git trusts that one directory, where the committed image trusted every directory"
+        },
+        {
+          "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record B's api.openai.com file",
+          "reason": "both records serve the same host, route and sources: the success answer copied from the published OpenAPI specification's example, the defaults from a capture of the real host. Record B replaces the example's model identifier with gpt-4o-mini, the model the server requests, and records the replacement; record A kept the example's identifier"
+        },
+        {
+          "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's simplegit sample, cloned whole at its pinned commit",
+          "reason": "the rule seeds the sample the software the fixture seeds data into publishes before anything the server's project publishes: git's book (Pro Git, 2.3 Viewing the Commit History) gives simplegit as the project its examples work in, and record A seeded it; record B seeded the server's own repository, a project document, which the order reaches only when the software publishes no sample. Of the conforming seeds this one writes the fewest values, the directory the benign call names"
         }
       ],
-      "patched_version": "f7d992c830c5f2ec5749852e66c0195e3ed7fe30"
+      "patched_version": "f7d992c830c5f2ec5749852e66c0195e3ed7fe30",
+      "stand_ins": [
+        {
+          "replaces": "api.openai.com, the OpenAI Chat Completions API that generateCommitMessage calls through the openai Node SDK (POST https://api.openai.com/v1/chat/completions, model gpt-4o-mini) to write the commit message the tool returns.",
+          "reason": "A remote third-party service that answers only an OpenAI account's API key: it cannot run in the container, and the run's networks reach no Internet host, so it is served under its real name on the closed network by the generic replay stand-in (evals/docker/Dockerfile.stand-in), the server trusting the fixture authority through NODE_EXTRA_CA_CERTS. git, the other software the tool drives, runs in the container itself.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/api.openai.com.json",
+          "outputs": [
+            {
+              "request": "https POST /v1/chat/completions",
+              "source": "software_sources",
+              "citation": "evals/stand_ins/api.openai.com.json: the 'Default' example response of Create chat completion in OpenAI's published OpenAPI specification (openai/openai-openapi openapi.json at commit 926a7b8133226630bac025350e84b0ca5c31d45a, spec version 2.3.0), served with the application/json media type its 200 response declares; no capture, since a capture of this route needs a real API key the fixture does not hold.",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "gpt-6-astra",
+                  "replacement": "gpt-4o-mini"
+                }
+              ]
+            },
+            {
+              "request": "https, any other method or target (default)",
+              "source": "capture",
+              "citation": "evals/stand_ins/api.openai.com.json defaults: the real host's answer over https to a generated unknown path (404, empty body, headers as received), captured on 2026-11-08 with evals.capture_stand_in and copied verbatim.",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "http, any request (default)",
+              "source": "capture",
+              "citation": "evals/stand_ins/api.openai.com.json defaults: the real host's answer over plain http (403, JSON error http_unsupported, headers as received), same capture of 2026-11-08, copied verbatim.",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "git",
+          "release": "2.56.0",
+          "day": "2026-11-08",
+          "source": "The server's README names git ('Git repository to analyze') with no version or install channel, so the latest release the Git project publishes: https://mirrors.edge.kernel.org/pub/software/scm/git/ lists git-2.56.0.tar.xz as the newest final release on 2026-11-08, sha256 26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3 from sha256sums.asc there; built with INSTALL's `make prefix=/usr/local all install` at the Makefile defaults"
+        },
+        {
+          "software": "OpenAI API (Chat Completions, model gpt-4o-mini), served by the stand-in",
+          "release": "v1 REST API as specified by openai/openai-openapi 2.3.0 (commit 926a7b8133226630bac025350e84b0ca5c31d45a); model gpt-4o-mini",
+          "day": "2026-11-08",
+          "source": "index.ts names the model gpt-4o-mini and the README 'GPT-4o-mini'; neither names an API version, so the API as currently published: the openai Node SDK's base URL https://api.openai.com/v1 and the specification version 2.3.0 at the head of openai/openai-openapi on 2026-11-08, the source of the stand-in's output"
+        }
+      ],
+      "seeds": [
+        {
+          "item": "/opt/repo: the simplegit sample project (github.com/schacon/simplegit-progit), cloned whole into the run image, the repository the benign call reads",
+          "kind": "published_sample",
+          "citation": "git's book, Pro Git (git-scm.com/book/en/v2/Git-Basics-Viewing-the-Commit-History): 'These examples use a very simple project called \"simplegit\". To get the project, run: git clone https://github.com/schacon/simplegit-progit'",
+          "pin": "ca82a6dff817ec66f44342007202690a93763949"
+        },
+        {
+          "item": "/opt/repo, the directory the sample is cloned into, which the benign call's autoCommitPath names",
+          "kind": "written",
+          "citation": "the committed fixture's path, kept so the benign call's argument stands",
+          "pin": null
+        },
+        {
+          "item": "the API key `your-api-key` passed with --key in the ENTRYPOINT, which the server needs to start",
+          "kind": "project_document",
+          "citation": "README.md of 123mutouren321414/mcp-server-auto-commit, Getting Started step 3 and Using with Claude Desktop ('--key your-api-key')",
+          "pin": "f7d992c830c5f2ec5749852e66c0195e3ed7fe30"
+        }
+      ]
     },
     {
       "server_package": "npm:adb-mcp",

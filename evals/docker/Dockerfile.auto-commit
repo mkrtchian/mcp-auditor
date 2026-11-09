@@ -1,23 +1,39 @@
 # mcp-server-auto-commit (CVE-2026-4198), patched_source fix_commit: the only fix is an
-# unmerged fork PR (123mutouren321414/mcp-server-auto-commit#8, commit
-# f7d992c830c5f2ec5749852e66c0195e3ed7fe30), since upstream has published no tag, release or
-# merge for this flaw. The commit drops the shell `cd ${cwd}` call and replaces exec with
-# execFile and argument arrays, so autoCommitPath never reaches a shell. Doubles as the
-# nuisance run image. No COPY/ADD from the build context; index.ts is fetched by RUN from the
-# pinned fork commit.
+# unmerged fork PR (hypermodel-labs/mcp-server-auto-commit#8, commit
+# f7d992c830c5f2ec5749852e66c0195e3ed7fe30 of 123mutouren321414/mcp-server-auto-commit), since
+# upstream has published no tag, release or merge for this flaw. The commit replaces exec with
+# execFile("git", argv, { cwd }), so autoCommitPath never reaches a shell. Doubles as the run
+# image. No COPY/ADD from the build context.
+#
+# The tool drives git (installed here at the latest release the Git project publishes, since the
+# server's README names no version or channel: INSTALL's `make prefix=/usr/local all install`)
+# and the OpenAI Chat Completions API (https://api.openai.com/v1, a remote service served on the
+# run's closed network by the api.openai.com stand-in, trusted through NODE_EXTRA_CA_CERTS).
 FROM node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git curl ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && git config --system --add safe.directory '*'
-# A neutral repository for the nuisance run's benign call, which runs `git diff HEAD` in it.
-RUN mkdir -p /opt/repo && cd /opt/repo && git init -q \
-    && printf '%s\n' '# Notes' 'A sample project.' > README.md \
-    && git add README.md \
-    && git -c user.name=Example -c user.email=example@example.com commit -q -m "Initial commit"
+    && apt-get install -y --no-install-recommends ca-certificates curl xz-utils make gcc libc6-dev \
+       libcurl4-gnutls-dev libexpat1-dev gettext zlib1g-dev libssl-dev perl cargo \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /usr/src/git && cd /usr/src/git \
+    && curl -fsSL -o git-2.56.0.tar.xz https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz \
+    && echo '26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3  git-2.56.0.tar.xz' | sha256sum -c - \
+    && tar -xJf git-2.56.0.tar.xz && cd git-2.56.0 \
+    && make -j"$(nproc)" prefix=/usr/local all && make prefix=/usr/local install \
+    && cd / && rm -rf /usr/src/git && git --version
+# The repository the tool analyzes in the run: the "simplegit" sample project of git's book (Pro
+# Git, 2.3 Viewing the Commit History), cloned whole at its pinned commit. It belongs to the
+# run's unprivileged account (65534), and git trusts this one directory (git-config(1),
+# safe.directory).
+RUN git clone -q https://github.com/schacon/simplegit-progit /opt/repo \
+    && git -C /opt/repo checkout -q ca82a6dff817ec66f44342007202690a93763949 \
+    && chown -R 65534:65534 /opt/repo \
+    && git config --system --add safe.directory /opt/repo
+# The server, cloned at the pinned fork commit and built as its README says (pnpm install, pnpm
+# run build), with the repository's pnpm-lock.yaml, which that install reads.
+RUN npm install -g --no-audit --no-fund pnpm@12.18.0
+RUN git clone -q https://github.com/123mutouren321414/mcp-server-auto-commit.git /app \
+    && git -C /app checkout -q f7d992c830c5f2ec5749852e66c0195e3ed7fe30
 WORKDIR /app
-RUN printf '%s' '{"name":"mcp-server-auto-commit","version":"0.0.1","type":"module","dependencies":{"@modelcontextprotocol/sdk":"^1.5.0","zod":"^3.24.2","openai":"^4.28.0","dotenv":"^16.4.5","minimist":"^1.2.8"},"devDependencies":{"typescript":"^5.7.3","@types/node":"^22.13.5","@types/minimist":"^1.2.5"}}' > package.json
-RUN printf '%s' '{"compilerOptions":{"target":"ES2022","module":"Node16","moduleResolution":"Node16","outDir":"./build","rootDir":".","strict":true,"esModuleInterop":true,"skipLibCheck":true,"forceConsistentCasingInFileNames":true},"include":["./index.ts"]}' > tsconfig.json
-RUN curl -fsSL -o index.ts https://raw.githubusercontent.com/123mutouren321414/mcp-server-auto-commit/f7d992c830c5f2ec5749852e66c0195e3ed7fe30/index.ts
-RUN npm install --no-audit --no-fund --loglevel=error && npx tsc
-ENTRYPOINT ["node", "/app/build/index.js", "--key", "sk-dummy-key-for-offline-tests"]
+RUN pnpm install && pnpm run build
+# The launch the server's README documents (`--key your-api-key`), with its placeholder key.
+ENTRYPOINT ["node", "/app/build/index.js", "--key", "your-api-key"]

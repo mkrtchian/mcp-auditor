@@ -1,0 +1,138 @@
+{
+  "host": "api.openai.com",
+  "address": "104.18.6.192",
+  "source": "software_sources",
+  "command": "hand-written: the POST /v1/chat/completions route from the OpenAI API reference, Create chat completion, x-oaiMeta example 'Default' response of openai/openai-openapi openapi.json at commit 926a7b8133226630bac025350e84b0ca5c31d45a (spec version 2.3.0), model gpt-6-astra replaced by gpt-4o-mini (the model index.ts requests), with the spec's application/json media type; the defaults copied verbatim from `uv run python -m evals.capture_stand_in --out api.openai.com.json https://api.openai.com/v1/models` captured_at 2026-11-08T00:23:55Z",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "target": "/v1/chat/completions",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\n  \"id\": \"chatcmpl-B9MBs8CjcvOU2jLn4n570S5qMJKcT\",\n  \"object\": \"chat.completion\",\n  \"created\": 1741569952,\n  \"model\": \"gpt-4o-mini\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"Hello! How can I assist you today?\",\n        \"refusal\": null,\n        \"annotations\": []\n      },\n      \"logprobs\": null,\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 19,\n    \"completion_tokens\": 10,\n    \"total_tokens\": 29,\n    \"prompt_tokens_details\": {\n      \"cached_tokens\": 0,\n      \"audio_tokens\": 0\n    },\n    \"completion_tokens_details\": {\n      \"reasoning_tokens\": 0,\n      \"audio_tokens\": 0,\n      \"accepted_prediction_tokens\": 0,\n      \"rejected_prediction_tokens\": 0\n    }\n  },\n  \"service_tier\": \"default\"\n}\n"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/4aadada4b3b08a68",
+      "status": 403,
+      "headers": [
+        [
+          "Date",
+          "Sun, 08 Nov 2026 00:23:56 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "228"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Cache-Control",
+          "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
+        ],
+        [
+          "Expires",
+          "Thu, 01 Jan 1970 00:00:01 GMT"
+        ],
+        [
+          "Referrer-Policy",
+          "same-origin"
+        ],
+        [
+          "X-Frame-Options",
+          "SAMEORIGIN"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ],
+        [
+          "set-cookie",
+          "__cf_bm=2gEus1pRY3OziHI1wr2bSdabWb7sFt_0R.XdCwn00Gw-1794097436.8362257-1.0.1.1-dDPgiA1QnitauxUmHQDCFkC7R9ut1U3fUKELeE7TdXUsj5URyGSOUrFTovKC3h9cCU9e4eix.AMRuyKbP1MiCzQogCKgR6uVgwNqmWkckib1HdhrieLnT5Yr0kfRco8k; HttpOnly; Path=/; Domain=api.openai.com; Expires=Sun, 08 Nov 2026 00:53:56 GMT"
+        ],
+        [
+          "Access-Control-Expose-Headers",
+          "CF-Ray"
+        ],
+        [
+          "Server",
+          "cloudflare"
+        ],
+        [
+          "CF-RAY",
+          "a5706e943ebe7228-CDG"
+        ],
+        [
+          "alt-svc",
+          "h3=\":443\"; ma=86400"
+        ]
+      ],
+      "body": "{\n  \"error\": {\n    \"type\": \"invalid_request_error\",\n    \"code\": \"http_unsupported\",\n    \"message\": \"The OpenAI API is only accessible over HTTPS. Ensure the URL starts with 'https://' and not 'http://'.\",\n    \"param\": null\n  }\n}",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/4aadada4b3b08a68",
+      "status": 404,
+      "headers": [
+        [
+          "Date",
+          "Sun, 08 Nov 2026 00:23:56 GMT"
+        ],
+        [
+          "Transfer-Encoding",
+          "chunked"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "cf-cache-status",
+          "DYNAMIC"
+        ],
+        [
+          "Access-Control-Expose-Headers",
+          "CF-Ray"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000; includeSubDomains; preload"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ],
+        [
+          "Server",
+          "cloudflare"
+        ],
+        [
+          "CF-RAY",
+          "a5706e945edd97ce-CDG"
+        ],
+        [
+          "alt-svc",
+          "h3=\":443\"; ma=86400"
+        ]
+      ],
+      "body": "",
+      "path_form": null
+    }
+  ]
+}

@@ -1,18 +1,23 @@
-# mcp-server-auto-commit (CVE-2026-4198), hypermodel-labs main @
-# 36b2651d5e94a237b9e53b055368acfac0f61d23 (the public HEAD both admission records built,
-# before any fix lands upstream). getGitChanges() runs child_process.exec(`cd ${cwd}`) with the
-# caller's autoCommitPath tool argument interpolated into a shell string, so a value such as
-# `/srv/app; cat /flag; true` runs as an arbitrary command whose stderr the tool's own catch
-# block folds into the error text it returns. No COPY/ADD from the build context; index.ts is
-# fetched by RUN from the pinned commit.
+# mcp-server-auto-commit (CVE-2026-4198), vulnerable version for the fix check only:
+# hypermodel-labs main @ 36b2651d5e94a237b9e53b055368acfac0f61d23, the public HEAD before any fix.
+# getGitChanges() passes the autoCommitPath tool argument to child_process.exec in a shell
+# string. Built as the run image (Dockerfile.auto-commit) is, from the upstream repository at
+# this commit with its pnpm-lock.yaml, so the two versions differ only by the fix. No COPY/ADD
+# from the build context.
 FROM node:22-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git curl ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && git config --system --add safe.directory '*'
+    && apt-get install -y --no-install-recommends ca-certificates curl xz-utils make gcc libc6-dev \
+       libcurl4-gnutls-dev libexpat1-dev gettext zlib1g-dev libssl-dev perl cargo \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /usr/src/git && cd /usr/src/git \
+    && curl -fsSL -o git-2.56.0.tar.xz https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz \
+    && echo '26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3  git-2.56.0.tar.xz' | sha256sum -c - \
+    && tar -xJf git-2.56.0.tar.xz && cd git-2.56.0 \
+    && make -j"$(nproc)" prefix=/usr/local all && make prefix=/usr/local install \
+    && cd / && rm -rf /usr/src/git && git --version
+RUN npm install -g --no-audit --no-fund pnpm@12.18.0
+RUN git clone -q https://github.com/hypermodel-labs/mcp-server-auto-commit.git /app \
+    && git -C /app checkout -q 36b2651d5e94a237b9e53b055368acfac0f61d23
 WORKDIR /app
-RUN printf '%s' '{"name":"mcp-server-auto-commit","version":"0.0.1","type":"module","dependencies":{"@modelcontextprotocol/sdk":"^1.5.0","zod":"^3.24.2","openai":"^4.28.0","dotenv":"^16.4.5","minimist":"^1.2.8"},"devDependencies":{"typescript":"^5.7.3","@types/node":"^22.13.5","@types/minimist":"^1.2.5"}}' > package.json
-RUN printf '%s' '{"compilerOptions":{"target":"ES2022","module":"Node16","moduleResolution":"Node16","outDir":"./build","rootDir":".","strict":true,"esModuleInterop":true,"skipLibCheck":true,"forceConsistentCasingInFileNames":true},"include":["./index.ts"]}' > tsconfig.json
-RUN curl -fsSL -o index.ts https://raw.githubusercontent.com/hypermodel-labs/mcp-server-auto-commit/36b2651d5e94a237b9e53b055368acfac0f61d23/index.ts
-RUN npm install --no-audit --no-fund --loglevel=error && npx tsc
-ENTRYPOINT ["node", "/app/build/index.js", "--key", "sk-dummy-key-for-offline-tests"]
+RUN pnpm install && pnpm run build
+ENTRYPOINT ["node", "/app/build/index.js", "--key", "your-api-key"]
