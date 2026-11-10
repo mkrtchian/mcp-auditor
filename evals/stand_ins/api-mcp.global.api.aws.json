@@ -1,0 +1,123 @@
+{
+  "host": "api-mcp.global.api.aws",
+  "address": "63.189.124.215",
+  "source": "capture",
+  "captured_at": "2026-11-07T23:15:29Z",
+  "command": "POST https://api-mcp.global.api.aws/suggest-aws-commands Content-Type: application/json body {\"query\": \"list all running EC2 instances in us-east-1\"} (httpx, Accept-Encoding identity, no redirects); defaults by evals.capture_stand_in helpers on https; port 80 refused the connection, so the http default is the https default, written",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "target": "/suggest-aws-commands",
+      "status": 200,
+      "headers": [
+        [
+          "Date",
+          "Sat, 07 Nov 2026 23:15:29 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "20821"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "x-amzn-RequestId",
+          "5a947d12-d01d-4b97-b8dd-5509d006f3b0"
+        ],
+        [
+          "x-amz-apigw-id",
+          "Gfia0H-tFiAETsg="
+        ],
+        [
+          "X-Amzn-Trace-Id",
+          "Root=1-6aefb111-4f8fc362503f1e24438f8d0a;Parent=7e4fc6c2f07138c1;Sampled=0;Lineage=1:51796b1a:0"
+        ]
+      ],
+      "body": "{\"suggestions\":[{\"command\":\"aws ec2 describe-classic-link-instances\",\"description\":\".. note:: This action is deprecated. Describes your linked EC2-Classic instances. This request only returns information about EC2-Classic instances linked to a VPC through ClassicLink. You cannot use this request to return information about other instances. See also: AWS API Documentation\",\"parameters\":{\"dry-run\":\"``--dry-run`` | ``--no-dry-run`` (boolean) Checks whether you have the required permissions for the action, without actually making the request, and provides an error response. If you have the required permissions, the error response is ``DryRunOperation`` . Otherwise, it is ``UnauthorizedOperation`` .\",\"instance-ids\":\"``--instance-ids`` (list) The instance IDs. Must be instances linked to a VPC through ClassicLink. (string)\",\"filters\":\"``--filters`` (list) The filters. * ``group-id`` - The ID of a VPC security group that's associated with the instance. * ``instance-id`` - The ID of the instance. * ``tag`` - The key/value combination of a tag assigned to the resource. Use the tag key in the filter name and the tag value as the filter value. For example, to find all resources that have a tag with the key ``Owner`` and the value ``TeamA`` , specify ``tag:Owner`` for the filter name and ``TeamA`` for the filter value. * ``tag-key`` - The key of a tag assigned to the resource. Use this filter to find all resources assigned a tag with a specific key, regardless of the tag value. * ``vpc-id`` - The ID of the VPC to which the instance is linked. (structure) A filter name and value pair that is used to return a more specific list of results from a describe operation. Filters can be used to match a set of resources by specific criteria, such as tags, attributes, or IDs. If you specify multiple filters, the filters are joined with an ``AND`` , and the request returns only results that match all of the specified filters. For more information, see `List and filter using the CLI and API <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Filtering.html#Filtering_Resources_CLI>`__ in the *Amazon EC2 User Guide* . Name -> (string) The name of the filter. Filter names are case-sensitive. Values -> (list) The filter values. Filter values are case-sensitive. If you specify multiple values for a filter, the values are joined with an ``OR`` , and the request returns all results that match any of the specified values. (string)\",\"starting-token\":\"``--starting-token`` (string) A token to specify where to start paginating. This is the ``NextToken`` from a previously truncated response. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"page-size\":\"``--page-size`` (integer) The size of each page to get in the AWS service call. This does not affect the number of items returned in the command's output. Setting a smaller page size results in more calls to the AWS service, retrieving fewer items in each call. This can help prevent the AWS service calls from timing out. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"max-items\":\"``--max-items`` (integer) The total number of items to return in the command's output. If the total number of items available is more than the value specified, a ``NextToken`` is provided in the command's output. To resume pagination, provide the ``NextToken`` value in the ``starting-token`` argument of a subsequent command. **Do not** use the ``NextToken`` response element directly outside of the AWS CLI. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\"},\"score\":1.5038207},{\"command\":\"aws ec2 describe-instance-status\",\"description\":\"Describes the status of the specified instances or all of your instances. By default, only running instances are described, unless you specifically indicate to return the status of all instances. Instance status includes the following components: * **Status checks** - Amazon EC2 performs status checks on running EC2 instances to identify hardware and software issues. For more information, see `Status checks for your instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html>`__ and `Troubleshoot instances with failed status checks <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstances.html>`__ in the *Amazon EC2 User Guide* . * **Scheduled events** - Amazon EC2 can schedule events (such as reboot, stop, or terminate) for your instances related to hardware issues, software updates, or system maintenance. For more information, see `Scheduled events for your instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-instances-status-check_sched.html>`__ in the *Amazon EC2 User Guide* . * **Instance state** - You can manage your instances from the moment you launch them through their termination. For more information, see `Instance lifecycle <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html>`__ in the *Amazon EC2 User Guide* . The Amazon EC2 API follows an eventual consistency model. This means that the result of an API command you run that creates or modifies resources might not be immediately available to all subsequent commands you run. For guidance on how to manage eventual consistency, see `Eventual consistency in the Amazon EC2 API <https://docs.aws.amazon.com/ec2/latest/devguide/eventual-consistency.html>`__ in the *Amazon EC2 Developer Guide* . .. note:: The order of the elements in the response, including those within nested structures, might vary. Applications should not assume the elements appear in a particular order. See also: AWS API Documentation\",\"parameters\":{\"instance-ids\":\"``--instance-ids`` (list) The instance IDs. Default: Describes all your instances. Constraints: Maximum 100 explicitly specified instance IDs. (string)\",\"include-managed-resources\":\"``--include-managed-resources`` | ``--no-include-managed-resources`` (boolean) Indicates whether to include managed resources in the output. If this parameter is set to ``true`` , the output includes resources that are managed by Amazon Web Services services, even if managed resource visibility is set to hidden.\",\"dry-run\":\"``--dry-run`` | ``--no-dry-run`` (boolean) Checks whether you have the required permissions for the operation, without actually making the request, and provides an error response. If you have the required permissions, the error response is ``DryRunOperation`` . Otherwise, it is ``UnauthorizedOperation`` .\",\"filters\":\"``--filters`` (list) The filters. * ``availability-zone`` - The Availability Zone of the instance. * ``availability-zone-id`` - The ID of the Availability Zone of the instance. * ``event.code`` - The code for the scheduled event (``instance-reboot`` | ``system-reboot`` | ``system-maintenance`` | ``instance-retirement`` | ``instance-stop`` ). * ``event.description`` - A description of the event. * ``event.instance-event-id`` - The ID of the event whose date and time you are modifying. * ``event.not-after`` - The latest end time for the scheduled event (for example, ``2014-09-15T17:15:20.000Z`` ). * ``event.not-before`` - The earliest start time for the scheduled event (for example, ``2014-09-15T17:15:20.000Z`` ). * ``event.not-before-deadline`` - The deadline for starting the event (for example, ``2014-09-15T17:15:20.000Z`` ). * ``instance-state-code`` - The code for the instance state, as a 16-bit unsigned integer. The high byte is used for internal purposes and should be ignored. The low byte is set based on the state represented. The valid values are 0 (pending), 16 (running), 32 (shutting-down), 48 (terminated), 64 (stopping), and 80 (stopped). * ``instance-state-name`` - The state of the instance (``pending`` | ``running`` | ``shutting-down`` | ``terminated`` | ``stopping`` | ``stopped`` ). * ``instance-status.reachability`` - Filters on instance status where the name is ``reachability`` (``passed`` | ``failed`` | ``initializing`` | ``insufficient-data`` ). * ``instance-status.status`` - The status of the instance (``ok`` | ``impaired`` | ``initializing`` | ``insufficient-data`` | ``not-applicable`` ). * ``operator.managed`` - A Boolean that indicates whether this is a managed instance. * ``operator.principal`` - The principal that manages the instance. Only valid for managed instances, where ``managed`` is ``true`` . * ``system-status.reachability`` - Filters on system status where the name is ``reachability`` (``passed`` | ``failed`` | ``initializing`` | ``insufficient-data`` ). * ``system-status.status`` - The system status of the instance (``ok`` | ``impaired`` | ``initializing`` | ``insufficient-data`` | ``not-applicable`` ). * ``attached-ebs-status.status`` - The status of the attached EBS volume for the instance (``ok`` | ``impaired`` | ``initializing`` | ``insufficient-data`` | ``not-applicable`` ). (structure) A filter name and value pair that is used to return a more specific list of results from a describe operation. Filters can be used to match a set of resources by specific criteria, such as tags, attributes, or IDs. If you specify multiple filters, the filters are joined with an ``AND`` , and the request returns only results that match all of the specified filters. For more information, see `List and filter using the CLI and API <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Filtering.html#Filtering_Resources_CLI>`__ in the *Amazon EC2 User Guide* . Name -> (string) The name of the filter. Filter names are case-sensitive. Values -> (list) The filter values. Filter values are case-sensitive. If you specify multiple values for a filter, the values are joined with an ``OR`` , and the request returns all results that match any of the specified values. (string)\",\"include-all-instances\":\"``--include-all-instances`` | ``--no-include-all-instances`` (boolean) When ``true`` , includes the health status for all instances. When ``false`` , includes the health status for running instances only. Default: ``false``\",\"starting-token\":\"``--starting-token`` (string) A token to specify where to start paginating. This is the ``NextToken`` from a previously truncated response. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"page-size\":\"``--page-size`` (integer) The size of each page to get in the AWS service call. This does not affect the number of items returned in the command's output. Setting a smaller page size results in more calls to the AWS service, retrieving fewer items in each call. This can help prevent the AWS service calls from timing out. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"max-items\":\"``--max-items`` (integer) The total number of items to return in the command's output. If the total number of items available is more than the value specified, a ``NextToken`` is provided in the command's output. To resume pagination, provide the ``NextToken`` value in the ``starting-token`` argument of a subsequent command. **Do not** use the ``NextToken`` response element directly outside of the AWS CLI. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\"},\"score\":1.4993759},{\"command\":\"aws ec2 describe-instance-type-offerings\",\"description\":\"Lists the instance types that are offered for the specified location. If no location is specified, the default is to list the instance types that are offered in the current Region. See also: AWS API Documentation\",\"parameters\":{\"dry-run\":\"``--dry-run`` | ``--no-dry-run`` (boolean) Checks whether you have the required permissions for the action, without actually making the request, and provides an error response. If you have the required permissions, the error response is ``DryRunOperation`` . Otherwise, it is ``UnauthorizedOperation`` .\",\"location-type\":\"``--location-type`` (string) The location type. * ``availability-zone`` - The Availability Zone. When you specify a location filter, it must be an Availability Zone for the current Region. * ``availability-zone-id`` - The AZ ID. When you specify a location filter, it must be an AZ ID for the current Region. * ``outpost`` - The Outpost ARN. When you specify a location filter, it must be an Outpost ARN for the current Region. * ``region`` - The current Region. If you specify a location filter, it must match the current Region. Possible values: * ``region`` * ``availability-zone`` * ``availability-zone-id`` * ``outpost``\",\"filters\":\"``--filters`` (list) One or more filters. Filter names and values are case-sensitive. * ``instance-type`` - The instance type. For a list of possible values, see `Instance <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Instance.html>`__ . * ``location`` - The location. For a list of possible identifiers, see `Regions and Zones <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`__ . (structure) A filter name and value pair that is used to return a more specific list of results from a describe operation. Filters can be used to match a set of resources by specific criteria, such as tags, attributes, or IDs. If you specify multiple filters, the filters are joined with an ``AND`` , and the request returns only results that match all of the specified filters. For more information, see `List and filter using the CLI and API <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Filtering.html#Filtering_Resources_CLI>`__ in the *Amazon EC2 User Guide* . Name -> (string) The name of the filter. Filter names are case-sensitive. Values -> (list) The filter values. Filter values are case-sensitive. If you specify multiple values for a filter, the values are joined with an ``OR`` , and the request returns all results that match any of the specified values. (string)\",\"starting-token\":\"``--starting-token`` (string) A token to specify where to start paginating. This is the ``NextToken`` from a previously truncated response. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"page-size\":\"``--page-size`` (integer) The size of each page to get in the AWS service call. This does not affect the number of items returned in the command's output. Setting a smaller page size results in more calls to the AWS service, retrieving fewer items in each call. This can help prevent the AWS service calls from timing out. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"max-items\":\"``--max-items`` (integer) The total number of items to return in the command's output. If the total number of items available is more than the value specified, a ``NextToken`` is provided in the command's output. To resume pagination, provide the ``NextToken`` value in the ``starting-token`` argument of a subsequent command. **Do not** use the ``NextToken`` response element directly outside of the AWS CLI. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\"},\"score\":1.4832314},{\"command\":\"aws emr list-instances\",\"description\":\"Provides information for all active Amazon EC2 instances and Amazon EC2 instances terminated in the last 30 days, up to a maximum of 2,000. Amazon EC2 instances in any of the following states are considered active: AWAITING_FULFILLMENT, PROVISIONING, BOOTSTRAPPING, RUNNING. See also: AWS API Documentation\",\"parameters\":{\"cluster-id\":\"``--cluster-id`` (string) The identifier of the cluster for which to list the instances.\",\"instance-group-id\":\"``--instance-group-id`` (string) The identifier of the instance group for which to list the instances.\",\"instance-group-types\":\"``--instance-group-types`` (list) The type of instance group for which to list the instances. (string)\",\"instance-fleet-id\":\"``--instance-fleet-id`` (string) The unique identifier of the instance fleet.\",\"instance-fleet-type\":\"``--instance-fleet-type`` (string) The node type of the instance fleet. For example MASTER, CORE, or TASK. Possible values: * ``MASTER`` * ``CORE`` * ``TASK``\",\"instance-states\":\"``--instance-states`` (list) A list of instance states that will filter the instances returned with this request. (string)\",\"starting-token\":\"``--starting-token`` (string) A token to specify where to start paginating. This is the ``NextToken`` from a previously truncated response. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"max-items\":\"``--max-items`` (integer) The total number of items to return in the command's output. If the total number of items available is more than the value specified, a ``NextToken`` is provided in the command's output. To resume pagination, provide the ``NextToken`` value in the ``starting-token`` argument of a subsequent command. **Do not** use the ``NextToken`` response element directly outside of the AWS CLI. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\"},\"score\":1.4743292},{\"command\":\"aws ecs list-container-instances\",\"description\":\"Returns a list of container instances in a specified cluster. You can filter the results of a ``ListContainerInstances`` operation with cluster query language statements inside the ``filter`` parameter. For more information, see `Cluster Query Language <https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cluster-query-language.html>`__ in the *Amazon Elastic Container Service Developer Guide* . See also: AWS API Documentation\",\"parameters\":{\"cluster\":\"``--cluster`` (string) The short name or full Amazon Resource Name (ARN) of the cluster that hosts the container instances to list. If you do not specify a cluster, the default cluster is assumed.\",\"filter\":\"``--filter`` (string) You can filter the results of a ``ListContainerInstances`` operation with cluster query language statements. For more information, see `Cluster Query Language <https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cluster-query-language.html>`__ in the *Amazon Elastic Container Service Developer Guide* .\",\"status\":\"``--status`` (string) Filters the container instances by status. For example, if you specify the ``DRAINING`` status, the results include only container instances that have been set to ``DRAINING`` using `UpdateContainerInstancesState <https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_UpdateContainerInstancesState.html>`__ . If you don't specify this parameter, the The default is to include container instances set to all states other than ``INACTIVE`` . Possible values: * ``ACTIVE`` * ``DRAINING`` * ``REGISTERING`` * ``DEREGISTERING`` * ``REGISTRATION_FAILED``\",\"starting-token\":\"``--starting-token`` (string) A token to specify where to start paginating. This is the ``NextToken`` from a previously truncated response. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"page-size\":\"``--page-size`` (integer) The size of each page to get in the AWS service call. This does not affect the number of items returned in the command's output. Setting a smaller page size results in more calls to the AWS service, retrieving fewer items in each call. This can help prevent the AWS service calls from timing out. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\",\"max-items\":\"``--max-items`` (integer) The total number of items to return in the command's output. If the total number of items available is more than the value specified, a ``NextToken`` is provided in the command's output. To resume pagination, provide the ``NextToken`` value in the ``starting-token`` argument of a subsequent command. **Do not** use the ``NextToken`` response element directly outside of the AWS CLI. For usage examples, see `Pagination <https://docs.aws.amazon.com/cli/latest/userguide/pagination.html>`__ in the *AWS Command Line Interface User Guide* .\"},\"score\":1.4707134}]}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "https",
+      "probed_target": "/292b52fd390ac75b",
+      "status": 403,
+      "headers": [
+        [
+          "Date",
+          "Sat, 07 Nov 2026 23:15:29 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "42"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "x-amzn-RequestId",
+          "f1eb7060-7875-41ed-967f-e20c0371fe1d"
+        ],
+        [
+          "x-amzn-ErrorType",
+          "MissingAuthenticationTokenException"
+        ],
+        [
+          "x-amz-apigw-id",
+          "Gfia3F39FiAEcTQ="
+        ]
+      ],
+      "body": "{\"message\":\"Missing Authentication Token\"}",
+      "path_form": null
+    },
+    {
+      "scheme": "http",
+      "probed_target": "/292b52fd390ac75b",
+      "status": 403,
+      "headers": [
+        [
+          "Date",
+          "Sat, 07 Nov 2026 23:15:29 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "42"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "x-amzn-RequestId",
+          "f1eb7060-7875-41ed-967f-e20c0371fe1d"
+        ],
+        [
+          "x-amzn-ErrorType",
+          "MissingAuthenticationTokenException"
+        ],
+        [
+          "x-amz-apigw-id",
+          "Gfia3F39FiAEcTQ="
+        ]
+      ],
+      "body": "{\"message\":\"Missing Authentication Token\"}",
+      "path_form": null
+    }
+  ]
+}

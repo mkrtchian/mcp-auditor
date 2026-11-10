@@ -273,7 +273,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a8d5b367a3dd5fc15d701a5b1d8d33ef76e953819f3dee59118c1f82abcbc257"
+        org.mcp-auditor.dockerfile-fingerprint: "d670f69ce801517d88877d0e0cbd7659267853499b7e67bf94eee32f69f04cdc"
     image: mcp-auditor-cve-holdout-2026-5323-a11y:local
 
   holdout-2026-5323-a11y-patched:
@@ -281,7 +281,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "d6d3611b33eeca8c408e229d785c5bfe7407ca5c217838dd5007f46d26f039c3"
+        org.mcp-auditor.dockerfile-fingerprint: "5d6174dc22660b9e43cf8f25dd190fe63276a22c6eab27e2121dbcf6d9698c9a"
     image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
 
   # SSRF target: every CKAN tool fetches its caller-supplied server_url with no validation
@@ -788,7 +788,7 @@ services:
       context: .
       dockerfile: Dockerfile.aws-api-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "c4515490e1b6232d76270441df700e4f2508aa77668a602ab908be67b37eba80"
+        org.mcp-auditor.dockerfile-fingerprint: "f66d5bcaee565d41dfcda461cc260d86ae2bb6019703919beb4c2b6a5210454d"
     image: mcp-auditor-nuisance-aws-api-mcp:local
     profiles: ["nuisance"]
 
