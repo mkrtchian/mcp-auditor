@@ -1,0 +1,78 @@
+# Fix-check image (vulnerable): Roslyn CodeLens MCP at 1.16.0 over the .NET 10 SDK, with a
+# solution that references an untrusted, solution-local analyzer DLL outside bin/obj. Serves the
+# fix check only; the witness nonce is mounted at run time, never baked.
+
+# Stage 1: build the untrusted analyzer. It reads a file at a fixed path and reports its content
+# as a diagnostic, so loading it (the flaw) surfaces that content in get_diagnostics.
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS analyzer
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+RUN mkdir -p /ana && cd /ana \
+ && printf '%s\n' \
+    '<Project Sdk="Microsoft.NET.Sdk">' \
+    '  <PropertyGroup>' \
+    '    <TargetFramework>netstandard2.0</TargetFramework>' \
+    '    <LangVersion>latest</LangVersion>' \
+    '    <EnforceExtendedAnalyzerRules>false</EnforceExtendedAnalyzerRules>' \
+    '    <NoWarn>RS1035</NoWarn>' \
+    '  </PropertyGroup>' \
+    '  <ItemGroup>' \
+    '    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />' \
+    '  </ItemGroup>' \
+    '</Project>' > Probe.csproj \
+ && printf '%s\n' \
+    'using System;' \
+    'using System.Collections.Immutable;' \
+    'using System.IO;' \
+    'using Microsoft.CodeAnalysis;' \
+    'using Microsoft.CodeAnalysis.Diagnostics;' \
+    '' \
+    '[DiagnosticAnalyzer(LanguageNames.CSharp)]' \
+    'public sealed class ProbeAnalyzer : DiagnosticAnalyzer' \
+    '{' \
+    '    private static readonly DiagnosticDescriptor Rule = new(' \
+    '        "PRB001", "probe", "{0}", "Probe", DiagnosticSeverity.Warning, true);' \
+    '    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>' \
+    '        ImmutableArray.Create(Rule);' \
+    '    public override void Initialize(AnalysisContext context)' \
+    '    {' \
+    '        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);' \
+    '        context.RegisterCompilationAction(ctx =>' \
+    '        {' \
+    '            string payload;' \
+    '            try { payload = File.ReadAllText("/srv/app/witness/data.txt").Trim(); }' \
+    '            catch (Exception ex) { payload = "PROBE_READ_FAILED:" + ex.GetType().Name; }' \
+    '            ctx.ReportDiagnostic(Diagnostic.Create(Rule, Location.None, payload));' \
+    '        });' \
+    '    }' \
+    '}' > ProbeAnalyzer.cs \
+ && dotnet build Probe.csproj -c Release -o /out -v quiet
+
+# Stage 2: the server at the vulnerable version and the target solution referencing the analyzer
+# outside bin/obj.
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+RUN dotnet tool install --tool-path /opt/tool RoslynCodeLens.Mcp --version 1.16.0
+RUN mkdir -p /srv/app && cd /srv/app \
+ && dotnet new sln -n Sample \
+ && dotnet new classlib -n Sample -o Sample \
+ && dotnet sln Sample.slnx add Sample/Sample.csproj \
+ && rm -f Sample/Class1.cs \
+ && printf '%s\n' \
+    'namespace Sample;' \
+    '' \
+    'public class Calculator' \
+    '{' \
+    '    public int Add(int a, int b)' \
+    '    {' \
+    '        int unusedLocal = 42;' \
+    '        return a + b;' \
+    '    }' \
+    '}' > Sample/Calculator.cs \
+ && mkdir -p /srv/app/tools /srv/app/witness
+COPY --from=analyzer /out/Probe.dll /srv/app/tools/Probe.dll
+RUN cd /srv/app \
+ && sed -i 's#</Project>#  <ItemGroup>\n    <Analyzer Include="../tools/Probe.dll" />\n  </ItemGroup>\n  <PropertyGroup>\n    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>\n  </PropertyGroup>\n</Project>#' Sample/Sample.csproj \
+ && dotnet build Sample.slnx -v quiet \
+ && chmod -R a+rwX /srv/app
+WORKDIR /srv/app
+ENTRYPOINT ["/opt/tool/roslyn-codelens-mcp"]

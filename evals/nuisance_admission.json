@@ -5202,7 +5202,7 @@
               "real_software": {
                 "answers": false,
                 "cause": "software_error",
-                "evidence": "Source lines and a run. The tool always runs `timeout <timeout> getevent -lrt` on the device (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a line 702: remoteShellArgs('timeout', String(timeout), 'getevent', '-lrt')). getevent never exits by itself when no event count is given: AOSP system/core toolbox/getevent.c at a3b721a32242006b59cb12bd62c9133632af3a2d line 655 `while(1) {` polls forever, its only return on success being line 683 `if(event_count && --event_count == 0)` (event_count is set only by -c, which the server never passes). So the device's toybox timeout always ends it and exits 124: external/toybox toys/other/timeout.c at 59a869a838cfadbf6bc41cb400471ca9d2cae9b5 line 85 `toys.exitval = (nextsig==9) ? 137 : 124;` (no --preserve-status is passed, line 106). The device advertises shell_v2 (every Android release since 7.0), so adb returns the remote exit status, and the patched server runs adb through execFile, which rejects on a non-zero exit; the tool then answers isError (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a lines 706-709, `监控输入事件失败: ...`; src/adb.ts lines 59-70). Arguments tried: timeout 1 (the committed call), and by source every value the schema allows (integer 1..300) plus deviceId/useUsb/useEmulator, which only select the device and change nothing. Run: real adb 37.0.1 against the device transport answering this request as the sources give it (no output, exit 124 after the timeout): `adb shell 'timeout' '1' 'getevent' '-lrt'` exits 124, and the probe on the run image prints `monitor-events [listed] -> error \"监控输入事件失败: ADB Command Error: Command failed: /opt/android/platform-tools/adb shell 'timeout' '1' 'getevent' '-lrt'\\n\"`."
+                "evidence": "Source lines and a run. The tool always runs `timeout <timeout> getevent -lrt` on the device (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a line 702: remoteShellArgs('timeout', String(timeout), 'getevent', '-lrt')). getevent never exits by itself when no event count is given: AOSP system/core toolbox/getevent.c at a3b721a32242006b59cb12bd62c9133632af3a2d line 655 `while(1) {` polls forever, its only return on success being line 683 `if(event_count && --event_count == 0)` (event_count is set only by -c, which the server never passes). So the device's toybox timeout always ends it and exits 124: external/toybox toys/other/timeout.c at 59a869a838cfadbf6bc41cb400471ca9d2cae9b5 line 85 `toys.exitval = (nextsig==9) ? 137 : 124;` (no --preserve-status is passed, line 106). The device advertises shell_v2 (every Android release since 7.0), so adb returns the remote exit status, and the patched server runs adb through execFile, which rejects on a non-zero exit; the tool then answers isError (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a lines 706-709, `\u76d1\u63a7\u8f93\u5165\u4e8b\u4ef6\u5931\u8d25: ...`; src/adb.ts lines 59-70). Arguments tried: timeout 1 (the committed call), and by source every value the schema allows (integer 1..300) plus deviceId/useUsb/useEmulator, which only select the device and change nothing. Run: real adb 37.0.1 against the device transport answering this request as the sources give it (no output, exit 124 after the timeout): `adb shell 'timeout' '1' 'getevent' '-lrt'` exits 124, and the probe on the run image prints `monitor-events [listed] -> error \"\u76d1\u63a7\u8f93\u5165\u4e8b\u4ef6\u5931\u8d25: ADB Command Error: Command failed: /opt/android/platform-tools/adb shell 'timeout' '1' 'getevent' '-lrt'\\n\"`."
               },
               "declared_function_is_effect": false
             },
@@ -5411,7 +5411,7 @@
               "arguments": {
                 "buffer": "main"
               },
-              "expect": "缓冲区的日志",
+              "expect": "\u7f13\u51b2\u533a\u7684\u65e5\u5fd7",
               "before": []
             },
             {
@@ -5420,7 +5420,7 @@
                 "packageName": "com.example.helloworld",
                 "lines": 50
               },
-              "expect": "的明显崩溃信息",
+              "expect": "\u7684\u660e\u663e\u5d29\u6e83\u4fe1\u606f",
               "before": [
                 {
                   "tool": "install-apk",
@@ -5926,7 +5926,7 @@
           "software": "Android SDK Platform-Tools (adb, Android Debug Bridge)",
           "release": "37.0.1",
           "day": "2026-11-05",
-          "source": "Copied from the holdout calibration card of CVE-2026-19978, whose calibration this flaw's fix check reuses: the server README at the patched commit (lines 106-110) names the software and no version ('安装 ADB: 下载 Android SDK Platform Tools ... 使用 `adb version` 验证安装'); 37.0.1 was the stable release (channel-0 of dl.google.com/android/repository/repository2-3.xml, 'Platform-Tools 37.0.1 (July 2026)' on developer.android.com/tools/releases/platform-tools) on 2026-11-05. The run image installs https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip (sha256 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1)."
+          "source": "Copied from the holdout calibration card of CVE-2026-19978, whose calibration this flaw's fix check reuses: the server README at the patched commit (lines 106-110) names the software and no version ('\u5b89\u88c5 ADB: \u4e0b\u8f7d Android SDK Platform Tools ... \u4f7f\u7528 `adb version` \u9a8c\u8bc1\u5b89\u88c5'); 37.0.1 was the stable release (channel-0 of dl.google.com/android/repository/repository2-3.xml, 'Platform-Tools 37.0.1 (July 2026)' on developer.android.com/tools/releases/platform-tools) on 2026-11-05. The run image installs https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip (sha256 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1)."
         }
       ]
     },
@@ -10402,6 +10402,225 @@
       ]
     },
     {
+      "server_package": "NuGet:RoslynCodeLens.Mcp",
+      "reaching_flaw": "CVE-2026-45555",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-45555",
+          "tools": [
+            {
+              "vulnerable_name": "get_diagnostics",
+              "patched_name": "get_diagnostics",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_code_fixes",
+              "patched_name": "get_code_fixes",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.17.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_diagnostics",
+              "arguments": {},
+              "before": [],
+              "expect": "CS0219"
+            },
+            {
+              "tool": "get_code_fixes",
+              "arguments": {
+                "diagnosticId": "CA1822",
+                "filePath": "/srv/app/Sample/Calculator.cs",
+                "line": 5
+              },
+              "before": [],
+              "expect": "Make static"
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "get_diagnostics",
+              "get_code_fixes"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/srv/app",
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [],
+          "trust": [],
+          "ip_label_domains": []
+        }
+      },
+      "launch": [
+        "/srv/app/Sample.slnx"
+      ],
+      "service": "roslyncodelens",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-45555",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-45555",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-45555",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-45555",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-45555",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-45555",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "NuGet:RoslynCodeLens.Mcp",
+          "flaw": "CVE-2026-45555",
+          "field": "tools",
+          "value": "record A's two tools, get_diagnostics and get_code_fixes",
+          "reason": "get_code_fixes drives the same solution-referenced analyzer loading that is the flaw: it reaches the same analyzer runner as get_diagnostics through the Roslyn code-fix path, and a benign call for CA1822 returns the 'Make static' fix on the patched version, so record A's added get_code_fixes is counted; record B listed get_diagnostics alone."
+        },
+        {
+          "server_package": "NuGet:RoslynCodeLens.Mcp",
+          "flaw": "CVE-2026-45555",
+          "field": "benign_calls",
+          "value": "record A's two calls: get_diagnostics with no arguments expecting CS0219, and get_code_fixes for CA1822 at /srv/app/Sample/Calculator.cs line 5 expecting the fix title 'Make static'",
+          "reason": "record A is retained because it carries the second counted tool's benign call; record A recorded the get_code_fixes expect as the diagnostic id CA1822, which the arguments already name, so the expect is set instead to the fix title 'Make static' the real Roslyn code fix returns, a text the arguments do not contain."
+        },
+        {
+          "server_package": "NuGet:RoslynCodeLens.Mcp",
+          "flaw": null,
+          "field": "host",
+          "value": "working_directory /srv/app, has_network false, no public names",
+          "reason": "record A ran the server from /srv/app, where its baked solution sits, record B from /; /srv/app is kept so the launched solution path resolves under the working directory."
+        },
+        {
+          "server_package": "NuGet:RoslynCodeLens.Mcp",
+          "flaw": null,
+          "field": "launch",
+          "value": "/srv/app/Sample.slnx",
+          "reason": "record A passes the solution at /srv/app, record B at /work/sample; the retained record A fixture bakes the solution under /srv/app, so its path is kept."
+        },
+        {
+          "server_package": "NuGet:RoslynCodeLens.Mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: an SDK-generated Sample solution scaffold and a written Calculator.cs carrying an assigned-but-unused local and an instance method with no instance use",
+          "reason": "record A's seed is kept because its Calculator.cs carries both diagnostics the two benign calls need, the compiler warning CS0219 and the CA1822 instance-method fix, where record B's App/Program.cs carries only the compiler warning CS0219 for the one tool it counted."
+        }
+      ],
+      "patched_version": "1.17.0",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "Sample solution scaffold (Sample.slnx + Sample/Sample.csproj, a net10.0 class library) generated by the .NET SDK templates at image build",
+          "kind": "generated",
+          "citation": "dotnet new sln -n Sample; dotnet new classlib -n Sample (Microsoft .NET SDK built-in templates)",
+          "pin": "mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e"
+        },
+        {
+          "item": "Sample/Calculator.cs: a class with one instance method Add and an assigned-but-unused local, so a benign get_diagnostics returns the compiler warning CS0219 and a benign get_code_fixes returns the CA1822 'Make static' fix",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": ".NET SDK (MSBuild and the Roslyn C# compiler and analyzers it ships, loaded by the server through MSBuildLocator/MSBuildWorkspace)",
+          "release": "10.0.403",
+          "day": "2026-11-09",
+          "source": "README.md Requirements names '.NET 10 SDK'; concrete patch is the current 10.0 SDK image mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e, 'dotnet --version' -> 10.0.403"
+        }
+      ]
+    },
+    {
       "server_package": "npm:knowns",
       "reaching_flaw": "CVE-2026-86439",
       "flaws": [
@@ -13295,9 +13514,9 @@
               "replacements": []
             },
             {
-              "request": "Couldn’t find shortcut",
+              "request": "Couldn\u2019t find shortcut",
               "source": "capture",
-              "citation": "any other request (a name or identifier not in the library, another subcommand or argument shape): capture of the real program on macOS 27.0 in rfizzle/hearth docs/research/2026-10-19-shortcuts-spike.md at commit 4f2e3f78e70dc7910fe7a79813913984fb062425, line 16: `shortcuts run <missing>` -> exit 1, stderr 'Error: The operation couldn’t be completed. Couldn’t find shortcut', nothing on stdout. A third-party capture of the real software, not one made here (no Mac is available); no Apple source gives the text. Used as the error for an input the program does not recognize.",
+              "citation": "any other request (a name or identifier not in the library, another subcommand or argument shape): capture of the real program on macOS 27.0 in rfizzle/hearth docs/research/2026-10-19-shortcuts-spike.md at commit 4f2e3f78e70dc7910fe7a79813913984fb062425, line 16: `shortcuts run <missing>` -> exit 1, stderr 'Error: The operation couldn\u2019t be completed. Couldn\u2019t find shortcut', nothing on stdout. A third-party capture of the real software, not one made here (no Mac is available); no Apple source gives the text. Used as the error for an input the program does not recognize.",
               "form_source": null,
               "replacements": []
             }
@@ -14141,7 +14360,7 @@
         {
           "item": "/work/pilot (bin/, fafm/ and md/, ten records in each of three forms): the pilot directory of the sample corpus the server's README names, seeded whole with its layout in /work, the project the server works in, owned by the run's account",
           "kind": "published_sample",
-          "citation": "grok-faf-mcp 1.5.3 README.md: 'Sample corpus: xai-faf-proof/pilot (https://github.com/Wolfe-Jam/xai-faf-proof/tree/main/pilot) — 10 records ready to score.' Fetched by an ADD --checksum of https://github.com/Wolfe-Jam/xai-faf-proof/archive/5f3ecc232f02131166579ee15362a98c247c4b4a.tar.gz (sha256 ef03bd9c6de5e8462bf8592a6b0a87d6eca918975792bcddf17e0c396aa65af4)",
+          "citation": "grok-faf-mcp 1.5.3 README.md: 'Sample corpus: xai-faf-proof/pilot (https://github.com/Wolfe-Jam/xai-faf-proof/tree/main/pilot) \u2014 10 records ready to score.' Fetched by an ADD --checksum of https://github.com/Wolfe-Jam/xai-faf-proof/archive/5f3ecc232f02131166579ee15362a98c247c4b4a.tar.gz (sha256 ef03bd9c6de5e8462bf8592a6b0a87d6eca918975792bcddf17e0c396aa65af4)",
           "pin": "5f3ecc232f02131166579ee15362a98c247c4b4a"
         },
         {

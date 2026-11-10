@@ -954,6 +954,15 @@ services:
     image: mcp-auditor-nuisance-kubectl:local
     profiles: ["nuisance"]
 
+  roslyncodelens:
+    build:
+      context: .
+      dockerfile: Dockerfile.roslyncodelens
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "28ffc83eb2c6ff3007a96fc0fe7908405e8ceff8d4b4918b79fc499384861158"
+    image: mcp-auditor-nuisance-roslyncodelens:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .

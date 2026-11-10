@@ -34,6 +34,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_35402_neo4j_cypher,
     cve_2026_44336_praisonai,
     cve_2026_44694_n8n,
+    cve_2026_45555_roslyncodelens,
     cve_2026_46341_apify,
     cve_2026_47394_praisonai,
     cve_2026_55157_token_optimizer,
@@ -98,4 +99,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *ghsa_j4r7_8ph4_43g3_faf.TARGETS,
     *cve_2026_5327_fast_filesystem.TARGETS,
     *cve_2025_69902_kubectl.TARGETS,
+    *cve_2026_45555_roslyncodelens.TARGETS,
 )
