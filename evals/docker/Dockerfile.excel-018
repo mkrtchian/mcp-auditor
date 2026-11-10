@@ -1,0 +1,23 @@
+# excel-mcp-server (PyPI:excel-mcp-server), vulnerable release 0.1.8 for CVE-2026-85661: over stdio
+# get_excel_path returns any absolute path unchecked (run_stdio never sets EXCEL_FILES_PATH).
+# Serves the fix check's positive control only, never a run. Same seed as the run image.
+#
+# The module sets a logging.FileHandler at /usr/local/lib/python3.12/excel-mcp.log at import,
+# which the run's user (65534) cannot create there: the file is created world-writable so the
+# server starts under the confinement, which touches no path logic. No COPY/ADD, the package
+# installs from PyPI by RUN.
+FROM python:3.12-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
+RUN pip install --no-cache-dir excel-mcp-server==0.1.8
+RUN install -m 0666 /dev/null /usr/local/lib/python3.12/excel-mcp.log
+RUN mkdir -p /data && python - <<'PY'
+import openpyxl
+wb = openpyxl.Workbook()
+ws = wb.active
+ws.title = "Summary"
+ws["A1"] = "Region"; ws["B1"] = "Revenue"
+ws["A2"] = "North";  ws["B2"] = 1200
+ws["A3"] = "South";  ws["B3"] = 950
+wb.save("/data/sample.xlsx")
+PY
+RUN chmod -R a+rX /data
+ENTRYPOINT ["excel-mcp-server"]

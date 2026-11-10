@@ -999,6 +999,15 @@ services:
     image: mcp-auditor-nuisance-skill-ninja:local
     profiles: ["nuisance"]
 
+  excel:
+    build:
+      context: .
+      dockerfile: Dockerfile.excel
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "75b162dad7a589209c7efb1691c27853d8c98e22a5fea66d367f770f57333d9d"
+    image: mcp-auditor-nuisance-excel:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .

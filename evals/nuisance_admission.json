@@ -22572,6 +22572,1734 @@
         }
       ],
       "software_releases": []
+    },
+    {
+      "server_package": "PyPI:excel-mcp-server",
+      "reaching_flaw": "CVE-2026-40576",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-40576",
+          "tools": [
+            {
+              "vulnerable_name": "apply_formula",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "validate_formula_syntax",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "format_range",
+              "patched_name": "format_range",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "read_data_from_excel",
+              "patched_name": "read_range",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "write_data_to_excel",
+              "patched_name": "write_range",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_workbook",
+              "patched_name": "create_workbook",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_worksheet",
+              "patched_name": "create_sheet",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_chart",
+              "patched_name": "create_chart",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_pivot_table",
+              "patched_name": "create_summary_table",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_table",
+              "patched_name": "create_table",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "copy_worksheet",
+              "patched_name": "copy_sheet",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_worksheet",
+              "patched_name": "delete_sheet",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "rename_worksheet",
+              "patched_name": "rename_sheet",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_workbook_metadata",
+              "patched_name": "describe_workbook",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "merge_cells",
+              "patched_name": "merge_cells",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "unmerge_cells",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "get_merged_cells",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "copy_range",
+              "patched_name": "copy_range",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_range",
+              "patched_name": "clear_range",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "validate_excel_range",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "get_data_validation_info",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "insert_rows",
+              "patched_name": "insert_rows_or_columns",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "insert_columns",
+              "patched_name": "insert_rows_or_columns",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_sheet_rows",
+              "patched_name": "delete_rows_or_columns",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_sheet_columns",
+              "patched_name": "delete_rows_or_columns",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "1.0.0",
+          "patched_source": "advisory",
+          "launch_option": {
+            "option": "--allow-dir",
+            "value": "/data",
+            "reason": "Over stdio the server confines the workbooks it opens only when an allowed directory is set: 0.1.8 never reads EXCEL_FILES_PATH on stdio, and 1.0.0 opens any absolute path when no directory is given. Under --allow-dir its path policy refuses a path outside the directory, which is what closes the traversal on stdio.",
+            "documentation": "excel-mcp-server 1.0.0, src/excel_mcp/cli.py: --allow-dir 'Only allow workbooks inside DIR (repeatable). Relative paths start in the first DIR. Also read from EXCEL_FILES_PATH.'"
+          },
+          "benign_calls": [
+            {
+              "tool": "format_range",
+              "arguments": {
+                "path": "sample.xlsx",
+                "sheet": "Summary",
+                "range": "A1:C1",
+                "style": {
+                  "bold": true
+                }
+              },
+              "expect": "Formatted",
+              "before": []
+            },
+            {
+              "tool": "read_range",
+              "arguments": {
+                "path": "sample.xlsx",
+                "sheet": "Summary",
+                "range": "A1:B3"
+              },
+              "expect": "Region",
+              "before": []
+            },
+            {
+              "tool": "write_range",
+              "arguments": {
+                "path": "book9.xlsx",
+                "sheet": "Sheet1",
+                "start_cell": "A1",
+                "rows": [
+                  [
+                    "Region",
+                    "Revenue"
+                  ],
+                  [
+                    "North",
+                    1200
+                  ]
+                ]
+              },
+              "expect": "cells_written",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book9.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_workbook",
+              "arguments": {
+                "path": "book1.xlsx"
+              },
+              "expect": "Sheet1",
+              "before": []
+            },
+            {
+              "tool": "create_sheet",
+              "arguments": {
+                "path": "book2.xlsx",
+                "sheet": "Data"
+              },
+              "expect": "Created sheet",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book2.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_chart",
+              "arguments": {
+                "path": "book13.xlsx",
+                "sheet": "Sheet1",
+                "data_range": "A1:B5",
+                "chart_type": "column",
+                "anchor_cell": "D2"
+              },
+              "expect": "Added a",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book13.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book13.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ],
+                      [
+                        "North",
+                        1200
+                      ],
+                      [
+                        "South",
+                        950
+                      ],
+                      [
+                        "East",
+                        1100
+                      ],
+                      [
+                        "West",
+                        1300
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_summary_table",
+              "arguments": {
+                "path": "book14.xlsx",
+                "sheet": "Sheet1",
+                "source_range": "A1:B5",
+                "group_by": [
+                  "Region"
+                ],
+                "values": [
+                  {
+                    "field": "Revenue",
+                    "aggregation": "sum"
+                  }
+                ],
+                "target_sheet": "Sheet1",
+                "target_cell": "D1"
+              },
+              "expect": "Wrote the summary",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book14.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book14.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ],
+                      [
+                        "North",
+                        1200
+                      ],
+                      [
+                        "South",
+                        950
+                      ],
+                      [
+                        "East",
+                        1100
+                      ],
+                      [
+                        "West",
+                        1300
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_table",
+              "arguments": {
+                "path": "book12.xlsx",
+                "sheet": "Sheet1",
+                "range": "A1:C5",
+                "name": "SalesTbl"
+              },
+              "expect": "Created table",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book12.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book12.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue",
+                        "Units"
+                      ],
+                      [
+                        "North",
+                        1200,
+                        30
+                      ],
+                      [
+                        "South",
+                        950,
+                        24
+                      ],
+                      [
+                        "East",
+                        1100,
+                        28
+                      ],
+                      [
+                        "West",
+                        1300,
+                        33
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "copy_sheet",
+              "arguments": {
+                "path": "book4.xlsx",
+                "sheet": "Sheet1",
+                "new_name": "Copy"
+              },
+              "expect": "Copied sheet",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book4.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "delete_sheet",
+              "arguments": {
+                "path": "book5.xlsx",
+                "sheet": "Extra"
+              },
+              "expect": "Deleted sheet",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book5.xlsx",
+                    "sheets": [
+                      "Sheet1",
+                      "Extra"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "rename_sheet",
+              "arguments": {
+                "path": "book3.xlsx",
+                "sheet": "Sheet1",
+                "new_name": "Report"
+              },
+              "expect": "Renamed sheet",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book3.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "describe_workbook",
+              "arguments": {
+                "path": "sample.xlsx"
+              },
+              "expect": "Summary",
+              "before": []
+            },
+            {
+              "tool": "merge_cells",
+              "arguments": {
+                "path": "book6.xlsx",
+                "sheet": "Sheet1",
+                "range": "A1:B2"
+              },
+              "expect": "Merged",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book6.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "copy_range",
+              "arguments": {
+                "path": "book7.xlsx",
+                "sheet": "Sheet1",
+                "range": "A1:B1",
+                "target_cell": "A4"
+              },
+              "expect": "Copied",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book7.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book7.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "clear_range",
+              "arguments": {
+                "path": "book8.xlsx",
+                "sheet": "Sheet1",
+                "range": "A1:B2"
+              },
+              "expect": "Cleared",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book8.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book8.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "x",
+                        "y"
+                      ],
+                      [
+                        "a",
+                        "b"
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "insert_rows_or_columns",
+              "arguments": {
+                "path": "book10.xlsx",
+                "sheet": "Sheet1",
+                "axis": "rows",
+                "at": 1,
+                "count": 1
+              },
+              "expect": "Inserted",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book10.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book10.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ],
+                      [
+                        "North",
+                        1200
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "delete_rows_or_columns",
+              "arguments": {
+                "path": "book11.xlsx",
+                "sheet": "Sheet1",
+                "axis": "rows",
+                "at": 1,
+                "count": 1
+              },
+              "expect": "Deleted",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book11.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book11.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ],
+                      [
+                        "North",
+                        1200
+                      ]
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "read_data_from_excel",
+              "get_workbook_metadata",
+              "write_data_to_excel",
+              "format_range",
+              "create_workbook",
+              "create_worksheet",
+              "create_chart",
+              "create_pivot_table",
+              "create_table",
+              "copy_worksheet",
+              "delete_worksheet",
+              "rename_worksheet",
+              "merge_cells",
+              "copy_range",
+              "delete_range",
+              "insert_rows",
+              "delete_sheet_rows"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-85661",
+          "tools": [
+            {
+              "vulnerable_name": "apply_formula",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "validate_formula_syntax",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "format_range",
+              "patched_name": "format_range",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "read_data_from_excel",
+              "patched_name": "read_range",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "write_data_to_excel",
+              "patched_name": "write_range",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_workbook",
+              "patched_name": "create_workbook",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_worksheet",
+              "patched_name": "create_sheet",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_chart",
+              "patched_name": "create_chart",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_pivot_table",
+              "patched_name": "create_summary_table",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "create_table",
+              "patched_name": "create_table",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "copy_worksheet",
+              "patched_name": "copy_sheet",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_worksheet",
+              "patched_name": "delete_sheet",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "rename_worksheet",
+              "patched_name": "rename_sheet",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_workbook_metadata",
+              "patched_name": "describe_workbook",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "merge_cells",
+              "patched_name": "merge_cells",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "unmerge_cells",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "get_merged_cells",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "copy_range",
+              "patched_name": "copy_range",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_range",
+              "patched_name": "clear_range",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "validate_excel_range",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "get_data_validation_info",
+              "patched_name": null,
+              "status": "removed"
+            },
+            {
+              "vulnerable_name": "insert_rows",
+              "patched_name": "insert_rows_or_columns",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "insert_columns",
+              "patched_name": "insert_rows_or_columns",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_sheet_rows",
+              "patched_name": "delete_rows_or_columns",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "delete_sheet_columns",
+              "patched_name": "delete_rows_or_columns",
+              "status": "renamed",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": null,
+          "patched_source": "none",
+          "launch_option": {
+            "option": "--allow-dir",
+            "value": "/data",
+            "reason": "Over stdio the server confines the workbooks it opens only when an allowed directory is set: 0.1.8 never reads EXCEL_FILES_PATH on stdio, and 1.0.0 opens any absolute path when no directory is given. Under --allow-dir its path policy refuses a path outside the directory, which is what closes the traversal on stdio.",
+            "documentation": "excel-mcp-server 1.0.0, src/excel_mcp/cli.py: --allow-dir 'Only allow workbooks inside DIR (repeatable). Relative paths start in the first DIR. Also read from EXCEL_FILES_PATH.'"
+          },
+          "benign_calls": [
+            {
+              "tool": "format_range",
+              "arguments": {
+                "path": "sample.xlsx",
+                "sheet": "Summary",
+                "range": "A1:C1",
+                "style": {
+                  "bold": true
+                }
+              },
+              "expect": "Formatted",
+              "before": []
+            },
+            {
+              "tool": "read_range",
+              "arguments": {
+                "path": "sample.xlsx",
+                "sheet": "Summary",
+                "range": "A1:B3"
+              },
+              "expect": "Region",
+              "before": []
+            },
+            {
+              "tool": "write_range",
+              "arguments": {
+                "path": "book9.xlsx",
+                "sheet": "Sheet1",
+                "start_cell": "A1",
+                "rows": [
+                  [
+                    "Region",
+                    "Revenue"
+                  ],
+                  [
+                    "North",
+                    1200
+                  ]
+                ]
+              },
+              "expect": "cells_written",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book9.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_workbook",
+              "arguments": {
+                "path": "book1.xlsx"
+              },
+              "expect": "Sheet1",
+              "before": []
+            },
+            {
+              "tool": "create_sheet",
+              "arguments": {
+                "path": "book2.xlsx",
+                "sheet": "Data"
+              },
+              "expect": "Created sheet",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book2.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_chart",
+              "arguments": {
+                "path": "book13.xlsx",
+                "sheet": "Sheet1",
+                "data_range": "A1:B5",
+                "chart_type": "column",
+                "anchor_cell": "D2"
+              },
+              "expect": "Added a",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book13.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book13.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ],
+                      [
+                        "North",
+                        1200
+                      ],
+                      [
+                        "South",
+                        950
+                      ],
+                      [
+                        "East",
+                        1100
+                      ],
+                      [
+                        "West",
+                        1300
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_summary_table",
+              "arguments": {
+                "path": "book14.xlsx",
+                "sheet": "Sheet1",
+                "source_range": "A1:B5",
+                "group_by": [
+                  "Region"
+                ],
+                "values": [
+                  {
+                    "field": "Revenue",
+                    "aggregation": "sum"
+                  }
+                ],
+                "target_sheet": "Sheet1",
+                "target_cell": "D1"
+              },
+              "expect": "Wrote the summary",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book14.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book14.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ],
+                      [
+                        "North",
+                        1200
+                      ],
+                      [
+                        "South",
+                        950
+                      ],
+                      [
+                        "East",
+                        1100
+                      ],
+                      [
+                        "West",
+                        1300
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "create_table",
+              "arguments": {
+                "path": "book12.xlsx",
+                "sheet": "Sheet1",
+                "range": "A1:C5",
+                "name": "SalesTbl"
+              },
+              "expect": "Created table",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book12.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book12.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue",
+                        "Units"
+                      ],
+                      [
+                        "North",
+                        1200,
+                        30
+                      ],
+                      [
+                        "South",
+                        950,
+                        24
+                      ],
+                      [
+                        "East",
+                        1100,
+                        28
+                      ],
+                      [
+                        "West",
+                        1300,
+                        33
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "copy_sheet",
+              "arguments": {
+                "path": "book4.xlsx",
+                "sheet": "Sheet1",
+                "new_name": "Copy"
+              },
+              "expect": "Copied sheet",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book4.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "delete_sheet",
+              "arguments": {
+                "path": "book5.xlsx",
+                "sheet": "Extra"
+              },
+              "expect": "Deleted sheet",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book5.xlsx",
+                    "sheets": [
+                      "Sheet1",
+                      "Extra"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "rename_sheet",
+              "arguments": {
+                "path": "book3.xlsx",
+                "sheet": "Sheet1",
+                "new_name": "Report"
+              },
+              "expect": "Renamed sheet",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book3.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "describe_workbook",
+              "arguments": {
+                "path": "sample.xlsx"
+              },
+              "expect": "Summary",
+              "before": []
+            },
+            {
+              "tool": "merge_cells",
+              "arguments": {
+                "path": "book6.xlsx",
+                "sheet": "Sheet1",
+                "range": "A1:B2"
+              },
+              "expect": "Merged",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book6.xlsx"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "copy_range",
+              "arguments": {
+                "path": "book7.xlsx",
+                "sheet": "Sheet1",
+                "range": "A1:B1",
+                "target_cell": "A4"
+              },
+              "expect": "Copied",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book7.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book7.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "clear_range",
+              "arguments": {
+                "path": "book8.xlsx",
+                "sheet": "Sheet1",
+                "range": "A1:B2"
+              },
+              "expect": "Cleared",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book8.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book8.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "x",
+                        "y"
+                      ],
+                      [
+                        "a",
+                        "b"
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "insert_rows_or_columns",
+              "arguments": {
+                "path": "book10.xlsx",
+                "sheet": "Sheet1",
+                "axis": "rows",
+                "at": 1,
+                "count": 1
+              },
+              "expect": "Inserted",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book10.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book10.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ],
+                      [
+                        "North",
+                        1200
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "delete_rows_or_columns",
+              "arguments": {
+                "path": "book11.xlsx",
+                "sheet": "Sheet1",
+                "axis": "rows",
+                "at": 1,
+                "count": 1
+              },
+              "expect": "Deleted",
+              "before": [
+                {
+                  "tool": "create_workbook",
+                  "arguments": {
+                    "path": "book11.xlsx"
+                  }
+                },
+                {
+                  "tool": "write_range",
+                  "arguments": {
+                    "path": "book11.xlsx",
+                    "sheet": "Sheet1",
+                    "start_cell": "A1",
+                    "rows": [
+                      [
+                        "Region",
+                        "Revenue"
+                      ],
+                      [
+                        "North",
+                        1200
+                      ]
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "read_data_from_excel",
+              "get_workbook_metadata",
+              "write_data_to_excel",
+              "format_range",
+              "create_workbook",
+              "create_worksheet",
+              "create_chart",
+              "create_pivot_table",
+              "create_table",
+              "copy_worksheet",
+              "delete_worksheet",
+              "rename_worksheet",
+              "merge_cells",
+              "copy_range",
+              "delete_range",
+              "insert_rows",
+              "delete_sheet_rows"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/data",
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [],
+          "trust": [],
+          "ip_label_domains": []
+        }
+      },
+      "launch": [
+        "stdio",
+        "--allow-dir",
+        "/data"
+      ],
+      "service": "excel",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "targeted pass record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "targeted pass record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-40576",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-40576",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-40576",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-40576",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-40576",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-40576",
+          "field": "fix_check",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-40576",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-85661",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-85661",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-85661",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-85661",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-85661",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-85661",
+          "field": "fix_check",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-85661",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-40576",
+          "field": "tools",
+          "value": "format_range, read_range, write_range, create_workbook, create_sheet, create_chart, create_summary_table, create_table, copy_sheet, delete_sheet, rename_sheet, describe_workbook, merge_cells, copy_range, clear_range, insert_rows_or_columns and delete_rows_or_columns counted, six tools of 0.1.8 removed",
+          "reason": "Record A listed the four tools of 0.1.8 that return content and read the flaw as the documented function of an unconfined server, which took them out of the count. Record B listed every tool of the rewrite, each taking a workbook path that the same path resolution reaches. 1.0.0 rewrote the tool set: six tools of 0.1.8 (apply_formula, validate_formula_syntax, unmerge_cells, get_merged_cells, validate_excel_range, get_data_validation_info) have no successor under their own name and are removed, and the others continue under their name or a new one (insert_rows and insert_columns both continue as insert_rows_or_columns, delete_sheet_rows and delete_sheet_columns as delete_rows_or_columns). All 17 tools of 1.0.0 still exist on the patched version, each reaches the flaw through the path it is given and answers on the real software, so the 17 are counted. Two analysts read the names against the sources of 0.1.8 and 1.0.0 and confirmed the mapping."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-40576",
+          "field": "declared_function_is_effect",
+          "value": "false for every counted tool",
+          "reason": "Record A read the read tools as declaring the read of any absolute path, because an unconfined server does open the path it is given. Under the launch the fix requires the server holds a root from its configuration, --allow-dir /data, and a root it holds is a root it declares: the tools read and write workbooks inside that root, and reading one outside it is the flaw, not the tool's function."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-40576",
+          "field": "patched_version",
+          "value": "1.0.0",
+          "reason": "The advisory gives 0.1.8 as the first patched release, but over stdio 0.1.8 still returns the contents of a workbook outside any allowed directory (run_stdio never sets the allowed directory, so the confinement it adds applies to the HTTP transports only). The first release whose path policy confines stdio under --allow-dir is 1.0.0, which the fix check shows."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-40576",
+          "field": "benign_calls",
+          "value": "the 17 calls of the first targeted pass, with their expects",
+          "reason": "Two analysts each played one benign call per tool of 1.0.0 on the run image under the run's confinement and launch, all 17 answering without error. The calls of the first one build any workbook they change with create_workbook (and write_range where a range is needed) as prerequisite calls, so each runs from the one seeded workbook and does not depend on the order of the others, and each expect is text the server returns that no argument carries. The second analyst's calls change the seeded workbook and rely on scratch sheets its seed adds."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-40576",
+          "field": "fix_check",
+          "value": "a read of a workbook outside /data, on 0.1.7 and on 1.0.0 under --allow-dir /data",
+          "reason": "Record A showed the witness surfacing on both 0.1.7 and 0.1.8 under the default stdio launch and recorded no patched version. Record B plants the witness as the content of a workbook mounted read-only outside the allowed directory and reads it with the read tool on the vulnerable release and on 1.0.0 launched with --allow-dir /data. Its module is kept, with an exploit for each of the 17 tools, each aimed at the same path."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": null,
+          "field": "launch",
+          "value": "stdio --allow-dir /data",
+          "reason": "Record A launched the documented default, stdio with no allowed directory, under which no release confines the server. Record B passes --allow-dir /data, the option the fix of the flaw requires and the one the current README gives in its stdio examples. The launch option is recorded on the flaw and the run uses it."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": null,
+          "field": "seeds",
+          "value": "the written workbook /data/sample.xlsx of the first targeted pass",
+          "reason": "Record A seeded nothing. No workbook is published for the server or for openpyxl, so the seed is written, and of the two workbooks the targeted pass proposed the one that writes the fewest values is kept: one sheet of six values, against thirty values on two mirrored sheets and six empty scratch sheets."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-85661",
+          "field": "counted",
+          "value": "false",
+          "reason": "No source gives CVE-2026-85661 a fixed version or a fix commit (the advisories name only the 0.1.8 source and the report), so no patched version is recorded and the flaw does not count, under the reading on a flaw no source shows fixed. Its fix check, run on 0.1.8 and on 1.0.0 under --allow-dir /data, shows it closed on 1.0.0, so it does not make the server leave and the 17 tools it shares with CVE-2026-40576 stay."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-85661",
+          "field": "tools",
+          "value": "the same 17 tools of 1.0.0 as the other flaw, the same six tools of 0.1.8 removed",
+          "reason": "Record A listed the four content-returning tools of 0.1.8, record B every tool. Every tool of 0.1.8 resolves its workbook path through the same function, so this report on 0.1.8 reaches the same tools as the advisory on 0.1.7, and the tools that continue on 1.0.0 are the 17 counted for the other flaw. They are kept in the flaw and not removed, since the flaw is shown closed on 1.0.0 under the launch and no tool carries an open flaw."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-85661",
+          "field": "declared_function_is_effect",
+          "value": "false for every tool",
+          "reason": "Record A read the tools as declaring the read of any path an unconfined server is given. Under --allow-dir /data the server holds a root from its configuration, a root it holds is a root it declares, and reading outside it is the flaw and not the tools' function."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-85661",
+          "field": "benign_calls",
+          "value": "the 17 calls of the first targeted pass, with their expects",
+          "reason": "The calls are the ones played on 1.0.0 for the other flaw, one per tool, each answering without error on the patched version. Record A played one read call on 0.1.8."
+        },
+        {
+          "server_package": "PyPI:excel-mcp-server",
+          "flaw": "CVE-2026-85661",
+          "field": "fix_check",
+          "value": "a read of a workbook outside /data, on 0.1.8 and on 1.0.0 under --allow-dir /data",
+          "reason": "Record A showed the witness surfacing on 0.1.8 and on 0.1.7 under the default stdio launch. Record B runs the same exploits against 0.1.8 and against 1.0.0 launched with --allow-dir /data, where the witness does not surface and the benign calls answer. The module that runs both flaws is kept."
+        }
+      ],
+      "patched_version": "1.0.0",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/data/sample.xlsx (sheet 'Summary', A1:B3 = Region/Revenue header, North/1200, South/950), written at image build with openpyxl and baked into the run image",
+          "kind": "written",
+          "citation": "No workbook is published for the server (the 1.0.0 sdist and its repository tree at v1.0.0 carry only a logo) or for openpyxl (its wheel ships none), so there is no published sample to seed whole and the workbook is written. Of the two proposed workbooks, this one writes the fewest values (six values on one sheet, against thirty on two mirrored sheets and six empty scratch sheets).",
+          "pin": null
+        }
+      ],
+      "software_releases": []
     }
   ]
 }
