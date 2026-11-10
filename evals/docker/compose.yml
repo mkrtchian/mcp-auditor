@@ -273,7 +273,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "db8ce1f7362deae2d09ba4e44f101ab01dd4453bbd471d0f26c7502a82958c1e"
+        org.mcp-auditor.dockerfile-fingerprint: "a8d5b367a3dd5fc15d701a5b1d8d33ef76e953819f3dee59118c1f82abcbc257"
     image: mcp-auditor-cve-holdout-2026-5323-a11y:local
 
   holdout-2026-5323-a11y-patched:
@@ -281,7 +281,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "3eae49c52ff0997ada8dc9eacbd1c7762af231ef6759a181760dec4938632c41"
+        org.mcp-auditor.dockerfile-fingerprint: "d6d3611b33eeca8c408e229d785c5bfe7407ca5c217838dd5007f46d26f039c3"
     image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
 
   # SSRF target: every CKAN tool fetches its caller-supplied server_url with no validation
@@ -1319,7 +1319,7 @@ services:
       context: .
       dockerfile: Dockerfile.figma
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ea43a319e1428dca0126fd3da7eb811f24e5bb2eea2c9bdae0671ccb7bceb07f"
+        org.mcp-auditor.dockerfile-fingerprint: "7080b6633991f085c296be3bc07fe2d9cec7b4baa1e8cb0390a9c06d13b9559b"
     image: mcp-auditor-nuisance-figma:local
     profiles: ["nuisance"]
 
@@ -1424,13 +1424,4 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "954f0fa9edb1668ed6b30e186e05c93caef5e8f7adb6f2fd24e65d4b00bdf0bb"
     image: mcp-auditor-cve-facebook-ads-responder:local
-    profiles: ["nuisance"]
-
-  figma-responder:
-    build:
-      context: .
-      dockerfile: Dockerfile.figma-responder
-      labels:
-        org.mcp-auditor.dockerfile-fingerprint: "d0046abe779503034eac8b04850205dcb35fac6366b60bf5fa4d6a6798708051"
-    image: mcp-auditor-cve-figma-responder:local
     profiles: ["nuisance"]

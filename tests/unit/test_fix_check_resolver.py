@@ -4,7 +4,6 @@ import pytest
 
 from evals.cve_planting_base import PlantedArgs, resolver_args
 from evals.nuisance_fix_checks import (
-    cve_2025_15061_figma,
     cve_2026_10276_jenkins,
     cve_2026_11720_googleapis,
     cve_2026_19956_facebook_ads,
@@ -32,7 +31,6 @@ _BUILDERS: dict[str, Callable[[], list[str]]] = {
     "gitlab-server": lambda: cve_2026_61462_gitlab.server_args("image", _ADDRESS),
     "googleapis-responder": lambda: cve_2026_11720_googleapis.responder_args("r", "n", 100),
     "googleapis-server": lambda: cve_2026_11720_googleapis.server_args("image", 100),
-    "figma-server": lambda: cve_2025_15061_figma.server_args("image", _NO_PLANTING),
     "neo4j-sentinel": lambda: cve_2026_35402_neo4j_cypher.sentinel_args("s", "n"),
     "neo4j-database": lambda: cve_2026_35402_neo4j_cypher.neo4j_container_args("d"),
     "neo4j-server": lambda: cve_2026_35402_neo4j_cypher.server_args("image"),

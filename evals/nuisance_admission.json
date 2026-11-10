@@ -21862,8 +21862,10 @@
             {
               "tool": "get_figma_data",
               "arguments": {
-                "fileKey": "abc123"
-              }
+                "fileKey": "1234abcd"
+              },
+              "expect": "FCC Test Component",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -21886,17 +21888,24 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/",
-        "has_network": true
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [
+            "api.figma.com"
+          ],
+          "trust": [
+            "NODE_EXTRA_CA_CERTS",
+            "CURL_CA_BUNDLE"
+          ],
+          "ip_label_domains": []
+        }
       },
       "launch": [
+        "--figma-api-key=YOUR-KEY",
         "--stdio"
       ],
       "service": "figma",
-      "backend": {
-        "provisioner": "figma",
-        "image": "mcp-auditor-cve-figma-responder:local",
-        "network": "mcp-auditor-cve-figma-bridge"
-      },
+      "backend": null,
       "agents": [
         {
           "role": "admitter",
@@ -21907,13 +21916,37 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "targeted pass record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "targeted pass record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
         }
       ],
       "agreement": [
         {
           "flaw": null,
           "field": "launch",
-          "agreed": false
+          "agreed": true
         },
         {
           "flaw": null,
@@ -21933,7 +21966,7 @@
         {
           "flaw": "CVE-2025-15061",
           "field": "benign_calls",
-          "agreed": true
+          "agreed": false
         }
       ],
       "settlements": [
@@ -21941,36 +21974,36 @@
           "server_package": "npm:figma-developer-mcp",
           "flaw": null,
           "field": "launch",
-          "value": "--stdio",
-          "reason": "record A gave an empty launch, record B --figma-api-key <key> --stdio; the figma API key rides as the FIGMA_API_KEY env the backend sets, and the launch carries --stdio, the server's own transport flag (it starts an HTTP listener and never speaks MCP over stdio without it)"
+          "value": "--figma-api-key=YOUR-KEY --stdio",
+          "reason": "both records give the README's launch: the placeholder api key on --figma-api-key and the stdio transport on --stdio. The earlier admission passed the key as the FIGMA_API_KEY env the responder backend set and launched with --stdio alone; with the responder gone the key rides on the documented flag, and the server exits at startup without a key, so it must be present."
         },
         {
           "server_package": "npm:figma-developer-mcp",
           "flaw": null,
           "field": "host.has_network",
-          "value": "true",
-          "reason": "both records set false; the command injection's curl child reaches the responder standing in for api.figma.com, so the server has_network is true"
+          "value": "false",
+          "reason": "both records set false. The server reaches api.figma.com by name through the namespace holder that serves its stand-in on the closed network, not through a network of its own, so has_network is false. The earlier admission set it true for the responder the curl child reached; the stand-in under the real name replaces it."
         },
         {
           "server_package": "npm:figma-developer-mcp",
           "flaw": "CVE-2025-15061",
           "field": "backend_need",
           "value": "fixture",
-          "reason": "both records marked backend_need external; corrected to fixture: api.figma.com is a public API a provisioned TLS responder stands in for, so the tool is provisioned and counted, not dropped (the apify/facebook_ads precedent)"
+          "reason": "both records left it unset. api.figma.com is a hosted public API served under its real name by a stand-in through the holder, so the counted tool is provisioned and kept, not dropped (the apify precedent). No backend is registered: the shared stand-in replay serves the host."
+        },
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": "CVE-2025-15061",
+          "field": "benign_calls",
+          "value": "get_figma_data with fileKey 1234abcd",
+          "reason": "record A gives fileKey 1234abcd, record B abc123; only 1234abcd is served, the file key Figma's own code-connect e2e test maps to the published GET-file sample the stand-in serves whole, so the benign call uses it and expects the file's name (FCC Test Component), which the patched ^[a-zA-Z0-9]+$ regex accepts. abc123 hits the stand-in's 404 default and errors."
         },
         {
           "server_package": "npm:figma-developer-mcp",
           "flaw": "CVE-2025-15061",
           "field": "tools",
           "value": "get_figma_data",
-          "reason": "both records listed get_figma_data and download_figma_images; only get_figma_data is counted: download_figma_images' fileKey is already restricted to ^[a-zA-Z0-9]+$ in the vulnerable 0.6.2 schema, so it cannot carry the shell injection on either arm, while get_figma_data's fileKey carries no restriction in 0.6.2 and gains the regex only in 0.6.3"
-        },
-        {
-          "server_package": "npm:figma-developer-mcp",
-          "flaw": "CVE-2025-15061",
-          "field": "benign_calls",
-          "value": "get_figma_data with an alphanumeric fileKey",
-          "reason": "both records left benign_calls empty; the counted tool needs a benign call the responder answers, a plain get_figma_data of an alphanumeric fileKey the responder serves as a valid Figma file and the patched fileKey regex accepts"
+          "reason": "both records count get_figma_data only. download_figma_images' fileKey is already restricted to ^[a-zA-Z0-9]+$ in the vulnerable 0.6.2 schema, so it cannot carry the shell injection on either arm."
         }
       ],
       "patched_version": "0.6.3"

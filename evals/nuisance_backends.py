@@ -21,7 +21,6 @@ from evals import (
     closed_network,
     doris_backend,
     facebook_ads_backend,
-    figma_backend,
     gitlab_backend,
     googleapis_backend,
     jenkins_backend,
@@ -35,7 +34,6 @@ from evals.cve_targets import image_tag
 from evals.docker_paths import image_dockerfile
 from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
-from evals.figma_backend import FIGMA_BRIDGE, FIGMA_RESPONDER_IMAGE
 from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
@@ -120,13 +118,6 @@ BACKENDS: dict[str, RegisteredBackend] = {
         FACEBOOK_ADS_BRIDGE,
         FACEBOOK_ADS_RESPONDER_IMAGE,
         "facebook-ads-responder",
-    ),
-    "figma": _responder(
-        figma_backend.LIFECYCLE,
-        figma_backend.__file__,
-        FIGMA_BRIDGE,
-        FIGMA_RESPONDER_IMAGE,
-        "figma-responder",
     ),
 }
 

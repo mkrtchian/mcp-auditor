@@ -1,0 +1,154 @@
+{
+  "host": "api.figma.com",
+  "address": "13.227.173.122",
+  "source": "software_sources",
+  "command": "hand-written: the GET /v1/files/1234abcd route serves, whole and unedited, Figma's own published GET-file API response fixture https://github.com/figma/code-connect/blob/d856baa9bf7907c430121139725a7a8181bac9a3/cli/src/connect/__test__/e2e/e2e_create_command/dummy_api_response.json (sha256 bde4672cc7f5848d329dd1e8b71aca5e52dc095b1f7267bf2c498087697ee033), the response figma's code-connect e2e test maps to the Figma file URL figma.com/file/1234abcd/Test-File, so the file key on the route is Figma's own test key and the body is Figma's own GET-file payload; its Content-Type is the one api.figma.com sends on JSON answers. A real capture of the route would need a Figma account token the closed fixture network denies. The http and https defaults are copied from `python -m evals.capture_stand_in https://api.figma.com/v1/files/1234abcd` run on 2026-11-07T22:19:07Z against the real host, and the address is the one it resolved then, kept as the fixture's fixed address",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/v1/files/1234abcd",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json; charset=utf-8"
+        ]
+      ],
+      "body": "{\n  \"document\": {\n    \"id\": \"0:0\",\n    \"name\": \"Document\",\n    \"type\": \"DOCUMENT\",\n    \"scrollBehavior\": \"SCROLLS\",\n    \"children\": [\n      {\n        \"id\": \"0:1\",\n        \"name\": \"Page 1\",\n        \"type\": \"CANVAS\",\n        \"scrollBehavior\": \"SCROLLS\",\n        \"children\": [\n          {\n            \"id\": \"2:324\",\n            \"name\": \"Components\",\n            \"type\": \"SECTION\",\n            \"scrollBehavior\": \"SCROLLS\",\n            \"sectionContentsHidden\": false,\n            \"fills\": [\n              {\n                \"blendMode\": \"NORMAL\",\n                \"type\": \"SOLID\",\n                \"color\": {\n                  \"r\": 0.250980406999588,\n                  \"g\": 0.250980406999588,\n                  \"b\": 0.250980406999588,\n                  \"a\": 1\n                }\n              }\n            ],\n            \"strokes\": [\n              {\n                \"opacity\": 0.10000000149011612,\n                \"blendMode\": \"NORMAL\",\n                \"type\": \"SOLID\",\n                \"color\": {\n                  \"r\": 1,\n                  \"g\": 1,\n                  \"b\": 1,\n                  \"a\": 1\n                }\n              }\n            ],\n            \"strokeWeight\": 1,\n            \"strokeAlign\": \"INSIDE\",\n            \"children\": [\n              {\n                \"id\": \"1:39\",\n                \"name\": \"Test Instance Component\",\n                \"type\": \"COMPONENT_SET\",\n                \"scrollBehavior\": \"SCROLLS\",\n                \"componentPropertyDefinitions\": {\n                  \"Color\": {\n                    \"type\": \"VARIANT\",\n                    \"defaultValue\": \"Default\",\n                    \"variantOptions\": [\"Default\", \"Red\"]\n                  }\n                },\n                \"blendMode\": \"PASS_THROUGH\",\n                \"children\": [\n                  {\n                    \"id\": \"1:38\",\n                    \"name\": \"Color=Default\",\n                    \"type\": \"COMPONENT\",\n                    \"scrollBehavior\": \"SCROLLS\",\n                    \"blendMode\": \"PASS_THROUGH\",\n                    \"children\": [\n                      {\n                        \"id\": \"1:37\",\n                        \"name\": \"Ellipse 1\",\n                        \"type\": \"ELLIPSE\",\n                        \"scrollBehavior\": \"SCROLLS\",\n                        \"blendMode\": \"PASS_THROUGH\",\n                        \"absoluteBoundingBox\": {\n                          \"x\": -939,\n                          \"y\": -340,\n                          \"width\": 28,\n                          \"height\": 28\n                        },\n                        \"absoluteRenderBounds\": {\n                          \"x\": -939,\n                          \"y\": -340,\n                          \"width\": 28,\n                          \"height\": 28\n                        },\n                        \"constraints\": {\n                          \"vertical\": \"SCALE\",\n                          \"horizontal\": \"SCALE\"\n                        },\n                        \"fills\": [\n                          {\n                            \"blendMode\": \"NORMAL\",\n                            \"type\": \"SOLID\",\n                            \"color\": {\n                              \"r\": 0.8509804010391235,\n                              \"g\": 0.8509804010391235,\n                              \"b\": 0.8509804010391235,\n                              \"a\": 1\n                            }\n                          }\n                        ],\n                        \"strokes\": [],\n                        \"strokeWeight\": 1,\n                        \"strokeAlign\": \"INSIDE\",\n                        \"effects\": [],\n                        \"arcData\": {\n                          \"startingAngle\": 0,\n                          \"endingAngle\": 6.2831854820251465,\n                          \"innerRadius\": 0\n                        }\n                      }\n                    ],\n                    \"absoluteBoundingBox\": {\n                      \"x\": -939,\n                      \"y\": -340,\n                      \"width\": 28,\n                      \"height\": 28\n                    },\n                    \"absoluteRenderBounds\": {\n                      \"x\": -939,\n                      \"y\": -340,\n                      \"width\": 28,\n                      \"height\": 28\n                    },\n                    \"constraints\": {\n                      \"vertical\": \"TOP\",\n                      \"horizontal\": \"LEFT\"\n                    },\n                    \"clipsContent\": false,\n                    \"background\": [\n                      {\n                        \"blendMode\": \"NORMAL\",\n                        \"visible\": false,\n                        \"type\": \"SOLID\",\n                        \"color\": {\n                          \"r\": 1,\n                          \"g\": 1,\n                          \"b\": 1,\n                          \"a\": 1\n                        }\n                      }\n                    ],\n                    \"fills\": [\n                      {\n                        \"blendMode\": \"NORMAL\",\n                        \"visible\": false,\n                        \"type\": \"SOLID\",\n                        \"color\": {\n                          \"r\": 1,\n                          \"g\": 1,\n                          \"b\": 1,\n                          \"a\": 1\n                        }\n                      }\n                    ],\n                    \"strokes\": [],\n                    \"strokeWeight\": 1,\n                    \"strokeAlign\": \"INSIDE\",\n                    \"backgroundColor\": {\n                      \"r\": 0,\n                      \"g\": 0,\n                      \"b\": 0,\n                      \"a\": 0\n                    },\n                    \"effects\": []\n                  },\n                  {\n                    \"id\": \"1:40\",\n                    \"name\": \"Color=Red\",\n                    \"type\": \"COMPONENT\",\n                    \"scrollBehavior\": \"SCROLLS\",\n                    \"blendMode\": \"PASS_THROUGH\",\n                    \"children\": [\n                      {\n                        \"id\": \"1:41\",\n                        \"name\": \"Ellipse 1\",\n                        \"type\": \"ELLIPSE\",\n                        \"scrollBehavior\": \"SCROLLS\",\n                        \"blendMode\": \"PASS_THROUGH\",\n                        \"absoluteBoundingBox\": {\n                          \"x\": -939,\n                          \"y\": -292,\n                          \"width\": 28,\n                          \"height\": 28\n                        },\n                        \"absoluteRenderBounds\": {\n                          \"x\": -939,\n                          \"y\": -292,\n                          \"width\": 28,\n                          \"height\": 28\n                        },\n                        \"constraints\": {\n                          \"vertical\": \"SCALE\",\n                          \"horizontal\": \"SCALE\"\n                        },\n                        \"fills\": [\n                          {\n                            \"blendMode\": \"NORMAL\",\n                            \"type\": \"SOLID\",\n                            \"color\": {\n                              \"r\": 0.999267578125,\n                              \"g\": 0,\n                              \"b\": 0,\n                              \"a\": 1\n                            }\n                          }\n                        ],\n                        \"strokes\": [],\n                        \"strokeWeight\": 1,\n                        \"strokeAlign\": \"INSIDE\",\n                        \"effects\": [],\n                        \"arcData\": {\n                          \"startingAngle\": 0,\n                          \"endingAngle\": 6.2831854820251465,\n                          \"innerRadius\": 0\n                        }\n                      }\n                    ],\n                    \"absoluteBoundingBox\": {\n                      \"x\": -939,\n                      \"y\": -292,\n                      \"width\": 28,\n                      \"height\": 28\n                    },\n                    \"absoluteRenderBounds\": {\n                      \"x\": -939,\n                      \"y\": -292,\n                      \"width\": 28,\n                      \"height\": 28\n                    },\n                    \"constraints\": {\n                      \"vertical\": \"TOP\",\n                      \"horizontal\": \"LEFT\"\n                    },\n                    \"clipsContent\": false,\n                    \"background\": [\n                      {\n                        \"blendMode\": \"NORMAL\",\n                        \"visible\": false,\n                        \"type\": \"SOLID\",\n                        \"color\": {\n                          \"r\": 1,\n                          \"g\": 1,\n                          \"b\": 1,\n                          \"a\": 1\n                        }\n                      }\n                    ],\n                    \"fills\": [\n                      {\n                        \"blendMode\": \"NORMAL\",\n                        \"visible\": false,\n                        \"type\": \"SOLID\",\n                        \"color\": {\n                          \"r\": 1,\n                          \"g\": 1,\n                          \"b\": 1,\n                          \"a\": 1\n                        }\n                      }\n                    ],\n                    \"strokes\": [],\n                    \"strokeWeight\": 1,\n                    \"strokeAlign\": \"INSIDE\",\n                    \"backgroundColor\": {\n                      \"r\": 0,\n                      \"g\": 0,\n                      \"b\": 0,\n                      \"a\": 0\n                    },\n                    \"effects\": []\n                  }\n                ],\n                \"absoluteBoundingBox\": {\n                  \"x\": -959,\n                  \"y\": -360,\n                  \"width\": 68,\n                  \"height\": 116\n                },\n                \"absoluteRenderBounds\": {\n                  \"x\": -959,\n                  \"y\": -360,\n                  \"width\": 68,\n                  \"height\": 116\n                },\n                \"constraints\": {\n                  \"vertical\": \"TOP\",\n                  \"horizontal\": \"LEFT\"\n                },\n                \"clipsContent\": true,\n                \"background\": [],\n                \"fills\": [],\n                \"strokes\": [\n                  {\n                    \"blendMode\": \"NORMAL\",\n                    \"type\": \"SOLID\",\n                    \"color\": {\n                      \"r\": 0.5921568870544434,\n                      \"g\": 0.27843138575553894,\n                      \"b\": 1,\n                      \"a\": 1\n                    }\n                  }\n                ],\n                \"cornerRadius\": 5,\n                \"cornerSmoothing\": 0,\n                \"strokeWeight\": 1,\n                \"strokeAlign\": \"INSIDE\",\n                \"backgroundColor\": {\n                  \"r\": 0,\n                  \"g\": 0,\n                  \"b\": 0,\n                  \"a\": 0\n                },\n                \"strokeDashes\": [10, 5],\n                \"effects\": []\n              }\n            ],\n            \"absoluteBoundingBox\": {\n              \"x\": -1129,\n              \"y\": -387,\n              \"width\": 583,\n              \"height\": 1973\n            },\n            \"absoluteRenderBounds\": {\n              \"x\": -1129,\n              \"y\": -387,\n              \"width\": 583,\n              \"height\": 1973\n            }\n          }\n        ],\n        \"backgroundColor\": {\n          \"r\": 0.11764705926179886,\n          \"g\": 0.11764705926179886,\n          \"b\": 0.11764705926179886,\n          \"a\": 1\n        },\n        \"prototypeStartNodeID\": null,\n        \"flowStartingPoints\": [],\n        \"prototypeDevice\": {\n          \"type\": \"NONE\",\n          \"rotation\": \"NONE\"\n        }\n      }\n    ]\n  },\n  \"components\": {\n    \"1:38\": {\n      \"key\": \"6864b97d5940e1f9070868391d2ccbba2380c825\",\n      \"name\": \"Color=Default\",\n      \"description\": \"\",\n      \"remote\": false,\n      \"componentSetId\": \"1:39\",\n      \"documentationLinks\": []\n    },\n    \"1:40\": {\n      \"key\": \"a5caa3e36ec50b7427c1303437e4578ac7ee6f0d\",\n      \"name\": \"Color=Red\",\n      \"description\": \"\",\n      \"remote\": false,\n      \"componentSetId\": \"1:39\",\n      \"documentationLinks\": []\n    }\n  },\n  \"componentSets\": {\n    \"1:39\": {\n      \"key\": \"937f0802a6169333ff44fec073f5fc6b8040a096\",\n      \"name\": \"Test Instance Component\",\n      \"description\": \"\",\n      \"documentationLinks\": []\n    }\n  },\n  \"schemaVersion\": 0,\n  \"styles\": {},\n  \"name\": \"FCC Test Component\",\n  \"lastModified\": \"2024-05-08T13:43:28Z\",\n  \"version\": \"5718789565\",\n  \"role\": \"owner\",\n  \"editorType\": \"figma\",\n  \"linkAccess\": \"org_edit\"\n}\n"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_target": "/6781fbb9fd060ba5",
+      "status": 403,
+      "headers": [
+        [
+          "Server",
+          "CloudFront"
+        ],
+        [
+          "Date",
+          "Sat, 07 Nov 2026 22:19:09 GMT"
+        ],
+        [
+          "Content-Type",
+          "text/html"
+        ],
+        [
+          "Content-Length",
+          "915"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "X-Cache",
+          "Error from cloudfront"
+        ],
+        [
+          "Via",
+          "1.1 b175326e4c39fed8749875ec4488f278.cloudfront.net (CloudFront)"
+        ],
+        [
+          "X-Amz-Cf-Pop",
+          "CDG54-P2"
+        ],
+        [
+          "Alt-Svc",
+          "h3=\":443\"; ma=86400"
+        ],
+        [
+          "X-Amz-Cf-Id",
+          "Sl1G2JzLOHsUXoophE2dYnsZ0zo0IHyQORE49FC_Nn524-_GDuX15w=="
+        ]
+      ],
+      "body": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n<HTML><HEAD><META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=iso-8859-1\">\n<TITLE>ERROR: The request could not be satisfied</TITLE>\n</HEAD><BODY>\n<H1>403 ERROR</H1>\n<H2>The request could not be satisfied.</H2>\n<HR noshade size=\"1px\">\nBad request.\nWe can't connect to the server for this app or website at this time. There might be too much traffic or a configuration error. Try again later, or contact the app or website owner.\n<BR clear=\"all\">\nIf you provide content to customers through CloudFront, you can find steps to troubleshoot and help prevent this error by reviewing the CloudFront documentation.\n<BR clear=\"all\">\n<HR noshade size=\"1px\">\n<PRE>\nGenerated by cloudfront (CloudFront)\nRequest ID: Sl1G2JzLOHsUXoophE2dYnsZ0zo0IHyQORE49FC_Nn524-_GDuX15w==\n</PRE>\n<ADDRESS>\n</ADDRESS>\n</BODY></HTML>",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_target": "/6781fbb9fd060ba5",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json; charset=utf-8"
+        ],
+        [
+          "Content-Length",
+          "32"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Sat, 07 Nov 2026 22:19:09 GMT"
+        ],
+        [
+          "server-timing",
+          "proxy;dur=3"
+        ],
+        [
+          "x-figma-rest-api-request-id",
+          "6b5db6f3-203f-4117-971e-7eb2493f1bd5"
+        ],
+        [
+          "access-control-allow-origin",
+          "*"
+        ],
+        [
+          "access-control-allow-headers",
+          "Content-Type, X-Figma-Token, Authorization"
+        ],
+        [
+          "access-control-expose-headers",
+          "Retry-After, X-Figma-Plan-Tier, X-Figma-Rate-Limit-Type, X-Figma-Upgrade-Link"
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store"
+        ],
+        [
+          "x-content-type-options",
+          "nosniff"
+        ],
+        [
+          "Vary",
+          "X-Figma-Token,Authorization,Accept-Encoding"
+        ],
+        [
+          "X-Cache",
+          "Error from cloudfront"
+        ],
+        [
+          "Via",
+          "1.1 ffee1d974bd2e9d67d5610f7ffb32b32.cloudfront.net (CloudFront)"
+        ],
+        [
+          "X-Amz-Cf-Pop",
+          "CDG54-P2"
+        ],
+        [
+          "Alt-Svc",
+          "h3=\":443\"; ma=86400"
+        ],
+        [
+          "X-Amz-Cf-Id",
+          "22w3Q99dzFJm-vicGEAd_UuVUKXQaLfMsBzuKGTlMeNhQvd6XhYOLA=="
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000; includeSubDomains; preload"
+        ]
+      ],
+      "body": "{\"status\":404,\"err\":\"Not found\"}",
+      "path_form": null
+    }
+  ]
+}
