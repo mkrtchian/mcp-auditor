@@ -50,7 +50,7 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    await client.call_tool("get_table_comment", {"table_name": "t1", "db_name": DORIS_DB})
+    await client.call_tool("get_table_comment", {"table_name": "mytable", "db_name": DORIS_DB})
 
 
 TARGET = CVETarget(

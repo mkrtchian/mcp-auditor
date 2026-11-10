@@ -24,9 +24,8 @@ from evals.cve_planting_base import LABEL, own_network_args, unprivileged_user_a
 from evals.cve_planting_docker import DOCKER_PLANTING
 from evals.doris_backend import (
     DORIS_BRIDGE,
-    DORIS_DB,
-    DORIS_HOST,
     DORIS_LAUNCH_LOCK,
+    DORIS_SERVER_LAUNCH,
     doris_rm,
     ensure_doris,
     start_doris_sentinel,
@@ -267,9 +266,10 @@ def doris_db_env(
             for sentinel in spec.sentinels:
                 sentinels.append(start_doris_sentinel(sentinel))
             time.sleep(2)  # let each sentinel's httpd bind before the server can drive a fetch
-            # No longer a twin of doris_backend.doris_server_args (the nuisance suite's launch):
-            # that one mounts no layout, the nuisance suite having none, reads its admission
-            # host's user and takes the nuisance memory bound.
+            # The server options are the nuisance suite's launch, DORIS_SERVER_LAUNCH: the two
+            # launches carry the same server options, diverging only in the docker run options
+            # (this one mounts the /srv layout and runs unprivileged, the nuisance one mounts no
+            # layout, reads its admission host's user and takes the nuisance memory bound).
             yield Launch(
                 command="docker",
                 args=[
@@ -287,14 +287,7 @@ def doris_db_env(
                     spec.host.working_directory,
                     *layout_mount_args(root, spec.host.layout_mount),
                     image,
-                    "--db-host",
-                    DORIS_HOST,
-                    "--db-port",
-                    "9030",
-                    "--db-user",
-                    "root",
-                    "--db-database",
-                    DORIS_DB,
+                    *DORIS_SERVER_LAUNCH,
                 ],
             )
         finally:

@@ -815,7 +815,7 @@ services:
       context: .
       dockerfile: Dockerfile.doris
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "1f942358216ac69d4bbd33ba4507e5456b3272768c4b02c83665e571e17b9360"
+        org.mcp-auditor.dockerfile-fingerprint: "c4a67fa1a78b69adac6c6d978c61314ab5c568445b3e6afe9df54adf320aa219"
     image: mcp-auditor-nuisance-doris:local
     profiles: ["nuisance"]
 

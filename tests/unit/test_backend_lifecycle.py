@@ -143,6 +143,12 @@ def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_res
     assert count(args, resolver_args()) == 1
 
 
+def test_the_doris_cluster_sets_the_backends_public_host_to_its_alias():
+    assert carries(
+        doris_backend.doris_cluster_run_args(), ["-e", "BE_CONFIG_EXTRA=public_host = doris"]
+    )
+
+
 def test_the_doris_cluster_answers_on_its_alias():
     assert carries(doris_backend.doris_cluster_run_args(), ["--network-alias", "doris"])
 

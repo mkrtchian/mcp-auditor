@@ -64,8 +64,9 @@ async def test_the_doris_backend_builder_launches_and_answers_a_benign_call():
         ) as client:
             tools = await client.list_tools()
             response = await client.call_tool(
-                "get_table_comment", {"table_name": "t1", "db_name": DORIS_DB}
+                "get_table_comment", {"table_name": "mytable", "db_name": DORIS_DB}
             )
 
     assert "get_table_comment" in {tool.name for tool in tools}
     assert response.is_error is False
+    assert "my first table" in response.content

@@ -4,9 +4,9 @@ A persistent Doris FE+BE cluster: a JVM front-end and back-end, heavy and slow t
 is provisioned once and reused across every exercise rather than per launch; only the per-launch
 sentinels are stood and torn down per run. This module owns that lifecycle, kept apart from the
 launch-construction concern of `holdout_environments`: ensuring the cluster is up and query-ready
-(the front-end health wait, then the schema provisioning that gates on a live back-end), standing a
-sentinel on the static-IP link-local network the back-end reaches, and the thin `docker` wrappers
-underneath. Both networks are closed: no route to the host or the Internet.
+(the front-end health wait, then the seeding of Doris' quick-start sample, which gates on a live
+back-end), standing a sentinel on the static-IP link-local network the back-end reaches, and the
+thin `docker` wrappers underneath. Both networks are closed: no route to the host or the Internet.
 
 A caller drives this through `ensure_doris`, `start_doris_sentinel`, `doris_rm` and
 `DORIS_LAUNCH_LOCK`, wiring `DORIS_HOST`/`DORIS_BRIDGE`/`DORIS_DB` into the server launch: the
@@ -58,16 +58,36 @@ DORIS_HOST = "doris"  # the cluster's hostname and alias on DORIS_BRIDGE
 DORIS_BRIDGE = "mcp-auditor-cve-doris-bridge"  # server <-> Doris FE, name resolution
 _DORIS_LLNET = "mcp-auditor-cve-doris-llnet"  # Doris <-> sentinels, static link-local IPs
 _DORIS_LLSUBNET = "169.254.0.0/16"
-DORIS_DB = "test_db"  # the database the server validates at connect
+DORIS_DB = "demo"  # the database of Doris' quick-start sample, the one the fixture seeds
 _DORIS_HEALTH_DEADLINE = 240.0
 _DORIS_BACKEND_DEADLINE = 180.0
 
-DORIS_SERVER_LAUNCH: list[str] = [
-    "--db-host", DORIS_HOST,
-    "--db-port", "9030",
-    "--db-user", "root",
-    "--db-database", DORIS_DB,
-]  # fmt: skip
+# The quick-start sample of the Doris 4.x documentation, taken whole: "Create a database and table"
+# and "Load test data" of versioned_docs/version-4.x/getting-started/quick-start.mdx at
+# apache/doris-website commit 060685ca7597183b740b337fbef4fb1ec81f2683. `IF NOT EXISTS` and the
+# empty-table guard on the insert are the only additions, the cluster persisting across launches.
+_SAMPLE_SCHEMA = """create database if not exists demo;
+use demo;
+
+create table if not exists mytable
+(
+    k1 TINYINT,
+    k2 DECIMAL(10, 2) DEFAULT "10.05",
+    k3 CHAR(10) COMMENT "string column",
+    k4 INT NOT NULL DEFAULT "1" COMMENT "int column"
+)
+COMMENT "my first table"
+DISTRIBUTED BY HASH(k1) BUCKETS 1
+PROPERTIES ("replication_num" = "1");"""
+_SAMPLE_ROWS = """insert into demo.mytable values
+(1, 0.14, 'a1', 20),
+(2, 1.04, 'b2', 21),
+(3, 3.14, 'c3', 22),
+(4, 4.35, 'd4', 23);"""
+
+# The server's documented defaults hold for the port (9030), the user (root, no password) and the
+# database (information_schema): only the host the cluster answers on is set.
+DORIS_SERVER_LAUNCH: list[str] = ["--db-host", DORIS_HOST]
 
 # The sentinel is a singleton on a fixed link-local IP, so it cannot be made per-launch-unique. A
 # caller that stands one holds this across its yield to serialise the concurrent runs that share
@@ -115,6 +135,12 @@ def doris_cluster_run_args() -> list[str]:
         *own_network_args(DORIS_BRIDGE),
         "--network-alias", DORIS_HOST,
         *memory_bound_args(),
+        # The all-in-one image registers its BE on loopback, so the Arrow Flight SQL endpoint the FE
+        # hands an ADBC client is 127.0.0.1, which a client in another container cannot reach. The
+        # Doris documentation's remedy (Arrow Flight SQL, FAQ "Error i/o timeout", case 2) is the
+        # BE's `public_host` set to an address the client reaches; the image appends
+        # BE_CONFIG_EXTRA to be.conf (/opt/doris-ci/entrypoint.sh).
+        "-e", f"BE_CONFIG_EXTRA=public_host = {DORIS_HOST}",
         DORIS_IMAGE,
     ]  # fmt: skip
 
@@ -132,19 +158,18 @@ def _wait_doris_healthy() -> None:
 
 
 def _provision_doris_schema() -> None:
-    # A bucketed table and a read of it both need a live back-end, so retrying until both succeed
-    # gates the yield on back-end readiness: a back-end not yet up would otherwise look like a
-    # permanent failure rather than a slow start.
+    # A bucketed table, an insert and a read all need a live back-end, so retrying until they
+    # succeed gates the yield on back-end readiness: a back-end not yet up would otherwise look like
+    # a permanent failure rather than a slow start.
     deadline = time.monotonic() + _DORIS_BACKEND_DEADLINE
     while time.monotonic() < deadline:
-        _doris_sql(f"CREATE DATABASE IF NOT EXISTS {DORIS_DB};")
-        created = _doris_sql(
-            f"CREATE TABLE IF NOT EXISTS {DORIS_DB}.t1 (id INT) "
-            "DISTRIBUTED BY HASH(id) BUCKETS 1 PROPERTIES('replication_num'='1');"
-        )
-        readable = _doris_sql(f"SELECT COUNT(*) FROM {DORIS_DB}.t1;")
-        if created.returncode == 0 and readable.returncode == 0:
-            return
+        created = _doris_sql(_SAMPLE_SCHEMA)
+        counted = _doris_sql("SELECT COUNT(*) FROM demo.mytable;")
+        if created.returncode == 0 and counted.returncode == 0:
+            if counted.stdout.split()[-1:] == ["4"]:
+                return
+            if counted.stdout.split()[-1:] == ["0"]:
+                _doris_sql(_SAMPLE_ROWS)
         time.sleep(3)
     raise RuntimeError("Doris backend did not become query-ready")
 

@@ -11,7 +11,7 @@ def test_the_doris_server_is_launched_at_the_clusters_alias():
     launch = given.the_admitted_server("doris").launch
 
     assert launch == DORIS_SERVER_LAUNCH
-    assert DORIS_SERVER_LAUNCH[DORIS_SERVER_LAUNCH.index("--db-host") + 1] == DORIS_HOST
+    assert DORIS_SERVER_LAUNCH == ["--db-host", DORIS_HOST]
 
 
 def test_the_mysql_benign_call_reaches_the_engine_in_its_own_image():

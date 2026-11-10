@@ -1,26 +1,14 @@
-# doris-mcp-server 0.6.1 (patched, fixed by validate_identifier, the fix of CVE-2025-66335).
-# The MCP server only: the Doris cluster it talks to is provisioned at run time.
-# No COPY/ADD: the fingerprint hashes instructions only, so the entrypoint is inlined by RUN.
+# doris-mcp-server 0.6.1 (patched), launched as its README documents for stdio:
+# `doris-mcp-server --transport stdio`, the connection options following as the run's arguments.
+# The Doris cluster it talks to is the backend fixture, provisioned at run time.
 FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
 RUN pip install --no-cache-dir "doris-mcp-server==0.6.1"
-
-# Translate the fix-check launch flags into the DORIS_* env vars the server reads, then run it
-# over stdio.
-RUN printf '%s\n' \
-  '#!/bin/sh' \
-  'set -e' \
-  'while [ $# -gt 0 ]; do' \
-  '  case "$1" in' \
-  '    --db-host) export DORIS_HOST="$2"; shift 2 ;;' \
-  '    --db-port) export DORIS_PORT="$2"; shift 2 ;;' \
-  '    --db-user) export DORIS_USER="$2"; shift 2 ;;' \
-  '    --db-database) export DORIS_DATABASE="$2"; shift 2 ;;' \
-  '    *) shift ;;' \
-  '  esac' \
-  'done' \
-  'export DORIS_PASSWORD="${DORIS_PASSWORD:-}"' \
-  'exec doris-mcp-server --transport stdio' \
-  > /usr/local/bin/doris_mcp_entrypoint.sh \
- && chmod +x /usr/local/bin/doris_mcp_entrypoint.sh
-
-ENTRYPOINT ["/usr/local/bin/doris_mcp_entrypoint.sh"]
+# The ADBC tools need the Arrow Flight SQL ports (README, "How to enable ADBC high-performance
+# features?"), here the ones the backend image's fe.conf and be.conf set (arrow_flight_sql_port =
+# 8070 and 8050), and a BE host they reach: SHOW BACKENDS answers the loopback address the
+# all-in-one image registers its BE on, so DORIS_BE_HOSTS (README, "Database Connection") names
+# the backend's host.
+ENV FE_ARROW_FLIGHT_SQL_PORT=8070 \
+    BE_ARROW_FLIGHT_SQL_PORT=8050 \
+    DORIS_BE_HOSTS=doris
+ENTRYPOINT ["doris-mcp-server", "--transport", "stdio"]
