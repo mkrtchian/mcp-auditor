@@ -69,11 +69,7 @@ def readmission_dockerfiles(server: AdmittedServer, resolution: Mapping[str, str
         services += [target.vulnerable_service, target.patched_service]
         if target.server_patched_service is not None:
             services.append(target.server_patched_service)
-    twins = [
-        *holdout_references(server, resolution),
-        *holdout_targets_among(f.flaw for f in server.flaws),
-    ]
-    for holdout in twins:
+    for holdout in _holdout_twins(server, resolution):
         services += [*holdout.images, holdout.patched_image]
     if server.backend is not None:
         services += BACKENDS[server.backend.provisioner].built_services
@@ -86,6 +82,13 @@ def readmission_dockerfiles(server: AdmittedServer, resolution: Mapping[str, str
             [f"no {image_dockerfile(service)}" for service in missing],
         )
     return kept
+
+
+def _holdout_twins(server: AdmittedServer, resolution: Mapping[str, str]) -> list[CVETarget]:
+    return [
+        *holdout_references(server, resolution),
+        *holdout_targets_among(f.flaw for f in server.flaws),
+    ]
 
 
 def _fix_check_targets(server: AdmittedServer) -> list[FixCheckTarget]:

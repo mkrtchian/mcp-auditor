@@ -59,20 +59,25 @@ def excel_env(
         witness = Path(scratch) / "witness.xlsx"
         witness.write_bytes(workbook_holding(spec.nonces[WITNESS_ID], SHEET))
         witness.chmod(0o644)
-        server_args = PATCHED_LAUNCH if image == image_tag(PATCHED_SERVICE) else ["stdio"]
-        yield Launch(
-            command="docker",
-            args=[
-                "run", "-i", "--rm",
-                *confinement_args(),
-                *unprivileged_user_args(),
-                "-w", "/",
-                *no_network_args(),
-                "-v", f"{witness}:{WITNESS_PATH}:ro",
-                image,
-                *server_args,
-            ],
-        )  # fmt: skip
+        yield Launch(command="docker", args=_run_args(image, witness))
+
+
+def _run_args(image: str, witness: Path) -> list[str]:
+    server_args = PATCHED_LAUNCH if image == image_tag(PATCHED_SERVICE) else ["stdio"]
+    return [
+        "run",
+        "-i",
+        "--rm",
+        *confinement_args(),
+        *unprivileged_user_args(),
+        "-w",
+        "/",
+        *no_network_args(),
+        "-v",
+        f"{witness}:{WITNESS_PATH}:ro",
+        image,
+        *server_args,
+    ]
 
 
 class Exploited(NamedTuple):
