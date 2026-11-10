@@ -9,9 +9,10 @@ back-end), standing a sentinel on the static-IP link-local network the back-end 
 thin `docker` wrappers underneath. Both networks are closed: no route to the host or the Internet.
 
 A caller drives this through `ensure_doris`, `start_doris_sentinel`, `doris_rm` and
-`DORIS_LAUNCH_LOCK`, wiring `DORIS_HOST`/`DORIS_BRIDGE`/`DORIS_DB` into the server launch: the
-server reaches the cluster by its alias `DORIS_HOST`, while the host-side tools address it by
-`DORIS_CONTAINER`. `doris_server_args` assembles that launch's `docker run` arguments.
+`DORIS_LAUNCH_LOCK`, wiring `DORIS_HOST` and `DORIS_BRIDGE` into the server launch: the server
+reaches the cluster by its alias `DORIS_HOST`, while the host-side tools address it by
+`DORIS_CONTAINER`. `DORIS_DB` names the seeded sample database the fixtures query, not a launch
+argument. `doris_server_args` assembles that launch's `docker run` arguments.
 
 The persistent cluster and its two networks are left running on purpose (reused across
 exercises); the generic orphan sweep documented in `cve_environments` reaps anything labelled
