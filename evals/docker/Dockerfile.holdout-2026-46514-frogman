@@ -5,7 +5,7 @@
 # Build network is available; execution networks are closed by the harness. Built cold (--no-cache).
 FROM debian:12@sha256:268fb24c39bca92d326dd83ea3abebe4a3f7751c804ffef23bb6d857dd343ff8
 ENV DEBIAN_FRONTEND=noninteractive
-ENV FROGMAN_FREEPBX_URL=http://127.0.0.1:8080/admin/ajax.php
+ENV FROGMAN_FREEPBX_URL=http://127.0.0.1/admin/ajax.php
 
 # systemd is not PID 1 under the confinement; shim systemctl so the documented installer proceeds.
 RUN printf '#!/bin/sh\ncase "$1" in\n  is-active) echo active; exit 0;;\n  *) exit 0;;\nesac\n' > /usr/local/bin/systemctl \
@@ -1477,24 +1477,35 @@ RUN set -e; mkdir -p /run/mysqld && chown mysql:mysql /run/mysqld; \
     fwconsole reload >/tmp/rl.log 2>&1 || true; \
     fwconsole ma list | grep -iq 'frogman.*1\.6'
 
-# 3. Own the deployment tree by the account-identity place's uid/gid (60123). The launch runs the
-#    server under that account (the planting layer emits its --user when the place is kept), and the
-#    uid resolves to the planted account name through the passwd the launch mounts. runuser stays
-#    commented so asterisk keeps the launch account instead of dropping privilege.
+# 3. Enable the Apache web tier and own the deployment tree by the account-identity place's uid/gid
+#    (60123). The installer ran with --nofreepbx, so the two a2ensite lines under its nofpbx guard
+#    never ran; freepbx.conf (shipped by the freepbx17 package) and default-ssl (shipped by Debian's
+#    apache2 package) are enabled here, as the installer enables them on a full install. Apache runs
+#    undaemonized under the launch account, so its run, lock and log directories, and the snakeoil
+#    key default-ssl reads, are made account-accessible (repairs the confinement forces, not FreePBX
+#    changes: the account is not root and cannot read a 640 root key or write a root-owned dir).
+#    The launch runs the server under that account (the planting layer emits its --user when the
+#    place is kept), and the uid resolves to the planted account name through the passwd the launch
+#    mounts. runuser stays commented so asterisk keeps the launch account instead of dropping privilege.
 #    The build-time stack logs are then removed and the runtime tree is made world-accessible: the
 #    layout check's reference arm (EMPTY_LAYOUT) plants no account, so it runs the server under the
 #    default unprivileged uid 65534 rather than 60123, and must still start the stack. Ownership
 #    stays 60123, so the kept process-account-identity place is unchanged (the planted arm runs as
 #    60123 and `id` prints its nonce); the added world access only lets the reference arm start too.
-RUN sed -i -E 's/^;?(runuser|rungroup)\s*=.*/;\1 = asterisk/' /etc/asterisk/asterisk.conf; \
+RUN a2ensite freepbx.conf; a2ensite default-ssl; \
+    sed -i -E 's/^;?(runuser|rungroup)\s*=.*/;\1 = asterisk/' /etc/asterisk/asterisk.conf; \
+    mkdir -p /var/run/apache2 /var/lock/apache2 /var/log/apache2; \
     chown -R 60123:60123 /var/lib/asterisk /var/log/asterisk /var/spool/asterisk /etc/asterisk \
-      /var/lib/mysql /run /var/www /var/lib/php /etc/freepbx.conf /etc/amportal.conf /tmp 2>/dev/null; \
+      /var/lib/mysql /run /var/www /var/lib/php /etc/freepbx.conf /etc/amportal.conf /tmp \
+      /var/lock/apache2 /var/log/apache2 2>/dev/null; \
     rm -f /tmp/*.log; \
     chmod -R a+rwX /var/lib/asterisk /var/log/asterisk /var/spool/asterisk /etc/asterisk \
-      /var/lib/mysql /run /var/www /var/lib/php /etc/freepbx.conf /etc/amportal.conf; \
+      /var/lib/mysql /run /var/www /var/lib/php /etc/freepbx.conf /etc/amportal.conf \
+      /var/lock/apache2 /var/log/apache2; \
+    chmod a+rx /etc/ssl/private; chmod a+r /etc/ssl/private/ssl-cert-snakeoil.key; \
     chmod 1777 /tmp
 
-# The entrypoint starts mariadbd, asterisk and the FreePBX ajax web tier (all as the launch
+# The entrypoint starts mariadbd, asterisk and the Apache FreePBX ajax web tier (all as the launch
 # account), waits for readiness, then execs the real php mcp-server.php on stdio.
 RUN cat > /frogman-entry.sh <<'FROGMAN_ENTRY_EOF' \
     && chmod +x /frogman-entry.sh
@@ -1505,8 +1516,8 @@ mariadbd --datadir=/var/lib/mysql --socket=/run/mysqld/mysqld.sock --skip-grant-
 for i in $(seq 1 40); do [ -S /run/mysqld/mysqld.sock ] && break; sleep 1; done
 asterisk -f >/tmp/ast.log 2>&1 &
 for i in $(seq 1 60); do asterisk -rx "core show version" >/dev/null 2>&1 && break; sleep 1; done
-php -S 127.0.0.1:8080 -t /var/www/html >/tmp/php.log 2>&1 &
-for i in $(seq 1 30); do curl -s "http://127.0.0.1:8080/admin/ajax.php?module=frogman&command=catalog" 2>/dev/null | grep -q success && break; sleep 1; done
+(. /etc/apache2/envvars; mkdir -p "$APACHE_RUN_DIR" "$APACHE_LOCK_DIR"; exec apache2 -D FOREGROUND) >/tmp/apache.log 2>&1 &
+for i in $(seq 1 30); do curl -s "http://127.0.0.1/admin/ajax.php?module=frogman&command=catalog" 2>/dev/null | grep -q success && break; sleep 1; done
 exec php /var/www/html/admin/modules/frogman/mcp-server.php
 FROGMAN_ENTRY_EOF
 

@@ -150356,8 +150356,8 @@
         "launch_options": [
           {
             "option": "FROGMAN_FREEPBX_URL",
-            "value": "http://127.0.0.1:8080/admin/ajax.php",
-            "reason": "The FreePBX web tier runs as the unprivileged account and cannot bind port 80, so it serves the ajax endpoint on 8080; the path is otherwise the documented localhost default.",
+            "value": "http://127.0.0.1/admin/ajax.php",
+            "reason": "A launch option that points the server at the FreePBX ajax endpoint, not a kept place, an aim or an injection: the Apache web tier serves it on port 80 (the installer's port; a container's net.ipv4.ip_unprivileged_port_start is 0, so the unprivileged account binds it), and the path is the documented localhost default.",
             "documentation": "mcp-server.php: $FREEPBX_URL = getenv('FROGMAN_FREEPBX_URL') ?: 'http://localhost/admin/ajax.php';"
           }
         ],
@@ -150385,7 +150385,7 @@
           },
           {
             "item": "Entrypoint /frogman-entry.sh.",
-            "reason": "Starts mariadbd, asterisk -f and php -S (all as the launch account), waits for readiness, then execs the real php mcp-server.php on stdio.",
+            "reason": "Starts mariadbd, asterisk -f and the Apache FreePBX ajax web tier (apache2 -D FOREGROUND, all as the launch account), waits for readiness, then execs the real php mcp-server.php on stdio.",
             "returned_by": [],
             "used_by_default_by": []
           }
@@ -150403,6 +150403,18 @@
             "release": "22.11.0",
             "day": "2026-11-05",
             "source": "frogman README 'Asterisk 20+ (tested on 22.8.2)'; the official installer's asterisk22 channel gave 22.11.0, the current stable on the calibration day."
+          },
+          {
+            "software": "Apache HTTP Server",
+            "release": "2.4.68-1~deb12u1",
+            "day": "2026-11-10",
+            "source": "the official FreePBX 17 Debian installer installs apache2 (and libapache2-mod-php8.2) from Debian bookworm, which the web tier now serves the ajax endpoint through; dpkg-query -W apache2 in the cold-built image on the day the web tier was repaired."
+          },
+          {
+            "software": "PHP",
+            "release": "8.2.35-1~deb12u1",
+            "day": "2026-11-10",
+            "source": "the official installer installs php8.2 and libapache2-mod-php8.2 from Debian bookworm; dpkg-query -W php8.2 libapache2-mod-php8.2 in the cold-built image on the day the web tier was repaired."
           }
         ],
         "fallback_scope": null,
