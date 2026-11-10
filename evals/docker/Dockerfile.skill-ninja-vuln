@@ -1,0 +1,11 @@
+# skill-ninja-mcp-server (npm:skill-ninja-mcp-server), vulnerable release 0.1.0 for CVE-2026-19328:
+# the installer tools join the caller's workspacePath with fixed sub-paths and read, write, delete
+# or enumerate there with no trust check, so any directory is reachable. Same workspace and
+# launch as the patched image, which doubles as the nuisance run image. No COPY/ADD, the package
+# installs from the npm registry by RUN.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g skill-ninja-mcp-server@0.1.0
+RUN mkdir -p /workspace/.github \
+    && printf '%s' '{"name":"demo-workspace","version":"1.0.0"}' > /workspace/package.json \
+    && chmod -R 0777 /workspace
+ENTRYPOINT ["skill-ninja-mcp"]

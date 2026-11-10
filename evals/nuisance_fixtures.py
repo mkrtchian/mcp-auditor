@@ -31,6 +31,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_10276_jenkins,
     cve_2026_11720_googleapis,
     cve_2026_18905_contextforge,
+    cve_2026_19328_skill_ninja,
     cve_2026_19956_facebook_ads,
     cve_2026_35402_neo4j_cypher,
     cve_2026_44336_praisonai,
@@ -106,4 +107,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_57496_netlicensing.TARGETS,
     *cve_2026_44968_dbt.TARGETS,
     *cve_2025_5277_aws_cli.TARGETS,
+    *cve_2026_19328_skill_ninja.TARGETS,
 )

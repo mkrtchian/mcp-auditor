@@ -990,6 +990,15 @@ services:
     image: mcp-auditor-nuisance-aws-cli:local
     profiles: ["nuisance"]
 
+  skill-ninja:
+    build:
+      context: .
+      dockerfile: Dockerfile.skill-ninja
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "20a08033aebd3da04f534eb721aaeea0c51f620fdc5d0e09a815e9f325870950"
+    image: mcp-auditor-nuisance-skill-ninja:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .

@@ -1,0 +1,18 @@
+# skill-ninja-mcp-server (npm:skill-ninja-mcp-server) 0.1.1, the release that fixes CVE-2026-19328
+# (workspacePath path traversal): resolveTrustedWorkspacePath rejects a path outside
+# a trusted workspace root before any filesystem access. Doubles as the nuisance run image.
+#
+# The server runs in its documented default, with no SKILL_NINJA_TRUSTED_WORKSPACES: its README
+# trusts the current working directory when it looks like a project root, and the run's -w
+# /workspace makes /workspace that root. Two project markers sit there, an empty .github (the
+# directory the server installs skills under) and a minimal package.json (which
+# skillNinja_recommend reads to detect a TypeScript project). The tree belongs to the run's user
+# (65534) through mode 0777. The skill index the tools install from is the package's own bundled
+# resources/skill-index.json. Transitive dependencies float (the package ships no lock).
+# No COPY/ADD, the package installs from the npm registry by RUN.
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+RUN npm install -g skill-ninja-mcp-server@0.1.1
+RUN mkdir -p /workspace/.github \
+    && printf '%s' '{"name":"demo-workspace","version":"1.0.0"}' > /workspace/package.json \
+    && chmod -R 0777 /workspace
+ENTRYPOINT ["skill-ninja-mcp"]
