@@ -25,7 +25,7 @@ from evals.holdout_kit.kit_client import KitClient, KitMCPClient, KitResponse, d
 from evals.holdout_kit.kit_launch import Launch
 from evals.nuisance_confinement import single_container_launch_args
 
-_DEFAULT_TOOL_CALL_TIMEOUT = 30
+_DEFAULT_TOOL_CALL_TIMEOUT = 60
 
 
 @dataclass(frozen=True)

@@ -92,7 +92,7 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.ports import MCPClientPort
 
-TOOL_CALL_TIMEOUT = 30  # the client's own default, the replay passes a short one to stay fast
+TOOL_CALL_TIMEOUT = 60  # the client's own default, the replay passes a short one to stay fast
 
 
 class LaunchShape(StrEnum):

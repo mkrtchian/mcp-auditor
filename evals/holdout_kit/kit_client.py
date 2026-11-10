@@ -21,7 +21,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import get_default_environment, stdio_client
 from mcp.types import PaginatedRequestParams, TextContent, Tool
 
-_DEFAULT_TOOL_CALL_TIMEOUT = 30
+_DEFAULT_TOOL_CALL_TIMEOUT = 60
 _INITIALIZE_TIMEOUT = 120
 
 # The host-side `docker` client variables (not the container's). The MCP SDK passes only a

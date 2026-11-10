@@ -19,7 +19,7 @@ from mcp.types import (
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 
-_DEFAULT_TOOL_CALL_TIMEOUT = 30
+_DEFAULT_TOOL_CALL_TIMEOUT = 60
 _INITIALIZE_TIMEOUT = 120
 
 type IncomingMessage = (

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     model: str = ""
     judge_model: str = ""
     reasoning: str = ""
-    tool_call_timeout: int = 30
+    tool_call_timeout: int = 60
     openrouter_hosts: str = ""
 
     def resolve_model(self) -> str:

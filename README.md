@@ -187,7 +187,7 @@ uv run python -m evals.run_cve_benchmark --ungated
 uv run python -m evals.run_cve_benchmark --concurrency 1
 
 # Measurement run, never gated: force the chain settings, the tool call timeout and every tool audited on all targets, and report each target's cost.
-uv run python -m evals.run_cve_benchmark --ungated --chains 3 --chain-steps 3 --tool-call-timeout 30 --no-tools-filter
+uv run python -m evals.run_cve_benchmark --ungated --chains 3 --chain-steps 3 --tool-call-timeout 60 --no-tools-filter
 
 # Optional: restrict any mode to specific CVEs with --cve (repeatable).
 uv run python -m evals.run_cve_benchmark --cve CVE-2025-53109 --cve CVE-2025-53355 --runs 1 --budget 10
@@ -226,7 +226,7 @@ Copy `.env.example` to `.env` and edit, or export variables directly. All `MCP_A
 | `LANGSMITH_API_KEY`        | --                   | LangSmith API key (required for tracing)  |
 | `LANGSMITH_PROJECT`        | --                   | LangSmith project name for traces (unset, LangSmith uses its own default) |
 | `LANGSMITH_ENDPOINT`       | US region            | Set to the EU URL if your workspace is EU |
-| `MCP_AUDITOR_TOOL_CALL_TIMEOUT` | `30`           | Seconds before a tool call is abandoned and judged as a timeout error |
+| `MCP_AUDITOR_TOOL_CALL_TIMEOUT` | `60`           | Seconds before a tool call is abandoned and judged as a timeout error |
 
 With the default `openai` provider, the main model and the judge both run `gpt-6-luna` at reasoning effort `none`. With `google` they run `gemini-3.5-flash-lite` at thinking level `minimal`. With `anthropic` they run `claude-haiku-4-5-20251001` with no reasoning setting. With `fireworks` they run GLM-5.3-Flash (`accounts/fireworks/models/glm-5p3-flash`) at reasoning effort `medium`: it is a thinking-only model, and the schema Fireworks enforces does not stop its reasoning. With `alibaba` they run `qwen3.8-flash` on Alibaba Cloud Model Studio's international endpoint, with thinking always off. With `openrouter` they run GLM 5.3 (`z-ai/glm-5.3`) at reasoning effort `low`, its cheapest setting, on the hosts `MCP_AUDITOR_OPENROUTER_HOSTS` pins. Pin them: unpinned, OpenRouter's routing may land on a host that filters security content or serves a lower quantization, and your account privacy settings can exclude a pinned host, which then fails every call. The default reasoning applies to the provider's default model only: a model named by `MCP_AUDITOR_MODEL` or `MCP_AUDITOR_JUDGE_MODEL` is sent no reasoning setting, so its API default applies, unless `MCP_AUDITOR_REASONING` is set.
 
