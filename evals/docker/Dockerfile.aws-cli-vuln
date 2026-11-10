@@ -1,0 +1,27 @@
+# aws-mcp-server, vulnerable version 1.2.0 (CVE-2025-5277, the command injection through a piped
+# command). The vulnerable image of the fix check only, never a run image.
+FROM python@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90
+
+# The server's own image installs these (deploy/docker/Dockerfile): unzip for the AWS CLI installer,
+# groff and less for the help pages `aws <service> help` renders.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      unzip curl less groff ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# AWS CLI v2, the real software the tools drive. The server's image installs the unversioned
+# installer, so the release current at admission is pinned here by checksum.
+ADD --checksum=sha256:7a121264f2637a3b90767aaf5bdd43ee88b8c925a931d0479fa2ce22b1a2fa76 \
+    https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.39.6.zip /tmp/awscliv2.zip
+RUN cd /tmp && unzip -q awscliv2.zip && ./aws/install && rm -rf awscliv2.zip aws
+
+# The server, installed from its 1.2.0 release commit with its documented install (pip install,
+# the project's lock is not read). Under floating dependencies the server does not start, and each
+# package a run showed at fault has its own loosest bound: mcp<1.12.3 (mcp 2.x removed
+# mcp.server.fastmcp, mcp 1.12.3 and later dropped the catch-all through which FastMCP took the
+# server's version= and capabilities= keywords) and pydantic<2.14 (mcp 1.12.2 imports
+# pydantic._internal._typing_extra.eval_type_backport, which pydantic 2.14 removed). Every other
+# dependency floats. See docs/nuisance-log.md for the failing runs.
+RUN pip install --no-cache-dir "mcp<1.12.3" "pydantic<2.14" \
+    https://github.com/alexei-led/aws-mcp-server/archive/aa053adf61f95dd022720e44677a89449adcfbf2.tar.gz
+
+ENTRYPOINT ["python", "-m", "aws_mcp_server"]

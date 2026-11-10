@@ -981,6 +981,15 @@ services:
     image: mcp-auditor-nuisance-dbt:local
     profiles: ["nuisance"]
 
+  aws-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile.aws-cli
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a3bbf5a0ce095972bc041716d4bcf99c35d630473609891c46de5ca344f1e5d9"
+    image: mcp-auditor-nuisance-aws-cli:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .

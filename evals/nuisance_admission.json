@@ -22081,6 +22081,206 @@
           "source": "https://pypi.org/project/dbt-duckdb/1.11.1/ (the duckdb adapter, the latest stable release on the day of admission; duckdb runs in-process, so the sample project runs under the closed network)"
         }
       ]
+    },
+    {
+      "server_package": "https://github.com/alexei-led/aws-mcp-server",
+      "reaching_flaw": "CVE-2025-5277",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-5277",
+          "tools": [
+            {
+              "vulnerable_name": "aws_cli_pipeline",
+              "patched_name": "aws_cli_pipeline",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "aws_cli_help",
+              "patched_name": "aws_cli_help",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.3.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "aws_cli_pipeline",
+              "arguments": {
+                "command": "aws --version"
+              },
+              "expect": "aws-cli/",
+              "before": []
+            },
+            {
+              "tool": "aws_cli_help",
+              "arguments": {
+                "service": "s3"
+              },
+              "expect": "high-level S3 commands",
+              "before": []
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-d5716526974fd91acaef0e4563af250e",
+            "exploit_calls": [
+              "aws_cli_pipeline",
+              "aws_cli_help"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [],
+          "trust": [],
+          "ip_label_domains": []
+        }
+      },
+      "launch": [],
+      "service": "aws-cli",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-5277",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-5277",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-5277",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-5277",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-5277",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-5277",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-5277",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/alexei-led/aws-mcp-server",
+          "flaw": "CVE-2025-5277",
+          "field": "counted_tools",
+          "value": "aws_cli_help",
+          "reason": "aws_cli_pipeline stays in the flaw's tools but is not counted: its declared function is to execute the AWS CLI command line its command argument carries, pipes to Unix commands included, which is the effect of command_execution, so an alarm that it runs a caller command cannot be read as a false alarm (declared_function_is_effect true). aws_cli_help is the counted tool: it declares a fixed documentation lookup, and its service and command arguments only name which help page, yet the server folds them into an aws help string that reaches the same shell handling of a pipe."
+        },
+        {
+          "server_package": "https://github.com/alexei-led/aws-mcp-server",
+          "flaw": "CVE-2025-5277",
+          "field": "benign_calls",
+          "value": "the expects 'aws-cli/' for aws_cli_pipeline and 'high-level S3 commands' for aws_cli_help",
+          "reason": "both records call aws --version and the s3 help page; the expect for the pipeline is the same banner prefix of the real AWS CLI, and for the help page one record took the DESCRIPTION heading and the other a phrase of the description text, 'high-level S3 commands'. The phrase is kept: it is text of the real page that neither argument carries, while the heading is a bare word the help page renders for every service."
+        },
+        {
+          "server_package": "https://github.com/alexei-led/aws-mcp-server",
+          "flaw": null,
+          "field": "host",
+          "value": "working_directory /",
+          "reason": "both records run the server unprivileged with no network and no stand-in; one set the working directory to / and the other to /app, a directory its image creates for an account it adds, and / is kept, the working directory most servers of the suite run from."
+        }
+      ],
+      "patched_version": "1.3.0",
+      "stand_ins": [],
+      "seeds": [],
+      "software_releases": [
+        {
+          "software": "AWS CLI v2",
+          "release": "2.39.6",
+          "day": "2026-11-08",
+          "source": "the server's own image (deploy/docker/Dockerfile) installs the unversioned installer awscli-exe-linux-x86_64.zip and names no version, so the current stable release is taken: the head of the AWS CLI v2 changelog (https://raw.githubusercontent.com/aws/aws-cli/v2/CHANGELOG.rst) names 2.39.6 on the day of admission, and the fixture installs the versioned installer pinned by its sha256"
+        }
+      ]
     }
   ]
 }
