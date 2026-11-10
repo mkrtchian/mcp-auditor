@@ -19,6 +19,7 @@ from evals.nuisance_fix_checks import (
     cve_2025_59834_adb_mcp,
     cve_2025_67366_sylphxltd_filesystem,
     cve_2025_69256_serverless,
+    cve_2025_69902_kubectl,
     cve_2026_0758_siri_shortcuts,
     cve_2026_4198_auto_commit,
     cve_2026_5327_fast_filesystem,
@@ -96,4 +97,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_7400_geekgod_fs.TARGETS,
     *ghsa_j4r7_8ph4_43g3_faf.TARGETS,
     *cve_2026_5327_fast_filesystem.TARGETS,
+    *cve_2025_69902_kubectl.TARGETS,
 )

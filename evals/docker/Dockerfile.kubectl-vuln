@@ -1,0 +1,36 @@
+# kubectl-mcp-server vulnerable version: the PyPI release kubectl-mcp-tool 1.2.0, the version
+# CVE-2025-69902 names. Its minimal_wrapper.run_kubectl_command runs subprocess.run(command,
+# shell=True) when the query begins with "kubectl ", so a shell metacharacter in a query runs an
+# attacker-chosen command. This image serves the fix check's positive control only, never a run.
+# Base pinned by digest; the server pinned to the PyPI version.
+FROM python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && curl -fsSL https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+    && chmod 0755 /usr/local/bin/kubectl \
+    && pip install --no-cache-dir "mcp>=1.5.0,<2" "kubectl-mcp-tool==1.2.0" \
+    && apt-get purge -y curl && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /tmp/.kube && cat > /tmp/.kube/config <<'EOF' && chmod 0644 /tmp/.kube/config && chmod 0777 /tmp/.kube
+apiVersion: v1
+kind: Config
+clusters:
+- name: example
+  cluster:
+    server: https://45.55.0.10:443
+contexts:
+- name: example
+  context:
+    cluster: example
+    namespace: default
+    user: example
+current-context: example
+users:
+- name: example
+  user:
+    token: ZXhhbXBsZS1jbHVzdGVyLXRva2Vu
+EOF
+
+ENTRYPOINT ["python", "-m", "kubectl_mcp_tool.minimal_wrapper"]

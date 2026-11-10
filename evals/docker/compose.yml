@@ -945,6 +945,15 @@ services:
     image: mcp-auditor-nuisance-postgres:local
     profiles: ["nuisance"]
 
+  kubectl:
+    build:
+      context: .
+      dockerfile: Dockerfile.kubectl
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "110b80b91b9cf5c33fbbc3685a7ddfa8fb82fbe31bea9ecabc73c84bec7fbc03"
+    image: mcp-auditor-nuisance-kubectl:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .
