@@ -22326,7 +22326,13 @@
             {
               "vulnerable_name": "get_figma_data",
               "patched_name": "get_figma_data",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -22354,7 +22360,8 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -22442,6 +22449,36 @@
           "flaw": "CVE-2025-15061",
           "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-15061",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-15061",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-15061",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
         }
       ],
       "settlements": [
@@ -22479,9 +22516,77 @@
           "field": "tools",
           "value": "get_figma_data",
           "reason": "both records count get_figma_data only. download_figma_images' fileKey is already restricted to ^[a-zA-Z0-9]+$ in the vulnerable 0.6.2 schema, so it cannot carry the shell injection on either arm."
+        },
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record A's api.figma.com stand-in: Figma's published GET-file sample taken whole on GET /v1/files/1234abcd, the real host's captured answers by default",
+          "reason": "both records serve api.figma.com under its real name, with the real host's captured 404 and 403 as the https and http defaults, but record B invents its 200 body in the form of Figma's OpenAPI schema while Figma publishes a GET-file response, which record A serves whole and unedited. A published example comes before an invented output, and both analysts of the targeted pass ran the fix check on record A's stand-in, so it is the one retained."
+        },
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: Figma's published GET-file sample, the body the stand-in serves for file key 1234abcd",
+          "reason": "the seed follows the retained stand-in: record A seeds Figma's published sample, pinned by its sha256, where record B's invented body seeds nothing it cites."
+        },
+        {
+          "server_package": "npm:figma-developer-mcp",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "record A's: the Figma REST API at v1, on the day the stand-in's defaults were captured",
+          "reason": "both records name the Figma REST API at its v1 path on the same day, but record B's release adds the figma/rest-api-spec tag its invented response body is modelled on. The release follows the retained stand-in, which serves Figma's published sample and models nothing on that spec, so record A's is kept."
         }
       ],
-      "patched_version": "0.6.3"
+      "patched_version": "0.6.3",
+      "stand_ins": [
+        {
+          "replaces": "the Figma REST API host api.figma.com, which get_figma_data reaches by name (HTTPS GET /v1/files/<key>, src/services/figma.ts baseUrl https://api.figma.com/v1)",
+          "reason": "api.figma.com is a hosted public service behind a Figma account and token; it cannot run in the container under the confinement, so it is served by the shared stand-in replay under its real name on the closed network, listed in host.public_names with its CA trust settings (NODE_EXTRA_CA_CERTS for Node's fetch, CURL_CA_BUNDLE for the curl fallback). A capture of the GET-file route needs a Figma account token, so that route is written from Figma's own sources.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/api.figma.com.json",
+          "outputs": [
+            {
+              "request": "GET https://api.figma.com/v1/files/1234abcd",
+              "source": "software_sources",
+              "citation": "Figma's own published GET-file API response fixture dummy_api_response.json (figma/code-connect, commit d856baa9bf7907c430121139725a7a8181bac9a3, path cli/src/connect/__test__/e2e/e2e_create_command/dummy_api_response.json, sha256 bde4672cc7f5848d329dd1e8b71aca5e52dc095b1f7267bf2c498087697ee033), served whole and unedited; 1234abcd is the file key Figma's own e2e_create_command test maps to this response (figma.com/file/1234abcd/Test-File). Its Content-Type application/json; charset=utf-8 is what api.figma.com sends on its JSON answers, as the capture of the defaults shows",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "GET https://api.figma.com/<any other path> (the https default)",
+              "source": "capture",
+              "citation": "the https default captured from the real api.figma.com by `python -m evals.capture_stand_in https://api.figma.com/v1/files/1234abcd` on 2026-11-07 (status 404, body {\"status\":404,\"err\":\"Not found\"}), the real host's answer to a path it does not have",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "GET http://api.figma.com/<any other path> (the http default)",
+              "source": "capture",
+              "citation": "the http default captured by the same run on 2026-11-07 (status 403, CloudFront text/html), the real host's answer to a plain-HTTP request",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "the GET /v1/files/1234abcd response body the api.figma.com stand-in serves, a whole Figma GET-file payload",
+          "kind": "published_sample",
+          "citation": "Figma's published fixture dummy_api_response.json, figma/code-connect commit d856baa9bf7907c430121139725a7a8181bac9a3, path cli/src/connect/__test__/e2e/e2e_create_command/dummy_api_response.json",
+          "pin": "bde4672cc7f5848d329dd1e8b71aca5e52dc095b1f7267bf2c498087697ee033"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "Figma REST API (api.figma.com)",
+          "release": "v1",
+          "day": "2026-11-07",
+          "source": "the server pins no API version: src/services/figma.ts sets baseUrl https://api.figma.com/v1, the API's own version path, and the Figma REST API is a hosted service with no published release version (https://developers.figma.com/docs/rest-api/), so the day is the day the stand-in's defaults were captured"
+        }
+      ]
     },
     {
       "server_package": "PyPI:dbt-mcp",
