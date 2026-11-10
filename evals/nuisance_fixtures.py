@@ -40,6 +40,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_55157_token_optimizer,
     cve_2026_55787_flyto,
     cve_2026_57442_mcpvault,
+    cve_2026_57496_netlicensing,
     cve_2026_58171_vibe_trading,
     cve_2026_58195_agentic_flow,
     cve_2026_61462_gitlab,
@@ -100,4 +101,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_5327_fast_filesystem.TARGETS,
     *cve_2025_69902_kubectl.TARGETS,
     *cve_2026_45555_roslyncodelens.TARGETS,
+    *cve_2026_57496_netlicensing.TARGETS,
 )

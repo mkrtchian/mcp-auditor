@@ -1,0 +1,51 @@
+{
+  "host": "go.netlicensing.io",
+  "address": "54.77.61.73",
+  "source": "capture",
+  "captured_at": "2026-11-07",
+  "command": "GET https://go.netlicensing.io/core/v2/rest/product/G36QQNFV-DEMO and an unknown path, Basic demo:demo (the server's built-in NETLICENSING_ALLOW_DEMO sandbox credentials); bodies are the NetLicensing sandbox responses verbatim",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/core/v2/rest/product/G36QQNFV-DEMO",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "{\"signature\":null,\"infos\":{\"info\":[]},\"items\":{\"item\":[{\"property\":[{\"value\":\"G36QQNFV-DEMO\",\"name\":\"number\"},{\"value\":\"true\",\"name\":\"active\"},{\"value\":\"Pricing Table demo product\",\"name\":\"name\"},{\"value\":\"1.0\",\"name\":\"version\"},{\"value\":\"true\",\"name\":\"licenseeAutoCreate\"},{\"value\":\"Demo product configured using \\\"Pricing Table\\\" licensing model\",\"name\":\"description\"},{\"value\":\"Here you may put your EULA\",\"name\":\"licensingInfo\"},{\"value\":\"true\",\"name\":\"inUse\"},{\"value\":\"You may add arbitrary tags to your product, e.g. CRM or ERP reference\",\"name\":\"customTag\"}],\"list\":[{\"property\":[{\"value\":\"100.00\",\"name\":\"totalPrice\"},{\"value\":\"EUR\",\"name\":\"currency\"},{\"value\":\"10\",\"name\":\"amountPercent\"}],\"list\":[],\"name\":\"discount\"},{\"property\":[{\"value\":\"10.00\",\"name\":\"totalPrice\"},{\"value\":\"EUR\",\"name\":\"currency\"},{\"value\":\"1.00\",\"name\":\"amountFix\"}],\"list\":[],\"name\":\"discount\"}],\"type\":\"Product\"}],\"pagenumber\":null,\"itemsnumber\":null,\"totalpages\":null,\"totalitems\":null,\"hasnext\":null},\"id\":null,\"ttl\":null}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "https",
+      "probed_target": "/0123456789abcdef",
+      "status": 403,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "{\"signature\":null,\"infos\":{\"info\":[{\"value\":\"Forbidden\",\"id\":\"403\",\"type\":\"ERROR\"}]},\"items\":null,\"id\":null,\"ttl\":null}",
+      "path_form": null
+    },
+    {
+      "scheme": "http",
+      "probed_target": "/0123456789abcdef",
+      "status": 403,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "{\"signature\":null,\"infos\":{\"info\":[{\"value\":\"Forbidden\",\"id\":\"403\",\"type\":\"ERROR\"}]},\"items\":null,\"id\":null,\"ttl\":null}",
+      "path_form": null
+    }
+  ]
+}

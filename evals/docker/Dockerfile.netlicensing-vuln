@@ -1,0 +1,11 @@
+# netlicensing-mcp, vulnerable version 0.1.7 (carries CVE-2026-57496; the REST path traversal is
+# fixed in 0.1.8). Serves the fix check's positive control only, never a run.
+# mcp<2 as in the run image: 0.1.7 declares the same unbounded mcp[cli]>=1.7.0 and fails to import
+# under mcp 2.x otherwise.
+FROM python:3.12-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
+
+RUN pip install --no-cache-dir "netlicensing-mcp==0.1.7" "mcp<2"
+
+ENV NETLICENSING_ALLOW_DEMO=true
+
+ENTRYPOINT ["python", "-m", "netlicensing_mcp.server"]

@@ -1,0 +1,19 @@
+# netlicensing-mcp, patched version 0.1.8 (fixes CVE-2026-57496 and CVE-2026-54446).
+# The run image. NetLicensing's REST API is a remote third-party SaaS that cannot run under the
+# confinement (no network), so it is served by a stand-in under its real name go.netlicensing.io;
+# nothing of it is installed here. Transitive dependencies float, except the mcp bound below.
+FROM python:3.12-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
+
+# The server pinned at its patched version, installed from PyPI. netlicensing-mcp 0.1.8 declares
+# mcp[cli]>=1.7.0 with no upper bound, which floats to mcp 2.x, where mcp.server.fastmcp has
+# moved and the server fails to import; mcp<2 is the loosest bound the project itself publishes
+# (from 0.1.10). See docs/nuisance-log.md for the failing import this pin fixes.
+RUN pip install --no-cache-dir "netlicensing-mcp==0.1.8" "mcp<2"
+
+# Sandbox/demo access: with no per-request API key (stdio transport sets none) the client needs
+# NETLICENSING_ALLOW_DEMO=true to authenticate to the NetLicensing sandbox as demo:demo instead
+# of raising 503. README: "For sandbox/demo access, set NETLICENSING_ALLOW_DEMO=true."
+ENV NETLICENSING_ALLOW_DEMO=true
+
+# stdio transport is the documented default: `python -m netlicensing_mcp.server`.
+ENTRYPOINT ["python", "-m", "netlicensing_mcp.server"]
