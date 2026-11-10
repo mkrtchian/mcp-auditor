@@ -1008,6 +1008,15 @@ services:
     image: mcp-auditor-nuisance-excel:local
     profiles: ["nuisance"]
 
+  houtini:
+    build:
+      context: .
+      dockerfile: Dockerfile.houtini
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a0d7363cc9314acf042b2d873605c9fa3497173ad558f2ec5a3295716bc02225"
+    image: mcp-auditor-nuisance-houtini:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .

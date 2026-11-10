@@ -24300,6 +24300,223 @@
         }
       ],
       "software_releases": []
+    },
+    {
+      "server_package": "npm:@houtini/lm",
+      "reaching_flaw": "CVE-2026-82112",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-82112",
+          "tools": [
+            {
+              "vulnerable_name": "code_task_files",
+              "patched_name": "code_task_files",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "3.1.0",
+          "patched_source": "fix_commit",
+          "launch_option": {
+            "option": "HOUTINI_LM_FILE_ROOTS",
+            "value": "/srv/app",
+            "reason": "The fix confines reads only when this variable is set: 3.1.0 resolves each path with realpath and refuses one outside the roots it names, and with the variable unset it still reads any absolute path. The roots are the in-scope checkout the run points the tool at. The variable is set to the same value on both versions so the launch does not tell them apart, and 2.13.2 has no such code and ignores it.",
+            "documentation": "@houtini/lm 3.1.0, src/index.ts: FILE_ROOTS is parsed from HOUTINI_LM_FILE_ROOTS, 'Optional allowlist of directory roots that code_task_files may read from', and readGuardedFile refuses a path whose realpath is not under a root."
+          },
+          "benign_calls": [
+            {
+              "tool": "code_task_files",
+              "arguments": {
+                "paths": [
+                  "/srv/app/.git/config"
+                ],
+                "task": "Summarise in one sentence what this configuration file is for.",
+                "language": "text",
+                "max_tokens": 96
+              },
+              "expect": "file(s) read",
+              "before": []
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "code_task_files"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/srv/app",
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [],
+          "trust": [],
+          "ip_label_domains": []
+        }
+      },
+      "launch": [],
+      "service": "houtini",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-82112",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-82112",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-82112",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-82112",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-82112",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-82112",
+          "field": "fix_check",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-82112",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:@houtini/lm",
+          "flaw": "CVE-2026-82112",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "Both records read code_task_files from its description alone, 'reads files directly from disk' at absolute paths, as declaring the read of any path its argument names, so the read outside the checkout would be its function. The server holds a root from its configuration, HOUTINI_LM_FILE_ROOTS, the option the fix requires and the launch sets, and a root the server holds from its configuration is a root it declares: the tool reads the files its caller names inside that root, and reading one outside it is the flaw, not the tool's function."
+        },
+        {
+          "server_package": "npm:@houtini/lm",
+          "flaw": "CVE-2026-82112",
+          "field": "benign_calls",
+          "value": "the one call of record B, expect 'file(s) read'",
+          "reason": "Both records read the checkout's own .git/config with the same arguments. Record A expects '1 file(s) read' and record B 'file(s) read', the footer the server appends to a successful response (the count of files it read), which no argument carries. The shorter text is kept, since it holds whatever the count."
+        },
+        {
+          "server_package": "npm:@houtini/lm",
+          "flaw": "CVE-2026-82112",
+          "field": "fix_check",
+          "value": "its own fix check, 3.1.0 against 2.13.2, not a copy of the holdout calibration",
+          "reason": "Record A reused the holdout twin's calibration. The calibration checks the fix commit 35d97bca directly, while the version recorded here is 3.1.0, the first npm release that carries that commit, so the calibration does not stand for the version the audit runs and the flaw runs its own fix check, on the 3.1.0 run image against a vulnerable 2.13.2 image."
+        },
+        {
+          "server_package": "npm:@houtini/lm",
+          "flaw": null,
+          "field": "seeds",
+          "value": "the /srv/app checkout generated by git at image build, with greet.js",
+          "reason": "Record A seeded an empty initialised repository, record B a repository holding one source file, greet.js, with an origin on a reserved domain. The second is kept: it is generated by git at build time, written by no one, and gives the tool a source file to read as well as the configuration file."
+        },
+        {
+          "server_package": "npm:@houtini/lm",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "the llama-server image and the model, on the second record's day",
+          "reason": "The two records name the same llama.cpp llama-server image digest and the same Qwen2.5-3B-Instruct q4_k_m revision, the pair the holdout card for the twin pins, and differ only by the day they were taken. The server documents no model, so the model is a component of the OpenAI-compatible endpoint it is deployed against and the revision the card pins is kept."
+        }
+      ],
+      "patched_version": "3.1.0",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/srv/app, the in-scope git checkout: one source file greet.js and a .git whose origin is https://example.invalid/app.git, baked into the run image because the nuisance run mounts no layout",
+          "kind": "generated",
+          "citation": "git init and git commit at image build, Dockerfile.houtini",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "OpenAI-compatible model API endpoint, served by llama.cpp llama-server (the server documents 'LM Studio or any OpenAI-compatible API (LM Studio, Ollama, vLLM, DeepSeek, Groq, Cerebras)'), baked into the server image on loopback port 1234 and launched at its defaults with only --host 127.0.0.1 --port 1234",
+          "release": "ghcr.io/ggml-org/llama.cpp:server@sha256:c0a11067c72bb1eb330b8bddbf9869274c195e596bf4fae55fd527102e644b85",
+          "day": "2026-11-08",
+          "source": "README 'Works with anything speaking the OpenAI format'; HOUTINI_LM_ENDPOINT_URL 'Base URL of the OpenAI-compatible API'. The documentation names no version, so the image the holdout card for the twin pins is used."
+        },
+        {
+          "software": "Model served by the endpoint: Qwen2.5-3B-Instruct-GGUF (q4_k_m), served unchanged by llama-server",
+          "release": "qwen2.5-3b-instruct-q4_k_m.gguf from Qwen/Qwen2.5-3B-Instruct-GGUF (HuggingFace), revision 7dabda4d13d513e3e842b20f0d435c732f172cbe, sha256 626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d",
+          "day": "2026-11-08",
+          "source": "The server documentation names no model, only the OpenAI-compatible endpoint, so the model is a component of the documented endpoint deployment and the GGUF revision the holdout card pins is used."
+        }
+      ]
     }
   ]
 }
