@@ -1,34 +1,42 @@
-# @sunwood-ai-labs/github-kanban-mcp-server v0.4.1 - the fix for CVE-2025-53818 and CVE-2026-0756:
-# src/utils/exec.ts drops the shell `exec` for execFile('gh', args) and the handlers pass each
-# value as a separate argv element, plus repo/issue-number validation. Not on npm (npm stops at
-# 0.3.0); built from the v0.4.1 git tag.
-# No COPY/ADD: the fingerprint hashes instructions only, so the gh stub is inlined by RUN.
+# @sunwood-ai-labs/github-kanban-mcp-server v0.4.1 (tag v0.4.1, commit 34246b6f18a4dc4e0cc974d571edc696752d3abc),
+# the fix for CVE-2025-53818 and CVE-2026-0756: src/utils/exec.ts runs execFile('gh', args) and
+# the handlers pass each value as one argv element. Not on npm (npm stops at 0.3.0), so it is
+# built from the tagged commit. Its dependencies float: the repository's package-lock.json is
+# removed before `npm install`.
+# The real GitHub CLI runs in the container: the server README lists "GitHub CLI (gh)" as its
+# prerequisite with no version, so the latest release, 2.103.3, is installed from its official
+# .deb. api.github.com, which gh calls, is served under its real name by the stand-in
+# (host.public_names), gh trusting its authority through SSL_CERT_FILE set at launch.
+# No COPY/ADD: the fingerprint hashes instructions only.
 FROM node:20@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
-RUN git clone --depth 1 --branch v0.4.1 \
-      https://github.com/sunwood-ai-labs/github-kanban-mcp-server.git /app
+
+ARG GH_VERSION=2.103.3
+ARG GH_DEB_SHA256=e3bafef96328d1a67de3a968bdfe1cc2ffd58cf6aba8b5e201356897ed06bb3d
+RUN curl -fsSL -o /tmp/gh.deb "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.deb" \
+ && echo "${GH_DEB_SHA256}  /tmp/gh.deb" | sha256sum -c - \
+ && dpkg -i /tmp/gh.deb \
+ && rm -f /tmp/gh.deb \
+ && gh --version
+
+ARG COMMIT=34246b6f18a4dc4e0cc974d571edc696752d3abc
 WORKDIR /app
-RUN npm install && npm run build
+RUN git init -q \
+ && git remote add origin https://github.com/sunwood-ai-labs/github-kanban-mcp-server.git \
+ && git fetch -q --depth 1 origin "$COMMIT" \
+ && git checkout -q FETCH_HEAD \
+ && rm -f package-lock.json \
+ && npm install --no-audit --no-fund \
+ && test -f build/index.js
 
-# A stubbed `gh` on PATH so benign tool calls return without a GitHub backend or network:
-# `create` prints an issue URL (the handler reads the trailing number), every other subcommand
-# prints a canned issue JSON, and it always exits 0.
-RUN printf '%s\n' \
-  '#!/bin/sh' \
-  'for a in "$@"; do' \
-  '  if [ "$a" = "create" ]; then' \
-  '    echo "https://github.com/octocat/hello-world/issues/1"' \
-  '    exit 0' \
-  '  fi' \
-  'done' \
-  'echo "{\"number\":1,\"title\":\"stub issue\",\"state\":\"open\",\"url\":\"https://github.com/octocat/hello-world/issues/1\"}"' \
-  'exit 0' \
-  > /usr/local/bin/gh \
- && chmod +x /usr/local/bin/gh
+# gh's documented non-interactive authentication (GH_TOKEN), in place of `gh auth login`, which
+# would write a hosts.yml. A written value in gh's token format; the stand-in ignores it.
+ENV GH_TOKEN=gho_A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8
 
-# The post-0.4.0 API requires a path to a git repo and reads owner/repo from its origin URL.
-RUN mkdir -p /work/repo/.git \
-  && printf '[remote "origin"]\n\turl = https://github.com/octocat/hello-world.git\n' \
-     > /work/repo/.git/config \
-  && chmod -R a+rX /work
+# The repository the tools' `path` names: GitHub's sample repository octocat/Hello-World, cloned
+# whole at a pinned commit; git writes its origin (https://github.com/octocat/Hello-World.git)
+# into .git/config, which the server reads owner/repo from.
+RUN git clone -q https://github.com/octocat/Hello-World.git /work/Hello-World \
+ && git -C /work/Hello-World checkout -q 7fd1a60b01f91b314f59955a4e4d4e80d8edf11d \
+ && chmod -R a+rX /work
 
 ENTRYPOINT ["node", "/app/build/index.js"]

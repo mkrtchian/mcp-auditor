@@ -761,7 +761,7 @@ services:
       context: .
       dockerfile: Dockerfile.kanban
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "b18e23c390498921846c2b8087bbb1dfb2bf14c8ed9ef589b5f100394c6bf3ed"
+        org.mcp-auditor.dockerfile-fingerprint: "213de7c3dd701b9878a3057ac91dadb5e27e51e8a5777bc7a493395a98546f36"
     image: mcp-auditor-nuisance-kanban:local
     profiles: ["nuisance"]
 

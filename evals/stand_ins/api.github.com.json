@@ -1,82 +1,233 @@
 {
-  "host": "api.github.com",
-  "address": "140.82.112.6",
-  "source": "software_sources",
-  "command": "hand-written from the GitHub GraphQL API reference (Repository.issues IssueConnection) and the IssueList query the pinned gh 2.103.3 sends, since a capture of api.github.com would need an authenticated signed session the closed fixture network denies",
-  "request_headers": [],
-  "routes": [
-    {
-      "scheme": "https",
-      "method": "POST",
-      "target": "/graphql",
-      "status": 200,
-      "headers": [
-        [
-          "Date",
-          "Thu, 05 Nov 2026 00:00:00 GMT"
-        ],
-        [
-          "Content-Type",
-          "application/json; charset=utf-8"
-        ],
-        [
-          "Server",
-          "github.com"
-        ],
-        [
-          "X-GitHub-Media-Type",
-          "github.v3; format=json"
-        ],
-        [
-          "X-GitHub-Request-Id",
-          "0000:000000:0000000:00000000:00000000"
-        ]
-      ],
-      "body": "{\"data\":{\"repository\":{\"hasIssuesEnabled\":true,\"issues\":{\"totalCount\":0,\"nodes\":[],\"pageInfo\":{\"hasNextPage\":false,\"endCursor\":null}}}}}\n"
-    }
-  ],
-  "defaults": [
-    {
-      "scheme": "http",
-      "probed_target": "/0123456789abcdef",
-      "status": 301,
-      "headers": [
-        [
-          "Content-Type",
-          "text/html"
-        ],
-        [
-          "Location",
-          "https://api.github.com/0123456789abcdef"
-        ]
-      ],
-      "body": "",
-      "path_form": null
-    },
-    {
-      "scheme": "https",
-      "probed_target": "/0123456789abcdef",
-      "status": 404,
-      "headers": [
-        [
-          "Date",
-          "Thu, 05 Nov 2026 00:00:00 GMT"
-        ],
-        [
-          "Content-Type",
-          "application/json; charset=utf-8"
-        ],
-        [
-          "Server",
-          "github.com"
-        ],
-        [
-          "X-GitHub-Media-Type",
-          "github.v3; format=json"
-        ]
-      ],
-      "body": "{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest\",\"status\":\"404\"}",
-      "path_form": null
-    }
-  ]
+ "host": "api.github.com",
+ "address": "140.82.112.6",
+ "source": "software_sources",
+ "command": "hand-written from the GitHub CLI's own tests at cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc), one route per GraphQL operation the pinned gh 2.103.3 sends for the server's four tools (operation names read from gh's requests, recorded offline): IssueList from pkg/cmd/issue/list/fixtures/issueList.json; IssueRepositoryInfo and IssueCreate from pkg/cmd/issue/create/create_test.go L555-560 and L562-566; IssueByNumber from pkg/cmd/issue/view/view_test.go L125-130; IssueUpdate from pkg/cmd/issue/edit/edit_test.go L777-778; CommentCreate from pkg/cmd/issue/comment/comment_test.go L962-966; OWNER/REPO replaced by octocat/Hello-World and the issue numbers 12 and 123 by 1. A capture of api.github.com would need an authenticated GitHub account the closed fixture network and the maintainer's dossier do not hold; an operation no route names gets the https default",
+ "request_headers": [],
+ "routes": [
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/graphql",
+   "action": "IssueList",
+   "status": 200,
+   "headers": [
+    [
+     "Date",
+     "Thu, 05 Nov 2026 00:00:00 GMT"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Server",
+     "github.com"
+    ],
+    [
+     "X-GitHub-Media-Type",
+     "github.v3; format=json"
+    ],
+    [
+     "X-GitHub-Request-Id",
+     "0000:000000:0000000:00000000:00000000"
+    ]
+   ],
+   "body": "{\n  \"data\": {\n    \"repository\": {\n      \"hasIssuesEnabled\": true,\n      \"issues\": {\n        \"totalCount\": 3,\n        \"nodes\": [\n          {\n            \"number\": 1,\n            \"title\": \"number won\",\n            \"url\": \"https://wow.com\",\n            \"updatedAt\": \"2022-08-24T22:01:12Z\",\n            \"labels\": {\n              \"nodes\": [\n                {\n                  \"name\": \"label\"\n                }\n              ],\n              \"totalCount\": 1\n            }\n          },\n          {\n            \"number\": 2,\n            \"title\": \"number too\",\n            \"url\": \"https://wow.com\",\n            \"updatedAt\": \"2022-07-20T19:01:12Z\",\n            \"labels\": {\n              \"nodes\": [\n                {\n                  \"name\": \"label\"\n                }\n              ],\n              \"totalCount\": 1\n            }\n          },\n          {\n            \"number\": 4,\n            \"title\": \"number fore\",\n            \"url\": \"https://wow.com\",\n            \"updatedAt\": \"2020-01-26T19:01:12Z\",\n            \"labels\": {\n              \"nodes\": [\n                {\n                  \"name\": \"label\"\n                }\n              ],\n              \"totalCount\": 1\n            }\n          }\n        ]\n      }\n    }\n  }\n}\n"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/graphql",
+   "action": "IssueRepositoryInfo",
+   "status": 200,
+   "headers": [
+    [
+     "Date",
+     "Thu, 05 Nov 2026 00:00:00 GMT"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Server",
+     "github.com"
+    ],
+    [
+     "X-GitHub-Media-Type",
+     "github.v3; format=json"
+    ],
+    [
+     "X-GitHub-Request-Id",
+     "0000:000000:0000000:00000000:00000000"
+    ]
+   ],
+   "body": "{ \"data\": { \"repository\": {\n\t\"id\": \"REPOID\",\n\t\"hasIssuesEnabled\": true\n} } }"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/graphql",
+   "action": "IssueCreate",
+   "status": 200,
+   "headers": [
+    [
+     "Date",
+     "Thu, 05 Nov 2026 00:00:00 GMT"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Server",
+     "github.com"
+    ],
+    [
+     "X-GitHub-Media-Type",
+     "github.v3; format=json"
+    ],
+    [
+     "X-GitHub-Request-Id",
+     "0000:000000:0000000:00000000:00000000"
+    ]
+   ],
+   "body": "{ \"data\": { \"createIssue\": { \"issue\": {\n\t\"URL\": \"https://github.com/octocat/Hello-World/issues/1\"\n} } } }"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/graphql",
+   "action": "IssueByNumber",
+   "status": 200,
+   "headers": [
+    [
+     "Date",
+     "Thu, 05 Nov 2026 00:00:00 GMT"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Server",
+     "github.com"
+    ],
+    [
+     "X-GitHub-Media-Type",
+     "github.v3; format=json"
+    ],
+    [
+     "X-GitHub-Request-Id",
+     "0000:000000:0000000:00000000:00000000"
+    ]
+   ],
+   "body": "{ \"data\": { \"repository\": { \"hasIssuesEnabled\": true, \"issue\": {\n\t\"number\": 1,\n\t\"url\": \"https://github.com/octocat/Hello-World/issues/1\"\n} } } }"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/graphql",
+   "action": "IssueUpdate",
+   "status": 200,
+   "headers": [
+    [
+     "Date",
+     "Thu, 05 Nov 2026 00:00:00 GMT"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Server",
+     "github.com"
+    ],
+    [
+     "X-GitHub-Media-Type",
+     "github.v3; format=json"
+    ],
+    [
+     "X-GitHub-Request-Id",
+     "0000:000000:0000000:00000000:00000000"
+    ]
+   ],
+   "body": "{ \"data\": { \"updateIssue\": { \"__typename\": \"\" } } }"
+  },
+  {
+   "scheme": "https",
+   "method": "POST",
+   "target": "/graphql",
+   "action": "CommentCreate",
+   "status": 200,
+   "headers": [
+    [
+     "Date",
+     "Thu, 05 Nov 2026 00:00:00 GMT"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Server",
+     "github.com"
+    ],
+    [
+     "X-GitHub-Media-Type",
+     "github.v3; format=json"
+    ],
+    [
+     "X-GitHub-Request-Id",
+     "0000:000000:0000000:00000000:00000000"
+    ]
+   ],
+   "body": "{ \"data\": { \"addComment\": { \"commentEdge\": { \"node\": {\n\t\"url\": \"https://github.com/octocat/Hello-World/issues/1#issuecomment-456\"\n} } } } }"
+  }
+ ],
+ "defaults": [
+  {
+   "scheme": "http",
+   "probed_target": "/0123456789abcdef",
+   "status": 301,
+   "headers": [
+    [
+     "Content-Type",
+     "text/html"
+    ],
+    [
+     "Location",
+     "https://api.github.com/0123456789abcdef"
+    ]
+   ],
+   "body": "",
+   "path_form": null
+  },
+  {
+   "scheme": "https",
+   "probed_target": "/0123456789abcdef",
+   "status": 404,
+   "headers": [
+    [
+     "Date",
+     "Thu, 05 Nov 2026 00:00:00 GMT"
+    ],
+    [
+     "Content-Type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "Server",
+     "github.com"
+    ],
+    [
+     "X-GitHub-Media-Type",
+     "github.v3; format=json"
+    ]
+   ],
+   "body": "{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest\",\"status\":\"404\"}",
+   "path_form": null
+  }
+ ]
 }
