@@ -2,7 +2,7 @@
   "host": "example-org.my.salesforce.com",
   "address": "136.146.47.14",
   "source": "software_sources",
-  "command": "hand-authored from the Salesforce REST API Developer Guide and OAuth 2.0 docs; no live capture is possible without an authenticated org under the closed fixture network",
+  "command": "hand-authored from the Salesforce REST API Developer Guide (Execute a SOQL Query, List Available REST API Versions, List Available REST Resources, Status Codes and Error Responses), the Salesforce CLI's plugin-data test exemplars (columnMetadata) and the sfdx-core Organization test record and the OAuth 2.0 refresh-token response form; no live capture is possible without an authenticated org under the closed network",
   "request_headers": [
     [
       "User-Agent",
@@ -25,7 +25,7 @@
           "application/json;charset=UTF-8"
         ]
       ],
-      "body": "{\"access_token\": \"00Dxx0000000000!AQEAQNarbitraryfixedaccesstokenvalueforthefixtureorg\", \"signature\": \"aGFzaGVkc2lnbmF0dXJldmFsdWVmb3JmaXh0dXJl\", \"scope\": \"refresh_token api\", \"instance_url\": \"https://example-org.my.salesforce.com\", \"id\": \"https://login.salesforce.com/id/00Dxx0000000000EAA/005xx0000000000AAA\", \"token_type\": \"Bearer\", \"issued_at\": \"1762300800000\"}"
+      "body": "{\"access_token\": \"00Dxx0000000000!AQEAQN0x7Lw2mP4sK9dR3tV6yB1cF8hJ5nQ\", \"signature\": \"q3Vx0bJm7cTz2Lk9Wd4RfY8sNh6Pe1Ag5Ju3Xo0Ci2E=\", \"scope\": \"refresh_token api\", \"instance_url\": \"https://example-org.my.salesforce.com\", \"id\": \"https://login.salesforce.com/id/00Dxx0000000000EAA/005xx0000000000AAA\", \"token_type\": \"Bearer\", \"issued_at\": \"1762300800000\"}"
     },
     {
       "scheme": "https",
@@ -51,7 +51,7 @@
           "application/json;charset=UTF-8"
         ]
       ],
-      "body": "{\"sobjects\": \"/services/data/v68.0/sobjects\", \"identity\": \"https://example-org.my.salesforce.com/services/data/v68.0/identity\", \"connect\": \"/services/data/v68.0/connect\", \"query\": \"/services/data/v68.0/query\", \"queryAll\": \"/services/data/v68.0/queryAll\", \"tooling\": \"/services/data/v68.0/tooling\", \"composite\": \"/services/data/v68.0/composite\", \"limits\": \"/services/data/v68.0/limits\", \"search\": \"/services/data/v68.0/search\"}"
+      "body": "{\"tooling\": \"/services/data/v68.0/tooling\", \"metadata\": \"/services/data/v68.0/metadata\", \"eclair\": \"/services/data/v68.0/eclair\", \"folders\": \"/services/data/v68.0/folders\", \"prechatForms\": \"/services/data/v68.0/prechatForms\", \"contact-tracing\": \"/services/data/v68.0/contact-tracing\", \"jsonxform\": \"/services/data/v68.0/jsonxform\", \"chatter\": \"/services/data/v68.0/chatter\", \"payments\": \"/services/data/v68.0/payments\", \"tabs\": \"/services/data/v68.0/tabs\", \"appMenu\": \"/services/data/v68.0/appMenu\", \"quickActions\": \"/services/data/v68.0/quickActions\", \"queryAll\": \"/services/data/v68.0/queryAll\", \"commerce\": \"/services/data/v68.0/commerce\", \"wave\": \"/services/data/v68.0/wave\", \"iot\": \"/services/data/v68.0/iot\", \"analytics\": \"/services/data/v68.0/analytics\", \"search\": \"/services/data/v68.0/search\", \"smartdatadiscovery\": \"/services/data/v68.0/smartdatadiscovery\", \"identity\": \"https://example-org.my.salesforce.com/id/00Dxx0000000000EAA/005xx0000000000AAA\", \"composite\": \"/services/data/v68.0/composite\", \"parameterizedSearch\": \"/services/data/v68.0/parameterizedSearch\", \"fingerprint\": \"/services/data/v68.0/fingerprint\", \"theme\": \"/services/data/v68.0/theme\", \"nouns\": \"/services/data/v68.0/nouns\", \"domino\": \"/services/data/v68.0/domino\", \"event\": \"/services/data/v68.0/event\", \"serviceTemplates\": \"/services/data/v68.0/serviceTemplates\", \"recent\": \"/services/data/v68.0/recent\", \"connect\": \"/services/data/v68.0/connect\", \"licensing\": \"/services/data/v68.0/licensing\", \"limits\": \"/services/data/v68.0/limits\", \"process\": \"/services/data/v68.0/process\", \"dedupe\": \"/services/data/v68.0/dedupe\", \"async-queries\": \"/services/data/v68.0/async-queries\", \"query\": \"/services/data/v68.0/query\", \"jobs\": \"/services/data/v68.0/jobs\", \"localizedvalue\": \"/services/data/v68.0/localizedvalue\", \"mobile\": \"/services/data/v68.0/mobile\", \"emailConnect\": \"/services/data/v68.0/emailConnect\", \"consent\": \"/services/data/v68.0/consent\", \"tokenizer\": \"/services/data/v68.0/tokenizer\", \"compactLayouts\": \"/services/data/v68.0/compactLayouts\", \"async\": \"/services/data/v68.0/async\", \"sobjects\": \"/services/data/v68.0/sobjects\", \"actions\": \"/services/data/v68.0/actions\", \"support\": \"/services/data/v68.0/support\"}"
     },
     {
       "scheme": "https",
@@ -64,7 +64,20 @@
           "application/json;charset=UTF-8"
         ]
       ],
-      "body": "{\"totalSize\": 0, \"done\": true, \"records\": []}"
+      "body": "{\"done\": true, \"totalSize\": 14, \"records\": [{\"attributes\": {\"type\": \"Account\", \"url\": \"/services/data/v68.0/sobjects/Account/001D000000IRFmaIAH\"}, \"Name\": \"Test 1\"}, {\"attributes\": {\"type\": \"Account\", \"url\": \"/services/data/v68.0/sobjects/Account/001D000000IomazIAB\"}, \"Name\": \"Test 2\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "target": "/services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account&columns=true",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ]
+      ],
+      "body": "{\"columnMetadata\": [{\"aggregate\": false, \"apexType\": \"Id\", \"booleanType\": false, \"columnName\": \"Id\", \"custom\": false, \"displayName\": \"Id\", \"foreignKeyName\": null, \"insertable\": false, \"joinColumns\": [], \"numberType\": false, \"textType\": false, \"updatable\": false}, {\"aggregate\": false, \"apexType\": \"String\", \"booleanType\": false, \"columnName\": \"Name\", \"custom\": false, \"displayName\": \"Name\", \"foreignKeyName\": null, \"insertable\": false, \"joinColumns\": [], \"numberType\": false, \"textType\": true, \"updatable\": false}]}"
     },
     {
       "scheme": "https",
@@ -77,7 +90,7 @@
           "application/json;charset=UTF-8"
         ]
       ],
-      "body": "{\"totalSize\": 1, \"done\": true, \"records\": [{\"attributes\": {\"type\": \"Organization\", \"url\": \"/services/data/v68.0/sobjects/Organization/00Dxx0000000000EAA\"}, \"Name\": \"Example Org\", \"InstanceName\": \"NA139\", \"IsSandbox\": false, \"TrialExpirationDate\": null, \"NamespacePrefix\": null, \"OrganizationType\": \"Developer Edition\"}]}"
+      "body": "{\"totalSize\": 1, \"done\": true, \"records\": [{\"attributes\": {\"type\": \"Organization\", \"url\": \"/services/data/v68.0/sobjects/Organization/00Dxx0000000000EAA\"}, \"Name\": \"My Org\", \"InstanceName\": \"cs42\", \"IsSandbox\": false, \"TrialExpirationDate\": null, \"NamespacePrefix\": null, \"OrganizationType\": \"Developer Edition\"}]}"
     }
   ],
   "defaults": [

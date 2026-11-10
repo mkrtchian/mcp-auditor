@@ -8935,7 +8935,13 @@
             {
               "vulnerable_name": "query_records",
               "patched_name": "query_records",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "command_execution",
@@ -8951,7 +8957,9 @@
                   "sObject": "Account",
                   "fields": "Id,Name"
                 }
-              }
+              },
+              "expect": "Test 1",
+              "before": []
             }
           ],
           "backend_need": "none",
@@ -8965,7 +8973,9 @@
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false,
+            "holdout_fingerprint": null
           }
         }
       ],
@@ -8974,7 +8984,16 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/srv/app",
-        "has_network": false
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [
+            "example-org.my.salesforce.com"
+          ],
+          "trust": [
+            "NODE_EXTRA_CA_CERTS"
+          ],
+          "ip_label_domains": []
+        }
       },
       "launch": [],
       "service": "sf-mcp",
@@ -8989,32 +9008,205 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-sonnet-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
         {
           "flaw": "CVE-2026-26029",
           "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-26029",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-26029",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-26029",
+          "field": "benign_calls",
           "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-26029",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-26029",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host.public_names",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
         }
       ],
       "settlements": [
         {
           "server_package": "https://github.com/akutishevsky/sf-mcp-server",
-          "flaw": "CVE-2026-26029",
-          "field": "tools",
-          "value": "query_records",
-          "reason": "record A also listed list_connected_salesforce_orgs, which runs the fixed string `sf org list` and takes no caller SQL, so it does not reach the injection; only query_records interpolates caller input into the shell command."
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's: sf's generated auth state, the org alias and the org identity",
+          "reason": "both records seed the auth state sf org login sfdx-url generates at build with the same CLI release, the alias playground and the holdout card's org identity, but record A also lists the access token and signature among its written values, with values of its own; record B leaves them to the stand-in's token route, where they are not reached at run time. The seed follows the retained stand-in and Dockerfile, record B's."
         },
         {
           "server_package": "https://github.com/akutishevsky/sf-mcp-server",
           "flaw": "CVE-2026-26029",
-          "field": "fix_check.source",
-          "value": "holdout_calibration",
-          "reason": "the counted flaw is the twin's own holdout-calibrated flaw at the holdout's patched version, so the fix_check recopies the holdout calibration (witness, exploit_calls and surfacing booleans) and the server carries no committed vulnerable fixture or FixCheckTarget; the deferred run image pins the holdout's patched tree, so the recopied booleans describe it."
+          "field": "benign_calls",
+          "value": "query_records expecting Test 1",
+          "reason": "Record A kept the committed capture's empty Account query route (totalSize 0, records []), so its benign call expected []; record B is retained, which copies the Salesforce REST API Developer Guide's first example response for the Account query (records Test 1 and Test 2) and adds the columns=true route sf data query issues when the query returns rows. The expected text is Test 1, the first record value of the copied documented output; record A's empty route follows no documented source, while the guide's first output for that query lists records."
+        },
+        {
+          "server_package": "https://github.com/akutishevsky/sf-mcp-server",
+          "flaw": null,
+          "field": "stand_ins",
+          "value": "record B's capture of example-org.my.salesforce.com",
+          "reason": "Both records serve only the Salesforce org under its real My Domain host, the org being a remote multi-tenant service that cannot run under the networkless confinement. Record A retained the committed capture's empty Account query route cited to the guide although the guide's first output for that query lists records; record B is retained, copying the guide's example response for the Account query whole (records Test 1 and Test 2, version identifier v66.0 replaced by v68.0, the doc's elision line dropped), adding the columns=true route sf issues when the query returns rows (from the Salesforce CLI plugin-data test exemplar), copying the guide's resource map and the sfdx-core test Organization record, and rewriting the two token values that spelled words about the fixture. Record B's capture follows the documented sources where record A's empty route does not. The capture is shared with the holdout twin CVE-2026-26029, whose fixture fingerprint moves and whose target is recalibrated in this change."
         }
       ],
-      "patched_version": "99fba0171b8c22b5ee3c0405053ccfd2910a066d"
+      "patched_version": "99fba0171b8c22b5ee3c0405053ccfd2910a066d",
+      "stand_ins": [
+        {
+          "replaces": "example-org.my.salesforce.com, the Salesforce org's REST and OAuth API that the real sf CLI calls over HTTPS at the org's My Domain host. It replaces the committed /usr/local/bin/sf shell stub, which stood in for the Salesforce CLI itself and printed a fixed empty record list for every invocation.",
+          "reason": "The real Salesforce CLI runs in the container under the confinement, so it is installed for real. A Salesforce org is a remote multi-tenant service that needs an account and the Internet, which no closed fixture network reaches, so the org alone is served by a stand-in under its real host name with the fixture authority's certificate (ADR 034), trusted through NODE_EXTRA_CA_CERTS.",
+          "file": "evals/docker/Dockerfile.stand-in",
+          "capture": "evals/stand_ins/example-org.my.salesforce.com.json",
+          "outputs": [
+            {
+              "request": "GET /services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account, issued by query_records through `sf data query` for the benign call",
+              "source": "software_sources",
+              "citation": "Salesforce REST API Developer Guide, Execute a SOQL Query (fetched 2026-11-07): the first example response body for the query of the name and id fields of Account, with its two records Test 1 and Test 2 and totalSize 14, copied as given but for the version identifier and the doc's elision line after the second record, dropped so the body parses as JSON; the server returns result.records, so Test 1 is a record value of the copied documented output",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "v66.0",
+                  "replacement": "v68.0"
+                }
+              ]
+            },
+            {
+              "request": "GET /services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account&columns=true, the column lookup sf data query issues when the query returns rows",
+              "source": "software_sources",
+              "citation": "the Salesforce CLI plugin-data test exemplar (plugin-data test/test-files/queryFields.exemplars.ts, the simpleQuery columnMetadata of the Id and Name columns), served as {\"columnMetadata\": [...]} as the plugin resolves it; the request is issued from src/commands/data/query.ts. The REST API guide gives no example for columns=true",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "GET /services/data/v68.0/query?q=...FROM%20Organization, sf's org status check",
+              "source": "software_sources",
+              "citation": "the sfdx-core test Organization record (sfdx-core test/unit/org/org.test.ts: Name My Org, InstanceName cs42, IsSandbox false, TrialExpirationDate null, NamespacePrefix null, OrganizationType Developer Edition), wrapped in the QueryResult envelope (totalSize, done, records with attributes) of the Salesforce REST API Developer Guide, Execute a SOQL Query; the record values are the test's, the envelope the doc's",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "GET /services/data/v68.0, the resources-by-version map used by sf's connection check",
+              "source": "software_sources",
+              "citation": "Salesforce REST API Developer Guide, List Available REST Resources (fetched 2026-11-07): the example JSON response body, copied whole",
+              "form_source": null,
+              "replacements": [
+                {
+                  "original": "v66.0",
+                  "replacement": "v68.0"
+                },
+                {
+                  "original": "https://MyDomainName.my.salesforce.com/id/00DRO0000008aXd2AI/005RO000000HfnkYAC",
+                  "replacement": "https://example-org.my.salesforce.com/id/00Dxx0000000000EAA/005xx0000000000AAA"
+                }
+              ]
+            },
+            {
+              "request": "GET /services/data, the versions list (not reached at run time, sf reads instanceApiVersion from the auth file)",
+              "source": "invented",
+              "citation": "one entry for the current release, version 68.0 labelled Winter '27, kept from the committed capture; the doc's own example lists older versions and copying it would move sf away from the v68.0 routes the holdout twin's build-time login also produces",
+              "form_source": "Salesforce REST API Developer Guide, List Available REST API Versions, an array of {label, url, version}",
+              "replacements": []
+            },
+            {
+              "request": "POST /services/oauth2/token, the refresh-token grant (not reached at run time, sf uses the stored access token)",
+              "source": "invented",
+              "citation": "values written for the org: the access_token and signature changed from the committed capture, whose values spelled words about the fixture; the ids and instance_url as committed",
+              "form_source": "Salesforce OAuth 2.0 refresh-token flow response (access_token, signature, scope, instance_url, id, token_type, issued_at)",
+              "replacements": []
+            },
+            {
+              "request": "any other request (the https and http default)",
+              "source": "software_sources",
+              "citation": "Salesforce REST API Developer Guide, Status Codes and Error Responses (fetched 2026-11-07): the 404 [{message, errorCode NOT_FOUND}]; path_form null, so the default quotes no request",
+              "form_source": null,
+              "replacements": []
+            }
+          ]
+        }
+      ],
+      "seeds": [
+        {
+          "item": "sf's own auth state for the org aliased playground, written by `sf org login sfdx-url --alias playground` run as uid 65534 with HOME=/tmp at build time: /tmp/.sfdx/integration@example-org.com.json (encrypted tokens), key.json (0600), alias.json, /tmp/.cache/sf (usage acknowledgement, CLI id, version tags) and /tmp/.sf; instanceUrl and loginUrl then set from https://127.0.0.1 to https://example-org.my.salesforce.com, build log files removed",
+          "kind": "generated",
+          "citation": "Salesforce CLI command reference, `sf org login sfdx-url`; generated by @salesforce/cli at image build",
+          "pin": "@salesforce/cli@2.157.8"
+        },
+        {
+          "item": "org alias playground",
+          "kind": "written",
+          "citation": "the benign call's targetOrg; neither the server nor its README names an alias",
+          "pin": null
+        },
+        {
+          "item": "org identity: My Domain host example-org.my.salesforce.com, org id 00Dxx0000000000EAA, user id 005xx0000000000AAA, username integration@example-org.com, refresh token in the sfdx URL",
+          "kind": "written",
+          "citation": "values of the holdout card's org kept; Salesforce publishes no sample org identity",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "Salesforce CLI (sf)",
+          "release": "2.157.8",
+          "day": "2026-11-05",
+          "source": "sf-mcp-server shells out to sf (src/index.ts lines 17 and 71 at 99fba01) and names no version; the Salesforce CLI documentation installs it from npm (npm install @salesforce/cli --global), whose dist-tags.latest was 2.157.8 (published 2026-11-03) on the calibration day and on 2026-11-07; the run image installs @salesforce/cli@2.157.8"
+        }
+      ]
     },
     {
       "server_package": "https://github.com/RyuzakiShinji/biome-mcp-server",

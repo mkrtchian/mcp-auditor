@@ -1,22 +1,75 @@
-# Nuisance run image of sf-mcp: a copy of Dockerfile.holdout-2026-26029-sf-mcp-patched, instructions unchanged,
-# pinning the admission's patched version, commit 99fba0171b8c22b5ee3c0405053ccfd2910a066d.
-
-# sf-mcp-server, patched build (CVE-2026-26029).
-# Identical to Dockerfile.holdout-2026-26029-sf-mcp except for the checked-out commit: 99fba01 is the fix that replaces
-# exec(sfCommand) with execFile("sf", args), so query_records no longer spawns a shell.
+# Nuisance run image of sf-mcp, at the admission's patched version, commit
+# 99fba0171b8c22b5ee3c0405053ccfd2910a066d (the fix that replaces exec(sfCommand) with
+# execFile("sf", args)).
+#
+# The tools shell out to the real Salesforce CLI (`sf`), installed from npm as the Salesforce CLI
+# documentation prescribes (`npm install @salesforce/cli --global`) and pinned to the release the
+# holdout card of CVE-2026-26029 records (2.157.8, still npm's `latest` on 2026-11-07). Only the
+# Salesforce org cannot run here: at run time it is the stand-in that replays
+# evals/stand_ins/example-org.my.salesforce.com.json under the org's My Domain host, trusted
+# through NODE_EXTRA_CA_CERTS.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl git ca-certificates \
+        git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN printf '#!/bin/sh\nprintf '\''{"result":{"records":[]}}'\''\n' > /usr/local/bin/sf \
-    && chmod 755 /usr/local/bin/sf
+RUN npm install @salesforce/cli@2.157.8 --global
 
+# One org authorized the way the sf documentation prescribes (`sf org login sfdx-url`), run as the
+# account the server runs under (uid/gid 65534, HOME=/tmp), so sf writes its own auth files, key
+# and usage acknowledgement. The org is unreachable at build time, so the login runs against a
+# loopback endpoint started and stopped within this instruction, answering the six requests the
+# login makes with the same bodies as the run's stand-in capture (sources in the admission
+# record). The stored plaintext instanceUrl and loginUrl are then set to the org's My Domain host,
+# the one the run's stand-in serves.
+RUN <<'LOGIN'
+set -e
+mkdir -p /opt/org && cd /opt/org
+cat > endpoint.mjs <<'ENDPOINT'
+import https from "node:https";
+import fs from "node:fs";
+const ORG = "00Dxx0000000000EAA", USER = "005xx0000000000AAA", NAME = "integration@example-org.com";
+const ID = `https://login.salesforce.com/id/${ORG}/${USER}`;
+const json = "application/json;charset=UTF-8";
+const routes = {
+  "POST /services/oauth2/token": [200, { access_token: `${ORG.slice(0, 15)}!AQEAQN0x7Lw2mP4sK9dR3tV6yB1cF8hJ5nQ`, signature: "q3Vx0bJm7cTz2Lk9Wd4RfY8sNh6Pe1Ag5Ju3Xo0Ci2E=", scope: "refresh_token api", instance_url: "https://127.0.0.1", id: ID, token_type: "Bearer", issued_at: "1762300800000" }],
+  "GET /services/oauth2/userinfo": [200, { sub: ID, user_id: USER, organization_id: ORG, preferred_username: NAME }],
+  [`GET /services/data/v51.0/sobjects/User/${USER}`]: [200, { Username: NAME }],
+  "GET /services/data/v51.0/query?q=SELECT%20Id%20FROM%20ScratchOrgInfo%20limit%201": [400, [{ message: "sObject type is not supported.", errorCode: "INVALID_TYPE" }]],
+  "GET /services/data": [200, [{ version: "68.0", label: "Winter '27", url: "/services/data/v68.0" }]],
+  "GET /services/data/v68.0/query?q=SELECT%20Name%2C%20InstanceName%2C%20IsSandbox%2C%20TrialExpirationDate%2C%20NamespacePrefix%2C%20OrganizationType%20FROM%20Organization": [200, { totalSize: 1, done: true, records: [{ attributes: { type: "Organization", url: `/services/data/v68.0/sobjects/Organization/${ORG}` }, Name: "My Org", InstanceName: "cs42", IsSandbox: false, TrialExpirationDate: null, NamespacePrefix: null, OrganizationType: "Developer Edition" }] }],
+};
+const missing = [404, [{ message: "The requested resource does not exist", errorCode: "NOT_FOUND" }]];
+https.createServer({ key: fs.readFileSync("key.pem"), cert: fs.readFileSync("cert.pem") }, (req, res) => {
+  const [status, body] = routes[`${req.method} ${req.url}`] ?? missing;
+  const text = JSON.stringify(body);
+  res.writeHead(status, { "Content-Type": json, "Content-Length": Buffer.byteLength(text) });
+  res.end(text);
+}).listen(443, "127.0.0.1");
+ENDPOINT
+openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 1 \
+    -subj "/CN=127.0.0.1" -addext "subjectAltName=IP:127.0.0.1" 2>/dev/null
+node endpoint.mjs &
+ENDPOINT_PID=$!
+until node -e 'require("net").connect(443, "127.0.0.1").on("connect", () => process.exit(0)).on("error", () => process.exit(1))'; do sleep 0.2; done
+printf 'force://PlatformCLI::5Aep8610000000000000000000000000000000000000000000000000000000000000000000000000000000@127.0.0.1\n' > auth-url.txt
+chown -R 65534:65534 /opt/org
+cd /
+setpriv --reuid 65534 --regid 65534 --clear-groups env HOME=/tmp NODE_EXTRA_CA_CERTS=/opt/org/cert.pem \
+    sf org login sfdx-url --sfdx-url-file /opt/org/auth-url.txt --alias playground --json >/dev/null
+kill "$ENDPOINT_PID"
+sed -i 's#https://127.0.0.1#https://example-org.my.salesforce.com#g' /tmp/.sfdx/*@*.json
+rm -rf /opt/org /tmp/node-compile-cache /tmp/sf-telemetry /tmp/.sf/*.log
+LOGIN
+
+# `npm install` as the project documents it (advisory GHSA-h4w9-g9c5-vfwq, PoC step 1): it
+# follows the package-lock.json the project commits at this revision. Without it the newest
+# @modelcontextprotocol/sdk 1.x fails `tsc` on src/index.ts line 10 (TS2353, `capabilities`).
 WORKDIR /app
 RUN git clone https://github.com/akutishevsky/sf-mcp-server.git . \
     && git checkout 99fba0171b8c22b5ee3c0405053ccfd2910a066d \
-    && npm ci \
+    && npm install \
     && npm run build
 
 ENTRYPOINT ["node", "/app/build/index.js"]

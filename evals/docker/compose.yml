@@ -905,7 +905,7 @@ services:
       context: .
       dockerfile: Dockerfile.sf-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "cca54d8060329836c84beaa3b382a097a484fd69719d3f68aa921bb6ea890b8f"
+        org.mcp-auditor.dockerfile-fingerprint: "c2e19b933e7ebf876a478ecb8d72d4da0fd193fdb0f2d2be501b0a731a72bc45"
     image: mcp-auditor-nuisance-sf-mcp:local
     profiles: ["nuisance"]
 
