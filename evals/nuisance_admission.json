@@ -24517,6 +24517,205 @@
           "source": "The server documentation names no model, only the OpenAI-compatible endpoint, so the model is a component of the documented endpoint deployment and the GGUF revision the holdout card pins is used."
         }
       ]
+    },
+    {
+      "server_package": "npm:mcp-memory-keeper",
+      "reaching_flaw": "CVE-2026-54561",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-54561",
+          "tools": [
+            {
+              "vulnerable_name": "context_import",
+              "patched_name": "context_import",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "context_get",
+              "patched_name": "context_get",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "0.13.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "context_import",
+              "arguments": {
+                "filePath": "project-context.json"
+              },
+              "expect": "Import successful!",
+              "before": []
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "context_import",
+              "context_get"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false,
+        "public_names": {
+          "stand_ins": [],
+          "trust": [],
+          "ip_label_domains": []
+        }
+      },
+      "launch": [],
+      "service": "memory-keeper",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-54561",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-54561",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-54561",
+          "field": "declared_function_is_effect",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-54561",
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-54561",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-54561",
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-54561",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-memory-keeper",
+          "flaw": "CVE-2026-54561",
+          "field": "declared_function_is_effect",
+          "value": "false",
+          "reason": "Record B read context_import from its description on the vulnerable version, which imports from a file path, as declaring the read of any path its argument names, so the read outside the data directory would be its function. Record A read it from the patched tool, whose description says imports are confined to the server's exports directory and that an absolute path must point inside it. The fix bounds the read to the exports directory, the root the server holds by default under the data directory, so the corrected tool reads a path inside a root it declares. Recorded false: the tool reads the file its caller names inside that root, and reading one outside it is the flaw, not the tool's function. The 2026-10-29 entry that logged the server not admitted read it true before the rule defined the declared function by the action of the flaw's class."
+        },
+        {
+          "server_package": "npm:mcp-memory-keeper",
+          "flaw": "CVE-2026-54561",
+          "field": "benign_calls",
+          "value": "the one call of record A, filePath 'project-context.json'",
+          "reason": "Both records import the export their image seeds in the exports directory and expect the server's success line, 'Import successful!', which no argument carries. They differ only by the seeded file's name, and the file belongs to the seed, which record A's is kept for."
+        },
+        {
+          "server_package": "npm:mcp-memory-keeper",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's written export, project-context.json, at the documented default data directory",
+          "reason": "Record A seeds one export with fixed neutral values, labelled written because it is authored to the export format the server's handler writes and no published sample exists. Record B seeds an export it labels generated although its item text and names are authored, and sets two environment variables for the data and export directories that the server does not need, its documented default directory serving as is. Record A is kept, with the default data directory made writable by the unprivileged account in the image."
+        },
+        {
+          "server_package": "npm:mcp-memory-keeper",
+          "flaw": "CVE-2026-54561",
+          "field": "counted_tools",
+          "value": "context_import",
+          "reason": "context_get stays in the flaw's tools but is not counted: its declared contract is to return the stored context of a session, so when it returns content imported from outside the scope it does what it declares (declared_function_is_effect true). The out-of-scope read and the count attach to context_import, which receives the path. context_get is the read-back step of the detection chain: the flaw's effect surfaces only through it, since context_import never echoes the imported content, and it is not an independently vulnerable tool."
+        }
+      ],
+      "patched_version": "0.13.0",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "exports/project-context.json, one memory-keeper JSON export (version 0.4.0 shape) holding a single context item (key 'language', value 'TypeScript'), baked at /tmp/mcp-data/memory-keeper/exports so the benign context_import has a valid file inside the exports directory",
+          "kind": "written",
+          "citation": "authored to the export JSON shape the context_export handler writes in src/index.ts (mcp-memory-keeper 0.13.0, format==='json' branch: {version, exported, session, contextItems, fileCache, checkpoints, metadata}); no published sample dataset and no build-time generator available, so written, with neutral fixed values carrying no machine value, no witness-format value and no audit word",
+          "pin": "mcp-memory-keeper@0.13.0"
+        }
+      ],
+      "software_releases": []
     }
   ]
 }

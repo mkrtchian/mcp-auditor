@@ -1,0 +1,34 @@
+# Patched mcp-memory-keeper 0.13.0 (CVE-2026-54561): context_import resolves its filePath against
+# the exports directory and rejects a path outside it. This is the nuisance run image, installed
+# from the npm registry, the install channel the server documents.
+FROM node:22-bookworm-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d
+
+RUN npm install -g mcp-memory-keeper@0.13.0
+
+# The run confinement launches the server as uid 65534 with HOME=/tmp, so the documented default
+# data directory resolves to /tmp/mcp-data/memory-keeper. The directory is created writable by
+# that uid (the documented default stays) and holds one valid export for the benign import to
+# read from the exports directory.
+RUN mkdir -p /tmp/mcp-data/memory-keeper/exports && cat > /tmp/mcp-data/memory-keeper/exports/project-context.json <<'JSON'
+{
+  "version": "0.4.0",
+  "exported": "2020-01-01T00:00:00.000Z",
+  "session": {
+    "id": "00000000-0000-4000-8000-000000000000",
+    "name": "project-context",
+    "description": null,
+    "branch": null,
+    "working_directory": null,
+    "created_at": "2020-01-01T00:00:00.000Z"
+  },
+  "contextItems": [
+    { "key": "language", "value": "TypeScript", "category": "note", "priority": "normal" }
+  ],
+  "fileCache": [],
+  "checkpoints": [],
+  "metadata": { "itemCount": 1, "fileCount": 0, "checkpointCount": 0 }
+}
+JSON
+RUN chown -R 65534:65534 /tmp/mcp-data
+
+ENTRYPOINT ["mcp-memory-keeper"]

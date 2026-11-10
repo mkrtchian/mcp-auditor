@@ -1017,6 +1017,15 @@ services:
     image: mcp-auditor-nuisance-houtini:local
     profiles: ["nuisance"]
 
+  memory-keeper:
+    build:
+      context: .
+      dockerfile: Dockerfile.memory-keeper
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "ee7291a79079823756b951e8d389c0bdb65fcef3eabc5ab114120d521313b22d"
+    image: mcp-auditor-nuisance-memory-keeper:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .

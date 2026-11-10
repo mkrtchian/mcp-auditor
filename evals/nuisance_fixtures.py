@@ -41,6 +41,7 @@ from evals.nuisance_fix_checks import (
     cve_2026_45555_roslyncodelens,
     cve_2026_46341_apify,
     cve_2026_47394_praisonai,
+    cve_2026_54561_memory_keeper,
     cve_2026_55157_token_optimizer,
     cve_2026_55787_flyto,
     cve_2026_57442_mcpvault,
@@ -112,4 +113,5 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_19328_skill_ninja.TARGETS,
     *cve_2026_40576_excel.TARGETS,
     *cve_2026_82112_houtini.TARGETS,
+    *cve_2026_54561_memory_keeper.TARGETS,
 )
