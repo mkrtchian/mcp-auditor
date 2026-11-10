@@ -21672,6 +21672,415 @@
         }
       ],
       "patched_version": "0.6.3"
+    },
+    {
+      "server_package": "PyPI:dbt-mcp",
+      "reaching_flaw": "CVE-2026-44968",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-44968",
+          "tools": [
+            {
+              "vulnerable_name": "build",
+              "patched_name": "build",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "compile",
+              "patched_name": "compile",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list",
+              "patched_name": "list",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "run",
+              "patched_name": "run",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "test",
+              "patched_name": "test",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_node_details_dev",
+              "patched_name": "get_node_details_dev",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "clone",
+              "patched_name": "clone",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "1.17.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "build",
+              "arguments": {
+                "node_selection": "customers"
+              },
+              "before": [],
+              "expect": "OK"
+            },
+            {
+              "tool": "compile",
+              "arguments": {
+                "node_selection": "customers"
+              },
+              "before": [],
+              "expect": "jaffle_shop"
+            },
+            {
+              "tool": "list",
+              "arguments": {
+                "node_selection": "customers"
+              },
+              "before": [],
+              "expect": "jaffle_shop"
+            },
+            {
+              "tool": "run",
+              "arguments": {
+                "node_selection": "customers"
+              },
+              "before": [],
+              "expect": "OK"
+            },
+            {
+              "tool": "test",
+              "arguments": {
+                "node_selection": "customers"
+              },
+              "before": [],
+              "expect": "OK"
+            },
+            {
+              "tool": "get_node_details_dev",
+              "arguments": {
+                "node_id": "customers"
+              },
+              "before": [],
+              "expect": "jaffle_shop"
+            },
+            {
+              "tool": "clone",
+              "arguments": {
+                "node_selection": "customers",
+                "state_path": "/project/target"
+              },
+              "before": [
+                {
+                  "tool": "build",
+                  "arguments": {
+                    "node_selection": "customers"
+                  }
+                }
+              ],
+              "expect": "OK"
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
+            "exploit_calls": [
+              "run",
+              "build",
+              "compile",
+              "list",
+              "test",
+              "clone",
+              "get_node_details_dev"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-44969",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": "1.17.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-44970",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": "1.17.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-55837",
+          "tools": [],
+          "effect_class": null,
+          "patched_version": "1.20.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [],
+      "service": "dbt",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-44968",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44968",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44968",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44968",
+          "field": "real_software",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-44968",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-44968",
+          "field": "fix_check.source",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-44968",
+          "field": "fix_check.relies_on_relaying_stand_in",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "PyPI:dbt-mcp",
+          "flaw": "CVE-2026-44968",
+          "field": "real_software",
+          "value": "clone answers true",
+          "reason": "record B recorded clone's real software unanswerable (software_error): its benign call named no state, and dbt clone then returns the Runtime Error '--state or --defer-state are required for deferral'. Record A gave clone the argument its description allows, state_path, pointing at the target/ directory dbt itself writes when the sample project is built, and the benign call returns without error on the patched image. The error B met is the software declining a call with no state, not a tool the software cannot run, so clone answers and is counted. Its benign call runs the build that writes that state first, so the state it names exists whether or not the image build left one."
+        },
+        {
+          "server_package": "PyPI:dbt-mcp",
+          "flaw": "CVE-2026-44968",
+          "field": "benign_calls",
+          "value": "record A's expects, clone with a build before it",
+          "reason": "record A's expects are kept: record B's expects for compile, list and get_node_details_dev (customer_lifetime_value, jaffle_shop.customers, model.jaffle_shop.customers) quote the node the call names or text its arguments carry, where record A's jaffle_shop is the sample project name, absent from every argument. Run, build, test and clone return the literal OK, the server's text for a quiet dbt command that prints nothing (the tool returns the subprocess output or OK), so no longer success text exists for them: a dbt command that prints is a failing or empty-selection one. OK appears in no call's arguments, so the load check accepts it. clone's call names state_path /project/target and follows a build call of the same node, the state dbt writes at build."
+        },
+        {
+          "server_package": "PyPI:dbt-mcp",
+          "flaw": null,
+          "field": "launch",
+          "value": "empty",
+          "reason": "record B passes dbt-mcp as the launch argument; the image's entrypoint is the server's documented command, so the launch needs no argument and the run image starts the server as the documentation deploys it."
+        },
+        {
+          "server_package": "PyPI:dbt-mcp",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: the published jaffle_shop_duckdb sample project, whole, at its pinned commit",
+          "reason": "record B adds a second, written dbt project outside the declared project scope, used only by the exploit. A fixture seeds only what a call reads, and no call reads it, so the run seeds the published sample alone. The exploit's decoy project sits in the fix-check images, which the run never builds."
+        },
+        {
+          "server_package": "PyPI:dbt-mcp",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "dbt-core 1.12.6 and dbt-duckdb 1.11.1",
+          "reason": "record B also lists duckdb 2.0.0, the engine dbt-duckdb pulls in transitively. dbt-duckdb 1.11.1 is the pinned adapter and duckdb floats with it, so the pinned releases are the two the image names."
+        },
+        {
+          "server_package": "PyPI:dbt-mcp",
+          "flaw": "CVE-2026-44969",
+          "field": "counted",
+          "value": "false",
+          "reason": "CVE-2026-44969 is the logging of a tool call's raw arguments to the server's log file when file logging is enabled, fixed in 1.17.1: a credential written to a file on disk, never returned in a tool response, so it falls in no graded class and no witness can surface through tools/call. It is recorded for completeness with a null effect_class and adds no counted tool."
+        },
+        {
+          "server_package": "PyPI:dbt-mcp",
+          "flaw": "CVE-2026-44970",
+          "field": "counted",
+          "value": "false",
+          "reason": "CVE-2026-44970 is the telemetry event that serializes each tool call's arguments and sends them to the vendor's usage endpoint, fixed in 1.17.1: data sent to an external endpoint, never returned in a tool response, so it falls in no graded class and no witness can surface through tools/call. It is recorded for completeness with a null effect_class and adds no counted tool."
+        },
+        {
+          "server_package": "PyPI:dbt-mcp",
+          "flaw": "CVE-2026-55837",
+          "field": "counted",
+          "value": "false",
+          "reason": "CVE-2026-55837 is an unauthenticated HTTP endpoint of the local OAuth helper the server starts for the platform login, fixed in 1.20.0 by host validation: it is not an MCP tool, is reached by no tools/call and returns its effect in no tool response, so it sets no version of the suite's server, which stays at 1.17.1, the first release fixing the counted flaw. It is recorded for completeness with a null effect_class and adds no counted tool."
+        }
+      ],
+      "patched_version": "1.17.1",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "The dbt Labs jaffle_shop_duckdb sample project (dbt_project.yml, models/, seeds/, profiles.yml), whole with its layout, cloned to /project and loaded with dbt seed then dbt run at image build, which also writes the duckdb file and target/ that dbt generates itself",
+          "kind": "published_sample",
+          "citation": "https://github.com/dbt-labs/jaffle_shop_duckdb/tree/20cc904370818ceab08cf19f8fd196e9e81def88 : the dbt Labs sample project for the duckdb adapter, whose README runs dbt seed and dbt run on it",
+          "pin": "20cc904370818ceab08cf19f8fd196e9e81def88"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "dbt-core",
+          "release": "1.12.6",
+          "day": "2026-11-08",
+          "source": "https://pypi.org/project/dbt-core/1.12.6/ (the latest stable release on the day of admission; the server's documentation names dbt Core without pinning a version)"
+        },
+        {
+          "software": "dbt-duckdb",
+          "release": "1.11.1",
+          "day": "2026-11-08",
+          "source": "https://pypi.org/project/dbt-duckdb/1.11.1/ (the duckdb adapter, the latest stable release on the day of admission; duckdb runs in-process, so the sample project runs under the closed network)"
+        }
+      ]
     }
   ]
 }

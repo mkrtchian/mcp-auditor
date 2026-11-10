@@ -972,6 +972,15 @@ services:
     image: mcp-auditor-nuisance-netlicensing:local
     profiles: ["nuisance"]
 
+  dbt:
+    build:
+      context: .
+      dockerfile: Dockerfile.dbt
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "1ef744187c78ea3d98ea787e36a1f35a43cd4fb0939d62f5ebffec6d417a39a2"
+    image: mcp-auditor-nuisance-dbt:local
+    profiles: ["nuisance"]
+
   knowns:
     build:
       context: .

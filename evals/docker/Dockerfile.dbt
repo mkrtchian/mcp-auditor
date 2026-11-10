@@ -1,0 +1,41 @@
+# dbt-mcp, patched version 1.17.1 (fixes CVE-2026-44968, CVE-2026-44969 and CVE-2026-44970).
+# The run image. The server drives the dbt CLI as an external subprocess, so dbt is installed in
+# its own environment, as the documentation deploys it, with the duckdb adapter: duckdb runs
+# in-process, so the dbt project needs no warehouse server and the image no network.
+FROM python:3.12-slim-bookworm@sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df
+
+# git clones the published sample project below.
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python -m venv /opt/dbt \
+    && /opt/dbt/bin/pip install --no-cache-dir "dbt-core==1.12.6" "dbt-duckdb==1.11.1" \
+    && ln -s /opt/dbt/bin/dbt /usr/local/bin/dbt
+
+# The server, isolated from the dbt environment (the documentation runs it with uvx). dbt-mcp
+# 1.17.x imports pydantic._internal._typing_extra.eval_type_backport, which pydantic 2.14 removed,
+# so under a floating pydantic the server does not import; pydantic<2.14 is the one bound, every
+# other dependency floats. See docs/nuisance-log.md for the failing import this bound fixes.
+RUN python -m venv /opt/mcp \
+    && /opt/mcp/bin/pip install --no-cache-dir "dbt-mcp==1.17.1" "pydantic<2.14"
+
+# dbt Labs' published sample project for the duckdb adapter, whole, pinned by commit, seeded and
+# built once so its models, its tables and its target/ state exist.
+RUN git clone https://github.com/dbt-labs/jaffle_shop_duckdb /project \
+    && git -C /project checkout 20cc904370818ceab08cf19f8fd196e9e81def88
+
+RUN cd /project && /opt/dbt/bin/dbt seed --profiles-dir /project \
+    && /opt/dbt/bin/dbt run --profiles-dir /project
+
+# The server runs as an unprivileged account and writes target/, logs/ and the duckdb file.
+RUN chmod -R 0777 /project
+
+ENV DBT_PROJECT_DIR=/project \
+    DBT_PROFILES_DIR=/project \
+    DBT_PATH=/opt/dbt/bin/dbt \
+    DISABLE_SEMANTIC_LAYER=true \
+    DISABLE_DISCOVERY=true \
+    DISABLE_ADMIN_API=true \
+    DISABLE_PRODUCT_DOCS=true
+
+ENTRYPOINT ["/opt/mcp/bin/dbt-mcp"]
