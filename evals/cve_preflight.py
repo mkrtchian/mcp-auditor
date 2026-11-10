@@ -1,7 +1,10 @@
 """The Docker preflight of the CVE benchmark: the daemon and the expected images, checked
 before any mode so a missing prerequisite reads as a crash and not as a detection miss. An
 image whose Dockerfile fingerprint label does not match is rebuilt, so the benchmark never
-audits whatever a tag happens to hold."""
+audits whatever a tag happens to hold.
+
+`python -m evals.cve_preflight` prints the expected services, the compose services the CVE
+calibration job builds."""
 
 import subprocess
 from collections.abc import Callable, Sequence
@@ -12,6 +15,7 @@ from rich.console import Console
 from evals.closed_network import ClosedNetworkUnsupported, check_closed_network_support
 from evals.cve_images import ComposeImageStore, ImageBuildFailed, ImageStore, ensure_images
 from evals.cve_planting import SENTINEL_SERVICE
+from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.run_images import DOCKER_REQUIREMENT
 
@@ -24,11 +28,15 @@ def expected_services(targets: Sequence[CVETarget]) -> tuple[str, ...]:
     # Both versions of every server, plus the sentinel unconditionally: a kept http_endpoint
     # and its namespace holder need it on any target, so dropping the fetch target must not
     # drop the sentinel from the preflight.
+    stand_ins = (
+        [STAND_IN_SERVICE] if any(t.planting_host.public_names.stand_ins for t in targets) else []
+    )
     return tuple(
         dict.fromkeys(
             [name for t in targets for name in t.images]
             + [t.patched_image for t in targets]
             + [SENTINEL_SERVICE]
+            + stand_ins
         )
     )
 
@@ -94,3 +102,11 @@ def preflight_ok(docker: PreflightDocker = HOST_DOCKER) -> bool:
             "[yellow]This Docker host cannot enforce --pids-limit, targets run without it.[/yellow]"
         )
     return True
+
+
+def main() -> None:
+    print(" ".join(expected_services(CVE_TARGETS)))
+
+
+if __name__ == "__main__":
+    main()

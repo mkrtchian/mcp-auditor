@@ -1,13 +1,17 @@
 from collections.abc import Callable
+from typing import Any
 
 import pytest
+import yaml
 
 from evals.closed_network import ClosedNetworkUnsupported
-from evals.cve_images import dockerfile_fingerprint
+from evals.cve_images import COMPOSE_FILE, dockerfile_fingerprint
 from evals.cve_planting import SENTINEL_SERVICE
+from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.cve_preflight import (
     PreflightDocker,
     expected_services,
+    main,
     preflight_ok,
     vulnerable_services,
 )
@@ -114,3 +118,23 @@ def test_expected_services_keeps_the_sentinel_with_the_fetch_target_filtered_out
 
     assert SENTINEL_SERVICE in expected_services(without_fetch)
     assert SENTINEL_SERVICE not in vulnerable_services(without_fetch)
+
+
+def test_expected_services_carry_the_stand_in_only_while_a_target_declares_one():
+    without_fetch = [target for target in CVE_TARGETS if target.cve_id != FETCH_ID]
+
+    assert STAND_IN_SERVICE in expected_services(CVE_TARGETS)
+    assert STAND_IN_SERVICE not in expected_services(without_fetch)
+
+
+def test_the_printed_services_are_compose_services_and_no_holdout_one(
+    capsys: pytest.CaptureFixture[str],
+):
+    compose_services: dict[str, Any] = yaml.safe_load(COMPOSE_FILE.read_text())["services"]
+
+    main()
+
+    printed = capsys.readouterr().out.split()
+    assert printed == list(expected_services(CVE_TARGETS))
+    assert set(printed) <= compose_services.keys()
+    assert not [service for service in printed if service.startswith("holdout-")]
