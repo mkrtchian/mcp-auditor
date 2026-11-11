@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+# Apache Gravitino's MCP server at v1.2.1 (patched for CVE-2026-41041), run over stdio. The
+# Gravitino it calls is the real one the gravitino backend stands (evals/gravitino_backend.py), the
+# launch naming its metalake and its URI.
+FROM python@sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39
+
+# git is needed to install the MCP server from its pinned source revision.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pinned at the v1.2.1 release commit.
+RUN pip install --no-cache-dir \
+    "gravitino_mcp_server @ git+https://github.com/apache/gravitino.git@e88bffcfc31b7a656c960245b63b1e4c4901b8ee#subdirectory=mcp-server"
+
+ENTRYPOINT ["python", "-m", "mcp_server"]

@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from evals.cve_images import dockerfile_instructions
 from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
+from evals.gravitino_backend import GRAVITINO_PARTS, GRAVITINO_SEED, GravitinoPart
 from evals.nuisance_admission import AdmittedServer
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
@@ -25,6 +26,29 @@ def the_benign_argument(service: str, name: str) -> Any:
 
 def run_dockerfile_env(server: AdmittedServer) -> dict[str, str]:
     return _env_values(image_dockerfile(server.service, DOCKER_DIRECTORY))
+
+
+def part_dockerfile_env(part: GravitinoPart) -> dict[str, str]:
+    return _env_values(image_dockerfile(part.service))
+
+
+def kafka_advertised_listeners() -> str:
+    kafka = next(part for part in GRAVITINO_PARTS if part.alias == "kafka")
+    return part_dockerfile_env(kafka)["KAFKA_ADVERTISED_LISTENERS"]
+
+
+def gravitino_catalog_properties() -> dict[str, dict[str, str]]:
+    return {
+        request.body["name"]: request.body["properties"]
+        for request in GRAVITINO_SEED
+        if request.path.endswith("/catalogs")
+    }
+
+
+def gravitino_seeded_values() -> list[str]:
+    return [
+        value for request in GRAVITINO_SEED for value in [request.path, *_strings(request.body)]
+    ]
 
 
 def benign_argument_values(server: AdmittedServer) -> list[str]:

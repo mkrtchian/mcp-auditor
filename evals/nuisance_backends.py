@@ -23,6 +23,7 @@ from evals import (
     facebook_ads_backend,
     gitlab_backend,
     googleapis_backend,
+    gravitino_backend,
     jenkins_backend,
     n8n_backend,
     responder_backend,
@@ -36,6 +37,7 @@ from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
 from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
 from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
+from evals.gravitino_backend import GRAVITINO_BRIDGE, GRAVITINO_IMAGE, GRAVITINO_SERVICES
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
 from evals.n8n_backend import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
 
@@ -83,6 +85,13 @@ BACKENDS: dict[str, RegisteredBackend] = {
         N8N_IMAGE,
         (N8N_SERVICE,),
         _served(n8n_backend.__file__, N8N_SERVICE),
+    ),
+    "gravitino": RegisteredBackend(
+        gravitino_backend.LIFECYCLE,
+        GRAVITINO_BRIDGE,
+        GRAVITINO_IMAGE,
+        GRAVITINO_SERVICES,
+        _served(gravitino_backend.__file__, *GRAVITINO_SERVICES),
     ),
     "atlassian": _responder(
         atlassian_backend.LIFECYCLE,

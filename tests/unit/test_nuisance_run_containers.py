@@ -42,3 +42,15 @@ def test_the_stand_in_a_backend_also_builds_is_rebuilt_once():
 
     assert images.backend_services.count(STAND_IN_SERVICE) == 1
     assert SENTINEL_SERVICE in images.backend_services
+
+
+def test_a_gravitino_server_lists_the_three_gravitino_part_images_among_the_backend_tags():
+    gravitino = edits.with_the_registered_backend(run_given.a_server("npm:g"), "gravitino")
+
+    images = run_images([gravitino])
+
+    assert {
+        "mcp-auditor-cve-gravitino-instance:local",
+        "mcp-auditor-cve-gravitino-db:local",
+        "mcp-auditor-cve-gravitino-kafka:local",
+    } <= set(images.backend_tags)

@@ -54,7 +54,11 @@ from evals.nuisance_gate_session_model import (
 from evals.nuisance_gate_session_recording import load_checked, record, recording_tree
 from evals.nuisance_images import backend_image_ids, image_tag
 from evals.nuisance_results import FigureExit
-from evals.nuisance_run_containers import run_images, sweep_run_containers
+from evals.nuisance_run_containers import (
+    remove_backend_containers,
+    run_images,
+    sweep_run_containers,
+)
 from evals.recording import RecordingRefused
 from evals.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 
@@ -118,10 +122,14 @@ async def run_gate(
     """Raises Refused on a run that cannot be compared or recorded before it starts."""
     refuse_without_closed_networks(harness.check_networks)
     opened = _open(options, harness)
+    images = run_images(options.servers)
     try:
+        # A built backend left running by a killed command never serves a gate: its provisioner
+        # stands it again from its image and its seed.
+        remove_backend_containers(harness.sweep, images)
         return await _run_opened(opened)
     finally:
-        sweep_run_containers(harness.sweep, run_images(options.servers))
+        sweep_run_containers(harness.sweep, images)
 
 
 async def _run_opened(opened: OpenedGate) -> NuisanceGateSession:

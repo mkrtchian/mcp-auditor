@@ -14,6 +14,8 @@ from evals.nuisance_gate import ServerComparison, ServerOutcome
 from evals.nuisance_gate_baseline import load_baselines, write_baseline
 from evals.nuisance_gate_session import run_gate
 from evals.nuisance_gate_session_model import NuisanceGateSession
+from tests.fakes import FakeContainerSweep
+from tests.unit.support.test_nuisance_admission_edits_given import on_the_ckan_backend
 from tests.unit.support.test_nuisance_admission_given import with_a_backend
 from tests.unit.support.test_nuisance_gate_baseline_given import a_gated_baseline
 
@@ -177,6 +179,26 @@ async def test_a_backend_server_records_its_backend_image_beside_its_service(tmp
         "filesystem-patched": "sha256:filesystem-patched",
         "apache/doris:all-in-one-4.1.3": "sha256:apache/doris:all-in-one-4.1.3",
     }
+
+
+async def test_a_built_backend_container_left_running_is_removed_before_the_first_benign_call(
+    tmp_path: Path,
+):
+    server = on_the_ckan_backend(FILESYSTEM)
+    given.a_gated_file(tmp_path, server)
+    containers = FakeContainerSweep.running_before_the_rebuild("stale_backend")
+    harness, removed_at_benign_calls = given.watching_removals_at_each_benign_call(
+        given.a_harness(
+            tmp_path,
+            given.scripted({server.server_package: given.clean_runs()}),
+            containers=containers,
+        ),
+        containers,
+    )
+
+    await run_gate(given.options([server]), harness)
+
+    assert removed_at_benign_calls == [["stale_backend"]]
 
 
 async def test_head_moving_during_the_runs_refuses_the_recording(tmp_path: Path):

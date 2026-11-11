@@ -1,4 +1,5 @@
 from collections.abc import Awaitable, Callable, Mapping, Sequence
+from dataclasses import replace
 from pathlib import Path
 
 import tests.unit.support.test_nuisance_run_given as run_given
@@ -92,6 +93,20 @@ def a_harness(
         check_networks=lambda: None,
         sweep=docker.sweep,
     )
+
+
+def watching_removals_at_each_benign_call(
+    harness: NuisanceGateHarness, containers: FakeContainerSweep
+) -> tuple[NuisanceGateHarness, list[list[str]]]:
+    """The harness, and what `containers` had removed at each benign call."""
+    removed: list[list[str]] = []
+    benign_call = harness.benign_call
+
+    async def call(server: AdmittedServer) -> str | None:
+        removed.append(list(containers.removed))
+        return await benign_call(server)
+
+    return replace(harness, benign_call=call), removed
 
 
 def options(

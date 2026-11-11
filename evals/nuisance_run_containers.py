@@ -1,6 +1,7 @@
 """The images of a nuisance run and their containers. A running server container is refused, as
-it may be an audit in progress. A running built backend container is removed before the rebuild,
-since a responder is a stateless stand-in its provisioner starts again from the fresh image. Both
+it may be an audit in progress. A running built backend container is removed at the start of a
+run, a vet and a gate, before any rebuild: every built backend starts again from its image and its
+seed, which its provisioner replays, so no state an earlier command wrote reaches the next. Both
 are swept at the end. The pulled backend (the Doris cluster) is persistent by design and left
 alone. A backend-less server with public names launches a holder and stand-ins, whose
 images the run rebuilds but never sweeps by tag: the launch removes its own containers, and a

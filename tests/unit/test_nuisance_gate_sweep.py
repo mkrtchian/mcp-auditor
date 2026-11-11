@@ -16,13 +16,14 @@ async def test_the_gate_removes_the_server_and_built_backend_containers_left_run
     tmp_path: Path,
 ):
     server = on_the_ckan_backend(given.FILESYSTEM)
-    containers = FakeContainerSweep(["leftover_server", "leftover_responder"])
+    # The first listing is the built backend containers the gate removes at its start.
+    containers = FakeContainerSweep([], ["leftover_server", "leftover_responder"])
     audit = given.scripted({server.server_package: given.clean_runs()})
 
     await run_gate(given.options([server]), given.a_harness(tmp_path, audit, containers=containers))
 
     assert containers.removed == ["leftover_server", "leftover_responder"]
-    assert containers.listed_tags == [[image_tag(server.service), *built_backend_tags([server])]]
+    assert containers.listed_tags[-1] == [image_tag(server.service), *built_backend_tags([server])]
 
 
 async def test_a_gate_that_raises_still_removes_the_containers_left_running(tmp_path: Path):

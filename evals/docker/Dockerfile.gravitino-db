@@ -1,0 +1,7 @@
+# The PostgreSQL the Gravitino backend's jdbc-postgresql catalog manages: PostgreSQL 16, the newest
+# release line Gravitino 1.2.1's JDBC PostgreSQL catalog documentation names
+# (docs/jdbc-postgresql-catalog.md at v1.2.1). Runs as the image's postgres user (uid 70), so the
+# entrypoint needs no capability to drop privileges.
+FROM postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
+ENV POSTGRES_USER=grav POSTGRES_PASSWORD=grav POSTGRES_DB=warehouse
+USER postgres

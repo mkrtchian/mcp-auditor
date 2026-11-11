@@ -1323,9 +1323,18 @@ services:
     image: mcp-auditor-nuisance-figma:local
     profiles: ["nuisance"]
 
-  # Nuisance backends: the images the backend fixtures build (the responders, the CKAN stack and
-  # the n8n instance), tagged as their backend modules tag them, rebuilt by the nuisance run with
-  # its server images.
+  gravitino:
+    build:
+      context: .
+      dockerfile: Dockerfile.gravitino
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "fb0a12352d52b08189348804f901601b9b916f665dc88348c213f521e35c5eb7"
+    image: mcp-auditor-nuisance-gravitino:local
+    profiles: ["nuisance"]
+
+  # Nuisance backends: the images the backend fixtures build (the responders, the CKAN stack, the
+  # n8n instance and the Gravitino stack), tagged as their backend modules tag them, rebuilt by the
+  # nuisance run with its server images.
 
   ckan-db:
     build:
@@ -1424,4 +1433,31 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "954f0fa9edb1668ed6b30e186e05c93caef5e8f7adb6f2fd24e65d4b00bdf0bb"
     image: mcp-auditor-cve-facebook-ads-responder:local
+    profiles: ["nuisance"]
+
+  gravitino-instance:
+    build:
+      context: .
+      dockerfile: Dockerfile.gravitino-instance
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "d549765fa9b484aac0bd57163c3b809c2ed6afcdb49676cae9a30ae8d7cdcbc8"
+    image: mcp-auditor-cve-gravitino-instance:local
+    profiles: ["nuisance"]
+
+  gravitino-db:
+    build:
+      context: .
+      dockerfile: Dockerfile.gravitino-db
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "9e11453214d51a7fd7928e39e7ed51dc2ae6ea34f32d4bc9281f693824d21d29"
+    image: mcp-auditor-cve-gravitino-db:local
+    profiles: ["nuisance"]
+
+  gravitino-kafka:
+    build:
+      context: .
+      dockerfile: Dockerfile.gravitino-kafka
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "d9d24bf1296c975ee111af76f8b5b9544dcaa71de5b4230133db15f7c4301d2c"
+    image: mcp-auditor-cve-gravitino-kafka:local
     profiles: ["nuisance"]

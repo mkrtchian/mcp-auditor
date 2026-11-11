@@ -26230,6 +26230,774 @@
         }
       ],
       "software_releases": []
+    },
+    {
+      "server_package": "https://github.com/apache/gravitino",
+      "reaching_flaw": "CVE-2026-41041",
+      "flaws": [
+        {
+          "flaw": "CVE-2026-41041",
+          "tools": [
+            {
+              "vulnerable_name": "get_list_of_schemas",
+              "patched_name": "get_list_of_schemas",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_list_of_tables",
+              "patched_name": "get_list_of_tables",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_table_metadata_details",
+              "patched_name": "get_table_metadata_details",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_of_topics",
+              "patched_name": "list_of_topics",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "load_topic",
+              "patched_name": "load_topic",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_of_models",
+              "patched_name": "list_of_models",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "load_model",
+              "patched_name": "load_model",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_model_versions",
+              "patched_name": "list_model_versions",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "load_model_version",
+              "patched_name": "load_model_version",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "load_model_version_by_alias",
+              "patched_name": "load_model_version_by_alias",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_of_filesets",
+              "patched_name": "list_of_filesets",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "load_fileset",
+              "patched_name": "load_fileset",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_files_in_fileset",
+              "patched_name": "list_files_in_fileset",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_tag_by_name",
+              "patched_name": "get_tag_by_name",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_metadata_by_tag",
+              "patched_name": "list_metadata_by_tag",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_tags_for_metadata",
+              "patched_name": "list_tags_for_metadata",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "associate_tag_with_metadata",
+              "patched_name": "associate_tag_with_metadata",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "disassociate_tag_from_metadata",
+              "patched_name": "disassociate_tag_from_metadata",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_policy_detail_information",
+              "patched_name": "get_policy_detail_information",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_metadata_by_policy",
+              "patched_name": "list_metadata_by_policy",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_policies_for_metadata",
+              "patched_name": "list_policies_for_metadata",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_policy_for_metadata",
+              "patched_name": "get_policy_for_metadata",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "associate_policy_with_metadata",
+              "patched_name": "associate_policy_with_metadata",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "disassociate_policy_from_metadata",
+              "patched_name": "disassociate_policy_from_metadata",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_statistics_for_metadata",
+              "patched_name": "list_statistics_for_metadata",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_statistics_for_partition",
+              "patched_name": "list_statistics_for_partition",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_job_template_by_name",
+              "patched_name": "get_job_template_by_name",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "1.2.1",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "get_list_of_schemas",
+              "arguments": {
+                "catalog_name": "lakehouse"
+              },
+              "expect": "sales",
+              "before": []
+            },
+            {
+              "tool": "get_list_of_tables",
+              "arguments": {
+                "catalog_name": "warehouse",
+                "schema_name": "retail"
+              },
+              "expect": "orders",
+              "before": []
+            },
+            {
+              "tool": "get_table_metadata_details",
+              "arguments": {
+                "catalog_name": "warehouse",
+                "schema_name": "retail",
+                "table_name": "orders"
+              },
+              "expect": "autoIncrement",
+              "before": []
+            },
+            {
+              "tool": "list_of_topics",
+              "arguments": {
+                "catalog_name": "streams",
+                "schema_name": "default"
+              },
+              "expect": "clicks",
+              "before": []
+            },
+            {
+              "tool": "load_topic",
+              "arguments": {
+                "catalog_name": "streams",
+                "schema_name": "default",
+                "topic_name": "clicks"
+              },
+              "expect": "cleanup.policy",
+              "before": []
+            },
+            {
+              "tool": "list_of_models",
+              "arguments": {
+                "catalog_name": "registry",
+                "schema_name": "prod"
+              },
+              "expect": "ranker",
+              "before": []
+            },
+            {
+              "tool": "load_model",
+              "arguments": {
+                "catalog_name": "registry",
+                "schema_name": "prod",
+                "model_name": "ranker"
+              },
+              "expect": "latestVersion",
+              "before": []
+            },
+            {
+              "tool": "list_model_versions",
+              "arguments": {
+                "catalog_name": "registry",
+                "schema_name": "prod",
+                "model_name": "ranker"
+              },
+              "expect": "stable",
+              "before": []
+            },
+            {
+              "tool": "load_model_version",
+              "arguments": {
+                "catalog_name": "registry",
+                "schema_name": "prod",
+                "model_name": "ranker",
+                "version": 0
+              },
+              "expect": "stable",
+              "before": []
+            },
+            {
+              "tool": "load_model_version_by_alias",
+              "arguments": {
+                "catalog_name": "registry",
+                "schema_name": "prod",
+                "model_name": "ranker",
+                "alias": "stable"
+              },
+              "expect": "file:/tmp/ranker/v0",
+              "before": []
+            },
+            {
+              "tool": "list_of_filesets",
+              "arguments": {
+                "catalog_name": "lakehouse",
+                "schema_name": "sales"
+              },
+              "expect": "events",
+              "before": []
+            },
+            {
+              "tool": "load_fileset",
+              "arguments": {
+                "catalog_name": "lakehouse",
+                "schema_name": "sales",
+                "fileset_name": "events"
+              },
+              "expect": "managed",
+              "before": []
+            },
+            {
+              "tool": "list_files_in_fileset",
+              "arguments": {
+                "catalog_name": "lakehouse",
+                "schema_name": "sales",
+                "fileset_name": "events",
+                "location_name": "unknown"
+              },
+              "expect": "part-000",
+              "before": []
+            },
+            {
+              "tool": "get_tag_by_name",
+              "arguments": {
+                "tag_name": "gold"
+              },
+              "expect": "anonymous",
+              "before": []
+            },
+            {
+              "tool": "list_metadata_by_tag",
+              "arguments": {
+                "tag_name": "gold"
+              },
+              "expect": "lakehouse",
+              "before": []
+            },
+            {
+              "tool": "list_tags_for_metadata",
+              "arguments": {
+                "metadata_full_name": "lakehouse",
+                "metadata_type": "catalog"
+              },
+              "expect": "[]",
+              "before": []
+            },
+            {
+              "tool": "associate_tag_with_metadata",
+              "arguments": {
+                "metadata_full_name": "lakehouse.sales",
+                "metadata_type": "schema",
+                "tags_to_associate": [
+                  "gold"
+                ]
+              },
+              "expect": "silver",
+              "before": []
+            },
+            {
+              "tool": "disassociate_tag_from_metadata",
+              "arguments": {
+                "metadata_full_name": "lakehouse.sales",
+                "metadata_type": "schema",
+                "tags_to_disassociate": [
+                  "gold"
+                ]
+              },
+              "expect": "silver",
+              "before": []
+            },
+            {
+              "tool": "get_policy_detail_information",
+              "arguments": {
+                "policy_name": "retention"
+              },
+              "expect": "custom",
+              "before": []
+            },
+            {
+              "tool": "list_metadata_by_policy",
+              "arguments": {
+                "policy_name": "retention"
+              },
+              "expect": "lakehouse",
+              "before": []
+            },
+            {
+              "tool": "list_policies_for_metadata",
+              "arguments": {
+                "metadata_full_name": "lakehouse",
+                "metadata_type": "catalog"
+              },
+              "expect": "retention",
+              "before": []
+            },
+            {
+              "tool": "get_policy_for_metadata",
+              "arguments": {
+                "metadata_full_name": "lakehouse",
+                "metadata_type": "catalog",
+                "policy_name": "retention"
+              },
+              "expect": "custom",
+              "before": []
+            },
+            {
+              "tool": "associate_policy_with_metadata",
+              "arguments": {
+                "metadata_full_name": "lakehouse.sales",
+                "metadata_type": "schema",
+                "policies_to_add": [
+                  "retention"
+                ]
+              },
+              "expect": "compaction",
+              "before": []
+            },
+            {
+              "tool": "disassociate_policy_from_metadata",
+              "arguments": {
+                "metadata_full_name": "lakehouse.sales",
+                "metadata_type": "schema",
+                "policies_to_remove": [
+                  "retention"
+                ]
+              },
+              "expect": "compaction",
+              "before": []
+            },
+            {
+              "tool": "list_statistics_for_metadata",
+              "arguments": {
+                "metalake_name": "analytics",
+                "metadata_type": "table",
+                "metadata_fullname": "warehouse.retail.orders"
+              },
+              "expect": "custom-row-count",
+              "before": []
+            },
+            {
+              "tool": "list_statistics_for_partition",
+              "arguments": {
+                "metalake_name": "analytics",
+                "metadata_type": "table",
+                "metadata_fullname": "warehouse.retail.orders",
+                "from_partition_name": "a",
+                "to_partition_name": "z"
+              },
+              "expect": "[]",
+              "before": []
+            },
+            {
+              "tool": "get_job_template_by_name",
+              "arguments": {
+                "name": "builtin-iceberg-rewrite-data-files"
+              },
+              "expect": "IcebergRewriteDataFilesJob",
+              "before": []
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-gravitino-cve202641041",
+            "exploit_calls": [
+              "get_list_of_schemas",
+              "get_list_of_tables",
+              "get_table_metadata_details",
+              "list_of_topics",
+              "load_topic",
+              "list_of_models",
+              "load_model",
+              "list_model_versions",
+              "load_model_version",
+              "load_model_version_by_alias",
+              "list_of_filesets",
+              "load_fileset",
+              "list_files_in_fileset",
+              "get_tag_by_name",
+              "list_metadata_by_tag",
+              "list_tags_for_metadata",
+              "associate_tag_with_metadata",
+              "disassociate_tag_from_metadata",
+              "get_policy_detail_information",
+              "list_metadata_by_policy",
+              "list_policies_for_metadata",
+              "get_policy_for_metadata",
+              "associate_policy_with_metadata",
+              "disassociate_policy_from_metadata",
+              "list_statistics_for_metadata",
+              "list_statistics_for_partition",
+              "get_job_template_by_name"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": true
+      },
+      "launch": [
+        "--metalake",
+        "analytics",
+        "--gravitino-uri",
+        "http://gravitino:8090"
+      ],
+      "service": "gravitino",
+      "backend": {
+        "provisioner": "gravitino",
+        "image": "mcp-auditor-cve-gravitino-instance:local",
+        "network": "mcp-auditor-cve-gravitino-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8",
+          "set_aside": "it saw the other agent's final summary before writing its own record"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2026-41041",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-41041",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-41041",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "https://github.com/apache/gravitino",
+          "flaw": "CVE-2026-41041",
+          "field": "tools",
+          "value": "get_list_of_schemas, get_list_of_tables, get_table_metadata_details, list_of_topics, load_topic, list_of_models, load_model, list_model_versions, load_model_version, load_model_version_by_alias, list_of_filesets, load_fileset, list_files_in_fileset, get_tag_by_name, list_metadata_by_tag, list_tags_for_metadata, associate_tag_with_metadata, disassociate_tag_from_metadata, get_policy_detail_information, list_metadata_by_policy, list_policies_for_metadata, get_policy_for_metadata, associate_policy_with_metadata, disassociate_policy_from_metadata, list_statistics_for_metadata, list_statistics_for_partition, get_job_template_by_name",
+          "reason": "record A lists 29 tools, record B 28; A carries the policy associate/disassociate pair and B carries run_job instead. The admission takes record A's read and write metadata tools: run_job and list_of_jobs are not the flaw's tools, since the template name goes in the request body and the job filter in the query string, not in the path the flaw composes. get_job_by_id and cancel_job leave the count: in 1.2.1 GravitinoEnv builds a RandomIdGenerator and JobManager.runJob takes the id from its nextId(), so no job id is fixed through Gravitino's own interfaces and no static benign call can pin one. The remaining 27 tools interpolate a caller-supplied identifier into the REST path unencoded."
+        },
+        {
+          "server_package": "https://github.com/apache/gravitino",
+          "flaw": null,
+          "field": "launch",
+          "value": "--metalake analytics --gravitino-uri http://gravitino:8090",
+          "reason": "record A reads metalake 'analytics', record B 'test'; the backend seeds and the server reads the one metalake, named 'analytics', the gravitino alias the backend answers under on its closed bridge."
+        }
+      ],
+      "patched_version": "1.2.1",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "metalake 'analytics'",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        },
+        {
+          "item": "fileset catalog 'lakehouse' (hadoop), schema 'sales', managed fileset 'events' with file part-000.txt",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        },
+        {
+          "item": "model catalog 'registry', schema 'prod', model 'ranker' with version 0 alias 'stable'",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        },
+        {
+          "item": "relational jdbc-postgresql catalog 'warehouse' (over PostgreSQL), schema 'retail', table 'orders' (columns id, amount), statistic custom-row-count",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        },
+        {
+          "item": "messaging kafka catalog 'streams' (over Kafka), schema 'default', topic 'clicks'",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        },
+        {
+          "item": "tags 'gold' (associated with catalog 'lakehouse') and 'silver' (associated with schema 'lakehouse.sales')",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        },
+        {
+          "item": "policies (custom) 'retention' (associated with catalog 'lakehouse') and 'compaction' (associated with schema 'lakehouse.sales')",
+          "kind": "written",
+          "citation": null,
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "Apache Gravitino server",
+          "release": "1.2.1",
+          "day": "2026-11-11",
+          "source": "https://github.com/apache/gravitino/releases/tag/v1.2.1 ; backend image the index digest of the 1.2.1-rc2 tag that became the voted 1.2.1 release, apache/gravitino@sha256:a7daab5fd18a8fd2d38f51c293abbba8393e2e00ac45d5423e1411d6ff7578f6 (Docker Hub carries no plain 1.2.1 tag; its /api/version answers 1.2.1). 1.2.1 is CVE-2026-41041's first patched version."
+        },
+        {
+          "software": "PostgreSQL (relational jdbc-postgresql catalog backend)",
+          "release": "16",
+          "day": "2026-11-11",
+          "source": "the newest release line Gravitino 1.2.1's JDBC PostgreSQL catalog documentation names (docs/jdbc-postgresql-catalog.md at v1.2.1: PostgreSQL 12.x-16.x). Image postgres:16-alpine postgres@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139"
+        },
+        {
+          "software": "Apache Kafka (messaging catalog backend)",
+          "release": "4.4.0",
+          "day": "2026-11-11",
+          "source": "Gravitino 1.2.1's Kafka catalog documentation names no release, so the stable release current on the admission day: the newest 4.x on Apache Kafka's downloads page (4.4.0, released 2026-10-22). Image apache/kafka:4.4.0 apache/kafka@sha256:833b867a9585a141da455dc2b57431c65cbccb27f11c91f694444cca9f777e0f"
+        }
+      ]
     }
   ]
 }
