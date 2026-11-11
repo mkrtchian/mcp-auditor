@@ -45,7 +45,7 @@ class ConsistencyDetail(BaseModel):
     rate: float
 
 
-class EvalMetrics(BaseModel):
+class HoneypotMetrics(BaseModel):
     recall: float
     precision: float
     consistency: float
@@ -188,7 +188,7 @@ def quiet_throttle_waits() -> None:
     logging.getLogger("mcp_auditor.throttling").setLevel(logging.ERROR)
 
 
-class PhaseUsage(BaseModel):
+class UsageBreakdown(BaseModel):
     """An audit's usage by phase. The channels overlap (the chain judgment counts in chain and
     judge), so the total is never their sum."""
 
@@ -197,11 +197,11 @@ class PhaseUsage(BaseModel):
     judge: ProviderUsage = ProviderUsage()
 
     @classmethod
-    def from_report(cls, report: AuditReport) -> "PhaseUsage":
+    def from_report(cls, report: AuditReport) -> "UsageBreakdown":
         return cls(total=report.provider_usage, chain=report.chain_usage, judge=report.judge_usage)
 
-    def add(self, other: "PhaseUsage") -> "PhaseUsage":
-        return PhaseUsage(
+    def add(self, other: "UsageBreakdown") -> "UsageBreakdown":
+        return UsageBreakdown(
             total=self.total.add(other.total),
             chain=self.chain.add(other.chain),
             judge=self.judge.add(other.judge),
@@ -212,13 +212,13 @@ class PhaseUsage(BaseModel):
 class SessionThrottles:
     requests: int = 0
     usage: ProviderUsage = field(default_factory=ProviderUsage)
-    by_target: dict[str, PhaseUsage] = field(default_factory=dict[str, PhaseUsage])
+    by_target: dict[str, UsageBreakdown] = field(default_factory=dict[str, UsageBreakdown])
 
     def count(self, report: AuditReport, target_id: str | None = None) -> int:
-        """Every report counted is billed, an incomplete attempt's and a replay's included."""
+        """Every report counted is billed, an incomplete attempt's and a retest's included."""
         if target_id is not None:
-            billed = self.by_target.get(target_id, PhaseUsage())
-            self.by_target[target_id] = billed.add(PhaseUsage.from_report(report))
+            billed = self.by_target.get(target_id, UsageBreakdown())
+            self.by_target[target_id] = billed.add(UsageBreakdown.from_report(report))
         return self.count_usage(report.provider_usage)
 
     def count_usage(self, usage: ProviderUsage) -> int:

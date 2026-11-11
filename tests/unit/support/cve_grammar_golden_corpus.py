@@ -10,7 +10,7 @@ import tests.unit.support.test_cve_grammar_given as given
 from evals.cve_grammar import MissClass, RunGrade
 from evals.cve_report_units import units_of
 from evals.cve_units import Unit, unit_of_exchanges
-from evals.judge_fixture import JudgeCase, JudgeInputs, load_fixture
+from evals.judge.fixture import JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AttackChain, AuditReport, ChainStep, EvalVerdict, TestCase
 
 JUDGE_FIXTURE_PATH = Path(__file__).parents[3] / "evals" / "fixtures" / "judge_cases.json"

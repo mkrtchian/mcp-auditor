@@ -1,0 +1,82 @@
+from evals.baseline import Baseline, BaselineStatus
+from evals.gate import Cell, Observation, cell_key, observe, protected_cells
+from evals.honeypot.decision import RunsOutcome
+from evals.honeypot.retest import Retester
+from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
+from evals.metrics import VerdictMap, build_run_detail
+from mcp_auditor.domain.models import AuditReport, EvalVerdict, ProviderUsage
+from tests.unit.support.test_eval_session_given import a_baseline_at_ci_conditions, a_session
+from tests.unit.support.test_honeypot_retest_given import FakeAudit, a_retest
+
+__all__ = ["a_session"]
+
+FLIPPED_HONEYPOT = HONEYPOTS[0]
+FLIPPED_CELL: Cell = next(
+    cell for cell, verdict in FLIPPED_HONEYPOT.ground_truth.items() if verdict == EvalVerdict.FAIL
+)
+PLANTED_FLAWS = sum(verdict == EvalVerdict.FAIL for verdict in MERGED_GROUND_TRUTH.values())
+
+
+def correct_runs(completed: int = 3) -> RunsOutcome:
+    return an_outcome([dict(MERGED_GROUND_TRUTH) for _ in range(completed)])
+
+
+def runs_missing_the_flipped_cell(completed: int = 3) -> RunsOutcome:
+    missing: VerdictMap = {**MERGED_GROUND_TRUTH, FLIPPED_CELL: EvalVerdict.PASS}
+    return an_outcome([dict(missing) for _ in range(completed)])
+
+
+def an_outcome(verdict_maps: list[VerdictMap]) -> RunsOutcome:
+    report = AuditReport(server_command="evals", tool_reports=[], provider_usage=ProviderUsage())
+    return RunsOutcome(
+        details=[
+            build_run_detail(index, verdicts, report, MERGED_GROUND_TRUTH)
+            for index, verdicts in enumerate(verdict_maps)
+        ],
+        verdict_maps=verdict_maps,
+        audits=[(index, report) for index in range(len(verdict_maps))],
+    )
+
+
+def a_baseline_all_correct(status: BaselineStatus) -> Baseline:
+    """Every merged ground truth cell observed correct in each run: all stable correct."""
+    observed = observe(dict(MERGED_GROUND_TRUTH), MERGED_GROUND_TRUTH)
+    run = {cell_key(cell): observation for cell, observation in observed.items()}
+    return a_baseline_at_ci_conditions(status=status).model_copy(
+        update={"runs": [dict(run) for _ in range(3)]}
+    )
+
+
+def a_baseline_without_the_flipped_cell(status: BaselineStatus) -> Baseline:
+    baseline = a_baseline_all_correct(status)
+    for run in baseline.runs:
+        del run[cell_key(FLIPPED_CELL)]
+    return baseline
+
+
+def a_baseline_that_saw_the_flipped_cell_pass(status: BaselineStatus) -> Baseline:
+    """Recorded when the flipped cell was labeled PASS: its stored summary counts it protected."""
+    baseline = a_baseline_all_correct(status)
+    for run in baseline.runs:
+        run[cell_key(FLIPPED_CELL)] = Observation.PASS
+    recorded_labels = {**MERGED_GROUND_TRUTH, FLIPPED_CELL: EvalVerdict.PASS}
+    return baseline.model_copy(
+        update={"protected": protected_cells(baseline.observation_runs(), recorded_labels)}
+    )
+
+
+def an_audit_reproducing_the_flip() -> FakeAudit:
+    retest = a_retest(reproducing=(FLIPPED_CELL,))
+    return FakeAudit({FLIPPED_HONEYPOT.name: [retest] * 5}, honeypots=HONEYPOTS)
+
+
+def a_crashing_audit() -> FakeAudit:
+    return FakeAudit({}, failing=frozenset({FLIPPED_HONEYPOT.name}), honeypots=HONEYPOTS)
+
+
+def a_retester(audit: FakeAudit) -> Retester:
+    return Retester(audit=audit, honeypots=HONEYPOTS, announce=lambda _: None, warn=lambda _: None)
+
+
+def no_audit_ran(audit: FakeAudit) -> bool:
+    return all(count == 0 for count in audit.calls.values())

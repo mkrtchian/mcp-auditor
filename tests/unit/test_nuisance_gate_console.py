@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_gate_console_given as given
-from evals.eval_display import print_verdict
+from evals.eval_display import print_outcome
 from evals.nuisance_gate_console import print_nuisance_gate_summary
 from evals.nuisance_gate_report import GATE_LEGEND
 from tests.unit.support.test_nuisance_gate_report_given import (
@@ -109,7 +109,7 @@ def test_the_summary_ends_with_the_verdict_panel(monkeypatch: pytest.MonkeyPatch
     output.truncate(0)
     output.seek(0)
 
-    print_verdict(report.gate.verdict, report.gate.reasons)
+    print_outcome(report.gate.verdict, report.gate.reasons)
 
     assert summary.endswith(output.getvalue())
     assert summary.count("Gate red.") == 1

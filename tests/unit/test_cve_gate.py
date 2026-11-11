@@ -12,7 +12,7 @@ from evals.cve_gate import (
     settle,
 )
 from evals.cve_grammar import CVEStatus
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 
 DETECTED = given.DETECTED
 MISSED = given.MISSED
@@ -112,7 +112,7 @@ def test_a_comparison_without_a_baseline_carries_no_baseline_runs():
 def test_settle_keeps_the_baseline_runs():
     pending = compare_target(given.a_gated_baseline(), given.a_candidate([MISSED] * 3))
 
-    settled = settle(pending, [True] * 4, ReplayRule())
+    settled = settle(pending, [True] * 4, RetestRule())
 
     assert settled.outcome == TargetOutcome.REGRESSION
     assert settled.baseline_runs == [DETECTED] * 6
@@ -130,7 +130,7 @@ def test_settle_keeps_the_baseline_runs():
 def test_settle_decides_the_replays(replays: list[bool | None], outcome: TargetOutcome):
     pending = given.a_comparison(TargetOutcome.PENDING_REPLAY)
 
-    settled = settle(pending, replays, ReplayRule())
+    settled = settle(pending, replays, RetestRule())
 
     assert settled.outcome == outcome
 
@@ -138,7 +138,7 @@ def test_settle_decides_the_replays(replays: list[bool | None], outcome: TargetO
 def test_settle_keeps_the_replays():
     pending = given.a_comparison(TargetOutcome.PENDING_REPLAY)
 
-    settled = settle(pending, [True, False, True, True, True], ReplayRule())
+    settled = settle(pending, [True, False, True, True, True], RetestRule())
 
     assert settled.replays == [True, False, True, True, True]
 
@@ -202,7 +202,7 @@ def test_unchecked_credits_that_change_no_status_stay_comparable():
 
 def test_an_undecided_replay_is_not_comparable():
     pending = given.a_comparison(TargetOutcome.PENDING_REPLAY)
-    undecided = settle(pending, [True, True], ReplayRule())
+    undecided = settle(pending, [True, True], RetestRule())
 
     result = judge([undecided], [])
 

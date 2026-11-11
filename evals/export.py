@@ -38,21 +38,21 @@ def export_judged_cases(
                         f.write(json.dumps(line) + "\n")
 
 
-def cve_export_path(report_path: Path) -> Path:
-    return report_path.with_name("cve_judged_cases.jsonl")
+def detection_export_path(report_path: Path) -> Path:
+    return report_path.with_name("detection_judged_cases.jsonl")
 
 
-def export_cve_judged_cases(audits: list[CVEAudit], report_path: Path) -> None:
-    """Single-step cases only: a CVE target has no per-case ground truth, and chains are
+def export_detection_judged_cases(audits: list[CVEAudit], report_path: Path) -> None:
+    """Single-step cases only: a target has no per-case ground truth, and chains are
     judged by another prompt."""
-    with cve_export_path(report_path).open("w") as f:
+    with detection_export_path(report_path).open("w") as f:
         for audit in audits:
             for tool_report in audit.report.tool_reports:
                 for case in tool_report.cases:
                     if case.eval_result is None:
                         continue
                     line = {
-                        "cve_id": audit.cve_id,
+                        "flaw_id": audit.cve_id,
                         "run_index": audit.run_index,
                         **_judge_input(case, tool_report.tool.description),
                     }
@@ -64,8 +64,8 @@ def nuisance_gate_export_path(report_path: Path) -> Path:
 
 
 def export_nuisance_gate_judged_cases(audits: list[GateAudit], report_path: Path) -> None:
-    """Chains included, unlike the CVE export: a chain verdict can raise an alarm, and the gate's
-    alarms may be analyzed."""
+    """Chains included, unlike the detection export: a chain verdict can raise an alarm, and the
+    gate's alarms may be analyzed."""
     with nuisance_gate_export_path(report_path).open("w") as f:
         for audit in audits:
             origin = {"server_package": audit.server_package, "run_index": audit.run_index}

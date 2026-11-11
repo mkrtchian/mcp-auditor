@@ -12,23 +12,23 @@ from typing import Any
 
 from rich.progress import Progress
 
-from evals import judge_display as display
 from evals.concurrency import positive_int
-from evals.declared_flips import Suite
+from evals.declared_flips import Instrument
 from evals.eval_session import REPOSITORY_TREE, Refused, declarations_of_head, read_tree
 from evals.gate import Observation
-from evals.judge_baseline import JUDGE_BASELINE_PATH
-from evals.judge_fixture import JudgeCase, JudgeFixture, ground_truth_of, load_fixture
-from evals.judge_gate import DEFAULT_JUDGE_RUNS
-from evals.judge_metrics import (
+from evals.judge import display
+from evals.judge.baseline import JUDGE_BASELINE_PATH
+from evals.judge.fixture import JudgeCase, JudgeFixture, ground_truth_of, load_fixture
+from evals.judge.gate import DEFAULT_JUDGE_RUNS
+from evals.judge.metrics import (
     CaseResult,
     JudgeMetrics,
     compute_judge_metrics,
     compute_per_category_metrics,
 )
-from evals.judge_outcomes import case_outcomes
-from evals.judge_session import NOT_COMPARABLE_EXIT, run_judge_gate
-from evals.judge_session_model import JudgeHarness, JudgeOptions, JudgeSessionResult
+from evals.judge.outcomes import case_outcomes
+from evals.judge.session import NOT_COMPARABLE_EXIT, run_judge_gate
+from evals.judge.session_model import JudgeHarness, JudgeOptions, JudgeSessionResult
 from evals.metrics import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.llm import create_judge_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
@@ -57,7 +57,7 @@ CRASHED_EXIT = 4
 
 def main() -> None:
     quiet_throttle_waits()
-    args = _parse_args()
+    args = parse_args()
     try:
         code = _evaluate(args)
     except Refused as refusal:
@@ -98,7 +98,7 @@ def _options(args: argparse.Namespace) -> JudgeOptions:
         settings=load_settings(),
         runs=args.runs,
         record_baseline=args.record_baseline,
-        ungated=args.ungated,
+        no_baseline=args.no_baseline,
         concurrency=args.concurrency,
     )
 
@@ -108,9 +108,9 @@ def _harness(tracking: "JudgeCallTracking") -> JudgeHarness:
         judge=tracking.judge,
         baseline_path=JUDGE_BASELINE_PATH,
         read_tree=read_tree,
-        declarations=lambda: declarations_of_head(Suite.JUDGE, REPOSITORY_TREE),
+        declarations=lambda: declarations_of_head(Instrument.JUDGE, REPOSITORY_TREE),
         clock=lambda: datetime.now(UTC),
-        on_replays=tracking.on_replays,
+        on_retests=tracking.on_retests,
         throttled_judgments=lambda: tracking.throttled_cases,
     )
 
@@ -143,9 +143,9 @@ class JudgeCallTracking:
         self._progress.advance(self._task)
         return verdict
 
-    def on_replays(self, count: int) -> None:
-        """Called once the run calls are all done, so later calls are replays."""
-        self._task = self._progress.add_task(f"Replaying {count} flipped case(s)", total=None)
+    def on_retests(self, count: int) -> None:
+        """Called once the run calls are all done, so later calls are retests."""
+        self._task = self._progress.add_task(f"Retesting {count} flipped case(s)", total=None)
 
 
 async def judge_one_case(llm: LLMPort, case: JudgeCase) -> tuple[EvalVerdict | None, ProviderUsage]:
@@ -170,26 +170,26 @@ def _judge_prompt(case: JudgeCase) -> str:
     return build_judge_prompt(tool=tool, test_case=test_case)
 
 
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the judge isolation eval")
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the judge eval")
     parser.add_argument("--runs", type=positive_int, default=DEFAULT_JUDGE_RUNS)
     parser.add_argument("--report", type=str, default=DEFAULT_REPORT_PATH)
     parser.add_argument(
         "--concurrency",
         type=positive_int,
         default=DEFAULT_CONCURRENCY,
-        help="Judge calls in flight at once, runs and replays alike.",
+        help="Judge calls in flight at once, runs and retests alike.",
     )
     parser.add_argument(
         "--record-baseline",
         action="store_true",
         help=(
-            "record evals/baselines/judge_isolation.json from a clean tree: run it twice at the"
-            " same commit (exploratory, then confirmed), then commit it by hand"
+            "record evals/baselines/judge.json from a clean tree: run it twice at the"
+            " same commit (unconfirmed, then confirmed), then commit it by hand"
         ),
     )
     parser.add_argument(
-        "--ungated",
+        "--no-baseline",
         action="store_true",
         help=(
             "gate on the floors alone (recall: one detection per run, precision: 0.50), at any"
@@ -215,9 +215,9 @@ def _build_report(result: JudgeSessionResult, fixture: JudgeFixture) -> dict[str
         },
         "gate": result.gate.model_dump(mode="json"),
         "runs": [{case: seen.value for case, seen in run.items()} for run in result.runs],
-        "replay_observations": {
+        "retest_observations": {
             case: [seen.value for seen in observations]
-            for case, observations in result.replay_observations.items()
+            for case, observations in result.retest_observations.items()
         },
         "throttled_judgments": result.throttled_judgments,
         "recorded": result.written.status.value if result.written else None,

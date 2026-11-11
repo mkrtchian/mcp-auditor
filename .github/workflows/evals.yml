@@ -32,10 +32,10 @@ jobs:
       - name: Run judge eval
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        # Half the default: the e2e job runs alongside and draws on the same tokens-per-minute limit
+        # Half the default: the honeypot suite job runs alongside and draws on the same tokens-per-minute limit
         run: uv run python -m evals.run_judge_eval --concurrency 15
 
-  e2e-eval:
+  honeypot-suite:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
@@ -54,18 +54,18 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev --locked
 
-      - name: Run e2e evals
+      - name: Run the honeypot suite
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TTY_COMPATIBLE: "1"
           TTY_INTERACTIVE: "0"
-        run: uv run python -m evals.run_evals
+        run: uv run python -m evals.run_honeypot_suite
 
-      - name: Upload e2e report
+      - name: Upload honeypot suite report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-eval-report
+          name: honeypot-suite-report
           path: |
-            output/eval_report.json
+            output/honeypot_report.json
             output/judged_cases.jsonl

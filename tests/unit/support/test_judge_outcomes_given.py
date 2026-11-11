@@ -1,9 +1,9 @@
 from evals.declared_flips import ActiveDeclarations
 from evals.gate import CellComparison, Observation
-from evals.gate_verdict import GateMode, GateVerdict
-from evals.judge_fixture import CaseLabel, JudgeFixture
-from evals.judge_gate import JudgeGateResult
-from evals.judge_session_model import JudgeSessionResult
+from evals.gate_outcome import GateMode, GateOutcome
+from evals.judge.fixture import CaseLabel, JudgeFixture
+from evals.judge.gate import JudgeGateResult
+from evals.judge.session_model import JudgeSessionResult
 from mcp_auditor.domain.models import AuditCategory
 from tests.unit.support.test_judge_baseline_given import a_baseline, conditions
 from tests.unit.support.test_judge_fixture_given import a_case, a_fixture
@@ -46,7 +46,7 @@ def a_judge_fixture() -> JudgeFixture:
 
 def a_result(
     cases: dict[str, CellComparison],
-    replay_observations: dict[str, list[Observation]] | None = None,
+    retest_observations: dict[str, list[Observation]] | None = None,
     with_baseline: bool = True,
 ) -> JudgeSessionResult:
     """Baseline on an older draw that lacks NEW_CASE, run 2 judging FLIPPED_CASE FAIL, runs 1
@@ -63,7 +63,7 @@ def a_result(
         runs=runs,
         gate=_a_gate(cases),
         baseline=a_baseline(runs=baseline_runs) if with_baseline else None,
-        replay_observations=replay_observations or {},
+        retest_observations=retest_observations or {},
         throttled_judgments=[],
         declarations=ActiveDeclarations(),
         written=None,
@@ -75,7 +75,7 @@ def a_result(
 def _a_gate(cases: dict[str, CellComparison]) -> JudgeGateResult:
     return JudgeGateResult(
         mode=GateMode.PAIRED,
-        verdict=GateVerdict.GREEN,
+        outcome=GateOutcome.GREEN,
         reasons=[],
         baseline_status=None,
         cases=cases,

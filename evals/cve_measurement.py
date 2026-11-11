@@ -13,7 +13,7 @@ from evals.cve_audit import RunOverrides
 from evals.cve_costs import CostPricing
 from evals.eval_session import Refused
 from evals.holdout_conditions import HoldoutConditions
-from evals.probe_candidates import Prices
+from evals.probe.candidates import Prices
 
 MEASUREMENT_UNGATED = "a measurement run is ungated: its conditions match no baseline"
 MEASUREMENT_WITHOUT_AUDIT = (

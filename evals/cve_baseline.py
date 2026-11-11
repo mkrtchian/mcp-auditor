@@ -33,7 +33,7 @@ from evals.cve_planting import PlantingHost
 from evals.cve_planting_base import LayoutMount
 from evals.cve_targets import CVETarget, LaunchMode, image_tag
 from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 from evals.public_stand_ins import STAND_INS_DIRECTORY, stand_in, stand_in_files
 from mcp_auditor.config import Settings
 
@@ -95,7 +95,7 @@ class CVETargetBaseline(BaseModel):
     status: BaselineStatus
     conditions: CVERunConditions
     fixture_fingerprint: str
-    replay_rule: ReplayRule
+    replay_rule: RetestRule
     commit: str
     recorded_at: str
     # One status per run, the rung kept for the reader: the planted nonce is the one detection.

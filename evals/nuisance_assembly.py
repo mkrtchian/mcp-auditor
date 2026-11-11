@@ -16,8 +16,8 @@ from evals.nuisance_counting import (
     flaw_counted_tools,
 )
 from evals.nuisance_results import NuisanceRunStatus, NuisanceServerResult
-from evals.probe import call_cost
-from evals.probe_candidates import Prices
+from evals.probe.analysis import call_cost
+from evals.probe.candidates import Prices
 
 
 def assemble_server(

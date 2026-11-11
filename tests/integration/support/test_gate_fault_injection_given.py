@@ -1,6 +1,6 @@
 from evals.baseline import Baseline, load_baseline
-from evals.fault_catalog import FAULTS, GREEN, Expectation, Fault
-from evals.fault_harness import FIXTURE_PATH, FaultResult, Harness, fixture_refusals
+from evals.honeypot.fault_catalog import FAULTS, GREEN, Expectation, Fault
+from evals.honeypot.fault_harness import FIXTURE_PATH, FaultResult, Harness, fixture_refusals
 from evals.honeypots import AuditModels
 from tests.fakes.fixture_judge import FixtureJudge
 from tests.fakes.scripted_audit_model import ScriptedAuditModel

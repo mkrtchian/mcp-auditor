@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_probe_corpus_given as given
-from evals.probe_corpus import (
+from evals.probe.corpus import (
+    CapturingLLM,
     ProbeCall,
-    RecordingLLM,
     load_corpus,
     sample_judge_calls,
     schema_for,
@@ -22,13 +22,13 @@ from mcp_auditor.domain.models import (
 from tests.fakes.llm import FakeLLM
 
 
-class TestRecordingLLM:
+class TestCapturingLLM:
     async def test_records_the_call_and_returns_the_inner_result(self):
         judgment = given.a_judgment()
         sink: list[ProbeCall] = []
-        recording = RecordingLLM(FakeLLM([judgment]), role="judge", sink=sink)
+        capturing = CapturingLLM(FakeLLM([judgment]), role="judge", sink=sink)
 
-        result, _ = await recording.generate_structured("judge this", Judgment)
+        result, _ = await capturing.generate_structured("judge this", Judgment)
 
         assert result is judgment
         assert [(c.schema_name, c.role, c.source, c.prompt) for c in sink] == [
@@ -38,8 +38,8 @@ class TestRecordingLLM:
 
     async def test_two_wrappers_on_one_sink_give_unique_ids_across_roles(self):
         sink: list[ProbeCall] = []
-        main = RecordingLLM(FakeLLM([given.a_judgment(), given.a_judgment()]), "main", sink)
-        judge = RecordingLLM(FakeLLM([given.a_judgment()]), "judge", sink)
+        main = CapturingLLM(FakeLLM([given.a_judgment(), given.a_judgment()]), "main", sink)
+        judge = CapturingLLM(FakeLLM([given.a_judgment()]), "judge", sink)
 
         await main.generate_structured("first", Judgment)
         await judge.generate_structured("second", Judgment)

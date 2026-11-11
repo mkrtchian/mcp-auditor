@@ -12,7 +12,8 @@ from evals.gate import (
     FlipCause,
     Observation,
     ProtectedCells,
-    ReplayRule,
+    RetestRule,
+    apply_retests,
     cell_key,
     classify,
     compare,
@@ -24,7 +25,6 @@ from evals.gate import (
     parse_cell_key,
     protected_cells,
     recall_floor_breached,
-    settle,
 )
 from evals.metrics import VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
@@ -192,43 +192,43 @@ def test_compare_marks_a_cell_the_baseline_did_not_record():
     ("reproduced", "cleared", "expected"),
     [(4, 0, True), (4, 1, True), (0, 2, False), (3, 2, False), (3, 1, None), (0, 1, None)],
 )
-def test_replay_rule_decides_four_of_five(reproduced: int, cleared: int, expected: bool | None):
-    assert ReplayRule().decide(reproduced, cleared) is expected
+def test_retest_rule_decides_four_of_five(reproduced: int, cleared: int, expected: bool | None):
+    assert RetestRule().decide(reproduced, cleared) is expected
 
 
 @pytest.mark.parametrize(
-    ("replays", "expected"),
+    ("retests", "expected"),
     [([True] * 4, True), ([False] * 2, False), ([True] * 3 + [False], None)],
 )
-def test_replay_rule_decides_a_sequence_of_replays(replays: list[bool], expected: bool | None):
-    assert ReplayRule().decide_replays(replays) is expected
+def test_retest_rule_decides_a_sequence_of_retests(retests: list[bool], expected: bool | None):
+    assert RetestRule().decide_retests(retests) is expected
 
 
-@pytest.mark.parametrize(("replays", "required"), [(5, 6), (5, 0), (0, 0)])
-def test_a_replay_rule_that_could_never_decide_is_rejected(replays: int, required: int):
+@pytest.mark.parametrize(("retests", "required"), [(5, 6), (5, 0), (0, 0)])
+def test_a_retest_rule_that_could_never_decide_is_rejected(retests: int, required: int):
     with pytest.raises(ValidationError):
-        ReplayRule(replays=replays, required=required)
+        RetestRule(retests=retests, required=required)
 
 
 def test_settle_turns_a_reproduced_flip_into_a_regression():
     flip = CellComparison(outcome=CellOutcome.FLIP, cause=FlipCause.WRONG_VERDICT)
 
-    settled = settle(flip, [True] * 4, ReplayRule())
+    settled = apply_retests(flip, [True] * 4, RetestRule())
 
     assert settled == CellComparison(
-        outcome=CellOutcome.REGRESSION, cause=FlipCause.WRONG_VERDICT, replays=[True] * 4
+        outcome=CellOutcome.REGRESSION, cause=FlipCause.WRONG_VERDICT, retests=[True] * 4
     )
 
 
 def test_settle_turns_a_cleared_flip_into_not_reproduced():
     flip = CellComparison(outcome=CellOutcome.FLIP, cause=FlipCause.UNCOVERED)
 
-    settled = settle(flip, [False, False], ReplayRule())
+    settled = apply_retests(flip, [False, False], RetestRule())
 
     assert settled == CellComparison(
         outcome=CellOutcome.FLIP_NOT_REPRODUCED,
         cause=FlipCause.UNCOVERED,
-        replays=[False, False],
+        retests=[False, False],
     )
 
 

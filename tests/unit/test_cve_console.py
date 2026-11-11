@@ -4,8 +4,8 @@ import pytest
 
 import tests.unit.support.test_cve_console_given as given
 from evals.cve_console import print_cve_summary
-from evals.eval_display import print_verdict
-from evals.gate_verdict import GateVerdict
+from evals.eval_display import print_outcome
+from evals.gate_outcome import GateOutcome
 
 REPORT_PATH = Path("output/cve_report.json")
 
@@ -55,7 +55,7 @@ def test_the_report_paths_name_the_judged_cases_export(monkeypatch: pytest.Monke
 
     assert (
         "Report written to output/cve_report.json and output/cve_report.md,"
-        " judged cases exported to output/cve_judged_cases.jsonl"
+        " judged cases exported to output/detection_judged_cases.jsonl"
     ) in output.getvalue()
 
 
@@ -68,7 +68,7 @@ def test_the_summary_ends_with_the_verdict_panel(monkeypatch: pytest.MonkeyPatch
     output.seek(0)
 
     assert report.gate is not None
-    print_verdict(GateVerdict.RED, report.gate.reasons)
+    print_outcome(GateOutcome.RED, report.gate.reasons)
 
     assert summary.endswith(output.getvalue())
 

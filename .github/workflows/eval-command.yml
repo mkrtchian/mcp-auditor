@@ -43,7 +43,7 @@ jobs:
             repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
             -f content=confused
           gh pr comment ${{ github.event.issue.number }} \
-            --body "Unrecognized command. Use \`/eval\` (judge only) or \`/eval full\` (judge + e2e)."
+            --body "Unrecognized command. Use \`/eval\` (judge only) or \`/eval full\` (judge + honeypot suite)."
 
       - name: Acknowledge command
         if: steps.cmd.outputs.mode != 'none'
@@ -109,8 +109,8 @@ jobs:
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
           exit $exit_code
 
-      - name: Run e2e eval
-        id: e2e
+      - name: Run honeypot suite
+        id: honeypot
         if: steps.cmd.outputs.mode == 'full' && steps.pr.outputs.fork == 'false'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -118,7 +118,7 @@ jobs:
           TTY_INTERACTIVE: "0"
         run: |
           set +e
-          uv run python -m evals.run_evals
+          uv run python -m evals.run_honeypot_suite
           exit_code=$?
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
           exit $exit_code
@@ -129,13 +129,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MODE: ${{ steps.cmd.outputs.mode }}
           JUDGE_EXIT_CODE: ${{ steps.judge.outputs.exit_code }}
-          E2E_EXIT_CODE: ${{ steps.e2e.outputs.exit_code }}
+          HONEYPOT_EXIT_CODE: ${{ steps.honeypot.outputs.exit_code }}
           SHA: ${{ steps.pr.outputs.sha }}
         run: |
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           gate_line=""
-          if [ -f output/eval_report.json ]; then
-            gate="$(jq -r '.gate.mode + (if .gate.baseline_status then ", baseline " + .gate.baseline_status else "" end)' output/eval_report.json)"
+          if [ -f output/honeypot_report.json ]; then
+            gate="$(jq -r '.gate.mode + (if .gate.baseline_status then ", baseline " + .gate.baseline_status else "" end)' output/honeypot_report.json)"
             gate_line=" Gate: $gate."
           fi
           commit_line=" Commit: ${SHA:0:7}."
@@ -148,10 +148,10 @@ jobs:
               3) reason=": judge not comparable or refused (conditions, fixture or baseline, see the log)" ;;
               4) reason=": judge crashed (see the log)" ;;
               *)
-                case "$E2E_EXIT_CODE" in
-                  1) reason=": e2e red (regression, floor or threshold)" ;;
-                  3) reason=": e2e not comparable (conditions, fixtures or incomplete runs, see the log)" ;;
-                  4) reason=": e2e crashed (see the log)" ;;
+                case "$HONEYPOT_EXIT_CODE" in
+                  1) reason=": honeypot suite red (regression, floor or threshold)" ;;
+                  3) reason=": honeypot suite not comparable (conditions, fixtures or incomplete runs, see the log)" ;;
+                  4) reason=": honeypot suite crashed (see the log)" ;;
                   *) reason="" ;;
                 esac
                 ;;

@@ -5,10 +5,10 @@ import pytest
 
 import tests.unit.support.test_eval_display_given as display_given
 import tests.unit.support.test_judge_outcomes_given as outcomes_given
-from evals import judge_display
 from evals.gate import CellComparison, CellOutcome, FlipCause
-from evals.judge_outcomes import CaseOutcomes, case_outcomes
-from evals.judge_session_model import JudgeSessionResult
+from evals.judge import display as judge_display
+from evals.judge.outcomes import CaseOutcomes, case_outcomes
+from evals.judge.session_model import JudgeSessionResult
 
 FLIPPED_ID = outcomes_given.FLIPPED_ID
 
@@ -23,11 +23,11 @@ def a_result_with_a_flip_not_reproduced() -> JudgeSessionResult:
             FLIPPED_ID: CellComparison(
                 outcome=CellOutcome.FLIP_NOT_REPRODUCED,
                 cause=FlipCause.WRONG_VERDICT,
-                replays=[True, False, False],
+                retests=[True, False, False],
             ),
             outcomes_given.STEADY_ID: CellComparison(outcome=CellOutcome.UNCHANGED),
         },
-        replay_observations={FLIPPED_ID: [outcomes_given.F, outcomes_given.P, outcomes_given.P]},
+        retest_observations={FLIPPED_ID: [outcomes_given.F, outcomes_given.P, outcomes_given.P]},
     )
 
 

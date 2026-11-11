@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 import tests.unit.support.test_declared_flips_given as given
 from evals.declared_flips import (
-    Suite,
+    Instrument,
     active_declarations,
     apply_declarations,
     declaration_problems,
@@ -22,6 +22,14 @@ OTHER_CELL: Cell = ("get_user", AuditCategory.ERROR_HANDLING)
 
 def test_a_missing_file_loads_as_no_entry(tmp_path: Path):
     assert load_declared_flips(tmp_path / "absent.json") == []
+
+
+def test_an_entry_names_its_instrument(tmp_path: Path):
+    path = given.a_file_holding(tmp_path, given.a_raw_entry(instrument="judge"))
+
+    [entry] = load_declared_flips(path)
+
+    assert entry.instrument == Instrument.JUDGE
 
 
 def test_a_valid_file_round_trips(tmp_path: Path):
@@ -61,19 +69,19 @@ def test_the_entries_of_a_commit_are_those_based_on_its_parent():
     current = given.an_entry(base=given.BASE)
     history = given.an_entry(base=given.OTHER_BASE)
 
-    assert entries_of_commit([current, history], Suite.HONEYPOT, given.BASE) == [current]
+    assert entries_of_commit([current, history], Instrument.HONEYPOT, given.BASE) == [current]
 
 
 def test_a_commit_without_a_parent_has_no_entry():
-    assert entries_of_commit([given.an_entry()], Suite.HONEYPOT, None) == []
+    assert entries_of_commit([given.an_entry()], Instrument.HONEYPOT, None) == []
 
 
-def test_the_entries_of_a_suite_leave_the_other_suite_out():
+def test_the_entries_of_an_instrument_leave_the_other_instrument_out():
     honeypot = given.an_entry()
-    judge = given.an_entry(key="0123456789abcdef", suite=Suite.JUDGE)
+    judge = given.an_entry(key="0123456789abcdef", instrument=Instrument.JUDGE)
 
-    assert entries_of_commit([honeypot, judge], Suite.JUDGE, given.BASE) == [judge]
-    assert entries_of_commit([honeypot, judge], Suite.HONEYPOT, given.BASE) == [honeypot]
+    assert entries_of_commit([honeypot, judge], Instrument.JUDGE, given.BASE) == [judge]
+    assert entries_of_commit([honeypot, judge], Instrument.HONEYPOT, given.BASE) == [honeypot]
 
 
 def test_a_clean_tree_activates_the_declared_keys():
@@ -104,7 +112,7 @@ def test_a_key_outside_the_ground_truth_is_a_problem():
 
 
 def test_a_judge_entry_naming_an_unknown_case_is_a_problem():
-    judge = given.an_entry(key="fedcba9876543210", suite=Suite.JUDGE)
+    judge = given.an_entry(key="fedcba9876543210", instrument=Instrument.JUDGE)
 
     problems = declaration_problems([judge], frozenset({"0123456789abcdef"}))
 
@@ -122,7 +130,7 @@ def test_a_key_named_twice_is_a_problem():
 def test_an_entry_of_another_commit_naming_an_unknown_key_is_no_problem():
     old = given.an_entry(key="removed/input_validation", base=given.OTHER_BASE)
 
-    entries = entries_of_commit([old, given.an_entry()], Suite.HONEYPOT, given.BASE)
+    entries = entries_of_commit([old, given.an_entry()], Instrument.HONEYPOT, given.BASE)
 
     assert declaration_problems(entries, given.KNOWN_KEYS) == []
 

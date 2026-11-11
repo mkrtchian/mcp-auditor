@@ -60,5 +60,5 @@ def a_run(comparisons: dict[Cell, CellComparison], runs: Runs | None = None) -> 
     )
 
 
-def comparison(outcome: CellOutcome, replays: list[bool] | None = None) -> CellComparison:
-    return CellComparison(outcome=outcome, replays=replays or [])
+def comparison(outcome: CellOutcome, retests: list[bool] | None = None) -> CellComparison:
+    return CellComparison(outcome=outcome, retests=retests or [])

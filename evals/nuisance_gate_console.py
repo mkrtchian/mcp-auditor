@@ -5,8 +5,8 @@ from pathlib import Path
 
 from rich.text import Text
 
-from evals.cell_grid import replay_fraction
-from evals.eval_display import GateRow, console, gate_table, print_report_paths, print_verdict
+from evals.cell_grid import retest_fraction
+from evals.eval_display import GateRow, console, gate_table, print_outcome, print_report_paths
 from evals.export import nuisance_gate_export_path
 from evals.nuisance_gate_report import (
     GATE_LEGEND,
@@ -30,7 +30,7 @@ def print_nuisance_gate_summary(report: NuisanceGateReport, report_path: Path) -
     for line in render_throttled(report):
         console.print(Text(line, style="yellow"))
     print_report_paths(report_path, nuisance_gate_export_path(report_path))
-    print_verdict(report.gate.verdict, report.gate.reasons)
+    print_outcome(report.gate.verdict, report.gate.reasons)
 
 
 def _print_lines(lines: list[str]) -> None:
@@ -47,11 +47,11 @@ def _gate_rows(report: NuisanceGateReport) -> list[GateRow]:
     lines = {line.server_package: line for line in report.servers}
     return [
         GateRow(
-            target=comparison.server_package,
+            subject=comparison.server_package,
             outcome=comparison.outcome.value,
             baseline=server_letters(comparison.baseline_runs) or "-",
             run=server_letters(comparison.candidate_runs) or "-",
-            replays=replay_fraction(comparison.replays),
+            retests=retest_fraction(comparison.replays),
             detail=server_detail(comparison, lines.get(comparison.server_package)),
         )
         for comparison in report.gate.servers

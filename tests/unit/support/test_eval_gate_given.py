@@ -1,6 +1,6 @@
 from evals.gate import Cell, DetectionCount, Observation
 from evals.ground_truth import GroundTruth
-from evals.metrics import EvalMetrics, VerdictMap
+from evals.metrics import HoneypotMetrics, VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 VULNERABLE_CELL: Cell = ("get_user", AuditCategory.INPUT_VALIDATION)
@@ -20,8 +20,8 @@ def metrics(
     precision: float = 0.9,
     consistency: float = 0.9,
     distribution_coverage: float = 0.9,
-) -> EvalMetrics:
-    return EvalMetrics(
+) -> HoneypotMetrics:
+    return HoneypotMetrics(
         recall=recall,
         precision=precision,
         consistency=consistency,

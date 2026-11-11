@@ -1,13 +1,18 @@
+import json
 from pathlib import Path
 
 import tests.unit.support.test_judge_baseline_given as given
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.judge_baseline import (
+from evals.gate import RetestRule
+from evals.honeypots import REPO_ROOT
+from evals.judge.baseline import (
+    JUDGE_BASELINE_PATH,
     judge_baseline_integrity,
     judge_condition_mismatches,
     load_judge_baseline,
     write_judge_baseline,
 )
+from evals.judge.fixture import load_fixture
 from tests.unit.support.test_judge_fixture_given import a_case, a_fixture
 
 PASS_ID = given.PASS_ID
@@ -84,7 +89,7 @@ def test_a_redraw_mismatches_on_the_inputs_fingerprint():
 
 
 def test_a_baseline_written_then_loaded_is_equal(tmp_path: Path):
-    path = tmp_path / "baselines" / "judge_isolation.json"
+    path = tmp_path / "baselines" / "judge.json"
     baseline = given.a_baseline()
 
     write_judge_baseline(path, baseline)
@@ -93,9 +98,9 @@ def test_a_baseline_written_then_loaded_is_equal(tmp_path: Path):
 
 
 def test_a_baseline_written_over_another_replaces_it_and_leaves_no_temporary(tmp_path: Path):
-    path = tmp_path / "judge_isolation.json"
+    path = tmp_path / "judge.json"
     write_judge_baseline(path, given.a_baseline())
-    second = given.a_baseline(status=BaselineStatus.EXPLORATORY)
+    second = given.a_baseline(status=BaselineStatus.UNCONFIRMED)
 
     write_judge_baseline(path, second)
 
@@ -105,3 +110,24 @@ def test_a_baseline_written_over_another_replaces_it_and_leaves_no_temporary(tmp
 
 def test_loading_an_absent_baseline_gives_none(tmp_path: Path):
     assert load_judge_baseline(tmp_path / "missing.json") is None
+
+
+def test_the_committed_baseline_still_keyed_replay_rule_loads_and_gates():
+    assert "replay_rule" in json.loads(JUDGE_BASELINE_PATH.read_text())
+    fixture = load_fixture(REPO_ROOT / "evals" / "fixtures" / "judge_cases.json")
+
+    baseline = load_judge_baseline(JUDGE_BASELINE_PATH)
+
+    assert baseline is not None and baseline.retest_rule == RetestRule()
+    assert baseline.status == BaselineStatus.CONFIRMED
+    assert judge_baseline_integrity(baseline, fixture) == []
+
+
+def test_a_written_baseline_carries_the_retest_keys_only(tmp_path: Path):
+    path = tmp_path / "judge.json"
+
+    write_judge_baseline(path, given.a_baseline())
+
+    written = json.loads(path.read_text())
+    assert written["retest_rule"] == {"retests": 5, "required": 4}
+    assert "replay_rule" not in written

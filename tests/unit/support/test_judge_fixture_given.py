@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.judge_fixture import (
+from evals.judge.fixture import (
     CaseLabel,
     CaseSource,
     DrawRecord,

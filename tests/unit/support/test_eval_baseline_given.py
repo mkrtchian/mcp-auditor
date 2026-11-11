@@ -9,11 +9,11 @@ from evals.baseline import (
 from evals.gate import (
     Cell,
     Observation,
-    ReplayRule,
+    RetestRule,
     cell_key,
 )
 from evals.ground_truth import GroundTruth
-from evals.metrics import EvalMetrics
+from evals.metrics import HoneypotMetrics
 from tests.unit.support.test_eval_gate_given import SAFE_CELL, VULNERABLE_CELL, a_ground_truth
 
 RECORDED_COMMIT = "0123abc"
@@ -107,9 +107,9 @@ def conditions(
 
 
 def a_baseline(
-    status: BaselineStatus = BaselineStatus.EXPLORATORY,
+    status: BaselineStatus = BaselineStatus.UNCONFIRMED,
     runs: ObservationRuns | None = None,
-    replay_rule: ReplayRule | None = None,
+    retest_rule: RetestRule | None = None,
     ground_truth: GroundTruth | None = None,
 ) -> Baseline:
     if runs is None:
@@ -119,11 +119,13 @@ def a_baseline(
     return Baseline(
         status=status,
         conditions=conditions(ground_truth=ground_truth),
-        replay_rule=replay_rule or ReplayRule(),
+        retest_rule=retest_rule or RetestRule(),
         commit=RECORDED_COMMIT,
         recorded_at="2026-09-23T10:00:00+00:00",
         runs=[{cell_key(cell): observation for cell, observation in run.items()} for run in runs],
-        metrics=EvalMetrics(recall=0.9, precision=0.8, consistency=0.7, distribution_coverage=0.95),
+        metrics=HoneypotMetrics(
+            recall=0.9, precision=0.8, consistency=0.7, distribution_coverage=0.95
+        ),
     )
 
 

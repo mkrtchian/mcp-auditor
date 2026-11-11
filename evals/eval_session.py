@@ -19,20 +19,20 @@ from evals.declared_flips import (
     DECLARED_FLIPS_PATH,
     ActiveDeclarations,
     DeclaredFlip,
-    Suite,
+    Instrument,
     active_declarations,
     declaration_problems,
     entries_of_commit,
     load_declared_flips,
 )
 from evals.gate import cell_key
-from evals.gate_verdict import GateMode
+from evals.gate_outcome import GateMode
 from evals.ground_truth import GroundTruth
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, REPO_ROOT
-from evals.recording import condition_refusals, exploratory_commit_refusal, rescore_refusals
+from evals.recording import condition_refusals, rescore_refusals, unconfirmed_commit_refusal
 from mcp_auditor.config import Settings, load_settings
 
-BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot_e2e.json"
+BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot.json"
 DEFAULT_RUNS = 3
 DEFAULT_BUDGET = 10
 DEFAULT_CONCURRENCY = 9
@@ -48,12 +48,12 @@ class Refused(Exception):
 
 
 @dataclass(frozen=True)
-class EvalOptions:
+class HoneypotOptions:
     runs: int
     budget: int
     report: str
     record_baseline: bool
-    ungated: bool
+    no_baseline: bool
     concurrency: int
 
 
@@ -64,8 +64,8 @@ class TreeState:
 
 
 @dataclass(frozen=True)
-class EvalSession:
-    """Fixed before any LLM call. `baseline` is None under --ungated, whatever the file holds.
+class HoneypotSession:
+    """Fixed before any LLM call. `baseline` is None under --no-baseline, whatever the file holds.
 
     The session records a baseline exactly when it holds a `tree`.
     """
@@ -89,21 +89,24 @@ class WorkingTree:
     read_tree: Callable[[], TreeState]
 
 
-def open_session(options: EvalOptions, working_tree: WorkingTree) -> EvalSession:
+def open_session(options: HoneypotOptions, working_tree: WorkingTree) -> HoneypotSession:
     """Raises Refused on anything that makes the run not comparable or its recording refused."""
-    if options.record_baseline and options.ungated:
+    if options.record_baseline and options.no_baseline:
         raise Refused(
             RECORDING_REFUSED,
-            ["--record-baseline cannot run --ungated: a baseline records the conditions it gates"],
+            [
+                "--record-baseline cannot run --no-baseline: a baseline records the conditions "
+                "it gates"
+            ],
         )
     settings = load_settings()
-    baseline = None if options.ungated else _load_committed_baseline(working_tree.baseline_path)
-    entries, dirty = declarations_of_head(Suite.HONEYPOT, working_tree)
-    session = EvalSession(
+    baseline = None if options.no_baseline else _load_committed_baseline(working_tree.baseline_path)
+    entries, dirty = declarations_of_head(Instrument.HONEYPOT, working_tree)
+    session = HoneypotSession(
         settings=settings,
         conditions=_conditions_or_refused(settings, options),
         baseline=baseline,
-        mode=select_mode(baseline, options.ungated),
+        mode=select_mode(baseline, options.no_baseline),
         tree=working_tree.read_tree() if options.record_baseline else None,
         declarations=active_declarations(entries, dirty),
     )
@@ -115,7 +118,7 @@ def open_session(options: EvalOptions, working_tree: WorkingTree) -> EvalSession
 
 
 def declarations_of_head(
-    suite: Suite, working_tree: WorkingTree
+    instrument: Instrument, working_tree: WorkingTree
 ) -> tuple[list[DeclaredFlip], bool]:
     """The entries declared by the commit at HEAD, and whether the tree has tracked changes."""
     try:
@@ -125,7 +128,7 @@ def declarations_of_head(
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [reason]) from error
     if not entries:
         return [], False
-    of_head = entries_of_commit(entries, suite, working_tree.parent_commit())
+    of_head = entries_of_commit(entries, instrument, working_tree.parent_commit())
     return of_head, bool(of_head) and working_tree.is_dirty()
 
 
@@ -144,7 +147,7 @@ def _parent_commit() -> str | None:
     return completed.stdout.strip()
 
 
-def _conditions_or_refused(settings: Settings, options: EvalOptions) -> BaselineConditions:
+def _conditions_or_refused(settings: Settings, options: HoneypotOptions) -> BaselineConditions:
     try:
         return candidate_conditions(settings, options)
     except ValueError as error:
@@ -165,7 +168,7 @@ def _load_committed_baseline(path: Path) -> Baseline | None:
     return baseline
 
 
-def candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineConditions:
+def candidate_conditions(settings: Settings, options: HoneypotOptions) -> BaselineConditions:
     return BaselineConditions(
         runs=options.runs,
         budget=options.budget,
@@ -186,17 +189,17 @@ def candidate_conditions(settings: Settings, options: EvalOptions) -> BaselineCo
     )
 
 
-def select_mode(baseline: Baseline | None, ungated: bool) -> GateMode:
-    if ungated:
+def select_mode(baseline: Baseline | None, no_baseline: bool) -> GateMode:
+    if no_baseline:
         return GateMode.FLOORS_ONLY
     if baseline is None:
         return GateMode.LEGACY_THRESHOLDS
-    if baseline.status == BaselineStatus.EXPLORATORY:
+    if baseline.status == BaselineStatus.UNCONFIRMED:
         return GateMode.FLOORS_ONLY
     return GateMode.PAIRED
 
 
-def pre_run_refusals(session: EvalSession, ground_truth: GroundTruth) -> list[str]:
+def pre_run_refusals(session: HoneypotSession, ground_truth: GroundTruth) -> list[str]:
     """What the file, the labels and the tree already decide, before three paid runs."""
     reasons: list[str] = []
     if session.baseline:
@@ -207,7 +210,7 @@ def pre_run_refusals(session: EvalSession, ground_truth: GroundTruth) -> list[st
     return reasons
 
 
-def _recording_refusals(session: EvalSession, tree: TreeState) -> list[str]:
+def _recording_refusals(session: HoneypotSession, tree: TreeState) -> list[str]:
     reasons = [
         f"a baseline records the conditions CI runs at, {mismatch}"
         for mismatch in ci_condition_mismatches(session.conditions)
@@ -215,7 +218,7 @@ def _recording_refusals(session: EvalSession, tree: TreeState) -> list[str]:
     if tree.dirty:
         reasons.append("the git tree has tracked modifications: record from a clean tree")
     if session.baseline:
-        reasons += exploratory_commit_refusal(session.baseline, tree.commit)
+        reasons += unconfirmed_commit_refusal(session.baseline, tree.commit)
     return reasons
 
 

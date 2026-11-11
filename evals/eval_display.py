@@ -12,9 +12,9 @@ from rich.text import Text
 
 from evals.baseline import Baseline, BaselineStatus
 from evals.cell_grid import PARTIAL, CellTag, GateGrid, GridBox, GridSection, OutcomeRow
-from evals.eval_report import EvalReport
 from evals.gate import ProtectedCells
-from evals.gate_verdict import GateMode, GateVerdict
+from evals.gate_outcome import GateMode, GateOutcome
+from evals.honeypot.report import HoneypotReport
 from evals.metrics import RunDetail
 from evals.recording import GatedSetChange
 from mcp_auditor.domain.models import AuditCategory
@@ -25,18 +25,18 @@ _METRIC_LABELS = {
     "recall": "Recall",
     "precision": "Precision",
     "consistency": "Consistency",
-    "distribution_coverage": "Distribution",
+    "distribution_coverage": "Distribution coverage",
 }
 
-_VERDICT_STYLES = {
-    GateVerdict.GREEN: "[bold green]Gate green.[/bold green]",
-    GateVerdict.RED: "[bold red]Gate red.[/bold red]",
-    GateVerdict.NOT_COMPARABLE: "[bold red]Not comparable.[/bold red]",
+_OUTCOME_STYLES = {
+    GateOutcome.GREEN: "[bold green]Gate green.[/bold green]",
+    GateOutcome.RED: "[bold red]Gate red.[/bold red]",
+    GateOutcome.NOT_COMPARABLE: "[bold red]Not comparable.[/bold red]",
 }
 
 
 def print_summary(
-    report: EvalReport,
+    report: HoneypotReport,
     report_path: str,
     grid: GateGrid | None = None,
     ignored_declarations: frozenset[str] = frozenset(),
@@ -64,31 +64,31 @@ def print_summary(
             f" at concurrency {report.config['concurrency']}[/yellow]"
         )
     console.print(f"Report written to {report_path}")
-    print_verdict(gate.verdict, gate.reasons)
+    print_outcome(gate.outcome, gate.reasons)
 
 
-def print_verdict(verdict: GateVerdict, reasons: list[str]) -> None:
-    console.print(Panel("\n".join([_VERDICT_STYLES[verdict], *_bullets(reasons)])))
+def print_outcome(outcome: GateOutcome, reasons: list[str]) -> None:
+    console.print(Panel("\n".join([_OUTCOME_STYLES[outcome], *_bullets(reasons)])))
 
 
 @dataclass(frozen=True)
 class GateRow:
-    target: str
+    subject: str
     outcome: str
     baseline: str
     run: str
-    replays: str
+    retests: str
     detail: str
 
 
-def gate_table(rows: Sequence[GateRow], target_header: str) -> Table:
+def gate_table(rows: Sequence[GateRow], subject_header: str) -> Table:
     table = Table(box=None, header_style="bold")
-    table.add_column(target_header, no_wrap=True)
-    for column in ("Outcome", "Baseline", "Run", "Replays"):
+    table.add_column(subject_header, no_wrap=True)
+    for column in ("Outcome", "Baseline", "Run", "Retests"):
         table.add_column(column)
     table.add_column("Detail", overflow="fold")
     for row in rows:
-        cells = (row.target, row.outcome, row.baseline, row.run, row.replays, row.detail)
+        cells = (row.subject, row.outcome, row.baseline, row.run, row.retests, row.detail)
         table.add_row(*(Text(cell) for cell in cells))
     return table
 
@@ -110,7 +110,7 @@ def _print_declarations(held: list[str], ignored: frozenset[str]) -> None:
         )
 
 
-def _metrics_table(report: EvalReport) -> Table:
+def _metrics_table(report: HoneypotReport) -> Table:
     legacy = report.gate.mode == GateMode.LEGACY_THRESHOLDS
     limits = report.thresholds if legacy else report.gate.floors
     table = Table(show_header=True, header_style="bold")
@@ -143,11 +143,11 @@ _STYLES: dict[CellTag, str] = {
     CellTag.GATE: "black on green",
     CellTag.UNSTABLE: "black on yellow",
     CellTag.MISS: "white on magenta",
-    CellTag.ALARM: "white on magenta",
+    CellTag.FALSE_POSITIVE: "white on magenta",
     CellTag.FLIP: "black on bright_yellow",
     CellTag.DECLARED: "black on bright_blue",
     CellTag.REGRESSION: "bold white on bright_red",
-    CellTag.FIXED: "black on cyan",
+    CellTag.IMPROVED: "black on cyan",
     CellTag.NEW: "black on white",
 }
 
@@ -155,13 +155,13 @@ _MEANINGS: dict[CellTag, str] = {
     CellTag.GATE: "gated: same correct verdict in every baseline run",
     CellTag.UNSTABLE: "not gated: verdict varies across baseline runs",
     CellTag.MISS: "not gated: planted flaw never found",
-    CellTag.ALARM: "not gated: PASS cell always flagged",
+    CellTag.FALSE_POSITIVE: "false positive: PASS cell judged FAIL in every baseline run",
     CellTag.FLIP: "gated cell wrong in this run, not a regression",
     CellTag.DECLARED: (
         "gated cell wrong in this run, declared before the run: the gate does not fail"
     ),
-    CellTag.REGRESSION: "gated cell wrong in this run, reproduced on replay: the gate fails",
-    CellTag.FIXED: "miss or alarm cell correct in every run of this one",
+    CellTag.REGRESSION: "gated cell wrong in this run, reproduced on retest: the gate fails",
+    CellTag.IMPROVED: "miss or false-positive cell correct in every run of this one",
     CellTag.NEW: "cell the baseline did not record",
 }
 
@@ -229,11 +229,11 @@ def _legend(sections: list[GridSection], gated_run: bool) -> Table:
 
 def _outcome_table(rows: list[OutcomeRow]) -> Table:
     table = Table(box=None, header_style="bold")
-    for column in ("Outcome", "Cell", "Baseline", "Run", "Replays"):
+    for column in ("Outcome", "Cell", "Baseline", "Run", "Retests"):
         table.add_column(column, overflow="fold")
     for row in rows:
         cell = f"{row.cell}*" if row.planted else row.cell
-        table.add_row(row.outcome, cell, row.baseline, row.run, row.replays)
+        table.add_row(row.outcome, cell, row.baseline, row.run, row.retests)
     return table
 
 
@@ -262,7 +262,7 @@ def print_refusal(title: str, reasons: list[str]) -> None:
 
 
 _NEXT_STEP = {
-    BaselineStatus.EXPLORATORY: (
+    BaselineStatus.UNCONFIRMED: (
         "Run --record-baseline again now, at this commit and before committing, to confirm it. "
         "Commit the file once confirmed."
     ),

@@ -32,11 +32,11 @@ from evals.census_draw import DrawRecord, governing_steps
 from evals.concurrency import positive_int
 from evals.cve_baseline import fixture_fingerprint
 from evals.cve_places import HOLDOUT_PLACES, load_places
-from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.holdout_draw import draw_order
 from evals.holdout_targets import HOLDOUT_TARGETS
+from evals.honeypot.runs import tracing_enabled
 from evals.metrics import quiet_throttle_waits
 from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer
 from evals.nuisance_admission_walk import addition_entries

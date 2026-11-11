@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.declared_flips import DeclaredFlip, Suite
+from evals.declared_flips import DeclaredFlip, Instrument
 
 BASE = "0123456789abcdef0123456789abcdef01234567"
 OTHER_BASE = "fedcba9876543210fedcba9876543210fedcba98"
@@ -10,10 +10,12 @@ KNOWN_KEYS = frozenset({"get_user/input_validation", "get_user/error_handling"})
 
 
 def an_entry(
-    key: str = "get_user/input_validation", base: str = BASE, suite: Suite = Suite.HONEYPOT
+    key: str = "get_user/input_validation",
+    base: str = BASE,
+    instrument: Instrument = Instrument.HONEYPOT,
 ) -> DeclaredFlip:
     return DeclaredFlip(
-        suite=suite,
+        instrument=instrument,
         key=key,
         mechanism="the generator no longer probes this category",
         base=base,

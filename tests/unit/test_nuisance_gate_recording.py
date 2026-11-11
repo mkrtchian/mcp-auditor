@@ -2,7 +2,7 @@ import pytest
 
 import tests.unit.support.test_nuisance_gate_recording_given as given
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 from evals.nuisance_gate import ServerOutcome
 from evals.nuisance_gate_baseline import NuisanceServerBaseline
 from evals.nuisance_gate_recording import (
@@ -28,10 +28,10 @@ def test_no_file_gives_an_exploratory_baseline_of_the_recording():
 
     assert decision == NuisanceServerBaseline(
         server_package=recording.server_package,
-        status=BaselineStatus.EXPLORATORY,
+        status=BaselineStatus.UNCONFIRMED,
         conditions=recording.conditions,
         fixture_fingerprint=recording.fixture_fingerprint,
-        replay_rule=ReplayRule(),
+        replay_rule=RetestRule(),
         commit=recording.commit,
         recorded_at=recording.recorded_at,
         runs=recording.runs,

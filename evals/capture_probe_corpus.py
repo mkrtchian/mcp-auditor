@@ -2,8 +2,8 @@
 
 The prompts come from a real audit of the three honeypots, so the corpus holds
 the calls the product makes, retries included, and from the tool definitions of
-the CVE images, which widen the generation prompts beyond the honeypots. The
-CVE servers are only listed: no audit runs against them here.
+the acceptance targets' images, which widen the generation prompts beyond the
+honeypots. Those servers are only listed: no audit runs against them here.
 """
 
 import asyncio
@@ -21,11 +21,11 @@ from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_preflight import VULNERABLE_SERVICES
 from evals.cve_targets import CVE_TARGETS
 from evals.honeypots import HONEYPOTS, REPO_ROOT, AuditModels, audit_honeypot, models_for
-from evals.probe_candidates import REFERENCE
-from evals.probe_corpus import (
+from evals.probe.candidates import REFERENCE
+from evals.probe.corpus import (
+    CapturingLLM,
     ProbeCall,
     ProbeCorpus,
-    RecordingLLM,
     ReferenceConditions,
     sample_judge_calls,
     write_corpus,
@@ -53,9 +53,12 @@ def main() -> None:
     mismatches = _reference_mismatches(settings)
     if mismatches:
         _refuse("the settings are not the reference", mismatches)
-    image_problems = _cve_image_problems()
+    image_problems = _target_image_problems()
     if image_problems:
-        _refuse(f"the CVE images are not ready. To build them: {_BUILD_COMMAND}", image_problems)
+        _refuse(
+            f"the acceptance targets' images are not ready. To build them: {_BUILD_COMMAND}",
+            image_problems,
+        )
     corpus = asyncio.run(_capture(settings))
     write_corpus(CORPUS_PATH, corpus)
     console.print(f"{len(corpus.calls)} calls written to {CORPUS_PATH}")
@@ -93,7 +96,7 @@ def _refuse(reason: str, details: list[str]) -> None:
     sys.exit(1)
 
 
-def _cve_image_problems() -> list[str]:
+def _target_image_problems() -> list[str]:
     try:
         ensure_images(VULNERABLE_SERVICES, ComposeImageStore())
     except ImageBuildFailed as error:
@@ -103,7 +106,7 @@ def _cve_image_problems() -> list[str]:
 
 async def _capture(settings: Settings) -> ProbeCorpus:
     # Listed first: a Docker failure here then costs no LLM call.
-    cve_calls = _cve_generation_calls(await _cve_tools())
+    target_calls = _target_generation_calls(await _target_tools())
     honeypot_calls = await _capture_honeypot_calls(settings)
     return ProbeCorpus(
         captured_at=datetime.now(UTC).isoformat(timespec="seconds"),
@@ -114,7 +117,7 @@ async def _capture(settings: Settings) -> ProbeCorpus:
         judge_calls_captured=sum(call.role == "judge" for call in honeypot_calls),
         calls=[
             *sample_judge_calls(honeypot_calls, JUDGE_SAMPLE_SIZE, JUDGE_SAMPLE_SEED),
-            *cve_calls,
+            *target_calls,
         ],
     )
 
@@ -122,17 +125,17 @@ async def _capture(settings: Settings) -> ProbeCorpus:
 async def _capture_honeypot_calls(settings: Settings) -> list[ProbeCall]:
     sink: list[ProbeCall] = []
     models = models_for(settings)
-    recording = AuditModels(
-        llm=RecordingLLM(models.llm, "main", sink),
-        judge_llm=RecordingLLM(models.judge_llm, "judge", sink),
+    capturing = AuditModels(
+        llm=CapturingLLM(models.llm, "main", sink),
+        judge_llm=CapturingLLM(models.judge_llm, "judge", sink),
     )
     for honeypot in HONEYPOTS:
         console.print(f"Auditing [bold]{honeypot.name}[/bold]...")
-        await audit_honeypot(recording, honeypot, CAPTURE_BUDGET)
+        await audit_honeypot(capturing, honeypot, CAPTURE_BUDGET)
     return sink
 
 
-async def _cve_tools() -> list[ToolDefinition]:
+async def _target_tools() -> list[ToolDefinition]:
     tools: list[ToolDefinition] = []
     for target in CVE_TARGETS:
         console.print(f"Listing the tools of {target.cve_id}...")
@@ -159,7 +162,7 @@ async def _silent_client(launch: Launch) -> AsyncGenerator[MCPClientPort]:
         devnull.close()
 
 
-def _cve_generation_calls(tools: list[ToolDefinition]) -> list[ProbeCall]:
+def _target_generation_calls(tools: list[ToolDefinition]) -> list[ProbeCall]:
     return [
         ProbeCall(
             call_id=f"cve/TestCaseBatch/{index:03d}",

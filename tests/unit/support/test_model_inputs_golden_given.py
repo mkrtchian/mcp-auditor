@@ -29,9 +29,9 @@ from pydantic import BaseModel
 import tests.unit.support.test_graph_given as graph
 from evals.census_classification import Classification
 from evals.census_draw import CalibrationCard
-from evals.judge_fixture import load_fixture
+from evals.judge.fixture import load_fixture
 from evals.nuisance_admission import AdmittedServer, FlawRecord
-from evals.probe_corpus import SCHEMA_NAMES, schema_for
+from evals.probe.corpus import SCHEMA_NAMES, schema_for
 from evals.run_judge_eval import FIXTURES_PATH, judge_one_case
 from mcp_auditor.adapters.llm import LLM, STRUCTURED_OUTPUTS
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE

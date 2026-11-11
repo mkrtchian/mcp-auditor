@@ -1,9 +1,9 @@
 import tests.unit.support.test_judge_gate_given as given
 from evals.baseline import BaselineStatus
 from evals.gate import CellOutcome, Observation
-from evals.gate_verdict import GateVerdict
-from evals.judge_gate import (
-    judge_case_gate,
+from evals.gate_outcome import GateOutcome
+from evals.judge.gate import (
+    decide_judge_gate,
     judge_ci_condition_mismatches,
     judge_floor_breaches,
     observe_case,
@@ -47,58 +47,60 @@ def test_a_judge_failing_every_case_breaches_the_precision_floor_when_fail_cases
 
 
 def test_a_floor_breach_is_red_with_no_baseline():
-    result = judge_case_gate(given.a_floors_only_input(given.runs_where(FAIL_ID, PASS, PASS, PASS)))
+    result = decide_judge_gate(
+        given.a_floors_only_input(given.runs_where(FAIL_ID, PASS, PASS, PASS))
+    )
 
-    assert result.verdict == GateVerdict.RED
+    assert result.outcome == GateOutcome.RED
     assert result.floor_breaches == ["recall"]
     assert result.reasons == ["recall: 0 detection(s) over 3 runs, under one per run"]
     assert result.cases == {}
 
 
 def test_the_precision_breach_reason_gives_the_measured_precision():
-    result = judge_case_gate(given.a_floors_only_input(given.runs_failing_every_case()))
+    result = decide_judge_gate(given.a_floors_only_input(given.runs_failing_every_case()))
 
     assert result.reasons == ["precision 0.33 under its floor 0.50"]
 
 
 def test_a_flip_that_reproduces_four_times_out_of_five_is_a_regression_and_red():
-    result = judge_case_gate(
+    result = decide_judge_gate(
         given.a_paired_input(
             runs=given.runs_where(PASS_ID, PASS, FAIL, PASS),
-            replays={PASS_ID: [True, False, True, True, True]},
+            retests={PASS_ID: [True, False, True, True, True]},
         )
     )
 
     assert result.cases[PASS_ID].outcome == CellOutcome.REGRESSION
-    assert result.verdict == GateVerdict.RED
+    assert result.outcome == GateOutcome.RED
     assert result.reasons == [f"regression on case {PASS_ID}"]
 
 
 def test_a_flip_that_does_not_reproduce_is_green():
-    result = judge_case_gate(
+    result = decide_judge_gate(
         given.a_paired_input(
-            runs=given.runs_where(PASS_ID, PASS, FAIL, PASS), replays={PASS_ID: [False, False]}
+            runs=given.runs_where(PASS_ID, PASS, FAIL, PASS), retests={PASS_ID: [False, False]}
         )
     )
 
     assert result.cases[PASS_ID].outcome == CellOutcome.FLIP_NOT_REPRODUCED
-    assert result.verdict == GateVerdict.GREEN
+    assert result.outcome == GateOutcome.GREEN
 
 
 def test_a_declared_flip_is_declared_and_green():
-    result = judge_case_gate(
+    result = decide_judge_gate(
         given.a_paired_input(
             runs=given.runs_where(PASS_ID, PASS, FAIL, PASS), declared=frozenset({PASS_ID})
         )
     )
 
     assert result.cases[PASS_ID].outcome == CellOutcome.DECLARED
-    assert result.verdict == GateVerdict.GREEN
+    assert result.outcome == GateOutcome.GREEN
     assert result.declared_held == []
 
 
 def test_a_declared_case_that_holds_is_named():
-    result = judge_case_gate(
+    result = decide_judge_gate(
         given.a_paired_input(runs=given.correct_runs(), declared=frozenset({PASS_ID}))
     )
 
@@ -106,39 +108,39 @@ def test_a_declared_case_that_holds_is_named():
 
 
 def test_a_mismatch_is_not_comparable():
-    result = judge_case_gate(
+    result = decide_judge_gate(
         given.a_paired_input(
             runs=given.correct_runs(), mismatches=["runs: baseline 3, candidate 5"]
         )
     )
 
-    assert result.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.outcome == GateOutcome.NOT_COMPARABLE
     assert result.reasons == ["runs: baseline 3, candidate 5"]
 
 
-def test_a_flip_under_an_exploratory_baseline_is_not_red():
-    result = judge_case_gate(
+def test_a_flip_under_an_unconfirmed_baseline_is_not_red():
+    result = decide_judge_gate(
         given.a_floors_only_input(
             given.runs_where(PASS_ID, PASS, FAIL, PASS),
-            baseline=given.a_baseline(status=BaselineStatus.EXPLORATORY),
+            baseline=given.a_baseline(status=BaselineStatus.UNCONFIRMED),
         )
     )
 
     assert result.cases[PASS_ID].outcome == CellOutcome.FLIP
-    assert result.verdict == GateVerdict.GREEN
-    assert result.baseline_status == BaselineStatus.EXPLORATORY
+    assert result.outcome == GateOutcome.GREEN
+    assert result.baseline_status == BaselineStatus.UNCONFIRMED
 
 
 def test_an_unspecified_case_is_outside_the_comparison():
-    result = judge_case_gate(
+    result = decide_judge_gate(
         given.a_paired_input(runs=given.runs_where(given.UNSPECIFIED_ID, FAIL, FAIL, FAIL))
     )
 
     assert given.UNSPECIFIED_ID not in result.cases
-    assert result.verdict == GateVerdict.GREEN
+    assert result.outcome == GateOutcome.GREEN
 
 
 def test_the_protected_cases_are_the_baseline_ones():
-    result = judge_case_gate(given.a_paired_input(runs=given.correct_runs()))
+    result = decide_judge_gate(given.a_paired_input(runs=given.correct_runs()))
 
     assert result.protected == given.a_baseline().protected

@@ -1,6 +1,6 @@
-from evals.gate_verdict import GateMode
-from evals.judge_baseline import JudgeBaseline
-from evals.judge_gate import JudgeGateInput
+from evals.gate_outcome import GateMode
+from evals.judge.baseline import JudgeBaseline
+from evals.judge.gate import JudgeGateInput
 from tests.unit.support.test_judge_baseline_given import (
     FAIL_ID,
     PASS_ID,
@@ -29,7 +29,7 @@ __all__ = [
 
 def a_paired_input(
     runs: ObservationRuns,
-    replays: dict[str, list[bool]] | None = None,
+    retests: dict[str, list[bool]] | None = None,
     declared: frozenset[str] = frozenset(),
     mismatches: list[str] | None = None,
 ) -> JudgeGateInput:
@@ -39,7 +39,7 @@ def a_paired_input(
         runs=runs,
         ground_truth=a_ground_truth(),
         baseline=a_baseline(),
-        replays=replays or {},
+        retests=retests or {},
         declared=declared,
         mismatches=mismatches or [],
     )

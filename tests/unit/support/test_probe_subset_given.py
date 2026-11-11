@@ -1,7 +1,7 @@
-from evals.probe import CallOutcome, ProbeObservation
-from evals.probe_candidates import Candidate
-from evals.probe_corpus import ProbeCall, ProbeCorpus, ReferenceConditions
-from tests.unit.support.test_probe_given import an_observation
+from evals.probe.analysis import CallOutcome, ProbeObservation
+from evals.probe.candidates import Candidate
+from evals.probe.corpus import ProbeCall, ProbeCorpus, ReferenceConditions
+from tests.unit.support.test_probe_analysis_given import an_observation
 
 
 def a_corpus_of(schema_names: list[str]) -> ProbeCorpus:

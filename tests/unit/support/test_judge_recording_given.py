@@ -1,7 +1,7 @@
 from evals.gate import CellComparison, CellOutcome
-from evals.gate_verdict import GateMode, GateVerdict
-from evals.judge_gate import JudgeGateResult
-from evals.judge_recording import JudgeRecording
+from evals.gate_outcome import GateMode, GateOutcome
+from evals.judge.gate import JudgeGateResult
+from evals.judge.recording import JudgeRecording
 from tests.unit.support.test_judge_baseline_given import (
     FAIL_ID,
     PASS_ID,
@@ -38,14 +38,14 @@ def a_recording(
 
 
 def a_gate(
-    verdict: GateVerdict = GateVerdict.GREEN,
+    outcome: GateOutcome = GateOutcome.GREEN,
     floor_breaches: list[str] | None = None,
     pass_case_outcome: CellOutcome = CellOutcome.UNCHANGED,
     mode: GateMode = GateMode.PAIRED,
 ) -> JudgeGateResult:
     return JudgeGateResult(
         mode=mode,
-        verdict=verdict,
+        outcome=outcome,
         reasons=[],
         baseline_status=None,
         cases={PASS_ID: CellComparison(outcome=pass_case_outcome)},

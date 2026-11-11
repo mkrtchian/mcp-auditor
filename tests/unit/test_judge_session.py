@@ -6,10 +6,10 @@ import tests.unit.support.test_judge_session_given as given
 from evals.baseline import BaselineStatus
 from evals.eval_session import Refused, TreeState
 from evals.gate import CellOutcome, Observation
-from evals.gate_verdict import GateMode, GateVerdict
-from evals.judge_baseline import load_judge_baseline
-from evals.judge_session import run_judge_gate
-from evals.judge_session_model import JudgeHarness, JudgeOptions
+from evals.gate_outcome import GateMode, GateOutcome
+from evals.judge.baseline import load_judge_baseline
+from evals.judge.session import run_judge_gate
+from evals.judge.session_model import JudgeHarness, JudgeOptions
 
 FAIL, PASS = given.FAIL, given.PASS
 FAIL_ID, PASS_ID = given.FAIL_ID, given.PASS_ID
@@ -21,15 +21,15 @@ async def _refused(options: JudgeOptions, harness: JudgeHarness) -> Refused:
     return refusal.value
 
 
-async def test_recording_ungated_is_refused_before_any_judge_call(tmp_path: Path):
+async def test_recording_without_a_baseline_is_refused_before_any_judge_call(tmp_path: Path):
     judge = given.ScriptedJudge()
 
     refusal = await _refused(
-        given.options(record_baseline=True, ungated=True),
+        given.options(record_baseline=True, no_baseline=True),
         given.a_harness(judge, tmp_path / "absent.json"),
     )
 
-    assert "--ungated" in refusal.reasons[0]
+    assert "--no-baseline" in refusal.reasons[0]
     assert judge.total_calls() == 0
 
 
@@ -100,11 +100,11 @@ async def test_recording_on_a_dirty_tree_is_refused_before_any_judge_call(tmp_pa
     assert judge.total_calls() == 0
 
 
-async def test_recording_over_an_exploratory_baseline_of_another_commit_is_refused_early(
+async def test_recording_over_an_unconfirmed_baseline_of_another_commit_is_refused_early(
     tmp_path: Path,
 ):
     judge = given.ScriptedJudge()
-    path = given.an_exploratory_baseline_file(tmp_path)
+    path = given.an_unconfirmed_baseline_file(tmp_path)
 
     refusal = await _refused(
         given.options(record_baseline=True),
@@ -145,8 +145,8 @@ async def test_every_case_is_judged_once_per_run_and_the_gate_is_green(tmp_path:
     assert set(judge.calls.values()) == {3}
     assert len(judge.calls) == 4
     assert result.gate.mode == GateMode.PAIRED
-    assert result.gate.verdict == GateVerdict.GREEN
-    assert result.replay_observations == {}
+    assert result.gate.outcome == GateOutcome.GREEN
+    assert result.retest_observations == {}
     assert result.exit_code == 0
 
 
@@ -170,7 +170,7 @@ async def test_a_run_with_no_baseline_file_returns_none_for_it(tmp_path: Path):
     assert result.baseline is None
 
 
-async def test_a_flipped_case_is_replayed_until_it_reproduces_and_the_others_are_not(
+async def test_a_flipped_case_is_retested_until_it_reproduces_and_the_others_are_not(
     tmp_path: Path,
 ):
     judge = given.a_judge_flipping(PASS_ID, FAIL, PASS, PASS, FAIL, FAIL, FAIL, FAIL)
@@ -179,21 +179,21 @@ async def test_a_flipped_case_is_replayed_until_it_reproduces_and_the_others_are
     result = await run_judge_gate(
         given.options(),
         given.a_judge_fixture(),
-        given.a_harness(judge, given.a_baseline_file(tmp_path), on_replays=announced.append),
+        given.a_harness(judge, given.a_baseline_file(tmp_path), on_retests=announced.append),
     )
 
     assert announced == [1]
-    assert result.replay_observations == {PASS_ID: [Observation.FAIL] * 4}
+    assert result.retest_observations == {PASS_ID: [Observation.FAIL] * 4}
     assert judge.calls[PASS_ID] == 3 + 4
     assert {case: count for case, count in judge.calls.items() if case != PASS_ID} == {
         case: 3 for case in judge.calls if case != PASS_ID
     }
     assert result.gate.cases[PASS_ID].outcome == CellOutcome.REGRESSION
-    assert result.gate.verdict == GateVerdict.RED
+    assert result.gate.outcome == GateOutcome.RED
     assert result.exit_code == 1
 
 
-async def test_a_flip_cleared_twice_stops_its_replays_and_keeps_the_gate_green(tmp_path: Path):
+async def test_a_flip_cleared_twice_stops_its_retests_and_keeps_the_gate_green(tmp_path: Path):
     judge = given.a_judge_flipping(PASS_ID, FAIL)
 
     result = await run_judge_gate(
@@ -203,12 +203,12 @@ async def test_a_flip_cleared_twice_stops_its_replays_and_keeps_the_gate_green(t
     )
 
     assert result.gate.cases[PASS_ID].outcome == CellOutcome.FLIP_NOT_REPRODUCED
-    assert result.gate.cases[PASS_ID].replays == [False, False]
-    assert result.replay_observations == {PASS_ID: [Observation.PASS] * 2}
+    assert result.gate.cases[PASS_ID].retests == [False, False]
+    assert result.retest_observations == {PASS_ID: [Observation.PASS] * 2}
     assert result.exit_code == 0
 
 
-async def test_a_replay_whose_judge_call_raised_counts_as_reproduced(tmp_path: Path):
+async def test_a_retest_whose_judge_call_raised_counts_as_reproduced(tmp_path: Path):
     judge = given.a_judge_flipping(PASS_ID, None, PASS, PASS, None, None, None, None)
 
     result = await run_judge_gate(
@@ -218,8 +218,8 @@ async def test_a_replay_whose_judge_call_raised_counts_as_reproduced(tmp_path: P
     )
 
     assert Observation.UNCOVERED in [run[PASS_ID] for run in result.runs]
-    assert result.gate.cases[PASS_ID].replays == [True, True, True, True]
-    assert result.replay_observations == {PASS_ID: [Observation.UNCOVERED] * 4}
+    assert result.gate.cases[PASS_ID].retests == [True, True, True, True]
+    assert result.retest_observations == {PASS_ID: [Observation.UNCOVERED] * 4}
     assert result.gate.cases[PASS_ID].outcome == CellOutcome.REGRESSION
 
 
@@ -230,14 +230,14 @@ async def test_nothing_is_announced_when_no_case_flipped(tmp_path: Path):
         given.options(),
         given.a_judge_fixture(),
         given.a_harness(
-            given.ScriptedJudge(), given.a_baseline_file(tmp_path), on_replays=announced.append
+            given.ScriptedJudge(), given.a_baseline_file(tmp_path), on_retests=announced.append
         ),
     )
 
     assert announced == []
 
 
-async def test_a_declared_flip_is_not_replayed(tmp_path: Path):
+async def test_a_declared_flip_is_not_retested(tmp_path: Path):
     judge = given.a_judge_flipping(PASS_ID, FAIL, FAIL, FAIL)
 
     result = await run_judge_gate(
@@ -253,13 +253,13 @@ async def test_a_declared_flip_is_not_replayed(tmp_path: Path):
     assert result.exit_code == 0
 
 
-async def test_no_flip_is_replayed_against_an_exploratory_baseline(tmp_path: Path):
+async def test_no_flip_is_retested_against_an_unconfirmed_baseline(tmp_path: Path):
     judge = given.a_judge_flipping(PASS_ID, FAIL)
 
     result = await run_judge_gate(
         given.options(),
         given.a_judge_fixture(),
-        given.a_harness(judge, given.an_exploratory_baseline_file(tmp_path)),
+        given.a_harness(judge, given.an_unconfirmed_baseline_file(tmp_path)),
     )
 
     assert judge.calls[PASS_ID] == 3
@@ -267,11 +267,11 @@ async def test_no_flip_is_replayed_against_an_exploratory_baseline(tmp_path: Pat
     assert result.exit_code == 0
 
 
-async def test_no_flip_is_replayed_under_ungated(tmp_path: Path):
+async def test_no_flip_is_retested_in_a_no_baseline_run(tmp_path: Path):
     judge = given.a_judge_flipping(PASS_ID, FAIL)
 
     result = await run_judge_gate(
-        given.options(ungated=True),
+        given.options(no_baseline=True),
         given.a_judge_fixture(),
         given.a_harness(judge, given.a_baseline_file(tmp_path)),
     )
@@ -282,7 +282,7 @@ async def test_no_flip_is_replayed_under_ungated(tmp_path: Path):
     assert result.baseline is None
 
 
-async def test_other_conditions_than_the_baseline_are_not_comparable_and_replay_nothing(
+async def test_other_conditions_than_the_baseline_are_not_comparable_and_retest_nothing(
     tmp_path: Path,
 ):
     judge = given.a_judge_flipping(PASS_ID, FAIL)
@@ -294,7 +294,7 @@ async def test_other_conditions_than_the_baseline_are_not_comparable_and_replay_
     )
 
     assert judge.calls[PASS_ID] == 4
-    assert result.gate.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.gate.outcome == GateOutcome.NOT_COMPARABLE
     assert result.exit_code == 3
 
 
@@ -305,27 +305,27 @@ def _throttle_mismatch(count: int) -> str:
     )
 
 
-@pytest.mark.parametrize("ungated", [False, True])
-async def test_a_throttled_run_judgment_is_not_comparable_and_replays_nothing(
-    tmp_path: Path, ungated: bool
+@pytest.mark.parametrize("no_baseline", [False, True])
+async def test_a_throttled_run_judgment_is_not_comparable_and_retests_nothing(
+    tmp_path: Path, no_baseline: bool
 ):
     judge = given.a_judge_flipping(PASS_ID, given.THROTTLED_JUDGMENT)
 
     result = await run_judge_gate(
-        given.options(ungated=ungated),
+        given.options(no_baseline=no_baseline),
         given.a_judge_fixture(),
         given.a_harness(judge, given.a_baseline_file(tmp_path)),
     )
 
     assert judge.calls[PASS_ID] == 3
-    assert result.replay_observations == {}
-    assert result.gate.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.retest_observations == {}
+    assert result.gate.outcome == GateOutcome.NOT_COMPARABLE
     assert result.gate.reasons == [_throttle_mismatch(1)]
     assert result.throttled_judgments == [PASS_ID]
     assert result.exit_code == 3
 
 
-async def test_a_throttled_replay_cannot_read_as_a_reproduced_flip(tmp_path: Path):
+async def test_a_throttled_retest_cannot_read_as_a_reproduced_flip(tmp_path: Path):
     judge = given.a_judge_flipping(PASS_ID, FAIL, PASS, PASS, *(given.THROTTLED_JUDGMENT,) * 4)
 
     result = await run_judge_gate(
@@ -334,14 +334,14 @@ async def test_a_throttled_replay_cannot_read_as_a_reproduced_flip(tmp_path: Pat
         given.a_harness(judge, given.a_baseline_file(tmp_path)),
     )
 
-    assert result.replay_observations == {PASS_ID: [Observation.UNCOVERED] * 4}
-    assert result.gate.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.retest_observations == {PASS_ID: [Observation.UNCOVERED] * 4}
+    assert result.gate.outcome == GateOutcome.NOT_COMPARABLE
     assert result.gate.reasons == [_throttle_mismatch(4)]
     assert result.exit_code == 3
 
 
-async def test_a_first_recording_writes_an_exploratory_baseline(tmp_path: Path):
-    path = tmp_path / "judge_isolation.json"
+async def test_a_first_recording_writes_an_unconfirmed_baseline(tmp_path: Path):
+    path = tmp_path / "judge.json"
 
     result = await run_judge_gate(
         given.options(record_baseline=True),
@@ -351,7 +351,7 @@ async def test_a_first_recording_writes_an_exploratory_baseline(tmp_path: Path):
 
     written = load_judge_baseline(path)
     assert written is not None
-    assert written.status == BaselineStatus.EXPLORATORY
+    assert written.status == BaselineStatus.UNCONFIRMED
     assert written.commit == given.RECORDED_COMMIT
     assert written.recorded_at == "2026-09-28T14:00:00+00:00"
     assert result.written == written
@@ -359,7 +359,7 @@ async def test_a_first_recording_writes_an_exploratory_baseline(tmp_path: Path):
 
 
 async def test_a_recording_is_refused_when_the_tree_drifted_during_the_runs(tmp_path: Path):
-    path = tmp_path / "judge_isolation.json"
+    path = tmp_path / "judge.json"
     trees = [given.a_clean_tree(), given.a_clean_tree("4567def")]
 
     result = await run_judge_gate(
@@ -376,7 +376,7 @@ async def test_a_recording_is_refused_when_the_tree_drifted_during_the_runs(tmp_
 
 
 async def test_a_recording_refused_by_its_decision_writes_nothing(tmp_path: Path):
-    path = tmp_path / "judge_isolation.json"
+    path = tmp_path / "judge.json"
     judge = given.a_judge_flipping(PASS_ID, None)
 
     result = await run_judge_gate(

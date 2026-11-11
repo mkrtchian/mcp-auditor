@@ -9,7 +9,7 @@ from evals.cell_grid import (
     cell_grid,
     outcome_rows,
     partial_improvements,
-    replay_fraction,
+    retest_fraction,
 )
 from evals.gate import CellOutcome, Observation
 from mcp_auditor.domain.models import AuditCategory
@@ -40,10 +40,10 @@ def test_a_planted_cell_never_detected_is_a_miss():
     assert then.tag_of(cell_grid(given.honeypots(), runs), PLANTED_CELL) == CellTag.MISS
 
 
-def test_a_safe_cell_always_flagged_is_an_alarm():
+def test_a_safe_cell_always_flagged_is_a_false_positive():
     runs = given.baseline_runs({SAFE_CELL: [FAIL, FAIL, FAIL]})
 
-    assert then.tag_of(cell_grid(given.honeypots(), runs), SAFE_CELL) == CellTag.ALARM
+    assert then.tag_of(cell_grid(given.honeypots(), runs), SAFE_CELL) == CellTag.FALSE_POSITIVE
 
 
 def test_a_planted_cell_seen_pass_pass_uncovered_is_unstable_not_a_miss():
@@ -92,7 +92,7 @@ def test_a_ground_truth_cell_missing_from_the_baseline_runs_is_new(
         (CellOutcome.FLIP_NOT_REPRODUCED, CellTag.FLIP),
         (CellOutcome.REGRESSION, CellTag.REGRESSION),
         (CellOutcome.DECLARED, CellTag.DECLARED),
-        (CellOutcome.IMPROVED, CellTag.FIXED),
+        (CellOutcome.IMPROVED, CellTag.IMPROVED),
         (CellOutcome.NOT_RECORDED, CellTag.NEW),
         (CellOutcome.UNCHANGED, CellTag.UNSTABLE),
         (CellOutcome.INCONCLUSIVE, CellTag.UNSTABLE),
@@ -107,7 +107,7 @@ def test_a_run_outcome_replaces_the_baseline_tag_unless_it_changes_nothing(
     assert then.tag_of(cell_grid(given.honeypots(), runs, run), SAFE_CELL) == tag
 
 
-def test_outcome_rows_list_the_changed_cells_sorted_with_their_observations_and_replays():
+def test_outcome_rows_list_the_changed_cells_sorted_with_their_observations_and_retests():
     baseline = given.baseline_runs({PLANTED_CELL: [FAIL, FAIL, PASS]})
     candidate = given.baseline_runs({PLANTED_CELL: [FAIL, UNCOVERED, None]})
     run = given.a_run(
@@ -128,7 +128,7 @@ def test_outcome_rows_list_the_changed_cells_sorted_with_their_observations_and_
             planted=False,
             baseline="PPP",
             run="PPP",
-            replays="2/3",
+            retests="2/3",
         ),
         OutcomeRow(
             outcome=CellOutcome.INCONCLUSIVE,
@@ -136,7 +136,7 @@ def test_outcome_rows_list_the_changed_cells_sorted_with_their_observations_and_
             planted=True,
             baseline="FFP",
             run="F--",
-            replays="-",
+            retests="-",
         ),
     ]
 
@@ -161,7 +161,7 @@ def test_outcome_rows_list_a_partial_improvement_of_an_unchanged_cell_in_cell_or
         planted=False,
         baseline="FFF",
         run="PFF",
-        replays="-",
+        retests="-",
     )
 
 
@@ -208,7 +208,7 @@ def test_only_a_stable_incorrect_baseline_cell_can_be_a_partial_improvement(
 
 
 @pytest.mark.parametrize(
-    ("replays", "fraction"), [([], "-"), ([True, False], "1/2"), ([True, True, True], "3/3")]
+    ("retests", "fraction"), [([], "-"), ([True, False], "1/2"), ([True, True, True], "3/3")]
 )
-def test_a_replay_fraction_counts_the_reproduced_replays(replays: list[bool], fraction: str):
-    assert replay_fraction(replays) == fraction
+def test_a_retest_fraction_counts_the_reproduced_retests(retests: list[bool], fraction: str):
+    assert retest_fraction(retests) == fraction

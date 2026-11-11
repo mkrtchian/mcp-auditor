@@ -13,7 +13,7 @@ from evals.nuisance_audit import DroppedRun, NuisanceAudit
 from evals.nuisance_population import RunPopulation
 from evals.nuisance_results import FigureExit, NuisanceRunResult
 from evals.nuisance_run import NuisanceDeps, RunProvenance, run_nuisance
-from evals.probe_candidates import Prices
+from evals.probe.candidates import Prices
 from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import (

@@ -11,7 +11,7 @@ class AuditProgress:
         self._preparing = progress.add_task("Preparing", total=None)
         self._auditing: TaskID | None = None
         self._unaudited = 0
-        self._replaying: TaskID | None = None
+        self._retesting: TaskID | None = None
 
     def announce(self, audits: int) -> None:
         self._progress.remove_task(self._preparing)
@@ -34,6 +34,6 @@ class AuditProgress:
             self._unaudited -= 1
             self._progress.advance(self._auditing)
             return
-        if self._replaying is None:
-            self._replaying = self._progress.add_task("Replaying", total=None)
-        self._progress.advance(self._replaying)
+        if self._retesting is None:
+            self._retesting = self._progress.add_task("Retesting", total=None)
+        self._progress.advance(self._retesting)

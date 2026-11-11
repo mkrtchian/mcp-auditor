@@ -5,14 +5,16 @@ import pytest
 from rich.console import Console
 
 import tests.unit.support.test_eval_display_given as given
+from evals.cell_grid import CellTag
 from evals.eval_display import (
     GateRow,
     gate_table,
+    print_outcome,
+    print_recorded_grid,
     print_report_paths,
     print_summary,
-    print_verdict,
 )
-from evals.gate_verdict import GateVerdict
+from evals.gate_outcome import GateOutcome
 
 
 def test_the_summary_states_the_throttled_requests_and_the_concurrency(
@@ -21,7 +23,7 @@ def test_the_summary_states_the_throttled_requests_and_the_concurrency(
     output = given.a_captured_console(monkeypatch)
     report = given.an_eval_report({"concurrency": 6, "throttled_requests": 4})
 
-    print_summary(report, "output/eval_report.json")
+    print_summary(report, "output/honeypot_report.json")
 
     assert "Throttled by the model provider: 4 requests at concurrency 6" in output.getvalue()
 
@@ -34,7 +36,7 @@ def test_the_summary_says_nothing_of_throttling_when_nothing_was_throttled(
 ):
     output = given.a_captured_console(monkeypatch)
 
-    print_summary(given.an_eval_report(config), "output/eval_report.json")
+    print_summary(given.an_eval_report(config), "output/honeypot_report.json")
 
     assert "Throttled" not in output.getvalue()
 
@@ -104,7 +106,7 @@ def test_the_summary_ends_with_the_verdict_panel(monkeypatch: pytest.MonkeyPatch
     output.truncate(0)
     output.seek(0)
 
-    print_verdict(GateVerdict.GREEN, [])
+    print_outcome(GateOutcome.GREEN, [])
 
     assert summary.endswith(output.getvalue())
 
@@ -114,20 +116,20 @@ def test_the_verdict_panel_states_the_verdict_and_its_reasons_literally(
 ):
     output = given.a_captured_console(monkeypatch)
 
-    print_verdict(GateVerdict.RED, ["regression on [bold]query[/bold]"])
+    print_outcome(GateOutcome.RED, ["regression on [bold]query[/bold]"])
 
     assert "Gate red." in output.getvalue()
     assert "- regression on [bold]query[/bold]" in output.getvalue()
 
 
-def test_the_gate_table_keeps_a_long_target_id_whole():
-    target = "very-long-server-package-name-that-would-wrap"
-    row = GateRow(target, "not_gated", "MMM", "MDM", "1/2", "a long detail " * 8)
+def test_the_gate_table_keeps_a_long_subject_id_whole():
+    subject = "very-long-server-package-name-that-would-wrap"
+    row = GateRow(subject, "not_gated", "MMM", "MDM", "1/2", "a long detail " * 8)
     buffer = StringIO()
 
     Console(file=buffer, width=80).print(gate_table([row], "Server"))
 
-    assert target in buffer.getvalue()
+    assert subject in buffer.getvalue()
 
 
 def test_the_gate_table_prints_a_markup_cell_literally():
@@ -151,9 +153,20 @@ def test_the_report_paths_name_the_json_and_the_markdown(monkeypatch: pytest.Mon
 def test_the_report_paths_name_the_export_when_given(monkeypatch: pytest.MonkeyPatch):
     output = given.a_captured_console(monkeypatch)
 
-    print_report_paths(Path("output/cve.json"), Path("output/cve_judged_cases.jsonl"))
+    print_report_paths(Path("output/cve.json"), Path("output/detection_judged_cases.jsonl"))
 
     assert (
         "Report written to output/cve.json and output/cve.md,"
-        " judged cases exported to output/cve_judged_cases.jsonl"
+        " judged cases exported to output/detection_judged_cases.jsonl"
     ) in output.getvalue()
+
+
+def test_the_grid_tags_a_false_positive_and_an_improved_cell(monkeypatch: pytest.MonkeyPatch):
+    output = given.a_captured_console(monkeypatch)
+
+    print_recorded_grid("Baseline", given.a_grid_tagging(CellTag.FALSE_POSITIVE, CellTag.IMPROVED))
+
+    printed = output.getvalue()
+    assert " false_positive " in printed and " improved " in printed
+    assert "false positive: PASS cell judged FAIL in every baseline run" in printed
+    assert "miss or false-positive cell correct in every run of this one" in printed

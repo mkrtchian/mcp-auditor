@@ -12,7 +12,7 @@ import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import nuisance_gate_command, nuisance_gate_console
 from evals.baseline import BaselineStatus
-from evals.gate_verdict import GateVerdict
+from evals.gate_outcome import GateOutcome
 from evals.holdout_census import HoldoutCensus
 from evals.nuisance_admission import NuisanceAdmission
 from evals.nuisance_gate import NuisanceGateResult
@@ -123,7 +123,7 @@ def a_green_recording_writing(
         seen.received.append(options)
         return NuisanceGateSession(
             audits=[],
-            gate=NuisanceGateResult(verdict=GateVerdict.GREEN, reasons=[], servers=[]),
+            gate=NuisanceGateResult(verdict=GateOutcome.GREEN, reasons=[], servers=[]),
             not_run={},
             orphans=[],
             written=[WrittenBaseline(GATE_SERVER, status, leaves_gated_set=False)],

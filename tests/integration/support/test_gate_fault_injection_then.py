@@ -1,10 +1,10 @@
 from collections.abc import Callable
 
 from evals.baseline import Baseline
-from evals.fault_catalog import NO_STABLE_FAIL_CELL, Expectation
-from evals.fault_harness import FaultResult
 from evals.gate import CellOutcome, CellState, Observation, cell_key, classify
-from evals.gate_verdict import GateVerdict
+from evals.gate_outcome import GateOutcome
+from evals.honeypot.fault_catalog import NO_STABLE_FAIL_CELL, Expectation
+from evals.honeypot.fault_harness import FaultResult
 from evals.honeypots import MERGED_GROUND_TRUTH
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
@@ -13,8 +13,8 @@ _FLIPPED = {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRO
 
 def expectation_met(result: FaultResult, expectation: Expectation) -> None:
     observed = _summary(result)
-    assert result.paired.verdict == expectation.paired, observed
-    assert result.floors_only.verdict == expectation.floors_only, observed
+    assert result.paired.outcome == expectation.paired, observed
+    assert result.floors_only.outcome == expectation.floors_only, observed
     assert bool(result.recording_refusals) == expectation.recording_refused, observed
     reasons = result.paired.reasons + result.floors_only.reasons + result.recording_refusals
     for expected in expectation.reasons:
@@ -24,7 +24,7 @@ def expectation_met(result: FaultResult, expectation: Expectation) -> None:
 def the_fixture_reproduced(result: FaultResult, fixture: Baseline) -> None:
     observed = _summary(result)
     assert result.observations == fixture.runs, observed
-    assert result.paired.verdict == GateVerdict.GREEN, observed
+    assert result.paired.outcome == GateOutcome.GREEN, observed
     for key in _fixture_cells(fixture, lambda state, _: state != CellState.UNSTABLE):
         assert result.paired.cells[key].outcome == CellOutcome.UNCHANGED, f"{key}: {observed}"
 
@@ -32,7 +32,7 @@ def the_fixture_reproduced(result: FaultResult, fixture: Baseline) -> None:
 def the_half_loss_obeys_the_rules(result: FaultResult, fixture: Baseline) -> None:
     observed = _summary(result)
     under_one_per_run = _detections(result) < len(result.observations)
-    assert (result.floors_only.verdict == GateVerdict.RED) == under_one_per_run, observed
+    assert (result.floors_only.outcome == GateOutcome.RED) == under_one_per_run, observed
     stable_detections = _fixture_cells(fixture, _stable_detection)
     for key in stable_detections:
         if not _detected_in_every_run(result, key):
@@ -98,8 +98,8 @@ def _summary(result: FaultResult) -> str:
         if comparison.outcome != CellOutcome.UNCHANGED
     }
     return (
-        f"{result.fault}: paired {result.paired.verdict} {result.paired.reasons}, "
-        f"floors_only {result.floors_only.verdict} {result.floors_only.reasons}, "
+        f"{result.fault}: paired {result.paired.outcome} {result.paired.reasons}, "
+        f"floors_only {result.floors_only.outcome} {result.floors_only.reasons}, "
         f"recording refusals {result.recording_refusals}, cells moved {moved}, "
         f"metrics {result.metrics}"
     )

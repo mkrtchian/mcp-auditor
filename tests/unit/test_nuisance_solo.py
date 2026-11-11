@@ -8,7 +8,7 @@ import tests.unit.support.test_nuisance_gate_session_given as gate_given
 import tests.unit.support.test_nuisance_run_given as run_given
 import tests.unit.support.test_nuisance_solo_given as given
 import tests.unit.support.test_nuisance_solo_then as then
-from evals.gate_verdict import GateVerdict
+from evals.gate_outcome import GateOutcome
 from evals.nuisance_gate_session import run_gate
 from evals.nuisance_vet_command import vet_servers
 
@@ -60,4 +60,4 @@ async def test_gate_plays_the_solo_benign_call_audits_and_replays_alone(tmp_path
 
     then.played_alone(in_flight, MAGENTO2, calls=6)
     then.played_together(in_flight, [s.server_package for s in others], peak=given.BOUND)
-    assert session.gate.verdict == GateVerdict.GREEN
+    assert session.gate.verdict == GateOutcome.GREEN

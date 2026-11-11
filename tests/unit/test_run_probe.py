@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from evals.probe import CallOutcome, ProbeObservation
-from evals.probe_candidates import REFERENCE
-from evals.probe_corpus import ProbeCall
+from evals.probe.analysis import CallOutcome, ProbeObservation
+from evals.probe.candidates import REFERENCE
+from evals.probe.corpus import ProbeCall
 from evals.run_probe import CandidateModels, append_observation, observe
 from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput

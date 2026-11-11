@@ -23,11 +23,11 @@ class CellTag(StrEnum):
     GATE = "gate"
     UNSTABLE = "unst"
     MISS = "miss"
-    ALARM = "alarm"
+    FALSE_POSITIVE = "false_positive"
     FLIP = "flip"
     DECLARED = "decl"
     REGRESSION = "REGR"
-    FIXED = "fixed"
+    IMPROVED = "improved"
     NEW = "new"
 
 
@@ -62,13 +62,13 @@ class OutcomeRow:
     planted: bool
     baseline: str
     run: str
-    replays: str
+    retests: str
 
 
 @dataclass(frozen=True)
 class GateGrid:
     title: str
-    sections: list[GridSection]  # empty against an exploratory baseline
+    sections: list[GridSection]  # empty against an unconfirmed baseline
     outcomes: list[OutcomeRow]
 
 
@@ -100,7 +100,7 @@ def outcome_rows(
             planted=ground_truth.get(parse_cell_key(key)) == EvalVerdict.FAIL,
             baseline=_letters(parse_cell_key(key), baseline_runs),
             run=_letters(parse_cell_key(key), run.runs),
-            replays=replay_fraction(comparison.replays),
+            retests=retest_fraction(comparison.retests),
         )
         for key, comparison in sorted(run.comparisons.items())
         if comparison.outcome != CellOutcome.UNCHANGED or key in partial
@@ -134,7 +134,7 @@ _OUTCOME_TAGS: dict[CellOutcome, CellTag] = {
     CellOutcome.FLIP_NOT_REPRODUCED: CellTag.FLIP,
     CellOutcome.REGRESSION: CellTag.REGRESSION,
     CellOutcome.DECLARED: CellTag.DECLARED,
-    CellOutcome.IMPROVED: CellTag.FIXED,
+    CellOutcome.IMPROVED: CellTag.IMPROVED,
     CellOutcome.NOT_RECORDED: CellTag.NEW,
 }
 
@@ -181,7 +181,7 @@ def _baseline_tag(state: CellState | None, planted: bool) -> CellTag:
         case CellState.UNSTABLE:
             return CellTag.UNSTABLE
         case CellState.STABLE_INCORRECT:
-            return CellTag.MISS if planted else CellTag.ALARM
+            return CellTag.MISS if planted else CellTag.FALSE_POSITIVE
         case None:
             return CellTag.NEW
 
@@ -197,5 +197,5 @@ def observation_letters(observations: Iterable[Observation]) -> str:
 _LETTERS = {Observation.PASS: "P", Observation.FAIL: "F", Observation.UNCOVERED: "-"}
 
 
-def replay_fraction(replays: Sequence[bool]) -> str:
-    return f"{sum(replays)}/{len(replays)}" if replays else "-"
+def retest_fraction(retests: Sequence[bool]) -> str:
+    return f"{sum(retests)}/{len(retests)}" if retests else "-"

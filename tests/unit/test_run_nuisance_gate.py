@@ -81,7 +81,7 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
 def test_gate_refuses_a_server_with_an_unrecorded_field_before_any_audit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
     unrecorded = records_given.with_every_new_field_unrecorded(
         admission.admitting_the_acceptance_server()
     )
@@ -99,7 +99,7 @@ def test_gate_refuses_only_the_selected_servers_with_an_unrecorded_field(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_beside_an_unrecorded_server(tmp_path)
 
     selected_recorded = run_nuisance.main(["gate", "--server", given.GATE_SERVER, *gate_set])
@@ -113,7 +113,7 @@ def test_gate_refuses_only_the_selected_servers_with_an_unrecorded_field(
 
 
 def test_the_gate_audits_only_the_selected_servers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    seen = given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    seen = given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_beside_an_unrecorded_server(tmp_path)
 
     run_nuisance.main(["gate", "--server", given.GATE_SERVER, *gate_set])
@@ -126,7 +126,7 @@ def test_an_exploratory_gate_recording_names_the_command_that_confirms_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
 
     exit_code = run_nuisance.main(["gate", "--record-baseline", *gate_set])
@@ -143,7 +143,7 @@ def test_the_confirming_gate_command_repeats_the_server_and_a_non_default_run_co
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
     server = given.GATE_SERVER
 
@@ -159,7 +159,7 @@ def test_the_confirming_gate_command_leaves_the_default_run_count_out(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.EXPLORATORY)
+    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
 
     run_nuisance.main(["gate", "--record-baseline", "--runs", "3", *gate_set])

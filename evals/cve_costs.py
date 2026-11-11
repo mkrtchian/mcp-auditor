@@ -12,9 +12,9 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from evals.metrics import PhaseUsage
-from evals.probe import call_cost
-from evals.probe_candidates import Prices
+from evals.metrics import UsageBreakdown
+from evals.probe.analysis import call_cost
+from evals.probe.candidates import Prices
 from mcp_auditor.domain.models import ProviderUsage
 
 # Above this many input tokens in one request, a tiered vendor (Anthropic) bills the whole
@@ -24,7 +24,7 @@ TIERED_REQUEST_INPUT_TOKENS = 100_000
 
 class TargetCost(BaseModel):
     cve_id: str
-    usage: PhaseUsage
+    usage: UsageBreakdown
     single_step: float | None
     chains: float | None
     judge: float
@@ -33,7 +33,7 @@ class TargetCost(BaseModel):
 
 
 def target_costs(
-    by_target: Mapping[str, PhaseUsage], generator_prices: Prices, judge_prices: Prices
+    by_target: Mapping[str, UsageBreakdown], generator_prices: Prices, judge_prices: Prices
 ) -> list[TargetCost]:
     shared = generator_prices if generator_prices == judge_prices else None
     return [
@@ -67,7 +67,7 @@ class CostPricing:
     judge: Prices
     as_of: date
 
-    def costs(self, by_target: Mapping[str, PhaseUsage]) -> list[TargetCost]:
+    def costs(self, by_target: Mapping[str, UsageBreakdown]) -> list[TargetCost]:
         return target_costs(by_target, self.generator, self.judge)
 
 

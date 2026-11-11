@@ -224,7 +224,7 @@ async def test_a_second_recording_at_the_same_commit_confirms_one_file_per_targe
     first = await run_gated(recording, given.a_harness(given.ScriptedAudit(), tmp_path))
     second = await run_gated(recording, given.a_harness(given.ScriptedAudit(), tmp_path))
 
-    assert [written.status for written in first.written] == [BaselineStatus.EXPLORATORY] * 2
+    assert [written.status for written in first.written] == [BaselineStatus.UNCONFIRMED] * 2
     assert [written.status for written in second.written] == [BaselineStatus.CONFIRMED] * 2
     files = load_baselines(tmp_path)
     assert sorted(files) == sorted(target.cve_id for target in targets)

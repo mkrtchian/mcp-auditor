@@ -35,13 +35,17 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | CVE target | target (acceptance target, holdout target) | rename | 2026-11-11 |
 | CVE validation benchmark | detection suite | rename | 2026-11-11 |
 | `--cve ID` | `--flaw ID` | rename | 2026-11-11 |
+| `--cve-export` (`draw_judge_cases`) | `--detection-export` | rename | 2026-11-11 |
 | dead, calibrated dead (a target that fails its calibration check), `dead_conditions` | out of calibration, out-of-calibration reasons | rename | 2026-11-11 |
 | dead (a patched version where no exploit works) | fixed | rename | 2026-11-11 |
 | dfie (plans) | declared function is the effect | rename | 2026-11-11 |
 | Distribution (ADR 003, ADR 005, the honeypot report's label) | distribution coverage | rename | 2026-11-11 |
 | e2e eval, E2E evals, end-to-end eval, honeypot e2e suite (ADR 003, ADR 006, ADR 007, ADR 015, ADR 034, CONTRIBUTING) | honeypot suite | rename | 2026-11-11 |
+| `e2e-eval` (the honeypot CI job) | `honeypot-suite` | rename | 2026-11-11 |
 | `eval_result`, `EvalResult` | judge result (`judge_result`) | rename | 2026-11-11 |
 | `evals/baselines/cve/` | `evals/baselines/detection/` | rename | 2026-11-11 |
+| `evals/baselines/honeypot_e2e.json` | `evals/baselines/honeypot.json` | rename | 2026-11-11 |
+| `evals/baselines/judge_isolation.json` | `evals/baselines/judge.json` | rename | 2026-11-11 |
 | `evals/holdout_census.json` | `evals/census.json` | rename | 2026-11-11 |
 | `evals/holdout_kit/` | kit | rename | 2026-11-11 |
 | `evals/holdout_places.json` | `evals/detection_places.json` | rename | 2026-11-11 |
@@ -77,9 +81,10 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | oracle (ADR 015, CLAUDE.md: the grader of any instrument, the ground truth on the honeypot suite) | grader: the ground truth, the labels. "Oracle" now names only the detection suite's grader. | moved meaning | 2026-11-11 |
 | oracle version (ADR 016, ADR 020: on the honeypot suite) | ground truth fingerprint | rename | 2026-09-25 |
 | oracle version (plans: on the CVE benchmark) | grammar fingerprint | rename | 2026-09-28 |
+| `output/eval_report.json` | `output/honeypot_report.json` | rename | 2026-11-11 |
 | patched twin, vulnerable twin, git twin (ADR 030, ADR 031, labeling log, plans) | patched image, vulnerable image | rename | 2026-11-11 |
 | `payload` (the key of a judge result in the JSON report, the "Payload" line of the Markdown report: the arguments only) | arguments (`arguments`). "Payload" now names the whole generated test input. | moved meaning | 2026-11-11 |
-| `pending_replay`, `replay_observations`, `replay_rule` | `pending_retest`, `retest_observations`, `retest_rule` | rename | 2026-11-11 |
+| `pending_replay`, `replay_observations`, `replay_rule` | `pending_retest`, `retest_observations`, `retest_rule`, the two committed baselines keeping `replay_rule` until their next re-recording | rename | 2026-11-11 |
 | planting layer | planting code | rename | 2026-11-11 |
 | readmission | re-admission | rename | 2026-11-11 |
 | refused credit | struck credit | rename | 2026-11-11 |

@@ -26,7 +26,6 @@ from evals.cve_layout_check import LayoutCheck
 from evals.cve_places import Places, kept_records
 from evals.cve_session_model import GradedAudit
 from evals.cve_targets import CVETarget, image_tag
-from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.failure_text import TYPES_ONLY
 from evals.holdout_assembly import assemble_target, holdout_prices
@@ -41,6 +40,7 @@ from evals.holdout_results import (
     RunInterrupted,
 )
 from evals.holdout_vetting import observe_layout, vet_all
+from evals.honeypot.runs import tracing_enabled
 from evals.metrics import SessionThrottles
 from evals.run_images import (
     rebuild_images,

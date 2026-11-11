@@ -21,7 +21,6 @@ from evals.closed_network import check_closed_network_support
 from evals.concurrency import positive_int
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_targets import CVETarget, image_tag
-from evals.eval_runs import tracing_enabled
 from evals.eval_session import Refused, last_commit
 from evals.holdout_card_readiness import unready_cards
 from evals.holdout_census import HoldoutCensus, load_census
@@ -38,6 +37,7 @@ from evals.holdout_run import (
     run_holdout,
 )
 from evals.holdout_targets import HOLDOUT_TARGETS
+from evals.honeypot.runs import tracing_enabled
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
 from evals.provider_errors import ProviderFatal, describe_provider_error

@@ -3,7 +3,7 @@
 from collections import Counter
 from collections.abc import Sequence
 
-from evals.cell_grid import replay_fraction
+from evals.cell_grid import retest_fraction
 from evals.cve_costs import render_cost_table
 from evals.cve_gate import CVEGateResult, TargetComparison
 from evals.cve_grammar import CVEStatus
@@ -146,7 +146,7 @@ def _render_gate_row(comparison: TargetComparison) -> str:
         comparison.outcome.value,
         status_letters(comparison.baseline_runs) or "-",
         status_letters(comparison.candidate_runs) or "-",
-        replay_fraction(comparison.replays),
+        retest_fraction(comparison.replays),
         (comparison.detail or "-").replace("|", "\\|"),
     ]
     return f"| {' | '.join(cells)} |"

@@ -27,7 +27,7 @@ from evals.cve_proofs import GradedRun, UnitPlace, is_aimed, proofs_in, struck_b
 from evals.cve_report_units import units_of
 from evals.cve_targets import CVE_TARGETS
 from evals.cve_units import Unit
-from evals.judge_fixture import JudgeCase, JudgeInputs
+from evals.judge.fixture import JudgeCase, JudgeInputs
 from mcp_auditor.domain.models import AuditReport
 
 GOLDEN_PATH = Path(__file__).parent / "cve_grammar_golden.json"

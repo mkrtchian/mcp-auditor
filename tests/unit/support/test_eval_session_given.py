@@ -4,13 +4,13 @@ from typing import NoReturn
 
 import tests.unit.support.test_eval_baseline_given as baseline_given
 from evals.baseline import Baseline, BaselineConditions, BaselineStatus
-from evals.declared_flips import ActiveDeclarations, DeclaredFlip, DeclaredFlipsFile, Suite
+from evals.declared_flips import ActiveDeclarations, DeclaredFlip, DeclaredFlipsFile, Instrument
 from evals.eval_session import (
     DEFAULT_BUDGET,
     DEFAULT_CONCURRENCY,
     DEFAULT_RUNS,
-    EvalOptions,
-    EvalSession,
+    HoneypotOptions,
+    HoneypotSession,
     TreeState,
     WorkingTree,
     select_mode,
@@ -49,18 +49,18 @@ def ci_conditions(budget: int = DEFAULT_BUDGET) -> BaselineConditions:
     )
 
 
-def options() -> EvalOptions:
-    return EvalOptions(
+def options() -> HoneypotOptions:
+    return HoneypotOptions(
         runs=DEFAULT_RUNS,
         budget=DEFAULT_BUDGET,
         report="",
         record_baseline=False,
-        ungated=False,
+        no_baseline=False,
         concurrency=DEFAULT_CONCURRENCY,
     )
 
 
-def a_baseline_at_ci_conditions(status: BaselineStatus = BaselineStatus.EXPLORATORY) -> Baseline:
+def a_baseline_at_ci_conditions(status: BaselineStatus = BaselineStatus.UNCONFIRMED) -> Baseline:
     """Each side of `LABELS` has its one cell stable and correct."""
     return baseline_given.a_baseline(
         status=status, runs=baseline_given.all_correct_runs()
@@ -72,13 +72,13 @@ def a_session(
     tree: TreeState | None = None,
     conditions: BaselineConditions | None = None,
     declarations: ActiveDeclarations | None = None,
-) -> EvalSession:
+) -> HoneypotSession:
     """A session recording whenever it holds a tree, as open_session builds it."""
-    return EvalSession(
+    return HoneypotSession(
         settings=Settings.model_construct(),
         conditions=conditions or ci_conditions(),
         baseline=baseline,
-        mode=select_mode(baseline, ungated=False),
+        mode=select_mode(baseline, no_baseline=False),
         tree=tree,
         declarations=declarations or ActiveDeclarations(),
     )
@@ -96,7 +96,7 @@ def a_declaration_file(tmp_path: Path, *keys: str) -> Path:
     """Entries declared by a commit whose parent is `PARENT`."""
     entries = [
         DeclaredFlip(
-            suite=Suite.HONEYPOT,
+            instrument=Instrument.HONEYPOT,
             key=key,
             mechanism="the generator no longer probes this category",
             base=PARENT,

@@ -3,11 +3,11 @@ from typing import Any
 
 from evals.draw_judge_cases import (
     Strata,
-    candidates_from_cve,
+    candidates_from_detection,
     candidates_from_honeypot,
 )
-from evals.judge_draw_checks import SourceReport
-from evals.judge_fixture import CaseLabel, JudgeCase, JudgeFixture
+from evals.judge.draw_checks import SourceReport
+from evals.judge.fixture import CaseLabel, JudgeCase, JudgeFixture
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
@@ -55,11 +55,11 @@ def a_chain_line(tool: str, category: AuditCategory) -> dict[str, Any]:
     }
 
 
-def a_cve_line(cve_id: str, **overrides: Any) -> dict[str, Any]:
+def a_detection_line(flaw_id: str, **overrides: Any) -> dict[str, Any]:
     line = a_honeypot_line("git_log", INJECTION, **overrides)
     for honeypot_only in ("expected_verdict", "correct"):
         del line[honeypot_only]
-    return {"cve_id": cve_id, **line}
+    return {"flaw_id": flaw_id, **line}
 
 
 def lines_for(tool: str, category: AuditCategory, count: int) -> list[dict[str, Any]]:
@@ -72,9 +72,9 @@ def some_cases(count: int, tool: str = "get_user") -> list[JudgeCase]:
     return candidates_from_honeypot(lines, ground_truth)[(tool, INJECTION)]
 
 
-def some_cve_cases(count: int, cve_id: str) -> list[JudgeCase]:
-    lines = [a_cve_line(cve_id, arguments={"id": index}) for index in range(count)]
-    return candidates_from_cve(lines)[cve_id]
+def some_detection_cases(count: int, flaw_id: str) -> list[JudgeCase]:
+    lines = [a_detection_line(flaw_id, arguments={"id": index}) for index in range(count)]
+    return candidates_from_detection(lines)[flaw_id]
 
 
 def some_strata() -> Strata:
@@ -84,7 +84,7 @@ def some_strata() -> Strata:
             "get_user/injection": some_cases(3, "get_user_pass"),
             "list_items/injection": some_cases(3, "list_items"),
         },
-        cve_targets={"CVE-2025-0001": some_cve_cases(4, "CVE-2025-0001")},
+        targets={"CVE-2025-0001": some_detection_cases(4, "CVE-2025-0001")},
     )
 
 

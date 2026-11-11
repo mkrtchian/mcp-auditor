@@ -5,7 +5,7 @@ from rich.console import Console
 from rich.progress import Progress
 
 import tests.unit.support.test_run_judge_eval_given as given
-from evals.run_judge_eval import JudgeCallTracking, judge_one_case
+from evals.run_judge_eval import JudgeCallTracking, judge_one_case, parse_args
 from mcp_auditor.domain.models import EvalVerdict
 from mcp_auditor.domain.ports import (
     ProviderRefusal,
@@ -57,3 +57,18 @@ async def test_a_judge_call_that_fails_to_answer_is_uncovered_and_keeps_its_usag
 async def test_any_other_judge_call_failure_propagates():
     with pytest.raises(ConnectionError):
         await judge_one_case(RaisingLLM(ConnectionError("network down")), given.a_judge_case())
+
+
+def test_no_baseline_runs_on_the_floors_alone(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr("sys.argv", ["run_judge_eval", "--no-baseline"])
+
+    assert parse_args().no_baseline
+
+
+def test_the_old_ungated_flag_is_refused(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr("sys.argv", ["run_judge_eval", "--ungated"])
+
+    with pytest.raises(SystemExit) as refused:
+        parse_args()
+
+    assert refused.value.code == 2

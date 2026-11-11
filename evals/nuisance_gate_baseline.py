@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve_baseline import grammar_fingerprint
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_run import HOLDOUT_BUDGET
 from evals.nuisance_counter import counter_fingerprint
@@ -78,7 +78,7 @@ class NuisanceServerBaseline(BaseModel):
     status: BaselineStatus
     conditions: NuisanceGateConditions
     fixture_fingerprint: str
-    replay_rule: ReplayRule
+    replay_rule: RetestRule
     commit: str
     recorded_at: str
     runs: list[bool]  # flagged per run, True for an alarm

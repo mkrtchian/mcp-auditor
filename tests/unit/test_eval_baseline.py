@@ -15,9 +15,11 @@ from evals.baseline import (
     rescore,
     write_baseline,
 )
-from evals.gate import Observation, cell_key
+from evals.eval_session import BASELINE_PATH, select_mode
+from evals.gate import Observation, RetestRule, cell_key
+from evals.gate_outcome import GateMode
 from evals.ground_truth import GroundTruth
-from evals.honeypots import HONEYPOTS
+from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 VULNERABLE_CELL = given.VULNERABLE_CELL
@@ -168,7 +170,7 @@ def test_a_differing_fixture_fingerprint_names_the_honeypot():
 
 
 def test_a_baseline_written_then_loaded_is_equal(tmp_path: Path):
-    path = tmp_path / "baselines" / "honeypot_e2e.json"
+    path = tmp_path / "baselines" / "honeypot.json"
     baseline = given.a_baseline()
 
     write_baseline(path, baseline)
@@ -177,7 +179,7 @@ def test_a_baseline_written_then_loaded_is_equal(tmp_path: Path):
 
 
 def test_a_baseline_written_over_another_replaces_it_and_leaves_no_temporary(tmp_path: Path):
-    path = tmp_path / "honeypot_e2e.json"
+    path = tmp_path / "honeypot.json"
     write_baseline(path, given.a_baseline())
     second = given.a_baseline(status=BaselineStatus.CONFIRMED)
 
@@ -188,13 +190,33 @@ def test_a_baseline_written_over_another_replaces_it_and_leaves_no_temporary(tmp
 
 
 def test_a_baseline_written_before_the_protected_summary_loads_without_it(tmp_path: Path):
-    path = tmp_path / "honeypot_e2e.json"
+    path = tmp_path / "honeypot.json"
     written = given.a_baseline().model_dump(exclude={"protected"})
     path.write_text(json.dumps(written))
 
     loaded = load_baseline(path)
 
     assert loaded is not None and loaded.protected is None
+
+
+def test_the_committed_baseline_still_keyed_replay_rule_loads_and_gates():
+    assert "replay_rule" in json.loads(BASELINE_PATH.read_text())
+
+    baseline = load_baseline(BASELINE_PATH)
+
+    assert baseline is not None and baseline.retest_rule == RetestRule()
+    assert baseline_integrity(baseline, MERGED_GROUND_TRUTH) == []
+    assert select_mode(baseline, no_baseline=False) == GateMode.PAIRED
+
+
+def test_a_written_baseline_carries_the_retest_keys_only(tmp_path: Path):
+    path = tmp_path / "honeypot.json"
+
+    write_baseline(path, given.a_baseline())
+
+    written = json.loads(path.read_text())
+    assert written["retest_rule"] == {"retests": 5, "required": 4}
+    assert "replay_rule" not in written
 
 
 def test_observation_runs_parse_the_keys_back_to_cells():

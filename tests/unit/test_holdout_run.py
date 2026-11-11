@@ -16,7 +16,7 @@ from evals.cve_targets import LaunchMode
 from evals.eval_session import Refused, TreeState
 from evals.holdout_audit import DroppedRun, IncompleteRun
 from evals.holdout_results import NotRunCause, RunInterrupted
-from evals.probe import call_cost
+from evals.probe.analysis import call_cost
 from evals.provider_errors import ProviderFatal
 from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage

@@ -5,9 +5,9 @@ import pytest
 import tests.unit.support.test_eval_metrics_given as given
 from evals.ground_truth import GroundTruth
 from evals.metrics import (
-    PhaseUsage,
     SessionThrottles,
     ThrottledAudit,
+    UsageBreakdown,
     VerdictMap,
     aggregate_verdicts,
     blocked_reasons,
@@ -394,8 +394,8 @@ def test_session_throttles_bill_each_phase_of_a_report_to_its_target():
 
 
 def test_phase_usage_add_sums_each_channel():
-    first = PhaseUsage.from_report(given.a_report_by_phase(total=300, chain=100, judge=50))
-    second = PhaseUsage.from_report(given.a_report_by_phase(total=30, chain=10, judge=5))
+    first = UsageBreakdown.from_report(given.a_report_by_phase(total=300, chain=100, judge=50))
+    second = UsageBreakdown.from_report(given.a_report_by_phase(total=30, chain=10, judge=5))
 
     summed = first.add(second)
 

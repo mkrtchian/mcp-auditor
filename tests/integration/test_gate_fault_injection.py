@@ -5,7 +5,7 @@ import pytest
 
 import tests.integration.support.test_gate_fault_injection_given as given
 import tests.integration.support.test_gate_fault_injection_then as then
-from evals.fault_catalog import FAULTS, Fault
+from evals.honeypot.fault_catalog import FAULTS, Fault
 from mcp_auditor.domain.models import AuditCategory
 
 FIXTURE = given.the_fixture()

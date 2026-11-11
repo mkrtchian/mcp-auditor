@@ -13,7 +13,7 @@ from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_base import LayoutMount, PublicNames
 from evals.cve_targets import CVE_TARGETS, CVETarget, LaunchMode
 from evals.docker_paths import DOCKER_DIRECTORY
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.unit.support.test_cve_planting_stand_ins_given import HOST as STAND_IN_HOST
 from tests.unit.support.test_cve_planting_stand_ins_given import (
@@ -305,7 +305,7 @@ def conditions(runs: int = 3) -> CVERunConditions:
 
 def a_baseline(
     runs: list[CVEStatus],
-    status: BaselineStatus = BaselineStatus.EXPLORATORY,
+    status: BaselineStatus = BaselineStatus.UNCONFIRMED,
     cve_id: str = "CVE-2025-53355",
 ) -> CVETargetBaseline:
     return CVETargetBaseline(
@@ -313,7 +313,7 @@ def a_baseline(
         status=status,
         conditions=conditions(),
         fixture_fingerprint="fixture",
-        replay_rule=ReplayRule(),
+        replay_rule=RetestRule(),
         commit=RECORDED_COMMIT,
         recorded_at="2026-09-28T10:00:00+00:00",
         runs=runs,

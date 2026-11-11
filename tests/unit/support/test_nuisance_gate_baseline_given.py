@@ -1,6 +1,6 @@
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve_baseline import grammar_fingerprint
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 from evals.holdout_run import HOLDOUT_BUDGET
 from evals.nuisance_counter import counter_fingerprint
 from evals.nuisance_gate_baseline import NuisanceGateConditions, NuisanceServerBaseline
@@ -46,10 +46,10 @@ def an_exploratory_baseline(
 ) -> NuisanceServerBaseline:
     return NuisanceServerBaseline(
         server_package=package,
-        status=BaselineStatus.EXPLORATORY,
+        status=BaselineStatus.UNCONFIRMED,
         conditions=conditions(),
         fixture_fingerprint=FIXTURE,
-        replay_rule=ReplayRule(),
+        replay_rule=RetestRule(),
         commit=commit,
         recorded_at="2026-10-22T10:00:00+00:00",
         runs=runs if runs is not None else [False] * 3,

@@ -13,7 +13,7 @@ from evals.honeypots import REPO_ROOT
 DECLARED_FLIPS_PATH = REPO_ROOT / "evals" / "declared_flips.json"
 
 
-class Suite(StrEnum):
+class Instrument(StrEnum):
     HONEYPOT = "honeypot"
     JUDGE = "judge"
 
@@ -22,7 +22,7 @@ class DeclaredFlip(BaseModel):
     """A cell a change to the system under test is expected to lose, declared in the
     commit that makes the change (ADR 020). `base` is that commit's parent."""
 
-    suite: Suite
+    instrument: Instrument
     key: str
     mechanism: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     base: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
@@ -46,11 +46,11 @@ def load_declared_flips(path: Path) -> list[DeclaredFlip]:
 
 
 def entries_of_commit(
-    entries: list[DeclaredFlip], suite: Suite, parent: str | None
+    entries: list[DeclaredFlip], instrument: Instrument, parent: str | None
 ) -> list[DeclaredFlip]:
     if parent is None:
         return []
-    return [entry for entry in entries if entry.suite == suite and entry.base == parent]
+    return [entry for entry in entries if entry.instrument == instrument and entry.base == parent]
 
 
 def declaration_problems(entries: list[DeclaredFlip], known_keys: Collection[str]) -> list[str]:

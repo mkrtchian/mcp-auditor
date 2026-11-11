@@ -15,18 +15,18 @@ from evals.gate import (
     CellState,
     Observation,
     ProtectedCells,
-    ReplayRule,
+    RetestRule,
     cell_key,
     classify,
     protected_cells,
 )
-from evals.gate_verdict import GateResult, GateVerdict
+from evals.gate_outcome import GateOutcome, GateResult
 from evals.ground_truth import GroundTruth
-from evals.metrics import EvalMetrics, compute_consistency, label_scores
+from evals.metrics import HoneypotMetrics, compute_consistency, label_scores
 
 _RESET_PROCEDURE = (
     "reset the baseline under ADR 020: delete its file in the commit that makes the change, "
-    "with no other change in that commit, and record twice at that commit (exploratory, then "
+    "with no other change in that commit, and record twice at that commit (unconfirmed, then "
     "confirmed). If the gate was red, name the cells whose flip fired it at the last run, in "
     "the labeling log entry or, for a model, in the commit message: each must come out stable "
     "and correct in the confirmed baseline, or the change is reverted. It is reverted too when "
@@ -51,7 +51,7 @@ class Recording(BaseModel):
     commit: str
     recorded_at: str
     runs: list[dict[Cell, Observation]]
-    metrics: EvalMetrics
+    metrics: HoneypotMetrics
     completed_all: bool
     protected: ProtectedCells
     ground_truth: GroundTruth
@@ -69,14 +69,14 @@ class GatedSetChange(BaseModel):
 def decide_recording(
     existing: Baseline | None, recording: Recording, gate: GateResult
 ) -> Baseline | RecordingRefused:
-    if existing is not None and existing.status == BaselineStatus.EXPLORATORY:
+    if existing is not None and existing.status == BaselineStatus.UNCONFIRMED:
         return _second_recording(existing, recording, gate)
     reasons = _refusals(existing, recording, gate)
     if reasons:
         return RecordingRefused(reasons=reasons)
     if existing is None:
-        return _baseline_from(recording, BaselineStatus.EXPLORATORY, ReplayRule())
-    return _baseline_from(recording, BaselineStatus.CONFIRMED, existing.replay_rule).model_copy(
+        return _baseline_from(recording, BaselineStatus.UNCONFIRMED, RetestRule())
+    return _baseline_from(recording, BaselineStatus.CONFIRMED, existing.retest_rule).model_copy(
         update={"replaces": _ref(existing)}
     )
 
@@ -117,15 +117,15 @@ def _blind_sides(protected: ProtectedCells) -> list[tuple[str, str]]:
     return sides
 
 
-def exploratory_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
+def unconfirmed_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
     """A baseline is confirmed at the commit of its first recording. A change that lands while
-    it is exploratory, a label revision included, resets it: the file is deleted and recorded
+    it is unconfirmed, a label revision included, resets it: the file is deleted and recorded
     again twice at the new commit.
     """
-    if baseline.status != BaselineStatus.EXPLORATORY or baseline.commit == commit:
+    if baseline.status != BaselineStatus.UNCONFIRMED or baseline.commit == commit:
         return []
     return [
-        f"the exploratory baseline was recorded at {baseline.commit}, this run at "
+        f"the unconfirmed baseline was recorded at {baseline.commit}, this run at "
         f"{commit}: confirm it at its own commit, or delete it in a commit of its own"
     ]
 
@@ -136,15 +136,15 @@ def condition_refusals(baseline: Baseline, candidate: BaselineConditions) -> lis
         return []
     return [
         f"conditions differ from the {baseline.status} baseline ({'; '.join(mismatches)}): "
-        f"to run at other conditions without changing the baseline, pass --ungated. To change "
+        f"to run at other conditions without changing the baseline, pass --no-baseline. To change "
         f"the baseline's conditions, {_RESET_PROCEDURE}"
     ]
 
 
 def _confirmed_refusals(existing: Baseline, recording: Recording, gate: GateResult) -> list[str]:
     reasons = condition_refusals(existing, recording.conditions)
-    if gate.verdict != GateVerdict.GREEN:
-        reasons.append(f"the gate is {gate.verdict}")
+    if gate.outcome != GateOutcome.GREEN:
+        reasons.append(f"the gate is {gate.outcome}")
     reasons += [
         f"gated cell {key} flipped in this run ({comparison.outcome})"
         for key, comparison in gate.cells.items()
@@ -162,7 +162,7 @@ def _second_recording(
     reasons = _second_recording_refusals(existing, combined, gate)
     if reasons:
         return RecordingRefused(reasons=reasons)
-    return _baseline_from(combined, BaselineStatus.CONFIRMED, existing.replay_rule).model_copy(
+    return _baseline_from(combined, BaselineStatus.CONFIRMED, existing.retest_rule).model_copy(
         update={"confirms": _ref(existing), "disagreements": _disagreements(existing, recording)}
     )
 
@@ -180,7 +180,7 @@ def _combined(existing: Baseline, recording: Recording) -> Recording:
 
 def _combined_metrics(
     existing: Baseline, recording: Recording, runs: list[dict[Cell, Observation]]
-) -> EvalMetrics:
+) -> HoneypotMetrics:
     # Coverage cannot be recomputed from observations. Both recordings hold the same number
     # of runs, so the mean of theirs is the mean over the combined runs.
     verdict_maps = verdict_maps_of(runs)
@@ -188,7 +188,7 @@ def _combined_metrics(
     coverage = (
         existing.metrics.distribution_coverage + recording.metrics.distribution_coverage
     ) / 2
-    return EvalMetrics(
+    return HoneypotMetrics(
         **label_scores(verdict_maps, recording.ground_truth),
         consistency=consistency,
         distribution_coverage=coverage,
@@ -209,7 +209,7 @@ def _second_recording_refusals(
     return (
         failed_run
         + not_made_again
-        + exploratory_commit_refusal(existing, combined.commit)
+        + unconfirmed_commit_refusal(existing, combined.commit)
         + condition_refusals(existing, combined.conditions)
         + ([NOT_MADE_AGAIN] if not_made_again else [])
     )
@@ -225,11 +225,11 @@ def _disagreements(existing: Baseline, recording: Recording) -> list[str]:
     )
 
 
-def _baseline_from(recording: Recording, status: BaselineStatus, rule: ReplayRule) -> Baseline:
+def _baseline_from(recording: Recording, status: BaselineStatus, rule: RetestRule) -> Baseline:
     return Baseline(
         status=status,
         conditions=recording.conditions,
-        replay_rule=rule,
+        retest_rule=rule,
         commit=recording.commit,
         recorded_at=recording.recorded_at,
         runs=[{cell_key(cell): obs for cell, obs in run.items()} for run in recording.runs],

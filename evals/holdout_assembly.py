@@ -9,8 +9,8 @@ from evals.cve_targets import CVETarget, LaunchMode
 from evals.holdout_audit import IncompleteRun
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_results import HoldoutRunStatus, HoldoutTargetResult
-from evals.probe import call_cost
-from evals.probe_candidates import Prices
+from evals.probe.analysis import call_cost
+from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport
 

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_judge_display_given as given
-from evals.judge_display import print_summary
+from evals.judge.display import print_summary
 
 REPORT_PATH = Path("output/judge_eval_report.json")
 

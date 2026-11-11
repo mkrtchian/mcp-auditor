@@ -1,4 +1,4 @@
-"""Replay the probe corpus against the reference and every candidate
+"""Send the probe corpus to the reference and every candidate
 (`uv run python -m evals.run_probe`), and report each model's statistics and defects.
 
 What is measured, what is reported and the limits are in `evals/probe_method.md`.
@@ -19,10 +19,16 @@ from rich.console import Console
 from rich.table import Table
 
 from evals.honeypots import REPO_ROOT
-from evals.probe import CallOutcome, CandidateStats, ProbeObservation, list_defects, summarize
-from evals.probe_candidates import CANDIDATES, PRICES_DATE, REFERENCE, Candidate
-from evals.probe_corpus import SCHEMA_NAMES, ProbeCall, ProbeCorpus, Role, load_corpus, schema_for
-from evals.probe_subset import (
+from evals.probe.analysis import (
+    CallOutcome,
+    CandidateStats,
+    ProbeObservation,
+    list_defects,
+    summarize,
+)
+from evals.probe.candidates import CANDIDATES, PRICES_DATE, REFERENCE, Candidate
+from evals.probe.corpus import SCHEMA_NAMES, ProbeCall, ProbeCorpus, Role, load_corpus, schema_for
+from evals.probe.subset import (
     UnknownCandidate,
     defect_counts,
     defect_table,
@@ -73,7 +79,7 @@ def main() -> None:
         return
     report = args.report or DEFAULT_REPORT_PATH
     models = _build_models(MEASURED)
-    observations = asyncio.run(_replay(corpus, models, Path(report).with_suffix(".jsonl")))
+    observations = asyncio.run(_send_corpus(corpus, models, Path(report).with_suffix(".jsonl")))
     result = _analyze(corpus, observations)
     _write_report(Path(report), result)
     _print_table(result)
@@ -81,7 +87,7 @@ def main() -> None:
 
 
 def _parse_arguments() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Replay the probe corpus against every candidate")
+    parser = argparse.ArgumentParser(description="Send the probe corpus to every candidate model")
     parser.add_argument("--report", type=str, default=None)
     parser.add_argument(
         "--candidates", nargs="+", metavar="NAME", help="subset run: these candidates only"
@@ -91,7 +97,7 @@ def _parse_arguments() -> argparse.Namespace:
 
 
 def _run_subset(corpus: ProbeCorpus, args: argparse.Namespace) -> None:
-    """Debugging only: replays a slice of the corpus and computes no statistics."""
+    """Debugging only: sends a slice of the corpus and computes no statistics."""
     try:
         candidates = MEASURED if args.candidates is None else select_candidates(args.candidates)
     except UnknownCandidate as unknown:
@@ -100,7 +106,7 @@ def _run_subset(corpus: ProbeCorpus, args: argparse.Namespace) -> None:
     subset = corpus.model_copy(update={"calls": select_calls(corpus, args.schema)})
     models = _build_models(candidates)
     sink = Path(args.report or SUBSET_REPORT_PATH).with_suffix(".jsonl")
-    observations = asyncio.run(_replay(subset, models, sink))
+    observations = asyncio.run(_send_corpus(subset, models, sink))
     console.print(defect_table(defect_counts(candidates, observations)))
     console.print(f"Observations written to {sink}")
 
@@ -122,7 +128,7 @@ def _build_models(candidates: list[Candidate]) -> list[CandidateModels]:
     return built
 
 
-async def _replay(
+async def _send_corpus(
     corpus: ProbeCorpus, models: list[CandidateModels], sink: Path
 ) -> list[ProbeObservation]:
     """Each observation reaches `sink` as it is measured, so a hung run keeps what it measured."""

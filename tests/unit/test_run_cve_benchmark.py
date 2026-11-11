@@ -228,7 +228,7 @@ def test_an_exploratory_recording_names_the_command_that_confirms_it(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.EXPLORATORY)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
 
     given.exit_code_of(monkeypatch, "--record-baseline", "--report", str(tmp_path / "r.json"))
 
@@ -242,7 +242,7 @@ def test_the_confirming_command_repeats_the_target_filter_and_a_non_default_run_
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.EXPLORATORY)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
     report = str(tmp_path / "r.json")
 
     given.exit_code_of(
@@ -266,7 +266,7 @@ def test_the_confirming_command_leaves_the_default_run_count_and_budget_out(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.EXPLORATORY)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
     report = str(tmp_path / "r.json")
 
     given.exit_code_of(monkeypatch, "--record-baseline", "--runs", "3", "--report", report)
@@ -291,11 +291,11 @@ def test_a_recording_prints_the_verdict_once_before_the_recorded_baselines(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.EXPLORATORY)
+    given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
 
     given.exit_code_of(monkeypatch, "--record-baseline", "--report", str(tmp_path / "r.json"))
 
     printed = output.getvalue()
     assert printed.count("Gate green.") == 1
     assert "Gate:" not in printed
-    assert printed.index("Gate green.") < printed.index("Baseline recorded (exploratory)")
+    assert printed.index("Gate green.") < printed.index("Baseline recorded (unconfirmed)")

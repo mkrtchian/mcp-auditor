@@ -1,7 +1,7 @@
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.gate import Observation, ProtectedCells, ReplayRule, protected_cells
-from evals.judge_baseline import JudgeBaseline, JudgeConditions
-from evals.judge_fixture import CaseLabel, JudgeFixture, ground_truth_of, inputs_fingerprint
+from evals.gate import Observation, ProtectedCells, RetestRule, protected_cells
+from evals.judge.baseline import JudgeBaseline, JudgeConditions
+from evals.judge.fixture import CaseLabel, JudgeFixture, ground_truth_of, inputs_fingerprint
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict
 from tests.unit.support.test_judge_fixture_given import a_case, a_fixture
@@ -74,7 +74,7 @@ def a_baseline(
     return JudgeBaseline(
         status=status,
         conditions=conditions(),
-        replay_rule=ReplayRule(),
+        retest_rule=RetestRule(),
         commit=commit,
         recorded_at="2026-09-28T12:00:00+00:00",
         runs=runs,

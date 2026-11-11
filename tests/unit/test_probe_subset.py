@@ -1,9 +1,9 @@
 import pytest
 
 import tests.unit.support.test_probe_subset_given as given
-from evals.probe import CallOutcome
-from evals.probe_candidates import CANDIDATES, REFERENCE
-from evals.probe_subset import UnknownCandidate, defect_counts, select_calls, select_candidates
+from evals.probe.analysis import CallOutcome
+from evals.probe.candidates import CANDIDATES, REFERENCE
+from evals.probe.subset import UnknownCandidate, defect_counts, select_calls, select_candidates
 
 
 class TestSelectCandidates:

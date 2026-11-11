@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 import tests.unit.support.test_judge_fixture_given as given
-from evals.judge_fixture import (
+from evals.judge.fixture import (
     CaseLabel,
     case_id,
     ground_truth_of,

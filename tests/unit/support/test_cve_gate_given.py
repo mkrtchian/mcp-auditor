@@ -2,7 +2,7 @@ from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_gate import TargetCandidate, TargetComparison, TargetOutcome
 from evals.cve_grammar import CVEStatus
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 
 CVE_ID = "CVE-2025-53355"
 FIXTURE = "fixture"
@@ -42,10 +42,10 @@ def an_exploratory_baseline(
 ) -> CVETargetBaseline:
     return CVETargetBaseline(
         cve_id=cve_id,
-        status=BaselineStatus.EXPLORATORY,
+        status=BaselineStatus.UNCONFIRMED,
         conditions=conditions(),
         fixture_fingerprint=FIXTURE,
-        replay_rule=ReplayRule(),
+        replay_rule=RetestRule(),
         commit=RECORDED_COMMIT,
         recorded_at="2026-09-28T10:00:00+00:00",
         runs=runs if runs is not None else [DETECTED] * 3,

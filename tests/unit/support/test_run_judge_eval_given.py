@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from evals.judge_fixture import JudgeCase
+from evals.judge.fixture import JudgeCase
 from mcp_auditor.domain.models import EvalVerdict, Judgment, Severity
 from mcp_auditor.domain.ports import ProviderUsage
 from tests.unit.support.test_judge_baseline_given import a_judge_fixture

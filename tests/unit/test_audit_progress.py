@@ -44,7 +44,7 @@ async def test_the_announced_completions_complete_auditing():
     assert _descriptions(progress) == ["Auditing"]
 
 
-async def test_a_completion_past_the_announced_audits_advances_replaying():
+async def test_a_completion_past_the_announced_audits_advances_retesting():
     progress = given.a_progress()
     audit_progress = AuditProgress(progress)
     audit_progress.announce(3)
@@ -53,9 +53,9 @@ async def test_a_completion_past_the_announced_audits_advances_replaying():
     for index in range(4):
         await audit(index)
 
-    replaying = _task(progress, "Replaying")
-    assert replaying.total is None
-    assert replaying.completed == 1
+    retesting = _task(progress, "Retesting")
+    assert retesting.total is None
+    assert retesting.completed == 1
     assert _task(progress, "Auditing").completed == 3
 
 

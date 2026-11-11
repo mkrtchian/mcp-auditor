@@ -1,7 +1,7 @@
 import tests.unit.support.test_judge_outcomes_given as given
 from evals.gate import CellComparison, CellOutcome, FlipCause
-from evals.judge_fixture import CaseLabel
-from evals.judge_outcomes import JudgeOutcomeRow, case_outcomes, judge_outcome_rows
+from evals.judge.fixture import CaseLabel
+from evals.judge.outcomes import JudgeOutcomeRow, case_outcomes, judge_outcome_rows
 
 F, P, U = given.F, given.P, given.U
 
@@ -12,11 +12,11 @@ def test_rows_list_only_the_cases_that_left_unchanged():
             given.FLIPPED_ID: CellComparison(
                 outcome=CellOutcome.FLIP_NOT_REPRODUCED,
                 cause=FlipCause.WRONG_VERDICT,
-                replays=[True, False, False],
+                retests=[True, False, False],
             ),
             given.STEADY_ID: CellComparison(outcome=CellOutcome.UNCHANGED),
         },
-        replay_observations={given.FLIPPED_ID: [F, P, U]},
+        retest_observations={given.FLIPPED_ID: [F, P, U]},
     )
 
     rows = judge_outcome_rows(result, given.a_judge_fixture())
@@ -26,22 +26,22 @@ def test_rows_list_only_the_cases_that_left_unchanged():
             outcome=CellOutcome.FLIP_NOT_REPRODUCED,
             case=given.FLIPPED_ID,
             origin="cell delete_record/input_validation",
-            target="delete_record/input_validation",
+            tool_category="delete_record/input_validation",
             label=CaseLabel.PASS,
             baseline="PPP",
             run="PFP",
-            replays="FP-",
+            retests="FP-",
             cause="wrong_verdict",
         )
     ]
 
 
-def test_a_case_with_no_replay_and_no_cause_shows_dashes():
+def test_a_case_with_no_retest_and_no_cause_shows_dashes():
     result = given.a_result({given.FLIPPED_ID: CellComparison(outcome=CellOutcome.FLIP)})
 
     [row] = judge_outcome_rows(result, given.a_judge_fixture())
 
-    assert (row.replays, row.cause) == ("-", "-")
+    assert (row.retests, row.cause) == ("-", "-")
 
 
 def test_a_case_the_baseline_lacks_reads_as_no_verdict():
@@ -49,7 +49,7 @@ def test_a_case_the_baseline_lacks_reads_as_no_verdict():
 
     [row] = judge_outcome_rows(result, given.a_judge_fixture())
 
-    assert (row.target, row.label, row.baseline, row.run) == (
+    assert (row.tool_category, row.label, row.baseline, row.run) == (
         "read_file/info_leakage",
         CaseLabel.FAIL,
         "---",
@@ -118,11 +118,11 @@ def test_a_case_always_wrong_in_the_baseline_and_right_in_some_runs_shows_as_par
         outcome="partial",
         case=given.PARTIAL_ID,
         origin="cell update_record/input_validation",
-        target="update_record/input_validation",
+        tool_category="update_record/input_validation",
         label=CaseLabel.FAIL,
         baseline="PPP",
         run="FPF",
-        replays="-",
+        retests="-",
         cause="-",
     )
 

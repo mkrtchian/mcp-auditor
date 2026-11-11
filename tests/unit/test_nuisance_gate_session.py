@@ -7,7 +7,7 @@ import pytest
 import tests.unit.support.test_nuisance_gate_session_given as given
 from evals.baseline import BaselineStatus
 from evals.eval_session import RECORDING_REFUSED, Refused, TreeState
-from evals.gate_verdict import GateVerdict
+from evals.gate_outcome import GateOutcome
 from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_audit import GateRun
 from evals.nuisance_gate import ServerComparison, ServerOutcome
@@ -29,7 +29,7 @@ async def test_a_gated_server_with_clean_runs_holds_and_the_gate_is_green(tmp_pa
 
     session = await run_gate(given.options([FILESYSTEM]), given.a_harness(tmp_path, audit))
 
-    _the_one_server_ends(session, ServerOutcome.HELD, GateVerdict.GREEN)
+    _the_one_server_ends(session, ServerOutcome.HELD, GateOutcome.GREEN)
     assert [audit.run_index for audit in session.audits] == [0, 1, 2]
     assert session.exit_code == 0
 
@@ -42,7 +42,7 @@ async def test_an_alarm_on_a_gated_server_that_reproduces_is_a_regression(tmp_pa
 
     session = await run_gate(given.options([FILESYSTEM]), given.a_harness(tmp_path, audit))
 
-    comparison = _the_one_server_ends(session, ServerOutcome.REGRESSION, GateVerdict.RED)
+    comparison = _the_one_server_ends(session, ServerOutcome.REGRESSION, GateOutcome.RED)
     assert comparison.replays == [True, True, True, True]
     assert session.exit_code == 1
 
@@ -55,7 +55,7 @@ async def test_an_alarm_that_does_not_reproduce_keeps_the_gate_green(tmp_path: P
     session = await run_gate(given.options([FILESYSTEM]), given.a_harness(tmp_path, audit))
 
     comparison = _the_one_server_ends(
-        session, ServerOutcome.ALARM_NOT_REPRODUCED, GateVerdict.GREEN
+        session, ServerOutcome.ALARM_NOT_REPRODUCED, GateOutcome.GREEN
     )
     assert comparison.replays == [False, False]
     assert any(FILESYSTEM.server_package in reason for reason in session.gate.reasons)
@@ -69,7 +69,7 @@ async def test_an_alarm_on_a_server_flagged_in_its_baseline_is_inconclusive(tmp_
 
     session = await run_gate(given.options([FILESYSTEM]), given.a_harness(tmp_path, audit))
 
-    comparison = _the_one_server_ends(session, ServerOutcome.INCONCLUSIVE, GateVerdict.GREEN)
+    comparison = _the_one_server_ends(session, ServerOutcome.INCONCLUSIVE, GateOutcome.GREEN)
     assert comparison.replays == []
     assert any(FILESYSTEM.server_package in reason for reason in session.gate.reasons)
     assert session.exit_code == 0
@@ -85,7 +85,7 @@ async def test_a_server_whose_benign_call_fails_is_not_run_and_not_comparable(tm
 
     assert session.not_run == {FILESYSTEM.server_package: "no answer"}
     assert session.audits == []
-    comparison = _the_one_server_ends(session, ServerOutcome.NOT_RUN, GateVerdict.NOT_COMPARABLE)
+    comparison = _the_one_server_ends(session, ServerOutcome.NOT_RUN, GateOutcome.NOT_COMPARABLE)
     assert comparison.baseline_runs == [False] * 6
     assert session.exit_code == 3
 
@@ -150,8 +150,8 @@ async def test_two_recordings_at_one_commit_write_an_exploratory_then_a_confirme
     )
 
     assert [(w.server_package, w.status) for w in first.written] == [
-        (FILESYSTEM.server_package, BaselineStatus.EXPLORATORY),
-        (KUBERNETES.server_package, BaselineStatus.EXPLORATORY),
+        (FILESYSTEM.server_package, BaselineStatus.UNCONFIRMED),
+        (KUBERNETES.server_package, BaselineStatus.UNCONFIRMED),
     ]
     assert [w.status for w in second.written] == [BaselineStatus.CONFIRMED] * 2
     confirmed = load_baselines(tmp_path)[FILESYSTEM.server_package]
@@ -215,7 +215,7 @@ async def test_head_moving_during_the_runs_refuses_the_recording(tmp_path: Path)
     ]
     assert session.written == []
     assert load_baselines(tmp_path) == {}
-    assert session.gate.verdict == GateVerdict.GREEN
+    assert session.gate.verdict == GateOutcome.GREEN
     assert session.exit_code == 3
 
 
@@ -242,7 +242,7 @@ async def test_a_run_that_does_not_complete_on_a_gated_server_is_not_comparable(
 
     session = await run_gate(given.options([FILESYSTEM]), given.a_harness(tmp_path, audit))
 
-    _the_one_server_ends(session, ServerOutcome.INCOMPLETE, GateVerdict.NOT_COMPARABLE)
+    _the_one_server_ends(session, ServerOutcome.INCOMPLETE, GateOutcome.NOT_COMPARABLE)
     assert session.exit_code == 3
 
 
@@ -271,7 +271,7 @@ async def test_a_replay_that_does_not_complete_is_incomplete(tmp_path: Path):
 
     session = await run_gate(given.options([FILESYSTEM]), given.a_harness(tmp_path, audit))
 
-    _the_one_server_ends(session, ServerOutcome.INCOMPLETE, GateVerdict.NOT_COMPARABLE)
+    _the_one_server_ends(session, ServerOutcome.INCOMPLETE, GateOutcome.NOT_COMPARABLE)
 
 
 async def test_a_baseline_file_of_a_server_outside_the_gate_set_is_an_orphan(tmp_path: Path):
@@ -298,7 +298,7 @@ async def test_a_one_server_run_leaves_the_other_gate_file_out_of_the_comparison
 
     assert [s.server_package for s in session.gate.servers] == [FILESYSTEM.server_package]
     assert session.orphans == []
-    assert session.gate.verdict == GateVerdict.NOT_COMPARABLE
+    assert session.gate.verdict == GateOutcome.NOT_COMPARABLE
 
 
 async def test_a_one_server_recording_is_refused_on_the_other_gate_file_mismatch(
@@ -317,7 +317,7 @@ async def test_a_one_server_recording_is_refused_on_the_other_gate_file_mismatch
 
 
 def _the_one_server_ends(
-    session: NuisanceGateSession, outcome: ServerOutcome, verdict: GateVerdict
+    session: NuisanceGateSession, outcome: ServerOutcome, verdict: GateOutcome
 ) -> ServerComparison:
     [comparison] = session.gate.servers
     assert comparison.outcome == outcome

@@ -6,24 +6,24 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field
 
 from evals.gate import (
     Cell,
     Observation,
     ProtectedCells,
-    ReplayRule,
+    RetestRule,
     cell_key,
     parse_cell_key,
     protected_cells,
 )
 from evals.ground_truth import GroundTruth
-from evals.metrics import EvalMetrics, KeyedVerdicts, label_scores
+from evals.metrics import HoneypotMetrics, KeyedVerdicts, label_scores
 from mcp_auditor.domain.models import EvalVerdict
 
 
 class BaselineStatus(StrEnum):
-    EXPLORATORY = "exploratory"
+    UNCONFIRMED = "unconfirmed"
     CONFIRMED = "confirmed"
 
 
@@ -54,11 +54,12 @@ class RecordingRef(BaseModel):
 class Baseline(BaseModel):
     status: BaselineStatus
     conditions: BaselineConditions
-    replay_rule: ReplayRule
+    # The committed baseline still carries the old key, until its next re-recording.
+    retest_rule: RetestRule = Field(validation_alias=AliasChoices("retest_rule", "replay_rule"))
     commit: str
     recorded_at: str
     runs: list[dict[str, Observation]]
-    metrics: EvalMetrics
+    metrics: HoneypotMetrics
     confirms: RecordingRef | None = None
     replaces: RecordingRef | None = None
     disagreements: list[str] = []
@@ -127,7 +128,7 @@ def _field_mismatches(
 @dataclass(frozen=True)
 class RescoredBaseline:
     ground_truth: GroundTruth
-    metrics: EvalMetrics
+    metrics: HoneypotMetrics
     protected: ProtectedCells
 
 

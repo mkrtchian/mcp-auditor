@@ -48,7 +48,7 @@ from evals.cve_session_model import CVEHarness, CVEOptions
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget, OutOfScopeCVE
 from evals.eval_display import console
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
-from evals.export import export_cve_judged_cases
+from evals.export import export_detection_judged_cases
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.metrics import SessionThrottles, quiet_throttle_waits
 from evals.run_images import DOCKER_SWEEP, ContainerSweep, sweep_containers, target_services
@@ -208,7 +208,7 @@ async def _run_graded(
     )
     report_path = Path(args.report)
     _write_reports(report, report_path)
-    export_cve_judged_cases(session.audits, report_path)
+    export_detection_judged_cases(session.audits, report_path)
     print_cve_summary(report, report_path)
     print_recording(session, _recorded_flags(args))
     if session.recording_refused:

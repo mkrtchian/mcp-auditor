@@ -1,4 +1,4 @@
-from evals.judge_metrics import (
+from evals.judge.metrics import (
     CaseResult,
     compute_judge_metrics,
     compute_per_category_metrics,

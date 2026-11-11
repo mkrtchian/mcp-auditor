@@ -11,7 +11,7 @@ from evals.holdout_conditions import (
     Cutoff,
     load_conditions,
 )
-from evals.probe_candidates import Prices
+from evals.probe.candidates import Prices
 
 
 def _complete_payload() -> dict[str, object]:

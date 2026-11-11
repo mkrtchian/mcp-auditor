@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Self
 
-from pydantic import BaseModel, model_validator
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
 from evals.ground_truth import GroundTruth
-from evals.metrics import EvalMetrics, VerdictMap
+from evals.metrics import HoneypotMetrics, VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 Cell = tuple[str, AuditCategory]
@@ -40,8 +40,8 @@ class FlipCause(StrEnum):
     WRONG_VERDICT = "wrong_verdict"
 
 
-class ReplayRule(BaseModel):
-    """A flip is a regression when it reproduces 4 times out of at most 5 replays, stopping
+class RetestRule(BaseModel):
+    """A flip is a regression when it reproduces 4 times out of at most 5 retests, stopping
     as soon as the outcome is decided.
 
     Blind spot: a judge that loses each detection half the time reproduces a flip with
@@ -49,28 +49,29 @@ class ReplayRule(BaseModel):
     `evals/fault_injection_method.md`.
     """
 
-    replays: int = 5
+    # Read from `replays` too, the key of the committed baselines until their next re-recording.
+    retests: int = Field(default=5, validation_alias=AliasChoices("retests", "replays"))
     required: int = 4
 
     @model_validator(mode="after")
     def _decides_once_spent(self) -> Self:
-        # Outside these bounds `decide` settles every flip before the first replay.
-        if not 1 <= self.required <= self.replays:
+        # Outside these bounds `decide` settles every flip before the first retest.
+        if not 1 <= self.required <= self.retests:
             raise ValueError(
-                f"replay rule needs 1 <= required <= replays, got {self.required} of {self.replays}"
+                f"retest rule needs 1 <= required <= retests, got {self.required} of {self.retests}"
             )
         return self
 
     def decide(self, reproduced: int, cleared: int) -> bool | None:
         if reproduced >= self.required:
             return True
-        if cleared > self.replays - self.required:
+        if cleared > self.retests - self.required:
             return False
         return None
 
-    def decide_replays(self, replays: list[bool]) -> bool | None:
-        reproduced = sum(replays)
-        return self.decide(reproduced, len(replays) - reproduced)
+    def decide_retests(self, retests: list[bool]) -> bool | None:
+        reproduced = sum(retests)
+        return self.decide(reproduced, len(retests) - reproduced)
 
 
 FLOORS: dict[str, float] = {
@@ -157,7 +158,7 @@ def _state_of(observations: list[Observation], expected: EvalVerdict) -> CellSta
 class CellComparison(BaseModel):
     outcome: CellOutcome
     cause: FlipCause | None = None
-    replays: list[bool] = []
+    retests: list[bool] = []
 
 
 def compare[K](
@@ -200,10 +201,12 @@ def _flip_cause[K](cell: K, candidate_runs: list[dict[K, Observation]]) -> FlipC
     return FlipCause.UNCOVERED if uncovered else FlipCause.WRONG_VERDICT
 
 
-def settle(comparison: CellComparison, replays: list[bool], rule: ReplayRule) -> CellComparison:
-    regression = rule.decide_replays(replays)
+def apply_retests(
+    comparison: CellComparison, retests: list[bool], rule: RetestRule
+) -> CellComparison:
+    regression = rule.decide_retests(retests)
     outcome = CellOutcome.REGRESSION if regression else CellOutcome.FLIP_NOT_REPRODUCED
-    return comparison.model_copy(update={"outcome": outcome, "replays": list(replays)})
+    return comparison.model_copy(update={"outcome": outcome, "retests": list(retests)})
 
 
 @dataclass(frozen=True)
@@ -232,7 +235,7 @@ def recall_floor_breached(count: DetectionCount) -> bool:
     return count.detections < count.runs
 
 
-def floor_breaches(metrics: EvalMetrics, count: DetectionCount) -> list[str]:
+def floor_breaches(metrics: HoneypotMetrics, count: DetectionCount) -> list[str]:
     recall = ["recall"] if recall_floor_breached(count) else []
     return recall + [name for name, floor in FLOORS.items() if getattr(metrics, name) < floor]
 
@@ -284,7 +287,7 @@ class MetricDelta(BaseModel):
 
 
 def metric_deltas(
-    baseline: EvalMetrics, candidate: EvalMetrics, resolutions: dict[str, float]
+    baseline: HoneypotMetrics, candidate: HoneypotMetrics, resolutions: dict[str, float]
 ) -> dict[str, MetricDelta]:
     deltas: dict[str, MetricDelta] = {}
     for name in _GATED_METRICS:

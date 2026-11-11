@@ -4,7 +4,7 @@ import pytest
 
 import tests.unit.support.test_eval_session_given as given
 from evals.baseline import BaselineStatus
-from evals.declared_flips import DECLARED_FLIPS_PATH, ActiveDeclarations, Suite
+from evals.declared_flips import DECLARED_FLIPS_PATH, ActiveDeclarations, Instrument
 from evals.eval_session import (
     BASELINE_PATH,
     REFUSED_BEFORE_ANY_LLM_CALL,
@@ -24,32 +24,32 @@ from evals.eval_session import (
     select_mode,
     tree_drift,
 )
-from evals.gate_verdict import GateMode
+from evals.gate_outcome import GateMode
 from mcp_auditor.config import Settings
 
 OTHER_COMMIT = "4567def"
 
 
-def test_ungated_gates_on_floors_only_even_with_a_confirmed_baseline():
+def test_a_no_baseline_run_gates_on_floors_only_even_with_a_confirmed_baseline():
     baseline = given.a_baseline_at_ci_conditions(BaselineStatus.CONFIRMED)
 
-    assert select_mode(baseline, ungated=True) == GateMode.FLOORS_ONLY
+    assert select_mode(baseline, no_baseline=True) == GateMode.FLOORS_ONLY
 
 
 def test_no_baseline_gates_on_the_legacy_thresholds():
-    assert select_mode(None, ungated=False) == GateMode.LEGACY_THRESHOLDS
+    assert select_mode(None, no_baseline=False) == GateMode.LEGACY_THRESHOLDS
 
 
-def test_an_exploratory_baseline_gates_on_floors_only():
-    baseline = given.a_baseline_at_ci_conditions(BaselineStatus.EXPLORATORY)
+def test_an_unconfirmed_baseline_gates_on_floors_only():
+    baseline = given.a_baseline_at_ci_conditions(BaselineStatus.UNCONFIRMED)
 
-    assert select_mode(baseline, ungated=False) == GateMode.FLOORS_ONLY
+    assert select_mode(baseline, no_baseline=False) == GateMode.FLOORS_ONLY
 
 
 def test_a_confirmed_baseline_gates_paired():
     baseline = given.a_baseline_at_ci_conditions(BaselineStatus.CONFIRMED)
 
-    assert select_mode(baseline, ungated=False) == GateMode.PAIRED
+    assert select_mode(baseline, no_baseline=False) == GateMode.PAIRED
 
 
 def test_a_run_without_baseline_nor_recording_is_not_refused():
@@ -129,8 +129,8 @@ def test_recording_at_other_ci_conditions_is_refused():
     ]
 
 
-def test_recording_over_an_exploratory_baseline_at_another_commit_is_refused():
-    baseline = given.a_baseline_at_ci_conditions(BaselineStatus.EXPLORATORY)
+def test_recording_over_an_unconfirmed_baseline_at_another_commit_is_refused():
+    baseline = given.a_baseline_at_ci_conditions(BaselineStatus.UNCONFIRMED)
     session = given.a_session(baseline=baseline, tree=given.a_clean_tree(OTHER_COMMIT))
 
     reasons = pre_run_refusals(session, given.LABELS)
@@ -243,11 +243,11 @@ def test_an_invalid_reasoning_setting_is_refused_before_any_llm_call(
 
 def test_an_invalid_declaration_file_is_refused_before_any_git_read(tmp_path: Path):
     declarations = tmp_path / "declared_flips.json"
-    declarations.write_text('{"entries": [{"suite": "honeypot"}]}')
+    declarations.write_text('{"entries": [{"instrument": "honeypot"}]}')
 
     with pytest.raises(Refused) as refusal:
         declarations_of_head(
-            Suite.HONEYPOT, given.a_working_tree_that_must_not_read_git(declarations)
+            Instrument.HONEYPOT, given.a_working_tree_that_must_not_read_git(declarations)
         )
 
     assert refusal.value.title == REFUSED_BEFORE_ANY_LLM_CALL
@@ -257,7 +257,7 @@ def test_an_invalid_declaration_file_is_refused_before_any_git_read(tmp_path: Pa
 def test_an_empty_declaration_file_reads_nothing_from_git(tmp_path: Path):
     working_tree = given.a_working_tree_that_must_not_read_git(given.a_declaration_file(tmp_path))
 
-    assert declarations_of_head(Suite.HONEYPOT, working_tree) == ([], False)
+    assert declarations_of_head(Instrument.HONEYPOT, working_tree) == ([], False)
 
 
 def test_an_active_declaration_of_an_unknown_cell_is_refused_before_any_llm_call(

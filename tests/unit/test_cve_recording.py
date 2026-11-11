@@ -10,7 +10,7 @@ from evals.cve_recording import (
     decide_recordings,
     leaves_gated_set,
 )
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
 DETECTED = given.DETECTED
@@ -31,10 +31,10 @@ def test_no_file_gives_an_exploratory_baseline_of_the_recording():
 
     assert decision == CVETargetBaseline(
         cve_id=recording.cve_id,
-        status=BaselineStatus.EXPLORATORY,
+        status=BaselineStatus.UNCONFIRMED,
         conditions=recording.conditions,
         fixture_fingerprint=recording.fixture_fingerprint,
-        replay_rule=ReplayRule(),
+        replay_rule=RetestRule(),
         commit=recording.commit,
         recorded_at=recording.recorded_at,
         runs=recording.runs,

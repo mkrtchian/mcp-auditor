@@ -4,7 +4,7 @@ from pathlib import Path
 
 from evals import holdout_census, holdout_exclusions
 from evals.honeypots import REPO_ROOT
-from evals.judge_fixture import CaseLabel, CaseSource, JudgeCase, JudgeInputs, load_fixture
+from evals.judge.fixture import CaseLabel, CaseSource, JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AuditCategory
 
 _TESTS_DIR = Path(__file__).resolve().parents[2]

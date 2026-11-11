@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel
 
-from evals.cell_grid import replay_fraction
+from evals.cell_grid import retest_fraction
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_counter import flagged_tools, raw_fail_count
 from evals.nuisance_counting import counted_tools
@@ -137,7 +137,7 @@ def _row(comparison: ServerComparison, line: GateServerLine | None) -> str:
         comparison.outcome.value,
         server_letters(comparison.baseline_runs) or "-",
         server_letters(comparison.candidate_runs) or "-",
-        replay_fraction(comparison.replays),
+        retest_fraction(comparison.replays),
         server_detail(comparison, line).replace("|", "\\|"),
     ]
     return f"| {' | '.join(cells)} |"

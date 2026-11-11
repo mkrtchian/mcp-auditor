@@ -14,7 +14,7 @@ from evals.holdout_audit import DroppedRun, IncompleteRun
 from evals.holdout_conditions import Cutoff, HoldoutConditions
 from evals.holdout_results import HoldoutRunResult
 from evals.holdout_run import HoldoutDeps, run_holdout
-from evals.probe_candidates import Prices
+from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import (
     AuditReport,

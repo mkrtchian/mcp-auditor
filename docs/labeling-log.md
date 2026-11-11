@@ -1063,3 +1063,15 @@ Commit: the one that adds this entry.
 **Fingerprint.** The grammar fingerprint stays `4208029a711b929723d0a0460a0fb986e94f15dbb865afa7078dffd54e5ac9b1`. No fixture fingerprint moves: the change is in the run's orchestration, which no fingerprint hashes.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the holdout run's pre-run check. No prompt, guard or default of the system under test moves, no fixture and no label. (2) It was raised by the investigation of CVE-2026-82112, whose model-backed output and slow layout-check call can fail one pass of a sound fixture under a shared CPU, not by a measured value: no holdout run exists. (3) A sound fixture should not leave N because the check ran beside five others, and a broken one fails both passes, so the check still drops what it is meant to drop. The retry touches no audit, so it keeps no best of several audits. (4) It applies to every holdout target, on every holdout run.
+
+### 2026-11-11, the scoring code of the honeypot suite and the judge eval moves to the glossary's words
+
+Commit: the one that adds this entry.
+
+**State.** The honeypot baseline and the judge eval baseline are both confirmed, and neither is reset. No label moves.
+
+**What changes.** The scoring code of the honeypot suite and of the judge eval moves into the packages `evals/honeypot/` and `evals/judge/`, and its names follow the glossary: a flip is retested under the retest rule (`RetestRule`, was `ReplayRule`), a gate result carries its `outcome` (was `verdict`), a first recording is `unconfirmed` (was `exploratory`), and the honeypot grid tags `false_positive` and `improved` (were `alarm` and `fixed`). The two baselines move by `git mv`, their content unchanged: `evals/baselines/honeypot_e2e.json` becomes `evals/baselines/honeypot.json`, and `evals/baselines/judge_isolation.json` becomes `evals/baselines/judge.json`. Both still carry the key `replay_rule` and its `replays`, which the loaders read through an alias until the next re-recording from a green gate. A baseline written from now on carries `retest_rule` and `retests`. The fault injection fixture, `evals/fixtures/fault_injection_baseline.json`, is a test fixture and is rewritten to the new keys.
+
+**Fingerprint.** Both are unchanged: the ground truth fingerprint stays `072b33c72ecc3732df4df957ed3ff63662a6747ccb87ac29ed5332d1031cb025`, and the judge inputs fingerprint stays `638da4313024181cc88b5c54f9032ff6b1d158664046bea12ed40f2b2b7aac73`, the values both baselines record.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the names and paths of its scoring code. Nothing it grades moves: no prompt, guard or default of the system under test, no label, no fixture case and no rule of the gate. (2) It was raised by the adoption of the glossary, not by a measured value. (3) A path and a name are none of what ADR 020 resets a baseline on (a fixture, the scoring code's grading, the model, runs or budget), so both baselines keep their runs and their confirmation. (4) It applies to every gated run of both instruments.

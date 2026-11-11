@@ -28,8 +28,8 @@
       }
     }
   },
-  "replay_rule": {
-    "replays": 5,
+  "retest_rule": {
+    "retests": 5,
     "required": 4
   },
   "commit": "519168f",

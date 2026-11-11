@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from evals.baseline import BaselineStatus
 from evals.cve_baseline import CVERunConditions, CVETargetBaseline
 from evals.cve_grammar import DETECTION_RUNGS, CVEStatus, RunGrade
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 
 _BASELINE_DIRECTORY = "evals/baselines/cve"
 WHOLE_RESET = (
@@ -131,7 +131,7 @@ def target_reset(cve_id: str) -> str:
 
 
 def _why_not_gated(baseline: CVETargetBaseline) -> str:
-    if baseline.status == BaselineStatus.EXPLORATORY:
+    if baseline.status == BaselineStatus.UNCONFIRMED:
         return (
             f"exploratory baseline recorded at {baseline.commit}: confirm it with a second "
             "recording at that commit, or delete it in a commit of its own"
@@ -140,7 +140,7 @@ def _why_not_gated(baseline: CVETargetBaseline) -> str:
 
 
 def settle(
-    comparison: TargetComparison, replays: list[bool | None], rule: ReplayRule
+    comparison: TargetComparison, replays: list[bool | None], rule: RetestRule
 ) -> TargetComparison:
     completed = [replay for replay in replays if replay is not None]
     if len(completed) < len(replays):
@@ -151,7 +151,7 @@ def settle(
                 "detail": "a replay did not complete",
             }
         )
-    decision = rule.decide_replays(completed)
+    decision = rule.decide_retests(completed)
     if decision is None:
         return comparison.model_copy(update={"replays": completed})
     outcome = TargetOutcome.REGRESSION if decision else TargetOutcome.MISS_NOT_REPRODUCED

@@ -1,8 +1,8 @@
 import pytest
 
 import tests.unit.support.test_nuisance_gate_given as given
-from evals.gate import ReplayRule
-from evals.gate_verdict import GateVerdict
+from evals.gate import RetestRule
+from evals.gate_outcome import GateOutcome
 from evals.nuisance_gate import ServerOutcome, compare_server, judge, settle
 from evals.nuisance_gate_baseline import WHOLE_RESET
 
@@ -78,7 +78,7 @@ def test_a_gated_server(runs: list[bool], outcome: ServerOutcome):
 def test_settle_keeps_the_baseline_runs():
     pending = compare_server(given.a_gated_baseline(), given.a_candidate(ONE_ALARM))
 
-    settled = settle(pending, [True] * 4, ReplayRule())
+    settled = settle(pending, [True] * 4, RetestRule())
 
     assert settled.outcome == ServerOutcome.REGRESSION
     assert settled.baseline_runs == [False] * 6
@@ -88,7 +88,7 @@ def test_an_alarm_reproduced_four_times_is_a_regression():
     pending = given.a_comparison(ServerOutcome.PENDING_REPLAY)
     replays: list[bool | None] = [False, True, True, True, True]
 
-    settled = settle(pending, replays, ReplayRule())
+    settled = settle(pending, replays, RetestRule())
 
     assert settled.outcome == ServerOutcome.REGRESSION
     assert settled.replays == [False, True, True, True, True]
@@ -97,7 +97,7 @@ def test_an_alarm_reproduced_four_times_is_a_regression():
 def test_an_alarm_cleared_by_its_replays_is_not_reproduced():
     pending = given.a_comparison(ServerOutcome.PENDING_REPLAY)
 
-    settled = settle(pending, [False, False], ReplayRule())
+    settled = settle(pending, [False, False], RetestRule())
 
     assert settled.outcome == ServerOutcome.ALARM_NOT_REPRODUCED
 
@@ -105,7 +105,7 @@ def test_an_alarm_cleared_by_its_replays_is_not_reproduced():
 def test_an_undecided_replay_keeps_the_alarm_pending():
     pending = given.a_comparison(ServerOutcome.PENDING_REPLAY)
 
-    settled = settle(pending, [True], ReplayRule())
+    settled = settle(pending, [True], RetestRule())
 
     assert settled.outcome == ServerOutcome.PENDING_REPLAY
     assert settled.replays == [True]
@@ -114,7 +114,7 @@ def test_an_undecided_replay_keeps_the_alarm_pending():
 def test_a_replay_that_did_not_complete_leaves_the_server_incomplete():
     pending = given.a_comparison(ServerOutcome.PENDING_REPLAY)
 
-    settled = settle(pending, [True, None], ReplayRule())
+    settled = settle(pending, [True, None], RetestRule())
 
     assert settled.outcome == ServerOutcome.INCOMPLETE
     assert settled.replays == [True]
@@ -123,7 +123,7 @@ def test_a_replay_that_did_not_complete_leaves_the_server_incomplete():
 def test_a_condition_mismatch_is_not_comparable_with_the_whole_reset():
     result = judge([given.a_comparison(ServerOutcome.HELD)], ["a.json: runs is 3, the run has 1"])
 
-    assert result.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.verdict == GateOutcome.NOT_COMPARABLE
     assert result.reasons == ["a.json: runs is 3, the run has 1", WHOLE_RESET]
 
 
@@ -135,7 +135,7 @@ def test_a_server_that_says_nothing_either_way_is_not_comparable(outcome: Server
         [given.a_comparison(ServerOutcome.HELD, "npm:other"), given.a_comparison(outcome)], []
     )
 
-    assert result.verdict == GateVerdict.NOT_COMPARABLE
+    assert result.verdict == GateOutcome.NOT_COMPARABLE
     assert len(result.reasons) == 1
     assert result.reasons[0].startswith(f"{given.SERVER_PACKAGE}: {outcome.value}")
 
@@ -148,7 +148,7 @@ def test_a_regression_turns_the_gate_red():
 
     result = judge(comparisons, [])
 
-    assert result.verdict == GateVerdict.RED
+    assert result.verdict == GateOutcome.RED
     assert len(result.reasons) == 1
     assert result.reasons[0].startswith(given.SERVER_PACKAGE)
 
@@ -161,7 +161,7 @@ def test_an_inconclusive_server_does_not_block_green_and_is_named():
 
     result = judge(comparisons, [])
 
-    assert result.verdict == GateVerdict.GREEN
+    assert result.verdict == GateOutcome.GREEN
     assert len(result.reasons) == 1
     assert result.reasons[0].startswith(given.SERVER_PACKAGE)
 
@@ -174,5 +174,5 @@ def test_a_gate_with_no_gated_server_says_so():
 
     result = judge(comparisons, [])
 
-    assert result.verdict == GateVerdict.GREEN
+    assert result.verdict == GateOutcome.GREEN
     assert result.reasons == ["no server is gated"]

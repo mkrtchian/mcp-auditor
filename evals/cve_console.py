@@ -5,7 +5,7 @@ from pathlib import Path
 from rich.table import Table
 from rich.text import Text
 
-from evals.cell_grid import replay_fraction
+from evals.cell_grid import retest_fraction
 from evals.cve_costs import (
     COST_COLUMNS,
     TIERED_REQUEST_INPUT_TOKENS,
@@ -25,9 +25,9 @@ from evals.cve_markdown import (
     status_letters,
 )
 from evals.cve_oracle import CVEBenchmarkReport, CVEResult
-from evals.eval_display import GateRow, console, gate_table, print_report_paths, print_verdict
-from evals.export import cve_export_path
-from evals.gate_verdict import GateVerdict
+from evals.eval_display import GateRow, console, gate_table, print_outcome, print_report_paths
+from evals.export import detection_export_path
+from evals.gate_outcome import GateOutcome
 
 
 def print_cve_summary(report: CVEBenchmarkReport, report_path: Path) -> None:
@@ -49,7 +49,7 @@ def print_cve_summary(report: CVEBenchmarkReport, report_path: Path) -> None:
     if report.gate is not None:
         console.print(gate_table(_gate_rows(report.gate), "Target"))
         _print_lines([GATE_LEGEND])
-    print_report_paths(report_path, cve_export_path(report_path))
+    print_report_paths(report_path, detection_export_path(report_path))
     _print_verdict(report.gate)
 
 
@@ -57,7 +57,7 @@ def _print_verdict(gate: CVEGateResult | None) -> None:
     if gate is None:
         console.print("[yellow]Ungated run: nothing compared to evals/baselines/cve/.[/yellow]")
     else:
-        print_verdict(GateVerdict(gate.verdict.value), gate.reasons)
+        print_outcome(GateOutcome(gate.verdict.value), gate.reasons)
 
 
 def _print_lines(lines: list[str]) -> None:
@@ -107,11 +107,11 @@ def _print_costs(report: CVEBenchmarkReport) -> None:
 def _gate_rows(gate: CVEGateResult) -> list[GateRow]:
     return [
         GateRow(
-            target=comparison.cve_id,
+            subject=comparison.cve_id,
             outcome=comparison.outcome.value,
             baseline=status_letters(comparison.baseline_runs) or "-",
             run=status_letters(comparison.candidate_runs) or "-",
-            replays=replay_fraction(comparison.replays),
+            retests=retest_fraction(comparison.replays),
             detail=comparison.detail or "-",
         )
         for comparison in gate.targets

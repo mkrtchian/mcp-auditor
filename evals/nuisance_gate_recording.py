@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 from evals.nuisance_gate import ServerComparison, ServerOutcome
 from evals.nuisance_gate_baseline import (
     WHOLE_RESET,
@@ -46,8 +46,8 @@ def decide_recording(
     if not recording.completed:
         return RecordingRefused(reasons=[_FAILED_RUN])
     if existing is None:
-        return _baseline_from(recording, BaselineStatus.EXPLORATORY, ReplayRule())
-    if existing.status == BaselineStatus.EXPLORATORY:
+        return _baseline_from(recording, BaselineStatus.UNCONFIRMED, RetestRule())
+    if existing.status == BaselineStatus.UNCONFIRMED:
         return _confirmation(existing, recording)
     return _replacement(existing, recording, comparison)
 
@@ -142,7 +142,7 @@ def _differences(existing: NuisanceServerBaseline, recording: ServerRecording) -
 
 
 def _baseline_from(
-    recording: ServerRecording, status: BaselineStatus, rule: ReplayRule
+    recording: ServerRecording, status: BaselineStatus, rule: RetestRule
 ) -> NuisanceServerBaseline:
     return NuisanceServerBaseline(
         server_package=recording.server_package,

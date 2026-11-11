@@ -16,13 +16,6 @@ from tests.unit.support.test_glossary_given import (
 # Pattern ids whose living hits a later step still has to rename, emptied step by step, grouped by
 # the step of the migration plan that removes them.
 _NOT_YET_RENAMED = (
-    # body step 3
-    "alarm-tag",
-    "distribution-label",
-    "fixed-tag",
-    "eval-names",
-    "phase-usage",
-    "suite-enum",
     # body step 4
     "admission-cve",
     "cve-family",
@@ -206,6 +199,60 @@ _ALLOWLIST = (
     AllowedLine(
         "CHANGELOG.md",
         "relayed-variables",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "evals/baseline.py",
+        "replay-retest",
+        'AliasChoices("retest_rule", "replay_rule")',
+        "read alias of the committed honeypot baseline until its next re-recording",
+    ),
+    AllowedLine(
+        "evals/judge/baseline.py",
+        "replay-retest",
+        'AliasChoices("retest_rule", "replay_rule")',
+        "read alias of the committed judge baseline until its next re-recording",
+    ),
+    AllowedLine(
+        "tests/unit/test_*baseline*.py",
+        "replay-retest",
+        "replay_rule",
+        "the tests that a committed baseline loads through the alias",
+    ),
+    AllowedLine(
+        "tests/unit/test_run_*.py",
+        "ungated",
+        '"--ungated"',
+        "the CLI tests that the old flag is refused",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "run-evals",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "e2e",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "judge-isolation",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "replay-retest",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "cve-id",
         "(was ",
         "a rename entry names the word it replaces",
     ),

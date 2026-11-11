@@ -11,8 +11,8 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus
-from evals.gate import ReplayRule
-from evals.gate_verdict import GateVerdict
+from evals.gate import RetestRule
+from evals.gate_outcome import GateOutcome
 from evals.nuisance_gate_baseline import WHOLE_RESET, NuisanceServerBaseline, server_reset
 
 
@@ -47,7 +47,7 @@ class ServerComparison(BaseModel):
 
 
 class NuisanceGateResult(BaseModel):
-    verdict: GateVerdict
+    verdict: GateOutcome
     reasons: list[str]
     servers: list[ServerComparison]
 
@@ -68,7 +68,7 @@ def compare_server(
         return outcome(ServerOutcome.NO_BASELINE)
     if baseline.fixture_fingerprint != candidate.fixture_fingerprint:
         return outcome(ServerOutcome.FIXTURE_CHANGED, server_reset(candidate.server_package))
-    if baseline.status == BaselineStatus.EXPLORATORY:
+    if baseline.status == BaselineStatus.UNCONFIRMED:
         return outcome(ServerOutcome.NOT_GATED, _why_not_gated(baseline))
     # Flagged in some baseline runs or in all of them, the server is unstable either way:
     # no new alarm can show on it.
@@ -83,7 +83,7 @@ def compare_server(
 
 
 def _why_not_gated(baseline: NuisanceServerBaseline) -> str:
-    if baseline.status == BaselineStatus.EXPLORATORY:
+    if baseline.status == BaselineStatus.UNCONFIRMED:
         return (
             f"exploratory baseline recorded at {baseline.commit}: confirm it with a second "
             "recording at that commit, or delete it in a commit of its own"
@@ -92,7 +92,7 @@ def _why_not_gated(baseline: NuisanceServerBaseline) -> str:
 
 
 def settle(
-    comparison: ServerComparison, replays: list[bool | None], rule: ReplayRule
+    comparison: ServerComparison, replays: list[bool | None], rule: RetestRule
 ) -> ServerComparison:
     completed = [replay for replay in replays if replay is not None]
     if len(completed) < len(replays):
@@ -103,7 +103,7 @@ def settle(
                 "detail": "a replay did not complete",
             }
         )
-    decision = rule.decide_replays(completed)
+    decision = rule.decide_retests(completed)
     if decision is None:
         return comparison.model_copy(update={"replays": completed})
     outcome = ServerOutcome.REGRESSION if decision else ServerOutcome.ALARM_NOT_REPRODUCED
@@ -118,11 +118,11 @@ def judge(comparisons: Sequence[ServerComparison], mismatches: list[str]) -> Nui
     ]
     if mismatches or not_comparable:
         reasons = [*mismatches, WHOLE_RESET] if mismatches else []
-        return _result(GateVerdict.NOT_COMPARABLE, [*reasons, *not_comparable], comparisons)
+        return _result(GateOutcome.NOT_COMPARABLE, [*reasons, *not_comparable], comparisons)
     regressions = _named(comparisons, ServerOutcome.REGRESSION)
     if regressions:
-        return _result(GateVerdict.RED, regressions, comparisons)
-    return _result(GateVerdict.GREEN, _green_reasons(comparisons), comparisons)
+        return _result(GateOutcome.RED, regressions, comparisons)
+    return _result(GateOutcome.GREEN, _green_reasons(comparisons), comparisons)
 
 
 def _named(comparisons: Sequence[ServerComparison], outcome: ServerOutcome) -> list[str]:
@@ -156,10 +156,10 @@ def _green_reasons(comparisons: Sequence[ServerComparison]) -> list[str]:
 
 
 def _result(
-    verdict: GateVerdict, reasons: list[str], comparisons: Sequence[ServerComparison]
+    verdict: GateOutcome, reasons: list[str], comparisons: Sequence[ServerComparison]
 ) -> NuisanceGateResult:
     return NuisanceGateResult(verdict=verdict, reasons=reasons, servers=list(comparisons))
 
 
-def exit_code(verdict: GateVerdict) -> int:
-    return {GateVerdict.GREEN: 0, GateVerdict.RED: 1, GateVerdict.NOT_COMPARABLE: 3}[verdict]
+def exit_code(verdict: GateOutcome) -> int:
+    return {GateOutcome.GREEN: 0, GateOutcome.RED: 1, GateOutcome.NOT_COMPARABLE: 3}[verdict]

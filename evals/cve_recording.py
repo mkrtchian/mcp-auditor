@@ -14,7 +14,7 @@ from evals.cve_gate import (
     target_reset,
 )
 from evals.cve_grammar import CVEStatus
-from evals.gate import ReplayRule
+from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
 _FAILED_RUN = "a run did not complete: a baseline holds every run its conditions claim"
@@ -40,8 +40,8 @@ def decide_recording(
     if not recording.completed:
         return RecordingRefused(reasons=[_FAILED_RUN])
     if existing is None:
-        return _baseline_from(recording, BaselineStatus.EXPLORATORY, ReplayRule())
-    if existing.status == BaselineStatus.EXPLORATORY:
+        return _baseline_from(recording, BaselineStatus.UNCONFIRMED, RetestRule())
+    if existing.status == BaselineStatus.UNCONFIRMED:
         return _confirmation(existing, recording)
     return _replacement(existing, recording, comparison)
 
@@ -130,7 +130,7 @@ def _differences(existing: CVETargetBaseline, recording: TargetRecording) -> lis
 
 
 def _baseline_from(
-    recording: TargetRecording, status: BaselineStatus, rule: ReplayRule
+    recording: TargetRecording, status: BaselineStatus, rule: RetestRule
 ) -> CVETargetBaseline:
     return CVETargetBaseline(
         cve_id=recording.cve_id,

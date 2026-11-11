@@ -4,19 +4,20 @@ import pytest
 
 import tests.unit.support.test_draw_judge_cases_given as given
 from evals.draw_judge_cases import (
-    CVE_TARGET_QUOTA,
     DRAW_SEED,
     FAIL_CELL_QUOTA,
     PASS_CELL_QUOTA,
-    candidates_from_cve,
+    TARGET_QUOTA,
+    candidates_from_detection,
     candidates_from_honeypot,
     complement,
     complement_refusals,
     draw,
     draw_fixture,
+    parse_args,
 )
-from evals.judge_draw_checks import leaked_secrets, source_refusals, source_run
-from evals.judge_fixture import CaseLabel, CaseSource, JudgeInputs
+from evals.judge.draw_checks import leaked_secrets, source_refusals, source_run
+from evals.judge.fixture import CaseLabel, CaseSource, JudgeInputs
 from mcp_auditor.domain.models import AuditCategory
 
 INFO_LEAKAGE = given.INFO_LEAKAGE
@@ -62,10 +63,10 @@ def test_a_honeypot_candidate_names_its_cell_and_waits_for_its_label():
     assert case.inputs == JudgeInputs.model_validate(line)
 
 
-def test_a_cve_candidate_is_filed_under_its_cve():
-    lines = [given.a_cve_line("CVE-2025-0001"), given.a_cve_line("CVE-2025-0002")]
+def test_a_detection_candidate_is_filed_under_its_flaw():
+    lines = [given.a_detection_line("CVE-2025-0001"), given.a_detection_line("CVE-2025-0002")]
 
-    candidates = candidates_from_cve(lines)
+    candidates = candidates_from_detection(lines)
 
     [case] = candidates["CVE-2025-0001"]
     assert (case.source, case.origin) == (CaseSource.CVE, "cve CVE-2025-0001")
@@ -82,12 +83,12 @@ def test_a_stratum_smaller_than_its_quota_yields_all_its_cases_and_a_shortfall()
     assert shortfalls == ["small: 2 candidates for a quota of 3"]
 
 
-def test_the_quotas_are_drawn_per_stratum_honeypot_first_then_cve():
+def test_the_quotas_are_drawn_per_stratum_honeypot_first_then_targets():
     fixture = draw_fixture(given.some_strata(), sources=[])
 
     origins = [case.origin.split()[0] for case in fixture.cases]
     expected_honeypot = FAIL_CELL_QUOTA + 2 * PASS_CELL_QUOTA
-    assert origins == ["cell"] * expected_honeypot + ["cve"] * CVE_TARGET_QUOTA
+    assert origins == ["cell"] * expected_honeypot + ["cve"] * TARGET_QUOTA
     assert fixture.draw.seed == DRAW_SEED
 
 
@@ -97,7 +98,7 @@ def test_the_same_seed_and_sources_give_the_same_draw():
     reordered = given.Strata(
         fail_cells={"get_user/info_leakage": shuffled},
         pass_cells=strata.pass_cells,
-        cve_targets=strata.cve_targets,
+        targets=strata.targets,
     )
 
     assert draw_fixture(strata, sources=[]) == draw_fixture(reordered, sources=[])
@@ -106,16 +107,16 @@ def test_the_same_seed_and_sources_give_the_same_draw():
 def test_no_verdict_nor_run_index_reaches_a_drawn_case():
     lines = [given.a_honeypot_line("get_user", INFO_LEAKAGE)]
     candidates = candidates_from_honeypot(lines, given.GROUND_TRUTH)
-    cve = candidates_from_cve([given.a_cve_line("CVE-2025-0001")])
+    detection = candidates_from_detection([given.a_detection_line("CVE-2025-0001")])
     strata = given.Strata(
         fail_cells={"get_user/info_leakage": candidates[("get_user", INFO_LEAKAGE)]},
         pass_cells={},
-        cve_targets=cve,
+        targets=detection,
     )
 
     dumped = draw_fixture(strata, sources=[]).model_dump_json()
 
-    stripped = ("verdict", "justification", "correct", "expected_verdict", "run_index", "cve_id")
+    stripped = ("verdict", "justification", "correct", "expected_verdict", "run_index", "flaw_id")
     assert not [field for field in stripped if f'"{field}"' in dumped]
 
 
@@ -231,7 +232,7 @@ def test_clean_cases_leak_nothing():
 
 
 def test_a_source_records_the_export_hash_its_commit_and_its_scalar_conditions():
-    source = source_run("output/cve_judged_cases.jsonl", b"{}\n", given.a_source_report())
+    source = source_run("output/detection_judged_cases.jsonl", b"{}\n", given.a_source_report())
 
     assert source.commit == "c0ffee"
     assert len(source.sha256) == 64
@@ -256,3 +257,23 @@ def test_clean_sources_at_one_commit_are_accepted():
     reports = {"a.jsonl": given.a_source_report(), "b.jsonl": given.a_source_report()}
 
     assert source_refusals(reports) == []
+
+
+def test_the_detection_export_is_read_from_its_flag(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        ["draw_judge_cases", "--honeypot-export", "h.jsonl", "--detection-export", "d.jsonl"],
+    )
+
+    assert str(parse_args().detection_export) == "d.jsonl"
+
+
+def test_the_old_cve_export_flag_is_refused(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "sys.argv", ["draw_judge_cases", "--honeypot-export", "h.jsonl", "--cve-export", "d.jsonl"]
+    )
+
+    with pytest.raises(SystemExit) as refused:
+        parse_args()
+
+    assert refused.value.code == 2

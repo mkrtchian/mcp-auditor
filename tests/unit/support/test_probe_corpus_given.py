@@ -1,6 +1,6 @@
 from typing import Literal
 
-from evals.probe_corpus import ProbeCall, ProbeCorpus, ReferenceConditions
+from evals.probe.corpus import ProbeCall, ProbeCorpus, ReferenceConditions
 from mcp_auditor.domain.models import EvalVerdict, Judgment, Severity
 
 

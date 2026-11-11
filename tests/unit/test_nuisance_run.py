@@ -14,7 +14,7 @@ from evals.nuisance_audit import DroppedRun
 from evals.nuisance_counter import counter_fingerprint
 from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 from evals.nuisance_results import FigureExit, NotRunCause
-from evals.probe import call_cost
+from evals.probe.analysis import call_cost
 from mcp_auditor.domain.models import MissCause, ProviderUsage
 
 
