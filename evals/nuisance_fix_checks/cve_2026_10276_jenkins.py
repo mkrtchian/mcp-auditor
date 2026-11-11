@@ -3,8 +3,8 @@
 Four tools compose a Jenkins request path from `jobPath`: get_build_status fetches
 `/${jobPath}/${buildNumber}/api/json`, get_build_log `/${jobPath}/${buildNumber}/consoleText`,
 get_failed_build_log `/${jobPath}/api/json` then the failed build's console, and trigger_build posts
-to `/${jobPath}/build`. On the vulnerable build (b1f32a7a5e0c) validateJobPath blocks absolute
-schemes but not percent-encoded traversal, so `job/public/%2e%2e/%2e%2e/userContent/internal/secret`
+to `/${jobPath}/build`. The vulnerable build (b1f32a7a5e0c) predates validateJobPath and puts
+`jobPath` into the path unvalidated, so `job/public/%2e%2e/%2e%2e/userContent/internal/secret`
 escapes the job namespace and reaches an internal path of the same host: reach = internal_fetch. The
 patched build (dcee5f1aa4b3) rejects the encoded traversal in all four, the shared validateJobPath
 guard. get_build_log and get_build_status read the reached path back, so their exploits surface the
