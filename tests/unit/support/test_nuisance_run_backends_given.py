@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 import tests.unit.support.test_nuisance_run_given as given
 from evals import nuisance_images
@@ -39,6 +39,16 @@ class DockerHost:
         if server.backend is not None and not self.containers.get(server.backend.image):
             self.containers[server.backend.image] = [f"{server.backend.provisioner}_started"]
         return None
+
+
+@dataclasses.dataclass(frozen=True)
+class RemovalHost:
+    running_containers: Callable[[Sequence[str]], list[str]]
+    remove_containers: Callable[[Sequence[str]], None]
+
+
+def host_of(docker: DockerHost) -> RemovalHost:
+    return RemovalHost(docker.running, docker.remove)
 
 
 def deps_on(host: DockerHost, server: AdmittedServer) -> NuisanceDeps:

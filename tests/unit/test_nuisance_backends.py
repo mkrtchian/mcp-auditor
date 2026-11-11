@@ -12,6 +12,7 @@ from evals.ckan_backend import (
     ckan_server_args,
 )
 from evals.docker_paths import DOCKER_DIRECTORY
+from evals.doris_backend import DORIS_CONTAINER
 from evals.gitlab_backend import GITLAB_RESPONDER_ALIAS, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_RESPONDER_IP
 from evals.jenkins_backend import JENKINS_URL
@@ -149,3 +150,12 @@ def test_the_n8n_registry_entry_builds_the_instance_and_serves_its_dockerfile():
 
     assert entry.built_services == ("n8n-instance",)
     assert DOCKER_DIRECTORY / "Dockerfile.n8n-instance" in entry.served
+
+
+def test_the_doris_cluster_is_reset_by_its_container_name():
+    assert BACKENDS["doris"].reset_containers == (DORIS_CONTAINER,)
+
+
+@pytest.mark.parametrize("key", [key for key, entry in BACKENDS.items() if entry.built_services])
+def test_a_built_backend_resets_no_container_by_name(key: str):
+    assert BACKENDS[key].reset_containers == ()

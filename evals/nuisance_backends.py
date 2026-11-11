@@ -34,7 +34,7 @@ from evals.backend_lifecycle import BackendLifecycle
 from evals.ckan_backend import CKAN_BRIDGE, CKAN_IMAGE, CKAN_PARTS, MOUNTED_FILES
 from evals.cve_targets import image_tag
 from evals.docker_paths import image_dockerfile
-from evals.doris_backend import DORIS_BRIDGE, DORIS_IMAGE
+from evals.doris_backend import DORIS_BRIDGE, DORIS_CONTAINER, DORIS_IMAGE
 from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
 from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
@@ -54,6 +54,9 @@ class RegisteredBackend:
     image: str
     built_services: tuple[str, ...]  # the compose services building its images, empty when pulled
     served: tuple[Path, ...]  # what it serves and how it joins the server, read by the fingerprint
+    # The persistent containers a nuisance command removes at its start, so the backend stands
+    # again from its image and its seed: empty for a built backend, which is removed by its tag.
+    reset_containers: tuple[str, ...] = ()
 
 
 def _served(backend_module: str, *built_services: str) -> tuple[Path, ...]:
@@ -72,7 +75,12 @@ _CKAN_SERVICES = tuple(part.service for part in CKAN_PARTS)
 
 BACKENDS: dict[str, RegisteredBackend] = {
     "doris": RegisteredBackend(
-        doris_backend.LIFECYCLE, DORIS_BRIDGE, DORIS_IMAGE, (), _served(doris_backend.__file__)
+        doris_backend.LIFECYCLE,
+        DORIS_BRIDGE,
+        DORIS_IMAGE,
+        (),
+        _served(doris_backend.__file__),
+        (DORIS_CONTAINER,),
     ),
     "ckan": RegisteredBackend(
         ckan_backend.LIFECYCLE,
@@ -152,6 +160,16 @@ def built_backend_services(servers: Sequence[AdmittedServer]) -> list[str]:
 
 def built_backend_tags(servers: Sequence[AdmittedServer]) -> list[str]:
     return [image_tag(service) for service in built_backend_services(servers)]
+
+
+def backend_reset_containers(servers: Sequence[AdmittedServer]) -> list[str]:
+    names = (
+        name
+        for server in servers
+        if server.backend is not None
+        for name in BACKENDS[server.backend.provisioner].reset_containers
+    )
+    return list(dict.fromkeys(names))
 
 
 def backend_problems(

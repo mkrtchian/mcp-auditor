@@ -1,6 +1,6 @@
 """The built backend images of a nuisance run: rebuilt with the server images, their running
-containers replaced at the start and swept at the end. Pulled backends are left alone. No Docker,
-no LLM."""
+containers replaced at the start and swept at the end. The pulled Doris cluster is removed by
+name at the start, never rebuilt nor swept. No Docker, no LLM."""
 
 import pytest
 
@@ -8,6 +8,7 @@ import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_run_backends_given as given
 import tests.unit.support.test_nuisance_run_given as run_given
 from evals.cve_planting_base import STAND_IN_IMAGE
+from evals.doris_backend import DORIS_CONTAINER
 from evals.eval_session import Refused
 
 
@@ -66,11 +67,12 @@ async def test_the_backend_container_started_during_the_run_is_removed_at_its_en
     assert host.removed == ["ckan_started"]
 
 
-async def test_a_pulled_backend_is_neither_rebuilt_refused_nor_swept():
+async def test_a_pulled_backend_is_reset_at_start_but_neither_rebuilt_nor_swept():
     server = edits.with_the_registered_backend(run_given.a_server(), "doris")
-    host = given.DockerHost({given.DORIS_TAG: ["doris_cluster"]})
+    host = given.DockerHost({given.DORIS_TAG: [DORIS_CONTAINER]})
 
     await run_given.run([server], given.deps_on(host, server))
 
     assert host.rebuilt == ["filesystem-patched"]
-    assert host.removed == []
+    assert host.removed == [DORIS_CONTAINER]
+    assert host.running([given.DORIS_TAG]) == ["doris_started"]

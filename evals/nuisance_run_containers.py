@@ -3,7 +3,9 @@ it may be an audit in progress. A running built backend container is removed at 
 run, a vet and a gate, before any rebuild: every built backend starts again from its image and its
 seed, which its provisioner replays, so no state an earlier command wrote reaches the next. Both
 are swept at the end. Both removals run `docker rm -f -v`, so a container's anonymous volumes go
-with it. The pulled backend (the Doris cluster) is persistent by design and left alone. A
+with it. The pulled backend (the Doris cluster) is removed by its container name at that start
+too, since the counted SQL tools can write its state, and its provisioner stands it again from its
+image and its seed; the end sweep leaves it running, as a holdout calibration shares it. A
 backend-less server with public names launches a holder and stand-ins, whose images the run
 rebuilds but never sweeps by tag: the launch removes its own containers, and a calibration may run
 containers of the same images."""
@@ -16,7 +18,11 @@ from typing import TYPE_CHECKING, Protocol
 
 from evals import nuisance_images
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
-from evals.nuisance_backends import built_backend_services, built_backend_tags
+from evals.nuisance_backends import (
+    backend_reset_containers,
+    built_backend_services,
+    built_backend_tags,
+)
 from evals.run_images import refuse_running_containers, sweep_containers
 
 if TYPE_CHECKING:
@@ -37,6 +43,7 @@ class RunImages:
     backend_services: list[str]
     server_tags: list[str]
     backend_tags: list[str]
+    reset_containers: list[str]
 
     @property
     def services(self) -> list[str]:
@@ -52,6 +59,7 @@ def run_images(servers: Sequence[AdmittedServer]) -> RunImages:
         ),
         server_tags=[nuisance_images.image_tag(service) for service in services],
         backend_tags=built_backend_tags(servers),
+        reset_containers=backend_reset_containers(servers),
     )
 
 
@@ -72,12 +80,12 @@ def refuse_server_containers(host: ContainerHost, images: RunImages, refusal: st
 
 def remove_backend_containers(host: ContainerHost, images: RunImages) -> None:
     """Before the rebuild: after it, the tag names the new image and no longer matches a
-    container started from the previous build."""
-    if not images.backend_tags:
-        return
-    running = host.running_containers(images.backend_tags)
-    if running:  # `docker rm -f` with no name fails
-        host.remove_containers(running)
+    container started from the previous build. A reset container is removed whether it runs or
+    not, the removal being unchecked."""
+    running = host.running_containers(images.backend_tags) if images.backend_tags else []
+    removed = [*running, *images.reset_containers]
+    if removed:  # `docker rm -f` with no name fails
+        host.remove_containers(removed)
 
 
 def sweep_run_containers(host: ContainerHost, images: RunImages) -> None:
