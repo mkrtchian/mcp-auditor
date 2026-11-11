@@ -869,7 +869,7 @@ services:
       context: .
       dockerfile: Dockerfile.desktop-commander
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "d14eb043edd43c80e95b4bb2529551ca42d1c19053ee846f0f3d757b45ebda7f"
+        org.mcp-auditor.dockerfile-fingerprint: "efd11bc3547b4f649ae06014fb3c5dc952c52ec3c598f2bd5b41c190cd4b121b"
     image: mcp-auditor-nuisance-desktop-commander:local
     profiles: ["nuisance"]
 

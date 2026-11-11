@@ -7723,7 +7723,7 @@
           "server_package": "npm:@wonderwhy-er/desktop-commander",
           "flaw": null,
           "field": "software_releases",
-          "value": "record A's: ripgrep 15.0.0 from @vscode/ripgrep-linux-x64 1.18.0, dash 0.5.12-2, Chrome for Testing 156.0.8078.47",
+          "value": "record A's: ripgrep 15.0.0 from @vscode/ripgrep-linux-x64 1.18.0, dash 0.5.12-2, and Chrome for Testing 157.0.8103.50, the build puppeteer 25.17.0 pins, in place of record A's 156.0.8078.47",
           "reason": "every program a counted tool drives has its release recorded: start_search spawns ripgrep and write_pdf launches the Chrome build the server's puppeteer pins, which record A installs and records, while record B records none and its fixture installs no Chrome, so write_pdf errors there."
         }
       ],
@@ -7770,9 +7770,9 @@
         },
         {
           "software": "Chrome for Testing (driven by write_pdf)",
-          "release": "156.0.8078.47",
-          "day": null,
-          "source": "The version md-to-pdf's puppeteer 25.16.0, a dependency of the server, pins and launches (puppeteer-core lib/puppeteer/revisions.js in the image: chrome '156.0.8078.47'), installed by the server's @puppeteer/browsers 3.2.6 from the Chrome for Testing channel."
+          "release": "157.0.8103.50",
+          "day": "2026-11-11",
+          "source": "The version md-to-pdf's puppeteer 25.17.0, a dependency of the server resolved at build time (md-to-pdf 5.2.5 depends on puppeteer >=8.0.0), pins and launches (puppeteer-core 25.17.0 lib/puppeteer/revisions.js in the image: chrome '157.0.8103.50'), installed by puppeteer's own CLI (browsers install chrome, the step its postinstall runs) from the Chrome for Testing channel, with @puppeteer/browsers 3.2.7."
         }
       ]
     },
