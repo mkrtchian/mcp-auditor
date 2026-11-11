@@ -132,6 +132,8 @@ The project's standards are defined in [`CLAUDE.md`](CLAUDE.md). This file serve
 
 The key points: hexagonal architecture, small pure functions, fakes over mocks. Read the full details there.
 
+The project's vocabulary is in [`docs/glossary.md`](docs/glossary.md): each term has one meaning, in code, docs and rules alike. A change that adds a term, renames one or moves its meaning updates the glossary, and [`docs/glossary-log.md`](docs/glossary-log.md) for a rename or a moved meaning.
+
 ## AI-assisted development
 
 If you're using an AI coding agent for non-trivial changes, write a plan in `plans/` before implementation. Naming convention: `YYYY-MM-DD_short_description.md`. The plan gets reviewed and approved before any code is written.
@@ -143,7 +145,7 @@ The repo ships two [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
 ## Architecture decisions
 
-Architecture decisions are documented in `docs/adr/` as immutable ADRs. To change a past decision, write a new ADR that supersedes it.
+Architecture decisions are documented in `docs/adr/` as immutable ADRs. To change a past decision, write a new ADR that supersedes it. An ADR keeps the words of its date: [`docs/glossary-log.md`](docs/glossary-log.md) maps them to the current terms.
 
 ## What makes a good contribution
 
