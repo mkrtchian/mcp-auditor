@@ -191,16 +191,24 @@ def test_openrouter_rejects_an_unknown_reasoning_naming_its_accepted_values() ->
 
 
 @pytest.mark.parametrize(
-    ("hosts", "expected"),
+    ("providers", "expected"),
     [
         ("", ()),
         ("sail-research", ("sail-research",)),
         (" sail-research , ,deepinfra/fp4", ("sail-research", "deepinfra/fp4")),
     ],
 )
-def test_openrouter_hosts_resolve_to_the_listed_slugs(
-    hosts: str, expected: tuple[str, ...]
+def test_openrouter_providers_resolve_to_the_listed_slugs(
+    providers: str, expected: tuple[str, ...]
 ) -> None:
-    settings = Settings(provider="openrouter", openrouter_hosts=hosts)
+    settings = Settings(provider="openrouter", openrouter_providers=providers)
 
-    assert settings.resolve_openrouter_hosts() == expected
+    assert settings.resolve_openrouter_providers() == expected
+
+
+def test_the_openrouter_providers_are_read_from_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MCP_AUDITOR_OPENROUTER_PROVIDERS", "sail-research")
+
+    assert Settings().resolve_openrouter_providers() == ("sail-research",)

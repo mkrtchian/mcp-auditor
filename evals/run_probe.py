@@ -241,8 +241,10 @@ def _candidate_entry(candidate: Candidate) -> dict[str, Any]:
     return {
         "name": candidate.name,
         "provider": settings.provider,
-        "openrouter_hosts": (
-            list(settings.resolve_openrouter_hosts()) if settings.provider == "openrouter" else []
+        "openrouter_providers": (
+            list(settings.resolve_openrouter_providers())
+            if settings.provider == "openrouter"
+            else []
         ),
         "model": model,
         "judge_model": judge_model,

@@ -340,7 +340,7 @@ async def test_the_completed_main_runs_are_kept_with_their_run_index(tmp_path: P
     result = await run_gated(given.options(targets=targets), given.a_harness(audit, tmp_path))
 
     kubernetes, symlink = given.KUBERNETES.cve_id, given.SYMLINK.cve_id
-    assert [(a.cve_id, a.run_index, a.report.target) for a in result.audits] == [
+    assert [(a.cve_id, a.run_index, a.report.server_command) for a in result.audits] == [
         (kubernetes, 0, given.audit_name(kubernetes, 0)),
         (kubernetes, 1, given.audit_name(kubernetes, 1)),
         (kubernetes, 2, given.audit_name(kubernetes, 2)),
@@ -356,6 +356,6 @@ async def test_an_audit_made_by_a_replay_is_not_kept(tmp_path: Path):
     result = await run_gated(given.options(), given.a_harness(audit, tmp_path))
 
     assert len(audit.calls) == 5
-    assert [audit.report.target for audit in result.audits] == [
+    assert [audit.report.server_command for audit in result.audits] == [
         given.audit_name(given.KUBERNETES.cve_id, call) for call in range(3)
     ]

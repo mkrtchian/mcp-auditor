@@ -252,7 +252,7 @@ def print_run_result(run_detail: RunDetail, progress: Progress) -> None:
     )
     for reason in run_detail.blocked_reasons:
         progress.console.print(f"  Payload blocked, {reason}")
-    for missed in run_detail.missed_steps:
+    for missed in run_detail.missed_model_calls:
         progress.console.print(f"  {escape(missed)}")
 
 

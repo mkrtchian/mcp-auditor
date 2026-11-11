@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.support.test_target_execution_given as given
+import tests.unit.support.test_server_execution_given as given
 from mcp_auditor.domain.models import ExecutionRegime
 from mcp_auditor.domain.relayed_environment import RelayRequest
-from mcp_auditor.target_execution import (
+from mcp_auditor.server_execution import (
     LaunchRefused,
-    TargetExecution,
+    ServerExecution,
     decide_launch,
 )
 from tests.fakes import FakeContainerRuntime
@@ -206,7 +206,7 @@ async def test_a_confined_execution_removes_its_container_and_records_the_kill_s
     runtime = FakeContainerRuntime(oom_killed=True)
     launch = decide_launch("npx", ["a-server"], given.a_context(runtime)).launch
 
-    execution = TargetExecution(launch, runtime)
+    execution = ServerExecution(launch, runtime)
     async with execution:
         assert execution.record is None
 
@@ -220,7 +220,7 @@ async def test_a_confined_execution_removes_its_container_when_the_block_raises(
     launch = decide_launch("npx", ["a-server"], given.a_context(runtime)).launch
 
     with pytest.raises(ConnectionError):
-        async with TargetExecution(launch, runtime):
+        async with ServerExecution(launch, runtime):
             raise ConnectionError("the server died")
 
     assert runtime.removed == [given.CONTAINER_NAME]
@@ -231,7 +231,7 @@ async def test_an_unconfined_execution_reaches_no_runtime():
     context = given.a_context(runtime, unconfined=True)
     launch = decide_launch("python", ["server.py"], context).launch
 
-    execution = TargetExecution(launch, runtime)
+    execution = ServerExecution(launch, runtime)
     async with execution:
         pass
 
@@ -279,7 +279,7 @@ def test_a_relay_refusal_stops_before_any_runtime_call():
     assert "--env TOKEN=value" in str(refusal.value)
 
 
-def test_each_regime_launches_with_the_relayed_variables():
+def test_each_regime_launches_with_the_relayed_environment():
     runtime = FakeContainerRuntime()
 
     launches = [

@@ -16,20 +16,6 @@ from tests.unit.support.test_glossary_given import (
 # Pattern ids whose living hits a later step still has to rename, emptied step by step, grouped by
 # the step of the migration plan that removes them.
 _NOT_YET_RENAMED = (
-    # body step 2
-    "acceptance-test",
-    "audit-step",
-    "dfie",
-    "execution-config",
-    "judged-cases",
-    "oracle-version",
-    "relayed-variables",
-    "replayed-walk",
-    "report-only-set",
-    "rubric-judge",
-    "selection-rule",
-    "target-route",
-    "unread-targets",
     # body step 3
     "alarm-tag",
     "distribution-label",
@@ -144,6 +130,84 @@ _ALLOWLIST = (
         "replay-retest",
         "where it is called the replay rule",
         "the glossary cites the name ADR 024 used",
+    ),
+    AllowedLine(
+        "src/mcp_auditor/checkpointing.py",
+        "missed-steps",
+        '"refused_steps",',
+        "an old channel name a resume across the migration is refused on",
+    ),
+    AllowedLine(
+        "src/mcp_auditor/checkpointing.py",
+        "missed-steps",
+        '"missed_steps",',
+        "an old channel name a resume across the migration is refused on",
+    ),
+    AllowedLine(
+        "src/mcp_auditor/checkpointing.py",
+        "missed-steps",
+        '"chain_step_missed",',
+        "an old channel name a resume across the migration is refused on",
+    ),
+    AllowedLine(
+        "src/mcp_auditor/checkpointing.py",
+        "judged-cases",
+        '"judged_cases",',
+        "an old channel name a resume across the migration is refused on",
+    ),
+    AllowedLine(
+        "tests/unit/test_checkpointing.py",
+        "missed-steps",
+        '"missed_steps"',
+        "the refusal cases name the old channels",
+    ),
+    AllowedLine(
+        "tests/unit/test_checkpointing.py",
+        "missed-steps",
+        '"refused_steps",',
+        "the refusal cases name the old channels",
+    ),
+    AllowedLine(
+        "tests/unit/test_checkpointing.py",
+        "missed-steps",
+        '"chain_step_missed",',
+        "the refusal cases name the old channels",
+    ),
+    AllowedLine(
+        "tests/unit/test_checkpointing.py",
+        "judged-cases",
+        '"judged_cases",',
+        "the refusal cases name the old channels",
+    ),
+    AllowedLine(
+        "tests/unit/support/test_checkpointing_given.py",
+        "audit-step",
+        "OfAnEarlierVersion.__name__ = ",
+        "writes a checkpoint under the class names of an earlier version",
+    ),
+    AllowedLine(
+        "tests/integration/support/test_resume_earlier_checkpoint_given.py",
+        "missed-steps",
+        '"refused_steps"',
+        "writes a checkpoint of an earlier version",
+    ),
+    AllowedLine(
+        "tests/unit/test_rendering.py",
+        "missed-steps",
+        '"missed_steps"',
+        "asserts that the product report carries none of the old keys",
+    ),
+    AllowedLine(
+        "tests/unit/test_rendering.py",
+        "relayed-variables",
+        '"relayed_variables"',
+        "asserts that the product report carries none of the old keys",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "relayed-variables",
+        "(was ",
+        "a rename entry names the word it replaces",
     ),
     AllowedLine(
         "evals/docker/Dockerfile.serverless*",

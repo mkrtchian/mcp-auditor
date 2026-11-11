@@ -70,7 +70,7 @@ async def audit_launch(launch: Launch, auditor: Auditor, shape: AuditShape) -> L
 
 def _graph_input(launch: Launch, auditor: Auditor, shape: AuditShape) -> dict[str, object]:
     return {
-        "target": f"{launch.command} {' '.join(launch.args)}",
+        "server_command": f"{launch.command} {' '.join(launch.args)}",
         "test_budget": auditor.budget,
         "attack_context": AttackContext(),
         "chain_budget": _either(shape.chain_budget, launch.chain_budget),

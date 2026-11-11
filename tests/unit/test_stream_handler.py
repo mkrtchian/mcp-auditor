@@ -5,9 +5,9 @@ import tests.unit.support.test_console_given as given
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
-    AuditStep,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
     TestCase,
 )
@@ -25,7 +25,7 @@ def test_a_blocked_case_is_reported_while_the_audit_runs():
     reporter.on_stream_event(
         (
             TOOL_AUDIT_NAMESPACE,
-            {"execute_tool": {"judged_cases": [_a_case(BLOCKED_REASON)], "current_case": None}},
+            {"execute_tool": {"processed_cases": [_a_case(BLOCKED_REASON)], "current_case": None}},
         )
     )
 
@@ -111,10 +111,12 @@ def _a_usage_event(
 
 
 def _an_unjudged_event(cause: MissCause) -> tuple[tuple[str, ...], dict[str, object]]:
-    missed = MissedStep(tool_name="run_command", step=AuditStep.JUDGMENT, cause=cause, detail="x")
+    missed = MissedModelCall(
+        tool_name="run_command", kind=ModelCallKind.JUDGMENT, cause=cause, detail="x"
+    )
     return (
         TOOL_AUDIT_NAMESPACE,
-        {"judge_response": {"judged_cases": [_a_case()], "missed_steps": [missed]}},
+        {"judge_response": {"processed_cases": [_a_case()], "missed_model_calls": [missed]}},
     )
 
 

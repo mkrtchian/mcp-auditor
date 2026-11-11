@@ -18,9 +18,9 @@ from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import (
     AuditReport,
-    AuditStep,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
 )
 from tests.fakes import FakeContainerSweep
@@ -79,20 +79,24 @@ def a_report(
     judge: ProviderUsage | None = None,
 ) -> AuditReport:
     """One tool report on the counted tool: a FAIL in a category of its class when flagged, a
-    PASS otherwise, and a missed step of the given cause."""
+    PASS otherwise, and a missed model call of the given cause."""
     verdict = grammar.FAIL if flagged else grammar.PASS
     tool_report = grammar.a_tool_report(COUNTED_TOOL, cases=[grammar.a_case(verdict=verdict)])
     steps = (
         []
         if missed is None
-        else [MissedStep(tool_name=COUNTED_TOOL, step=AuditStep.JUDGMENT, cause=missed, detail="")]
+        else [
+            MissedModelCall(
+                tool_name=COUNTED_TOOL, kind=ModelCallKind.JUDGMENT, cause=missed, detail=""
+            )
+        ]
     )
     return AuditReport(
-        target="test",
+        server_command="test",
         tool_reports=[tool_report],
         provider_usage=provider or ProviderUsage(),
         judge_usage=judge or ProviderUsage(),
-        missed_steps=steps,
+        missed_model_calls=steps,
     )
 
 

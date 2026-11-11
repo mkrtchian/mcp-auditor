@@ -13,7 +13,7 @@ from mcp_auditor.domain import (
     ToolResponse,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AuditStep
+from mcp_auditor.domain.models import ModelCallKind
 from mcp_auditor.graph.chain_nodes import (
     abandon_chain,
     make_execute_step,
@@ -53,7 +53,7 @@ class TestMakePlanChains:
         result = await node(state)
 
         assert result["pending_chains"] == []
-        then.refused_step_recorded(result, AuditStep.CHAIN_PLANNING)
+        then.refused_call_recorded(result, ModelCallKind.CHAIN_PLANNING)
         assert result["chain_usage"] == [refusal.usage]
         assert route_after_planning({**state, **result}) == END
 
@@ -83,12 +83,12 @@ class TestPrepareChain:
 
     def test_clears_a_refusal_from_the_previous_chain(self):
         state = given.a_chain_audit_state(
-            pending_chains=[given.a_chain_goal()], chain_step_missed=True
+            pending_chains=[given.a_chain_goal()], chain_model_call_missed=True
         )
 
         result = prepare_chain(state)
 
-        assert result["chain_step_missed"] is False
+        assert result["chain_model_call_missed"] is False
 
 
 class TestMakeExecuteStep:
@@ -201,7 +201,7 @@ class TestMakeObserveStep:
 
         result = await node(state)
 
-        then.refused_step_recorded(result, AuditStep.CHAIN_STEP_OBSERVATION)
+        then.refused_call_recorded(result, ModelCallKind.CHAIN_STEP_OBSERVATION)
         assert route_after_observe({**state, **result}) == "judge_chain"
 
     async def test_an_unreadable_observation_sends_the_chain_to_its_judgment(self):
@@ -214,7 +214,7 @@ class TestMakeObserveStep:
 
         result = await node(state)
 
-        then.unreadable_step_recorded(result, AuditStep.CHAIN_STEP_OBSERVATION)
+        then.unreadable_call_recorded(result, ModelCallKind.CHAIN_STEP_OBSERVATION)
         assert result["provider_usage"] == [unreadable.usage]
         assert result["chain_usage"] == [unreadable.usage]
         assert route_after_observe({**state, **result}) == "judge_chain"
@@ -251,7 +251,7 @@ class TestMakePlanStep:
 
         result = await node(state)
 
-        then.refused_step_recorded(result, AuditStep.CHAIN_STEP_PLANNING)
+        then.refused_call_recorded(result, ModelCallKind.CHAIN_STEP_PLANNING)
         assert route_after_plan_step({**state, **result}) == "judge_chain"
 
 
@@ -289,7 +289,7 @@ class TestMakeJudgeChain:
         state = given.a_chain_audit_state(
             current_chain_goal=given.a_chain_goal(),
             current_chain_steps=[step],
-            chain_step_missed=True,
+            chain_model_call_missed=True,
         )
 
         result = await node(state)
@@ -297,8 +297,8 @@ class TestMakeJudgeChain:
         [chain] = result["completed_chains"]
         assert chain.steps == [step]
         assert chain.eval_result is None
-        then.refused_step_recorded(result, AuditStep.CHAIN_JUDGMENT)
-        assert result["chain_step_missed"] is False
+        then.refused_call_recorded(result, ModelCallKind.CHAIN_JUDGMENT)
+        assert result["chain_model_call_missed"] is False
         assert result["judge_usage"] == [refusal.usage]
         assert result["chain_usage"] == [refusal.usage]
 
@@ -310,7 +310,7 @@ class TestRouteAfterObserve:
             "current_observation": observation,
             "current_chain_steps": [given.a_chain_step()],
             "max_chain_steps": 5,
-            "chain_step_missed": False,
+            "chain_model_call_missed": False,
         }
         assert route_after_observe(state) == "plan_step"
 
@@ -320,7 +320,7 @@ class TestRouteAfterObserve:
             "current_observation": observation,
             "current_chain_steps": [given.a_chain_step()],
             "max_chain_steps": 5,
-            "chain_step_missed": False,
+            "chain_model_call_missed": False,
         }
         assert route_after_observe(state) == "judge_chain"
 
@@ -331,7 +331,7 @@ class TestRouteAfterObserve:
             "current_observation": observation,
             "current_chain_steps": steps,
             "max_chain_steps": 3,
-            "chain_step_missed": False,
+            "chain_model_call_missed": False,
         }
         assert route_after_observe(state) == "judge_chain"
 

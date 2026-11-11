@@ -293,11 +293,11 @@ class ExecutionRecord(BaseModel):
     oom_killed: bool | None = None
     """Read with the regime: under `confined`, `None` means the kill state could not be read.
     Under the other regimes it is always `None`, there being no container of the auditor's."""
-    relayed_variables: list[str] | None = None
+    redacted_variables: list[str] | None = None
     plain_variables: dict[str, str] | None = None
 
 
-class AuditStep(StrEnum):
+class ModelCallKind(StrEnum):
     TEST_GENERATION = "test_generation"
     JUDGMENT = "judgment"
     CONTEXT_EXTRACTION = "context_extraction"
@@ -307,25 +307,25 @@ class AuditStep(StrEnum):
     CHAIN_JUDGMENT = "chain_judgment"
 
 
-JUDGE_STEPS = frozenset({AuditStep.JUDGMENT, AuditStep.CHAIN_JUDGMENT})
+JUDGE_CALLS = frozenset({ModelCallKind.JUDGMENT, ModelCallKind.CHAIN_JUDGMENT})
 
 
-def is_judge_step(step: AuditStep) -> bool:
-    return step in JUDGE_STEPS
+def is_judge_call(kind: ModelCallKind) -> bool:
+    return kind in JUDGE_CALLS
 
 
-CHAIN_STEPS = frozenset(
+CHAIN_CALLS = frozenset(
     {
-        AuditStep.CHAIN_PLANNING,
-        AuditStep.CHAIN_STEP_OBSERVATION,
-        AuditStep.CHAIN_STEP_PLANNING,
-        AuditStep.CHAIN_JUDGMENT,
+        ModelCallKind.CHAIN_PLANNING,
+        ModelCallKind.CHAIN_STEP_OBSERVATION,
+        ModelCallKind.CHAIN_STEP_PLANNING,
+        ModelCallKind.CHAIN_JUDGMENT,
     }
 )
 
 
-def is_chain_step(step: AuditStep) -> bool:
-    return step in CHAIN_STEPS
+def is_chain_call(kind: ModelCallKind) -> bool:
+    return kind in CHAIN_CALLS
 
 
 class MissCause(StrEnum):
@@ -334,21 +334,21 @@ class MissCause(StrEnum):
     PROVIDER_THROTTLED = "provider_throttled"
 
 
-class MissedStep(BaseModel):
+class MissedModelCall(BaseModel):
     tool_name: str
-    step: AuditStep
+    kind: ModelCallKind
     cause: MissCause
     detail: str
 
 
 class AuditReport(BaseModel):
-    target: str
+    server_command: str
     tool_reports: list[ToolReport]
     provider_usage: ProviderUsage
     judge_usage: ProviderUsage = ProviderUsage()
     chain_usage: ProviderUsage = ProviderUsage()  # the chain judgment counts here and as judge
     execution: ExecutionRecord | None = None
-    missed_steps: list[MissedStep] = []
+    missed_model_calls: list[MissedModelCall] = []
 
     @property
     def generator_usage(self) -> ProviderUsage:
@@ -360,7 +360,9 @@ class AuditReport(BaseModel):
 
     @property
     def is_complete(self) -> bool:
-        return not self.missed_steps and all(tr.coverage_gap is None for tr in self.tool_reports)
+        return not self.missed_model_calls and all(
+            tr.coverage_gap is None for tr in self.tool_reports
+        )
 
     @property
     def findings(self) -> list[EvalResult]:

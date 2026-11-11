@@ -2,7 +2,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from mcp_auditor.domain.relayed_environment import RelayRequest
-from mcp_auditor.target_execution import Host, LaunchContext, LaunchOptions
+from mcp_auditor.server_execution import Host, LaunchContext, LaunchOptions
 from tests.fakes import FakeContainerRuntime
 
 DOCKER_ENV = {"DOCKER_HOST": "unix:///run/user/1000/docker.sock"}

@@ -1,4 +1,4 @@
-# The acceptance test of the real CVE planting path: a real sentinel served by a real
+# The integration test of the real CVE planting path: a real sentinel served by a real
 # busybox container, read by a container started with the target's planted arguments. It is
 # the only instrument of the production `DockerPlanting` and the readiness probe (the fake
 # stands in everywhere else), so it must go red on a planting regression.

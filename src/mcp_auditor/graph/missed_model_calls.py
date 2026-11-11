@@ -4,12 +4,12 @@ from typing import Any
 from pydantic import BaseModel
 
 from mcp_auditor.domain.models import (
-    AuditStep,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
-    is_chain_step,
-    is_judge_step,
+    is_chain_call,
+    is_judge_call,
 )
 from mcp_auditor.domain.ports import (
     LLMPort,
@@ -22,21 +22,21 @@ from mcp_auditor.domain.ports import (
 @dataclass(frozen=True)
 class ModelCall[T: BaseModel]:
     tool_name: str
-    step: AuditStep
+    kind: ModelCallKind
     prompt: str
     output_schema: type[T]
 
 
 @dataclass(frozen=True)
 class Missed:
-    missed_step: MissedStep
+    missed_call: MissedModelCall
     usage: ProviderUsage
     is_judge: bool
     is_chain: bool
 
     def state_update(self) -> dict[str, Any]:
         update: dict[str, Any] = {
-            "missed_steps": [self.missed_step],
+            "missed_model_calls": [self.missed_call],
             "provider_usage": [self.usage],
         }
         if self.is_judge:
@@ -64,10 +64,12 @@ async def call_model[T: BaseModel](
 
 
 def _missed(call: ModelCall[Any], cause: MissCause, detail: str, usage: ProviderUsage) -> Missed:
-    step = MissedStep(tool_name=call.tool_name, step=call.step, cause=cause, detail=detail)
+    missed_call = MissedModelCall(
+        tool_name=call.tool_name, kind=call.kind, cause=cause, detail=detail
+    )
     return Missed(
-        missed_step=step,
+        missed_call=missed_call,
         usage=usage,
-        is_judge=is_judge_step(call.step),
-        is_chain=is_chain_step(call.step),
+        is_judge=is_judge_call(call.kind),
+        is_chain=is_chain_call(call.kind),
     )

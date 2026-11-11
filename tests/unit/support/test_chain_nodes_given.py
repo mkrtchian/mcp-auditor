@@ -137,15 +137,15 @@ def a_chain_audit_state(
     current_observation: StepObservation | None = None,
     chain_budget: int = 2,
     max_chain_steps: int = 5,
-    judged_cases: list[TestCase] | None = None,
+    processed_cases: list[TestCase] | None = None,
     attack_context: AttackContext | None = None,
     completed_chains: list[AttackChain] | None = None,
     blocked_step_reason: str | None = None,
-    chain_step_missed: bool = False,
+    chain_model_call_missed: bool = False,
 ) -> dict[str, Any]:
     return {
         "current_tool": tool or a_tool(),
-        "judged_cases": judged_cases or [],
+        "processed_cases": processed_cases or [],
         "attack_context": attack_context or AttackContext(),
         "chain_budget": chain_budget,
         "max_chain_steps": max_chain_steps,
@@ -156,7 +156,7 @@ def a_chain_audit_state(
         "current_observation": current_observation,
         "completed_chains": completed_chains or [],
         "blocked_step_reason": blocked_step_reason,
-        "chain_step_missed": chain_step_missed,
+        "chain_model_call_missed": chain_model_call_missed,
         "provider_usage": [],
     }
 

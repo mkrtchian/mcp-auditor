@@ -9,12 +9,12 @@ from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
     AuditReport,
-    AuditStep,
     BlockedPayload,
     CoverageGap,
     EvalResult,
     Judgment,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
     TestCase,
     TestCaseBatch,
@@ -24,7 +24,7 @@ from mcp_auditor.domain.models import (
     order_tools_for_audit,
 )
 from mcp_auditor.domain.ports import LLMPort
-from mcp_auditor.graph.missed_steps import Missed, ModelCall, call_model
+from mcp_auditor.graph.missed_model_calls import Missed, ModelCall, call_model
 from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
     build_context_extraction_prompt,
@@ -63,7 +63,7 @@ class GenerationRequest:
         )
         if self.redacting:
             prompt = with_redaction_notice(prompt)
-        return ModelCall(self.tool.name, AuditStep.TEST_GENERATION, prompt, TestCaseBatch)
+        return ModelCall(self.tool.name, ModelCallKind.TEST_GENERATION, prompt, TestCaseBatch)
 
     def gap_in(self, batch: TestCaseBatch) -> CoverageGap | None:
         return find_coverage_gap(batch, self.budget, self.categories)
@@ -73,11 +73,11 @@ class GenerationRequest:
 class GenerationOutcome:
     batch: TestCaseBatch
     usages: list[ProviderUsage]
-    missed_steps: list[MissedStep] = field(default_factory=list[MissedStep])
+    missed_model_calls: list[MissedModelCall] = field(default_factory=list[MissedModelCall])
 
     @property
     def missed(self) -> bool:
-        return bool(self.missed_steps)
+        return bool(self.missed_model_calls)
 
     def retried_as(self, retry: "GenerationOutcome") -> "GenerationOutcome":
         batch = self.batch if retry.missed else retry.batch
@@ -90,7 +90,9 @@ class GenerationOutcome:
 
     def _joined(self, later: "GenerationOutcome", batch: TestCaseBatch) -> "GenerationOutcome":
         usages = [*self.usages, *later.usages]
-        return GenerationOutcome(batch, usages, [*self.missed_steps, *later.missed_steps])
+        return GenerationOutcome(
+            batch, usages, [*self.missed_model_calls, *later.missed_model_calls]
+        )
 
 
 def make_generate_test_cases(llm: LLMPort, redacting: bool = False):
@@ -105,10 +107,10 @@ def make_generate_test_cases(llm: LLMPort, redacting: bool = False):
         outcome = await _generate_covering_batch(llm, request)
         return {
             "pending_cases": [TestCase(payload=p) for p in outcome.batch.cases],
-            "judged_cases": [],
+            "processed_cases": [],
             "provider_usage": outcome.usages,
             "coverage_gap": request.gap_in(outcome.batch),
-            "missed_steps": outcome.missed_steps,
+            "missed_model_calls": outcome.missed_model_calls,
         }
 
     return generate_test_cases
@@ -133,13 +135,15 @@ async def _complete_categories(
     size = completion_size(request.budget, request.categories, missing)
     completion = await _ask_for_batch(llm, request.call_for(missing, size))
     kept = [case for case in completion.batch.cases if case.category in missing][:size]
-    return GenerationOutcome(TestCaseBatch(cases=kept), completion.usages, completion.missed_steps)
+    return GenerationOutcome(
+        TestCaseBatch(cases=kept), completion.usages, completion.missed_model_calls
+    )
 
 
 async def _ask_for_batch(llm: LLMPort, call: ModelCall[TestCaseBatch]) -> GenerationOutcome:
     answer = await call_model(llm, call)
     if isinstance(answer, Missed):
-        return GenerationOutcome(TestCaseBatch(cases=[]), [answer.usage], [answer.missed_step])
+        return GenerationOutcome(TestCaseBatch(cases=[]), [answer.usage], [answer.missed_call])
     batch, usage = answer
     return GenerationOutcome(batch, [usage])
 
@@ -152,7 +156,7 @@ def make_execute_tool(server: AuditedServer):
         outcome = await server.attempt(tool, case.payload)
         if isinstance(outcome, BlockedPayload):
             blocked = case.model_copy(update={"blocked_reason": outcome.reason})
-            return {"judged_cases": [blocked], "current_case": None, "pending_cases": pending}
+            return {"processed_cases": [blocked], "current_case": None, "pending_cases": pending}
         if outcome.is_error:
             case = case.model_copy(update={"error": outcome.content, "response": None})
         else:
@@ -169,9 +173,11 @@ def make_judge_response(llm: LLMPort, redacting: bool = False):
         prompt = build_judge_prompt(tool=tool, test_case=case)
         if redacting:
             prompt = with_redaction_notice(prompt)
-        answer = await call_model(llm, ModelCall(tool.name, AuditStep.JUDGMENT, prompt, Judgment))
+        answer = await call_model(
+            llm, ModelCall(tool.name, ModelCallKind.JUDGMENT, prompt, Judgment)
+        )
         if isinstance(answer, Missed):
-            return {"judged_cases": [case], "current_case": None, **answer.state_update()}
+            return {"processed_cases": [case], "current_case": None, **answer.state_update()}
         judgment, usage = answer
         eval_result = EvalResult(
             tool_name=tool.name,
@@ -183,7 +189,7 @@ def make_judge_response(llm: LLMPort, redacting: bool = False):
         )
         judged_case = case.model_copy(update={"eval_result": eval_result})
         return {
-            "judged_cases": [judged_case],
+            "processed_cases": [judged_case],
             "current_case": None,
             "provider_usage": [usage],
             "judge_usage": [usage],
@@ -193,12 +199,12 @@ def make_judge_response(llm: LLMPort, redacting: bool = False):
 
 
 async def collect_generated_cases(state: dict[str, Any]) -> dict[str, Any]:
-    return {"judged_cases": state["pending_cases"], "pending_cases": []}
+    return {"processed_cases": state["pending_cases"], "pending_cases": []}
 
 
 async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
     tool = state["current_tool"]
-    cases = state["judged_cases"]
+    cases = state["processed_cases"]
     chains = state.get("completed_chains", [])
     gap = state.get("coverage_gap")
     report = ToolReport(tool=tool, cases=cases, chains=chains, coverage_gap=gap)
@@ -212,7 +218,9 @@ def make_extract_attack_context(llm: LLMPort, redacting: bool = False):
         prompt = build_context_extraction_prompt(tool_report, existing_context)
         if redacting:
             prompt = with_redaction_notice(prompt)
-        call = ModelCall(tool_report.tool.name, AuditStep.CONTEXT_EXTRACTION, prompt, AttackContext)
+        call = ModelCall(
+            tool_report.tool.name, ModelCallKind.CONTEXT_EXTRACTION, prompt, AttackContext
+        )
         answer = await call_model(llm, call)
         if isinstance(answer, Missed):
             return {"attack_context": existing_context, **answer.state_update()}
@@ -223,16 +231,15 @@ def make_extract_attack_context(llm: LLMPort, redacting: bool = False):
 
 
 async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
-    target = state["target"]
     reports = state.get("tool_reports", [])
     usage = _sum_provider_usage(state.get("provider_usage", []))
     report = AuditReport(
-        target=target,
+        server_command=state["server_command"],
         tool_reports=reports,
         provider_usage=usage,
         judge_usage=_sum_provider_usage(state.get("judge_usage", [])),
         chain_usage=_sum_provider_usage(state.get("chain_usage", [])),
-        missed_steps=state.get("missed_steps", []),
+        missed_model_calls=state.get("missed_model_calls", []),
     )
     return {"audit_report": report}
 

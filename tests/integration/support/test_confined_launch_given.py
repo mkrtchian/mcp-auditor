@@ -3,7 +3,7 @@ import pathlib
 from uuid import uuid4
 
 from mcp_auditor.adapters.docker import DockerRuntime, docker_client_env
-from mcp_auditor.target_execution import Host, LaunchContext, LaunchOptions
+from mcp_auditor.server_execution import Host, LaunchContext, LaunchOptions
 
 
 def a_confined_context(options: LaunchOptions) -> LaunchContext:

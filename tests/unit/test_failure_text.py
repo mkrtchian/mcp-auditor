@@ -1,6 +1,6 @@
 from evals.cve_audit import LaunchError
 from evals.failure_text import FULL_DETAIL, TYPES_ONLY
-from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
+from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.rendering import MISS_CAUSE_LABELS
 
 SECRET = "secret-nonce"
@@ -43,16 +43,16 @@ def test_a_wrapping_error_reads_as_the_original_error_it_was_raised_from() -> No
 
 
 def test_a_missed_step_shows_its_cause_without_the_provider_message() -> None:
-    refusal = MissedStep(
+    refusal = MissedModelCall(
         tool_name="git_init",
-        step=AuditStep.CHAIN_PLANNING,
+        kind=ModelCallKind.CHAIN_PLANNING,
         cause=MissCause.PROVIDER_REFUSAL,
         detail=SECRET,
     )
 
-    assert SECRET in FULL_DETAIL.missed_detail(refusal)
-    assert SECRET not in TYPES_ONLY.missed_detail(refusal)
-    assert MISS_CAUSE_LABELS[MissCause.PROVIDER_REFUSAL] in TYPES_ONLY.missed_detail(refusal)
+    assert SECRET in FULL_DETAIL.missed_call_detail(refusal)
+    assert SECRET not in TYPES_ONLY.missed_call_detail(refusal)
+    assert MISS_CAUSE_LABELS[MissCause.PROVIDER_REFUSAL] in TYPES_ONLY.missed_call_detail(refusal)
 
 
 def test_only_the_full_detail_shows_the_server_lines() -> None:

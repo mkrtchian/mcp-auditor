@@ -1,6 +1,6 @@
 import tests.unit.support.test_graph_throttling_given as given
 from mcp_auditor.adapters.llm_throttling import one_audit
-from mcp_auditor.domain.models import AuditStep, MissCause
+from mcp_auditor.domain.models import MissCause, ModelCallKind
 
 
 async def test_a_call_throttled_past_every_retry_stops_every_later_call_of_the_audit():
@@ -11,7 +11,9 @@ async def test_a_call_throttled_past_every_retry_stops_every_later_call_of_the_a
 
     report = result["audit_report"]
     assert chat_model.calls == 2
-    assert {missed.cause for missed in report.missed_steps} == {MissCause.PROVIDER_THROTTLED}
-    generations = [m.tool_name for m in report.missed_steps if m.step == AuditStep.TEST_GENERATION]
+    assert {missed.cause for missed in report.missed_model_calls} == {MissCause.PROVIDER_THROTTLED}
+    generations = [
+        m.tool_name for m in report.missed_model_calls if m.kind == ModelCallKind.TEST_GENERATION
+    ]
     assert generations == given.TOOL_NAMES
     assert not report.is_complete

@@ -119,8 +119,8 @@ async def audit_once(
 
 
 def _print_incidents(server: AdmittedServer, report: AuditReport, detail: ReportDetail) -> None:
-    for missed in report.missed_steps:
-        line = escape(detail.missed_detail(missed))
+    for missed in report.missed_model_calls:
+        line = escape(detail.missed_call_detail(missed))
         console.print(f"[yellow]{server.server_package}: {line}[/yellow]")
     throttled = report.provider_usage.throttled_requests
     if throttled > 0:
@@ -171,7 +171,7 @@ def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderError) -> str:
 
 
 def _is_throttled(report: AuditReport) -> bool:
-    return any(missed.cause is MissCause.PROVIDER_THROTTLED for missed in report.missed_steps)
+    return any(missed.cause is MissCause.PROVIDER_THROTTLED for missed in report.missed_model_calls)
 
 
 @dataclass(frozen=True)
@@ -203,7 +203,7 @@ async def gate_run(
             f" {describe_miss_causes(attempt_causes)}, no counted alarm, attempted again[/yellow]"
         )
     console.print(
-        f"[yellow]{server.server_package} run did not complete:[/yellow] a step missed at all"
+        f"[yellow]{server.server_package} run did not complete:[/yellow] a model call missed at all"
         f" {INCOMPLETE_ATTEMPTS} attempts ({describe_miss_causes(causes)})"
     )
     return None
@@ -211,9 +211,9 @@ async def gate_run(
 
 def incomplete_causes(report: AuditReport) -> frozenset[MissCause]:
     return frozenset(
-        missed.cause for missed in report.missed_steps if missed.cause in _INCOMPLETE_CAUSES
+        missed.cause for missed in report.missed_model_calls if missed.cause in _INCOMPLETE_CAUSES
     )
 
 
 def is_incomplete(report: AuditReport) -> bool:
-    return any(missed.cause in _INCOMPLETE_CAUSES for missed in report.missed_steps)
+    return any(missed.cause in _INCOMPLETE_CAUSES for missed in report.missed_model_calls)

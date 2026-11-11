@@ -81,14 +81,14 @@ async def audit_honeypots(audit: HoneypotAudit) -> tuple[VerdictMap, AuditReport
         raise failures.exceptions[0] from None
     reports = [task.result() for task in tasks]
     verdicts: VerdictMap = {}
-    merged = AuditReport(target="evals", tool_reports=[], provider_usage=ProviderUsage())
+    merged = AuditReport(server_command="evals", tool_reports=[], provider_usage=ProviderUsage())
     for report in reports:
         verdicts.update(aggregate_verdicts(report))
         merged = AuditReport(
-            target=merged.target,
+            server_command=merged.server_command,
             tool_reports=[*merged.tool_reports, *report.tool_reports],
             provider_usage=merged.provider_usage.add(report.provider_usage),
-            missed_steps=[*merged.missed_steps, *report.missed_steps],
+            missed_model_calls=[*merged.missed_model_calls, *report.missed_model_calls],
         )
     return verdicts, merged
 
@@ -122,7 +122,7 @@ async def audit_connected(
     with one_audit():
         result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
             {
-                "target": f"uv {' '.join(config.args)}",
+                "server_command": f"uv {' '.join(config.args)}",
                 "test_budget": budget,
                 "attack_context": AttackContext(),
                 "chain_budget": config.chain_budget,

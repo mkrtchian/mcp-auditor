@@ -110,7 +110,9 @@ def a_billing_audit_target(
     budget: int, throttles: SessionThrottles, places: object, overrides: object = None
 ) -> AuditTarget:
     usage = ProviderUsage(input_tokens=500, output_tokens=50)
-    throttles.count(AuditReport(target="test", tool_reports=[], provider_usage=usage), BILLED_CVE)
+    throttles.count(
+        AuditReport(server_command="test", tool_reports=[], provider_usage=usage), BILLED_CVE
+    )
 
     async def audit(target: object) -> None:
         return None

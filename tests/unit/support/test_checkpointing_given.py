@@ -1,11 +1,15 @@
+from enum import StrEnum
 from typing import Any
 
 import pytest
+from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.base import CheckpointMetadata, empty_checkpoint
 from langgraph.checkpoint.base.id import uuid6
 from langgraph.checkpoint.memory import InMemorySaver
+from pydantic import BaseModel
 
 import tests.unit.support.test_graph_given as graph_given
-from mcp_auditor.domain.models import ToolDefinition, ToolResponse
+from mcp_auditor.domain.models import MissCause, ToolDefinition, ToolResponse
 from tests.fakes import FakeMCPClient
 
 
@@ -36,7 +40,7 @@ async def a_crashed_audit(checkpointer: Any, thread_id: str):
 
 
 async def a_latest_checkpoint_holding(
-    checkpointer: InMemorySaver, thread_id: str, channel: str
+    checkpointer: InMemorySaver, thread_id: str, channel: str, value: Any = None
 ) -> None:
     latest = await checkpointer.aget_tuple(
         {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
@@ -44,6 +48,49 @@ async def a_latest_checkpoint_holding(
     assert latest is not None
     checkpoint = latest.checkpoint.copy()
     checkpoint["id"] = str(uuid6())
-    checkpoint["channel_values"] = {**checkpoint["channel_values"], channel: []}
+    checkpoint["channel_values"] = {
+        **checkpoint["channel_values"],
+        channel: [] if value is None else value,
+    }
     checkpoint["channel_versions"] = {**checkpoint["channel_versions"], channel: "1"}
     await checkpointer.aput(latest.config, checkpoint, latest.metadata, {channel: "1"})
+
+
+async def a_thread_interrupted_before_its_first_checkpoint(
+    checkpointer: InMemorySaver, thread_id: str, input_channel: str
+) -> Any:
+    graph = graph_given.a_graph_with_checkpointer(
+        graph_given.a_fake_llm_for_multi_tool_audit([]), FakeMCPClient([]), checkpointer
+    )
+    checkpoint = empty_checkpoint()
+    checkpoint["channel_values"] = {"__start__": {input_channel: "python server.py"}}
+    checkpoint["channel_versions"] = {"__start__": "1"}
+    config: RunnableConfig = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
+    metadata: CheckpointMetadata = {"source": "input", "step": -1, "parents": {}}
+    await checkpointer.aput(config, checkpoint, metadata, {"__start__": "1"})
+    return graph
+
+
+class _AuditStepOfAnEarlierVersion(StrEnum):
+    JUDGMENT = "judgment"
+
+
+class _MissedStepOfAnEarlierVersion(BaseModel):
+    tool_name: str
+    step: _AuditStepOfAnEarlierVersion
+    cause: MissCause
+    detail: str
+
+
+# Serialized under the class names an earlier version defined, which no module defines now.
+_AuditStepOfAnEarlierVersion.__name__ = "AuditStep"
+_MissedStepOfAnEarlierVersion.__name__ = "MissedStep"
+for _earlier in (_AuditStepOfAnEarlierVersion, _MissedStepOfAnEarlierVersion):
+    _earlier.__module__ = "mcp_auditor.domain.models"
+
+MISSED_STEP_OF_AN_EARLIER_VERSION = _MissedStepOfAnEarlierVersion(
+    tool_name="first",
+    step=_AuditStepOfAnEarlierVersion.JUDGMENT,
+    cause=MissCause.PROVIDER_REFUSAL,
+    detail="refused",
+)

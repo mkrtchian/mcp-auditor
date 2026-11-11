@@ -76,7 +76,7 @@ def _incomplete_status(run: IncompleteRun) -> HoldoutRunStatus:
         lost_connection_responses=run.health.lost_connection_responses,
         unchecked_reason=None,
         replay_attempt_failures=[],
-        miss_causes=sorted({missed.cause.value for missed in run.report.missed_steps}),
+        miss_causes=sorted({missed.cause.value for missed in run.report.missed_model_calls}),
     )
 
 

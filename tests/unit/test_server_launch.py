@@ -216,7 +216,7 @@ def test_a_record_names_the_redacted_variables_and_spells_out_the_plain_ones(
 ):
     record = launch.record(None)
 
-    assert record.relayed_variables == ["GITHUB_TOKEN"]
+    assert record.redacted_variables == ["GITHUB_TOKEN"]
     assert record.plain_variables == {"AWS_REGION": "eu-west-1"}
 
 
@@ -232,4 +232,4 @@ def test_a_record_names_the_redacted_variables_and_spells_out_the_plain_ones(
 def test_a_record_without_relays_carries_no_relayed_environment(launch: ServerLaunch):
     record = launch.record(None)
 
-    assert (record.relayed_variables, record.plain_variables) == (None, None)
+    assert (record.redacted_variables, record.plain_variables) == (None, None)

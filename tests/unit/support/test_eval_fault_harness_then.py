@@ -18,7 +18,9 @@ def merged(verdicts: VerdictMap, report: AuditReport, reports: list[AuditReport]
     }
     assert report.tool_reports == [tool for each in reports for tool in each.tool_reports]
     assert report.provider_usage == ProviderUsage(input_tokens=600, output_tokens=60)
-    assert report.missed_steps == [step for each in reports for step in each.missed_steps]
+    assert report.missed_model_calls == [
+        step for each in reports for step in each.missed_model_calls
+    ]
 
 
 def lost_as_drawn_at(verdicts: VerdictMap, audit_index: int) -> None:

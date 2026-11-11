@@ -1,7 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import TestCaseBatch
-from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
+from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
 
 
 def pending_payloads_are(result: dict[str, Any], batch: TestCaseBatch) -> None:
@@ -13,10 +13,10 @@ def provider_usage_count(result: dict[str, Any], expected: int) -> None:
 
 
 def one_generation_refusal_recorded(result: dict[str, Any]) -> None:
-    assert result["missed_steps"] == [
-        MissedStep(
+    assert result["missed_model_calls"] == [
+        MissedModelCall(
             tool_name="test_tool",
-            step=AuditStep.TEST_GENERATION,
+            kind=ModelCallKind.TEST_GENERATION,
             cause=MissCause.PROVIDER_REFUSAL,
             detail="flagged by policy",
         )

@@ -21,7 +21,7 @@ class TestAuditReportChainFindings:
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})
         report = AuditReport(
-            target="test",
+            server_command="test",
             tool_reports=[ToolReport(tool=tool, cases=[], chains=[chain])],
             provider_usage=ProviderUsage(),
         )
@@ -45,7 +45,7 @@ class TestAuditReportChainFindings:
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})
         report = AuditReport(
-            target="test",
+            server_command="test",
             tool_reports=[ToolReport(tool=tool, cases=[], chains=[chain])],
             provider_usage=ProviderUsage(),
         )

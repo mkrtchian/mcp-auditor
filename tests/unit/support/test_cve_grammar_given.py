@@ -122,10 +122,10 @@ def a_chain_blocked_at_first_step(first_step_arguments: dict[str, Any]) -> Attac
 def a_report(
     cases: list[TestCase] | None = None,
     chains: list[AttackChain] | None = None,
-    target: str = "test",
+    server_command: str = "test",
 ) -> AuditReport:
     report = a_report_of_tools(a_tool_report("read_file", cases, chains))
-    return report.model_copy(update={"target": target})
+    return report.model_copy(update={"server_command": server_command})
 
 
 def a_tool_report(
@@ -140,7 +140,7 @@ def a_tool_report(
 
 def a_report_of_tools(*tool_reports: ToolReport) -> AuditReport:
     return AuditReport(
-        target="test", tool_reports=list(tool_reports), provider_usage=ProviderUsage()
+        server_command="test", tool_reports=list(tool_reports), provider_usage=ProviderUsage()
     )
 
 

@@ -238,11 +238,11 @@ def an_initial_state(
     max_chain_steps: int = 3,
 ) -> dict[str, Any]:
     return {
-        "target": "python honeypot_server.py",
+        "server_command": "python honeypot_server.py",
         "discovered_tools": [],
         "test_budget": test_budget,
         "current_tool": None,
-        "judged_cases": [],
+        "processed_cases": [],
         "tool_reports": [],
         "provider_usage": [],
         "audit_report": None,

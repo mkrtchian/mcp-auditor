@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any
 
 from mcp_auditor.console import AuditDisplay
-from mcp_auditor.domain.models import MissedStep, ProviderUsage, ToolDefinition
+from mcp_auditor.domain.models import MissedModelCall, ProviderUsage, ToolDefinition
 from mcp_auditor.progress import CIProgress, ToolProgress
 
 
@@ -66,21 +66,21 @@ class AuditProgressReporter:
                 progress.start()
                 self._active_progress = progress
         elif node_name == "execute_tool":
-            judged = state_update.get("judged_cases", [])
-            if judged:
-                last_case = judged[-1]
+            processed = state_update.get("processed_cases", [])
+            if processed:
+                last_case = processed[-1]
                 if last_case.blocked_reason and self._active_progress:
                     self._active_progress.advance_blocked(last_case.blocked_reason)
         elif node_name == "judge_response":
-            judged = state_update.get("judged_cases", [])
-            if judged:
-                last_case = judged[-1]
+            processed = state_update.get("processed_cases", [])
+            if processed:
+                last_case = processed[-1]
                 if self._active_progress is None:
                     return
                 if last_case.eval_result is not None:
                     self._active_progress.advance(last_case.eval_result)
                 elif last_case.blocked_reason is None:
-                    missed: list[MissedStep] = state_update["missed_steps"]
+                    missed: list[MissedModelCall] = state_update["missed_model_calls"]
                     self._active_progress.advance_unjudged(missed[-1].cause)
 
     def _on_chain_audit_event(self, node_name: str, state_update: dict[str, Any]) -> None:

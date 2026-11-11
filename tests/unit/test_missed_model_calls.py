@@ -1,10 +1,10 @@
 from mcp_auditor.domain import Judgment, ProviderUsage
-from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
+from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
-from mcp_auditor.graph.missed_steps import Missed, ModelCall, call_model
+from mcp_auditor.graph.missed_model_calls import Missed, ModelCall, call_model
 from tests.fakes import FakeLLM
 
-JUDGMENT_CALL = ModelCall("read_file", AuditStep.JUDGMENT, "judge this", Judgment)
+JUDGMENT_CALL = ModelCall("read_file", ModelCallKind.JUDGMENT, "judge this", Judgment)
 
 
 async def test_an_unreadable_answer_is_a_missed_step_with_its_usage():
@@ -13,9 +13,9 @@ async def test_an_unreadable_answer_is_a_missed_step_with_its_usage():
     outcome = await call_model(FakeLLM([UnparseableOutput(3, 1, usage)]), JUDGMENT_CALL)
 
     assert outcome == Missed(
-        missed_step=MissedStep(
+        missed_call=MissedModelCall(
             tool_name="read_file",
-            step=AuditStep.JUDGMENT,
+            kind=ModelCallKind.JUDGMENT,
             cause=MissCause.UNREADABLE_ANSWER,
             detail="no answer matched the expected format after 3 attempts"
             " (1 cut at the output limit)",
@@ -34,9 +34,9 @@ async def test_a_refusal_is_a_missed_step_with_the_provider_message():
     )
 
     assert outcome == Missed(
-        missed_step=MissedStep(
+        missed_call=MissedModelCall(
             tool_name="read_file",
-            step=AuditStep.JUDGMENT,
+            kind=ModelCallKind.JUDGMENT,
             cause=MissCause.PROVIDER_REFUSAL,
             detail="flagged by policy",
         ),
@@ -54,9 +54,9 @@ async def test_a_throttled_call_is_a_missed_step_with_the_provider_message_and_i
     )
 
     assert outcome == Missed(
-        missed_step=MissedStep(
+        missed_call=MissedModelCall(
             tool_name="read_file",
-            step=AuditStep.JUDGMENT,
+            kind=ModelCallKind.JUDGMENT,
             cause=MissCause.PROVIDER_THROTTLED,
             detail="the model provider throttled the request past every retry"
             " (312 s waited by the auditor): Error code: 429 - slow down",

@@ -18,9 +18,9 @@ from evals.failure_text import FULL_DETAIL, ReportDetail
 from evals.launch_audit import Auditor
 from mcp_auditor.domain.models import (
     AuditReport,
-    AuditStep,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
 )
 from tests.unit.support import test_cve_grammar_given as grammar
@@ -76,15 +76,15 @@ def an_audit_raising(error: Exception, *, grouped: bool = True) -> Auditor:
 
 def a_report_missing(*causes: MissCause) -> AuditReport:
     missed = [
-        MissedStep(
+        MissedModelCall(
             tool_name="git_init",
-            step=AuditStep.CHAIN_PLANNING,
+            kind=ModelCallKind.CHAIN_PLANNING,
             cause=cause,
             detail="Invalid prompt",
         )
         for cause in causes
     ]
-    return grammar.a_report().model_copy(update={"missed_steps": missed})
+    return grammar.a_report().model_copy(update={"missed_model_calls": missed})
 
 
 def a_report_throttled(times: int) -> AuditReport:

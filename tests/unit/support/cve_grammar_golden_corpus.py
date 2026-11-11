@@ -168,7 +168,8 @@ def _nonce_reports() -> dict[str, AuditReport]:
             ]
         ),
         "nonce_only_in_the_report_target": given.a_report(
-            cases=[given.a_case(response="nothing")], target=f"docker run -e FLAG={SENTINEL}"
+            cases=[given.a_case(response="nothing")],
+            server_command=f"docker run -e FLAG={SENTINEL}",
         ),
         "nonce_only_in_a_step_observation": _of_chain(
             [given.a_step(response="nothing", observation=f"saw {SENTINEL}")]

@@ -58,7 +58,7 @@ class ScriptedAudit:
         self.calls.append(target.cve_id)
         script = self.scripts.get(target.cve_id)
         grade = script.pop(0) if script else a_detected_grade()
-        return None if grade is None else GradedAudit(grade, a_report(target=name))
+        return None if grade is None else GradedAudit(grade, a_report(server_command=name))
 
 
 def audit_name(cve_id: str, call: int) -> str:

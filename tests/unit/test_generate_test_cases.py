@@ -15,7 +15,7 @@ async def test_a_complete_batch_is_kept_without_retry():
     then.pending_payloads_are(result, batch)
     then.provider_usage_count(result, 1)
     assert result["coverage_gap"] is None
-    assert result["judged_cases"] == []
+    assert result["processed_cases"] == []
 
 
 async def test_an_incomplete_batch_is_retried_once():
@@ -152,4 +152,4 @@ async def test_a_generation_without_refusal_records_none():
 
     result = await node(given.a_generation_state(test_budget=5))
 
-    assert result["missed_steps"] == []
+    assert result["missed_model_calls"] == []

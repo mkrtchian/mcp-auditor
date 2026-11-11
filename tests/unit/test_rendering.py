@@ -239,13 +239,13 @@ def test_markdown_shows_the_image_alone_when_the_digest_is_unknown():
     assert "@" not in result
 
 
-def test_markdown_places_the_execution_line_right_after_the_target():
+def test_markdown_places_the_execution_line_right_after_the_server_command():
     report = given.a_report_with_execution(given.a_confined_record())
 
     lines = render_markdown(report).splitlines()
 
-    target_index = next(i for i, line in enumerate(lines) if line.startswith("**Target**"))
-    assert lines[target_index + 1].startswith("**Execution**")
+    command_index = next(i for i, line in enumerate(lines) if line.startswith("**Server command**"))
+    assert lines[command_index + 1].startswith("**Execution**")
 
 
 def test_markdown_shows_a_declared_container_execution_without_mounts():
@@ -348,7 +348,7 @@ RELAYED_LINE = "**Relayed environment**: GITHUB_TOKEN (redacted), AWS_REGION=eu-
 def test_markdown_shows_the_relayed_environment_under_every_regime(record: ExecutionRecord):
     relaying = record.model_copy(
         update={
-            "relayed_variables": ["GITHUB_TOKEN"],
+            "redacted_variables": ["GITHUB_TOKEN"],
             "plain_variables": {"AWS_REGION": "eu-west-1"},
         }
     )
@@ -390,11 +390,24 @@ def test_json_carries_the_execution_record_with_the_full_digest():
         "writable_paths",
         "read_only_paths",
         "oom_killed",
-        "relayed_variables",
+        "redacted_variables",
         "plain_variables",
     }
     assert execution["regime"] == "confined"
     assert execution["image_digest"] == given.FULL_DIGEST
+
+
+def test_json_names_the_server_command_the_redacted_variables_and_the_missed_model_calls():
+    report = given.a_report_with_a_refused_judgment_on_get_user()
+    report.execution = given.a_confined_record()
+
+    data = json.loads(render_json(report))
+
+    assert data["server_command"] == report.server_command
+    assert "redacted_variables" in data["execution"]
+    assert [missed["kind"] for missed in data["missed_model_calls"]] == ["judgment"]
+    assert not {"target", "missed_steps"} & data.keys()
+    assert "relayed_variables" not in data["execution"]
 
 
 def test_json_execution_is_null_without_a_record():
@@ -454,32 +467,32 @@ def test_json_carries_the_coverage_gap():
     assert tool_reports[1]["coverage_gap"] is None
 
 
-def test_markdown_summary_flags_a_refused_step_and_an_incomplete_audit():
+def test_markdown_summary_flags_a_refused_model_call_and_an_incomplete_audit():
     report = given.a_report_with_a_refused_judgment_on_get_user()
 
     summary = render_markdown(report).split("\n## get_user")[0]
 
-    assert "**Refused by the model provider**: 1 step\n" in summary
+    assert "**Refused by the model provider**: 1 model call\n" in summary
     assert "**Unreadable answer from the model**" not in summary
     assert "**Audit complete**: no" in summary
     assert summary.index("**Audit complete**") < summary.index("**Findings**")
 
 
-def test_markdown_summary_counts_each_cause_of_a_missed_step_on_its_own_line():
+def test_markdown_summary_counts_each_cause_of_a_missed_model_call_on_its_own_line():
     report = given.a_report_with_missed_judgments_on_get_user(refused=1, unreadable=2)
 
     summary = render_markdown(report).split("\n## get_user")[0]
 
-    assert "**Refused by the model provider**: 1 step\n" in summary
-    assert "**Unreadable answer from the model**: 2 steps\n" in summary
+    assert "**Refused by the model provider**: 1 model call\n" in summary
+    assert "**Unreadable answer from the model**: 2 model calls\n" in summary
 
 
-def test_markdown_summary_has_no_line_for_a_cause_no_step_missed_by():
+def test_markdown_summary_has_no_line_for_a_cause_no_model_call_missed_by():
     report = given.a_report_with_missed_judgments_on_get_user(refused=0, unreadable=1)
 
     summary = render_markdown(report).split("\n## get_user")[0]
 
-    assert "**Unreadable answer from the model**: 1 step\n" in summary
+    assert "**Unreadable answer from the model**: 1 model call\n" in summary
     assert "**Refused by the model provider**" not in summary
 
 
@@ -501,7 +514,7 @@ def test_markdown_summary_of_a_complete_audit_has_neither_line():
     assert "**Refused by the model provider**" not in result
 
 
-def test_markdown_tool_section_lists_its_refused_step():
+def test_markdown_tool_section_lists_its_refused_model_call():
     report = given.a_report_with_a_refused_judgment_on_get_user()
 
     sections = render_markdown(report).split("\n## ")
@@ -515,7 +528,7 @@ def test_markdown_tool_section_lists_its_refused_step():
     assert "Refused" not in list_items_section
 
 
-def test_markdown_tool_section_lists_its_unreadable_step():
+def test_markdown_tool_section_lists_its_unreadable_model_call():
     report = given.a_report_with_missed_judgments_on_get_user(refused=0, unreadable=1)
 
     sections = render_markdown(report).split("\n## ")
@@ -527,12 +540,12 @@ def test_markdown_tool_section_lists_its_unreadable_step():
     )
 
 
-def test_markdown_names_a_throttled_step_in_the_summary_and_its_tool_section():
+def test_markdown_names_a_throttled_model_call_in_the_summary_and_its_tool_section():
     report = given.a_report_with_a_throttled_judgment_on_get_user()
 
     summary, get_user_section = render_markdown(report).split("\n## get_user")[:2]
 
-    assert "**Throttled past every retry**: 1 step\n" in summary
+    assert "**Throttled past every retry**: 1 model call\n" in summary
     assert "**Audit complete**: no" in summary
     assert (
         f'**Throttled past every retry**: judgment, "{given.THROTTLE_MESSAGE}"' in get_user_section
@@ -546,7 +559,7 @@ def test_markdown_renders_a_case_with_no_verdict_and_no_block_as_not_judged():
 
     assert "### NOT JUDGED -- injection" in result
     assert "ls; cat /etc/shadow" in result
-    assert "the judgment step was missed, its cause is listed under the tool" in result
+    assert "the judgment model call was missed, its cause is listed under the tool" in result
 
 
 def test_markdown_renders_a_chain_with_no_verdict_as_not_judged():
@@ -557,15 +570,15 @@ def test_markdown_renders_a_chain_with_no_verdict_as_not_judged():
     assert "**Verdict**: not judged" in result
 
 
-def test_json_carries_the_missed_steps():
+def test_json_carries_the_missed_model_calls():
     report = given.a_report_with_a_refused_judgment_on_get_user()
 
-    missed_steps = json.loads(render_json(report))["missed_steps"]
+    missed_model_calls = json.loads(render_json(report))["missed_model_calls"]
 
-    assert missed_steps == [
+    assert missed_model_calls == [
         {
             "tool_name": "get_user",
-            "step": "judgment",
+            "kind": "judgment",
             "cause": "provider_refusal",
             "detail": given.REFUSAL_MESSAGE,
         }

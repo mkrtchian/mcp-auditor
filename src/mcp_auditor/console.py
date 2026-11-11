@@ -17,7 +17,7 @@ from mcp_auditor.domain.models import (
     AuditReport,
     EvalResult,
     ExecutionRegime,
-    MissedStep,
+    MissedModelCall,
     ProviderUsage,
     Severity,
     ToolReport,
@@ -27,7 +27,7 @@ from mcp_auditor.domain.rendering import (
     MISS_CAUSE_LABELS,
     ToolSummary,
     describe_coverage_gap,
-    describe_missed_step,
+    describe_missed_model_call,
     format_severity_breakdown,
     render_summary,
     summarize_tools,
@@ -45,10 +45,10 @@ class AuditDisplay:
             self._console = Console()
         self._ci_mode = ci_mode
 
-    def print_header(self, target_command: str, regime: ExecutionRegime) -> None:
+    def print_header(self, server_command: str, regime: ExecutionRegime) -> None:
         if self._ci_mode:
             return
-        body = f"{target_command}\nexecution: {_describe_regime(regime)}"
+        body = f"{server_command}\nexecution: {_describe_regime(regime)}"
         self._console.print(Panel(body, title="MCP Auditor"))
 
     def print_discovery(self, tool_count: int, tool_names: list[str]) -> None:
@@ -80,9 +80,11 @@ class AuditDisplay:
             self._print_results_panel(report)
         for tool_report in report.tool_reports:
             self.print_coverage_gap(tool_report)
-        self.print_missed_steps(report.missed_steps)
+        self.print_missed_model_calls(report.missed_model_calls)
         if not report.is_complete:
-            self.print_warning("audit incomplete, the steps warned about above were not done")
+            self.print_warning(
+                "audit incomplete, see the missed model calls and coverage gaps above"
+            )
 
     def _print_results_panel(self, report: AuditReport) -> None:
         table, total_pass, total_judged = _build_summary_table(report)
@@ -101,10 +103,10 @@ class AuditDisplay:
         gap = describe_coverage_gap(tool_report.coverage_gap)
         self.print_warning(f"{tool_report.tool.name}: incomplete test batch, {gap}")
 
-    def print_missed_steps(self, missed_steps: list[MissedStep]) -> None:
-        for missed in missed_steps:
+    def print_missed_model_calls(self, missed_calls: list[MissedModelCall]) -> None:
+        for missed in missed_calls:
             cause = MISS_CAUSE_LABELS[missed.cause].lower()
-            description = describe_missed_step(missed)
+            description = describe_missed_model_call(missed)
             self.print_warning(escape(f"{missed.tool_name}: {cause}, {description}"))
 
     def print_findings_recap(self, report: AuditReport) -> None:

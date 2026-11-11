@@ -25,8 +25,8 @@ from mcp_auditor.domain.models import AttackContext, AuditReport, Severity
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from mcp_auditor.report_files import ReportPaths
+from mcp_auditor.server_execution import LaunchOptions, ServerExecution
 from mcp_auditor.stream_handler import AuditProgressReporter
-from mcp_auditor.target_execution import LaunchOptions, TargetExecution
 
 DEFAULT_MAX_CHAIN_STEPS = 3
 
@@ -38,7 +38,7 @@ class CIOptions:
 
 
 @dataclass(frozen=True)
-class ExecutionConfig:
+class AuditRunOptions:
     budget: int
     chains: int
     resume: bool
@@ -47,7 +47,7 @@ class ExecutionConfig:
 
 @dataclass(frozen=True)
 class AuditConfig:
-    execution: ExecutionConfig
+    run_options: AuditRunOptions
     report_paths: ReportPaths
     ci: CIOptions
     launch: LaunchOptions
@@ -77,12 +77,12 @@ class Analysts:
 
 
 class Audit:
-    """One run against one target, from the launched container to the finished report."""
+    """One audit of one audited server, from the launched container to the finished report."""
 
     def __init__(
         self,
         config: AuditConfig,
-        execution: TargetExecution,
+        execution: ServerExecution,
         analysts: Analysts,
         display: AuditDisplay,
     ):
@@ -96,7 +96,7 @@ class Audit:
         redaction = self._execution.launch.relayed.redaction()
         with RedactingStderr(redaction) as server_stderr, redacted_sdk_logging(redaction):
             try:
-                report = await self._probe_the_target(server_stderr)
+                report = await self._probe_the_server(server_stderr)
             except ConnectionError as exc:
                 self._give_up(f"could not connect to MCP server: {exc}", server_stderr, exc)
             except OSError as exc:
@@ -108,7 +108,7 @@ class Audit:
         # The container's kill state is known only once the execution's block has exited.
         return report.model_copy(update={"execution": self._execution.record})
 
-    async def _probe_the_target(self, server_stderr: RedactingStderr) -> AuditReport | None:
+    async def _probe_the_server(self, server_stderr: RedactingStderr) -> AuditReport | None:
         async with (
             self._execution,
             AsyncSqliteSaver.from_conn_string(checkpoint_db_path()) as checkpointer,
@@ -119,7 +119,7 @@ class Audit:
             ) as mcp_client,
         ):
             server = AuditedServer(mcp_client, server_stderr.redaction)
-            if self._config.execution.dry_run:
+            if self._config.run_options.dry_run:
                 await self._show_payloads(server)
                 return None
             return await self._audit(server, checkpointer)
@@ -133,9 +133,11 @@ class Audit:
             tools_filter=self._config.tools_filter,
         )
         thread_id = compute_thread_id(self._execution.launch)
-        resuming = await resume_or_reset(graph, thread_id, self._config.execution.resume)
-        if self._config.execution.resume and not resuming:
-            self._display.print_info("nothing to resume for this target, starting a fresh audit")
+        resuming = await resume_or_reset(graph, thread_id, self._config.run_options.resume)
+        if self._config.run_options.resume and not resuming:
+            self._display.print_info(
+                "nothing to resume for this server command, starting a fresh audit"
+            )
         with one_audit():
             return await self._stream(graph, thread_id, None if resuming else self._initial_state())
 
@@ -158,9 +160,9 @@ class Audit:
 
     def _initial_state(self) -> dict[str, Any]:
         return {
-            "target": self._execution.launch.target,
-            "test_budget": self._config.execution.budget,
-            "chain_budget": self._config.execution.chains,
+            "server_command": self._execution.launch.server_command,
+            "test_budget": self._config.run_options.budget,
+            "chain_budget": self._config.run_options.chains,
             "max_chain_steps": DEFAULT_MAX_CHAIN_STEPS,
             "attack_context": AttackContext(),
         }
@@ -170,8 +172,8 @@ class Audit:
         return {
             "configurable": {"thread_id": thread_id},
             "metadata": {
-                "target": self._execution.launch.target,
-                "budget": self._config.execution.budget,
+                "server_command": self._execution.launch.server_command,
+                "budget": self._config.run_options.budget,
                 "provider": settings.provider,
                 "model": settings.resolve_model(),
             },
@@ -184,8 +186,8 @@ class Audit:
         with one_audit():
             result = await graph.ainvoke(
                 {
-                    "target": "",
-                    "test_budget": self._config.execution.budget,
+                    "server_command": "",
+                    "test_budget": self._config.run_options.budget,
                     "attack_context": AttackContext(),
                 }
             )
@@ -196,7 +198,7 @@ class Audit:
                 report.tool.name, [c.payload for c in report.cases]
             )
             self._display.print_coverage_gap(report)
-        self._display.print_missed_steps(result.get("missed_steps", []))
+        self._display.print_missed_model_calls(result.get("missed_model_calls", []))
 
     def _give_up(
         self,

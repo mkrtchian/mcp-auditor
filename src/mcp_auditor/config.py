@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     judge_model: str = ""
     reasoning: str = ""
     tool_call_timeout: int = 60
-    openrouter_hosts: str = ""
+    openrouter_providers: str = ""
 
     def resolve_model(self) -> str:
         if self.model:
@@ -33,8 +33,9 @@ class Settings(BaseSettings):
             return defaults.reasoning
         return None
 
-    def resolve_openrouter_hosts(self) -> tuple[str, ...]:
-        return tuple(host.strip() for host in self.openrouter_hosts.split(",") if host.strip())
+    def resolve_openrouter_providers(self) -> tuple[str, ...]:
+        slugs = self.openrouter_providers.split(",")
+        return tuple(slug.strip() for slug in slugs if slug.strip())
 
 
 @dataclass(frozen=True)

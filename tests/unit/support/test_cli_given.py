@@ -1,5 +1,5 @@
 from mcp_auditor.domain import AuditReport, Severity, TestCase
-from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
+from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
 from tests.unit.support import test_models_given as models
 
 
@@ -9,7 +9,7 @@ def a_report(
     coverage_gap: bool = False,
 ) -> AuditReport:
     report = models.a_report(
-        missed_steps=[_a_missed_judgment(missed)] if missed else None,
+        missed_model_calls=[_a_missed_judgment(missed)] if missed else None,
         coverage_gap=models.a_coverage_gap() if coverage_gap else None,
     )
     if finding is not None:
@@ -21,5 +21,7 @@ def a_report(
     return report
 
 
-def _a_missed_judgment(cause: MissCause) -> MissedStep:
-    return MissedStep(tool_name="test_tool", step=AuditStep.JUDGMENT, cause=cause, detail="missed")
+def _a_missed_judgment(cause: MissCause) -> MissedModelCall:
+    return MissedModelCall(
+        tool_name="test_tool", kind=ModelCallKind.JUDGMENT, cause=cause, detail="missed"
+    )

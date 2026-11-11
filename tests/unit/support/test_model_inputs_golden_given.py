@@ -326,11 +326,11 @@ def _attack_chain(steps: list[ChainStep]) -> AttackChain:
 
 def _initial_state() -> dict[str, Any]:
     return {
-        "target": "python server.py",
+        "server_command": "python server.py",
         "discovered_tools": [],
         "test_budget": 1,
         "current_tool": None,
-        "judged_cases": [],
+        "processed_cases": [],
         "tool_reports": [],
         "provider_usage": [],
         "audit_report": None,

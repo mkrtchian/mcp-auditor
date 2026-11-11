@@ -1,4 +1,4 @@
-# The launch of the server under audit: the user's command, the regime it runs under,
+# The launch of the audited server: the user's command, the regime it runs under,
 # and the container profile a confined regime derives its argv from. Pure: no
 # subprocess, no environment read, no filesystem probe, no clock, no randomness.
 from collections.abc import Mapping, Sequence
@@ -72,7 +72,7 @@ class ServerLaunch:
         return cls(command, tuple(args), ExecutionRegime.UNCONFINED, relayed=relayed)
 
     @property
-    def target(self) -> str:
+    def server_command(self) -> str:
         """The command as the user wrote it, which is how a report names what was audited."""
         return " ".join([self.command, *self.args])
 
@@ -96,7 +96,7 @@ class ServerLaunch:
     def record(self, oom_killed: bool | None) -> ExecutionRecord:
         record = ExecutionRecord(
             regime=self.regime,
-            relayed_variables=[v.name for v in self.relayed.variables if v.redacted] or None,
+            redacted_variables=[v.name for v in self.relayed.variables if v.redacted] or None,
             plain_variables={v.name: v.value for v in self.relayed.variables if not v.redacted}
             or None,
         )
@@ -177,7 +177,7 @@ def container_argv(launch: ServerLaunch, profile: ContainerProfile) -> list[str]
 # The quotes go around `src=...`, not around the path, which is where Docker's CSV parser
 # accepts them. What no quoting can carry is refused before this runs, by
 # `_require_a_spellable_path` in the mount policy: change this spelling and that list is
-# wrong, with nothing but the acceptance test to say so.
+# wrong, with nothing but the Docker integration test to say so.
 def _mount_flags(plan: MountPlan) -> list[str]:
     flags: list[str] = []
     for mount in plan.mounts:

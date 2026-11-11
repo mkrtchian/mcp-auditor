@@ -28,7 +28,7 @@ def make_chat_model(
     if settings.provider == "openrouter":
         if reasoning is not None:
             (efforts or OpenRouterEffortCatalog()).check(model, reasoning)
-        return _make_openrouter_model(model, reasoning, settings.resolve_openrouter_hosts())
+        return _make_openrouter_model(model, reasoning, settings.resolve_openrouter_providers())
     raise ValueError(
         f"Unknown provider: {settings.provider!r}. "
         "Use 'google', 'anthropic', 'openai', 'fireworks', 'alibaba' or 'openrouter'."
@@ -156,7 +156,7 @@ _OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 
 def _make_openrouter_model(
-    model: str, reasoning: str | None, hosts: tuple[str, ...]
+    model: str, reasoning: str | None, providers: tuple[str, ...]
 ) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
     from langchain_openai import ChatOpenAI
 
@@ -168,20 +168,20 @@ def _make_openrouter_model(
         base_url=_OPENROUTER_BASE_URL,
         api_key=SecretStr(api_key),
         use_responses_api=False,
-        extra_body=_openrouter_body(reasoning, hosts),
+        extra_body=_openrouter_body(reasoning, providers),
         max_retries=3,
         timeout=_REQUEST_TIMEOUT_SECONDS,
         max_completion_tokens=_MAX_OUTPUT_TOKENS,
     )
 
 
-# require_parameters keeps off a host that ignores response_format or reasoning. Pinned hosts
-# get no fallback, so a failure on them is an error rather than a silent switch to a host
-# that may filter security content or serve a lower quantization.
-def _openrouter_body(reasoning: str | None, hosts: tuple[str, ...]) -> dict[str, Any]:
+# require_parameters keeps off a provider that ignores response_format or reasoning. Pinned
+# providers get no fallback, so a failure on them is an error rather than a silent switch to a
+# provider that may filter security content or serve a lower quantization.
+def _openrouter_body(reasoning: str | None, providers: tuple[str, ...]) -> dict[str, Any]:
     provider: dict[str, Any] = {"require_parameters": True}
-    if hosts:
-        provider["order"] = list(hosts)
+    if providers:
+        provider["order"] = list(providers)
         provider["allow_fallbacks"] = False
     body: dict[str, Any] = {"provider": provider}
     # reasoning.effort, unlike the top-level reasoning_effort, takes max.

@@ -52,7 +52,7 @@ def an_unjudged_case() -> TestCase:
 
 def a_report(cases: list[TestCase], chains: list[AttackChain] | None = None) -> AuditReport:
     return AuditReport(
-        target="test",
+        server_command="test",
         tool_reports=[ToolReport(tool=TOOL, cases=cases, chains=chains or [])],
         provider_usage=ProviderUsage(),
     )

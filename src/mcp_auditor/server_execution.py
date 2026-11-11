@@ -1,4 +1,4 @@
-# The composition root of the target's execution: which regime a command runs under,
+# The composition root of the audited server's execution: which regime a command runs under,
 # which image confines it, and the lifetime of the container it runs in. Outside the
 # hexagon, like `cli.py`, and it decides without printing anything.
 from collections.abc import Mapping, Sequence
@@ -87,7 +87,7 @@ class LaunchDecision:
 
 
 class LaunchRefused(Exception):
-    """Why the target cannot be launched, and the ways forward."""
+    """Why the audited server cannot be launched, and the ways forward."""
 
 
 def decide_launch(command: str, args: Sequence[str], context: LaunchContext) -> LaunchDecision:
@@ -217,8 +217,8 @@ def _confined_warnings(plan: MountPlan, runtime: ContainerRuntime) -> tuple[str,
     return tuple(warnings)
 
 
-class TargetExecution:
-    """The container's lifetime around the connection to the server under audit.
+class ServerExecution:
+    """The container's lifetime around the connection to the audited server.
 
     Whatever ends the block, the kill state is read and the container removed. Under the
     two regimes without a container of the auditor's, nothing is touched.
@@ -229,7 +229,7 @@ class TargetExecution:
         self._runtime = runtime
         self.record: ExecutionRecord | None = None
 
-    async def __aenter__(self) -> "TargetExecution":
+    async def __aenter__(self) -> "ServerExecution":
         return self
 
     async def __aexit__(

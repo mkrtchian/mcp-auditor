@@ -17,20 +17,20 @@ from mcp_auditor.audit import (
     Analysts,
     Audit,
     AuditConfig,
+    AuditRunOptions,
     CIOptions,
-    ExecutionConfig,
 )
 from mcp_auditor.config_file import load_config_file, merge_defaults
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import AuditReport, Severity
 from mcp_auditor.domain.relayed_environment import RelayRequest
 from mcp_auditor.report_files import ReportPaths, write_reports
-from mcp_auditor.target_execution import (
+from mcp_auditor.server_execution import (
     Host,
     LaunchContext,
     LaunchOptions,
     LaunchRefused,
-    TargetExecution,
+    ServerExecution,
     decide_launch,
 )
 
@@ -44,7 +44,7 @@ def cli() -> None:
 
 
 @cli.command()
-@click.argument("target", nargs=-1, required=True)
+@click.argument("server_command", nargs=-1, required=True)
 @click.option("--budget", default=10, type=click.IntRange(min=1), help="Test cases per tool.")
 @click.option("--output", "-o", type=str, default=None, help="JSON output path.")
 @click.option("--markdown", "-m", type=str, default=None, help="Markdown output path.")
@@ -106,7 +106,7 @@ def cli() -> None:
 @click.pass_context
 def run(
     ctx: click.Context,
-    target: tuple[str, ...],
+    server_command: tuple[str, ...],
     budget: int,
     output: str | None,
     markdown: str | None,
@@ -124,7 +124,7 @@ def run(
 ) -> None:
     """Audit an MCP server.
 
-    TARGET is the command to start the MCP server.
+    SERVER_COMMAND is the command to start the MCP server.
 
     \b
     Examples:
@@ -134,7 +134,7 @@ def run(
     """
     params = _merge_with_config_file(ctx)
     config = AuditConfig(
-        execution=ExecutionConfig(
+        run_options=AuditRunOptions(
             budget=params["budget"],
             chains=params.get("chains", 0),
             resume=params["resume"],
@@ -153,7 +153,7 @@ def run(
         ),
         tools_filter=parse_tools_filter(params["tools"]),
     )
-    asyncio.run(_run_audit(target, config))
+    asyncio.run(_run_audit(server_command, config))
 
 
 def _merge_with_config_file(ctx: click.Context) -> dict[str, Any]:
@@ -172,16 +172,16 @@ def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
     return frozenset(name.strip() for name in raw.split(","))
 
 
-async def _run_audit(target: tuple[str, ...], config: AuditConfig) -> None:
+async def _run_audit(server_command: tuple[str, ...], config: AuditConfig) -> None:
     logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
     display = AuditDisplay(ci_mode=config.ci.enabled)
     context = _launch_context(config)
-    launch = _decided_launch(target, context, display)
-    display.print_header(launch.target, launch.regime)
+    launch = _decided_launch(server_command, context, display)
+    display.print_header(launch.server_command, launch.regime)
 
     audit = Audit(
         config=config,
-        execution=TargetExecution(launch, context.runtime),
+        execution=ServerExecution(launch, context.runtime),
         analysts=_hired_analysts(display),
         display=display,
     )
@@ -223,10 +223,10 @@ def _launch_context(config: AuditConfig) -> LaunchContext:
 
 
 def _decided_launch(
-    target: tuple[str, ...], context: LaunchContext, display: AuditDisplay
+    server_command: tuple[str, ...], context: LaunchContext, display: AuditDisplay
 ) -> ServerLaunch:
     try:
-        decision = decide_launch(target[0], list(target[1:]), context)
+        decision = decide_launch(server_command[0], list(server_command[1:]), context)
     except LaunchRefused as refusal:
         display.print_error(str(refusal))
         raise SystemExit(1) from refusal
@@ -235,7 +235,7 @@ def _decided_launch(
     return decision.launch
 
 
-# Hired after the launch decision, never before: a target the auditor refuses to launch is
+# Hired after the launch decision, never before: a server the auditor refuses to launch is
 # refused the same way on a machine that holds an API key and on one that does not.
 def _hired_analysts(display: AuditDisplay) -> Analysts:
     try:

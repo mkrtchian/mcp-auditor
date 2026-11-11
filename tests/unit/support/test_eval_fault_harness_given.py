@@ -13,14 +13,14 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
-    AuditStep,
     ChainGoal,
     ChainPlanBatch,
     EvalResult,
     EvalVerdict,
     Judgment,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
     Severity,
     StepObservation,
@@ -141,7 +141,7 @@ def a_report_per_honeypot() -> HoneypotReports:
         {
             "honeypot": _a_report(
                 "get_user", EvalVerdict.FAIL, ProviderUsage(input_tokens=100, output_tokens=10)
-            ).model_copy(update={"missed_steps": [_a_refused_step("get_user")]}),
+            ).model_copy(update={"missed_model_calls": [_a_refused_step("get_user")]}),
             "subtle": _a_report(
                 "list_items", EvalVerdict.PASS, ProviderUsage(input_tokens=200, output_tokens=20)
             ),
@@ -167,12 +167,15 @@ def _a_report(tool: str, verdict: EvalVerdict, usage: ProviderUsage) -> AuditRep
         tool=ToolDefinition(name=tool, input_schema={"type": "object"}),
         cases=[TestCase(payload=_a_payload(AuditCategory.INFO_LEAKAGE), eval_result=result)],
     )
-    return AuditReport(target=tool, tool_reports=[tool_report], provider_usage=usage)
+    return AuditReport(server_command=tool, tool_reports=[tool_report], provider_usage=usage)
 
 
-def _a_refused_step(tool: str) -> MissedStep:
-    return MissedStep(
-        tool_name=tool, step=AuditStep.JUDGMENT, cause=MissCause.PROVIDER_REFUSAL, detail="refused"
+def _a_refused_step(tool: str) -> MissedModelCall:
+    return MissedModelCall(
+        tool_name=tool,
+        kind=ModelCallKind.JUDGMENT,
+        cause=MissCause.PROVIDER_REFUSAL,
+        detail="refused",
     )
 
 

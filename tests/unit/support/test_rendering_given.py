@@ -3,7 +3,6 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
-    AuditStep,
     ChainGoal,
     ChainStep,
     CoverageGap,
@@ -12,7 +11,8 @@ from mcp_auditor.domain.models import (
     ExecutionRecord,
     ExecutionRegime,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
     Severity,
     TestCase,
@@ -22,7 +22,7 @@ from mcp_auditor.domain.models import (
 
 
 def an_empty_report() -> AuditReport:
-    return a_report(target="python honeypot_server.py", tool_reports=[])
+    return a_report(server_command="python honeypot_server.py", tool_reports=[])
 
 
 def a_report_with_low_then_critical() -> AuditReport:
@@ -31,7 +31,7 @@ def a_report_with_low_then_critical() -> AuditReport:
         a_fail_result("tool_a", AuditCategory.INJECTION, Severity.CRITICAL, "Command injection"),
     ]
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[a_tool_report("tool_a", results)],
     )
 
@@ -55,7 +55,7 @@ def a_two_tool_report() -> AuditReport:
         a_pass_result("list_items", AuditCategory.ERROR_HANDLING),
     ]
     return a_report(
-        target="python honeypot_server.py",
+        server_command="python honeypot_server.py",
         tool_reports=[
             a_tool_report("get_user", get_user_results),
             a_tool_report("list_items", list_items_results),
@@ -74,7 +74,7 @@ def a_report_with_injection_finding() -> AuditReport:
         ),
     ]
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[a_tool_report("get_user", results)],
     )
 
@@ -89,7 +89,7 @@ def a_report_with_unmapped_finding() -> AuditReport:
         ),
     ]
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[a_tool_report("get_user", results)],
     )
 
@@ -99,7 +99,7 @@ def a_report_with_mapped_pass() -> AuditReport:
         a_pass_result("get_user", AuditCategory.INJECTION),
     ]
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[a_tool_report("get_user", results)],
     )
 
@@ -111,7 +111,7 @@ def a_report_with_chain_finding() -> AuditReport:
         cases=[],
         chains=[chain],
     )
-    return a_report(target="python server.py", tool_reports=[tool_report])
+    return a_report(server_command="python server.py", tool_reports=[tool_report])
 
 
 def a_report_with_chain_injection_finding() -> AuditReport:
@@ -124,7 +124,7 @@ def a_report_with_chain_injection_finding() -> AuditReport:
         cases=[],
         chains=[chain],
     )
-    return a_report(target="python server.py", tool_reports=[tool_report])
+    return a_report(server_command="python server.py", tool_reports=[tool_report])
 
 
 def a_report_with_pass_case_and_fail_chain() -> AuditReport:
@@ -144,7 +144,7 @@ def a_report_with_pass_case_and_fail_chain() -> AuditReport:
         ],
         chains=[chain],
     )
-    return a_report(target="python server.py", tool_reports=[tool_report])
+    return a_report(server_command="python server.py", tool_reports=[tool_report])
 
 
 BLOCKED_CASE_REASON = "destructive filesystem command: rm -rf"
@@ -153,21 +153,21 @@ BLOCKED_CHAIN_REASON = "destructive SQL statement: drop table"
 
 def a_report_with_a_blocked_case() -> AuditReport:
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[_a_tool_report_with_blocked(cases=[a_blocked_case()])],
     )
 
 
 def a_report_with_a_blocked_chain() -> AuditReport:
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[_a_tool_report_with_blocked(chains=[a_blocked_chain()])],
     )
 
 
 def a_report_with_a_blocked_case_and_a_blocked_chain() -> AuditReport:
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[
             _a_tool_report_with_blocked(cases=[a_blocked_case()], chains=[a_blocked_chain()])
         ],
@@ -194,7 +194,9 @@ def a_report_with_an_unencodable_blocked_case() -> AuditReport:
         ),
         blocked_reason="argument q holds a character that cannot be encoded as UTF-8",
     )
-    return a_report(target="python server.py", tool_reports=[_a_tool_report_with_blocked([case])])
+    return a_report(
+        server_command="python server.py", tool_reports=[_a_tool_report_with_blocked([case])]
+    )
 
 
 def a_blocked_chain() -> AttackChain:
@@ -254,10 +256,10 @@ REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage po
 
 def a_report_with_a_refused_judgment_on_get_user() -> AuditReport:
     report = a_two_tool_report()
-    report.missed_steps = [
-        MissedStep(
+    report.missed_model_calls = [
+        MissedModelCall(
             tool_name="get_user",
-            step=AuditStep.JUDGMENT,
+            kind=ModelCallKind.JUDGMENT,
             cause=MissCause.PROVIDER_REFUSAL,
             detail=REFUSAL_MESSAGE,
         )
@@ -273,10 +275,10 @@ UNREADABLE_DETAIL = (
 def a_report_with_missed_judgments_on_get_user(refused: int, unreadable: int) -> AuditReport:
     report = a_two_tool_report()
     causes = [MissCause.PROVIDER_REFUSAL] * refused + [MissCause.UNREADABLE_ANSWER] * unreadable
-    report.missed_steps = [
-        MissedStep(
+    report.missed_model_calls = [
+        MissedModelCall(
             tool_name="get_user",
-            step=AuditStep.JUDGMENT,
+            kind=ModelCallKind.JUDGMENT,
             cause=cause,
             detail=REFUSAL_MESSAGE if cause == MissCause.PROVIDER_REFUSAL else UNREADABLE_DETAIL,
         )
@@ -290,10 +292,10 @@ THROTTLE_MESSAGE = "429 RESOURCE_EXHAUSTED"
 
 def a_report_with_a_throttled_judgment_on_get_user() -> AuditReport:
     report = a_two_tool_report()
-    report.missed_steps = [
-        MissedStep(
+    report.missed_model_calls = [
+        MissedModelCall(
             tool_name="get_user",
-            step=AuditStep.JUDGMENT,
+            kind=ModelCallKind.JUDGMENT,
             cause=MissCause.PROVIDER_THROTTLED,
             detail=THROTTLE_MESSAGE,
         )
@@ -310,30 +312,30 @@ def a_report_with_an_unjudged_case() -> AuditReport:
         ),
     )
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[_a_tool_report_with_blocked(cases=[unjudged])],
     )
 
 
 def a_report_with_an_unjudged_chain() -> AuditReport:
     return a_report(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[_a_tool_report_with_blocked(chains=[a_chain()])],
     )
 
 
 def a_report_with_execution(record: ExecutionRecord) -> AuditReport:
-    return a_report(target="npx server", tool_reports=[], execution=record)
+    return a_report(server_command="npx server", tool_reports=[], execution=record)
 
 
 def a_report(
-    target: str,
+    server_command: str,
     tool_reports: list[ToolReport],
     provider_usage: ProviderUsage | None = None,
     execution: ExecutionRecord | None = None,
 ) -> AuditReport:
     return AuditReport(
-        target=target,
+        server_command=server_command,
         tool_reports=tool_reports,
         provider_usage=provider_usage or ProviderUsage(),
         execution=execution,

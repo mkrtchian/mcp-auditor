@@ -13,7 +13,7 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolReport,
 )
-from mcp_auditor.domain.models import AuditStep, MissCause, MissedStep
+from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
 
 
 def a_tool(
@@ -50,26 +50,26 @@ def a_report_with_finding(severity: Severity) -> AuditReport:
         eval_result=an_eval_result(severity=severity),
     )
     return AuditReport(
-        target="test",
+        server_command="test",
         tool_reports=[ToolReport(tool=a_tool(), cases=[case])],
         provider_usage=ProviderUsage(),
     )
 
 
 def a_report(
-    missed_steps: list[MissedStep] | None = None, coverage_gap: CoverageGap | None = None
+    missed_model_calls: list[MissedModelCall] | None = None, coverage_gap: CoverageGap | None = None
 ) -> AuditReport:
     return AuditReport(
-        target="test",
+        server_command="test",
         tool_reports=[ToolReport(tool=a_tool(), cases=[], coverage_gap=coverage_gap)],
         provider_usage=ProviderUsage(),
-        missed_steps=missed_steps or [],
+        missed_model_calls=missed_model_calls or [],
     )
 
 
-def a_refused_step(step: AuditStep = AuditStep.JUDGMENT) -> MissedStep:
-    return MissedStep(
-        tool_name="test_tool", step=step, cause=MissCause.PROVIDER_REFUSAL, detail="flagged"
+def a_refused_call(kind: ModelCallKind = ModelCallKind.JUDGMENT) -> MissedModelCall:
+    return MissedModelCall(
+        tool_name="test_tool", kind=kind, cause=MissCause.PROVIDER_REFUSAL, detail="flagged"
     )
 
 

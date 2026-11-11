@@ -13,7 +13,7 @@ from mcp_auditor.domain import (
     ToolResponse,
 )
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AuditStep, filter_tools
+from mcp_auditor.domain.models import ModelCallKind, filter_tools
 from mcp_auditor.graph.nodes import (
     build_tool_report,
     make_discover_tools,
@@ -136,7 +136,9 @@ class TestExtractAttackContext:
         result = await node(state)
 
         assert result["attack_context"] == previous
-        then.refused_step_recorded(result, tool_name="read_file", step=AuditStep.CONTEXT_EXTRACTION)
+        then.refused_call_recorded(
+            result, tool_name="read_file", kind=ModelCallKind.CONTEXT_EXTRACTION
+        )
         assert result["provider_usage"] == [refusal.usage]
 
 
@@ -176,7 +178,7 @@ class TestExecuteTool:
 
         result = await node({"pending_cases": [case], "current_tool": tool})
 
-        [blocked] = result["judged_cases"]
+        [blocked] = result["processed_cases"]
         assert blocked.blocked_reason is not None
         assert client.calls == []
 
@@ -187,7 +189,7 @@ class TestExecuteTool:
 
         result = await node({"pending_cases": [case], "current_tool": tool})
 
-        blocked = result["judged_cases"][0]
+        blocked = result["processed_cases"][0]
         assert blocked.eval_result is None
         assert blocked.response is None
         assert blocked.error is None
@@ -202,9 +204,9 @@ class TestJudgeResponse:
         case = given.a_test_case(category=AuditCategory.INJECTION, response="some output")
         tool = given.a_tool(name="read_file")
 
-        result = await node({"current_case": case, "judged_cases": [], "current_tool": tool})
+        result = await node({"current_case": case, "processed_cases": [], "current_tool": tool})
 
-        assert len(result["judged_cases"]) == 1
+        assert len(result["processed_cases"]) == 1
         then.judged_case_identity_from(result, tool_name="read_file", case=case)
         then.judged_case_uses_judgment(result, judgment=judgment)
 
@@ -214,12 +216,12 @@ class TestJudgeResponse:
         case = given.a_test_case(response="some output")
         tool = given.a_tool(name="read_file")
 
-        result = await node({"current_case": case, "judged_cases": [], "current_tool": tool})
+        result = await node({"current_case": case, "processed_cases": [], "current_tool": tool})
 
-        assert result["judged_cases"] == [case]
-        assert result["judged_cases"][0].eval_result is None
+        assert result["processed_cases"] == [case]
+        assert result["processed_cases"][0].eval_result is None
         assert result["current_case"] is None
-        then.refused_step_recorded(result, tool_name="read_file", step=AuditStep.JUDGMENT)
+        then.refused_call_recorded(result, tool_name="read_file", kind=ModelCallKind.JUDGMENT)
         assert result["provider_usage"] == [refusal.usage]
         assert result["judge_usage"] == [refusal.usage]
         assert "chain_usage" not in result
@@ -244,7 +246,7 @@ class TestFinalizeToolAudit:
         tool = given.a_tool()
         judged = [given.a_judged_case(response="r1"), given.a_judged_case(response="r2")]
 
-        result = await build_tool_report({"current_tool": tool, "judged_cases": judged})
+        result = await build_tool_report({"current_tool": tool, "processed_cases": judged})
 
         assert result["tool_reports"][0].cases == judged
 
@@ -252,7 +254,7 @@ class TestFinalizeToolAudit:
         gap = given.a_coverage_gap()
         state: dict[str, Any] = {
             "current_tool": given.a_tool(),
-            "judged_cases": [],
+            "processed_cases": [],
             "coverage_gap": gap,
         }
 
@@ -261,7 +263,7 @@ class TestFinalizeToolAudit:
         assert result["tool_reports"][0].coverage_gap == gap
 
     async def test_reads_no_gap_from_an_older_checkpoint(self):
-        result = await build_tool_report({"current_tool": given.a_tool(), "judged_cases": []})
+        result = await build_tool_report({"current_tool": given.a_tool(), "processed_cases": []})
 
         assert result["tool_reports"][0].coverage_gap is None
 

@@ -27,7 +27,7 @@ def runs_missing_the_flipped_cell(completed: int = 3) -> RunsOutcome:
 
 
 def an_outcome(verdict_maps: list[VerdictMap]) -> RunsOutcome:
-    report = AuditReport(target="evals", tool_reports=[], provider_usage=ProviderUsage())
+    report = AuditReport(server_command="evals", tool_reports=[], provider_usage=ProviderUsage())
     return RunsOutcome(
         details=[
             build_run_detail(index, verdicts, report, MERGED_GROUND_TRUTH)

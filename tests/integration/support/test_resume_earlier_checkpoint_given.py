@@ -8,12 +8,12 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[imp
 from rich.console import Console
 
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.audit import Analysts, Audit, AuditConfig, CIOptions, ExecutionConfig
+from mcp_auditor.audit import Analysts, Audit, AuditConfig, AuditRunOptions, CIOptions
 from mcp_auditor.checkpointing import checkpoint_db_path, compute_thread_id
 from mcp_auditor.config import Settings
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.report_files import ReportPaths
-from mcp_auditor.target_execution import LaunchOptions, TargetExecution
+from mcp_auditor.server_execution import LaunchOptions, ServerExecution
 from tests.fakes import FakeContainerRuntime, FakeLLM
 
 SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent.parent / "honeypot_server.py"
@@ -33,14 +33,14 @@ async def a_checkpoint_from_an_earlier_version(launch: ServerLaunch) -> None:
 
 def an_audit_resuming(launch: ServerLaunch, output: io.StringIO) -> Audit:
     config = AuditConfig(
-        execution=ExecutionConfig(budget=1, chains=0, resume=True, dry_run=False),
+        run_options=AuditRunOptions(budget=1, chains=0, resume=True, dry_run=False),
         report_paths=ReportPaths(),
         ci=CIOptions(),
         launch=LaunchOptions(unconfined=True, image=None, mounts=()),
     )
     return Audit(
         config=config,
-        execution=TargetExecution(launch, FakeContainerRuntime(untouchable=True)),
+        execution=ServerExecution(launch, FakeContainerRuntime(untouchable=True)),
         analysts=Analysts(llm=FakeLLM([]), judge=FakeLLM([]), settings=Settings()),
         display=AuditDisplay(console=Console(file=output, width=200)),
     )

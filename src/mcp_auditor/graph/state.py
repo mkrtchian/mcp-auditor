@@ -11,7 +11,7 @@ from mcp_auditor.domain.models import (
     ChainGoal,
     ChainStep,
     CoverageGap,
-    MissedStep,
+    MissedModelCall,
     ProviderUsage,
     StepObservation,
     TestCase,
@@ -21,16 +21,16 @@ from mcp_auditor.domain.models import (
 
 
 class GraphState(TypedDict):
-    target: str
+    server_command: str
     discovered_tools: list[ToolDefinition]
     test_budget: int
     current_tool: ToolDefinition | None
-    judged_cases: list[TestCase]
+    processed_cases: list[TestCase]
     tool_reports: Annotated[list[ToolReport], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
     judge_usage: Annotated[list[ProviderUsage], operator.add]
     chain_usage: Annotated[list[ProviderUsage], operator.add]
-    missed_steps: Annotated[list[MissedStep], operator.add]
+    missed_model_calls: Annotated[list[MissedModelCall], operator.add]
     audit_report: AuditReport | None
     attack_context: AttackContext
     chain_budget: int
@@ -44,10 +44,10 @@ class AuditToolState(TypedDict):
     test_budget: int
     pending_cases: list[TestCase]
     current_case: TestCase | None
-    judged_cases: Annotated[list[TestCase], operator.add]
+    processed_cases: Annotated[list[TestCase], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
     judge_usage: Annotated[list[ProviderUsage], operator.add]
-    missed_steps: Annotated[list[MissedStep], operator.add]
+    missed_model_calls: Annotated[list[MissedModelCall], operator.add]
     attack_context: AttackContext
     coverage_gap: CoverageGap | None
 
@@ -60,7 +60,7 @@ class AuditToolInput(TypedDict):
 
 class ChainAuditState(TypedDict):
     current_tool: ToolDefinition
-    judged_cases: list[TestCase]
+    processed_cases: list[TestCase]
     attack_context: AttackContext
     chain_budget: int
     max_chain_steps: int
@@ -70,17 +70,17 @@ class ChainAuditState(TypedDict):
     current_step_payload: AuditPayload | None
     current_observation: StepObservation | None
     blocked_step_reason: str | None
-    chain_step_missed: bool
+    chain_model_call_missed: bool
     completed_chains: Annotated[list[AttackChain], operator.add]
     provider_usage: Annotated[list[ProviderUsage], operator.add]
     judge_usage: Annotated[list[ProviderUsage], operator.add]
     chain_usage: Annotated[list[ProviderUsage], operator.add]
-    missed_steps: Annotated[list[MissedStep], operator.add]
+    missed_model_calls: Annotated[list[MissedModelCall], operator.add]
 
 
 class ChainAuditInput(TypedDict):
     current_tool: ToolDefinition
-    judged_cases: list[TestCase]
+    processed_cases: list[TestCase]
     attack_context: AttackContext
     chain_budget: int
     max_chain_steps: int

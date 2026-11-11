@@ -195,7 +195,7 @@ class TestMakeChatModel:
         self, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
-        settings = _openrouter_settings(openrouter_hosts="sail-research")
+        settings = _openrouter_settings(openrouter_providers="sail-research")
 
         chat_model = make_chat_model(settings, settings.resolve_model(), _glm_efforts())
 
@@ -223,7 +223,11 @@ class TestMakeChatModel:
     ):
         monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
         settings = Settings(
-            provider="openrouter", model="", judge_model="", reasoning="medium", openrouter_hosts=""
+            provider="openrouter",
+            model="",
+            judge_model="",
+            reasoning="medium",
+            openrouter_providers="",
         )
 
         with pytest.raises(ValueError, match="supports reasoning efforts max, high, low"):
@@ -243,13 +247,13 @@ class TestMakeChatModel:
             make_chat_model(settings, settings.resolve_model(), _glm_efforts())
 
 
-def _openrouter_settings(model: str = "", openrouter_hosts: str = "") -> Settings:
+def _openrouter_settings(model: str = "", openrouter_providers: str = "") -> Settings:
     return Settings(
         provider="openrouter",
         model=model,
         judge_model="",
         reasoning="",
-        openrouter_hosts=openrouter_hosts,
+        openrouter_providers=openrouter_providers,
     )
 
 

@@ -7,7 +7,7 @@ from evals.audit_attempts import (
     IncompleteAttempt,
     ProviderErrorAttempt,
     ThrottledAttempt,
-    graded_despite_missed_steps,
+    graded_despite_missed_model_calls,
     graded_or_incomplete,
 )
 from evals.cve_audit import LaunchError, RunOverrides, attempt_once, audit_target, checked_grade
@@ -88,10 +88,10 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
     monkeypatch: pytest.MonkeyPatch,
 ):
     given.captured_console(monkeypatch)
-    graded = GradedAudit(a_detected_grade(), grammar.a_report(target="second attempt"))
+    graded = GradedAudit(a_detected_grade(), grammar.a_report(server_command="second attempt"))
     attempt = given.ScriptedAttempts([IncompleteAttempt(grammar.a_report(), _REFUSED), graded])
 
-    outcome = await graded_despite_missed_steps(TARGET, attempt)
+    outcome = await graded_despite_missed_model_calls(TARGET, attempt)
 
     assert outcome is graded
     assert attempt.calls == 2
@@ -108,7 +108,7 @@ async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
     ]
     attempt = given.ScriptedAttempts[GradedAudit](outcomes)
 
-    grade = await graded_despite_missed_steps(TARGET, attempt)
+    grade = await graded_despite_missed_model_calls(TARGET, attempt)
 
     assert grade is None
     assert attempt.calls == INCOMPLETE_ATTEMPTS
@@ -125,7 +125,7 @@ async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.
     given.captured_console(monkeypatch)
     attempt = given.ScriptedAttempts[GradedAudit]([None])
 
-    grade = await graded_despite_missed_steps(TARGET, attempt)
+    grade = await graded_despite_missed_model_calls(TARGET, attempt)
 
     assert grade is None
     assert attempt.calls == 1
@@ -158,9 +158,10 @@ def test_a_miss_with_no_refused_step_is_graded_a_miss():
     assert outcome.status == CVEStatus.MISSED
 
 
-def test_a_struck_only_credit_with_a_refused_step_reads_as_refused():
-    # The replay struck the run's only credit, so the final grade is a miss. A refused step then
-    # makes it a refusal, not a genuine miss, so a refusal never poisons the gate or the baseline.
+def test_a_struck_only_credit_with_a_refused_model_call_reads_as_refused():
+    # The replay struck the run's only credit, so the final grade is a miss. A refused model call
+    # then makes it a refusal, not a genuine miss, so a refusal never poisons the gate or the
+    # baseline.
     struck = RunGrade(
         status=CVEStatus.MISSED,
         miss_class=MissClass.AIMED_NO_PROOF,
@@ -263,7 +264,7 @@ async def test_a_throttled_attempt_is_not_audited_again(monkeypatch: pytest.Monk
     given.captured_console(monkeypatch)
     attempt = given.ScriptedAttempts[GradedAudit]([ThrottledAttempt()])
 
-    grade = await graded_despite_missed_steps(TARGET, attempt)
+    grade = await graded_despite_missed_model_calls(TARGET, attempt)
 
     assert grade is None
     assert attempt.calls == 1
@@ -384,7 +385,7 @@ async def test_a_provider_error_attempt_is_not_audited_again(monkeypatch: pytest
     given.captured_console(monkeypatch)
     attempt = given.ScriptedAttempts[GradedAudit]([ProviderErrorAttempt("ModelAPIError")])
 
-    grade = await graded_despite_missed_steps(TARGET, attempt)
+    grade = await graded_despite_missed_model_calls(TARGET, attempt)
 
     assert grade is None
     assert attempt.calls == 1

@@ -13,7 +13,7 @@ from evals.audit_attempts import (
     IncompleteAttempt,
     ProviderErrorAttempt,
     ThrottledAttempt,
-    graded_despite_missed_steps,
+    graded_despite_missed_model_calls,
     graded_or_incomplete,
 )
 from evals.cve_environments import Launch
@@ -78,7 +78,7 @@ def audit_target(
     auditor = build_auditor(budget)
 
     async def audit(target: CVETarget) -> GradedAudit | None:
-        return await graded_despite_missed_steps(
+        return await graded_despite_missed_model_calls(
             target, lambda: attempt_once(target, auditor, throttles, places, overrides)
         )
 
@@ -123,7 +123,9 @@ async def attempt_once(
         console.print(f"[yellow]{target.cve_id} {failure}:[/yellow] {escape(described)}")
     if run is None:
         return None
-    if any(missed.cause is MissCause.PROVIDER_THROTTLED for missed in run.report.missed_steps):
+    if any(
+        missed.cause is MissCause.PROVIDER_THROTTLED for missed in run.report.missed_model_calls
+    ):
         console.print(
             f"[yellow]{target.cve_id} run skipped:[/yellow]"
             " throttled by the model provider past every retry"
@@ -187,8 +189,10 @@ def _describe_unchecked_replay(replayed: ReplayOutcome) -> str:
 def _print_incidents(target: CVETarget, report: AuditReport, detail: ReportDetail) -> None:
     for reason in blocked_reasons(report):
         console.print(f"[yellow]{target.cve_id}: payload blocked, {reason}[/yellow]")
-    for missed in report.missed_steps:
-        console.print(f"[yellow]{target.cve_id}: {escape(detail.missed_detail(missed))}[/yellow]")
+    for missed in report.missed_model_calls:
+        console.print(
+            f"[yellow]{target.cve_id}: {escape(detail.missed_call_detail(missed))}[/yellow]"
+        )
     throttled = report.provider_usage.throttled_requests
     if throttled > 0:
         console.print(

@@ -1,7 +1,7 @@
 from typing import Any
 
 from mcp_auditor.domain import AttackChain, AuditCategory, EvalVerdict
-from mcp_auditor.domain.models import AuditStep, MissCause
+from mcp_auditor.domain.models import MissCause, ModelCallKind
 from tests.unit.support.test_chain_nodes_given import DEFAULT_TOOL_NAME
 
 
@@ -19,14 +19,14 @@ def chain_eval_result_is(
     assert chain.eval_result.verdict == verdict
 
 
-def unreadable_step_recorded(result: dict[str, Any], step: AuditStep) -> None:
-    _one_missed_step(result, step, MissCause.UNREADABLE_ANSWER)
+def unreadable_call_recorded(result: dict[str, Any], kind: ModelCallKind) -> None:
+    _one_missed_call(result, kind, MissCause.UNREADABLE_ANSWER)
 
 
-def refused_step_recorded(result: dict[str, Any], step: AuditStep) -> None:
-    _one_missed_step(result, step, MissCause.PROVIDER_REFUSAL)
+def refused_call_recorded(result: dict[str, Any], kind: ModelCallKind) -> None:
+    _one_missed_call(result, kind, MissCause.PROVIDER_REFUSAL)
 
 
-def _one_missed_step(result: dict[str, Any], step: AuditStep, cause: MissCause) -> None:
-    [missed] = result["missed_steps"]
-    assert (missed.tool_name, missed.step, missed.cause) == (DEFAULT_TOOL_NAME, step, cause)
+def _one_missed_call(result: dict[str, Any], kind: ModelCallKind, cause: MissCause) -> None:
+    [missed] = result["missed_model_calls"]
+    assert (missed.tool_name, missed.kind, missed.cause) == (DEFAULT_TOOL_NAME, kind, cause)

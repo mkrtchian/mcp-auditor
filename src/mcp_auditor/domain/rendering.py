@@ -12,7 +12,7 @@ from mcp_auditor.domain.models import (
     ExecutionRecord,
     ExecutionRegime,
     MissCause,
-    MissedStep,
+    MissedModelCall,
     Severity,
     TestCase,
     ToolReport,
@@ -30,10 +30,11 @@ def render_summary(report: AuditReport) -> str:
     tool_count = len(report.tool_reports)
     findings = report.findings
     finding_count = len(findings)
+    server = report.server_command
     if finding_count == 0:
-        return f"{report.target}: {tool_count} tools, no findings"
+        return f"{server}: {tool_count} tools, no findings"
     severity_breakdown = _severity_breakdown(findings)
-    return f"{report.target}: {tool_count} tools, {finding_count} findings ({severity_breakdown})"
+    return f"{server}: {tool_count} tools, {finding_count} findings ({severity_breakdown})"
 
 
 def render_json(report: AuditReport) -> str:
@@ -46,8 +47,10 @@ def render_markdown(report: AuditReport) -> str:
         _render_summary_section(report),
     ]
     for tool_report in report.tool_reports:
-        missed_steps = [r for r in report.missed_steps if r.tool_name == tool_report.tool.name]
-        sections.append(_render_tool_section(tool_report, missed_steps))
+        missed_calls = [
+            r for r in report.missed_model_calls if r.tool_name == tool_report.tool.name
+        ]
+        sections.append(_render_tool_section(tool_report, missed_calls))
     return "\n".join(sections)
 
 
@@ -59,7 +62,7 @@ def _render_summary_section(report: AuditReport) -> str:
     blocked_count = _blocked_count(report)
     lines = [
         "## Summary\n",
-        f"**Target**: {report.target}",
+        f"**Server command**: {report.server_command}",
     ]
     if report.execution is not None:
         lines.extend(_render_execution_lines(report.execution))
@@ -83,11 +86,11 @@ def _render_summary_section(report: AuditReport) -> str:
 
 def _render_completeness_lines(report: AuditReport) -> list[str]:
     lines: list[str] = []
-    missed_counts = Counter(missed.cause for missed in report.missed_steps)
+    missed_counts = Counter(missed.cause for missed in report.missed_model_calls)
     for cause, label in MISS_CAUSE_LABELS.items():
         count = missed_counts[cause]
         if count > 0:
-            noun = "step" if count == 1 else "steps"
+            noun = "model call" if count == 1 else "model calls"
             lines.append(f"**{label}**: {count} {noun}")
     if not report.is_complete:
         lines.append("**Audit complete**: no")
@@ -99,7 +102,7 @@ def _render_execution_lines(record: ExecutionRecord) -> list[str]:
         lines = _render_confinement_lines(record)
     else:
         lines = [f"**Execution**: {record.regime.replace('_', ' ')}"]
-    relayed = [f"{name} (redacted)" for name in record.relayed_variables or []]
+    relayed = [f"{name} (redacted)" for name in record.redacted_variables or []]
     relayed += [f"{name}={value}" for name, value in (record.plain_variables or {}).items()]
     if relayed:
         lines.append(f"**Relayed environment**: {', '.join(relayed)}")
@@ -141,17 +144,17 @@ def describe_coverage_gap(gap: CoverageGap) -> str:
     return description
 
 
-def describe_missed_step(missed: MissedStep) -> str:
-    return f'{missed.step.replace("_", " ")}, "{missed.detail}"'
+def describe_missed_model_call(missed: MissedModelCall) -> str:
+    return f'{missed.kind.replace("_", " ")}, "{missed.detail}"'
 
 
-def _render_tool_section(tool_report: ToolReport, missed_steps: list[MissedStep]) -> str:
+def _render_tool_section(tool_report: ToolReport, missed_calls: list[MissedModelCall]) -> str:
     lines = [f"\n## {tool_report.tool.name}\n"]
     if tool_report.coverage_gap is not None:
         lines.append(f"**Coverage gap**: {describe_coverage_gap(tool_report.coverage_gap)}\n")
-    for missed in missed_steps:
+    for missed in missed_calls:
         label = MISS_CAUSE_LABELS[missed.cause]
-        lines.append(f"**{label}**: {describe_missed_step(missed)}\n")
+        lines.append(f"**{label}**: {describe_missed_model_call(missed)}\n")
     for case in tool_report.cases:
         lines.append(_render_case_section(case))
     for chain in tool_report.chains:
@@ -194,7 +197,7 @@ def _render_unjudged_section(case: TestCase) -> str:
     lines = [
         f"### NOT JUDGED -- {case.payload.category}",
         f"**Payload**: `{case.payload.arguments}`",
-        "**Reason**: the judgment step was missed, its cause is listed under the tool",
+        "**Reason**: the judgment model call was missed, its cause is listed under the tool",
     ]
     return "\n".join(lines)
 

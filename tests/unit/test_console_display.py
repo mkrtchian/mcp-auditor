@@ -4,10 +4,10 @@ from rich.text import Text
 import tests.unit.support.test_console_given as given
 from mcp_auditor.domain.models import (
     AuditCategory,
-    AuditStep,
     ExecutionRegime,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     Severity,
 )
 
@@ -182,7 +182,7 @@ def test_missed_steps_are_warned_one_by_one_as_the_dry_run_does():
     display, buffer = given.a_ci_display()
     refused = given.a_refused_chain_planning_on_list_items()
 
-    display.print_missed_steps([refused, refused])
+    display.print_missed_model_calls([refused, refused])
 
     warnings = _warnings(buffer.getvalue())
     assert len(warnings) == 2
@@ -192,14 +192,14 @@ def test_missed_steps_are_warned_one_by_one_as_the_dry_run_does():
 def test_a_refused_step_warning_prints_the_provider_message_verbatim():
     display, buffer = given.a_ci_display()
     message = "Blocked [see policy] by [/moderation]"
-    refused = MissedStep(
+    refused = MissedModelCall(
         tool_name="get_user",
-        step=AuditStep.JUDGMENT,
+        kind=ModelCallKind.JUDGMENT,
         cause=MissCause.PROVIDER_REFUSAL,
         detail=message,
     )
 
-    display.print_missed_steps([refused])
+    display.print_missed_model_calls([refused])
 
     assert message in _warnings(buffer.getvalue())[0]
 
@@ -214,9 +214,11 @@ def test_a_refused_step_warning_prints_the_provider_message_verbatim():
 )
 def test_a_missed_step_warning_names_its_cause(cause: MissCause, label: str):
     display, buffer = given.a_ci_display()
-    missed = MissedStep(tool_name="get_user", step=AuditStep.JUDGMENT, cause=cause, detail="x")
+    missed = MissedModelCall(
+        tool_name="get_user", kind=ModelCallKind.JUDGMENT, cause=cause, detail="x"
+    )
 
-    display.print_missed_steps([missed])
+    display.print_missed_model_calls([missed])
 
     assert f'get_user: {label}, judgment, "x"' in _warnings(buffer.getvalue())[0]
 

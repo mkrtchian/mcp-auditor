@@ -1,4 +1,4 @@
-# The acceptance test of a planted stand-in: the stand-in image serving a capture written here,
+# The integration test of a planted stand-in: the stand-in image serving a capture written here,
 # read by a container started with the target's planted arguments, over plain HTTP and over
 # TLS against the fixture authority.
 #

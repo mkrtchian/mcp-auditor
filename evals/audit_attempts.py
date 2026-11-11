@@ -9,7 +9,7 @@ from evals.eval_display import console
 from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.domain.models import AuditReport, MissCause
 
-# A missed step (a policy refusal or an unreadable answer) leaves the run saying nothing of
+# A missed model call (a policy refusal or an unreadable answer) leaves the run saying nothing of
 # detection. The generated prompts differ from one audit to the next, so a new attempt usually
 # passes the provider's filter and gets a readable answer.
 INCOMPLETE_ATTEMPTS = 3
@@ -17,7 +17,7 @@ INCOMPLETE_ATTEMPTS = 3
 
 @dataclass(frozen=True)
 class IncompleteAttempt:
-    """An audit that did not detect and whose report holds a missed step, with its causes."""
+    """An audit that did not detect and whose report holds a missed model call, with its causes."""
 
     report: AuditReport
     causes: frozenset[MissCause]
@@ -26,7 +26,7 @@ class IncompleteAttempt:
 
 @dataclass(frozen=True)
 class ThrottledAttempt:
-    """An audit whose report holds a step throttled past every retry, thrown away ungraded."""
+    """An audit whose report holds a model call throttled past every retry, thrown away ungraded."""
 
 
 @dataclass(frozen=True)
@@ -41,11 +41,11 @@ class ProviderErrorAttempt:
 type AttemptOutcome[T] = T | IncompleteAttempt | ThrottledAttempt | ProviderErrorAttempt | None
 
 
-async def graded_despite_missed_steps[T](
+async def graded_despite_missed_model_calls[T](
     target: CVETarget, attempt: Callable[[], Awaitable[AttemptOutcome[T]]]
 ) -> T | None:
-    """The first complete attempt grades the run. None when every attempt missed a step, and at
-    once on a throttled attempt or a provider error, as on a run skipped at launch."""
+    """The first complete attempt grades the run. None when every attempt missed a model call, and
+    at once on a throttled attempt or a provider error, as on a run skipped at launch."""
     causes: frozenset[MissCause] = frozenset()
     for number in range(1, INCOMPLETE_ATTEMPTS + 1):
         outcome = await attempt()
@@ -59,7 +59,7 @@ async def graded_despite_missed_steps[T](
             f" {describe_miss_causes(outcome.causes)}, not graded[/yellow]"
         )
     console.print(
-        f"[yellow]{target.cve_id} run skipped:[/yellow] a step missed at all"
+        f"[yellow]{target.cve_id} run skipped:[/yellow] a model call missed at all"
         f" {INCOMPLETE_ATTEMPTS} attempts ({describe_miss_causes(causes)})"
     )
     return None
@@ -76,8 +76,11 @@ def describe_miss_causes(causes: frozenset[MissCause]) -> str:
 
 
 def graded_or_incomplete(grade: RunGrade, report: AuditReport) -> RunGrade | IncompleteAttempt:
-    """A detection carries its own proof and stands whatever step was missed. A run that did
-    not detect with a missed step says nothing of detection, the struck credit included."""
-    if report.missed_steps and grade.status not in DETECTION_RUNGS:
-        return IncompleteAttempt(report, frozenset(missed.cause for missed in report.missed_steps))
+    """A detection carries its own proof and stands whatever model call was missed. A run that
+    did not detect with a missed model call says nothing of detection, the struck credit
+    included."""
+    if report.missed_model_calls and grade.status not in DETECTION_RUNGS:
+        return IncompleteAttempt(
+            report, frozenset(missed.cause for missed in report.missed_model_calls)
+        )
     return grade

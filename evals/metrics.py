@@ -35,7 +35,7 @@ class RunDetail(BaseModel):
     recall: float
     precision: float
     blocked_reasons: list[str] = []
-    missed_steps: list[str] = []
+    missed_model_calls: list[str] = []
     token_usage: dict[str, int]
 
 
@@ -158,10 +158,10 @@ def blocked_reasons(report: AuditReport) -> list[str]:
     ]
 
 
-def missed_steps(report: AuditReport) -> list[str]:
+def missed_model_calls(report: AuditReport) -> list[str]:
     return [
-        f"{MISS_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.step}, {missed.detail}"
-        for missed in report.missed_steps
+        f"{MISS_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.kind}, {missed.detail}"
+        for missed in report.missed_model_calls
     ]
 
 
@@ -172,8 +172,8 @@ class ThrottledAudit(Exception):
 
 def raise_if_throttled(report: AuditReport) -> None:
     throttled = [
-        f"{missed.tool_name}: {missed.step}, {missed.detail}"
-        for missed in report.missed_steps
+        f"{missed.tool_name}: {missed.kind}, {missed.detail}"
+        for missed in report.missed_model_calls
         if missed.cause is MissCause.PROVIDER_THROTTLED
     ]
     if throttled:
@@ -241,7 +241,7 @@ def build_run_detail(
         recall=compute_recall(verdicts, ground_truth),
         precision=compute_precision(verdicts, ground_truth),
         blocked_reasons=blocked_reasons(audit_report),
-        missed_steps=missed_steps(audit_report),
+        missed_model_calls=missed_model_calls(audit_report),
         token_usage={
             "input_tokens": audit_report.provider_usage.input_tokens,
             "output_tokens": audit_report.provider_usage.output_tokens,

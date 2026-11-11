@@ -16,6 +16,16 @@ from mcp_auditor.checkpointing import (
 from mcp_auditor.domain.relayed_environment import RelayedEnvironment, RelayedVariable
 from tests.fakes import FakeMCPClient
 
+# Channels a graph of an earlier version declared, under names the graph no longer has.
+EARLIER_CHANNELS = [
+    "refused_steps",
+    "chain_step_refused",
+    "target",
+    "judged_cases",
+    "missed_steps",
+    "chain_step_missed",
+]
+
 
 async def test_resuming_a_crashed_audit_finishes_without_reauditing(tmp_path: Path):
     client = given.ServerDyingOnCall(
@@ -58,17 +68,17 @@ async def test_resuming_a_completed_audit_runs_a_fresh_one(tmp_path: Path):
     then.each_tool_audited_once(result, ["first"])
 
 
-async def test_reauditing_the_same_target_does_not_accumulate_the_previous_report(tmp_path: Path):
+async def test_reauditing_the_same_server_does_not_accumulate_the_previous_report(tmp_path: Path):
     client = FakeMCPClient([graph_given.a_tool("first")])
     fake_llm = graph_given.a_fake_llm_for_multi_tool_audit([1, 1])
 
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
         graph = graph_given.a_graph_with_checkpointer(fake_llm, client, checkpointer)
-        config = {"configurable": {"thread_id": "same-target"}}
-        await resume_or_reset(graph, "same-target", requested=False)
+        config = {"configurable": {"thread_id": "same-server"}}
+        await resume_or_reset(graph, "same-server", requested=False)
         await graph_given.invoke_graph_with_config(graph, graph_given.an_initial_state(), config)
 
-        await resume_or_reset(graph, "same-target", requested=False)
+        await resume_or_reset(graph, "same-server", requested=False)
         result = await graph_given.invoke_graph_with_config(
             graph, graph_given.an_initial_state(), config
         )
@@ -110,7 +120,7 @@ async def test_a_thread_with_nothing_stored_is_not_resumable(tmp_path: Path):
         assert not await resume_or_reset(graph, "never-audited", requested=True)
 
 
-@pytest.mark.parametrize("earlier_channel", ["refused_steps", "chain_step_refused"])
+@pytest.mark.parametrize("earlier_channel", EARLIER_CHANNELS)
 async def test_a_checkpoint_from_an_earlier_version_refuses_to_resume(earlier_channel: str):
     checkpointer = InMemorySaver()
     graph = await given.a_crashed_audit(checkpointer, "earlier")
@@ -130,7 +140,37 @@ async def test_an_unfinished_checkpoint_without_earlier_channels_resumes():
     assert await resume_or_reset(graph, "current", requested=True)
 
 
-@pytest.mark.parametrize("earlier_channel", ["refused_steps", "chain_step_refused"])
+async def test_a_thread_interrupted_before_its_first_checkpoint_under_an_earlier_version_refuses():
+    checkpointer = InMemorySaver()
+    graph = await given.a_thread_interrupted_before_its_first_checkpoint(
+        checkpointer, "earlier", "target"
+    )
+
+    with pytest.raises(CheckpointFromEarlierVersion):
+        await resume_or_reset(graph, "earlier", requested=True)
+
+
+async def test_a_thread_interrupted_before_its_first_checkpoint_resumes():
+    checkpointer = InMemorySaver()
+    graph = await given.a_thread_interrupted_before_its_first_checkpoint(
+        checkpointer, "current", "server_command"
+    )
+
+    assert await resume_or_reset(graph, "current", requested=True)
+
+
+async def test_a_checkpoint_holding_the_classes_of_an_earlier_version_refuses_to_resume():
+    checkpointer = InMemorySaver()
+    graph = await given.a_crashed_audit(checkpointer, "earlier")
+    await given.a_latest_checkpoint_holding(
+        checkpointer, "earlier", "missed_steps", [given.MISSED_STEP_OF_AN_EARLIER_VERSION]
+    )
+
+    with pytest.raises(CheckpointFromEarlierVersion):
+        await resume_or_reset(graph, "earlier", requested=True)
+
+
+@pytest.mark.parametrize("earlier_channel", EARLIER_CHANNELS)
 async def test_a_checkpoint_from_an_earlier_version_is_wiped_when_resume_was_not_asked(
     earlier_channel: str,
 ):

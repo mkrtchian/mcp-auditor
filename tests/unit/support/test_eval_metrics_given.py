@@ -3,12 +3,12 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
-    AuditStep,
     ChainGoal,
     EvalResult,
     EvalVerdict,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
     Severity,
     TestCase,
@@ -26,7 +26,9 @@ def a_report(
         _a_tool_report(name, results, chains_map.get(name, []))
         for name, results in results_by_tool.items()
     ]
-    return AuditReport(target="test", tool_reports=tool_reports, provider_usage=ProviderUsage())
+    return AuditReport(
+        server_command="test", tool_reports=tool_reports, provider_usage=ProviderUsage()
+    )
 
 
 def _a_tool_report(name: str, results: list[EvalResult], chains: list[AttackChain]) -> ToolReport:
@@ -107,24 +109,28 @@ def and_a_refused_judgment(report: AuditReport, tool: str, provider_message: str
 def and_a_missed_judgment(
     report: AuditReport, tool: str, cause: MissCause, detail: str
 ) -> AuditReport:
-    missed = MissedStep(tool_name=tool, step=AuditStep.JUDGMENT, cause=cause, detail=detail)
-    return report.model_copy(update={"missed_steps": [*report.missed_steps, missed]})
+    missed = MissedModelCall(
+        tool_name=tool, kind=ModelCallKind.JUDGMENT, cause=cause, detail=detail
+    )
+    return report.model_copy(update={"missed_model_calls": [*report.missed_model_calls, missed]})
 
 
 def a_report_throttled(times: int) -> AuditReport:
     return AuditReport(
-        target="test", tool_reports=[], provider_usage=ProviderUsage(throttled_requests=times)
+        server_command="test",
+        tool_reports=[],
+        provider_usage=ProviderUsage(throttled_requests=times),
     )
 
 
 def a_report_billed(input_tokens: int, output_tokens: int) -> AuditReport:
     usage = ProviderUsage(input_tokens=input_tokens, output_tokens=output_tokens)
-    return AuditReport(target="test", tool_reports=[], provider_usage=usage)
+    return AuditReport(server_command="test", tool_reports=[], provider_usage=usage)
 
 
 def a_report_by_phase(total: int, chain: int, judge: int) -> AuditReport:
     return AuditReport(
-        target="test",
+        server_command="test",
         tool_reports=[],
         provider_usage=ProviderUsage(input_tokens=total),
         chain_usage=ProviderUsage(input_tokens=chain),

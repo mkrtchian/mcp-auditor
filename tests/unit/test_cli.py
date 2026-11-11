@@ -42,6 +42,14 @@ def test_confinement_options_are_documented():
     assert "--mount" in result.output
 
 
+def test_the_usage_names_the_server_command():
+    result = CliRunner().invoke(cli, ["run", "--help"])
+
+    assert result.exit_code == 0
+    assert "SERVER_COMMAND..." in result.output
+    assert "SERVER_COMMAND is the command to start the MCP server." in result.output
+
+
 def test_a_launcher_without_a_confinement_profile_stops_the_run():
     runner = CliRunner()
     result = runner.invoke(cli, ["run", "--", "python", "x.py"])

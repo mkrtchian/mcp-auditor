@@ -7,12 +7,12 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
-    AuditStep,
     CoverageGap,
     EvalResult,
     EvalVerdict,
     MissCause,
-    MissedStep,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
     Severity,
     TestCase,
@@ -105,7 +105,7 @@ def dry_run_payloads() -> list[AuditPayload]:
 
 def a_report_with_two_tools() -> AuditReport:
     return AuditReport(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[
             ToolReport(
                 tool=ToolDefinition(name="get_user", description="", input_schema={}),
@@ -145,10 +145,10 @@ def a_report_throttled(throttled_requests: int) -> AuditReport:
 REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage policy"
 
 
-def a_refused_chain_planning_on_list_items() -> MissedStep:
-    return MissedStep(
+def a_refused_chain_planning_on_list_items() -> MissedModelCall:
+    return MissedModelCall(
         tool_name="list_items",
-        step=AuditStep.CHAIN_PLANNING,
+        kind=ModelCallKind.CHAIN_PLANNING,
         cause=MissCause.PROVIDER_REFUSAL,
         detail=REFUSAL_MESSAGE,
     )
@@ -156,7 +156,7 @@ def a_refused_chain_planning_on_list_items() -> MissedStep:
 
 def a_report_with_a_refused_step() -> AuditReport:
     report = a_report_with_two_tools()
-    report.missed_steps = [a_refused_chain_planning_on_list_items()]
+    report.missed_model_calls = [a_refused_chain_planning_on_list_items()]
     return report
 
 
@@ -199,7 +199,7 @@ def _a_test_case(
 
 def _a_report(tool_reports: list[ToolReport]) -> AuditReport:
     return AuditReport(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=tool_reports,
         provider_usage=ProviderUsage(input_tokens=100, output_tokens=50),
     )

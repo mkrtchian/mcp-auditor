@@ -16,7 +16,13 @@ from evals.holdout_results import HoldoutRunResult
 from evals.holdout_run import HoldoutDeps, run_holdout
 from evals.probe_candidates import Prices
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep, ProviderUsage
+from mcp_auditor.domain.models import (
+    AuditReport,
+    MissCause,
+    MissedModelCall,
+    ModelCallKind,
+    ProviderUsage,
+)
 from tests.fakes import FakeContainerSweep
 from tests.unit.support import test_cve_grammar_given as grammar
 
@@ -44,10 +50,10 @@ def a_report(provider: ProviderUsage, judge: ProviderUsage) -> AuditReport:
 
 def a_report_missing(*causes: MissCause) -> AuditReport:
     missed = [
-        MissedStep(tool_name="read_file", step=AuditStep.JUDGMENT, cause=cause, detail="")
+        MissedModelCall(tool_name="read_file", kind=ModelCallKind.JUDGMENT, cause=cause, detail="")
         for cause in causes
     ]
-    return grammar.a_report().model_copy(update={"missed_steps": missed})
+    return grammar.a_report().model_copy(update={"missed_model_calls": missed})
 
 
 def graded(status: CVEStatus, report: AuditReport, **grade_fields: Any) -> GradedAudit:

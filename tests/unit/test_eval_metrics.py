@@ -324,7 +324,7 @@ def test_a_run_detail_lists_no_refused_step_in_a_clean_report():
 
     detail = build_run_detail(0, aggregate_verdicts(report), report, {})
 
-    assert detail.missed_steps == []
+    assert detail.missed_model_calls == []
 
 
 def test_a_run_detail_lists_each_missed_step_with_its_cause_tool_and_detail():
@@ -336,7 +336,7 @@ def test_a_run_detail_lists_each_missed_step_with_its_cause_tool_and_detail():
 
     detail = build_run_detail(0, aggregate_verdicts(report), report, {})
 
-    assert detail.missed_steps == [
+    assert detail.missed_model_calls == [
         "Refused by the model provider, search: judgment, flagged by the usage policy",
         "Unreadable answer from the model, search: judgment, no answer matched",
     ]

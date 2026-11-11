@@ -11,7 +11,7 @@ from mcp_auditor.domain import (
     ProviderUsage,
     Severity,
 )
-from mcp_auditor.domain.models import AuditStep, Judgment, order_tools_for_audit
+from mcp_auditor.domain.models import Judgment, ModelCallKind, order_tools_for_audit
 
 
 class TestEnumConstraints:
@@ -142,7 +142,7 @@ class TestAuditReportFindings:
         assert report.has_findings_at_or_above(Severity.HIGH) is False
 
     def test_empty_report_has_no_findings(self):
-        report = AuditReport(target="test", tool_reports=[], provider_usage=ProviderUsage())
+        report = AuditReport(server_command="test", tool_reports=[], provider_usage=ProviderUsage())
 
         assert report.has_findings_at_or_above(Severity.LOW) is False
 
@@ -153,8 +153,8 @@ class TestAuditReportCompleteness:
 
         assert report.is_complete is True
 
-    def test_a_refused_step_makes_the_report_incomplete(self):
-        report = given.a_report(missed_steps=[given.a_refused_step()])
+    def test_a_refused_model_call_makes_the_report_incomplete(self):
+        report = given.a_report(missed_model_calls=[given.a_refused_call()])
 
         assert report.is_complete is False
 
@@ -164,11 +164,13 @@ class TestAuditReportCompleteness:
         assert report.is_complete is False
 
     def test_missed_steps_survive_a_json_roundtrip(self):
-        report = given.a_report(missed_steps=[given.a_refused_step(AuditStep.CHAIN_PLANNING)])
+        report = given.a_report(
+            missed_model_calls=[given.a_refused_call(ModelCallKind.CHAIN_PLANNING)]
+        )
 
         rebuilt = AuditReport.model_validate_json(report.model_dump_json())
 
-        assert rebuilt.missed_steps == report.missed_steps
+        assert rebuilt.missed_model_calls == report.missed_model_calls
 
 
 class TestOrderToolsForAudit:

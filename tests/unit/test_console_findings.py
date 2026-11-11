@@ -119,7 +119,7 @@ def test_summary_score_line_low_score():
 
 def test_summary_score_line_zero_cases():
     report = AuditReport(
-        target="python server.py",
+        server_command="python server.py",
         tool_reports=[],
         provider_usage=ProviderUsage(input_tokens=0, output_tokens=0),
     )

@@ -6,7 +6,7 @@ from langgraph.checkpoint.memory import MemorySaver  # type: ignore[import-untyp
 import tests.unit.support.test_graph_given as given
 import tests.unit.support.test_graph_then as then
 from mcp_auditor.domain import AttackContext
-from mcp_auditor.domain.models import AuditStep, MissCause
+from mcp_auditor.domain.models import MissCause, ModelCallKind
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
@@ -206,7 +206,7 @@ async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissCause):
 
     report = then.tool_report_at(result, 0)
     assert [case.eval_result is None for case in report.cases] == [True, False]
-    then.audit_report_misses_one_step(result, "get_user", AuditStep.JUDGMENT, cause)
+    then.audit_report_misses_one_call(result, "get_user", ModelCallKind.JUDGMENT, cause)
     assert result["audit_report"].provider_usage == fake_llm.total_usage
     assert result["audit_report"].judge_usage == failure.usage.add(FAKE_USAGE)
 
@@ -269,7 +269,7 @@ async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the
     then.report_has_cases(first, 0)
     then.report_has_a_gap_of(first, requested=2, received=0)
     then.report_has_cases(then.tool_report_at(result, 1), 2)
-    then.audit_report_misses_one_step(result, "get_user", AuditStep.TEST_GENERATION, cause)
+    then.audit_report_misses_one_call(result, "get_user", ModelCallKind.TEST_GENERATION, cause)
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 
@@ -281,7 +281,7 @@ async def test_a_dry_run_with_a_refused_generation_carries_the_refused_step():
     result = await given.invoke_graph(graph, state)
 
     then.report_has_a_gap_of(result["tool_reports"][0], requested=3, received=0)
-    then.state_has_missed_steps(result, [("get_user", AuditStep.TEST_GENERATION)])
+    then.state_has_missed_calls(result, [("get_user", ModelCallKind.TEST_GENERATION)])
 
 
 async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
@@ -292,7 +292,7 @@ async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
     result = await given.invoke_graph(graph, state)
 
     then.report_has_no_chains(then.tool_report_at(result, 0))
-    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.CHAIN_PLANNING)])
+    then.audit_report_has_missed_calls(result, [("get_user", ModelCallKind.CHAIN_PLANNING)])
 
 
 @pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
@@ -304,7 +304,9 @@ async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(cau
     result = await given.invoke_graph(graph, state)
 
     then.report_has_judged_chains(then.tool_report_at(result, 0), 2)
-    then.audit_report_misses_one_step(result, "get_user", AuditStep.CHAIN_STEP_OBSERVATION, cause)
+    then.audit_report_misses_one_call(
+        result, "get_user", ModelCallKind.CHAIN_STEP_OBSERVATION, cause
+    )
 
 
 async def test_a_refused_step_planning_judges_the_chain_with_the_steps_it_has():
@@ -318,4 +320,4 @@ async def test_a_refused_step_planning_judges_the_chain_with_the_steps_it_has():
     report = then.tool_report_at(result, 0)
     then.report_has_judged_chains(report, 1)
     assert len(report.chains[0].steps) == 1
-    then.audit_report_has_missed_steps(result, [("get_user", AuditStep.CHAIN_STEP_PLANNING)])
+    then.audit_report_has_missed_calls(result, [("get_user", ModelCallKind.CHAIN_STEP_PLANNING)])

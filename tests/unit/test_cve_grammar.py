@@ -69,9 +69,9 @@ def test_nonce_carried_only_by_a_later_chain_step_is_a_proof():
     assert grade.status == CVEStatus.DETECTED
 
 
-def test_nonce_only_in_the_report_target_is_not_a_proof():
+def test_nonce_only_in_the_server_command_is_not_a_proof():
     report = given.a_report(
-        cases=[given.a_case(response="nothing")], target=f"docker run -e FLAG={SENTINEL}"
+        cases=[given.a_case(response="nothing")], server_command=f"docker run -e FLAG={SENTINEL}"
     )
 
     grade = grade_run(given.a_read_target(), units_of(report))

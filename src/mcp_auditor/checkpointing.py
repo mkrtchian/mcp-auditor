@@ -2,7 +2,7 @@
 
 import hashlib
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ExecutionRegime
@@ -25,10 +25,20 @@ def checkpoint_db_path() -> str:
     return str(checkpoint_dir / "checkpoints.db")
 
 
-# Channels a checkpoint written before missed steps holds. The graph no longer declares
-# them, so a resume would silently drop their content (refused steps vanish from the
-# report) or fail mid-chain on the renamed channel.
-_EARLIER_VERSION_CHANNELS = frozenset({"refused_steps", "chain_step_refused"})
+# Channels a checkpoint written by an earlier version holds, under names the graph no longer
+# declares. A resume would silently drop their content (missed model calls and judged cases
+# vanish from the report) or fail mid-chain on the renamed channel. Renaming a field is no
+# safer: a stored value revives without it, so its earlier verdicts would vanish too.
+_EARLIER_VERSION_CHANNELS = frozenset(
+    {
+        "refused_steps",
+        "chain_step_refused",
+        "target",
+        "judged_cases",
+        "missed_steps",
+        "chain_step_missed",
+    }
+)
 
 
 class CheckpointFromEarlierVersion(Exception):
@@ -61,5 +71,13 @@ async def resume_or_reset(graph: Any, thread_id: str, requested: bool) -> bool:
 
 async def _refuse_earlier_version(checkpointer: Any, config: dict[str, Any]) -> None:
     async for stored in checkpointer.alist(config):
-        if _EARLIER_VERSION_CHANNELS & stored.checkpoint["channel_values"].keys():
+        if _EARLIER_VERSION_CHANNELS & _stored_channels(stored.checkpoint["channel_values"]):
             raise CheckpointFromEarlierVersion
+
+
+# A thread interrupted before its first step holds only its input, under `__start__`.
+def _stored_channels(channel_values: dict[str, Any]) -> set[str]:
+    graph_input: object = channel_values.get("__start__")
+    if not isinstance(graph_input, dict):
+        return set(channel_values)
+    return {*channel_values, *cast(dict[str, Any], graph_input)}

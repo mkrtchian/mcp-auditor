@@ -7,7 +7,7 @@ from evals.failure_text import FULL_DETAIL, ReportDetail
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer, BackendFixture
 from evals.nuisance_audit import NuisanceAuditor
-from mcp_auditor.domain.models import AuditReport, AuditStep, MissCause, MissedStep
+from mcp_auditor.domain.models import AuditReport, MissCause, MissedModelCall, ModelCallKind
 from tests.unit.support import test_audit_launch_given as launch_given
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support.test_nuisance_admission_given import (
@@ -77,10 +77,10 @@ def a_lifecycle_holding_one_lock() -> BackendLifecycle:
 
 
 def a_report_refused_with_detail(detail: str) -> AuditReport:
-    refused = MissedStep(
+    refused = MissedModelCall(
         tool_name="read_file",
-        step=AuditStep.JUDGMENT,
+        kind=ModelCallKind.JUDGMENT,
         cause=MissCause.PROVIDER_REFUSAL,
         detail=detail,
     )
-    return grammar.a_report().model_copy(update={"missed_steps": [refused]})
+    return grammar.a_report().model_copy(update={"missed_model_calls": [refused]})
