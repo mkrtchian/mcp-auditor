@@ -66,7 +66,7 @@ from evals.run_images import (
 from evals.run_interruption import sibling_runs
 from mcp_auditor.config import Settings
 
-NUISANCE_RUNS = 3  # the log sets it before the first real run, a --runs flag lowers it
+NUISANCE_RUNS = 2  # set in docs/nuisance-log.md, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
 _REFUSAL = "nuisance run refused"
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
