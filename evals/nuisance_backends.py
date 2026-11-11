@@ -25,6 +25,7 @@ from evals import (
     googleapis_backend,
     gravitino_backend,
     jenkins_backend,
+    mcp_ssh_sshd_backend,
     n8n_backend,
     responder_backend,
 )
@@ -39,6 +40,7 @@ from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.gravitino_backend import GRAVITINO_BRIDGE, GRAVITINO_IMAGE, GRAVITINO_SERVICES
 from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
+from evals.mcp_ssh_sshd_backend import SSHD_BRIDGE, SSHD_IMAGE, SSHD_SERVICE
 from evals.n8n_backend import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
 
 if TYPE_CHECKING:
@@ -92,6 +94,13 @@ BACKENDS: dict[str, RegisteredBackend] = {
         GRAVITINO_IMAGE,
         GRAVITINO_SERVICES,
         _served(gravitino_backend.__file__, *GRAVITINO_SERVICES),
+    ),
+    "mcp_ssh_sshd": RegisteredBackend(
+        mcp_ssh_sshd_backend.LIFECYCLE,
+        SSHD_BRIDGE,
+        SSHD_IMAGE,
+        (SSHD_SERVICE,),
+        _served(mcp_ssh_sshd_backend.__file__, SSHD_SERVICE),
     ),
     "atlassian": _responder(
         atlassian_backend.LIFECYCLE,

@@ -1,0 +1,39 @@
+# @aiondadotcom/mcp-ssh 1.3.4, vulnerable arm for GHSA-p4h8-56qp-hpgv: the hostAlias reaches the ssh
+# client with no end-of-options marker.
+# Fix check only: no compose service, no key or ssh config baked. No COPY/ADD from the build
+# context; the server installs from npm by RUN.
+FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+
+# wget reaches an internal HTTP endpoint for a command-execution payload and fetches the OpenSSH
+# tarball at build; libssl3 and zlib1g are the client's runtime libraries, ca-certificates the
+# TLS roots for the https download.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends wget ca-certificates libssl3 zlib1g \
+ && rm -rf /var/lib/apt/lists/*
+
+# The real SSH client (ssh, scp) the server shells out to, as its README requires ("SSH client
+# installed"). The README names no channel or version, so the OpenSSH release current on the
+# admission day (2026-11-11) is used: OpenSSH 10.6p2 (released 2026-11-05), built from the
+# portable release tarball. The release notes give its SHA256 in base64
+# (muRIcgkM8vBrPPn/FH5/FvMJZxNAdj7S+ZJIOYrinVs=), the hex pin below. Only the client is built; no sshd.
+ARG OPENSSH_SHA256=9ae44872090cf2f06b3cf9ff147e7f16f309671340763ed2f99248398ae29d5b
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends gcc make libc6-dev libssl-dev zlib1g-dev \
+ && wget -q -O /tmp/openssh.tar.gz \
+      https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.6p2.tar.gz \
+ && echo "${OPENSSH_SHA256}  /tmp/openssh.tar.gz" | sha256sum -c - \
+ && mkdir /tmp/openssh \
+ && tar -xzf /tmp/openssh.tar.gz -C /tmp/openssh --strip-components=1 \
+ && cd /tmp/openssh \
+ && ./configure --prefix=/usr --sysconfdir=/etc/ssh --without-pam \
+ && make -j"$(nproc)" ssh scp \
+ && install -m 0755 ssh scp /usr/bin/ \
+ && cd / \
+ && rm -rf /tmp/openssh /tmp/openssh.tar.gz \
+ && apt-get purge -y --auto-remove gcc make libc6-dev libssl-dev zlib1g-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && test ! -e /usr/sbin/sshd
+
+RUN npm install -g @aiondadotcom/mcp-ssh@1.3.4
+
+ENTRYPOINT ["mcp-ssh"]

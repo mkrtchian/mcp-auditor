@@ -1,0 +1,18 @@
+# The OpenSSH server mcp-ssh's tools reach: Debian bookworm's openssh-server package (the release
+# its apt index holds at build), as the unprivileged account `tester` on port 2222, key
+# authentication only, with the sftp subsystem scp uses. authorized_keys holds the public half of
+# the key whose private half the run image (Dockerfile.mcp-ssh) bakes; sample.txt is the file the
+# benign download reads. The host key is generated at build. The configuration replaces Debian's
+# own /etc/ssh/sshd_config. No COPY/ADD from the build context.
+FROM debian:bookworm-slim@sha256:40b107342c492725bc7aacbe93a49945445191ae364184a6d24fedb28172f6f7
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-server && rm -rf /var/lib/apt/lists/*
+RUN useradd -m -u 1000 -s /bin/bash tester \
+ && mkdir -p /home/tester/.ssh /etc/ssh/keys \
+ && echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJFWavxXNitjKkMftpYNsBazxnC9dknTE29M2ObpoRir' > /home/tester/.ssh/authorized_keys \
+ && printf 'demo transfer content\n' > /home/tester/sample.txt \
+ && chown -R tester:tester /home/tester/.ssh /home/tester/sample.txt && chmod 700 /home/tester/.ssh && chmod 600 /home/tester/.ssh/authorized_keys \
+ && ssh-keygen -t ed25519 -N '' -f /etc/ssh/keys/ssh_host_ed25519_key \
+ && chown -R tester:tester /etc/ssh/keys \
+ && printf 'Port 2222\nHostKey /etc/ssh/keys/ssh_host_ed25519_key\nPidFile /home/tester/sshd.pid\nAuthorizedKeysFile /home/tester/.ssh/authorized_keys\nPasswordAuthentication no\nUsePAM no\nSubsystem sftp /usr/lib/openssh/sftp-server\n' > /etc/ssh/sshd_config
+USER tester
+ENTRYPOINT ["/usr/sbin/sshd","-D","-e","-f","/etc/ssh/sshd_config"]

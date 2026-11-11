@@ -1332,9 +1332,18 @@ services:
     image: mcp-auditor-nuisance-gravitino:local
     profiles: ["nuisance"]
 
+  mcp-ssh:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-ssh
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "a79ee6b5b9f6a17949a5628bb2c16acf88dff611420ab8fc2ce726113b810d8f"
+    image: mcp-auditor-nuisance-mcp-ssh:local
+    profiles: ["nuisance"]
+
   # Nuisance backends: the images the backend fixtures build (the responders, the CKAN stack, the
-  # n8n instance and the Gravitino stack), tagged as their backend modules tag them, rebuilt by the
-  # nuisance run with its server images.
+  # n8n instance, the Gravitino stack and the sshd), tagged as their backend modules tag them,
+  # rebuilt by the nuisance run with its server images.
 
   ckan-db:
     build:
@@ -1460,4 +1469,13 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "d9d24bf1296c975ee111af76f8b5b9544dcaa71de5b4230133db15f7c4301d2c"
     image: mcp-auditor-cve-gravitino-kafka:local
+    profiles: ["nuisance"]
+
+  mcp-ssh-sshd:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-ssh-sshd
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "1addc932b9a7f9e301fdd142f1d7da25c93579ea95af08802343c286ab10c8fb"
+    image: mcp-auditor-cve-mcp-ssh-sshd:local
     profiles: ["nuisance"]

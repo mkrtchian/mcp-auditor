@@ -10,6 +10,7 @@ modules hold the callables and keep the kit's import closure.
 from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.nuisance_fix_checks import (
     cve_2025_5277_aws_cli,
+    cve_2025_9654_mcp_ssh,
     cve_2025_15061_figma,
     cve_2025_52573_ios_simulator,
     cve_2025_53100_codehooks,
@@ -60,6 +61,7 @@ from evals.nuisance_fix_checks import (
     ghsa_8g7g_hmwm_6rv2_n8n,
     ghsa_cc2g_gq8c_r332_grok_faf,
     ghsa_j4r7_8ph4_43g3_faf,
+    ghsa_p4h8_56qp_hpgv_mcp_ssh,
     ghsa_rr55_jp92_8wp2_claude_faf,
 )
 
@@ -85,6 +87,8 @@ FIX_CHECK_TARGETS: tuple[FixCheckTarget, ...] = (
     *cve_2026_46341_apify.TARGETS,
     *cve_2026_10276_jenkins.TARGETS,
     *cve_2026_41041_gravitino.TARGETS,
+    *cve_2025_9654_mcp_ssh.TARGETS,
+    *ghsa_p4h8_56qp_hpgv_mcp_ssh.TARGETS,
     *cve_2026_11720_googleapis.TARGETS,
     *cve_2026_61462_gitlab.TARGETS,
     *cve_2026_35402_neo4j_cypher.TARGETS,

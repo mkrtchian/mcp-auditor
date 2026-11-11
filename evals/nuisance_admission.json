@@ -26998,6 +26998,435 @@
           "source": "Gravitino 1.2.1's Kafka catalog documentation names no release, so the stable release current on the admission day: the newest 4.x on Apache Kafka's downloads page (4.4.0, released 2026-10-22). Image apache/kafka:4.4.0 apache/kafka@sha256:833b867a9585a141da455dc2b57431c65cbccb27f11c91f694444cca9f777e0f"
         }
       ]
+    },
+    {
+      "server_package": "npm:@aiondadotcom/mcp-ssh",
+      "reaching_flaw": "CVE-2025-9654",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-9654",
+          "tools": [
+            {
+              "vulnerable_name": "runRemoteCommand",
+              "patched_name": "runRemoteCommand",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "checkConnectivity",
+              "patched_name": "checkConnectivity",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "uploadFile",
+              "patched_name": "uploadFile",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "downloadFile",
+              "patched_name": "downloadFile",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "runCommandBatch",
+              "patched_name": "runCommandBatch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.0.4",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "checkConnectivity",
+              "arguments": {
+                "hostAlias": "sshhost"
+              },
+              "expect": "Connection successful",
+              "before": []
+            },
+            {
+              "tool": "uploadFile",
+              "arguments": {
+                "hostAlias": "sshhost",
+                "localPath": "/tmp/payload.txt",
+                "remotePath": "up.txt"
+              },
+              "expect": "\"success\": true",
+              "before": []
+            },
+            {
+              "tool": "downloadFile",
+              "arguments": {
+                "hostAlias": "sshhost",
+                "remotePath": "sample.txt",
+                "localPath": "/tmp/down.txt"
+              },
+              "expect": "\"success\": true",
+              "before": []
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-mcp-ssh-cve20259654",
+            "exploit_calls": [
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "GHSA-p4h8-56qp-hpgv",
+          "tools": [
+            {
+              "vulnerable_name": "runRemoteCommand",
+              "patched_name": "runRemoteCommand",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            },
+            {
+              "vulnerable_name": "checkConnectivity",
+              "patched_name": "checkConnectivity",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "uploadFile",
+              "patched_name": "uploadFile",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "downloadFile",
+              "patched_name": "downloadFile",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "runCommandBatch",
+              "patched_name": "runCommandBatch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": true
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "1.3.5",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "checkConnectivity",
+              "arguments": {
+                "hostAlias": "sshhost"
+              },
+              "expect": "Connection successful",
+              "before": []
+            },
+            {
+              "tool": "uploadFile",
+              "arguments": {
+                "hostAlias": "sshhost",
+                "localPath": "/tmp/payload.txt",
+                "remotePath": "up.txt"
+              },
+              "expect": "\"success\": true",
+              "before": []
+            },
+            {
+              "tool": "downloadFile",
+              "arguments": {
+                "hostAlias": "sshhost",
+                "remotePath": "sample.txt",
+                "localPath": "/tmp/down.txt"
+              },
+              "expect": "\"success\": true",
+              "before": []
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-mcp-ssh-ghsap4h856qphpgv",
+            "exploit_calls": [
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": true
+      },
+      "launch": [],
+      "service": "mcp-ssh",
+      "backend": {
+        "provisioner": "mcp_ssh_sshd",
+        "image": "mcp-auditor-cve-mcp-ssh-sshd:local",
+        "network": "mcp-auditor-cve-mcp-ssh-sshd-bridge"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8",
+          "set_aside": "it saw the other agent's final summary before writing its own record"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-9654",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-9654",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-9654",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-9654",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": "GHSA-p4h8-56qp-hpgv",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "GHSA-p4h8-56qp-hpgv",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "GHSA-p4h8-56qp-hpgv",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "GHSA-p4h8-56qp-hpgv",
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:@aiondadotcom/mcp-ssh",
+          "flaw": "CVE-2025-9654",
+          "field": "tools",
+          "value": "checkConnectivity, uploadFile, downloadFile",
+          "reason": "the three tools whose declared function is not the effect count; runRemoteCommand and runCommandBatch declare running the shell command their argument carries (launchers), so they stay in the flaw's five tools but do not count, and getHostInfo is no flaw's tool (in 1.3.5 it only reads ~/.ssh/config). Record A reads the five tools with two launchers, record B counts all five."
+        },
+        {
+          "server_package": "npm:@aiondadotcom/mcp-ssh",
+          "flaw": "GHSA-p4h8-56qp-hpgv",
+          "field": "tools",
+          "value": "checkConnectivity, uploadFile, downloadFile",
+          "reason": "the three tools whose declared function is not the effect count; runRemoteCommand and runCommandBatch declare running the shell command their argument carries (launchers), so they stay in the flaw's five tools but do not count, and getHostInfo is no flaw's tool (in 1.3.5 it only reads ~/.ssh/config). Record A reads the five tools with two launchers, record B counts all five."
+        },
+        {
+          "server_package": "npm:@aiondadotcom/mcp-ssh",
+          "flaw": "CVE-2025-9654",
+          "field": "benign_calls",
+          "value": "record A's calls on the three counted tools against sshhost",
+          "reason": "record A's fixture is retained (the complete one, with the sshd backend and the ~/.ssh seeds the three counted tools need); the two launchers do not count, so they carry no benign call."
+        },
+        {
+          "server_package": "npm:@aiondadotcom/mcp-ssh",
+          "flaw": "GHSA-p4h8-56qp-hpgv",
+          "field": "benign_calls",
+          "value": "record A's calls on the three counted tools against sshhost",
+          "reason": "record A's fixture is retained (the complete one, with the sshd backend and the ~/.ssh seeds the three counted tools need); the two launchers do not count, so they carry no benign call."
+        },
+        {
+          "server_package": "npm:@aiondadotcom/mcp-ssh",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's: the ~/.ssh/config naming sshhost, the ed25519 key pair, /tmp/payload.txt, the uid 65534 home set to /tmp, and sample.txt on the sshd",
+          "reason": "record A's fixture is retained as the complete one; its values are written for the deployment, where record B seeds fewer items."
+        },
+        {
+          "server_package": "npm:@aiondadotcom/mcp-ssh",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "OpenSSH client 10.6p2; the sshd at Debian bookworm's openssh-server release",
+          "reason": "the client is the OpenSSH release current on the admission day (10.6p2, over record B's 10.6p1); the sshd runs Debian bookworm's openssh-server package, recorded at the package release the built image installs, not the 10.6p2 the record declared but the Dockerfile does not install."
+        }
+      ],
+      "patched_version": "1.3.5",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "~/.ssh/config in the run image (/tmp/.ssh/config): Host sshhost -> HostName sshhost, User tester, Port 2222, IdentityFile /tmp/.ssh/id_ed25519, IdentitiesOnly yes",
+          "kind": "written",
+          "citation": "written for the deployment so a benign hostAlias resolves to the sshd backend; mcp-ssh README SSH Configuration Integration documents ~/.ssh/config discovery",
+          "pin": null
+        },
+        {
+          "item": "ed25519 key pair; the private half in the run image ~/.ssh/id_ed25519, the public half in the sshd backend's authorized_keys (no comment)",
+          "kind": "generated",
+          "citation": "ssh-keygen -t ed25519 with no passphrase, generated for this deployment",
+          "pin": null
+        },
+        {
+          "item": "/tmp/payload.txt in the run image (content 'demo transfer content'), uploadFile's localPath",
+          "kind": "written",
+          "citation": "written for the deployment; no published sample exists for mcp-ssh",
+          "pin": null
+        },
+        {
+          "item": "the run image's uid 65534 passwd home set to /tmp, so the OpenSSH client resolves ~/.ssh from the passwd home under the confinement's HOME=/tmp",
+          "kind": "written",
+          "citation": "a standard image adjustment matching the confinement HOME=/tmp",
+          "pin": null
+        },
+        {
+          "item": "/home/tester/sample.txt on the sshd backend (content 'demo transfer content'), downloadFile's remotePath",
+          "kind": "written",
+          "citation": "written for the deployment",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "OpenSSH client (ssh, scp)",
+          "release": "OpenSSH 10.6p2",
+          "day": "2026-11-11",
+          "source": "mcp-ssh README Requirements names the client ('SSH client installed (ssh and scp commands available)') with no channel or version; with none named, the release current on the admission day 2026-11-11 is OpenSSH 10.6p2 (released 2026-11-05, openssh.org/releasenotes.html), built from the portable tarball, SHA256 base64 muRIcgkM8vBrPPn/FH5/FvMJZxNAdj7S+ZJIOYrinVs= (hex 9ae44872090cf2f06b3cf9ff147e7f16f309671340763ed2f99248398ae29d5b)"
+        },
+        {
+          "software": "OpenSSH server (sshd) [backend]",
+          "release": "1:9.2p1-2+deb12u10",
+          "day": "2026-11-11",
+          "source": "the sshd backend runs Debian bookworm's openssh-server package, read with dpkg-query -W openssh-server in the built mcp-ssh-sshd image; the record declared OpenSSH 10.6p2 but its Dockerfile installs the Debian package"
+        }
+      ]
     }
   ]
 }

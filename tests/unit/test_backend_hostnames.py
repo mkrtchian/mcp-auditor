@@ -1,9 +1,13 @@
+import base64
+
 import pytest
 
 import tests.unit.support.test_backend_hostnames_given as given
 from evals.doris_backend import DORIS_HOST, DORIS_SERVER_LAUNCH
 from evals.gravitino_backend import GRAVITINO_PARTS, GRAVITINO_SERVER_LAUNCH
+from evals.mcp_ssh_sshd_backend import SSHD_ALIAS, SSHD_PORT, singleton_run_args
 from evals.nuisance_admission import AdmittedServer
+from tests.unit.support.docker_argv import carries
 
 _AUDIT_WORDS = ("mcp-auditor", "mcpaudit")
 
@@ -57,3 +61,20 @@ def test_no_gravitino_alias_or_seeded_value_names_the_audit():
     naming = [value for value in values if any(word in value for word in _AUDIT_WORDS)]
 
     assert naming == []
+
+
+def test_the_sshd_answers_at_the_host_the_mcp_ssh_config_names():
+    config = given.mcp_ssh_config()
+
+    assert config["HostName"] == SSHD_ALIAS == "sshhost"
+    assert config["Port"] == str(SSHD_PORT)
+    assert carries(singleton_run_args(), ["--network-alias", SSHD_ALIAS])
+
+
+def test_the_mcp_ssh_key_halves_are_one_pair_with_no_comment():
+    authorized = given.sshd_authorized_key_fields()
+    private = given.mcp_ssh_private_key()
+
+    assert len(authorized) == 2
+    assert base64.b64decode(authorized[1]) == private.public_blob
+    assert private.comment == ""
