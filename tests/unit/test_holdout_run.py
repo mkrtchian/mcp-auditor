@@ -8,17 +8,17 @@ import pytest
 
 import tests.unit.support.test_holdout_run_given as given
 import tests.unit.support.test_holdout_vetting_given as vetting
+from evals.cve.detection.layout_check import LayoutCheck
+from evals.cve.detection.replay import ReplayAttemptFailure, UncheckedReason
+from evals.cve.detection.session_model import GradedAudit
+from evals.cve.detection.targets import LaunchMode
+from evals.cve.provider_errors import ProviderFatal
+from evals.cve.server_health import ServerHealth
 from evals.cve_grammar import CVEStatus, MechanismClass
-from evals.cve_layout_check import LayoutCheck
-from evals.cve_replay import ReplayAttemptFailure, UncheckedReason
-from evals.cve_session_model import GradedAudit
-from evals.cve_targets import LaunchMode
 from evals.eval_session import Refused, TreeState
 from evals.holdout_audit import DroppedRun, IncompleteRun
 from evals.holdout_results import NotRunCause, RunInterrupted
 from evals.probe.analysis import call_cost
-from evals.provider_errors import ProviderFatal
-from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage
 from tests.fakes import FakeContainerSweep
 
@@ -42,7 +42,7 @@ async def test_a_target_is_assembled_from_its_runs():
         ),
         given.graded(CVEStatus.MISSED, report, aimed=True, fail_without_proof=True),
     ]
-    audit = given.scripted({target.cve_id: outcomes})
+    audit = given.scripted({target.flaw_id: outcomes})
 
     result = await given.run([target], given.deps_auditing(audit))
 
@@ -63,7 +63,7 @@ async def test_a_union_target_is_assembled_with_its_class_labels_sorted():
     target = given.a_target(
         mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.COMMAND_EXECUTION})
     )
-    audit = given.scripted({target.cve_id: given.three_detections()})
+    audit = given.scripted({target.flaw_id: given.three_detections()})
 
     result = await given.run([target], given.deps_auditing(audit))
 
@@ -73,7 +73,7 @@ async def test_a_union_target_is_assembled_with_its_class_labels_sorted():
 
 async def test_a_target_records_its_backend_images_beside_its_services():
     target = given.a_target(backend_images=("apache/doris:all-in-one-4.1.3",))
-    audit = given.scripted({target.cve_id: given.three_detections()})
+    audit = given.scripted({target.flaw_id: given.three_detections()})
 
     result = await given.run([target], given.deps_auditing(audit))
 
@@ -93,7 +93,7 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
         IncompleteRun(refused_report),
         IncompleteRun(refused_report),
     ]
-    audit = given.scripted({target.cve_id: outcomes})
+    audit = given.scripted({target.flaw_id: outcomes})
 
     result = await given.run([target], given.deps_auditing(audit))
 
@@ -118,7 +118,7 @@ async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss
         given.a_report_missing(MissCause.UNREADABLE_ANSWER, MissCause.PROVIDER_REFUSAL),
         ServerHealth(non_protocol_lines=0, lost_connection_responses=3),
     )
-    audit = given.scripted({target.cve_id: [unchecked, refused, detection]})
+    audit = given.scripted({target.flaw_id: [unchecked, refused, detection]})
 
     result = await given.run([target], given.deps_auditing(audit))
 
@@ -139,41 +139,41 @@ async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss
 
 async def test_a_target_dead_on_a_version_is_not_run():
     dead, healthy = given.a_target(given.KUBERNETES), given.a_target(given.FILESYSTEM)
-    audit = given.scripted({dead.cve_id: [], healthy.cve_id: given.three_detections()})
+    audit = given.scripted({dead.flaw_id: [], healthy.flaw_id: given.three_detections()})
     deps = given.deps_auditing(
-        audit, check={dead.cve_id: ["patched: exploit 0 still surfaces etc-shadow"]}
+        audit, check={dead.flaw_id: ["patched: exploit 0 still surfaces etc-shadow"]}
     )
 
     result = await given.run([dead, healthy], deps)
 
-    assert [t.cve_id for t in result.targets] == [healthy.cve_id]
+    assert [t.cve_id for t in result.targets] == [healthy.flaw_id]
     (not_run,) = result.not_run
-    assert not_run.cve_id == dead.cve_id
+    assert not_run.cve_id == dead.flaw_id
     assert "patched: exploit 0 still surfaces etc-shadow" in not_run.reason
     assert not_run.cause is NotRunCause.PRE_RUN_CHECK
 
 
 async def test_a_normal_target_the_layout_breaks_is_dropped():
     broken, healthy = given.a_target(given.KUBERNETES), given.a_target(given.FILESYSTEM)
-    audit = given.scripted({broken.cve_id: [], healthy.cve_id: given.three_detections()})
+    audit = given.scripted({broken.flaw_id: [], healthy.flaw_id: given.three_detections()})
     deps = given.deps_auditing(
-        audit, layout={broken.cve_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])}
+        audit, layout={broken.flaw_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])}
     )
 
     result = await given.run([broken, healthy], deps)
 
-    assert [t.cve_id for t in result.targets] == [healthy.cve_id]
+    assert [t.cve_id for t in result.targets] == [healthy.flaw_id]
     (not_run,) = result.not_run
-    assert not_run.cve_id == broken.cve_id
+    assert not_run.cve_id == broken.flaw_id
     assert not_run.reason == "the layout breaks the server under the normal launch"
     assert not_run.cause is NotRunCause.PRE_RUN_CHECK
 
 
 async def test_a_fallback_target_the_layout_breaks_is_kept():
     target = given.a_target(given.KUBERNETES, launch_mode=LaunchMode.FALLBACK)
-    audit = given.scripted({target.cve_id: given.three_detections()})
+    audit = given.scripted({target.flaw_id: given.three_detections()})
     deps = given.deps_auditing(
-        audit, layout={target.cve_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])}
+        audit, layout={target.flaw_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])}
     )
 
     result = await given.run([target], deps)
@@ -185,15 +185,15 @@ async def test_a_fallback_target_the_layout_breaks_is_kept():
 
 async def test_a_target_clean_on_its_solo_second_pre_run_pass_runs_and_is_named():
     flaky = given.a_target(given.KUBERNETES)
-    audit = given.scripted({flaky.cve_id: given.three_detections()})
-    checks = vetting.ScriptedChecks(dead={flaky.cve_id: [["vulnerable: exploit 3 dead"], []]})
+    audit = given.scripted({flaky.flaw_id: given.three_detections()})
+    checks = vetting.ScriptedChecks(dead={flaky.flaw_id: [["vulnerable: exploit 3 dead"], []]})
     deps = dataclasses.replace(given.deps_auditing(audit), check=checks.check, layout=checks.layout)
 
     result = await given.run([flaky], deps)
 
-    assert [t.cve_id for t in result.targets] == [flaky.cve_id]
+    assert [t.cve_id for t in result.targets] == [flaky.flaw_id]
     assert result.not_run == []
-    assert result.second_pass == [flaky.cve_id]
+    assert result.second_pass == [flaky.flaw_id]
 
 
 async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run():
@@ -205,13 +205,13 @@ async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run()
         launch_failure,
         launch_failure,
     ]
-    audit = given.scripted({sick.cve_id: sick_outcomes, healthy.cve_id: given.three_detections()})
+    audit = given.scripted({sick.flaw_id: sick_outcomes, healthy.flaw_id: given.three_detections()})
 
     result = await given.run([sick, healthy], given.deps_auditing(audit))
 
-    assert [t.cve_id for t in result.targets] == [healthy.cve_id]
+    assert [t.cve_id for t in result.targets] == [healthy.flaw_id]
     (not_run,) = result.not_run
-    assert not_run.cve_id == sick.cve_id
+    assert not_run.cve_id == sick.flaw_id
     assert not_run.reason == "a run failed to launch after retries"
     assert not_run.cause is NotRunCause.LAUNCH_FAILURE
 
@@ -224,12 +224,12 @@ async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
         DroppedRun(NotRunCause.THROTTLED),
         given.graded(CVEStatus.DETECTED, report, aimed=True),
     ]
-    audit = given.scripted({sick.cve_id: sick_outcomes, healthy.cve_id: given.three_detections()})
+    audit = given.scripted({sick.flaw_id: sick_outcomes, healthy.flaw_id: given.three_detections()})
 
     result = await given.run([sick, healthy], given.deps_auditing(audit))
 
     (not_run,) = result.not_run
-    assert not_run.cve_id == sick.cve_id
+    assert not_run.cve_id == sick.flaw_id
     assert not_run.reason == "throttled by the model provider past every retry"
     assert not_run.cause is NotRunCause.THROTTLED
 
@@ -242,7 +242,7 @@ async def test_a_provider_error_wins_over_a_launch_failure():
         DroppedRun(NotRunCause.PROVIDER_ERROR),
         given.graded(CVEStatus.DETECTED, report, aimed=True),
     ]
-    audit = given.scripted({sick.cve_id: sick_outcomes, healthy.cve_id: given.three_detections()})
+    audit = given.scripted({sick.flaw_id: sick_outcomes, healthy.flaw_id: given.three_detections()})
 
     result = await given.run([sick, healthy], given.deps_auditing(audit))
 
@@ -253,10 +253,10 @@ async def test_a_provider_error_wins_over_a_launch_failure():
 
 async def test_the_run_announces_the_audits_of_the_surviving_targets_only():
     dead, healthy = given.a_target(given.KUBERNETES), given.a_target(given.FILESYSTEM)
-    audit = given.scripted({dead.cve_id: [], healthy.cve_id: given.three_detections()})
+    audit = given.scripted({dead.flaw_id: [], healthy.flaw_id: given.three_detections()})
     announced: list[int] = []
     deps = dataclasses.replace(
-        given.deps_auditing(audit, check={dead.cve_id: ["vulnerable: no exploit surfaces"]}),
+        given.deps_auditing(audit, check={dead.flaw_id: ["vulnerable: no exploit surfaces"]}),
         announce_audits=announced.append,
     )
 
@@ -267,7 +267,7 @@ async def test_the_run_announces_the_audits_of_the_surviving_targets_only():
 
 async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
     target = given.a_target(given.FILESYSTEM)
-    audit = given.scripted({target.cve_id: given.three_detections()})
+    audit = given.scripted({target.flaw_id: given.three_detections()})
 
     result = await given.run([target], given.deps_auditing(audit, throttled=7), concurrency=4)
 
@@ -277,7 +277,7 @@ async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
 
 async def test_the_result_carries_the_run_timestamp():
     target = given.a_target(given.FILESYSTEM)
-    audit = given.scripted({target.cve_id: given.three_detections()})
+    audit = given.scripted({target.flaw_id: given.three_detections()})
 
     result = await given.run([target], given.deps_auditing(audit))
 
@@ -317,9 +317,9 @@ async def test_a_dirty_tree_refuses_before_rebuild_and_audit():
 async def test_every_target_dropped_refuses_with_the_reasons():
     dead, broken = given.a_target(given.KUBERNETES), given.a_target(given.FILESYSTEM)
     deps = given.deps_auditing(
-        given.scripted({dead.cve_id: [], broken.cve_id: []}),
-        check={dead.cve_id: ["patched: exploit 0 still surfaces etc-shadow"]},
-        layout={broken.cve_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])},
+        given.scripted({dead.flaw_id: [], broken.flaw_id: []}),
+        check={dead.flaw_id: ["patched: exploit 0 still surfaces etc-shadow"]},
+        layout={broken.flaw_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])},
     )
 
     with pytest.raises(Refused, match="no target survived") as caught:
@@ -355,7 +355,7 @@ async def test_a_container_of_the_run_images_running_at_start_refuses_before_the
 async def test_a_container_seen_only_after_the_rebuild_refuses_and_is_left_running():
     target = given.a_target(given.FILESYSTEM)
     containers = FakeContainerSweep.appearing_after_the_rebuild("concurrent_filesystem")
-    deps = given.deps_auditing(given.scripted({target.cve_id: []}), containers=containers)
+    deps = given.deps_auditing(given.scripted({target.flaw_id: []}), containers=containers)
 
     with pytest.raises(Refused) as refused:
         await given.run([target], deps)
@@ -368,7 +368,7 @@ async def test_the_containers_left_running_at_the_end_are_removed():
     target = given.a_target(given.FILESYSTEM)
     containers = FakeContainerSweep.left_at_the_end("stuck_one", "stuck_two")
     deps = given.deps_auditing(
-        given.scripted({target.cve_id: given.three_detections()}), containers=containers
+        given.scripted({target.flaw_id: given.three_detections()}), containers=containers
     )
 
     await given.run([target], deps)
@@ -382,7 +382,7 @@ async def test_no_container_left_at_the_end_removes_and_prints_nothing(
     target = given.a_target(given.FILESYSTEM)
     containers = FakeContainerSweep()
     deps = given.deps_auditing(
-        given.scripted({target.cve_id: given.three_detections()}), containers=containers
+        given.scripted({target.flaw_id: given.three_detections()}), containers=containers
     )
 
     await given.run([target], deps)
@@ -408,8 +408,8 @@ async def test_the_sweep_runs_when_no_target_survives():
     dead = given.a_target(given.KUBERNETES)
     containers = FakeContainerSweep.left_at_the_end("stuck_one")
     deps = given.deps_auditing(
-        given.scripted({dead.cve_id: []}),
-        check={dead.cve_id: ["vulnerable: no exploit surfaces"]},
+        given.scripted({dead.flaw_id: []}),
+        check={dead.flaw_id: ["vulnerable: no exploit surfaces"]},
         containers=containers,
     )
 
@@ -423,7 +423,7 @@ async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
     target = given.a_target(backend_images=("apache/doris:all-in-one-4.1.3",))
     containers = FakeContainerSweep()
     deps = given.deps_auditing(
-        given.scripted({target.cve_id: given.three_detections()}), containers=containers
+        given.scripted({target.flaw_id: given.three_detections()}), containers=containers
     )
 
     await given.run([target], deps)

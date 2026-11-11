@@ -13,8 +13,8 @@ import subprocess
 
 import pytest
 
-from evals import cve_targets
-from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve.detection import targets as detection_targets
+from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
 from evals.doris_backend import DORIS_DB
 from evals.holdout_kit.kit_backends import doris_backend_env
@@ -58,7 +58,7 @@ def _prerequisites() -> None:
 async def test_the_doris_backend_builder_launches_and_answers_a_benign_call():
     host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
     spec = planting_spec((), host, RANDOM_NONCES)
-    with doris_backend_env(cve_targets.image_tag(_SERVICE), spec) as launch:
+    with doris_backend_env(detection_targets.image_tag(_SERVICE), spec) as launch:
         async with KitMCPClient.connect(
             launch.command, launch.args, env=docker_client_env(os.environ)
         ) as client:

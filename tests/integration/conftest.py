@@ -3,7 +3,9 @@ import pathlib
 
 import pytest
 
-from tests.integration.support.cve_stub_target import a_docker_that_runs_its_command_on_the_host
+from tests.integration.support.detection_fake_targets import (
+    a_docker_that_runs_its_command_on_the_host,
+)
 
 
 @pytest.fixture

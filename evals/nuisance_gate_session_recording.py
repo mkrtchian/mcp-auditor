@@ -1,5 +1,6 @@
 """Recording the nuisance gate's baseline: what refuses a recording before the paid runs, and the
-write of one file per server once the gate has decided, the mirror of `cve_session_recording`."""
+write of one file per server once the gate has decided, the mirror of
+`evals.cve.detection.session_recording`."""
 
 from pathlib import Path
 

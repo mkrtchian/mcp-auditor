@@ -11,7 +11,7 @@ import pytest
 
 import tests.integration.support.test_cve_planting_given as planting
 import tests.integration.support.test_cve_planting_stand_ins_given as given
-from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_planting_base import (
     SENTINEL_IMAGE,
     SENTINEL_SERVICE,

@@ -7,11 +7,11 @@ import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals import cve_baseline
 from evals.backend_lifecycle import BackendLifecycle
 from evals.cve.census.census import CLASSIFIERS, Census
 from evals.cve.census.classification import Classification
 from evals.cve.census.work import AgentRecord, AgentRole
+from evals.cve.detection import baseline as detection_baseline
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, PublicNames, SymbolicUser
 from evals.nuisance_admission import (
@@ -51,7 +51,7 @@ def a_nuisance_census() -> NuisanceCensus:
 def an_admission() -> NuisanceAdmission:
     return NuisanceAdmission(
         rule_commit="0" * 40,
-        grammar_fingerprint=cve_baseline.grammar_fingerprint(),
+        grammar_fingerprint=detection_baseline.grammar_fingerprint(),
         servers=[an_admitted_server()],
     )
 
@@ -189,7 +189,7 @@ def problems_of(admission: NuisanceAdmission, census: NuisanceCensus | None = No
     return admission_problems(
         admission,
         census if census is not None else a_nuisance_census(),
-        cve_baseline.grammar_fingerprint(),
+        detection_baseline.grammar_fingerprint(),
         a_backend_registry(),
     )
 

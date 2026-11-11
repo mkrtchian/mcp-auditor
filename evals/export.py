@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.cve_session_model import CVEAudit
+from evals.cve.detection.session_model import DetectionAudit
 from evals.ground_truth import GroundTruth
 from evals.nuisance_gate_session_model import GateAudit
 from mcp_auditor.domain.models import AttackChain, AuditReport, TestCase
@@ -42,7 +42,7 @@ def detection_export_path(report_path: Path) -> Path:
     return report_path.with_name("detection_judged_cases.jsonl")
 
 
-def export_detection_judged_cases(audits: list[CVEAudit], report_path: Path) -> None:
+def export_detection_judged_cases(audits: list[DetectionAudit], report_path: Path) -> None:
     """Single-step cases only: a target has no per-case ground truth, and chains are
     judged by another prompt."""
     with detection_export_path(report_path).open("w") as f:
@@ -52,7 +52,7 @@ def export_detection_judged_cases(audits: list[CVEAudit], report_path: Path) -> 
                     if case.eval_result is None:
                         continue
                     line = {
-                        "flaw_id": audit.cve_id,
+                        "flaw_id": audit.flaw_id,
                         "run_index": audit.run_index,
                         **_judge_input(case, tool_report.tool.description),
                     }

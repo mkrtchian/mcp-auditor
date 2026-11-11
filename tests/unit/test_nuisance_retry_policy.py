@@ -4,9 +4,10 @@ import pytest
 from langchain_core.exceptions import ModelAuthenticationError
 
 import tests.unit.support.test_eval_display_given as display_given
-from evals import launch_audit
 from evals import nuisance_audit as nuisance_audit_module
-from evals.audit_attempts import INCOMPLETE_ATTEMPTS
+from evals.cve import launch_audit
+from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS
+from evals.cve.provider_errors import ProviderFatal
 from evals.nuisance_audit import (
     NUISANCE_INFRA_ATTEMPTS,
     DroppedRun,
@@ -18,7 +19,6 @@ from evals.nuisance_audit import (
     nuisance_audit,
 )
 from evals.nuisance_results import NotRunCause
-from evals.provider_errors import ProviderFatal
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_nuisance_run_given as run_given
 from tests.unit.support.test_nuisance_admission_given import an_admitted_server

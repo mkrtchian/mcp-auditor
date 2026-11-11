@@ -14,11 +14,11 @@ from mcp_auditor.report_files import ReportPaths
 from mcp_auditor.server_execution import LaunchOptions, ServerExecution
 from tests.fakes import FakeContainerRuntime, FakeLLM
 
-STUB_PATH = pathlib.Path(__file__).resolve().parent / "cve_replay_stub_server.py"
+READ_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "detection_replay_read_server.py"
 
 
-def a_stub(*flags: str) -> ServerLaunch:
-    return ServerLaunch.unconfined(sys.executable, [str(STUB_PATH), *flags])
+def a_read_server(*flags: str) -> ServerLaunch:
+    return ServerLaunch.unconfined(sys.executable, [str(READ_SERVER_PATH), *flags])
 
 
 def an_audit_of(launch: ServerLaunch) -> Audit:

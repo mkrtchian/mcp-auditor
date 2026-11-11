@@ -18,13 +18,13 @@ layout read-only, no network of its own.
 
 import re
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_base import PublicNames
 from evals.cve_planting_spec import resolve_container_path
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-85787-postgres"
@@ -112,8 +112,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await _run_query(client, "SELECT 1")
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-85787",
+TARGET = Target(
+    flaw_id="CVE-2026-85787",
     severity="CVSS 8.8 (v3.1, placeholder)",
     mechanisms=frozenset(
         {

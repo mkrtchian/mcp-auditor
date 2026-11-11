@@ -1,4 +1,4 @@
-from evals.cve_images import dockerfile_instructions
+from evals.cve.images import dockerfile_instructions
 from evals.docker_paths import image_dockerfile
 from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
 from evals.holdout_kit.kit_client import KitTool

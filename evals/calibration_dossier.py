@@ -20,8 +20,8 @@ from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw
 from evals.cve.census.classification import Classification
 from evals.cve.census.sources import SourceName, SourceRecord
 from evals.cve.detection.draw_record import CalibrationCard
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve_planting_base import SENTINEL_SERVICE
-from evals.cve_targets import CVE_TARGETS
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
 from evals.run_census import GRAMMAR_CLASSES
@@ -144,7 +144,9 @@ def _write_docs(out: Path) -> None:
 
 
 def acceptance_services() -> set[str]:
-    services = {name for target in CVE_TARGETS for name in (*target.images, target.patched_image)}
+    services = {
+        name for target in ACCEPTANCE_TARGETS for name in (*target.images, target.patched_image)
+    }
     return services | {SENTINEL_SERVICE}
 
 
@@ -212,11 +214,11 @@ nothing else:
   `ToolResponse` (the exploits run unchanged: `KitResponse` mirrors `ToolResponse`).
 - `from evals.holdout_kit.kit_launch import Launch` -> `evals.cve_environments.Launch`.
 
-The authored `KitTarget` then wraps into a `CVETarget` (the shared fields).
+The authored `KitTarget` then wraps into a `Target` (the shared fields).
 
 ## KitTarget fields
 
-- `cve_id`: the drawn identifier.
+- `flaw_id`: the drawn flaw ID.
 - `mechanisms`: the `frozenset` of grammar `MechanismClass` values the target is filed under:
   one class, the union of its flaws' classes when they differ, or empty for no class.
 - `aim`: a compiled `re.Pattern` the exploit's call arguments must match, so a place that

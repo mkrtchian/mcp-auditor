@@ -13,6 +13,12 @@ from pathlib import Path
 
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
+from evals.cve.run_images import (
+    rebuild_images,
+    refuse_without_closed_networks,
+    remove_containers,
+    running_containers,
+)
 from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_session import Refused
 from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
@@ -38,12 +44,6 @@ from evals.nuisance_run_containers import (
 from evals.nuisance_unrecorded import unrecorded_fields
 from evals.nuisance_vetting import benign_call, vet_all
 from evals.nuisance_walk import acceptance_servers, nuisance_population
-from evals.run_images import (
-    rebuild_images,
-    refuse_without_closed_networks,
-    remove_containers,
-    running_containers,
-)
 
 _REFUSAL = "nuisance vet refused"
 

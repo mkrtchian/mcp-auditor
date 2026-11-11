@@ -12,7 +12,7 @@ import pytest
 import tests.integration.support.test_closed_networks_given as given
 import tests.integration.support.test_closed_networks_then as then
 from evals.closed_network import ensure_closed_network
-from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_planting_base import SENTINEL_SERVICE
 
 

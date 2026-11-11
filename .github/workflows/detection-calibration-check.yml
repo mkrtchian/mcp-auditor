@@ -1,0 +1,81 @@
+name: Detection calibration check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - evals/docker/**
+      - evals/cve/*.py
+      - evals/cve/detection/*.py
+      - evals/cve_*.py
+      - evals/holdout_places.json
+      - evals/run_detection.py
+      - evals/detection_preflight.py
+      - evals/closed_network.py
+      - evals/public_stand_ins.py
+      - evals/stand_ins/**
+      - tests/integration/test_cve_planting.py
+      - tests/integration/support/test_cve_planting_*.py
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/detection-calibration-check.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - evals/docker/**
+      - evals/cve/*.py
+      - evals/cve/detection/*.py
+      - evals/cve_*.py
+      - evals/holdout_places.json
+      - evals/run_detection.py
+      - evals/detection_preflight.py
+      - evals/closed_network.py
+      - evals/public_stand_ins.py
+      - evals/stand_ins/**
+      - tests/integration/test_cve_planting.py
+      - tests/integration/support/test_cve_planting_*.py
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/detection-calibration-check.yml
+  workflow_dispatch:
+
+jobs:
+  calibration-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      # Step A: a failure here is build/infra or a broken Dockerfile, not a target out of
+      # calibration.
+      # Only the services the preflight expects (the acceptance targets, the sentinel the
+      # planting step needs, the stand-in), never the holdout and nuisance images.
+      - name: Build detection fixture images
+        run: |
+          services=$(uv run python -m evals.detection_preflight)
+          docker compose -f evals/docker/compose.yml build $services
+
+      # Step A2: the real Docker planting path (readiness probe, orphan sweep), fake everywhere
+      # else. A separate step, so a pytest failure reads distinctly from Step B's exit-1 signal.
+      - name: Exercise the Docker planting path
+        env:
+          CVE_PLANTING_REQUIRED: "1"
+        run: uv run pytest tests/integration/test_cve_planting.py
+
+      # Step B: exit 1 here means a target out of calibration (the check's signal).
+      # --ci skips targets marked CI-unstable (logged), keeping the check green on the
+      # stable set while the local calibration check and the graded run still cover them.
+      - name: Calibration check (no LLM)
+        run: uv run python -m evals.run_detection --calibration-check --ci

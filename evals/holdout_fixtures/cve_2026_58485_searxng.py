@@ -13,12 +13,12 @@ resolving name is what separates them. 1.7.1 adds a resolving undici lookup
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_base import PublicNames
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 # All three kept endpoints live in 169.254.0.0/16, so their rebinding names all begin "169-254-".
@@ -50,8 +50,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("web_url_read", {"url": "https://example.com/"})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-58485",
+TARGET = Target(
+    flaw_id="CVE-2026-58485",
     severity="CVSS 7.5 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
     aim=AIM,

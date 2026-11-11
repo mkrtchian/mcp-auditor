@@ -1,5 +1,5 @@
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.cve_baseline import grammar_fingerprint
+from evals.cve.detection.baseline import grammar_fingerprint
 from evals.gate import RetestRule
 from evals.holdout_run import HOLDOUT_BUDGET
 from evals.nuisance_counter import counter_fingerprint

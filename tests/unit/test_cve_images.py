@@ -4,7 +4,8 @@ import pytest
 
 import tests.unit.support.test_cve_images_given as given
 from evals import nuisance_images
-from evals.cve_images import (
+from evals.cve.detection.targets import image_tag
+from evals.cve.images import (
     COMPOSE_BUILD_BATCH_SIZE,
     ComposeImageStore,
     ImageBuildFailed,
@@ -14,7 +15,6 @@ from evals.cve_images import (
     stale_services,
     unpinned_bases,
 )
-from evals.cve_targets import image_tag
 from tests.fakes.image_store import FakeImageStore
 
 FILESYSTEM_TAG = image_tag("filesystem")

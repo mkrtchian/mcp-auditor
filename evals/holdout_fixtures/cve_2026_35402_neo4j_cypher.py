@@ -10,12 +10,12 @@ query whose query_type is 'rw', so the same call raises before it executes.
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_layout import PROJECT
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 READ_TOOL = "read_neo4j_cypher"
@@ -49,8 +49,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool(READ_TOOL, {"query": "RETURN 1 AS n"})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-35402",
+TARGET = Target(
+    flaw_id="CVE-2026-35402",
     severity="CVSS 7.5 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
     aim=AIM,

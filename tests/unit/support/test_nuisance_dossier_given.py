@@ -3,7 +3,7 @@ from pathlib import Path
 import tests.unit.support.test_census_figures_given as figures
 import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals.cve_targets import CVETarget
+from evals.cve.detection.targets import Target
 from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_dossier import write_dossier
@@ -34,9 +34,9 @@ def a_twin_with_its_own_fix_check() -> AdmittedServer:
     )
 
 
-def its_holdout_targets(server: AdmittedServer) -> list[CVETarget]:
+def its_holdout_targets(server: AdmittedServer) -> list[Target]:
     flaws = {flaw.flaw for flaw in server.flaws}
-    return [target for target in HOLDOUT_TARGETS if target.cve_id in flaws]
+    return [target for target in HOLDOUT_TARGETS if target.flaw_id in flaws]
 
 
 def a_written_twin_dossier(tmp_path: Path, server: AdmittedServer) -> Path:
@@ -46,4 +46,4 @@ def a_written_twin_dossier(tmp_path: Path, server: AdmittedServer) -> Path:
 
 
 def _holdout_identifiers() -> set[str]:
-    return {target.cve_id for target in HOLDOUT_TARGETS}
+    return {target.flaw_id for target in HOLDOUT_TARGETS}

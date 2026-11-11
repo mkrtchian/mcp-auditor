@@ -122,7 +122,7 @@ def test_a_holdout_copy_dossier_carries_its_holdout_reference_as_text(dossier_of
     out = dossier_of(server)
 
     for target in holdout_references(server, given.the_copy_resolution()):
-        fixture = holdout_fixture_file(target.cve_id)
+        fixture = holdout_fixture_file(target.flaw_id)
         reference = out / "reference" / "holdout_fixtures" / f"{fixture.name}.txt"
         text = reference.read_text()
         assert text.startswith(fixture.read_text())
@@ -218,11 +218,11 @@ def test_every_holdout_calibration_flaw_resolves_to_one_target_and_one_fixture()
         }
         assert calibrated <= resolution.keys(), server.server_package
         targets = holdout_references(server, resolution)
-        assert {target.cve_id for target in targets} == {resolution[flaw] for flaw in calibrated}, (
-            server.server_package
-        )
+        assert {target.flaw_id for target in targets} == {
+            resolution[flaw] for flaw in calibrated
+        }, server.server_package
         for target in targets:
-            assert holdout_fixture_file(target.cve_id).is_file()
+            assert holdout_fixture_file(target.flaw_id).is_file()
 
 
 def test_a_copy_on_a_drawn_target_and_its_sibling_resolve_to_one_target():
@@ -230,7 +230,7 @@ def test_a_copy_on_a_drawn_target_and_its_sibling_resolve_to_one_target():
 
     targets = holdout_references(server, given.the_copy_resolution())
 
-    assert [target.cve_id for target in targets] == [given.A_DRAWN_TARGET]
+    assert [target.flaw_id for target in targets] == [given.A_DRAWN_TARGET]
 
 
 def test_a_holdout_calibration_flaw_no_target_carries_is_refused():
@@ -263,7 +263,7 @@ def test_a_closure_reaching_the_auditor_is_refused_before_writing(
     server = the_committed_admission().servers[0]
 
     def roots_reaching_the_auditor(_: AdmittedServer) -> list[str]:
-        return ["evals.cve_baseline"]
+        return ["evals.cve.detection.baseline"]
 
     monkeypatch.setattr(readmission, "closure_roots", roots_reaching_the_auditor)
 

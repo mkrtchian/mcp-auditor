@@ -8,13 +8,20 @@ from dataclasses import dataclass
 
 from rich.markup import escape
 
-from evals.audit_attempts import INCOMPLETE_ATTEMPTS, describe_miss_causes
 from evals.concurrency import entered_in_thread
-from evals.cve_audit import RunOverrides
+from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS, describe_missed_call_causes
+from evals.cve.detection.audit import RunOverrides
+from evals.cve.failure_text import ReportDetail
+from evals.cve.launch_audit import Auditor, AuditShape, audit_launch, print_lost_connections
+from evals.cve.provider_errors import (
+    AuditFailed,
+    ProviderErrorKind,
+    ProviderFatal,
+    describe_provider_error,
+)
+from evals.cve.server_health import ServerHealth
 from evals.cve_environments import Launch
 from evals.eval_display import console
-from evals.failure_text import ReportDetail
-from evals.launch_audit import Auditor, AuditShape, audit_launch, print_lost_connections
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
@@ -24,13 +31,6 @@ from evals.nuisance_counting import counted_tools
 from evals.nuisance_images import image_tag
 from evals.nuisance_provisioners import provisioner_of
 from evals.nuisance_results import NotRunCause
-from evals.provider_errors import (
-    AuditFailed,
-    ProviderErrorKind,
-    ProviderFatal,
-    describe_provider_error,
-)
-from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import AuditReport, MissCause
 
 NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries
@@ -200,11 +200,12 @@ async def gate_run(
         causes |= attempt_causes
         console.print(
             f"[yellow]{server.server_package}: attempt {number}/{INCOMPLETE_ATTEMPTS}:"
-            f" {describe_miss_causes(attempt_causes)}, no counted alarm, attempted again[/yellow]"
+            f" {describe_missed_call_causes(attempt_causes)}, no counted alarm,"
+            " attempted again[/yellow]"
         )
     console.print(
         f"[yellow]{server.server_package} run did not complete:[/yellow] a model call missed at all"
-        f" {INCOMPLETE_ATTEMPTS} attempts ({describe_miss_causes(causes)})"
+        f" {INCOMPLETE_ATTEMPTS} attempts ({describe_missed_call_causes(causes)})"
     )
     return None
 

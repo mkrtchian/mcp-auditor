@@ -21,11 +21,11 @@ from typing import Any
 import tests.unit.support.cve_grammar_golden_corpus as corpus
 import tests.unit.support.test_cve_grammar_given as given
 import tests.unit.support.test_cve_strike_given as strike
-from evals.cve_calibration import dead_conditions, patched_dead_conditions
+from evals.cve.detection.calibration_check import dead_conditions, patched_dead_conditions
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve_grammar import CreditCheck, GradedTarget, grade_run, resolve
 from evals.cve_proofs import GradedRun, UnitPlace, is_aimed, proofs_in, struck_by_replay
 from evals.cve_report_units import units_of
-from evals.cve_targets import CVE_TARGETS
 from evals.cve_units import Unit
 from evals.judge.fixture import JudgeCase, JudgeInputs
 from mcp_auditor.domain.models import AuditReport
@@ -125,7 +125,7 @@ _REMOVED_GRADED_UNDER = {"CVE-2025-68145": "CVE-2025-68143"}
 
 def _graded_target(cve_id: str) -> given.FakeTarget:
     keeper = _REMOVED_GRADED_UNDER.get(cve_id) or _MERGED_SIBLINGS.get(cve_id, cve_id)
-    [target] = [target for target in CVE_TARGETS if target.cve_id == keeper]
+    [target] = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == keeper]
     return given.FakeTarget(target.mechanisms, {given.PLACE: given.SENTINEL}, target.aim)
 
 

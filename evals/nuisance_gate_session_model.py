@@ -1,11 +1,13 @@
 """The value objects of one nuisance gate run: its options, its injected harness, the audits it
-produces and the session fixed before any audit, the mirror of `cve_session_model`."""
+produces and the session fixed before any audit, the mirror of
+`evals.cve.detection.session_model`."""
 
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from evals.baseline import BaselineStatus
+from evals.cve.run_images import ContainerSweep
 from evals.eval_session import TreeState
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_audit import GateRun
@@ -15,7 +17,6 @@ from evals.nuisance_gate_baseline import (
     NuisanceServerBaseline,
     baseline_file_name,
 )
-from evals.run_images import ContainerSweep
 from mcp_auditor.domain.models import AuditReport
 
 type Baselines = dict[str, NuisanceServerBaseline]

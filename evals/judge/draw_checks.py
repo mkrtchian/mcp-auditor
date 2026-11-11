@@ -27,7 +27,7 @@ _KEY_PATTERNS = {
 
 
 class SourceReport(BaseModel):
-    """The slice of `honeypot_report.json` or `cve_report.json` the draw reads."""
+    """The slice of `honeypot_report.json` or `detection_report.json` the draw reads."""
 
     commit: str
     dirty: bool

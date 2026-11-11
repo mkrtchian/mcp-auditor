@@ -1,8 +1,8 @@
 """The no-LLM calibration check the agent runs until a fixture reproduces, free of mcp_auditor.
 
-Parity note: the acceptance twin is evals/cve_calibration.check_target (with dead_conditions /
-patched_dead_conditions) and evals/cve_recording_client.RecordingClient. Rewritten on the kit
-client and KitTarget; the grading logic reuses the clean grammar (cve_grammar / cve_proofs /
+Parity note: the acceptance twin is evals/cve/detection/calibration_check.check_target (with
+dead_conditions / patched_dead_conditions) and evals/cve/exchange_log.ExchangeLog. Rewritten on
+the kit client and KitTarget; the grading logic reuses the clean grammar (cve_grammar / cve_proofs /
 cve_units) unchanged, so the kit grades exactly as the benchmark does. Unlike the twin, the
 builder is entered synchronously (no worker thread): the kit calibrates one target at a time, so
 there is no event loop to keep free, and the kit stays clear of evals/concurrency. Beyond the
@@ -41,7 +41,7 @@ class TargetVersion(StrEnum):
 
 
 class KitRecorder:
-    """The role RecordingClient plays, rewritten without MCPClientPort: every call recorded so a
+    """The role ExchangeLog plays, rewritten without MCPClientPort: every call recorded so a
     dead fixture can be read back from the exchanges."""
 
     def __init__(self, inner: KitClient) -> None:

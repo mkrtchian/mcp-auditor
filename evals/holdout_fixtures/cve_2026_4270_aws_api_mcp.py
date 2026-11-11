@@ -18,11 +18,11 @@ The exploits name each file by its absolute path, so the launch plants no in-sco
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_spec import resolve_container_path
-from evals.cve_targets import CVETarget
 from evals.holdout_environments import filesystem_scope_env
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -91,8 +91,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("call_aws", {"cli_command": "aws ec2 describe-instances help"})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-4270",
+TARGET = Target(
+    flaw_id="CVE-2026-4270",
     severity="CVSS 6.8 (v4.0, kit card)",
     mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
     aim=AIM,

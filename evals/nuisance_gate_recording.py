@@ -1,5 +1,5 @@
 """Whether a recording of one acceptance server is written, and as what (ADR 023, ADR 024), the
-mirror of `cve_recording` with an alarm in place of a miss."""
+mirror of `evals.cve.detection.recording` with an alarm in place of a miss."""
 
 from collections.abc import Mapping
 

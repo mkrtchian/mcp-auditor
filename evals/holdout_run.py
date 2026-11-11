@@ -1,10 +1,10 @@
 """The holdout run orchestrator: audit every drawn target at one commit under the rule's run
 conditions, keep no per-case trace, and assemble the per-target and whole-run results.
 
-A sibling of the acceptance gated session (`cve_session`): no gate, no baseline, no judged-case
-export, the opposite missed-step policy (`holdout_audit`). The targets are passed in, never read
-from `HOLDOUT_TARGETS` here, so the tests hand it crafted ones. The heavy I/O is grouped in
-`HoldoutDeps`, faked by the unit tests and built from the live settings by `default_deps`.
+A sibling of the acceptance gated session (`evals.cve.detection.session`): no gate, no baseline, no
+judged-case export, the opposite missed-step policy (`holdout_audit`). The targets are passed in,
+never read from `HOLDOUT_TARGETS` here, so the tests hand it crafted ones. The heavy I/O is grouped
+in `HoldoutDeps`, faked by the unit tests and built from the live settings by `default_deps`.
 """
 
 import dataclasses
@@ -14,20 +14,29 @@ from datetime import UTC, date, datetime
 
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
-from evals.cve_audit import RunOverrides, attempt_once, build_auditor
-from evals.cve_baseline import (
+from evals.cve.detection.audit import RunOverrides, attempt_once, build_auditor
+from evals.cve.detection.baseline import (
     backend_image_ids,
     fixture_fingerprint,
     grammar_fingerprint,
     image_ids,
 )
-from evals.cve_calibration import check_target
-from evals.cve_layout_check import LayoutCheck
+from evals.cve.detection.calibration_check import check_target
+from evals.cve.detection.layout_check import LayoutCheck
+from evals.cve.detection.session_model import GradedAudit
+from evals.cve.detection.targets import Target, image_tag
+from evals.cve.failure_text import TYPES_ONLY
+from evals.cve.run_images import (
+    rebuild_images,
+    refuse_running_containers,
+    refuse_without_closed_networks,
+    remove_containers,
+    running_containers,
+    sweep_containers,
+    target_services,
+)
 from evals.cve_places import Places, kept_records
-from evals.cve_session_model import GradedAudit
-from evals.cve_targets import CVETarget, image_tag
 from evals.eval_session import Refused, TreeState, read_tree
-from evals.failure_text import TYPES_ONLY
 from evals.holdout_assembly import assemble_target, holdout_prices
 from evals.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
 from evals.holdout_conditions import HoldoutConditions
@@ -42,15 +51,6 @@ from evals.holdout_results import (
 from evals.holdout_vetting import observe_layout, vet_all
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import SessionThrottles
-from evals.run_images import (
-    rebuild_images,
-    refuse_running_containers,
-    refuse_without_closed_networks,
-    remove_containers,
-    running_containers,
-    sweep_containers,
-    target_services,
-)
 from evals.run_interruption import first_failure, sibling_runs
 from mcp_auditor.config import Settings
 
@@ -59,14 +59,14 @@ HOLDOUT_BUDGET = 10  # holdout-rule.md, Run conditions and statistic, a constant
 HOLDOUT_CONCURRENCY = 6
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 
-type Audit = Callable[[CVETarget], Awaitable[GradedAudit | IncompleteRun | DroppedRun]]
+type Audit = Callable[[Target], Awaitable[GradedAudit | IncompleteRun | DroppedRun]]
 
 
 @dataclass(frozen=True)
 class HoldoutDeps:
     audit: Audit
-    check: Callable[[CVETarget], Awaitable[list[str]]]  # the dead conditions on both versions
-    layout: Callable[[CVETarget], Awaitable[LayoutCheck]]
+    check: Callable[[Target], Awaitable[list[str]]]  # the dead conditions on both versions
+    layout: Callable[[Target], Awaitable[LayoutCheck]]
     rebuild: Callable[[Sequence[str]], None]
     image_ids: Callable[[Sequence[str]], dict[str, str]]
     backend_image_ids: Callable[[Sequence[str]], dict[str, str]]
@@ -92,7 +92,7 @@ class _RunContext:
 
 
 async def run_holdout(
-    targets: Sequence[CVETarget],
+    targets: Sequence[Target],
     disclosure_dates: Mapping[str, date],
     conditions: HoldoutConditions,
     settings: Settings,
@@ -132,7 +132,7 @@ def _refuse_running_containers(deps: HoldoutDeps, tags: Sequence[str]) -> None:
 
 
 async def _run_surviving(
-    targets: Sequence[CVETarget], deps: HoldoutDeps, ctx: _RunContext, tree: TreeState
+    targets: Sequence[Target], deps: HoldoutDeps, ctx: _RunContext, tree: TreeState
 ) -> HoldoutRunResult:
     pre_run = await vet_all(targets, deps.check, deps.layout)
     assembled, dropped, failure = await _run_all(pre_run.surviving, deps, ctx)
@@ -159,8 +159,8 @@ def _refuse_tracing() -> None:
         )
 
 
-def _refuse_tools_filter(targets: Sequence[CVETarget]) -> None:
-    filtered = [target.cve_id for target in targets if target.tools_filter is not None]
+def _refuse_tools_filter(targets: Sequence[Target]) -> None:
+    filtered = [target.flaw_id for target in targets if target.tools_filter is not None]
     if filtered:
         raise Refused(
             "holdout run refused",
@@ -168,8 +168,8 @@ def _refuse_tools_filter(targets: Sequence[CVETarget]) -> None:
         )
 
 
-def _refuse_missing_census(targets: Sequence[CVETarget], dates: Mapping[str, date]) -> None:
-    missing = [target.cve_id for target in targets if target.cve_id not in dates]
+def _refuse_missing_census(targets: Sequence[Target], dates: Mapping[str, date]) -> None:
+    missing = [target.flaw_id for target in targets if target.flaw_id not in dates]
     if missing:
         raise Refused(
             "holdout run refused",
@@ -177,13 +177,13 @@ def _refuse_missing_census(targets: Sequence[CVETarget], dates: Mapping[str, dat
         )
 
 
-def _refuse_unknown_places(targets: Sequence[CVETarget], places: Places) -> None:
+def _refuse_unknown_places(targets: Sequence[Target], places: Places) -> None:
     reasons: list[str] = []
     for target in targets:
         try:
             target.planting_spec(kept_records(target.kept_places, places))
         except ValueError as exc:
-            reasons.append(f"{target.cve_id}: {exc}")
+            reasons.append(f"{target.flaw_id}: {exc}")
     if reasons:
         raise Refused("holdout run refused", reasons)
 
@@ -207,15 +207,15 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
     auditor = dataclasses.replace(build_auditor(HOLDOUT_BUDGET), report_detail=TYPES_ONLY)
     throttles = SessionThrottles()
 
-    async def audit(target: CVETarget) -> GradedAudit | IncompleteRun | DroppedRun:
+    async def audit(target: Target) -> GradedAudit | IncompleteRun | DroppedRun:
         return await holdout_audit(
             target, lambda: attempt_once(target, auditor, throttles, places, overrides)
         )
 
-    async def check(target: CVETarget) -> list[str]:
+    async def check(target: Target) -> list[str]:
         return await check_target(target, places, report_detail=TYPES_ONLY)
 
-    async def layout(target: CVETarget) -> LayoutCheck:
+    async def layout(target: Target) -> LayoutCheck:
         return await observe_layout(target, places, report_detail=TYPES_ONLY)
 
     return HoldoutDeps(
@@ -236,8 +236,8 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
 
 
 async def _run_all(
-    surviving: Sequence[CVETarget], deps: HoldoutDeps, ctx: _RunContext
-) -> tuple[list[tuple[CVETarget, HoldoutTargetResult]], list[NotRunTarget], BaseException | None]:
+    surviving: Sequence[Target], deps: HoldoutDeps, ctx: _RunContext
+) -> tuple[list[tuple[Target, HoldoutTargetResult]], list[NotRunTarget], BaseException | None]:
     """The finished targets, assembled or dropped, and the exception that stopped the run, if
     any: a first exception out of a target's runs cancels every target still in flight."""
     deps.announce_audits(len(surviving) * ctx.runs)
@@ -245,20 +245,20 @@ async def _run_all(
         surviving, lambda target: _run_target(target, deps.audit, ctx.runs)
     )
     prices = holdout_prices(ctx.conditions, ctx.settings)
-    assembled: list[tuple[CVETarget, HoldoutTargetResult]] = []
+    assembled: list[tuple[Target, HoldoutTargetResult]] = []
     dropped: list[NotRunTarget] = []
     for target, outcomes in finished:
         if isinstance(outcomes, DroppedRun):
             reason = DROPPED_RUN_REASONS[outcomes.cause]
-            dropped.append(NotRunTarget(target.cve_id, reason, outcomes.cause))
+            dropped.append(NotRunTarget(target.flaw_id, reason, outcomes.cause))
         else:
-            result = assemble_target(target, outcomes, ctx.disclosure_dates[target.cve_id], prices)
+            result = assemble_target(target, outcomes, ctx.disclosure_dates[target.flaw_id], prices)
             assembled.append((target, result))
     return assembled, dropped, failure
 
 
 async def _run_target(
-    target: CVETarget, audit: Audit, runs: int
+    target: Target, audit: Audit, runs: int
 ) -> list[GradedAudit | IncompleteRun] | DroppedRun:
     outcomes = await sibling_runs(runs, lambda: audit(target))
     causes = {outcome.cause for outcome in outcomes if isinstance(outcome, DroppedRun)}
@@ -271,7 +271,7 @@ async def _run_target(
 def _assemble_run(
     ctx: _RunContext,
     deps: HoldoutDeps,
-    assembled: Sequence[tuple[CVETarget, HoldoutTargetResult]],
+    assembled: Sequence[tuple[Target, HoldoutTargetResult]],
     not_run: list[NotRunTarget],
     tree: TreeState,
 ) -> HoldoutRunResult:
@@ -292,7 +292,7 @@ def _assemble_run(
         max_chain_steps=ctx.conditions.max_chain_steps,
         tool_call_timeout=ctx.conditions.tool_call_timeout,
         grammar_fingerprint=grammar_fingerprint(),
-        fixture_fingerprints={t.cve_id: fixture_fingerprint(t, ctx.places) for t in targets},
+        fixture_fingerprints={t.flaw_id: fixture_fingerprint(t, ctx.places) for t in targets},
         commit=tree.commit,
         census_commit=ctx.census_commit,
         image_ids={
@@ -310,5 +310,5 @@ def _assemble_run(
     )
 
 
-def _backend_images(targets: Sequence[CVETarget]) -> list[str]:
+def _backend_images(targets: Sequence[Target]) -> list[str]:
     return list(dict.fromkeys(tag for target in targets for tag in target.backend_images))

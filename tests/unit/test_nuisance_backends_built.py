@@ -2,8 +2,8 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_run_given as run_given
-from evals import cve_targets
 from evals.atlassian_backend import ATLASSIAN_RESPONDER_IMAGE
+from evals.cve.detection import targets as detection_targets
 from evals.nuisance_backends import (
     BACKENDS,
     RegisteredBackend,
@@ -21,7 +21,7 @@ def _is_built(entry: RegisteredBackend) -> bool:
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_a_backend_built_locally_names_the_compose_service_of_its_image(key: str):
     entry = BACKENDS[key]
-    tags = [cve_targets.image_tag(service) for service in entry.built_services]
+    tags = [detection_targets.image_tag(service) for service in entry.built_services]
 
     if _is_built(entry):
         assert entry.image in tags
@@ -35,7 +35,7 @@ def test_every_responder_image_is_rebuilt_with_its_backend(responder: Responder)
     backend_on = {entry.network: entry for entry in BACKENDS.values()}
 
     built = backend_on[responder.bridge].built_services
-    assert responder.image in [cve_targets.image_tag(service) for service in built]
+    assert responder.image in [detection_targets.image_tag(service) for service in built]
 
 
 def test_two_servers_on_one_backend_give_one_service():
@@ -68,4 +68,4 @@ def test_the_built_backend_tags_are_the_image_tags_of_their_services():
 
 
 def _ckan_stack_tags() -> list[str]:
-    return [cve_targets.image_tag(service) for service in BACKENDS["ckan"].built_services]
+    return [detection_targets.image_tag(service) for service in BACKENDS["ckan"].built_services]

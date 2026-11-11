@@ -2,8 +2,8 @@ import asyncio
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
-from evals.cve_layout_check import LayoutCheck
-from evals.cve_targets import CVETarget
+from evals.cve.detection.layout_check import LayoutCheck
+from evals.cve.detection.targets import Target
 from tests.unit.support.test_holdout_run_given import FILESYSTEM, GIT, KUBERNETES, a_target
 
 TARGETS = (a_target(FILESYSTEM), a_target(KUBERNETES), a_target(GIT))
@@ -24,21 +24,21 @@ class ScriptedChecks:
     events: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     _passes: dict[str, int] = field(default_factory=dict[str, int])
 
-    async def check(self, target: CVETarget) -> list[str]:
-        self._passes[target.cve_id] = self._passes.get(target.cve_id, 0) + 1
+    async def check(self, target: Target) -> list[str]:
+        self._passes[target.flaw_id] = self._passes.get(target.flaw_id, 0) + 1
         await self._step("start", target)
-        return _nth(self.dead.get(target.cve_id, [LIVE]), self._passes[target.cve_id])
+        return _nth(self.dead.get(target.flaw_id, [LIVE]), self._passes[target.flaw_id])
 
-    async def layout(self, target: CVETarget) -> LayoutCheck:
-        observed = _nth(self.layouts.get(target.cve_id, [SOUND]), self._passes[target.cve_id])
+    async def layout(self, target: Target) -> LayoutCheck:
+        observed = _nth(self.layouts.get(target.flaw_id, [SOUND]), self._passes[target.flaw_id])
         await self._step("end", target)
         return observed
 
     def passes(self, cve_id: str) -> int:
         return self._passes.get(cve_id, 0)
 
-    async def _step(self, kind: str, target: CVETarget) -> None:
-        self.events.append((kind, target.cve_id))
+    async def _step(self, kind: str, target: Target) -> None:
+        self.events.append((kind, target.flaw_id))
         await asyncio.sleep(0)
 
 

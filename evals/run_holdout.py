@@ -1,6 +1,6 @@
 """Holdout-specific commands, kept out of run_census (the census and its draw order) and
-run_cve_benchmark (the benchmark). The calibration-dossier scaffolding runs with no LLM and no
-network; the `run` command audits the drawn targets, so it needs Docker and an LLM key.
+run_detection (the detection acceptance layer). The calibration-dossier scaffolding runs with no LLM
+and no network; the `run` command audits the drawn targets, so it needs Docker and an LLM key.
 """
 
 import argparse
@@ -15,13 +15,24 @@ from rich.progress import Progress
 
 from evals import calibration_dossier
 from evals import eval_display as display
-from evals.admission_calibration import calibrate_admitted, default_calibration_deps
-from evals.audit_progress import AuditProgress
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import positive_int
+from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import Census, load_census
+from evals.cve.detection.calibration_check_exit import (
+    default_calibration_check_deps,
+    run_calibration_check,
+)
+from evals.cve.detection.targets import Target, image_tag
+from evals.cve.provider_errors import ProviderFatal, describe_provider_error
+from evals.cve.run_images import (
+    DOCKER_SWEEP,
+    ContainerSweep,
+    refuse_without_closed_networks,
+    sweep_containers,
+    target_services,
+)
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
-from evals.cve_targets import CVETarget, image_tag
 from evals.eval_session import Refused, last_commit
 from evals.holdout_card_readiness import unready_cards
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
@@ -39,15 +50,7 @@ from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.honeypot.runs import tracing_enabled
 from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
-from evals.provider_errors import ProviderFatal, describe_provider_error
 from evals.run_files import partial_result_kept, refuse_existing_report, write_result
-from evals.run_images import (
-    DOCKER_SWEEP,
-    ContainerSweep,
-    refuse_without_closed_networks,
-    sweep_containers,
-    target_services,
-)
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
@@ -142,7 +145,7 @@ def _run(args: argparse.Namespace) -> int:
 
 
 def _refuse_unready_cards(census: Census) -> None:
-    drawn = [target.cve_id for target in HOLDOUT_TARGETS]
+    drawn = [target.flaw_id for target in HOLDOUT_TARGETS]
     gaps = unready_cards(census.draw, drawn)
     if gaps:
         raise Refused(
@@ -189,7 +192,7 @@ def _tracked(deps: HoldoutDeps, progress: AuditProgress) -> HoldoutDeps:
 def _calibrate(args: argparse.Namespace) -> int:
     places = load_places(HOLDOUT_PLACES)
     targets = [
-        target for target in HOLDOUT_TARGETS if args.cve is None or target.cve_id == args.cve
+        target for target in HOLDOUT_TARGETS if args.cve is None or target.flaw_id == args.cve
     ]
     if not targets:
         print("no holdout target is drawn")
@@ -205,12 +208,12 @@ def _calibrate(args: argparse.Namespace) -> int:
 
 
 async def _calibrate_targets(
-    targets: list[CVETarget], places: Places, concurrency: int, sweep: ContainerSweep
+    targets: list[Target], places: Places, concurrency: int, sweep: ContainerSweep
 ) -> int:
     tags = [image_tag(service) for service in target_services(targets)]
     try:
-        deps = default_calibration_deps(concurrency, ci=False)
-        return await calibrate_admitted(targets, places, deps)
+        deps = default_calibration_check_deps(concurrency, ci=False)
+        return await run_calibration_check(targets, places, deps)
     finally:
         sweep_containers(tags, sweep.running_containers, sweep.remove_containers)
 

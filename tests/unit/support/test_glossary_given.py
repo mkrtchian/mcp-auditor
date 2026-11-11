@@ -657,7 +657,7 @@ RETIRED_WORDS = (
     ),
     RetiredWord("version-setting-ident", r"\bversion_setting\w*|\b_sets_version\b", re.NOFLAG, "4"),
     RetiredWord("primary-number", r"\bprimary_number\b|\bprimary_controls\b", re.NOFLAG, "4"),
-    RetiredWord("miss-causes", r"\bmiss_causes\b|describe_miss_causes", re.NOFLAG, "5"),
+    RetiredWord("miss-causes", r"\bmiss_causes\b|describe_missed_call_causes", re.NOFLAG, "5"),
     RetiredWord(
         "stand-in-target",
         r"\bprobed_target\b|\bStandInRoute\.target\b|r\['target'\]",

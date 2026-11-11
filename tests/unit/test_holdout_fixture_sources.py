@@ -7,7 +7,7 @@ from evals.run_census import CENSUS_PATH
 
 
 def test_every_committed_card_stand_in_is_a_file_the_target_fingerprint_covers():
-    targets = {target.cve_id: target for target in HOLDOUT_TARGETS}
+    targets = {target.flaw_id: target for target in HOLDOUT_TARGETS}
     draw = load_census(CENSUS_PATH).draw
     cards = [] if draw is None else draw.cards
     with_stand_ins = [card for card in cards if card.flaw in targets and card.stand_ins]

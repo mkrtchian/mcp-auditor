@@ -18,11 +18,17 @@ from evals import nuisance_images
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
 from evals.cve.census.draw_order import DrawEntry
-from evals.cve_audit import RunOverrides, build_auditor
-from evals.cve_baseline import grammar_fingerprint, image_ids
+from evals.cve.detection.audit import RunOverrides, build_auditor
+from evals.cve.detection.baseline import grammar_fingerprint, image_ids
+from evals.cve.failure_text import TYPES_ONLY
+from evals.cve.run_images import (
+    rebuild_images,
+    refuse_without_closed_networks,
+    remove_containers,
+    running_containers,
+)
 from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_session import Refused, TreeState, read_tree
-from evals.failure_text import TYPES_ONLY
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_run import HOLDOUT_BUDGET
 from evals.honeypot.runs import tracing_enabled
@@ -57,12 +63,6 @@ from evals.nuisance_run_containers import (
 from evals.nuisance_solo import first_failure_then_alone, played_alone
 from evals.nuisance_vetting import benign_call, vet_all
 from evals.probe.candidates import Prices
-from evals.run_images import (
-    rebuild_images,
-    refuse_without_closed_networks,
-    remove_containers,
-    running_containers,
-)
 from evals.run_interruption import sibling_runs
 from mcp_auditor.config import Settings
 

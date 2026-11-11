@@ -8,7 +8,7 @@ auditor's StdioMCPClient; the kit connects through kit_client.py instead. It add
 `mcp-auditor-cve-` one, so a kit build never overwrites an acceptance image. The clean
 planting and layout layers are reused by in-repo import (cve_planting, cve_layout, cve_places),
 never copied, because moving them would move every acceptance fixture fingerprint
-(evals/cve_baseline.ENVIRONMENT_PATHS) and redden the gate.
+(evals/cve/detection/baseline.ENVIRONMENT_PATHS) and redden the gate.
 
 Landmine flags (CLAUDE.md), each named against the failure it guards:
 - The `--user` mapping and the layout's owner. The tree is owned by the unprivileged account,

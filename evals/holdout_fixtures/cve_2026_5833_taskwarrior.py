@@ -16,12 +16,12 @@ account, cat /proc/sys/kernel/hostname for the UTS name, curl for the internal H
 
 import re
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_layout import ANCHOR_PATHS
 from evals.cve_places import LayoutAnchor, Places
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-5833-taskwarrior"
@@ -80,8 +80,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("add_task", {"description": "buy milk"})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-5833",
+TARGET = Target(
+    flaw_id="CVE-2026-5833",
     severity="CVSS 8.8 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
     aim=AIM,

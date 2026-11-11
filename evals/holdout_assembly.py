@@ -3,9 +3,9 @@
 from collections.abc import Sequence
 from datetime import date
 
+from evals.cve.detection.session_model import GradedAudit
+from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve_grammar import DETECTION_RUNGS, RunGrade
-from evals.cve_session_model import GradedAudit
-from evals.cve_targets import CVETarget, LaunchMode
 from evals.holdout_audit import IncompleteRun
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_results import HoldoutRunStatus, HoldoutTargetResult
@@ -21,7 +21,7 @@ def holdout_prices(conditions: HoldoutConditions, settings: Settings) -> tuple[P
 
 
 def assemble_target(
-    target: CVETarget,
+    target: Target,
     outcomes: Sequence[GradedAudit | IncompleteRun],
     disclosure_date: date,
     prices: tuple[Prices, Prices],
@@ -29,7 +29,7 @@ def assemble_target(
     reports = [outcome.report for outcome in outcomes]
     gen_price, judge_price = prices
     return HoldoutTargetResult(
-        cve_id=target.cve_id,
+        cve_id=target.flaw_id,
         disclosure_date=disclosure_date,
         mechanism_labels=tuple(sorted(m.value for m in target.mechanisms)),
         tools_count=len(reports[0].tool_reports),

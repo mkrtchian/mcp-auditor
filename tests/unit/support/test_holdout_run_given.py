@@ -4,11 +4,11 @@ from collections.abc import Awaitable, Callable, Mapping
 from datetime import date
 from typing import Any
 
+from evals.cve.detection.layout_check import LayoutCheck
+from evals.cve.detection.session_model import GradedAudit
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
 from evals.cve_grammar import CVEStatus, RunGrade
-from evals.cve_layout_check import LayoutCheck
 from evals.cve_places import HOLDOUT_PLACES, load_places
-from evals.cve_session_model import GradedAudit
-from evals.cve_targets import CVE_TARGETS, CVETarget
 from evals.eval_session import TreeState
 from evals.holdout_audit import DroppedRun, IncompleteRun
 from evals.holdout_conditions import Cutoff, HoldoutConditions
@@ -34,12 +34,12 @@ RECORDED_AT = "2026-10-28T09:30:00+00:00"
 SETTINGS = Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none")
 
 type Outcome = GradedAudit | IncompleteRun | DroppedRun
-type Audit = Callable[[CVETarget], Awaitable[Outcome]]
+type Audit = Callable[[Target], Awaitable[Outcome]]
 
 
-def a_target(cve_id: str = FILESYSTEM, **changes: Any) -> CVETarget:
+def a_target(cve_id: str = FILESYSTEM, **changes: Any) -> Target:
     """A real target, since run_holdout plants its kept places and fingerprints its fixture."""
-    (target,) = [target for target in CVE_TARGETS if target.cve_id == cve_id]
+    (target,) = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == cve_id]
     return dataclasses.replace(target, **{"tools_filter": None, **changes})
 
 
@@ -68,8 +68,8 @@ def three_detections() -> list[Outcome]:
 def scripted(outcomes_by_id: Mapping[str, list[Outcome]]) -> Audit:
     scripts = {cve_id: list(outcomes) for cve_id, outcomes in outcomes_by_id.items()}
 
-    async def audit(target: CVETarget) -> Outcome:
-        return scripts[target.cve_id].pop(0)
+    async def audit(target: Target) -> Outcome:
+        return scripts[target.flaw_id].pop(0)
 
     return audit
 
@@ -85,10 +85,10 @@ class InterruptingAudit:
         self._finished_done = asyncio.Event()
         self._failing_calls = 0
 
-    async def __call__(self, target: CVETarget) -> Outcome:
-        if target.cve_id == self._finished:
+    async def __call__(self, target: Target) -> Outcome:
+        if target.flaw_id == self._finished:
             return self._detection()
-        if target.cve_id == self._failing:
+        if target.flaw_id == self._failing:
             self._failing_calls += 1
             if self._failing_calls == 1:
                 await self._finished_done.wait()
@@ -102,11 +102,11 @@ class InterruptingAudit:
             self._finished_done.set()
         return outcome
 
-    async def _until_cancelled(self, target: CVETarget) -> Outcome:
+    async def _until_cancelled(self, target: Target) -> Outcome:
         try:
             await asyncio.Event().wait()
         except asyncio.CancelledError:
-            self.cancelled.append(target.cve_id)
+            self.cancelled.append(target.flaw_id)
             raise
         raise AssertionError("a run that never ends completed")
 
@@ -123,11 +123,11 @@ def deps_auditing(
     layouts = layout or {}
     docker = containers or FakeContainerSweep()
 
-    async def _check(target: CVETarget) -> list[str]:
-        return checks.get(target.cve_id, [])
+    async def _check(target: Target) -> list[str]:
+        return checks.get(target.flaw_id, [])
 
-    async def _layout(target: CVETarget) -> LayoutCheck:
-        return layouts.get(target.cve_id, LayoutCheck(gave_up=None, breaks=False, unrouted=[]))
+    async def _layout(target: Target) -> LayoutCheck:
+        return layouts.get(target.flaw_id, LayoutCheck(gave_up=None, breaks=False, unrouted=[]))
 
     return HoldoutDeps(
         audit=audit,
@@ -147,13 +147,13 @@ def deps_auditing(
 
 
 def deps_reaching_nothing() -> HoldoutDeps:
-    async def audit(_target: CVETarget) -> Outcome:
+    async def audit(_target: Target) -> Outcome:
         raise AssertionError("the audit was reached")
 
-    async def check(_target: CVETarget) -> list[str]:
+    async def check(_target: Target) -> list[str]:
         raise AssertionError("the dead-condition check was reached")
 
-    async def layout(_target: CVETarget) -> LayoutCheck:
+    async def layout(_target: Target) -> LayoutCheck:
         raise AssertionError("the layout observation was reached")
 
     def rebuild(_services: object) -> None:
@@ -201,7 +201,7 @@ def deps_reaching_nothing() -> HoldoutDeps:
 
 
 async def run(
-    targets: list[CVETarget],
+    targets: list[Target],
     deps: HoldoutDeps,
     *,
     dates: dict[str, date] | None = None,
@@ -210,7 +210,7 @@ async def run(
 ) -> HoldoutRunResult:
     """`dates=None` discloses every target on 2026-01-01."""
     if dates is None:
-        dates = {target.cve_id: date(2026, 1, 1) for target in targets}
+        dates = {target.flaw_id: date(2026, 1, 1) for target in targets}
     return await run_holdout(
         targets,
         dates,

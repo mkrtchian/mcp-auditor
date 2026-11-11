@@ -7,10 +7,10 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_run_given as given
+from evals.cve.provider_errors import ProviderFatal
 from evals.eval_session import Refused, TreeState
 from evals.nuisance_admission import BackendFixture
 from evals.nuisance_results import RunInterrupted
-from evals.provider_errors import ProviderFatal
 from tests.fakes import FakeContainerSweep
 
 

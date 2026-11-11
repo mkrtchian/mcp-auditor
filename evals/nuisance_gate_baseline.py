@@ -1,5 +1,6 @@
 """The nuisance gate's baseline: the run conditions it records and one file per acceptance server
-under `evals/baselines/nuisance/`, the sibling of `cve_baseline`'s baseline half.
+under `evals/baselines/nuisance/`, the sibling of the baseline half of
+`evals.cve.detection.baseline`.
 
 The conditions are the nuisance figure's (the holdout budget, no tools filter, the chain settings
 and tool call timeout of `evals/holdout_conditions.json`), since the gate gates what the figure
@@ -15,7 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.cve_baseline import grammar_fingerprint
+from evals.cve.detection.baseline import grammar_fingerprint
 from evals.gate import RetestRule
 from evals.holdout_conditions import HoldoutConditions
 from evals.holdout_run import HOLDOUT_BUDGET

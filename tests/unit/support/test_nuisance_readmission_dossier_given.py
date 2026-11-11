@@ -22,7 +22,7 @@ ITS_SIBLING = "CVE-2026-87911"
 
 def the_copy_resolution() -> dict[str, str]:
     return copy_targets(
-        [target.cve_id for target in HOLDOUT_TARGETS], the_committed_census().census.draw
+        [target.flaw_id for target in HOLDOUT_TARGETS], the_committed_census().census.draw
     )
 
 

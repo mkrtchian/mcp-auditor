@@ -18,8 +18,8 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from evals import dossier_closure, nuisance_fix_checks, nuisance_readmission_docs
+from evals.cve.detection.targets import Target
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
-from evals.cve_targets import CVETarget
 from evals.docker_paths import image_dockerfile
 from evals.eval_session import Refused
 from evals.holdout_kit.fix_check import FixCheckTarget
@@ -38,7 +38,7 @@ def write_readmission_dossier(
 ) -> None:
     server = _admitted_server(admission, server_package)
     resolution = copy_targets(
-        [target.cve_id for target in HOLDOUT_TARGETS], nuisance_census.census.draw
+        [target.flaw_id for target in HOLDOUT_TARGETS], nuisance_census.census.draw
     )
     dockerfiles = readmission_dockerfiles(server, resolution)
     closure = dossier_closure.import_closure(closure_roots(server))
@@ -84,7 +84,7 @@ def readmission_dockerfiles(server: AdmittedServer, resolution: Mapping[str, str
     return kept
 
 
-def _holdout_twins(server: AdmittedServer, resolution: Mapping[str, str]) -> list[CVETarget]:
+def _holdout_twins(server: AdmittedServer, resolution: Mapping[str, str]) -> list[Target]:
     return [
         *holdout_references(server, resolution),
         *holdout_targets_among(f.flaw for f in server.flaws),
@@ -119,8 +119,8 @@ def closure_roots(server: AdmittedServer) -> list[str]:
     return roots
 
 
-def holdout_references(server: AdmittedServer, resolution: Mapping[str, str]) -> list[CVETarget]:
-    by_identifier = {target.cve_id: target for target in HOLDOUT_TARGETS}
+def holdout_references(server: AdmittedServer, resolution: Mapping[str, str]) -> list[Target]:
+    by_identifier = {target.flaw_id: target for target in HOLDOUT_TARGETS}
     calibrated = [
         flaw.flaw for flaw in server.flaws if flaw.fix_check.source == "holdout_calibration"
     ]

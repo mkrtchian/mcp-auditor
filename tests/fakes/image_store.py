@@ -1,6 +1,6 @@
 from collections.abc import Mapping, Sequence
 
-from evals.cve_images import FINGERPRINT_LABEL, ImageBuildFailed
+from evals.cve.images import FINGERPRINT_LABEL, ImageBuildFailed
 
 
 class FakeImageStore:

@@ -4,18 +4,18 @@ stands as a non-detection and is never retried, only an infra failure is retried
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from evals.audit_attempts import (
+from evals.cve.audit_attempts import (
     AttemptOutcome,
     IncompleteAttempt,
     ProviderErrorAttempt,
     ThrottledAttempt,
-    describe_miss_causes,
+    describe_missed_call_causes,
 )
-from evals.cve_session_model import GradedAudit
-from evals.cve_targets import CVETarget
+from evals.cve.detection.session_model import GradedAudit
+from evals.cve.detection.targets import Target
+from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_display import console
 from evals.holdout_results import NotRunCause
-from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.domain.models import AuditReport
 
 HOLDOUT_INFRA_ATTEMPTS = 3  # one try, two retries
@@ -38,7 +38,7 @@ class DroppedRun:
 
 
 async def holdout_audit(
-    target: CVETarget, attempt: Callable[[], Awaitable[AttemptOutcome[GradedAudit]]]
+    target: Target, attempt: Callable[[], Awaitable[AttemptOutcome[GradedAudit]]]
 ) -> GradedAudit | IncompleteRun | DroppedRun:
     """One run of one target. A detection stands whatever step was missed. A missed step with no
     detection is a non-detection, not retried (unlike acceptance's keep-best-of-several). An
@@ -53,13 +53,13 @@ async def holdout_audit(
             return outcome
         if isinstance(outcome, IncompleteAttempt):
             console.print(
-                f"[yellow]{target.cve_id}: {describe_miss_causes(outcome.causes)}, counted as"
-                " not detected[/yellow]"
+                f"[yellow]{target.flaw_id}: {describe_missed_call_causes(outcome.causes)},"
+                " counted as not detected[/yellow]"
             )
             return IncompleteRun(outcome.report, outcome.health)
         causes.add(_cause_of(outcome))
         console.print(
-            f"[yellow]{target.cve_id}: {_failure(outcome)},"
+            f"[yellow]{target.flaw_id}: {_failure(outcome)},"
             f" attempt {number}/{HOLDOUT_INFRA_ATTEMPTS}[/yellow]"
         )
     return DroppedRun(next(cause for cause in _DROP_PRECEDENCE if cause in causes))

@@ -13,12 +13,12 @@ reads it: nothing is seeded inside the layout, which stays byte-for-byte univers
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_base import LayoutMount
 from evals.cve_planting_spec import resolve_container_path
-from evals.cve_targets import CVETarget
 from evals.holdout_environments import filesystem_scope_env
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -103,8 +103,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("read_file", {"path": f"{WORKING_DIRECTORY}/.git/HEAD"})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2025-11489",
+TARGET = Target(
+    flaw_id="CVE-2025-11489",
     severity="CVSS 7.5 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.COMMAND_EXECUTION}),
     aim=AIM,

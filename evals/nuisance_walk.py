@@ -25,7 +25,7 @@ from evals.cve.census.draw_order import draw_order
 from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVERS
 from evals.cve.census.grouping import DRAW_ORDER_CRITERIA
 from evals.cve.detection.draw_record import Settlement
-from evals.cve_targets import CVE_TARGETS
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.nuisance_walk_record import (
     NuisanceCensus,
     normalized_package,
@@ -82,7 +82,9 @@ def acceptance_servers(nuisance_census: NuisanceCensus) -> set[str]:
 
 def current_acceptance_servers(nuisance_census: NuisanceCensus) -> set[str]:
     classified = _classified(nuisance_census.census)
-    return {server_of(t.cve_id, nuisance_census) for t in CVE_TARGETS if t.cve_id in classified}
+    return {
+        server_of(t.flaw_id, nuisance_census) for t in ACCEPTANCE_TARGETS if t.flaw_id in classified
+    }
 
 
 def _classified(census: Census) -> set[str]:

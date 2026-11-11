@@ -1,13 +1,13 @@
 """KitTarget: the fixture the calibration agent writes and kit_driver consumes, free of mcp_auditor.
 
-Parity note: the acceptance twin is evals/cve_targets.CVETarget (with LaunchMode / FallbackScope).
-KitTarget is a flat field-for-field mirror of the fields a drawn target carries, with
-`exploits`/`benign` typed against KitClient and `builder` against kit_launch.Launch. The
+Parity note: the acceptance twin is evals/cve/detection/targets.Target (with LaunchMode /
+FallbackScope). KitTarget is a flat field-for-field mirror of the fields a drawn target carries,
+with `exploits`/`benign` typed against KitClient and `builder` against kit_launch.Launch. The
 maintainer's transplant into evals/holdout_targets.py swaps the two import lines (kit_client ->
-mcp_auditor ports, kit_launch -> cve_environments) and wraps the authored KitTarget into a
-CVETarget appended to HOLDOUT_TARGETS; nothing else changes. test_holdout_kit_isolation.py pins the
-field parity so the mirror cannot drift. LaunchMode / FallbackScope are kit-local copies so the
-exported kit stays standalone, depending only on the clean modules the dossier copies.
+mcp_auditor ports, kit_launch -> cve_environments) and wraps the authored KitTarget into a Target
+appended to HOLDOUT_TARGETS; nothing else changes. test_holdout_kit_isolation.py pins the field
+parity so the mirror cannot drift. LaunchMode / FallbackScope are kit-local copies so the exported
+kit stays standalone, depending only on the clean modules the dossier copies.
 """
 
 import re
@@ -29,12 +29,12 @@ from evals.holdout_kit.kit_client import KitClient
 from evals.holdout_kit.kit_launch import Launch, LaunchShape
 
 
-class LaunchMode(StrEnum):  # mirror of evals/cve_targets.LaunchMode
+class LaunchMode(StrEnum):  # mirror of evals/cve/detection/targets.LaunchMode
     NORMAL = "normal"
     FALLBACK = "fallback"
 
 
-class FallbackScopeKind(StrEnum):  # mirror of evals/cve_targets.FallbackScopeKind
+class FallbackScopeKind(StrEnum):  # mirror of evals/cve/detection/targets.FallbackScopeKind
     DOCUMENTED_DEFAULT = "documented_default"
     EMPTY_OUTSIDE = "empty_outside"
     OPTIONAL = "optional"
@@ -54,7 +54,7 @@ KitBuilder = Callable[[str, PlantingSpec, LaunchShape], AbstractContextManager[L
 
 @dataclass(frozen=True)
 class KitTarget:
-    cve_id: str
+    flaw_id: str
     mechanisms: frozenset[MechanismClass]
     aim: re.Pattern[str]
     reaches: frozenset[str]

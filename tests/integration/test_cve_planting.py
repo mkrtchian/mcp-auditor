@@ -15,7 +15,7 @@ import pytest
 import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
 from evals import cve_planting_docker
-from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_layout import owned_layout
 from evals.cve_planting import DockerPlanting, PlantingFailed, planted
 from evals.cve_planting_base import (

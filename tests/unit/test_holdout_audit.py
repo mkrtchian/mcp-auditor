@@ -3,14 +3,16 @@ from langchain_core.exceptions import ModelAuthenticationError
 
 import tests.unit.support.test_eval_display_given as display_given
 from evals import holdout_audit as holdout_audit_module
-from evals.audit_attempts import (
+from evals.cve.audit_attempts import (
     AttemptOutcome,
     IncompleteAttempt,
     ProviderErrorAttempt,
     ThrottledAttempt,
 )
-from evals.cve_session_model import GradedAudit
-from evals.cve_targets import CVE_TARGETS
+from evals.cve.detection.session_model import GradedAudit
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.provider_errors import ProviderFatal
+from evals.cve.server_health import ServerHealth
 from evals.holdout_audit import (
     HOLDOUT_INFRA_ATTEMPTS,
     DroppedRun,
@@ -18,13 +20,11 @@ from evals.holdout_audit import (
     holdout_audit,
 )
 from evals.holdout_results import NotRunCause
-from evals.provider_errors import ProviderFatal
-from evals.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_grammar_given as grammar
-from tests.unit.support.test_cve_oracle_given import a_detected_grade
+from tests.unit.support.test_detection_oracle_given import a_detected_grade
 
-TARGET = CVE_TARGETS[0]
+TARGET = ACCEPTANCE_TARGETS[0]
 _PROVIDER_ERROR = ProviderErrorAttempt("ModelAPIError, status 500")
 
 
@@ -81,7 +81,7 @@ async def test_an_attempt_missing_steps_names_their_causes(monkeypatch: pytest.M
     await holdout_audit(TARGET, _ScriptedAttempts([IncompleteAttempt(grammar.a_report(), causes)]))
 
     assert (
-        f"{TARGET.cve_id}: refused by the model provider and unreadable model answer,"
+        f"{TARGET.flaw_id}: refused by the model provider and unreadable model answer,"
         " counted as not detected"
     ) in output.getvalue()
 
@@ -121,7 +121,7 @@ async def test_a_throttled_attempt_is_retried_and_a_later_graded_attempt_stands(
     assert outcome is graded
     assert attempt.calls == 2
     assert (
-        f"{TARGET.cve_id}: throttled by the model provider past every retry,"
+        f"{TARGET.flaw_id}: throttled by the model provider past every retry,"
         f" attempt 1/{HOLDOUT_INFRA_ATTEMPTS}"
     ) in output.getvalue()
 
@@ -164,7 +164,7 @@ async def test_a_provider_error_at_every_attempt_drops_the_run_as_a_provider_err
 
     assert outcome == DroppedRun(NotRunCause.PROVIDER_ERROR)
     assert attempt.calls == HOLDOUT_INFRA_ATTEMPTS
-    assert f"{TARGET.cve_id}: provider error (ModelAPIError, status 500), attempt 1/3" in (
+    assert f"{TARGET.flaw_id}: provider error (ModelAPIError, status 500), attempt 1/3" in (
         output.getvalue()
     )
 

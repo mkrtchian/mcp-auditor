@@ -15,8 +15,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from evals import cve_baseline, nuisance_backends, nuisance_images, nuisance_walk
+from evals import nuisance_backends, nuisance_images, nuisance_walk
 from evals.cve.census.work import AgentRecord
+from evals.cve.detection import baseline as detection_baseline
 from evals.cve.detection.draw_record import LaunchOption
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost
@@ -131,7 +132,10 @@ def load_admission(path: Path, nuisance_census: NuisanceCensus) -> NuisanceAdmis
         )
     admission = NuisanceAdmission.model_validate_json(path.read_text())
     problems = admission_problems(
-        admission, nuisance_census, cve_baseline.grammar_fingerprint(), nuisance_backends.BACKENDS
+        admission,
+        nuisance_census,
+        detection_baseline.grammar_fingerprint(),
+        nuisance_backends.BACKENDS,
     )
     if problems:
         raise ValueError(f"invalid nuisance admission {path}: {'; '.join(problems)}")

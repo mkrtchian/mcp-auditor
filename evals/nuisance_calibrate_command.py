@@ -11,6 +11,7 @@ from pathlib import Path
 
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
+from evals.cve.run_images import DOCKER_SWEEP, refuse_without_closed_networks, sweep_containers
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
 from evals.holdout_kit.kit_launch import build_images, image_tag
@@ -27,7 +28,6 @@ from evals.nuisance_commands import (
 )
 from evals.nuisance_fixtures import FIX_CHECK_TARGETS
 from evals.nuisance_run import NUISANCE_CONCURRENCY
-from evals.run_images import DOCKER_SWEEP, refuse_without_closed_networks, sweep_containers
 
 
 @dataclass(frozen=True)

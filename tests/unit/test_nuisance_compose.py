@@ -4,9 +4,9 @@ import pytest
 import yaml
 
 from evals import nuisance_images
-from evals.cve_images import COMPOSE_FILE
+from evals.cve.detection.targets import image_tag
+from evals.cve.images import COMPOSE_FILE
 from evals.cve_planting_base import STAND_IN_SERVICE
-from evals.cve_targets import image_tag
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission

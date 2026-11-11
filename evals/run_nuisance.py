@@ -1,4 +1,4 @@
-"""Nuisance-specific commands, kept out of run_census, run_cve_benchmark and run_holdout.
+"""Nuisance-specific commands, kept out of run_census, run_detection and run_holdout.
 
 `walk` prints the servers the walk reached, the holdout walk's then the addition's, each with the
 draw position of its reaching flaw and the flaws that set its version, for the maintainer to
@@ -27,11 +27,12 @@ from pathlib import Path
 from rich.progress import Progress
 
 from evals import eval_display as display
-from evals.audit_progress import AuditProgress
 from evals.concurrency import positive_int
+from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.draw_order import draw_order
+from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord, governing_steps
-from evals.cve_baseline import fixture_fingerprint
+from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.eval_session import Refused, last_commit
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
@@ -72,7 +73,6 @@ from evals.nuisance_unrecorded import refuse_unrecorded
 from evals.nuisance_vet_command import add_vet_arguments
 from evals.nuisance_walk import NuisanceServer, acceptance_servers, nuisance_population
 from evals.nuisance_walk_record import NuisanceCensus
-from evals.provider_errors import ProviderFatal, describe_provider_error
 from evals.run_files import partial_result_kept, refuse_existing_report, write_result
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
@@ -272,9 +272,9 @@ def _refuse_stale_holdout_copies(
 ) -> None:
     places = load_places(HOLDOUT_PLACES)
     fingerprints = {
-        target.cve_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS
+        target.flaw_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS
     }
-    resolution = copy_targets([target.cve_id for target in HOLDOUT_TARGETS], draw)
+    resolution = copy_targets([target.flaw_id for target in HOLDOUT_TARGETS], draw)
     current = {copy: fingerprints[drawn] for copy, drawn in resolution.items()}
     stale = stale_holdout_copies(servers, current)
     if stale:

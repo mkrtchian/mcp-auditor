@@ -33,6 +33,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | CVE gate, CVE oracle, CVE grammar, CVE baseline, CVE fixture, CVE run (ADRs, rules, logs, plans) | detection gate, oracle, grammar, detection baseline, detection fixture, detection suite run | rename | 2026-11-11 |
 | CVE holdout (ADR 028) | detection holdout layer | rename | 2026-11-11 |
 | CVE target | target (acceptance target, holdout target) | rename | 2026-11-11 |
+| `CVETarget`, `CVE_TARGETS` | target (`Target`), `ACCEPTANCE_TARGETS` | rename | 2026-11-11 |
 | CVE validation benchmark | detection suite | rename | 2026-11-11 |
 | `--cve ID` | `--flaw ID` | rename | 2026-11-11 |
 | `--cve-export` (`draw_judge_cases`) | `--detection-export` | rename | 2026-11-11 |
@@ -46,6 +47,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | `evals/baselines/cve/` | `evals/baselines/detection/` | rename | 2026-11-11 |
 | `evals/baselines/honeypot_e2e.json` | `evals/baselines/honeypot.json` | rename | 2026-11-11 |
 | `evals/baselines/judge_isolation.json` | `evals/baselines/judge.json` | rename | 2026-11-11 |
+| `evals.cve_preflight` | `evals.detection_preflight` | rename | 2026-11-11 |
 | `evals/holdout_census.json` | `evals/census.json` | rename | 2026-11-11 |
 | `evals/holdout_census_method.md` | `evals/census_method.md` | rename | 2026-11-11 |
 | `evals/holdout_kit/` | kit | rename | 2026-11-11 |
@@ -60,6 +62,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | fixed (honeypot grid tag) | `improved`. "Fixed" now names a patched version where no exploit surfaces. | moved meaning | 2026-11-11 |
 | flaw that sets the version, version-setting flaw | counted flaw | rename | 2026-11-11 |
 | fresh targets (ADR 015, ADR 028, README) | holdout targets | rename | 2026-11-11 |
+| `.github/workflows/cve-calibration.yml` | `.github/workflows/detection-calibration-check.yml` | rename | 2026-11-11 |
 | `GateVerdict`, gate verdict, verdict of the gate (ADR 020, labeling log, plans) | gate outcome | rename | 2026-11-11 |
 | holdout (the detection holdout layer alone) | detection holdout layer. "Holdout" now names a role of both suites. | moved meaning | 2026-11-11 |
 | holdout calibration (fix-check source) | holdout calibration copy (`detection_holdout_calibration`) | rename | 2026-11-11 |
@@ -83,6 +86,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | oracle (ADR 015, CLAUDE.md: the grader of any instrument, the ground truth on the honeypot suite) | grader: the ground truth, the labels. "Oracle" now names only the detection suite's grader. | moved meaning | 2026-11-11 |
 | oracle version (ADR 016, ADR 020: on the honeypot suite) | ground truth fingerprint | rename | 2026-09-25 |
 | oracle version (plans: on the CVE benchmark) | grammar fingerprint | rename | 2026-09-28 |
+| `output/cve_judged_cases.jsonl`, `output/cve_report.json` | `output/detection_judged_cases.jsonl`, `output/detection_report.json` | rename | 2026-11-11 |
 | `output/eval_report.json` | `output/honeypot_report.json` | rename | 2026-11-11 |
 | `output/holdout_census/` | `output/census/` | rename | 2026-11-11 |
 | patched twin, vulnerable twin, git twin (ADR 030, ADR 031, labeling log, plans) | patched image, vulnerable image | rename | 2026-11-11 |

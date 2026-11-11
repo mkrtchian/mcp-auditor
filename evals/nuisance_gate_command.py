@@ -13,9 +13,9 @@ from rich.markup import escape
 from rich.progress import Progress
 from rich.text import Text
 
-from evals.audit_progress import AuditProgress
 from evals.baseline import BaselineStatus
 from evals.concurrency import positive_int
+from evals.cve.audit_progress import AuditProgress
 from evals.eval_display import console
 from evals.eval_session import Refused
 from evals.export import export_nuisance_gate_judged_cases

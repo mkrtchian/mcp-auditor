@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from evals.cve_images import dockerfile_instructions
+from evals.cve.images import dockerfile_instructions
 from evals.docker_paths import image_dockerfile
 from evals.fixture_sources import (
     unfingerprinted_pins,

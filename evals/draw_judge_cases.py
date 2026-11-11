@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from evals import eval_display as display
-from evals.cve_targets import CVE_TARGETS
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.eval_session import Refused
 from evals.gate import Cell, cell_key
 from evals.ground_truth import GroundTruth
@@ -181,7 +181,7 @@ def parse_args() -> argparse.Namespace:
 
 def _draw(args: argparse.Namespace) -> None:
     reports = {path: path.with_name("honeypot_report.json") for path in args.honeypot_export}
-    reports[args.detection_export] = args.detection_export.with_name("cve_report.json")
+    reports[args.detection_export] = args.detection_export.with_name("detection_report.json")
     sources = _sources(reports)
     strata = _strata_of(
         [line for path in args.honeypot_export for line in _lines(path)],
@@ -222,7 +222,7 @@ def _strata_of(
 ) -> Strata:
     cells = candidates_from_honeypot(honeypot_lines, MERGED_GROUND_TRUTH)
     # Every benchmarked target is a stratum, so one with no judged case shows as a shortfall.
-    none_judged: dict[str, list[JudgeCase]] = {target.cve_id: [] for target in CVE_TARGETS}
+    none_judged: dict[str, list[JudgeCase]] = {target.flaw_id: [] for target in ACCEPTANCE_TARGETS}
     targets = none_judged | candidates_from_detection(detection_lines)
     return Strata(
         fail_cells=_cells_labeled(cells, EvalVerdict.FAIL),

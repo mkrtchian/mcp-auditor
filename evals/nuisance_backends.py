@@ -32,7 +32,7 @@ from evals import (
 from evals.atlassian_backend import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
 from evals.backend_lifecycle import BackendLifecycle
 from evals.ckan_backend import CKAN_BRIDGE, CKAN_IMAGE, CKAN_PARTS, MOUNTED_FILES
-from evals.cve_targets import image_tag
+from evals.cve.detection.targets import image_tag
 from evals.docker_paths import image_dockerfile
 from evals.doris_backend import DORIS_BRIDGE, DORIS_CONTAINER, DORIS_IMAGE
 from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE

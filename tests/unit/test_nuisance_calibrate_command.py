@@ -6,8 +6,9 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_calibrate_command_given as given
-from evals import cve_targets, nuisance_calibrate_command, run_nuisance
+from evals import nuisance_calibrate_command, run_nuisance
 from evals.closed_network import ClosedNetworkUnsupported
+from evals.cve.detection import targets as detection_targets
 from evals.holdout_kit import kit_launch
 from evals.nuisance_admission import NuisanceAdmission
 from evals.nuisance_backends import BACKENDS
@@ -128,7 +129,9 @@ def test_calibrate_removes_the_kit_and_built_backend_containers_left_running(
 
     assert containers.removed == ["leftover_kit", "leftover_responder"]
     kit_tags = [kit_launch.image_tag(service) for service in ("vuln", "patched", "server-patched")]
-    ckan_tags = [cve_targets.image_tag(service) for service in BACKENDS["ckan"].built_services]
+    ckan_tags = [
+        detection_targets.image_tag(service) for service in BACKENDS["ckan"].built_services
+    ]
     assert containers.listed_tags == [[*kit_tags, *ckan_tags]]
 
 

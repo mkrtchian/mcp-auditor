@@ -13,11 +13,11 @@ the embedded IPv4, so the same URL is refused.
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 # An exploit is "aimed" when its URL carries the IPv4-mapped IPv6 transition form that slips past
@@ -50,8 +50,8 @@ async def _catalogue_read(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("list_modules", {})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-55787",
+TARGET = Target(
+    flaw_id="CVE-2026-55787",
     severity="CVSS 7.5 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
     aim=AIM,

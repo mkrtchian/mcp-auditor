@@ -1,7 +1,7 @@
 """A minimal async MCP client over the `mcp` SDK, free of mcp_auditor.
 
 Parity note: the acceptance twin is the auditor's StdioMCPClient
-(src/mcp_auditor/adapters/mcp_client.py) wrapped by evals/cve_recording_client.py. KitResponse
+(src/mcp_auditor/adapters/mcp_client.py) wrapped by evals/cve/exchange_log.py. KitResponse
 mirrors ToolResponse (content, is_error) and KitTool mirrors ToolDefinition (name, description,
 input_schema), so an exploit written against KitClient runs unchanged against MCPClientPort.
 

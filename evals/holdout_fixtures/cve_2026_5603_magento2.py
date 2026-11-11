@@ -11,12 +11,12 @@ injected.
 
 import re
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_layout import PROJECT
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-5603-magento2"
@@ -74,8 +74,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("cache-view", {"key": "--help"})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-5603",
+TARGET = Target(
+    flaw_id="CVE-2026-5603",
     severity="CVSS 8.8 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
     aim=AIM,

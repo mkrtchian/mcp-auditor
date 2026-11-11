@@ -4,11 +4,12 @@ import pytest
 
 from evals.holdout_kit.kit_client import KitMCPClient
 from tests.integration.support.test_mcp_client_given import PAGINATED_SERVER_PATH
-from tests.integration.support.test_mcp_client_transport_given import STUB_PATH
+from tests.integration.support.test_mcp_client_transport_given import READ_SERVER_PATH
 
 
 async def test_a_server_logging_its_shutdown_to_stdout_is_left_cleanly() -> None:
-    async with KitMCPClient.connect(sys.executable, [str(STUB_PATH), "noisy_shutdown"]) as client:
+    command = [str(READ_SERVER_PATH), "noisy_shutdown"]
+    async with KitMCPClient.connect(sys.executable, command) as client:
         response = await client.call_tool("read", {"path": "/any"})
 
     assert response.content == "ok"

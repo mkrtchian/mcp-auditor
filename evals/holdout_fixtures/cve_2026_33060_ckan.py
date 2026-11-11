@@ -14,12 +14,12 @@ advisory marks patched), which rejects a private / link-local server_url before 
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_base import PublicNames
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 # The exploit aims a CKAN tool at an internal / link-local address; the benign public-portal
@@ -57,8 +57,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("ckan_status_show", {"server_url": "https://demo.ckan.org"})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-33060",
+TARGET = Target(
+    flaw_id="CVE-2026-33060",
     severity="CVSS 7.5 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
     aim=AIM,

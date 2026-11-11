@@ -1,6 +1,6 @@
 """The pin that keeps the holdout kit free of mcp_auditor, the way the acceptance conformance
 phase had to be re-pinned: the written kit's import closure, a static scan of the kit, a
-negative control, and the KitTarget/CVETarget field transplant rule."""
+negative control, and the KitTarget/Target field transplant rule."""
 
 from dataclasses import fields
 from pathlib import Path
@@ -8,7 +8,7 @@ from pathlib import Path
 import tests.unit.support.holdout_kit_isolation as iso
 import tests.unit.support.test_census_given as census_given
 from evals.calibration_dossier import write_kit
-from evals.cve_targets import CVETarget
+from evals.cve.detection.targets import Target
 from evals.holdout_kit.fix_check import FixCheckResult
 from evals.holdout_kit.kit_target import KitTarget
 from evals.nuisance_admission import FixCheckRecord
@@ -35,11 +35,11 @@ def test_scan_flags_a_planted_mcp_auditor_import(tmp_path: Path):
     assert iso.scan_tree(tmp_path) == {str(planted): ["mcp_auditor"]}
 
 
-# A drawn target is a CVETarget the maintainer wraps a KitTarget into, so every KitTarget field
-# must exist on CVETarget for the transplant.
+# A drawn target is a Target the maintainer wraps a KitTarget into, so every KitTarget field
+# must exist on Target for the transplant.
 def test_kit_target_fields_are_cve_target_fields():
     kit_names = {field.name for field in fields(KitTarget)}
-    assert kit_names <= {field.name for field in fields(CVETarget)}
+    assert kit_names <= {field.name for field in fields(Target)}
 
 
 def test_fix_check_result_mirrors_the_admission_record_fields():

@@ -17,15 +17,12 @@ from tests.unit.support.test_glossary_given import (
 # the step of the migration plan that removes them.
 _NOT_YET_RENAMED = (
     # body step 4
-    "admission-cve",
     "cve-family",
     "cve-ident",
     "eval-result",
     "holdout-places",
     "holdout-vetting",
-    "known-gap-holdout",
     "location-id",
-    "not-run-conditions",
     "sentinel-route",
     "stub",
     "target-product",
@@ -227,6 +224,18 @@ _ALLOWLIST = (
         "the CLI tests that the old flag is refused",
     ),
     AllowedLine(
+        "tests/unit/test_run_*.py",
+        "cve-flag",
+        '"--cve"',
+        "the CLI tests that the old flag is refused",
+    ),
+    AllowedLine(
+        "tests/unit/test_run_*.py",
+        "calibrate-cmd",
+        '"--calibrate"',
+        "the CLI tests that the old flag is refused",
+    ),
+    AllowedLine(
         "CHANGELOG.md",
         "run-evals",
         "(was ",
@@ -253,6 +262,42 @@ _ALLOWLIST = (
     AllowedLine(
         "CHANGELOG.md",
         "cve-id",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "run-cve-benchmark",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "cve-flag",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "calibrate-cmd",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "baselines-cve",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "moved-module",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "not-run-conditions",
         "(was ",
         "a rename entry names the word it replaces",
     ),

@@ -10,24 +10,24 @@ import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 
-from evals.cve_layout_check import LayoutCheck, layout_check, observe_versions
+from evals.cve.detection.layout_check import LayoutCheck, layout_check, observe_versions
+from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve_places import Places, kept_records
-from evals.cve_targets import CVETarget, LaunchMode
-from evals.failure_text import FULL_DETAIL, ReportDetail
 from evals.holdout_results import NotRunCause, NotRunTarget
 
 
 @dataclass(frozen=True)
 class PreRunCheck:
     not_run: list[NotRunTarget]
-    surviving: list[CVETarget]
+    surviving: list[Target]
     second_pass: list[str]  # the targets that run only because their solo second pass was clean
 
 
 async def vet_all(
-    targets: Sequence[CVETarget],
-    check: Callable[[CVETarget], Awaitable[list[str]]],
-    layout: Callable[[CVETarget], Awaitable[LayoutCheck]],
+    targets: Sequence[Target],
+    check: Callable[[Target], Awaitable[list[str]]],
+    layout: Callable[[Target], Awaitable[LayoutCheck]],
 ) -> PreRunCheck:
     first = await asyncio.gather(*(_vet(target, check, layout) for target in targets))
     final = [
@@ -37,11 +37,13 @@ async def vet_all(
     paired = list(zip(targets, final, strict=True))
     return PreRunCheck(
         not_run=[
-            NotRunTarget(t.cve_id, r, NotRunCause.PRE_RUN_CHECK) for t, r in paired if r is not None
+            NotRunTarget(t.flaw_id, r, NotRunCause.PRE_RUN_CHECK)
+            for t, r in paired
+            if r is not None
         ],
         surviving=[t for t, r in paired if r is None],
         second_pass=[
-            target.cve_id
+            target.flaw_id
             for target, before, after in zip(targets, first, final, strict=True)
             if before is not None and after is None
         ],
@@ -49,16 +51,16 @@ async def vet_all(
 
 
 async def _vet(
-    target: CVETarget,
-    check: Callable[[CVETarget], Awaitable[list[str]]],
-    layout: Callable[[CVETarget], Awaitable[LayoutCheck]],
+    target: Target,
+    check: Callable[[Target], Awaitable[list[str]]],
+    layout: Callable[[Target], Awaitable[LayoutCheck]],
 ) -> str | None:
     conditions = await check(target)
     observed = await layout(target)
     return vet_reason(target, conditions, observed)
 
 
-def vet_reason(target: CVETarget, conditions: list[str], layout: LayoutCheck) -> str | None:
+def vet_reason(target: Target, conditions: list[str], layout: LayoutCheck) -> str | None:
     """Why a target is dropped from N before any audit, or None to run it. A break keeps a FALLBACK
     target but drops a NORMAL one calibrated under a launch it lost (holdout-rule.md, Deployment
     layout (A server the layout breaks))."""
@@ -74,7 +76,7 @@ def vet_reason(target: CVETarget, conditions: list[str], layout: LayoutCheck) ->
 
 
 async def observe_layout(
-    target: CVETarget, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
+    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
 ) -> LayoutCheck:
     vuln, patched = await observe_versions(target, places, report_detail=report_detail)
     return layout_check(target, kept_records(target.kept_places, places), vuln, patched)

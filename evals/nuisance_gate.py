@@ -2,7 +2,8 @@
 baseline is gated, and a candidate alarm on it is replayed under the replay rule of ADR 016. A
 server with an alarm in its baseline is unstable, and a new alarm on it is reported inconclusive.
 
-The mirror of `cve_gate`, with the server in place of the target and an alarm in place of a miss.
+The mirror of `evals.cve.detection.gate`, with the server in place of the target and an alarm in
+place of a miss.
 """
 
 from collections.abc import Sequence

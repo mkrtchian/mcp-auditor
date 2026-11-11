@@ -11,7 +11,7 @@ from evals.cve.census.draw_order import draw_digest
 from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVERS
 from evals.cve.census.sources import SourceName, SourceRecord
 from evals.cve.detection.draw_record import DetectionWalkStep, DrawRecord, Settlement
-from evals.cve_targets import CVE_TARGETS
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.nuisance_walk_record import (
     Addition,
     IdentitySettlement,
@@ -28,8 +28,10 @@ ON_RESOURCES: dict[str, Any] = {"primitive": Primitive.RESOURCES}
 OVER_HTTP: dict[str, Any] = {"transport": Transport.HTTP}
 
 # `min`, since a frozenset's order varies between processes.
-A_CURRENT_TARGET_FLAW = CVE_TARGETS[0].cve_id
-A_DROPPED_BENCHMARK_FLAW = min(ACCEPTANCE_TARGET_FLAWS - {target.cve_id for target in CVE_TARGETS})
+A_CURRENT_TARGET_FLAW = ACCEPTANCE_TARGETS[0].flaw_id
+A_DROPPED_BENCHMARK_FLAW = min(
+    ACCEPTANCE_TARGET_FLAWS - {target.flaw_id for target in ACCEPTANCE_TARGETS}
+)
 AN_EXCLUDED_SERVER = min(EXCLUDED_SERVERS)
 
 

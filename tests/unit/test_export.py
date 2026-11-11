@@ -4,7 +4,7 @@ import pytest
 
 import tests.unit.support.test_export_given as given
 import tests.unit.support.test_export_then as then
-from evals.cve_session_model import CVEAudit
+from evals.cve.detection.session_model import DetectionAudit
 from evals.export import (
     export_detection_judged_cases,
     export_judged_cases,
@@ -94,7 +94,10 @@ def test_each_detection_line_carries_its_flaw_and_run_but_no_expected_verdict(
     tmp_path: Path,
 ) -> None:
     report = given.a_report_with_a_judged_case_an_unjudged_case_and_a_chain()
-    audits = [CVEAudit("CVE-2025-0001", 0, report), CVEAudit("CVE-2025-0002", 1, report)]
+    audits = [
+        DetectionAudit("CVE-2025-0001", 0, report),
+        DetectionAudit("CVE-2025-0002", 1, report),
+    ]
 
     export_detection_judged_cases(audits, tmp_path / "detection_report.json")
 

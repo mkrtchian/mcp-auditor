@@ -17,13 +17,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
 from evals import nuisance_images
+from evals.cve.run_images import refuse_running_containers, sweep_containers
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.nuisance_backends import (
     backend_reset_containers,
     built_backend_services,
     built_backend_tags,
 )
-from evals.run_images import refuse_running_containers, sweep_containers
 
 if TYPE_CHECKING:
     from evals.nuisance_admission import AdmittedServer

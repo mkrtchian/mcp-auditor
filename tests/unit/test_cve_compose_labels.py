@@ -4,7 +4,8 @@ from typing import Any
 import pytest
 import yaml
 
-from evals.cve_images import (
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.images import (
     COMPOSE_FILE,
     FINGERPRINT_LABEL,
     dockerfile_fingerprint,
@@ -12,7 +13,6 @@ from evals.cve_images import (
     unpinned_bases,
 )
 from evals.cve_planting_base import SENTINEL_SERVICE
-from evals.cve_targets import CVE_TARGETS
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.fixture_sources import unsourced_copies
 
@@ -31,7 +31,7 @@ def test_each_compose_service_is_labeled_with_its_dockerfile_fingerprint(service
 
 def test_every_service_a_target_or_the_sentinel_names_is_a_compose_service():
     named = {SENTINEL_SERVICE}
-    for target in CVE_TARGETS:
+    for target in ACCEPTANCE_TARGETS:
         named |= {*target.images, target.patched_image}
 
     assert named <= COMPOSE_SERVICES.keys()

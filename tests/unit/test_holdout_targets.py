@@ -5,6 +5,7 @@ from pathlib import Path
 import tests.unit.support.test_cve_planting_given as planting_given
 import tests.unit.support.test_holdout_targets_given as given
 from evals import doris_backend, n8n_instance_backend
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS, Target
 from evals.cve_layout import PROJECT, WORK
 from evals.cve_places import (
     HOLDOUT_PLACES,
@@ -15,23 +16,22 @@ from evals.cve_places import (
 )
 from evals.cve_planting import planting_spec
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
-from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES, CVETarget
 from evals.holdout_targets import HOLDOUT_TARGETS
 
-# These modules are the paths a holdout target must never travel: the acceptance gate
-# (cve_session_model's _BENCHMARKED = CVE_TARGETS), the preflight, the judge fixture draw
-# (seeded from CVE_TARGETS) and the probe corpus (iterated over CVE_TARGETS). A plain
+# These modules are the paths a holdout target must never travel: the detection gate
+# (session_model's _BENCHMARKED = ACCEPTANCE_TARGETS), the preflight, the judge fixture draw
+# (seeded from ACCEPTANCE_TARGETS) and the probe corpus (iterated over ACCEPTANCE_TARGETS). A plain
 # `import evals.holdout_targets` in any of them would let a holdout flaw reach the measured
 # instruments, so the AST scan pins them clean.
 _INSTRUMENTS = (
-    "cve_session_model",
-    "cve_preflight",
-    "draw_judge_cases",
-    "capture_probe_corpus",
-    "run_cve_benchmark",
-    "cve_benchmark_modes",
-    "admission_calibration",
-    "launch_audit",
+    "cve/detection/session_model.py",
+    "detection_preflight.py",
+    "draw_judge_cases.py",
+    "capture_probe_corpus.py",
+    "run_detection.py",
+    "cve/detection/no_llm_modes.py",
+    "cve/detection/calibration_check_exit.py",
+    "cve/launch_audit.py",
 )
 
 _EVALS = Path(__file__).resolve().parents[2] / "evals"
@@ -40,13 +40,13 @@ _EVALS = Path(__file__).resolve().parents[2] / "evals"
 def test_the_holdout_targets_are_the_census_drawn_flaws():
     # The run reads HOLDOUT_TARGETS and the census records draw.drawn: a flaw in one and not the
     # other would be skipped or refused silently. The orders differ (transplant against draw).
-    assert {target.cve_id for target in HOLDOUT_TARGETS} == given.the_census_drawn_identifiers()
+    assert {target.flaw_id for target in HOLDOUT_TARGETS} == given.the_census_drawn_identifiers()
 
 
 def test_holdout_identifiers_are_disjoint_from_the_acceptance_layer():
-    holdout_ids = {target.cve_id for target in HOLDOUT_TARGETS}
-    acceptance_ids = {target.cve_id for target in CVE_TARGETS}
-    acceptance_ids |= {out.cve_id for out in OUT_OF_SCOPE_CVES}
+    holdout_ids = {target.flaw_id for target in HOLDOUT_TARGETS}
+    acceptance_ids = {target.flaw_id for target in ACCEPTANCE_TARGETS}
+    acceptance_ids |= {out.flaw_id for out in OUT_OF_SCOPE_FLAWS}
 
     assert holdout_ids.isdisjoint(acceptance_ids), (
         "a flaw cannot be both an acceptance and a holdout target"
@@ -55,28 +55,28 @@ def test_holdout_identifiers_are_disjoint_from_the_acceptance_layer():
 
 def test_holdout_services_are_disjoint_from_the_acceptance_services():
     assert _services(HOLDOUT_TARGETS)
-    assert _services(HOLDOUT_TARGETS).isdisjoint(_services(CVE_TARGETS))
+    assert _services(HOLDOUT_TARGETS).isdisjoint(_services(ACCEPTANCE_TARGETS))
 
 
 # The sentinel and the stand-in are the fixture images targets share, so a holdout target may
 # list them.
-def _services(targets: Iterable[CVETarget]) -> set[str]:
+def _services(targets: Iterable[Target]) -> set[str]:
     services = {name for target in targets for name in (*target.images, target.patched_image)}
     return services - {SENTINEL_SERVICE, STAND_IN_SERVICE}
 
 
 # A baked `/work` is a nuisance fix check's: rule v11 gives a CVE target's `/work` the empty tmpfs.
 def test_no_acceptance_or_holdout_target_bakes_its_work_directory():
-    for target in (*CVE_TARGETS, *HOLDOUT_TARGETS):
-        assert not target.planting_host.baked_work, target.cve_id
+    for target in (*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS):
+        assert not target.planting_host.baked_work, target.flaw_id
 
 
 # The stand-in's answering logic is inlined in `Dockerfile.stand-in`, so only the images part of the
 # fixture fingerprint, which hashes each image's Dockerfile instructions, covers it.
 def test_every_target_declaring_stand_ins_lists_the_stand_in_image():
-    for target in (*CVE_TARGETS, *HOLDOUT_TARGETS):
+    for target in (*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS):
         if target.planting_host.public_names.stand_ins:
-            assert STAND_IN_SERVICE in target.images, target.cve_id
+            assert STAND_IN_SERVICE in target.images, target.flaw_id
 
 
 # The image's own `/work` would sit under the per-launch tmpfs the planting layer mounts there, so a
@@ -84,7 +84,7 @@ def test_every_target_declaring_stand_ins_lists_the_stand_in_image():
 def test_no_acceptance_or_holdout_image_names_a_path_under_work():
     services = {
         service
-        for target in (*CVE_TARGETS, *HOLDOUT_TARGETS)
+        for target in (*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS)
         for service in (*target.images, target.server_image, target.patched_image)
     }
 
@@ -95,7 +95,7 @@ def test_no_acceptance_or_holdout_image_names_a_path_under_work():
 # Rule v11 starts a target in the checkout, or in the empty `/work` when it cannot write there.
 def test_every_holdout_target_starts_in_the_checkout_or_work():
     for target in HOLDOUT_TARGETS:
-        assert target.planting_host.working_directory in {PROJECT, WORK}, target.cve_id
+        assert target.planting_host.working_directory in {PROJECT, WORK}, target.flaw_id
 
 
 def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():
@@ -105,13 +105,13 @@ def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():
 
 
 def test_the_doris_target_fingerprints_the_module_that_seeds_its_backend():
-    doris = next(target for target in HOLDOUT_TARGETS if target.cve_id == "CVE-2025-66335")
+    doris = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2025-66335")
 
     assert Path(doris_backend.__file__) in doris.backend_sources
 
 
 def test_the_n8n_target_fingerprints_the_module_that_provisions_its_instance():
-    n8n = next(target for target in HOLDOUT_TARGETS if target.cve_id == "GHSA-8g7g-hmwm-6rv2")
+    n8n = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "GHSA-8g7g-hmwm-6rv2")
 
     assert Path(n8n_instance_backend.__file__) in n8n.backend_sources
 
@@ -119,7 +119,7 @@ def test_the_n8n_target_fingerprints_the_module_that_provisions_its_instance():
 # The a11y images inline a copy of the fixture authority into Chromium's NSS store: a regeneration
 # of the authority leaves that copy stale until both Dockerfiles take the new one and are rebuilt.
 def test_the_a11y_images_bake_the_committed_fixture_authority():
-    a11y = next(target for target in HOLDOUT_TARGETS if target.cve_id == "CVE-2026-5323")
+    a11y = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2026-5323")
     committed = (_EVALS / "stand_ins" / "tls" / "fixture-authority.pem").read_text()
 
     for service in (a11y.server_image, a11y.patched_image):
@@ -128,7 +128,7 @@ def test_the_a11y_images_bake_the_committed_fixture_authority():
 
 
 def test_every_backend_image_is_pinned_by_digest():
-    targets = [*HOLDOUT_TARGETS, *CVE_TARGETS]
+    targets = [*HOLDOUT_TARGETS, *ACCEPTANCE_TARGETS]
     unpinned = [
         image for target in targets for image in target.backend_images if "@sha256:" not in image
     ]
@@ -136,10 +136,14 @@ def test_every_backend_image_is_pinned_by_digest():
     assert unpinned == []
 
 
+def test_every_instrument_the_scan_reads_exists():
+    assert [path for path in _INSTRUMENTS if not (_EVALS / path).is_file()] == []
+
+
 def test_no_instrument_imports_the_holdout_target_module():
-    for module_name in _INSTRUMENTS:
-        assert not _imports_holdout_targets(_EVALS / f"{module_name}.py"), (
-            f"{module_name} imports evals.holdout_targets, so a holdout target could reach it"
+    for path in _INSTRUMENTS:
+        assert not _imports_holdout_targets(_EVALS / path), (
+            f"{path} imports evals.holdout_targets, so a holdout target could reach it"
         )
 
 
@@ -164,7 +168,7 @@ def _imports_holdout_targets(path: Path) -> bool:
 def test_every_holdout_target_reaches_only_the_closed_vocabulary():
     for target in HOLDOUT_TARGETS:
         assert target.reaches <= REACHABLE_BY, (
-            f"{target.cve_id}: reaches holds a token outside the closed vocabulary"
+            f"{target.flaw_id}: reaches holds a token outside the closed vocabulary"
         )
 
 
@@ -172,9 +176,9 @@ def test_every_holdout_kept_place_is_offered_within_its_reach():
     places = load_places(HOLDOUT_PLACES)
     for target in HOLDOUT_TARGETS:
         for place_id in target.kept_places:
-            assert place_id in places, f"{target.cve_id}: keeps {place_id}, absent from the file"
+            assert place_id in places, f"{target.flaw_id}: keeps {place_id}, absent from the file"
             assert places[place_id].reachable_by & target.reaches, (
-                f"{target.cve_id}: keeps {place_id}, reachable by none of its reach"
+                f"{target.flaw_id}: keeps {place_id}, reachable by none of its reach"
             )
 
 
@@ -183,7 +187,7 @@ def test_no_holdout_target_keeps_an_unplaceable_place():
     for target in HOLDOUT_TARGETS:
         for record in kept_records(target.kept_places, places):
             assert record.kind is not PlantKind.UNPLACEABLE, (
-                f"{target.cve_id}: keeps {record.id}, an unplaceable place"
+                f"{target.flaw_id}: keeps {record.id}, an unplaceable place"
             )
 
 

@@ -17,12 +17,12 @@ command_execution path: the `$(...)` substitution reads it as the server user.
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_spec import resolve_container_path
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-55157-token-optimizer"
@@ -113,8 +113,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await _call(client, "root")
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-55157",
+TARGET = Target(
+    flaw_id="CVE-2026-55157",
     severity="CVSS 8.4 (v3.1, GHSA-49mq-fc6q-3h46)",
     mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION, MechanismClass.READ_OUTSIDE_SCOPE}),
     aim=AIM,

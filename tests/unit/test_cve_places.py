@@ -6,6 +6,7 @@ import pytest
 
 import tests.unit.support.test_cve_places_given as given
 import tests.unit.support.test_cve_planting_given as planting_given
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve_places import (
     HOLDOUT_PLACES,
     REACHABLE_BY,
@@ -15,7 +16,6 @@ from evals.cve_places import (
     load_places,
 )
 from evals.cve_planting import planting_spec
-from evals.cve_targets import CVE_TARGETS
 
 RECORDED_HASH = "240a7b83a977d0aca9e05952132d1d49acb581631360aee6793043fbff664f4b"
 
@@ -254,34 +254,34 @@ def test_an_unknown_source_raises(tmp_path: Path):
 
 
 def test_every_target_reaches_only_the_closed_vocabulary():
-    for target in CVE_TARGETS:
+    for target in ACCEPTANCE_TARGETS:
         assert target.reaches <= REACHABLE_BY, (
-            f"{target.cve_id}: reaches holds a token outside the closed vocabulary"
+            f"{target.flaw_id}: reaches holds a token outside the closed vocabulary"
         )
 
 
 def test_every_kept_place_is_offered_by_the_file_within_its_target_reach():
     places = load_places(HOLDOUT_PLACES)
-    for target in CVE_TARGETS:
+    for target in ACCEPTANCE_TARGETS:
         for place_id in target.kept_places:
-            assert place_id in places, f"{target.cve_id}: keeps {place_id}, absent from the file"
+            assert place_id in places, f"{target.flaw_id}: keeps {place_id}, absent from the file"
             assert places[place_id].reachable_by & target.reaches, (
-                f"{target.cve_id}: keeps {place_id}, reachable by none of its reach"
+                f"{target.flaw_id}: keeps {place_id}, reachable by none of its reach"
             )
 
 
 def test_no_target_keeps_an_unplaceable_place():
     places = load_places(HOLDOUT_PLACES)
-    for target in CVE_TARGETS:
+    for target in ACCEPTANCE_TARGETS:
         for record in kept_records(target.kept_places, places):
             assert record.kind is not PlantKind.UNPLACEABLE, (
-                f"{target.cve_id}: keeps {record.id}, an unplaceable place that plants nothing"
+                f"{target.flaw_id}: keeps {record.id}, an unplaceable place that plants nothing"
             )
 
 
 def test_every_target_kept_list_plants_together():
     places = load_places(HOLDOUT_PLACES)
-    for target in CVE_TARGETS:
+    for target in ACCEPTANCE_TARGETS:
         planting_spec(
             kept_records(target.kept_places, places),
             target.planting_host,

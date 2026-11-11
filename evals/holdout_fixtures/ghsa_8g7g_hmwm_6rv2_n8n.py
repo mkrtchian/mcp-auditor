@@ -21,10 +21,10 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from evals import n8n_instance_backend
+from evals.cve.detection.targets import Target
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_targets import CVETarget
 from evals.holdout_environments import ssrf_redirect_env
 from evals.n8n_instance_backend import (
     N8N_INSTANCE_IP,
@@ -67,8 +67,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("n8n_test_workflow", _trigger(BENIGN_TARGET))
 
 
-TARGET = CVETarget(
-    cve_id="GHSA-8g7g-hmwm-6rv2",
+TARGET = Target(
+    flaw_id="GHSA-8g7g-hmwm-6rv2",
     severity="CVSS 7.5 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
     aim=AIM,

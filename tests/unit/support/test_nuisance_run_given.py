@@ -5,6 +5,7 @@ from datetime import date
 import tests.unit.support.test_cve_grammar_given as grammar
 import tests.unit.support.test_nuisance_admission_given as admission
 from evals.cve.census.draw_order import DrawEntry
+from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.cve_grammar import MechanismClass
 from evals.eval_session import TreeState
 from evals.holdout_conditions import Cutoff, HoldoutConditions
@@ -14,7 +15,6 @@ from evals.nuisance_population import RunPopulation
 from evals.nuisance_results import FigureExit, NuisanceRunResult
 from evals.nuisance_run import NuisanceDeps, RunProvenance, run_nuisance
 from evals.probe.candidates import Prices
-from evals.server_health import NO_INCIDENTS, ServerHealth
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import (
     AuditReport,

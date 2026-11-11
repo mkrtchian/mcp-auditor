@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from evals.run_images import ContainerSweep
+from evals.cve.run_images import ContainerSweep
 
 
 class FakeContainerSweep:

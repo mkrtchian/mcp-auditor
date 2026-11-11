@@ -22,13 +22,13 @@ transport presents, so it returns without error and surfaces no nonce on either 
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_layout import PROJECT
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_spec import resolve_container_path
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-81562-claude-in-mobile"
@@ -136,8 +136,8 @@ _EXPLOITS: tuple[Exploit, ...] = (
 )
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-81562",
+TARGET = Target(
+    flaw_id="CVE-2026-81562",
     severity="CVSS 8.8 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
     aim=AIM,

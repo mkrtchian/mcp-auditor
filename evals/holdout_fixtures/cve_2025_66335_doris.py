@@ -22,10 +22,10 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from evals import doris_backend
+from evals.cve.detection.targets import Target
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_targets import CVETarget
 from evals.doris_backend import DORIS_DB, DORIS_IMAGE, MYSQL_CLIENT_IMAGE
 from evals.holdout_environments import doris_db_env
 from mcp_auditor.domain.ports import MCPClientPort
@@ -53,8 +53,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool("get_table_comment", {"table_name": "mytable", "db_name": DORIS_DB})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2025-66335",
+TARGET = Target(
+    flaw_id="CVE-2025-66335",
     severity="CVSS 7.5 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
     aim=AIM,

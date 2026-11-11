@@ -11,9 +11,9 @@ import subprocess
 
 import pytest
 
-from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve.detection.targets import image_tag
+from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
-from evals.cve_targets import image_tag
 from evals.holdout_kit.kit_client import KitMCPClient, docker_client_env
 from evals.holdout_kit.kit_driver import TargetVersion, launch_user_condition, options_before_image
 from evals.holdout_kit.kit_launch import filesystem_env

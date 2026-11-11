@@ -7,14 +7,14 @@ import tests.unit.support.test_census_given as given
 import tests.unit.support.test_holdout_run_given as holdout_given
 import tests.unit.support.test_run_holdout_run_given as run_given
 from evals import run_holdout
-from evals.admission_calibration import CalibrationDeps
 from evals.closed_network import ClosedNetworkUnsupported
+from evals.cve.detection.calibration_check_exit import CalibrationCheckDeps
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
+from evals.cve.run_images import target_services
 from evals.cve_planting_base import SENTINEL_SERVICE
-from evals.cve_targets import CVE_TARGETS, image_tag
 from evals.holdout_kit import kit_launch
-from evals.run_images import target_services
 from tests.fakes import FakeContainerSweep
-from tests.unit.support.test_admission_calibration_given import deps_with
+from tests.unit.support.test_detection_calibration_check_exit_given import deps_with
 
 
 @pytest.fixture(autouse=True)
@@ -118,11 +118,13 @@ def _cannot_close_a_network() -> None:
     raise ClosedNetworkUnsupported("invalid gateway mode: isolated")
 
 
-def _a_calibration(monkeypatch: pytest.MonkeyPatch, deps: CalibrationDeps) -> None:
-    def default_calibration_deps(*_: object, **__: object) -> CalibrationDeps:
+def _a_calibration(monkeypatch: pytest.MonkeyPatch, deps: CalibrationCheckDeps) -> None:
+    def default_calibration_check_deps(*_: object, **__: object) -> CalibrationCheckDeps:
         return deps
 
-    monkeypatch.setattr(run_holdout, "default_calibration_deps", default_calibration_deps)
+    monkeypatch.setattr(
+        run_holdout, "default_calibration_check_deps", default_calibration_check_deps
+    )
 
 
 def test_run_refuses_an_acceptance_target_for_its_tools_filter(
@@ -130,7 +132,7 @@ def test_run_refuses_an_acceptance_target_for_its_tools_filter(
 ):
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")  # the auditor is built, never called
-    monkeypatch.setattr(run_holdout, "HOLDOUT_TARGETS", (CVE_TARGETS[0],))
+    monkeypatch.setattr(run_holdout, "HOLDOUT_TARGETS", (ACCEPTANCE_TARGETS[0],))
     run_given.cards_reporting(monkeypatch, [])
 
     assert run_holdout.main(["run"]) == run_holdout.REFUSED_EXIT
@@ -211,7 +213,9 @@ _COMMITTED_CAPTURES = sorted((iso.REPO_ROOT / "evals" / "stand_ins").glob("*.jso
 
 
 def _acceptance_services() -> set[str]:
-    services = {name for target in CVE_TARGETS for name in (*target.images, target.patched_image)}
+    services = {
+        name for target in ACCEPTANCE_TARGETS for name in (*target.images, target.patched_image)
+    }
     return services | {SENTINEL_SERVICE}
 
 

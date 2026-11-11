@@ -9,8 +9,8 @@ import pytest
 
 import tests.unit.support.test_run_holdout_run_given as given
 from evals import run_holdout
+from evals.cve.provider_errors import ProviderFatal
 from evals.holdout_results import RunInterrupted
-from evals.provider_errors import ProviderFatal
 
 
 @pytest.mark.parametrize("suffix", [".json", ".md", ".result.json"])

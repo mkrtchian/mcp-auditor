@@ -16,10 +16,10 @@ from datetime import UTC, datetime
 
 from rich.console import Console
 
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve_environments import Launch
-from evals.cve_images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve_preflight import VULNERABLE_SERVICES
-from evals.cve_targets import CVE_TARGETS
+from evals.detection_preflight import VULNERABLE_SERVICES
 from evals.honeypots import HONEYPOTS, REPO_ROOT, AuditModels, audit_honeypot, models_for
 from evals.probe.candidates import REFERENCE
 from evals.probe.corpus import (
@@ -137,8 +137,8 @@ async def _capture_honeypot_calls(settings: Settings) -> list[ProbeCall]:
 
 async def _target_tools() -> list[ToolDefinition]:
     tools: list[ToolDefinition] = []
-    for target in CVE_TARGETS:
-        console.print(f"Listing the tools of {target.cve_id}...")
+    for target in ACCEPTANCE_TARGETS:
+        console.print(f"Listing the tools of {target.flaw_id}...")
         # Lists tools only, outside any concurrency, planting nothing, so it needs no places.
         with target.environment(target.planting_spec(())) as planted:
             async with _silent_client(planted.launch) as client:

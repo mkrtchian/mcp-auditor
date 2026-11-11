@@ -12,8 +12,8 @@ import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_holdout_copies_given as copies_given
 import tests.unit.support.test_run_nuisance_run_given as given
 from evals import run_nuisance
+from evals.cve.provider_errors import ProviderFatal
 from evals.nuisance_results import RunInterrupted
-from evals.provider_errors import ProviderFatal
 from tests.unit.support.test_run_holdout_run_given import PROOF_FIELDS, result_keys
 
 

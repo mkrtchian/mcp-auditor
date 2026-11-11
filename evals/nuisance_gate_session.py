@@ -13,8 +13,9 @@ from datetime import UTC, datetime
 from evals import nuisance_vetting
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
-from evals.cve_audit import RunOverrides, build_auditor
-from evals.cve_baseline import image_ids
+from evals.cve.detection.audit import RunOverrides, build_auditor
+from evals.cve.detection.baseline import image_ids
+from evals.cve.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
@@ -61,7 +62,6 @@ from evals.nuisance_run_containers import (
 )
 from evals.nuisance_solo import gathered_then_alone, played_alone
 from evals.recording import RecordingRefused
-from evals.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 
 
 def gate_servers(admission: NuisanceAdmission, current: set[str]) -> list[AdmittedServer]:

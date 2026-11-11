@@ -19,12 +19,12 @@ place names the location it reads; the benign call carries no projectPath and is
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_layout import PROJECT
 from evals.cve_places import Places
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 # The plain writable Godot project the first call of every exploit operates on, baked by both
@@ -104,8 +104,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 
 KEPT_PLACES: tuple[str, ...] = tuple(place_id for place_id, _ in _SPECS)
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-25546",
+TARGET = Target(
+    flaw_id="CVE-2026-25546",
     severity="CVSS 7.5 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
     aim=AIM,

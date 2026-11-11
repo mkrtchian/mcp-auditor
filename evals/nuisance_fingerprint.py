@@ -1,5 +1,5 @@
 """The fixture fingerprint of an admitted nuisance server, built on the Dockerfile identity
-machinery of `cve_images`.
+machinery of `evals.cve.images`.
 
 It lives apart from `nuisance_images` because it reads the backend registry, which
 `nuisance_images` stays free of.
@@ -25,8 +25,8 @@ from evals import (
     public_stand_ins,
 )
 from evals.baseline import fingerprint_sources
-from evals.cve_baseline import host_stand_in_files, planting_host_parts
-from evals.cve_images import dockerfile_instructions
+from evals.cve.detection.baseline import host_stand_in_files, planting_host_parts
+from evals.cve.images import dockerfile_instructions
 from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.nuisance_backends import BACKENDS, RegisteredBackend
 from evals.nuisance_counting import counted_flaws, counted_tools

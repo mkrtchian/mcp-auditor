@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from evals.cve.detection.draw_record import CalibrationCard
-from evals.cve_targets import CVETarget
+from evals.cve.detection.targets import Target
 from evals.docker_paths import image_dockerfile
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_holdout_reference import holdout_fixture_file
@@ -22,15 +22,15 @@ def grammar_classes_send_an_unclassed_flaw_to_null(out: Path) -> None:
     assert "a class name of your own" not in text
 
 
-def it_carries_the_holdout_reference_of(out: Path, target: CVETarget) -> None:
-    fixture = holdout_fixture_file(target.cve_id)
+def it_carries_the_holdout_reference_of(out: Path, target: Target) -> None:
+    fixture = holdout_fixture_file(target.flaw_id)
     text = (out / "reference" / "holdout_fixtures" / f"{fixture.name}.txt").read_text()
     assert text.startswith(fixture.read_text())
     assert f"def {target.builder.__name__}(" in text
     card = CalibrationCard.model_validate_json(
-        (out / "reference" / "cards" / f"{target.cve_id}.json").read_text()
+        (out / "reference" / "cards" / f"{target.flaw_id}.json").read_text()
     )
-    assert card.flaw == target.cve_id
+    assert card.flaw == target.flaw_id
     for service in (*target.images, target.patched_image):
         dockerfile = out / "reference" / "docker" / image_dockerfile(service).name
         assert dockerfile.exists(), service

@@ -17,7 +17,7 @@ PROOF_FIELDS = {"evidence", "category", "judge_input", "judge", "verdict", "stat
 
 def a_run_result() -> HoldoutRunResult:
     target = run_given.a_target(run_given.FILESYSTEM)
-    audit = run_given.scripted({target.cve_id: run_given.three_detections()})
+    audit = run_given.scripted({target.flaw_id: run_given.three_detections()})
     return asyncio.run(run_given.run([target], run_given.deps_auditing(audit)))
 
 
@@ -43,7 +43,7 @@ def a_drawn_run_ending_in(
 
 
 def a_drawn_target_with_a_ready_card(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(run_holdout, "HOLDOUT_TARGETS", (SimpleNamespace(cve_id="CVE-2025-0001"),))
+    monkeypatch.setattr(run_holdout, "HOLDOUT_TARGETS", (SimpleNamespace(flaw_id="CVE-2025-0001"),))
     cards_reporting(monkeypatch, [])
 
 

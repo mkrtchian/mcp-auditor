@@ -14,12 +14,12 @@ bound in a holder the server shares.
 import re
 import shlex
 
+from evals.cve.detection.targets import Target
 from evals.cve_environments import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
 from evals.cve_planting_spec import request_target, resolve_container_path
-from evals.cve_targets import CVETarget
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-44717-calculate"
@@ -102,8 +102,8 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
     await client.call_tool(TOOL, {"expression": "2 + 3*5"})
 
 
-TARGET = CVETarget(
-    cve_id="CVE-2026-44717",
+TARGET = Target(
+    flaw_id="CVE-2026-44717",
     severity="CVSS 8.8 (v3.1, placeholder)",
     mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
     aim=AIM,

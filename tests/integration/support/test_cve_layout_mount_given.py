@@ -4,6 +4,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from evals.cve.detection.targets import image_tag
 from evals.cve_environments import git_init_traversal_env
 from evals.cve_layout import build_layout, owned_layout
 from evals.cve_planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
@@ -15,7 +16,6 @@ from evals.cve_planting_base import (
     no_network_args,
 )
 from evals.cve_planting_docker import DOCKER_PLANTING
-from evals.cve_targets import image_tag
 from tests.integration.support.test_cve_planting_given import a_work_spec
 from tests.integration.support.test_cve_planting_given import (
     missing_prerequisite as missing_prerequisite,
