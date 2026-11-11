@@ -39,7 +39,7 @@ from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPOND
 from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.gravitino_backend import GRAVITINO_BRIDGE, GRAVITINO_IMAGE, GRAVITINO_SERVICES
-from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE
+from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE, JENKINS_SERVICE
 from evals.mcp_ssh_sshd_backend import SSHD_BRIDGE, SSHD_IMAGE, SSHD_SERVICE
 from evals.n8n_backend import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
 
@@ -102,19 +102,19 @@ BACKENDS: dict[str, RegisteredBackend] = {
         (SSHD_SERVICE,),
         _served(mcp_ssh_sshd_backend.__file__, SSHD_SERVICE),
     ),
+    "jenkins": RegisteredBackend(
+        jenkins_backend.LIFECYCLE,
+        JENKINS_BRIDGE,
+        JENKINS_RESPONDER_IMAGE,
+        (JENKINS_SERVICE,),
+        _served(jenkins_backend.__file__, JENKINS_SERVICE),
+    ),
     "atlassian": _responder(
         atlassian_backend.LIFECYCLE,
         atlassian_backend.__file__,
         ATLASSIAN_BRIDGE,
         ATLASSIAN_RESPONDER_IMAGE,
         "atlassian-responder",
-    ),
-    "jenkins": _responder(
-        jenkins_backend.LIFECYCLE,
-        jenkins_backend.__file__,
-        JENKINS_BRIDGE,
-        JENKINS_RESPONDER_IMAGE,
-        "jenkins-responder",
     ),
     "gitlab": _responder(
         gitlab_backend.LIFECYCLE,

@@ -14105,12 +14105,46 @@
             {
               "vulnerable_name": "get_build_log",
               "patched_name": "get_build_log",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             },
             {
               "vulnerable_name": "get_build_status",
               "patched_name": "get_build_status",
-              "status": "unchanged"
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "trigger_build",
+              "patched_name": "trigger_build",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "get_failed_build_log",
+              "patched_name": "get_failed_build_log",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
             }
           ],
           "effect_class": "internal_fetch",
@@ -14123,14 +14157,35 @@
               "arguments": {
                 "jobPath": "job/MyJob",
                 "buildNumber": "lastBuild"
-              }
+              },
+              "expect": "Finished: SUCCESS",
+              "before": []
             },
             {
               "tool": "get_build_status",
               "arguments": {
                 "jobPath": "job/MyJob",
                 "buildNumber": "lastBuild"
-              }
+              },
+              "expect": "\"result\": \"SUCCESS\"",
+              "before": []
+            },
+            {
+              "tool": "trigger_build",
+              "arguments": {
+                "jobPath": "job/MyJob",
+                "parameters": {}
+              },
+              "expect": "triggered successfully",
+              "before": []
+            },
+            {
+              "tool": "get_failed_build_log",
+              "arguments": {
+                "jobPath": "job/MyJob"
+              },
+              "expect": "has no failed builds",
+              "before": []
             }
           ],
           "backend_need": "fixture",
@@ -14140,12 +14195,15 @@
             "witness": "MCPAUDIT-placeholder-reconciled-at-calibration",
             "exploit_calls": [
               "get_build_log",
-              "get_build_status"
+              "get_build_status",
+              "trigger_build",
+              "get_failed_build_log"
             ],
             "vulnerable_surfaces": true,
             "patched_surfaces": false,
             "server_patched_surfaces": null,
-            "patched_benign_errored": false
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
           }
         }
       ],
@@ -14173,6 +14231,16 @@
           "role": "admitter",
           "scope": "admission record B",
           "model": "claude-fable-5-1"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record A",
+          "model": "claude-opus-5-5"
+        },
+        {
+          "role": "admitter",
+          "scope": "re-admission record B",
+          "model": "claude-opus-5-5"
         }
       ],
       "agreement": [
@@ -14191,7 +14259,24 @@
           "reason": "records A and B both marked dfie true; flipped to false on source analysis of src/index.ts and an independent adversarial review: get_build_log and get_build_status fetch the configured JENKINS_URL (axios baseURL) and validateJobPath blocks absolute schemes, so the percent-encoded traversal in jobPath (%2f/%5c/%2e%2e) that escapes the job namespace to reach an internal path under the configured host is a bypass of the bounded fetch contract, not the declared function"
         }
       ],
-      "patched_version": "dcee5f1aa4b3"
+      "patched_version": "dcee5f1aa4b3",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "the Jenkins controller image seeds, at image build time: the admin account the server authenticates as (JENKINS_USER=admin, JENKINS_TOKEN a fixed API token), the private security realm with logged-in authorization and no anonymous read, the freestyle job MyJob with Jenkins's default configuration, and MyJob's first build (number 1, result SUCCESS) triggered through the REST API; each container starts from this reference home (Jenkins's jenkins.sh copies it into a fresh JENKINS_HOME)",
+          "kind": "written",
+          "citation": "the server README's JENKINS_URL/JENKINS_USER/JENKINS_TOKEN configuration and Jenkins's default freestyle job",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "Jenkins",
+          "release": "2.580.2",
+          "day": null,
+          "source": "the backend controller image is jenkins/jenkins:2.580.2-lts-jdk21 pinned by its index digest, the newest LTS line; the server README names JENKINS_URL, JENKINS_USER and JENKINS_TOKEN with no Jenkins version"
+        }
+      ]
     },
     {
       "server_package": "PyPI:mcp-neo4j-cypher",

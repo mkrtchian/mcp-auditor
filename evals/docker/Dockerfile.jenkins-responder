@@ -1,47 +1,54 @@
-# HTTP mock-Jenkins responder for the nuisance suite's jenkins backend, the controller that the
-# get_build_log, get_build_status and trigger_build tools of hekmon8/Jenkins-server-mcp reach
-# through JENKINS_URL on port 80. It is NOT the server under test and carries none of its flaw.
-# Paths are percent-decoded and normalised before routing, as a Jenkins behind a proxy would see
-# them. It answers:
-#   - <job path>/<build>/consoleText: a fixed benign console log
-#   - <job path>/api/json and <job path>/<build>/api/json: a fixed benign build description
-#   - /crumbIssuer/api/json and any POST: what trigger_build needs to succeed
-#   - /internal/...: 404, unless WITNESS_NONCE is set, then the nonce in a consoleText body or in
-#     the result field of an api/json body, so a per-launch container holds the fix-check
-#     witness and the shared singleton serves none
-# Never spoken to over MCP stdio: the audited server reaches it as an outbound HTTP request.
-# No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+# The jenkins backend of hekmon8/Jenkins-server-mcp: the real Jenkins controller, the 2.580.2 LTS
+# from the project's official image, pinned by its index digest. It replaces the earlier HTTP
+# responder (the image keeps its name): Jenkins runs within the backend's memory bound and needs no
+# capability, so no part of it is a stand-in. It is NOT the server under test and carries none of
+# its flaw.
+# The job, the account and the first build are made by Jenkins itself at image build time. The base
+# image declares JENKINS_HOME a volume, so what a RUN writes there is discarded: Jenkins runs once
+# on it, its content then moves to the image's reference directory, which the image's jenkins.sh
+# copies into the fresh JENKINS_HOME at every container start, so each container starts from this
+# seed. An init script creates the account the server's documentation asks for (JENKINS_USER,
+# JENKINS_TOKEN) with a fixed API token, the private realm and the logged-in authorization, and
+# the freestyle job MyJob with Jenkins's default configuration, then one build is triggered through
+# the REST API as that user. The init script is removed before the layer ends.
+# At run time Jenkins starts on its default port 8080 as the image's own user, the setup wizard off.
+# No COPY/ADD: everything is inline.
+FROM jenkins/jenkins:2.580.2-lts-jdk21@sha256:74401de6a6f92e1afe1b02d1c8e3d0c33f263bfb5275dd8813f9150355f2367b
+ARG JENKINS_API_TOKEN=11794c0bdb7038b17e9411596ab682d0c0
+ENV JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+RUN <<'EOF'
+set -eu
+export JENKINS_HOME=/var/jenkins_home
+mkdir -p "$JENKINS_HOME/init.groovy.d"
+cat > "$JENKINS_HOME/init.groovy.d/account.groovy" <<'GROOVY'
+import hudson.model.FreeStyleProject
+import hudson.security.FullControlOnceLoggedInAuthorizationStrategy
+import hudson.security.HudsonPrivateSecurityRealm
+import jenkins.model.Jenkins
+import jenkins.security.ApiTokenProperty
 
-RUN printf '%s\n' \
-  "const http = require('http');" \
-  "const path = require('path');" \
-  "" \
-  "const NONCE = process.env.WITNESS_NONCE;" \
-  "const LOG = 'Started by user admin\nBuilding in workspace\nFinished: SUCCESS\n';" \
-  "" \
-  "function reply(res, status, type, body) {" \
-  "  res.writeHead(status, { 'content-type': type });" \
-  "  res.end(body);" \
-  "}" \
-  "" \
-  "function describe(result) {" \
-  "  return JSON.stringify({ name: 'public', building: false, result: result, timestamp: 1767225600000, duration: 4200, url: 'http://jenkins/job/public/1/', lastFailedBuild: { number: 1, url: 'http://jenkins/job/public/1/' } });" \
-  "}" \
-  "" \
-  "http.createServer((req, res) => {" \
-  "  req.resume();" \
-  "  let pathname = req.url.split('?')[0];" \
-  "  try { pathname = decodeURIComponent(pathname); } catch (e) { /* keep the raw path */ }" \
-  "  pathname = path.posix.normalize(pathname);" \
-  "  const internal = pathname.startsWith('/internal/');" \
-  "  if (internal && !NONCE) return reply(res, 404, 'text/plain', 'Not Found');" \
-  "  if (req.method === 'POST') return reply(res, 201, 'text/plain', '');" \
-  "  if (pathname === '/crumbIssuer/api/json') return reply(res, 200, 'application/json', JSON.stringify({ crumbRequestField: 'Jenkins-Crumb', crumb: 'calib-crumb' }));" \
-  "  if (pathname.endsWith('/consoleText')) return reply(res, 200, 'text/plain', internal ? NONCE + '\n' : LOG);" \
-  "  if (pathname.endsWith('/api/json')) return reply(res, 200, 'application/json', describe(internal ? NONCE : 'SUCCESS'));" \
-  "  return reply(res, 404, 'text/plain', 'Not Found');" \
-  "}).listen(80);" \
-  > /responder.js
-
-ENTRYPOINT ["node", "/responder.js"]
+def jenkins = Jenkins.get()
+def realm = new HudsonPrivateSecurityRealm(false)
+def user = realm.createAccount('admin', UUID.randomUUID().toString())
+user.getProperty(ApiTokenProperty).getTokenStore().addFixedNewToken('jenkins-server-mcp', System.getenv('JENKINS_API_TOKEN'), null)
+user.save()
+jenkins.setSecurityRealm(realm)
+def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+strategy.setAllowAnonymousRead(false)
+jenkins.setAuthorizationStrategy(strategy)
+jenkins.createProject(FreeStyleProject, 'MyJob')
+jenkins.save()
+GROOVY
+java $JAVA_OPTS -jar /usr/share/jenkins/jenkins.war --httpPort=8080 &
+pid=$!
+n=0
+until curl -fs -o /dev/null http://localhost:8080/login; do n=$((n+1)); [ "$n" -lt 150 ]; sleep 2; done
+curl -fsS -X POST -u "admin:$JENKINS_API_TOKEN" http://localhost:8080/job/MyJob/build
+n=0
+until grep -qs '<result>' "$JENKINS_HOME/jobs/MyJob/builds/1/build.xml"; do n=$((n+1)); [ "$n" -lt 150 ]; sleep 2; done
+kill "$pid"
+while kill -0 "$pid" 2>/dev/null; do sleep 1; done
+rm -r "$JENKINS_HOME/init.groovy.d"
+cp -a "$JENKINS_HOME/." /usr/share/jenkins/ref/
+find "$JENKINS_HOME" -mindepth 1 -delete
+EOF

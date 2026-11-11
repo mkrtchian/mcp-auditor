@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 import tests.unit.support.test_backend_lifecycle_given as given
@@ -12,7 +14,7 @@ from evals.ckan_backend import (
 from evals.docker_paths import DOCKER_DIRECTORY
 from evals.gitlab_backend import GITLAB_RESPONDER_ALIAS, GITLAB_RESPONDER_IMAGE
 from evals.googleapis_backend import GOOGLEAPIS_RESPONDER_IP
-from evals.jenkins_backend import JENKINS_RESPONDER_IP
+from evals.jenkins_backend import JENKINS_URL
 from evals.n8n_backend import N8N_IP, n8n_server_args, singleton_run_args
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import memory_bound_args
@@ -28,7 +30,7 @@ from tests.unit.support.docker_argv import (
 # These servers take their backend's address from their image, so the address baked into the run
 # Dockerfile and its vulnerable twin has to be the one the backend stands its responder at.
 _BAKED_ADDRESSES = {
-    "jenkins": f"JENKINS_URL=http://{JENKINS_RESPONDER_IP}",
+    "jenkins": f"JENKINS_URL={JENKINS_URL}",
     "gitlab": f"GITLAB_API_URL=http://{GITLAB_RESPONDER_ALIAS}/",
     "googleapis": f"UPSTREAM_URL=http://{GOOGLEAPIS_RESPONDER_IP}",
 }
@@ -44,6 +46,15 @@ _BAKED_ADDRESSES = {
 )
 def test_the_run_image_bakes_the_address_its_backend_stands_at(dockerfile: str, baked: str):
     assert baked in (DOCKER_DIRECTORY / dockerfile).read_text()
+
+
+@pytest.mark.parametrize("dockerfile", ["Dockerfile.jenkins", "Dockerfile.jenkins-vuln"])
+def test_the_jenkins_run_image_bakes_the_api_token_the_controller_image_seeds(dockerfile: str):
+    controller = (DOCKER_DIRECTORY / "Dockerfile.jenkins-responder").read_text()
+    seeded = re.search(r"^ARG JENKINS_API_TOKEN=(\S+)$", controller, re.MULTILINE)
+
+    assert seeded is not None
+    assert f"JENKINS_TOKEN={seeded[1]}" in (DOCKER_DIRECTORY / dockerfile).read_text()
 
 
 def test_the_gitlab_responder_answers_at_the_host_its_run_image_bakes():

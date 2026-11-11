@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from evals.apify_backend import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
 from evals.facebook_ads_backend import FACEBOOK_ADS_BENIGN_HOST, FACEBOOK_ADS_RESPONDER_IP
 from evals.nuisance_backends import BACKENDS
-from evals.nuisance_fix_checks import cve_2026_10276_jenkins as jenkins
 from evals.nuisance_fix_checks import cve_2026_19956_facebook_ads as facebook_ads
 from evals.nuisance_fix_checks import cve_2026_46341_apify as apify
 from evals.nuisance_fix_checks import cve_2026_61462_gitlab as gitlab
@@ -70,12 +69,5 @@ RESPONDER_FIX_CHECKS = [
         gitlab.responder_args,
         gitlab.server_args,
         lambda address: [f"GITLAB_API_URL=http://{address}/api/v4"],
-    ),
-    ResponderFixCheck(
-        jenkins.TARGET.flaw,
-        "jenkins",
-        jenkins.responder_args,
-        jenkins.server_args,
-        lambda address: [f"JENKINS_URL=http://{address}"],
     ),
 ]

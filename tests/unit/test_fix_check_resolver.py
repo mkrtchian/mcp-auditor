@@ -23,7 +23,7 @@ _BUILDERS: dict[str, Callable[[], list[str]]] = {
     "atlassian-server": lambda: cve_2026_77252_atlassian.server_args("image", _ADDRESS),
     "apify-responder": lambda: cve_2026_46341_apify.responder_args("r", "n", _ADDRESS),
     "apify-server": lambda: cve_2026_46341_apify.server_args("image", _ADDRESS),
-    "jenkins-responder": lambda: cve_2026_10276_jenkins.responder_args("r", "n", _ADDRESS),
+    "jenkins-controller": lambda: cve_2026_10276_jenkins.controller_args("c", _ADDRESS),
     "jenkins-server": lambda: cve_2026_10276_jenkins.server_args("image", _ADDRESS),
     "facebook-ads-sentinel": lambda: cve_2026_19956_facebook_ads.sentinel_args("r", "n", _ADDRESS),
     "facebook-ads-server": lambda: cve_2026_19956_facebook_ads.server_args("image", _ADDRESS),

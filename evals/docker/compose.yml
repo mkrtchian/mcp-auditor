@@ -1094,7 +1094,7 @@ services:
       context: .
       dockerfile: Dockerfile.jenkins
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "451825395d5a8072cfb01b90a316db484088973fdb76d8600664acc5ff41985c"
+        org.mcp-auditor.dockerfile-fingerprint: "12c36ec0cf8b074a10f90a19b947c12bbeb6d1755a38c0c20d66a46daef3eaa1"
     image: mcp-auditor-nuisance-jenkins:local
     profiles: ["nuisance"]
 
@@ -1413,7 +1413,7 @@ services:
       context: .
       dockerfile: Dockerfile.jenkins-responder
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "403f4c56566e0172b66b92686b95484d6fc3d0df464f443f75bd921fa2cc2b7c"
+        org.mcp-auditor.dockerfile-fingerprint: "23ee4c82cc73e44384b7c670578425ca28373e08a1806e9a9e3fe17fdf3687eb"
     image: mcp-auditor-cve-jenkins-responder:local
     profiles: ["nuisance"]
 

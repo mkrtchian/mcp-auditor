@@ -3,7 +3,13 @@ import pytest
 import tests.unit.support.test_backend_lifecycle_given as given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals import ckan_backend, doris_backend, gravitino_backend, mcp_ssh_sshd_backend
+from evals import (
+    ckan_backend,
+    doris_backend,
+    gravitino_backend,
+    jenkins_backend,
+    mcp_ssh_sshd_backend,
+)
 from evals.cve_planting_base import LABEL, resolver_args
 from evals.holdout_kit.kit_backend_launch import backend_launch, lifecycle_of
 from evals.nuisance_backends import BACKENDS
@@ -132,12 +138,14 @@ def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolve
         *(part.run_args() for part in ckan_backend.CKAN_PARTS),
         *(part.run_args() for part in gravitino_backend.GRAVITINO_PARTS),
         mcp_ssh_sshd_backend.singleton_run_args(),
+        jenkins_backend.singleton_run_args(),
     ],
     ids=[
         "doris cluster",
         *(part.container for part in ckan_backend.CKAN_PARTS),
         *(part.container for part in gravitino_backend.GRAVITINO_PARTS),
         "mcp-ssh sshd",
+        "jenkins controller",
     ],
 )
 def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_resolver_option(
