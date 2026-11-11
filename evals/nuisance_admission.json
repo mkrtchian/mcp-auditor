@@ -14268,7 +14268,7 @@
           "flaw": "CVE-2026-10276",
           "field": "declared_function_is_effect",
           "value": "false",
-          "reason": "records A and B both marked dfie true; flipped to false on source analysis of src/index.ts and an independent adversarial review: get_build_log and get_build_status fetch the configured JENKINS_URL (axios baseURL) and validateJobPath blocks absolute schemes, so the percent-encoded traversal in jobPath (%2f/%5c/%2e%2e) that escapes the job namespace to reach an internal path under the configured host is a bypass of the bounded fetch contract, not the declared function"
+          "reason": "records A and B both marked dfie true; flipped to false on source analysis of src/index.ts and an independent adversarial review: get_build_log and get_build_status fetch the configured JENKINS_URL (axios baseURL), so the percent-encoded traversal in jobPath (%2f/%5c/%2e%2e) that escapes the job namespace to reach an internal path under the configured host is a bypass of the bounded fetch contract, not the declared function (the vulnerable build has no jobPath guard; the patched validateJobPath also refuses absolute schemes and a leading slash)"
         }
       ],
       "patched_version": "dcee5f1aa4b3",
@@ -14285,7 +14285,7 @@
         {
           "software": "Jenkins",
           "release": "2.580.2",
-          "day": null,
+          "day": "2026-11-11",
           "source": "the backend controller image is jenkins/jenkins:2.580.2-lts-jdk21 pinned by its index digest, the newest LTS line; the server README names JENKINS_URL, JENKINS_USER and JENKINS_TOKEN with no Jenkins version"
         }
       ]
