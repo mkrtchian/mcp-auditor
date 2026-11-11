@@ -10297,7 +10297,7 @@
                   "Magento/backend"
                 ]
               },
-              "expect": "Deploy using quick strategy",
+              "expect": "Execution time: ",
               "before": []
             },
             {
@@ -10305,7 +10305,7 @@
               "arguments": {
                 "keepGenerated": true
               },
-              "expect": "Schema creation/updates:",
+              "expect": "Please refer to Developer Guide for more details.",
               "before": []
             },
             {
