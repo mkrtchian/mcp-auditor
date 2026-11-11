@@ -59,6 +59,7 @@ from evals.nuisance_run_containers import (
     run_images,
     sweep_run_containers,
 )
+from evals.nuisance_solo import gathered_then_alone, played_alone
 from evals.recording import RecordingRefused
 from evals.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 
@@ -164,7 +165,7 @@ async def _vetted(opened: OpenedGate) -> dict[str, str]:
     failing server refuses the recording."""
     servers = opened.options.servers
     opened.harness.rebuild(list(dict.fromkeys(server.service for server in servers)))
-    failures = await asyncio.gather(*(opened.harness.benign_call(server) for server in servers))
+    failures = await gathered_then_alone(servers, opened.harness.benign_call)
     not_run = {
         server.server_package: failure
         for server, failure in zip(servers, failures, strict=True)
@@ -180,14 +181,15 @@ async def _run_servers(opened: OpenedGate, not_run: dict[str, str]) -> list[Serv
     count = opened.options.conditions.runs
     servers = [s for s in opened.options.servers if s.server_package not in not_run]
     opened.harness.announce_audits(len(servers) * count)
-    # gather keeps submission order, so each server's runs keep the order of a sequence.
-    outcomes = await asyncio.gather(
-        *(opened.harness.audit(server) for server in servers for _ in range(count))
-    )
-    return [
-        _server_runs(server, outcomes[index * count : (index + 1) * count])
-        for index, server in enumerate(servers)
-    ]
+    outcomes = await gathered_then_alone(servers, lambda server: _runs(opened, server, count))
+    return [_server_runs(server, runs) for server, runs in zip(servers, outcomes, strict=True)]
+
+
+async def _runs(opened: OpenedGate, server: AdmittedServer, count: int) -> list[GateRun | None]:
+    """In the order of a sequence, which gather keeps."""
+    if played_alone(server):
+        return [await opened.harness.audit(server) for _ in range(count)]
+    return list(await asyncio.gather(*(opened.harness.audit(server) for _ in range(count))))
 
 
 def _server_runs(server: AdmittedServer, outcomes: Sequence[GateRun | None]) -> ServerRuns:
@@ -210,13 +212,10 @@ async def _gate(
         compare_server(baselines.get(sr.server.server_package), _candidate(sr)) for sr in runs
     ]
     if not mismatches:
-        audited = list(
-            await asyncio.gather(
-                *(
-                    _settled(comparison, sr.server, opened)
-                    for comparison, sr in zip(audited, runs, strict=True)
-                )
-            )
+        pending = {comparison.server_package: comparison for comparison in audited}
+        audited = await gathered_then_alone(
+            [sr.server for sr in runs],
+            lambda server: _settled(pending[server.server_package], server, opened),
         )
     by_package = {comparison.server_package: comparison for comparison in audited}
     comparisons = [

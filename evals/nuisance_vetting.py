@@ -1,7 +1,6 @@
 """The nuisance pre-run check: drop from the run, before any audit, a server whose benign call
 fails on its patched image."""
 
-import asyncio
 import os
 from collections.abc import Awaitable, Callable, Sequence
 
@@ -13,13 +12,14 @@ from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_audit import nuisance_environment
 from evals.nuisance_benign_call import benign_call_failure
 from evals.nuisance_results import NotRunCause, NotRunServer
+from evals.nuisance_solo import gathered_then_alone
 
 
 async def vet_all(
     servers: Sequence[AdmittedServer],
     benign_call: Callable[[AdmittedServer], Awaitable[str | None]],
 ) -> tuple[list[NotRunServer], list[AdmittedServer]]:
-    reasons = await asyncio.gather(*(benign_call(server) for server in servers))
+    reasons = await gathered_then_alone(servers, benign_call)
     paired = list(zip(servers, reasons, strict=True))
     not_run = [
         NotRunServer(server.server_package, reason, NotRunCause.BENIGN_CALL_FAILED)

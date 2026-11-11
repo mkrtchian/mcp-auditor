@@ -54,6 +54,7 @@ from evals.nuisance_run_containers import (
     server_services,
     sweep_run_containers,
 )
+from evals.nuisance_solo import first_failure_then_alone, played_alone
 from evals.nuisance_vetting import benign_call, vet_all
 from evals.probe_candidates import Prices
 from evals.run_images import (
@@ -62,7 +63,7 @@ from evals.run_images import (
     remove_containers,
     running_containers,
 )
-from evals.run_interruption import first_failure, sibling_runs
+from evals.run_interruption import sibling_runs
 from mcp_auditor.config import Settings
 
 NUISANCE_RUNS = 3  # the log sets it before the first real run, a --runs flag lowers it
@@ -218,7 +219,7 @@ async def _run_all(
     """The finished servers, assembled or dropped, and the exception that stopped the run, if
     any: a first exception out of a server's runs cancels every server still in flight."""
     deps.announce_audits(len(surviving) * ctx.runs)
-    finished, failure = await first_failure(
+    finished, failure = await first_failure_then_alone(
         surviving, lambda server: _run_server(server, deps.audit, ctx.runs)
     )
     assembled: list[tuple[AdmittedServer, NuisanceServerResult]] = []
@@ -236,7 +237,10 @@ async def _run_all(
 async def _run_server(
     server: AdmittedServer, audit: Audit, runs: int
 ) -> list[NuisanceAudit] | DroppedRun:
-    outcomes = await sibling_runs(runs, lambda: audit(server))
+    if played_alone(server):
+        outcomes = [await audit(server) for _ in range(runs)]
+    else:
+        outcomes = await sibling_runs(runs, lambda: audit(server))
     causes = {outcome.cause for outcome in outcomes if isinstance(outcome, DroppedRun)}
     for cause in _DROP_PRECEDENCE:
         if cause in causes:
