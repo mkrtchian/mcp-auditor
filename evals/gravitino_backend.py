@@ -12,7 +12,8 @@ server reaches Gravitino under the alias `gravitino`, and Gravitino reaches the 
 At each stand-up `ensure_gravitino_backend` checks that Gravitino answers 1.2.1, then replays the
 seed through Gravitino's REST API with `docker exec` inside the instance (the host cannot reach a
 closed bridge) when the metalake is absent: the metalake, a fileset, a model, a jdbc-postgresql
-and a kafka catalog with their objects, a tag and a policy, every value written for the fixture.
+and a kafka catalog with their objects, a tag and a policy on the `lakehouse` catalog and a second
+of each on its `sales` schema, every value written for the fixture.
 The backend's state lives in its containers only, so a stand-up after their removal starts from
 the images and the seed. The backend carries no witness: a fix check stands its own instance.
 
