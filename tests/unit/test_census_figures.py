@@ -1,8 +1,8 @@
 from datetime import date
 
 import tests.unit.support.test_census_figures_given as given
-from evals.census_classification import Criterion, SoftwareKind, Transport
-from evals.census_figures import Share, compute_figures
+from evals.cve.census.classification import Criterion, SoftwareKind, Transport
+from evals.cve.census.figures import Share, compute_figures
 
 HTTP_ONLY = {"transport": Transport.HTTP, "first_failed_criterion": Criterion.STDIO_TOOLS_CALL}
 A_CLIENT = {"software_kind": SoftwareKind.CLIENT, "first_failed_criterion": Criterion.MCP_SERVER}

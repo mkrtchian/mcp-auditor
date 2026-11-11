@@ -7,11 +7,11 @@ from typing import Any
 import tests.unit.support.test_census_figures_given as figures
 import tests.unit.support.test_census_sources_given as sources
 from evals import run_census
-from evals.census_classification import Classification, SoftwareKind
-from evals.census_grouping import READERS
-from evals.census_prefilter import PrefilterTerm
-from evals.census_sources import AdvisoryRecord, SourceName
-from evals.census_work import AgentRecord, AgentRole, Downloads, Gap, HitDecision, read_jsonl
+from evals.cve.census.classification import Classification, SoftwareKind
+from evals.cve.census.grouping import READERS
+from evals.cve.census.prefilter import PrefilterTerm
+from evals.cve.census.sources import AdvisoryRecord, SourceName
+from evals.cve.census.work import AgentRecord, AgentRole, Downloads, Gap, HitDecision, read_jsonl
 
 DOWNLOADED = date(2026, 10, 8)
 MCP_SUMMARY = "Path traversal in an MCP filesystem server"

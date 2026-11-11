@@ -1,9 +1,9 @@
 from typing import Literal
 
-import tests.unit.support.test_census_draw_given as draw_given
+import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals.census_draw import CalibrationCard, DrawRecord, Sibling
+from evals.cve.detection.draw_record import CalibrationCard, DrawRecord, Sibling
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 
 SERVER = admission_given.SERVER_PACKAGE

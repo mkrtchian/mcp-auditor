@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 import tests.unit.support.test_calibration_dossier_given as given
-from evals.census_classification import Classification
-from evals.census_draw import CalibrationCard
+from evals.cve.census.classification import Classification
+from evals.cve.detection.draw_record import CalibrationCard
 
 
 def test_the_fixture_format_embeds_the_card_and_classification_schemas(tmp_path: Path):

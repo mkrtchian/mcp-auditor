@@ -1,11 +1,16 @@
 from datetime import date
 from pathlib import Path
 
+import pytest
+
+import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_census_sources_given as sources
 import tests.unit.support.test_run_census_given as given
-from evals.census_grouping import READERS
-from evals.census_sources import SourceName
-from evals.holdout_census import Discovery, load_census
+from evals import run_census
+from evals.cve.census.census import Discovery, load_census
+from evals.cve.census.draw_order import draw_order
+from evals.cve.census.grouping import READERS
+from evals.cve.census.sources import SourceName
 
 GHSA = SourceName.GHSA
 OSV = SourceName.OSV
@@ -126,7 +131,7 @@ def test_prefilter_lists_only_the_undecided_hits(tmp_path: Path):
 def test_assemble_refuses_while_the_census_is_incomplete(tmp_path: Path):
     sources_directory = given.a_sources_directory(tmp_path, ghsa=[given.an_mcp_advisory(A_GHSA)])
     work = given.a_work_directory(tmp_path)
-    census = tmp_path / "holdout_census.json"
+    census = tmp_path / "census.json"
 
     exit_code = given.run("assemble", sources_directory, work, "--census", str(census))
 
@@ -143,7 +148,7 @@ def test_assemble_refuses_when_a_classifier_misses_a_flaw(tmp_path: Path):
         decisions=[given.kept(GHSA, A_GHSA), given.kept(GHSA, OTHER_GHSA)],
         classifiers=given.both_classifiers_classifying((A_GHSA, date(2025, 6, 10))),
     )
-    census = tmp_path / "holdout_census.json"
+    census = tmp_path / "census.json"
 
     exit_code = given.run("assemble", sources_directory, work, "--census", str(census))
 
@@ -159,7 +164,7 @@ def test_assemble_refuses_when_a_reader_grouping_is_missing(tmp_path: Path):
         classifiers=given.both_classifiers_classifying((A_GHSA, date(2025, 6, 10))),
         readers=READERS[:1],
     )
-    census = tmp_path / "holdout_census.json"
+    census = tmp_path / "census.json"
 
     exit_code = given.run("assemble", sources_directory, work, "--census", str(census))
 
@@ -169,7 +174,7 @@ def test_assemble_refuses_when_a_reader_grouping_is_missing(tmp_path: Path):
 
 def test_assemble_writes_a_census_that_loads(tmp_path: Path):
     sources_directory, work = _a_complete_census_collection(tmp_path)
-    census = tmp_path / "holdout_census.json"
+    census = tmp_path / "census.json"
 
     exit_code = given.run("assemble", sources_directory, work, "--census", str(census))
 
@@ -184,7 +189,7 @@ def test_assemble_writes_a_census_that_loads(tmp_path: Path):
 
 def test_assemble_records_how_many_hits_each_prefilter_term_finds(tmp_path: Path):
     sources_directory, work = _a_complete_census_collection(tmp_path)
-    census = tmp_path / "holdout_census.json"
+    census = tmp_path / "census.json"
 
     given.run("assemble", sources_directory, work, "--census", str(census))
 
@@ -208,6 +213,34 @@ def test_classify_dossier_writes_one_file_per_flaw_the_schema_and_the_grammar_cl
         "classification_schema.json",
         "grammar_classes.md",
     ]
+
+
+def test_draw_order_prints_each_candidate_with_its_digest_and_disclosure_date(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    census = census_given.a_census()
+    entries = draw_order(census)
+
+    exit_code = run_census.main(
+        ["draw-order", "--census", str(census_given.written(tmp_path, census))]
+    )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"{len(entries)} candidates in draw order:" in output
+    for entry in entries:
+        assert f"  {entry.digest[:12]}  {entry.identifier}  {entry.disclosure_date}" in output
+    assert "pre_cutoff" not in output
+    assert "post_cutoff" not in output
+
+
+def test_draw_order_on_a_malformed_census_exits_three(tmp_path: Path):
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("{not valid census}")
+
+    exit_code = run_census.main(["draw-order", "--census", str(malformed)])
+
+    assert exit_code == 3
 
 
 def _a_complete_census_collection(tmp_path: Path) -> tuple[Path, Path]:

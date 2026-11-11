@@ -1,7 +1,7 @@
 import pytest
 
 import tests.unit.support.test_holdout_fixture_sources_then as then
-from evals.holdout_census import load_census
+from evals.cve.census.census import load_census
 from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.run_census import CENSUS_PATH
 

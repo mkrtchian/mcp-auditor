@@ -3,7 +3,7 @@ its second-agent check ran under rule v11 or later."""
 
 from collections.abc import Sequence
 
-from evals.census_draw import CalibrationCard, CardCheck, DrawRecord
+from evals.cve.detection.draw_record import CalibrationCard, CardCheck, DrawRecord
 
 CARD_CHECK_RULE_VERSION = 11
 

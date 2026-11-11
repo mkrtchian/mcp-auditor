@@ -1,8 +1,9 @@
-"""Build the holdout census from the three source exports and the census agents' work files.
+"""Build the census from the three source exports and the census agents' work files, and print
+its draw order.
 
 The work directory, the operating procedure and the download commands are in
-evals/holdout_census_method.md. This module reads and writes files and does nothing else:
-what the collection holds is computed by evals/census_progress.py.
+evals/census_method.md. This module reads and writes files and does nothing else: what the
+collection holds is computed by evals/cve/census/progress.py.
 """
 
 import argparse
@@ -15,12 +16,14 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals import eval_display as display
-from evals.census_classification import Classification
-from evals.census_grouping import READERS, ProofJudgment
-from evals.census_identity import Flaw
-from evals.census_prefilter import PrefilterTerm
-from evals.census_progress import AssemblyInputs, Collection, CollectionWork
-from evals.census_sources import (
+from evals.cve.census.census import CLASSIFIERS, load_census
+from evals.cve.census.classification import Classification
+from evals.cve.census.draw_order import draw_order
+from evals.cve.census.grouping import READERS, ProofJudgment
+from evals.cve.census.identity import Flaw
+from evals.cve.census.prefilter import PrefilterTerm
+from evals.cve.census.progress import AssemblyInputs, Collection, CollectionWork
+from evals.cve.census.sources import (
     AdvisoryRecord,
     Download,
     SourceName,
@@ -31,7 +34,7 @@ from evals.census_sources import (
     read_osv,
     source_provenance,
 )
-from evals.census_work import (
+from evals.cve.census.work import (
     AgentRecord,
     Downloads,
     Gap,
@@ -41,12 +44,11 @@ from evals.census_work import (
     read_jsonl,
 )
 from evals.eval_session import Refused
-from evals.holdout_census import CLASSIFIERS, load_census
 from evals.honeypots import REPO_ROOT
 
-SOURCES = REPO_ROOT / "output" / "holdout_census" / "sources"
-WORK = REPO_ROOT / "output" / "holdout_census" / "work"
-CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
+SOURCES = REPO_ROOT / "output" / "census" / "sources"
+WORK = REPO_ROOT / "output" / "census" / "work"
+CENSUS_PATH = REPO_ROOT / "evals" / "census.json"
 INCOMPLETE_EXIT = 1
 REFUSED_EXIT = 3
 
@@ -96,7 +98,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Build the CVE holdout census.")
+    parser = argparse.ArgumentParser(description="Build the census of the CVE benchmark.")
     commands = parser.add_subparsers(required=True)
     for name, command, help_text in [
         ("prefilter", _prefilter, "write the undecided pre-filter hits of each source"),
@@ -112,6 +114,9 @@ def _parser() -> argparse.ArgumentParser:
             subparser.add_argument("--out", type=Path, required=True)
         if name == "assemble":
             subparser.add_argument("--census", type=Path, default=CENSUS_PATH)
+    draw = commands.add_parser("draw-order", help="print the draw order for the maintainer to walk")
+    draw.set_defaults(command=_draw_order)
+    draw.add_argument("--census", type=Path, default=CENSUS_PATH)
     return parser
 
 
@@ -172,6 +177,18 @@ def _assemble(args: argparse.Namespace) -> int:
         raise Refused("Assembly refused: the census does not load.", [str(error)]) from error
     draft.replace(path)
     print(f"{len(census.flaws)} flaws written to {path}")
+    return 0
+
+
+def _draw_order(args: argparse.Namespace) -> int:
+    try:
+        census = load_census(args.census)
+    except ValueError as error:
+        raise Refused("Refused: the census is malformed.", [str(error)]) from error
+    entries = draw_order(census)
+    print(f"{len(entries)} candidates in draw order:")
+    for entry in entries:
+        print(f"  {entry.digest[:12]}  {entry.identifier}  {entry.disclosure_date}")
     return 0
 
 

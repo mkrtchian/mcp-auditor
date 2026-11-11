@@ -1,12 +1,12 @@
 """The admission file of the nuisance suite: the servers the maintainer admits, one file of
-its own (`evals/nuisance_admission.json`), distinct from the holdout census.
+its own (`evals/nuisance_admission.json`), distinct from the census.
 
 The schema is filled by the two blind admission agents and the maintainer who settles their
-disagreements, on the model of the draw record of `evals/census_draw.py`. Every list is empty
-until the admission session. `admission_problems` holds the load validation, raised joined by
-`load_admission`, so a crafted admission can be checked without a file. The file is absent
-until the session, and `load_admission` says so. The fields defaulting to `None` are those rule
-v3 or v4 added and not yet recorded, which `nuisance_unrecorded` refuses at run.
+disagreements, on the model of the draw record of `evals/cve/detection/draw_record.py`. Every
+list is empty until the admission session. `admission_problems` holds the load validation,
+raised joined by `load_admission`, so a crafted admission can be checked without a file. The
+file is absent until the session, and `load_admission` says so. The fields defaulting to `None`
+are those rule v3 or v4 added and not yet recorded, which `nuisance_unrecorded` refuses at run.
 """
 
 from collections.abc import Mapping
@@ -16,8 +16,8 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from evals import cve_baseline, nuisance_backends, nuisance_images, nuisance_walk
-from evals.census_draw import LaunchOption
-from evals.census_work import AgentRecord
+from evals.cve.census.work import AgentRecord
+from evals.cve.detection.draw_record import LaunchOption
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost
 from evals.fixture_provenance import SoftwareRelease, StandInRecord

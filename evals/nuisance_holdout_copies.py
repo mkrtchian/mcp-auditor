@@ -8,7 +8,7 @@ recorded fingerprint are never read (the last is `nuisance_unrecorded`'s)."""
 
 from collections.abc import Iterable, Mapping, Sequence
 
-from evals.census_draw import DrawRecord
+from evals.cve.detection.draw_record import DrawRecord
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_counting import counted_flaws
 

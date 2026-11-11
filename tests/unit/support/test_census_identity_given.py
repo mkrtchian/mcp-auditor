@@ -1,7 +1,7 @@
 from datetime import date
 
 import tests.unit.support.test_census_sources_given as sources
-from evals.census_sources import AdvisoryRecord, SourceName
+from evals.cve.census.sources import AdvisoryRecord, SourceName
 
 
 def a_ghsa(ghsa_id: str, *aliases: str, published: date = date(2025, 6, 10)) -> AdvisoryRecord:

@@ -19,8 +19,8 @@ from pathlib import Path
 
 from evals import calibration_dossier, dossier_closure, nuisance_holdout_reference, nuisance_walk
 from evals.calibration_dossier import KIT_MODULES, acceptance_services, copy_clean_sources
+from evals.cve.census.census import Census
 from evals.eval_session import Refused
-from evals.holdout_census import HoldoutCensus
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_readmission_docs import admission_confinement_text
@@ -41,7 +41,7 @@ def write_dossier(
     if not identifiers:
         raise Refused(
             f"Refused: no census flaw names the server {server_package}.",
-            ["The --server argument must be a server package the holdout census records."],
+            ["The --server argument must be a server package the census records."],
         )
     _refuse_unknown_backend(backend)
     out.mkdir(parents=True, exist_ok=True)
@@ -66,7 +66,7 @@ def _refuse_unknown_backend(backend: str | None) -> None:
         )
 
 
-def _write_advisories(census: HoldoutCensus, identifiers: list[str], out: Path) -> None:
+def _write_advisories(census: Census, identifiers: list[str], out: Path) -> None:
     by_identifier = {flaw.identifier: flaw for flaw in census.flaws}
     advisories = out / "advisories"
     advisories.mkdir(parents=True, exist_ok=True)

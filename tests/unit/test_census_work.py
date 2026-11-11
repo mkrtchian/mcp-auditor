@@ -4,9 +4,9 @@ import pytest
 from pydantic import ValidationError
 
 import tests.unit.support.test_census_work_given as given
-from evals.census_work import AgentRecord, AgentRole, read_jsonl
-from evals.holdout_census import load_census
-from tests.unit.support.test_census_draw_given import A_DRAWN_FLAW
+from evals.cve.census.census import load_census
+from evals.cve.census.work import AgentRecord, AgentRole, read_jsonl
+from tests.unit.support.test_detection_draw_record_given import A_DRAWN_FLAW
 
 
 def test_an_agent_that_continued_on_the_fallback_model_is_one_record_satisfying_the_draw(

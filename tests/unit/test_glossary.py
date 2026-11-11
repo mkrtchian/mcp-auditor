@@ -257,6 +257,24 @@ _ALLOWLIST = (
         "a rename entry names the word it replaces",
     ),
     AllowedLine(
+        "evals/cve/census/work.py",
+        "cve-id",
+        "cve_id: str",
+        "`VulnerableMcpEntry.cve_id` holds the CVE IDs vulnerablemcp.info lists",
+    ),
+    AllowedLine(
+        "evals/cve/census/progress.py",
+        "cve-id",
+        "entry.cve_id",
+        "reads of that field",
+    ),
+    AllowedLine(
+        "tests/unit/support/test_census_given.py",
+        "cve-id",
+        "VulnerableMcpEntry(cve_id=",
+        "builds that record",
+    ),
+    AllowedLine(
         "evals/docker/Dockerfile.serverless*",
         "stub",
         "installer stub",

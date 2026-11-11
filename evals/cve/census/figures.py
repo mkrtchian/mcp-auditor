@@ -1,4 +1,4 @@
-"""Figures of the holdout census, recomputed from its classifications.
+"""Figures of the census, recomputed from its classifications.
 
 A flaw meets a criterion under the rule when either classifier finds that it does, so it
 falls outside the grammar only when both place it there. The breakdowns are never merged:
@@ -12,7 +12,7 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from evals.census_classification import (
+from evals.cve.census.classification import (
     Classification,
     Criterion,
     criteria_met,

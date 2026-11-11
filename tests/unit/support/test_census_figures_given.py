@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Any, NamedTuple
 
-from evals.census_classification import (
+from evals.cve.census.classification import (
     Classification,
     Primitive,
     SoftwareKind,

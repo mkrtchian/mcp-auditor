@@ -82,7 +82,7 @@ def test_run_records_the_census_and_walk_record_commits_in_its_result(
     assert run_nuisance.main(given.a_run_command(tmp_path)) == 0
 
     result = json.loads(report.with_suffix(".result.json").read_text())
-    assert result["census_commit"] == "commit-of-holdout_census.json"
+    assert result["census_commit"] == "commit-of-census.json"
     assert result["walk_record_commit"] == "commit-of-nuisance_walk_record.json"
 
 

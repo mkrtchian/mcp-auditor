@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_run_given as nuisance_run_given
 import tests.unit.support.test_nuisance_walk_given as walk_given

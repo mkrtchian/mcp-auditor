@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from evals.census_sources import AdvisoryRecord, SourceName
+from evals.cve.census.sources import AdvisoryRecord, SourceName
 
 
 class PrefilterTerm(BaseModel):

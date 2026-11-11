@@ -1,4 +1,4 @@
-"""The holdout census, `evals/holdout_census.json`, and its validation on load.
+"""The census, `evals/census.json`, and its validation on load.
 
 Everything derived in the file is recomputed on load and compared: each flaw's
 identifier and disclosure date from its source records, its withdrawn flag, the date
@@ -16,10 +16,9 @@ from typing import Literal
 from pydantic import BaseModel, Field, computed_field
 
 from evals import cve_places
-from evals.census_classification import Classification, is_consistent
-from evals.census_draw import DrawRecord, draw_problems
-from evals.census_figures import CensusFigures, Share, compute_figures
-from evals.census_grouping import (
+from evals.cve.census.classification import Classification, is_consistent
+from evals.cve.census.figures import CensusFigures, Share, compute_figures
+from evals.cve.census.grouping import (
     READERS,
     ProofJudgment,
     draw_order_flaws,
@@ -27,10 +26,11 @@ from evals.census_grouping import (
     grouped_flaws,
     known_gap,
 )
-from evals.census_identity import Flaw, census_identifier, disclosure_date
-from evals.census_prefilter import PrefilterTerm
-from evals.census_sources import SourceProvenance, SourceRecord
-from evals.census_work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
+from evals.cve.census.identity import Flaw, disclosure_date, flaw_id_of
+from evals.cve.census.prefilter import PrefilterTerm
+from evals.cve.census.sources import SourceProvenance, SourceRecord
+from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
+from evals.cve.detection.draw_record import DrawRecord, draw_problems
 
 BOUND = date(2026, 10, 7)
 CLASSIFIERS = ("classifier_1", "classifier_2")
@@ -69,7 +69,7 @@ class DateMismatch(BaseModel):
     computed_date: date
 
 
-class HoldoutCensus(BaseModel):
+class Census(BaseModel):
     rule_version: Literal[3] = 3
     rule_commit: Literal["0468deb"] = "0468deb"
     bound_commit: Literal["3f09545"] = "3f09545"
@@ -130,8 +130,8 @@ def draw_candidates(flaws: Sequence[CensusFlaw]) -> set[str]:
     }
 
 
-def load_census(path: Path) -> HoldoutCensus:
-    census = HoldoutCensus.model_validate_json(path.read_text())
+def load_census(path: Path) -> Census:
+    census = Census.model_validate_json(path.read_text())
     coverage = _coverage_problems(census)
     problems = [
         *(problem for flaw in census.flaws for problem in _flaw_problems(flaw, census.bound)),
@@ -155,7 +155,7 @@ def load_census(path: Path) -> HoldoutCensus:
         disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
         problems += draw_problems(census.draw, order, disclosure_dates, place_ids, census.agents)
     if problems:
-        raise ValueError(f"invalid holdout census {path}: {'; '.join(problems)}")
+        raise ValueError(f"invalid census {path}: {'; '.join(problems)}")
     return census
 
 
@@ -166,7 +166,7 @@ def _without_census_identifier(records: Sequence[SourceRecord]) -> str:
 
 def _flaw_problems(flaw: CensusFlaw, bound: date) -> list[str]:
     problems: list[str] = []
-    canonical = census_identifier(set(flaw.ids), flaw.records)
+    canonical = flaw_id_of(set(flaw.ids), flaw.records)
     expected = canonical or _without_census_identifier(flaw.records)
     if flaw.identifier != expected or flaw.no_census_identifier != (canonical is None):
         problems.append(f"flaw {flaw.identifier}: its canonical identifier is {expected}")
@@ -204,7 +204,7 @@ def _identity_problems(flaws: list[CensusFlaw]) -> list[str]:
     return duplicated + shared
 
 
-def _coverage_problems(census: HoldoutCensus) -> list[str]:
+def _coverage_problems(census: Census) -> list[str]:
     if tuple(census.classifications) != CLASSIFIERS:
         return [f"classifiers must be {', '.join(CLASSIFIERS)}"]
     in_census = {flaw.identifier for flaw in census.flaws}
@@ -237,7 +237,7 @@ def _consistency_problems(classifications: dict[str, list[Classification]]) -> l
     ]
 
 
-def _reader_problems(census: HoldoutCensus) -> list[str]:
+def _reader_problems(census: Census) -> list[str]:
     if tuple(census.groupings) != READERS:
         return [f"readers must be {', '.join(READERS)}"]
     recorded = {agent.scope for agent in census.agents if agent.role == AgentRole.READER}
@@ -250,7 +250,7 @@ def _reader_problems(census: HoldoutCensus) -> list[str]:
     ]
 
 
-def _grouping_problems(census: HoldoutCensus) -> list[str]:
+def _grouping_problems(census: Census) -> list[str]:
     given = grouped_flaws(census.classifications, draw_candidates(census.flaws))
     problems: list[str] = []
     for reader, own in census.groupings.items():
@@ -270,7 +270,7 @@ def _grouping_problems(census: HoldoutCensus) -> list[str]:
     return problems
 
 
-def _derived_problems(census: HoldoutCensus) -> list[str]:
+def _derived_problems(census: Census) -> list[str]:
     dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
     withdrawn = {flaw.identifier for flaw in census.flaws if flaw.withdrawn}
     population = gap_population(census.classifications, draw_candidates(census.flaws))

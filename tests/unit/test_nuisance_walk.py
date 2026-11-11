@@ -1,8 +1,8 @@
 import pytest
 
 import tests.unit.support.test_nuisance_walk_given as given
-from evals.census_classification import Criterion
-from evals.holdout_draw import draw_order
+from evals.cve.census.classification import Criterion
+from evals.cve.census.draw_order import draw_order
 from evals.nuisance_walk import (
     ServerMark,
     acceptance_servers,

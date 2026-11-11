@@ -27,8 +27,8 @@ from langchain_anthropic import ChatAnthropic
 from pydantic import BaseModel
 
 import tests.unit.support.test_graph_given as graph
-from evals.census_classification import Classification
-from evals.census_draw import CalibrationCard
+from evals.cve.census.classification import Classification
+from evals.cve.detection.draw_record import CalibrationCard
 from evals.judge.fixture import load_fixture
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.probe.corpus import SCHEMA_NAMES, schema_for

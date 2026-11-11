@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.holdout_kit_isolation as iso
-import tests.unit.support.test_holdout_census_given as given
+import tests.unit.support.test_census_given as given
 import tests.unit.support.test_holdout_run_given as holdout_given
 import tests.unit.support.test_run_holdout_run_given as run_given
 from evals import run_holdout
@@ -11,7 +11,6 @@ from evals.admission_calibration import CalibrationDeps
 from evals.closed_network import ClosedNetworkUnsupported
 from evals.cve_planting_base import SENTINEL_SERVICE
 from evals.cve_targets import CVE_TARGETS, image_tag
-from evals.holdout_draw import draw_order
 from evals.holdout_kit import kit_launch
 from evals.run_images import target_services
 from tests.fakes import FakeContainerSweep
@@ -137,30 +136,16 @@ def test_run_refuses_an_acceptance_target_for_its_tools_filter(
     assert run_holdout.main(["run"]) == run_holdout.REFUSED_EXIT
 
 
-def test_draw_order_prints_each_candidate_with_its_digest_and_disclosure_date(
+def test_draw_order_is_no_longer_a_command_of_the_holdout_run(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = given.a_census()
-    entries = draw_order(census)
+    census = given.written(tmp_path, given.a_census())
 
-    exit_code = run_holdout.main(["draw-order", "--census", str(given.written(tmp_path, census))])
+    with pytest.raises(SystemExit) as refused:
+        run_holdout.main(["draw-order", "--census", str(census)])
 
-    assert exit_code == 0
-    output = capsys.readouterr().out
-    assert f"{len(entries)} candidates in draw order:" in output
-    for entry in entries:
-        assert f"  {entry.digest[:12]}  {entry.identifier}  {entry.disclosure_date}" in output
-    assert "pre_cutoff" not in output
-    assert "post_cutoff" not in output
-
-
-def test_draw_order_on_a_malformed_census_exits_three(tmp_path: Path):
-    malformed = tmp_path / "malformed.json"
-    malformed.write_text("{not valid census}")
-
-    exit_code = run_holdout.main(["draw-order", "--census", str(malformed)])
-
-    assert exit_code == 3
+    assert refused.value.code == 2
+    assert "invalid choice: 'draw-order'" in capsys.readouterr().err
 
 
 def test_calibration_dossier_on_an_unknown_cve_refuses_with_exit_three(tmp_path: Path):

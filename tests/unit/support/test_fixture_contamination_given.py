@@ -2,7 +2,8 @@ import ast
 import re
 from pathlib import Path
 
-from evals import holdout_census, holdout_exclusions
+from evals.cve.census.census import load_census
+from evals.cve.census.exclusions import EXCLUDED_SERVERS
 from evals.honeypots import REPO_ROOT
 from evals.judge.fixture import CaseLabel, CaseSource, JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AuditCategory
@@ -16,7 +17,7 @@ HONEYPOT_SERVERS = (
 )
 
 _JUDGE_CASES = REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"
-_HOLDOUT_CENSUS = REPO_ROOT / "evals" / "holdout_census.json"
+_CENSUS = REPO_ROOT / "evals" / "census.json"
 
 # The auditor's own tool name heads every payload marker it plants (`mcp-auditor-probe`, the
 # `mcp-auditor-no-such-…` probe paths). A server never emits that name except by echoing our
@@ -58,7 +59,7 @@ def cve_cases() -> list[JudgeCase]:
 
 
 def servers_by_cve() -> dict[str, str]:
-    census = holdout_census.load_census(_HOLDOUT_CENSUS)
+    census = load_census(_CENSUS)
     return {
         classification.flaw: classification.server_package
         for own in census.classifications.values()
@@ -72,7 +73,7 @@ def server_corpus_of(cases: list[JudgeCase], servers: dict[str, str]) -> set[str
         cve_id = _cve_id_of(case)
         if cve_id not in servers:
             raise LookupError(f"the census does not classify {cve_id} of case {case.id}")
-        if servers[cve_id] not in holdout_exclusions.EXCLUDED_SERVERS:
+        if servers[cve_id] not in EXCLUDED_SERVERS:
             continue
         corpus |= _server_texts_of(case)
     return corpus

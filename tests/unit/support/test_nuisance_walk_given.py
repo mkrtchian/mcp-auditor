@@ -3,15 +3,15 @@ from pathlib import Path
 from typing import Any, Literal
 
 import tests.unit.support.test_census_figures_given as figures
+import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_census_grouping_given as grouping
-import tests.unit.support.test_holdout_census_given as census_given
-from evals.census_classification import Criterion, Primitive, Transport
-from evals.census_draw import DrawRecord, DrawWalkStep, Settlement
-from evals.census_sources import SourceName, SourceRecord
+from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw, Discovery
+from evals.cve.census.classification import Criterion, Primitive, Transport
+from evals.cve.census.draw_order import draw_digest
+from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVERS
+from evals.cve.census.sources import SourceName, SourceRecord
+from evals.cve.detection.draw_record import DetectionWalkStep, DrawRecord, Settlement
 from evals.cve_targets import CVE_TARGETS
-from evals.holdout_census import CLASSIFIERS, CensusFlaw, Discovery, HoldoutCensus
-from evals.holdout_draw import draw_digest
-from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
 from evals.nuisance_walk_record import (
     Addition,
     IdentitySettlement,
@@ -29,13 +29,13 @@ OVER_HTTP: dict[str, Any] = {"transport": Transport.HTTP}
 
 # `min`, since a frozenset's order varies between processes.
 A_CURRENT_TARGET_FLAW = CVE_TARGETS[0].cve_id
-A_DROPPED_BENCHMARK_FLAW = min(BENCHMARK_FLAWS - {target.cve_id for target in CVE_TARGETS})
+A_DROPPED_BENCHMARK_FLAW = min(ACCEPTANCE_TARGET_FLAWS - {target.cve_id for target in CVE_TARGETS})
 AN_EXCLUDED_SERVER = min(EXCLUDED_SERVERS)
 
 
 def a_census_walking(
     steps: list[tuple[str, Outcome, str]], **classification_overrides_per_flaw: dict[str, Any]
-) -> HoldoutCensus:
+) -> Census:
     """A census built around a draw walk of mixed outcomes. Each step is (identifier, outcome,
     server_package). A flaw named only in the overrides (not in the walk) still becomes a census
     flaw, so a server's non-walk census flaws can be carried; its server_package comes from the
@@ -70,7 +70,7 @@ def a_census_walking(
         grammar_fingerprint="deadbeef",
         settlements=[],
         walk=[
-            DrawWalkStep(identifier=identifier, outcome=outcome, reason="")
+            DetectionWalkStep(identifier=identifier, outcome=outcome, reason="")
             for identifier, outcome, _package in steps
         ],
         cards=[],
@@ -81,7 +81,7 @@ def a_census_walking(
     return _bare_census(order).model_copy(update={"classifications": classifications, "draw": draw})
 
 
-def a_census_walking_the_first(walked: int, of: list[str]) -> HoldoutCensus:
+def a_census_walking_the_first(walked: int, of: list[str]) -> Census:
     """Each flaw its own server, `npm:<flaw>`. The holdout walk takes the first `walked` flaws
     of the draw order (the salted digest order, not the order written), the queue the rest."""
     ordered = sorted(of, key=draw_digest)
@@ -92,8 +92,8 @@ def a_census_walking_the_first(walked: int, of: list[str]) -> HoldoutCensus:
 
 
 def with_the_second_classifier_overriding(
-    census: HoldoutCensus, flaw: str, override: dict[str, Any]
-) -> HoldoutCensus:
+    census: Census, flaw: str, override: dict[str, Any]
+) -> Census:
     """Override the second classifier's classification of one flaw, so a disagreement between the
     two classifiers can be exercised (server_of reads the first, the criteria read either)."""
     second = CLASSIFIERS[1]
@@ -105,22 +105,18 @@ def with_the_second_classifier_overriding(
     return census.model_copy(update={"classifications": classifications})
 
 
-def with_a_settlement(
-    census: HoldoutCensus, flaw: str, criterion: Criterion, verdict: bool
-) -> HoldoutCensus:
+def with_a_settlement(census: Census, flaw: str, criterion: Criterion, ruling: bool) -> Census:
     assert census.draw is not None
-    settlement = Settlement(
-        flaw=flaw, criterion=criterion, verdict=verdict, reason="the maintainer"
-    )
+    settlement = Settlement(flaw=flaw, criterion=criterion, ruling=ruling, reason="the maintainer")
     draw = census.draw.model_copy(update={"settlements": [*census.draw.settlements, settlement]})
     return census.model_copy(update={"draw": draw})
 
 
 def with_a_record_settlement(
-    nuisance_census: NuisanceCensus, flaw: str, criterion: Criterion, verdict: bool
+    nuisance_census: NuisanceCensus, flaw: str, criterion: Criterion, ruling: bool
 ) -> NuisanceCensus:
     record = nuisance_census.record
-    settlement = Settlement(flaw=flaw, criterion=criterion, verdict=verdict, reason="the record")
+    settlement = Settlement(flaw=flaw, criterion=criterion, ruling=ruling, reason="the record")
     settled = record.model_copy(update={"settlements": [*record.settlements, settlement]})
     return NuisanceCensus(census=nuisance_census.census, record=settled)
 
@@ -134,7 +130,7 @@ def with_an_identity(
     return NuisanceCensus(census=nuisance_census.census, record=identified)
 
 
-def a_nuisance_census(census: HoldoutCensus) -> NuisanceCensus:
+def a_nuisance_census(census: Census) -> NuisanceCensus:
     return NuisanceCensus(census=census, record=an_empty_record())
 
 
@@ -161,7 +157,7 @@ def written_record(tmp_path: Path, record: NuisanceWalkRecord) -> Path:
     return path
 
 
-def _bare_census(identifiers: list[str]) -> HoldoutCensus:
+def _bare_census(identifiers: list[str]) -> Census:
     census = census_given.a_census()
     return census.model_copy(update={"flaws": [_flaw(identifier) for identifier in identifiers]})
 

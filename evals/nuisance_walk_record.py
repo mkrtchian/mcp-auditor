@@ -18,10 +18,10 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals.census_classification import Classification, Criterion, criteria_met
-from evals.census_draw import DrawRecord, Settlement
-from evals.holdout_census import CLASSIFIERS, HoldoutCensus
-from evals.holdout_draw import draw_order
+from evals.cve.census.census import CLASSIFIERS, Census
+from evals.cve.census.classification import Classification, Criterion, criteria_met
+from evals.cve.census.draw_order import draw_order
+from evals.cve.detection.draw_record import DrawRecord, Settlement
 
 
 class Addition(BaseModel):
@@ -47,7 +47,7 @@ class NuisanceCensus:
     """The census and the record, with the lookups the walk repeats per flaw indexed once:
     rescanning every flaw for every flaw made a population build quadratic."""
 
-    census: HoldoutCensus
+    census: Census
     record: NuisanceWalkRecord
 
     @cached_property
@@ -87,7 +87,7 @@ class NuisanceCensus:
 _WALKED_CRITERIA = tuple(c for c in Criterion if c is not Criterion.GRAMMAR_CLASS)
 
 
-def load_walk_record(path: Path, census: HoldoutCensus) -> NuisanceCensus:
+def load_walk_record(path: Path, census: Census) -> NuisanceCensus:
     if not path.exists():
         raise FileNotFoundError(f"no nuisance walk record at {path}: it has not been committed")
     record = NuisanceWalkRecord.model_validate_json(path.read_text())
@@ -109,7 +109,7 @@ def walk_record_problems(nuisance_census: NuisanceCensus) -> list[str]:
     ]
 
 
-def reached_identifiers(census: HoldoutCensus) -> list[str]:
+def reached_identifiers(census: Census) -> list[str]:
     return list(dict.fromkeys(step.identifier for step in _draw(census).walk))
 
 
@@ -121,7 +121,7 @@ def normalized_package(server_package: str) -> str:
     return prefix + re.sub(r"[-_.]+", "-", name).lower()
 
 
-def _membership_problems(census: HoldoutCensus, record: NuisanceWalkRecord) -> list[str]:
+def _membership_problems(census: Census, record: NuisanceWalkRecord) -> list[str]:
     candidates = {entry.identifier for entry in draw_order(census)}
     flaws = {flaw.identifier for flaw in census.flaws}
     return [
@@ -151,14 +151,14 @@ def _duplicate_problems(record: NuisanceWalkRecord) -> list[str]:
     ]
 
 
-def _contradiction_problems(census: HoldoutCensus, record: NuisanceWalkRecord) -> list[str]:
-    drawn = {(s.flaw, s.criterion): s.verdict for s in _draw(census).settlements}
+def _contradiction_problems(census: Census, record: NuisanceWalkRecord) -> list[str]:
+    drawn = {(s.flaw, s.criterion): s.ruling for s in _draw(census).settlements}
     return [
-        f"{settlement.flaw}: settled {settlement.verdict} on {settlement.criterion}, "
-        f"the draw settles it {not settlement.verdict}"
+        f"{settlement.flaw}: settled {settlement.ruling} on {settlement.criterion}, "
+        f"the draw settles it {not settlement.ruling}"
         for settlement in record.settlements
-        if drawn.get((settlement.flaw, settlement.criterion), settlement.verdict)
-        != settlement.verdict
+        if drawn.get((settlement.flaw, settlement.criterion), settlement.ruling)
+        != settlement.ruling
     ]
 
 
@@ -192,7 +192,7 @@ def _completeness_problems(nuisance_census: NuisanceCensus) -> list[str]:
     return problems
 
 
-def _draw(census: HoldoutCensus) -> DrawRecord:
+def _draw(census: Census) -> DrawRecord:
     if census.draw is None:
         raise ValueError("the census has no draw walk to follow")
     return census.draw

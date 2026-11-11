@@ -1,9 +1,9 @@
-"""The grouping by proof of the holdout census, and the known gap it gives.
+"""The grouping by proof of the census, and the known gap it gives.
 
 Two readers judge, each on its own, how the effect of each flaw the rule gives them could be
 proven in a tool response, and group the flaws by that proof. The flaws a reader places in
-`NO_PROOF_GROUP` are the known gap of the holdout as that reader finds it (ADR 029). A flaw
-meets a criterion when either classifier finds that it does, as in evals/census_figures.py,
+`NO_PROOF_GROUP` are the known gap as that reader finds it (ADR 029). A flaw
+meets a criterion when either classifier finds that it does, as in evals/cve/census/figures.py,
 so it falls outside the grammar only when both place it there.
 """
 
@@ -12,9 +12,9 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel
 
-from evals.census_classification import Classification, Criterion, criteria_met, in_grammar
-from evals.census_figures import Share
-from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
+from evals.cve.census.classification import Classification, Criterion, criteria_met, in_grammar
+from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVERS
+from evals.cve.census.figures import Share
 
 READERS = ("reader_1", "reader_2")
 NO_PROOF_GROUP = "no_proof_in_tool_output"
@@ -96,7 +96,7 @@ def _by_flaw(classifications: dict[str, list[Classification]]) -> dict[str, list
 
 def in_draw_order(flaw: str, seen: Sequence[Classification]) -> bool:
     return (
-        flaw not in BENCHMARK_FLAWS
+        flaw not in ACCEPTANCE_TARGET_FLAWS
         and all(
             any(criteria_met(classification)[criterion] for classification in seen)
             for criterion in DRAW_ORDER_CRITERIA

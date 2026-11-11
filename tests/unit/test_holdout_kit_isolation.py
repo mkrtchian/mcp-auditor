@@ -6,7 +6,7 @@ from dataclasses import fields
 from pathlib import Path
 
 import tests.unit.support.holdout_kit_isolation as iso
-import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_census_given as census_given
 from evals.calibration_dossier import write_kit
 from evals.cve_targets import CVETarget
 from evals.holdout_kit.fix_check import FixCheckResult

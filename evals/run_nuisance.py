@@ -28,13 +28,13 @@ from rich.progress import Progress
 
 from evals import eval_display as display
 from evals.audit_progress import AuditProgress
-from evals.census_draw import DrawRecord, governing_steps
 from evals.concurrency import positive_int
+from evals.cve.census.draw_order import draw_order
+from evals.cve.detection.draw_record import DrawRecord, governing_steps
 from evals.cve_baseline import fixture_fingerprint
 from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.eval_session import Refused, last_commit
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
-from evals.holdout_draw import draw_order
 from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import quiet_throttle_waits

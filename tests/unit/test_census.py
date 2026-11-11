@@ -5,11 +5,12 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.support.test_census_given as given
 import tests.unit.support.test_census_identity_given as identity
-import tests.unit.support.test_holdout_census_given as given
-from evals.census_work import HitDecision, read_jsonl
-from evals.holdout_census import DateMismatch, HoldoutCensus, load_census
-from evals.run_census import CENSUS_PATH
+from evals import nuisance_commands, run_census, run_holdout
+from evals.cve.census.census import Census, DateMismatch, load_census
+from evals.cve.census.work import HitDecision, read_jsonl
+from evals.honeypots import REPO_ROOT
 
 
 def test_a_well_formed_census_loads(tmp_path: Path):
@@ -20,11 +21,17 @@ def test_a_well_formed_census_loads(tmp_path: Path):
     assert loaded == census
 
 
-def test_the_committed_census_loads():
-    load_census(CENSUS_PATH)
+@pytest.mark.parametrize(
+    "default_path",
+    [run_census.CENSUS_PATH, run_holdout.CENSUS_PATH, nuisance_commands.CENSUS_PATH],
+    ids=["run_census", "run_holdout", "nuisance_commands"],
+)
+def test_every_command_reads_the_committed_census_by_default(default_path: Path):
+    assert default_path == REPO_ROOT / "evals" / "census.json"
+    load_census(default_path)
 
 
-DEFECTS: list[tuple[Callable[[HoldoutCensus], HoldoutCensus], str]] = [
+DEFECTS: list[tuple[Callable[[Census], Census], str]] = [
     (
         given.with_a_non_canonical_identifier,
         "flaw GHSA-aaaa-bbbb-cccc: its canonical identifier is CVE-2025-0001",
@@ -84,7 +91,7 @@ DEFECTS: list[tuple[Callable[[HoldoutCensus], HoldoutCensus], str]] = [
     ("defect", "refusal"), DEFECTS, ids=[defect.__name__ for defect, _ in DEFECTS]
 )
 def test_a_census_with_one_defect_is_refused(
-    tmp_path: Path, defect: Callable[[HoldoutCensus], HoldoutCensus], refusal: str
+    tmp_path: Path, defect: Callable[[Census], Census], refusal: str
 ):
     path = given.written(tmp_path, defect(given.a_census()))
 

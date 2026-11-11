@@ -1,6 +1,6 @@
 from functools import cache
 
-from evals.holdout_census import load_census
+from evals.cve.census.census import load_census
 from evals.nuisance_admission import ADMISSION_PATH, NuisanceAdmission, load_admission
 from evals.nuisance_commands import CENSUS_PATH, WALK_RECORD_PATH
 from evals.nuisance_walk_record import NuisanceCensus, load_walk_record

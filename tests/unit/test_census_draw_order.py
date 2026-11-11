@@ -1,8 +1,8 @@
 from datetime import date
 
-import tests.unit.support.test_holdout_draw_given as given
-from evals.holdout_draw import DRAW_SALT, draw_digest, draw_order
-from tests.unit.support.test_holdout_draw_given import A_BENCHMARK_FLAW, AN_EXCLUDED_SERVER
+import tests.unit.support.test_census_draw_order_given as given
+from evals.cve.census.draw_order import DRAW_SALT, draw_digest, draw_order
+from tests.unit.support.test_census_draw_order_given import A_BENCHMARK_FLAW, AN_EXCLUDED_SERVER
 
 
 def test_draw_digest_is_the_known_sha256_of_a_fixed_identifier():

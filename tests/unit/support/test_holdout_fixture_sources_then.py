@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from evals.census_draw import CalibrationCard
+from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve_baseline import ENVIRONMENT_PATHS, host_stand_in_files
 from evals.cve_places import HOLDOUT_PLACES, PlantKind, kept_records, load_places
 from evals.cve_targets import CVETarget

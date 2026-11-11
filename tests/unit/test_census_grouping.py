@@ -1,9 +1,9 @@
 import tests.unit.support.test_census_figures_given as figures
 import tests.unit.support.test_census_grouping_given as given
-from evals.census_figures import Share
-from evals.census_grouping import gap_population, grouped_flaws, known_gap
+from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS
+from evals.cve.census.figures import Share
+from evals.cve.census.grouping import gap_population, grouped_flaws, known_gap
 from evals.cve_targets import CVE_TARGETS, OUT_OF_SCOPE_CVES
-from evals.holdout_exclusions import BENCHMARK_FLAWS
 
 EXCLUDED_SERVER = "npm:mcp-fetch-server"
 A_BENCHMARK_FLAW = "CVE-2025-65513"
@@ -75,7 +75,7 @@ def test_a_flaw_outside_the_candidates_is_left_out():
 def test_every_current_and_dropped_benchmark_target_is_a_benchmark_flaw():
     targets = {target.cve_id for target in (*CVE_TARGETS, *OUT_OF_SCOPE_CVES)}
 
-    assert targets <= BENCHMARK_FLAWS
+    assert targets <= ACCEPTANCE_TARGET_FLAWS
 
 
 def test_the_known_gap_of_a_reader_is_its_no_proof_share_of_the_gap_population():

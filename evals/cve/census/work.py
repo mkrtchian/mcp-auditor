@@ -11,8 +11,8 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ValidationError, model_validator
 
-from evals.census_classification import SoftwareKind
-from evals.census_sources import SourceName
+from evals.cve.census.classification import SoftwareKind
+from evals.cve.census.sources import SourceName
 
 
 class HitDecision(BaseModel):

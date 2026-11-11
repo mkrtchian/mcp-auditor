@@ -1,7 +1,7 @@
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals.census_classification import Criterion
-from evals.census_draw import Settlement
-from evals.holdout_census import HoldoutCensus
+from evals.cve.census.census import Census
+from evals.cve.census.classification import Criterion
+from evals.cve.detection.draw_record import Settlement
 from evals.nuisance_walk_record import (
     IdentitySettlement,
     NuisanceCensus,
@@ -9,7 +9,7 @@ from evals.nuisance_walk_record import (
 )
 
 
-def a_census() -> HoldoutCensus:
+def a_census() -> Census:
     """`walked` is reached by the holdout walk, `queued` is a draw-order flaw past it, and
     `unpinnable` is a census flaw outside the draw order."""
     return walk_given.a_census_walking(
@@ -19,25 +19,25 @@ def a_census() -> HoldoutCensus:
     )
 
 
-def a_census_settling(flaw: str, criterion: Criterion, verdict: bool) -> HoldoutCensus:
-    return walk_given.with_a_settlement(a_census(), flaw, criterion, verdict)
+def a_census_settling(flaw: str, criterion: Criterion, ruling: bool) -> Census:
+    return walk_given.with_a_settlement(a_census(), flaw, criterion, ruling)
 
 
-def a_census_split_on_the_effect_of(flaw: str) -> HoldoutCensus:
+def a_census_split_on_the_effect_of(flaw: str) -> Census:
     """The second classifier finds the flaw's effect hidden, the first finds it shown."""
     return walk_given.with_the_second_classifier_overriding(
         a_census(), flaw, walk_given.EFFECT_HIDDEN
     )
 
 
-def a_census_split_on_the_grammar_class_of(flaw: str) -> HoldoutCensus:
+def a_census_split_on_the_grammar_class_of(flaw: str) -> Census:
     """The second classifier files the flaw outside the grammar, the first inside."""
     return walk_given.with_the_second_classifier_overriding(
         a_census(), flaw, walk_given.OUTSIDE_THE_GRAMMAR
     )
 
 
-def a_census_naming_two_packages_for_the_queue() -> HoldoutCensus:
+def a_census_naming_two_packages_for_the_queue() -> Census:
     return walk_given.with_the_second_classifier_overriding(
         a_census(), "queued", {"server_package": "https://github.com/acme/srv2"}
     )
@@ -50,8 +50,8 @@ def a_record_settling(*settlements: tuple[str, Criterion, bool]) -> NuisanceWalk
     return an_empty_record().model_copy(
         update={
             "settlements": [
-                Settlement(flaw=flaw, criterion=criterion, verdict=verdict, reason="read")
-                for flaw, criterion, verdict in settlements
+                Settlement(flaw=flaw, criterion=criterion, ruling=ruling, reason="read")
+                for flaw, criterion, ruling in settlements
             ]
         }
     )
@@ -68,7 +68,7 @@ def a_record_identifying(*flaws: str) -> NuisanceWalkRecord:
     )
 
 
-def paired(census: HoldoutCensus, record: NuisanceWalkRecord) -> NuisanceCensus:
+def paired(census: Census, record: NuisanceWalkRecord) -> NuisanceCensus:
     return NuisanceCensus(census=census, record=record)
 
 

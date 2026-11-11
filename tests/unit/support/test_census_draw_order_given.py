@@ -2,10 +2,10 @@ from datetime import date
 from typing import Any
 
 import tests.unit.support.test_census_figures_given as figures
-import tests.unit.support.test_holdout_census_given as census_given
-from evals.census_figures import compute_figures
-from evals.census_sources import SourceName, SourceRecord
-from evals.holdout_census import CensusFlaw, Discovery, HoldoutCensus
+import tests.unit.support.test_census_given as census_given
+from evals.cve.census.census import Census, CensusFlaw, Discovery
+from evals.cve.census.figures import compute_figures
+from evals.cve.census.sources import SourceName, SourceRecord
 
 AN_EXCLUDED_SERVER = "npm:mcp-fetch-server"
 A_BENCHMARK_FLAW = "CVE-2025-65513"
@@ -39,10 +39,10 @@ def agreed_classifications(specs: dict[str, dict[str, Any]]) -> dict[str, list[A
     return {"classifier_1": seen, "classifier_2": seen}
 
 
-def a_census(flaws: list[CensusFlaw], classifications: dict[str, list[Any]]) -> HoldoutCensus:
+def a_census(flaws: list[CensusFlaw], classifications: dict[str, list[Any]]) -> Census:
     dates = {flaw.identifier: flaw.disclosure_date for flaw in flaws}
     withdrawn = {flaw.identifier for flaw in flaws if flaw.withdrawn}
-    return HoldoutCensus(
+    return Census(
         sources=census_given.a_provenance(),
         agents=[],
         prefilter=[],

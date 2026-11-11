@@ -16,13 +16,13 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals import cve_places
-from evals.census_classification import Classification
-from evals.census_draw import CalibrationCard
-from evals.census_sources import SourceName, SourceRecord
+from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw
+from evals.cve.census.classification import Classification
+from evals.cve.census.sources import SourceName, SourceRecord
+from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve_planting_base import SENTINEL_SERVICE
 from evals.cve_targets import CVE_TARGETS
 from evals.eval_session import Refused
-from evals.holdout_census import CLASSIFIERS, CensusFlaw, HoldoutCensus
 from evals.honeypots import REPO_ROOT
 from evals.run_census import GRAMMAR_CLASSES
 
@@ -66,7 +66,7 @@ class CandidateDossier(Dossier):
     neighbours: list[Dossier]
 
 
-def write_kit(census: HoldoutCensus, cve: str, out: Path) -> None:
+def write_kit(census: Census, cve: str, out: Path) -> None:
     flaw = _member(census, cve)
     out.mkdir(parents=True, exist_ok=True)
     _write_advisories(census, flaw, out)
@@ -74,7 +74,7 @@ def write_kit(census: HoldoutCensus, cve: str, out: Path) -> None:
     _write_docs(out)
 
 
-def _member(census: HoldoutCensus, cve: str) -> CensusFlaw:
+def _member(census: Census, cve: str) -> CensusFlaw:
     for flaw in census.flaws:
         if flaw.identifier == cve:
             return flaw
@@ -84,7 +84,7 @@ def _member(census: HoldoutCensus, cve: str) -> CensusFlaw:
     )
 
 
-def _write_advisories(census: HoldoutCensus, flaw: CensusFlaw, out: Path) -> None:
+def _write_advisories(census: Census, flaw: CensusFlaw, out: Path) -> None:
     packages = server_packages(census.classifications)
     package = packages.get(flaw.identifier, "")
     neighbours = [

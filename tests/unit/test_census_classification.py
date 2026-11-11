@@ -1,4 +1,4 @@
-from evals.census_classification import (
+from evals.cve.census.classification import (
     Criterion,
     SoftwareKind,
     Transport,

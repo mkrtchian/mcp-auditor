@@ -3,7 +3,7 @@ from datetime import date
 from pathlib import Path
 
 import tests.unit.support.test_census_sources_given as given
-from evals.census_sources import (
+from evals.cve.census.sources import (
     AdvisoryRecord,
     Download,
     SourceName,

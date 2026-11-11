@@ -1,6 +1,6 @@
 import pytest
 
-from evals.holdout_census import load_census
+from evals.cve.census.census import load_census
 from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer, load_admission
 from evals.nuisance_commands import WALK_RECORD_PATH
 from evals.nuisance_fingerprint import nuisance_fixture_fingerprint

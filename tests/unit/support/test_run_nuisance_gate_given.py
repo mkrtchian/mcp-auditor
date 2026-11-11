@@ -4,16 +4,16 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.support.test_census_draw_given as draw_given
+import tests.unit.support.test_census_given as census_given
+import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_eval_display_given as display_given
-import tests.unit.support.test_holdout_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import nuisance_gate_command, nuisance_gate_console
 from evals.baseline import BaselineStatus
+from evals.cve.census.census import Census
 from evals.gate_outcome import GateOutcome
-from evals.holdout_census import HoldoutCensus
 from evals.nuisance_admission import NuisanceAdmission
 from evals.nuisance_gate import NuisanceGateResult
 from evals.nuisance_gate_baseline import NuisanceGateConditions
@@ -29,7 +29,7 @@ from tests.unit.support.test_nuisance_gate_session_given import a_harness, scrip
 GATE_SERVER = admission_given.ACCEPTANCE_PACKAGE
 
 
-def gate_arguments(tmp_path: Path, census: HoldoutCensus, admission_path: Path) -> list[str]:
+def gate_arguments(tmp_path: Path, census: Census, admission_path: Path) -> list[str]:
     return [
         *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
         "--admission",
@@ -84,9 +84,7 @@ def a_gate_set_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
     return _gate_arguments(tmp_path, census, both)
 
 
-def _gate_arguments(
-    tmp_path: Path, census: HoldoutCensus, admitted: NuisanceAdmission
-) -> list[str]:
+def _gate_arguments(tmp_path: Path, census: Census, admitted: NuisanceAdmission) -> list[str]:
     return [
         *gate_arguments(tmp_path, census, admission_given.written(tmp_path, admitted)),
         "--report",

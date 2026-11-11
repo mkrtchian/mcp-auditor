@@ -6,24 +6,24 @@ from typing import Any
 import tests.unit.support.test_census_figures_given as figures
 import tests.unit.support.test_census_grouping_given as grouping
 import tests.unit.support.test_census_identity_given as identity
-from evals.census_classification import Classification, Criterion
-from evals.census_figures import Share, compute_figures
-from evals.census_grouping import READERS, ProofJudgment, gap_population, known_gap
-from evals.census_identity import merge
-from evals.census_prefilter import INITIAL_TERMS
-from evals.census_sources import AdvisoryRecord, SourceFile, SourceName, SourceProvenance
-from evals.census_work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
-from evals.holdout_census import (
+from evals.cve.census.census import (
     BOUND,
     CLASSIFIERS,
+    Census,
     CensusFlaw,
     Discovery,
-    HoldoutCensus,
     TermHits,
     census_flaw,
     date_mismatches,
     draw_candidates,
 )
+from evals.cve.census.classification import Classification, Criterion
+from evals.cve.census.figures import Share, compute_figures
+from evals.cve.census.grouping import READERS, ProofJudgment, gap_population, known_gap
+from evals.cve.census.identity import merge
+from evals.cve.census.prefilter import INITIAL_TERMS
+from evals.cve.census.sources import AdvisoryRecord, SourceFile, SourceName, SourceProvenance
+from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
 
 FLAW_WITH_A_CVE = "CVE-2025-0001"
 ITS_GHSA = "GHSA-aaaa-bbbb-cccc"
@@ -32,7 +32,7 @@ OSV_ONLY_FLAW = "PYSEC-2025-1"
 SHARED_ID = "GO-2025-0001"
 
 
-def a_census() -> HoldoutCensus:
+def a_census() -> Census:
     flaws = [
         census_flaw(flaw, [Discovery.PREFILTER])
         for flaw in merge(
@@ -58,7 +58,7 @@ def a_census() -> HoldoutCensus:
         for classifier in CLASSIFIERS
     }
     groupings = {reader: [grouping.no_proof(GHSA_ONLY_FLAW)] for reader in READERS}
-    return HoldoutCensus(
+    return Census(
         sources=a_provenance(),
         agents=[
             AgentRecord(role=AgentRole.COLLECTOR, scope="ghsa", model="claude-opus-5-5"),
@@ -90,8 +90,8 @@ def a_provenance() -> SourceProvenance:
     )
 
 
-def written(tmp_path: Path, census: HoldoutCensus) -> Path:
-    path = tmp_path / "holdout_census.json"
+def written(tmp_path: Path, census: Census) -> Path:
+    path = tmp_path / "census.json"
     path.write_text(census.model_dump_json(indent=2))
     return path
 
@@ -101,11 +101,11 @@ def a_flaw_with_records(*records: AdvisoryRecord) -> CensusFlaw:
     return census_flaw(flaw, [Discovery.PREFILTER])
 
 
-def with_a_cve_of(census: HoldoutCensus, cve_id: str, server_package: str) -> HoldoutCensus:
-    """A valid census that also classifies `cve_id` under `server_package`."""
-    flaw = a_flaw_with_records(identity.an_nvd(cve_id))
+def with_a_cve_of(census: Census, flaw_id: str, server_package: str) -> Census:
+    """A valid census that also classifies `flaw_id` under `server_package`."""
+    flaw = a_flaw_with_records(identity.an_nvd(flaw_id))
     classification = figures.a_classification(
-        flaw=cve_id, disclosure_date=flaw.disclosure_date, server_package=server_package
+        flaw=flaw_id, disclosure_date=flaw.disclosure_date, server_package=server_package
     )
     classifications = {
         classifier: [*census.classifications[classifier], classification]
@@ -122,7 +122,7 @@ def with_a_cve_of(census: HoldoutCensus, cve_id: str, server_package: str) -> Ho
 # (figures, date mismatches) recomputed, so the census carries that defect alone.
 
 
-def with_a_non_canonical_identifier(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_non_canonical_identifier(census: Census) -> Census:
     def renamed(own: list[Classification]) -> list[Classification]:
         return [
             each.model_copy(update={"flaw": ITS_GHSA}) if each.flaw == FLAW_WITH_A_CVE else each
@@ -135,50 +135,50 @@ def with_a_non_canonical_identifier(census: HoldoutCensus) -> HoldoutCensus:
     return _recomputed(census)
 
 
-def with_a_wrong_disclosure_date(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_wrong_disclosure_date(census: Census) -> Census:
     flaw = _flaw(census, GHSA_ONLY_FLAW)
     return _with_flaw(
         census, GHSA_ONLY_FLAW, disclosure_date=flaw.disclosure_date + timedelta(days=1)
     )
 
 
-def with_a_duplicate_identifier(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_duplicate_identifier(census: Census) -> Census:
     duplicate = _flaw(census, OSV_ONLY_FLAW).model_copy(update={"ids": ["PYSEC-2025-2"]})
     return census.model_copy(update={"flaws": [*census.flaws, duplicate]})
 
 
-def with_two_flaws_sharing_an_id(census: HoldoutCensus) -> HoldoutCensus:
+def with_two_flaws_sharing_an_id(census: Census) -> Census:
     for identifier in (OSV_ONLY_FLAW, GHSA_ONLY_FLAW):
         census = _with_flaw(census, identifier, ids=[*_flaw(census, identifier).ids, SHARED_ID])
     return census
 
 
-def with_a_hit_decision_without_reason(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_hit_decision_without_reason(census: Census) -> Census:
     hits = [census.hits[0].model_copy(update={"reason": "  "}), *census.hits[1:]]
     return census.model_copy(update={"hits": hits})
 
 
-def with_a_flaw_missing_from_one_classifier(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_flaw_missing_from_one_classifier(census: Census) -> Census:
     return _with_classifications(
         census, CLASSIFIERS[1], lambda own: [each for each in own if each.flaw != OSV_ONLY_FLAW]
     )
 
 
-def with_a_flaw_classified_twice(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_flaw_classified_twice(census: Census) -> Census:
     return _with_classifications(census, CLASSIFIERS[0], lambda own: [*own, own[0]])
 
 
-def with_a_classification_of_an_unknown_flaw(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_classification_of_an_unknown_flaw(census: Census) -> Census:
     unknown = figures.a_classification(flaw="CVE-2099-0001")
     return _with_classifications(census, CLASSIFIERS[0], lambda own: [*own, unknown])
 
 
-def with_three_classifiers(census: HoldoutCensus) -> HoldoutCensus:
+def with_three_classifiers(census: Census) -> Census:
     third = {"classifier_3": census.classifications[CLASSIFIERS[0]]}
     return census.model_copy(update={"classifications": census.classifications | third})
 
 
-def with_an_inconsistent_first_failed_criterion(census: HoldoutCensus) -> HoldoutCensus:
+def with_an_inconsistent_first_failed_criterion(census: Census) -> Census:
     def stdio_tools_call_marked_failed(own: list[Classification]) -> list[Classification]:
         failed = {"first_failed_criterion": Criterion.STDIO_TOOLS_CALL}
         return [own[0].model_copy(update=failed), *own[1:]]
@@ -188,7 +188,7 @@ def with_an_inconsistent_first_failed_criterion(census: HoldoutCensus) -> Holdou
     )
 
 
-def with_a_flaw_disclosed_after_the_bound(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_flaw_disclosed_after_the_bound(census: Census) -> Census:
     late = BOUND + timedelta(days=1)
     flaw = _flaw(census, GHSA_ONLY_FLAW)
     records = [record.model_copy(update={"published": late}) for record in flaw.records]
@@ -196,48 +196,48 @@ def with_a_flaw_disclosed_after_the_bound(census: HoldoutCensus) -> HoldoutCensu
     return _recomputed(moved)
 
 
-def with_stale_figures(census: HoldoutCensus) -> HoldoutCensus:
+def with_stale_figures(census: Census) -> Census:
     stale = census.figures.model_copy(update={"reachable": Share(count=0, denominator=3)})
     return census.model_copy(update={"figures": stale})
 
 
-def with_a_reader_missing_a_grouped_flaw(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_reader_missing_a_grouped_flaw(census: Census) -> Census:
     return _recomputed(_with_groupings(census, READERS[1], lambda own: []))
 
 
-def with_a_reader_grouping_a_flaw_outside_the_population(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_reader_grouping_a_flaw_outside_the_population(census: Census) -> Census:
     extra = grouping.a_judgment(FLAW_WITH_A_CVE)
     return _recomputed(_with_groupings(census, READERS[0], lambda own: [*own, extra]))
 
 
-def with_a_flaw_grouped_twice(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_flaw_grouped_twice(census: Census) -> Census:
     return _recomputed(_with_groupings(census, READERS[0], lambda own: [*own, own[0]]))
 
 
-def with_a_judgment_without_a_reason(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_judgment_without_a_reason(census: Census) -> Census:
     return _with_groupings(
         census, READERS[0], lambda own: [own[0].model_copy(update={"reason": " "}), *own[1:]]
     )
 
 
-def with_three_readers(census: HoldoutCensus) -> HoldoutCensus:
+def with_three_readers(census: Census) -> Census:
     third = {"reader_3": census.groupings[READERS[0]]}
     return census.model_copy(update={"groupings": census.groupings | third})
 
 
-def with_a_reader_without_an_agent_record(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_reader_without_an_agent_record(census: Census) -> Census:
     agents = [agent for agent in census.agents if agent.scope != READERS[1]]
     return census.model_copy(update={"agents": agents})
 
 
-def with_a_stale_known_gap(census: HoldoutCensus) -> HoldoutCensus:
+def with_a_stale_known_gap(census: Census) -> Census:
     stale = {reader: Share(count=0, denominator=1) for reader in READERS}
     return census.model_copy(update={"known_gap": stale})
 
 
 def with_a_classifier_date_differing_from_the_computed_one(
-    census: HoldoutCensus,
-) -> HoldoutCensus:
+    census: Census,
+) -> Census:
     def one_day_late(own: list[Classification]) -> list[Classification]:
         late = own[0].disclosure_date + timedelta(days=1)
         return [own[0].model_copy(update={"disclosure_date": late}), *own[1:]]
@@ -245,13 +245,13 @@ def with_a_classifier_date_differing_from_the_computed_one(
     return _recomputed(_with_classifications(census, CLASSIFIERS[1], one_day_late))
 
 
-def with_stale_date_mismatches(census: HoldoutCensus) -> HoldoutCensus:
+def with_stale_date_mismatches(census: Census) -> Census:
     return with_a_classifier_date_differing_from_the_computed_one(census).model_copy(
         update={"date_mismatches": []}
     )
 
 
-def _recomputed(census: HoldoutCensus) -> HoldoutCensus:
+def _recomputed(census: Census) -> Census:
     dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
     withdrawn = {flaw.identifier for flaw in census.flaws if flaw.withdrawn}
     population = gap_population(census.classifications, draw_candidates(census.flaws))
@@ -264,11 +264,11 @@ def _recomputed(census: HoldoutCensus) -> HoldoutCensus:
     )
 
 
-def _flaw(census: HoldoutCensus, identifier: str) -> CensusFlaw:
+def _flaw(census: Census, identifier: str) -> CensusFlaw:
     return next(flaw for flaw in census.flaws if flaw.identifier == identifier)
 
 
-def _with_flaw(census: HoldoutCensus, changed: str, **changes: Any) -> HoldoutCensus:
+def _with_flaw(census: Census, changed: str, **changes: Any) -> Census:
     flaws = [
         flaw.model_copy(update=changes) if flaw.identifier == changed else flaw
         for flaw in census.flaws
@@ -277,10 +277,10 @@ def _with_flaw(census: HoldoutCensus, changed: str, **changes: Any) -> HoldoutCe
 
 
 def _with_classifications(
-    census: HoldoutCensus,
+    census: Census,
     classifier: str,
     change: Callable[[list[Classification]], list[Classification]],
-) -> HoldoutCensus:
+) -> Census:
     classifications = census.classifications | {
         classifier: change(census.classifications[classifier])
     }
@@ -288,10 +288,10 @@ def _with_classifications(
 
 
 def _with_groupings(
-    census: HoldoutCensus,
+    census: Census,
     reader: str,
     change: Callable[[list[ProofJudgment]], list[ProofJudgment]],
-) -> HoldoutCensus:
+) -> Census:
     groupings = census.groupings | {reader: change(census.groupings[reader])}
     return census.model_copy(update={"groupings": groupings})
 

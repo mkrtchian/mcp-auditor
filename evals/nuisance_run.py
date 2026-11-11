@@ -17,13 +17,13 @@ from datetime import UTC, datetime
 from evals import nuisance_images
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
+from evals.cve.census.draw_order import DrawEntry
 from evals.cve_audit import RunOverrides, build_auditor
 from evals.cve_baseline import grammar_fingerprint, image_ids
 from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.failure_text import TYPES_ONLY
 from evals.holdout_conditions import HoldoutConditions
-from evals.holdout_draw import DrawEntry
 from evals.holdout_run import HOLDOUT_BUDGET
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import SessionThrottles

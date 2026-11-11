@@ -1,6 +1,6 @@
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals.holdout_draw import draw_digest
+from evals.cve.census.draw_order import draw_digest
 from evals.nuisance_admission import NuisanceAdmission
 from evals.nuisance_walk_record import NuisanceCensus
 

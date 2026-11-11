@@ -1,7 +1,7 @@
 import importlib.util
 from pathlib import Path
 
-import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_census_given as census_given
 from evals.calibration_dossier import write_kit
 
 

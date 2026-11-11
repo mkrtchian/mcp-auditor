@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import tests.unit.support.test_census_draw_given as draw_given
-import tests.unit.support.test_holdout_census_given as census_given
-from evals.census_work import AgentRecord, AgentRole
-from tests.unit.support.test_census_draw_given import A_DRAWN_FLAW
+import tests.unit.support.test_census_given as census_given
+import tests.unit.support.test_detection_draw_record_given as draw_given
+from evals.cve.census.work import AgentRecord, AgentRole
+from tests.unit.support.test_detection_draw_record_given import A_DRAWN_FLAW
 
 REQUESTED = "claude-opus-5-5"
 ANSWERED = "claude-opus-4-8"

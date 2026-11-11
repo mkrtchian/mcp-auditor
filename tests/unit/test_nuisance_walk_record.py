@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_walk_record_given as given
-from evals.census_classification import Criterion
+from evals.cve.census.classification import Criterion
 from evals.nuisance_walk_record import load_walk_record, walk_record_problems
 
 

@@ -1,4 +1,4 @@
-"""The nuisance population: the walk of the salted draw order of evals/holdout_census.json.
+"""The nuisance population: the walk of the salted draw order of evals/census.json.
 
 The nuisance suite reaches every flaw the holdout walk reached, whatever its outcome, then resumes
 in draw order over the draw-order flaws the holdout walk has not reached, skipping one that fails
@@ -14,18 +14,18 @@ no network.
 from dataclasses import dataclass
 from enum import StrEnum
 
-from evals.census_classification import (
+from evals.cve.census.census import CLASSIFIERS, Census
+from evals.cve.census.classification import (
     Classification,
     Criterion,
     Primitive,
     criteria_met,
 )
-from evals.census_draw import Settlement
-from evals.census_grouping import DRAW_ORDER_CRITERIA
+from evals.cve.census.draw_order import draw_order
+from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVERS
+from evals.cve.census.grouping import DRAW_ORDER_CRITERIA
+from evals.cve.detection.draw_record import Settlement
 from evals.cve_targets import CVE_TARGETS
-from evals.holdout_census import CLASSIFIERS, HoldoutCensus
-from evals.holdout_draw import draw_order
-from evals.holdout_exclusions import BENCHMARK_FLAWS, EXCLUDED_SERVERS
 from evals.nuisance_walk_record import (
     NuisanceCensus,
     normalized_package,
@@ -75,7 +75,9 @@ def version_setting_flaws(server_package: str, nuisance_census: NuisanceCensus) 
 def acceptance_servers(nuisance_census: NuisanceCensus) -> set[str]:
     """Every benchmark flaw's server, the dropped targets' included."""
     classified = _classified(nuisance_census.census)
-    return {server_of(flaw, nuisance_census) for flaw in BENCHMARK_FLAWS if flaw in classified}
+    return {
+        server_of(flaw, nuisance_census) for flaw in ACCEPTANCE_TARGET_FLAWS if flaw in classified
+    }
 
 
 def current_acceptance_servers(nuisance_census: NuisanceCensus) -> set[str]:
@@ -83,7 +85,7 @@ def current_acceptance_servers(nuisance_census: NuisanceCensus) -> set[str]:
     return {server_of(t.cve_id, nuisance_census) for t in CVE_TARGETS if t.cve_id in classified}
 
 
-def _classified(census: HoldoutCensus) -> set[str]:
+def _classified(census: Census) -> set[str]:
     return {classification.flaw for classification in census.classifications[CLASSIFIERS[0]]}
 
 
@@ -177,7 +179,7 @@ def _met(
 ) -> bool:
     settlement = _settlement(flaw, nuisance_census, criterion)
     if settlement is not None:
-        return settlement.verdict
+        return settlement.ruling
     return from_classifiers
 
 
@@ -187,7 +189,7 @@ def _tools_reached(flaw: str, nuisance_census: NuisanceCensus, seen: list[Classi
     # A False STDIO_TOOLS_CALL settlement does not override: it may hold for the transport
     # alone (not stdio), and this suite counts a flaw whatever transport the census records.
     settlement = _settlement(flaw, nuisance_census, Criterion.STDIO_TOOLS_CALL)
-    return settlement is not None and settlement.verdict
+    return settlement is not None and settlement.ruling
 
 
 def _settlement(

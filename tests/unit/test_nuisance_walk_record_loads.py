@@ -1,6 +1,6 @@
 import pytest
 
-from evals.holdout_census import HoldoutCensus, load_census
+from evals.cve.census.census import Census, load_census
 from evals.nuisance_admission import ADMISSION_PATH, load_admission
 from evals.nuisance_commands import WALK_RECORD_PATH
 from evals.nuisance_walk import NuisanceServer, nuisance_population
@@ -9,12 +9,12 @@ from evals.run_census import CENSUS_PATH
 
 
 @pytest.fixture(scope="module")
-def census() -> HoldoutCensus:
+def census() -> Census:
     return load_census(CENSUS_PATH)
 
 
 @pytest.fixture(scope="module")
-def nuisance_census(census: HoldoutCensus) -> NuisanceCensus:
+def nuisance_census(census: Census) -> NuisanceCensus:
     return load_walk_record(WALK_RECORD_PATH, census)
 
 
@@ -28,7 +28,7 @@ def test_the_committed_walk_record_loads(nuisance_census: NuisanceCensus):
 
 
 def test_the_record_takes_no_server_out_of_the_holdout_walk_part(
-    census: HoldoutCensus, nuisance_census: NuisanceCensus, population: list[NuisanceServer]
+    census: Census, nuisance_census: NuisanceCensus, population: list[NuisanceServer]
 ):
     bare = NuisanceCensus(
         census=census,

@@ -4,8 +4,8 @@ from typing import Any
 
 import pytest
 
-import tests.unit.support.test_census_draw_given as draw_given
-import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_census_given as census_given
+import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_report_given as report_given
 import tests.unit.support.test_nuisance_run_given as run_given

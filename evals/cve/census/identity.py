@@ -3,7 +3,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from evals.census_sources import AdvisoryRecord, SourceRecord
+from evals.cve.census.sources import AdvisoryRecord, SourceRecord
 
 
 @dataclass(frozen=True)
@@ -17,7 +17,7 @@ def merge(records: Iterable[AdvisoryRecord], recorded: Mapping[str, set[str]]) -
     return [_flaw(ids, members, recorded) for ids, members in _alias_components(records)]
 
 
-def census_identifier(ids: set[str], records: Sequence[SourceRecord]) -> str | None:
+def flaw_id_of(ids: set[str], records: Sequence[SourceRecord]) -> str | None:
     rejected = {_canonical(record.id) for record in records if record.rejected}
     cves = sorted(
         (order, each)
@@ -42,7 +42,7 @@ def _flaw(ids: set[str], records: list[AdvisoryRecord], recorded: Mapping[str, s
     )
     if len(met) > 1:
         raise ValueError(f"one flaw meets the recorded identifiers {', '.join(met)}")
-    identifier = met[0] if met else census_identifier(ids, records)
+    identifier = met[0] if met else flaw_id_of(ids, records)
     return Flaw(identifier=identifier, ids=ids, records=records)
 
 

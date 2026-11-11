@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.support.test_census_draw_given as draw_given
-import tests.unit.support.test_holdout_census_given as given
+import tests.unit.support.test_census_given as given
+import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_readmission_dossier_given as readmission
 import tests.unit.support.test_nuisance_walk_given as walk_given
@@ -61,7 +61,7 @@ def test_walk_without_an_admission_prints_no_count_line(
 
 
 def test_a_malformed_census_exits_three(tmp_path: Path):
-    path = tmp_path / "holdout_census.json"
+    path = tmp_path / "census.json"
     path.write_text("{ not valid json")
 
     missing = tmp_path / "absent.json"

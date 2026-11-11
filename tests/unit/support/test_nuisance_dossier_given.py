@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import tests.unit.support.test_census_figures_given as figures
-import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve_targets import CVETarget
 from evals.holdout_targets import HOLDOUT_TARGETS

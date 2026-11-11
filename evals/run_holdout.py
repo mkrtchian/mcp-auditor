@@ -1,6 +1,6 @@
-"""Holdout-specific commands, kept out of run_census (the census) and run_cve_benchmark (the
-benchmark). The draw-order and calibration-dossier scaffolding runs with no LLM and no network;
-the `run` command audits the drawn targets, so it needs Docker and an LLM key.
+"""Holdout-specific commands, kept out of run_census (the census and its draw order) and
+run_cve_benchmark (the benchmark). The calibration-dossier scaffolding runs with no LLM and no
+network; the `run` command audits the drawn targets, so it needs Docker and an LLM key.
 """
 
 import argparse
@@ -19,13 +19,12 @@ from evals.admission_calibration import calibrate_admitted, default_calibration_
 from evals.audit_progress import AuditProgress
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import positive_int
+from evals.cve.census.census import Census, load_census
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.cve_targets import CVETarget, image_tag
 from evals.eval_session import Refused, last_commit
 from evals.holdout_card_readiness import unready_cards
-from evals.holdout_census import HoldoutCensus, load_census
 from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
-from evals.holdout_draw import draw_order
 from evals.holdout_markdown import render_markdown
 from evals.holdout_report import HoldoutReport, build_report
 from evals.holdout_results import HoldoutRunResult
@@ -52,7 +51,7 @@ from evals.run_images import (
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
-CENSUS_PATH = REPO_ROOT / "evals" / "holdout_census.json"
+CENSUS_PATH = REPO_ROOT / "evals" / "census.json"
 DEFAULT_REPORT_PATH = "output/holdout_report.json"
 REFUSED_EXIT = 3
 CRASHED_EXIT = 4
@@ -78,9 +77,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Holdout draw commands.")
     commands = parser.add_subparsers(required=True)
-    draw = commands.add_parser("draw-order", help="print the draw order for the maintainer to walk")
-    draw.set_defaults(command=_draw_order)
-    draw.add_argument("--census", type=Path, default=CENSUS_PATH)
     dossier = commands.add_parser(
         "calibration-dossier", help="write the isolated calibration kit for one candidate"
     )
@@ -107,22 +103,13 @@ def _add_calibrate(commands: "_SubParsersAction[argparse.ArgumentParser]") -> No
     calibrate.add_argument("--concurrency", type=positive_int, default=6)
 
 
-def _census(path: Path) -> HoldoutCensus:
+def _census(path: Path) -> Census:
     """Only the census load reads a ValueError as a refusal: a malformed census must not read as
     success, and a ValueError raised later is a crash."""
     try:
         return load_census(path)
     except ValueError as error:
         raise Refused("Refused: the census is malformed.", [str(error)]) from error
-
-
-def _draw_order(args: argparse.Namespace) -> int:
-    census = _census(args.census)
-    entries = draw_order(census)
-    print(f"{len(entries)} candidates in draw order:")
-    for entry in entries:
-        print(f"  {entry.digest[:12]}  {entry.identifier}  {entry.disclosure_date}")
-    return 0
 
 
 def _calibration_dossier(args: argparse.Namespace) -> int:
@@ -154,7 +141,7 @@ def _run(args: argparse.Namespace) -> int:
     return 0
 
 
-def _refuse_unready_cards(census: HoldoutCensus) -> None:
+def _refuse_unready_cards(census: Census) -> None:
     drawn = [target.cve_id for target in HOLDOUT_TARGETS]
     gaps = unready_cards(census.draw, drawn)
     if gaps:
@@ -168,7 +155,7 @@ def _refuse_unready_cards(census: HoldoutCensus) -> None:
 class _ReadyHoldoutRun:
     """What a holdout run reads, once its cards and its conditions are checked ready."""
 
-    census: HoldoutCensus
+    census: Census
     conditions: HoldoutConditions
     settings: Settings
 

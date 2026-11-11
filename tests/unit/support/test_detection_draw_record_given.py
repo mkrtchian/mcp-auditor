@@ -3,27 +3,27 @@ from datetime import date
 from typing import Literal
 
 import tests.unit.support.test_census_figures_given as figures
-import tests.unit.support.test_holdout_census_given as census_given
-from evals.census_draw import (
+import tests.unit.support.test_census_given as census_given
+from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw, Discovery, draw_candidates
+from evals.cve.census.figures import compute_figures
+from evals.cve.census.grouping import READERS, ProofJudgment, gap_population, known_gap
+from evals.cve.census.sources import SourceName, SourceRecord
+from evals.cve.census.work import AgentRecord, AgentRole
+from evals.cve.detection.draw_record import (
     CalibrationCard,
     CardCheck,
     CardStandIn,
+    DetectionWalkStep,
     DrawRecord,
-    DrawWalkStep,
     GiveUp,
     GiveUpReason,
 )
-from evals.census_figures import compute_figures
-from evals.census_grouping import READERS, ProofJudgment, gap_population, known_gap
-from evals.census_sources import SourceName, SourceRecord
-from evals.census_work import AgentRecord, AgentRole
 from evals.fixture_provenance import (
     SoftwareRelease,
     SourceKind,
     StandInOutput,
     StandInRecord,
 )
-from evals.holdout_census import CLASSIFIERS, CensusFlaw, Discovery, HoldoutCensus, draw_candidates
 
 A_DRAWN_FLAW = "CVE-2025-0001"
 A_TWICE_GIVEN_UP_FLAW = "GHSA-dddd-eeee-ffff"
@@ -35,8 +35,8 @@ def a_draw() -> DrawRecord:
         grammar_fingerprint="deadbeef",
         settlements=[],
         walk=[
-            DrawWalkStep(identifier=A_DRAWN_FLAW, outcome="drawn", reason=""),
-            DrawWalkStep(
+            DetectionWalkStep(identifier=A_DRAWN_FLAW, outcome="drawn", reason=""),
+            DetectionWalkStep(
                 identifier=A_TWICE_GIVEN_UP_FLAW,
                 outcome="given_up",
                 reason="no place reached on either calibration",
@@ -92,7 +92,7 @@ def a_draw_stepping_again(
     flaw: str, outcome: Literal["drawn", "skipped", "given_up", "excluded"], under: int | None
 ) -> DrawRecord:
     draw = a_draw()
-    step = DrawWalkStep(identifier=flaw, outcome=outcome, reason="", rule_version=under)
+    step = DetectionWalkStep(identifier=flaw, outcome=outcome, reason="", rule_version=under)
     return draw.model_copy(update={"walk": [*draw.walk, step]})
 
 
@@ -156,7 +156,7 @@ def a_card_with_a_stand_in(flaw: str, stand_in: CardStandIn) -> CalibrationCard:
     return a_card(flaw).model_copy(update={"stand_ins": [stand_in]})
 
 
-def a_census_with_draw(draw: DrawRecord) -> HoldoutCensus:
+def a_census_with_draw(draw: DrawRecord) -> Census:
     census = census_given.a_census()
     model = "claude-opus-4-8"
     agents = [
@@ -169,7 +169,7 @@ def a_census_with_draw(draw: DrawRecord) -> HoldoutCensus:
     return census.model_copy(update={"agents": agents, "draw": draw})
 
 
-def a_census_drawing(identifiers: list[str]) -> HoldoutCensus:
+def a_census_drawing(identifiers: list[str]) -> Census:
     flaws = [_flaw(identifier) for identifier in identifiers]
     classifications = {
         classifier: [figures.a_classification(flaw=identifier) for identifier in identifiers]
@@ -183,7 +183,7 @@ def a_census_drawing(identifiers: list[str]) -> HoldoutCensus:
         for identifier in identifiers
         for role in (AgentRole.CALIBRATOR, AgentRole.CARD_CHECKER)
     ]
-    return HoldoutCensus(
+    return Census(
         sources=census_given.a_provenance(),
         agents=[
             *(AgentRecord(role=AgentRole.READER, scope=reader, model="m") for reader in READERS),
@@ -226,7 +226,7 @@ def _a_draw_of(identifiers: list[str]) -> DrawRecord:
         grammar_fingerprint="deadbeef",
         settlements=[],
         walk=[
-            DrawWalkStep(identifier=identifier, outcome="drawn", reason="")
+            DetectionWalkStep(identifier=identifier, outcome="drawn", reason="")
             for identifier in identifiers
         ],
         cards=[a_card(identifier) for identifier in identifiers],
@@ -239,14 +239,14 @@ def _a_draw_of(identifiers: list[str]) -> DrawRecord:
     )
 
 
-def with_a_walk_skipping(census: HoldoutCensus, flaw: str) -> HoldoutCensus:
-    """The census with a draw whose holdout walk is one `skipped` step on `flaw`, which
+def with_a_walk_skipping(census: Census, flaw: str) -> Census:
+    """The census with a draw whose detection walk is one `skipped` step on `flaw`, which
     `load_census` accepts with no card and no calibration agent."""
     draw = DrawRecord(
         rule_commit="abc1234",
         grammar_fingerprint="deadbeef",
         settlements=[],
-        walk=[DrawWalkStep(identifier=flaw, outcome="skipped", reason="")],
+        walk=[DetectionWalkStep(identifier=flaw, outcome="skipped", reason="")],
         cards=[],
         card_checks=[],
         give_ups=[],

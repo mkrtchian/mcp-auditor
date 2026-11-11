@@ -2,8 +2,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-import tests.unit.support.test_census_draw_given as draw_given
-import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_census_given as census_given
+import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.holdout_kit_isolation as iso
-import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_nuisance_dossier_given as given
 import tests.unit.support.test_nuisance_dossier_then as then
 import tests.unit.support.test_nuisance_unrecorded_given as unrecorded_given

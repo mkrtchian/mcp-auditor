@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from evals.census_draw import CalibrationCard
+from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve_targets import CVETarget
 from evals.docker_paths import image_dockerfile
 from evals.nuisance_admission import AdmittedServer

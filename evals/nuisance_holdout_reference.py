@@ -11,10 +11,10 @@ import shutil
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 
+from evals.cve.census.census import Census
 from evals.cve_targets import CVETarget
 from evals.docker_paths import image_dockerfile
 from evals.eval_session import Refused
-from evals.holdout_census import HoldoutCensus
 from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.honeypots import REPO_ROOT
 
@@ -26,9 +26,7 @@ def holdout_targets_among(identifiers: Iterable[str]) -> list[CVETarget]:
     return [target for target in HOLDOUT_TARGETS if target.cve_id in wanted]
 
 
-def write_holdout_references(
-    out: Path, census: HoldoutCensus, targets: Sequence[CVETarget]
-) -> None:
+def write_holdout_references(out: Path, census: Census, targets: Sequence[CVETarget]) -> None:
     if not targets:
         return
     cards = {card.flaw: card for card in census.draw.cards} if census.draw is not None else {}

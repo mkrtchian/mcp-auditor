@@ -4,8 +4,8 @@ here, every count a property of the result."""
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from evals.cve.census.draw_order import DrawEntry
 from evals.cve_units import JudgeCategory
-from evals.holdout_draw import DrawEntry
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_audit import NuisanceAudit, incomplete_causes, is_incomplete
 from evals.nuisance_counter import fail_count_on, flagged_tools, raw_fail_count

@@ -47,6 +47,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | `evals/baselines/honeypot_e2e.json` | `evals/baselines/honeypot.json` | rename | 2026-11-11 |
 | `evals/baselines/judge_isolation.json` | `evals/baselines/judge.json` | rename | 2026-11-11 |
 | `evals/holdout_census.json` | `evals/census.json` | rename | 2026-11-11 |
+| `evals/holdout_census_method.md` | `evals/census_method.md` | rename | 2026-11-11 |
 | `evals/holdout_kit/` | kit | rename | 2026-11-11 |
 | `evals/holdout_places.json` | `evals/detection_places.json` | rename | 2026-11-11 |
 | `evals.run_cve_benchmark` | `evals.run_detection` | rename | 2026-11-11 |
@@ -64,6 +65,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | holdout calibration (fix-check source) | holdout calibration copy (`detection_holdout_calibration`) | rename | 2026-11-11 |
 | holdout calibration (CLAUDE.md, plans: `run_holdout calibrate`) | calibration check of the holdout targets | rename | 2026-11-11 |
 | holdout census | census | rename | 2026-11-11 |
+| `HoldoutCensus` | census (`Census`) | rename | 2026-11-11 |
 | holdout log (`docs/holdout-log.md`) | detection suite log (`docs/detection-suite-log.md`) | rename | 2026-11-11 |
 | holdout rule (`docs/holdout-rule.md`) | detection suite rule (`docs/detection-suite-rule.md`) | rename | 2026-11-11 |
 | holdout server (the server of a holdout target) | detection holdout server. "Holdout server" is now always qualified by its suite. | moved meaning | 2026-11-11 |
@@ -82,6 +84,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | oracle version (ADR 016, ADR 020: on the honeypot suite) | ground truth fingerprint | rename | 2026-09-25 |
 | oracle version (plans: on the CVE benchmark) | grammar fingerprint | rename | 2026-09-28 |
 | `output/eval_report.json` | `output/honeypot_report.json` | rename | 2026-11-11 |
+| `output/holdout_census/` | `output/census/` | rename | 2026-11-11 |
 | patched twin, vulnerable twin, git twin (ADR 030, ADR 031, labeling log, plans) | patched image, vulnerable image | rename | 2026-11-11 |
 | `payload` (the key of a judge result in the JSON report, the "Payload" line of the Markdown report: the arguments only) | arguments (`arguments`). "Payload" now names the whole generated test input. | moved meaning | 2026-11-11 |
 | `pending_replay`, `replay_observations`, `replay_rule` | `pending_retest`, `retest_observations`, `retest_rule`, the two committed baselines keeping `replay_rule` until their next re-recording | rename | 2026-11-11 |

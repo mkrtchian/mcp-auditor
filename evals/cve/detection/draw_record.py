@@ -1,9 +1,9 @@
-"""The draw-time schema of the holdout census: the draw record and the calibration cards the
-draw and its calibration fill.
+"""The draw-time schema of the census: the draw record and the calibration cards the draw and
+its calibration fill.
 
 Everything here is optional and empty until the maintainer's draw session. `draw_problems`
-is the load validation `holdout_census.load_census` runs when a `draw` is present. This module
-imports nothing from holdout_census, so holdout_census can import from it with no cycle.
+is the load validation `census.load_census` runs when a `draw` is present. This module imports
+nothing from the census module, so the census module can import from it with no cycle.
 """
 
 from collections import Counter, defaultdict
@@ -12,10 +12,10 @@ from datetime import date
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
-from evals.census_classification import Criterion
-from evals.census_work import AgentRecord, AgentRole
+from evals.cve.census.classification import Criterion
+from evals.cve.census.work import AgentRecord, AgentRole
 from evals.cve_places import REACHABLE_BY
 from evals.fixture_provenance import (
     SoftwareRelease,
@@ -117,13 +117,16 @@ class GiveUp(BaseModel):
 
 
 class Settlement(BaseModel):
+    # The committed census and walk record carry the ruling under `verdict`, read and written.
+    model_config = ConfigDict(validate_by_name=True, serialize_by_alias=True)
+
     flaw: str
     criterion: Criterion
-    verdict: bool
+    ruling: bool = Field(validation_alias="verdict", serialization_alias="verdict")
     reason: str
 
 
-class DrawWalkStep(BaseModel):
+class DetectionWalkStep(BaseModel):
     identifier: str
     outcome: Literal["drawn", "skipped", "given_up", "excluded"]
     reason: str
@@ -134,7 +137,7 @@ class DrawRecord(BaseModel):
     rule_commit: str
     grammar_fingerprint: str
     settlements: list[Settlement]
-    walk: list[DrawWalkStep]
+    walk: list[DetectionWalkStep]
     cards: list[CalibrationCard]
     card_checks: list[CardCheck]
     give_ups: list[GiveUp]
@@ -159,10 +162,10 @@ def draw_problems(
     ]
 
 
-def governing_steps(draw: DrawRecord) -> dict[str, DrawWalkStep]:
+def governing_steps(draw: DrawRecord) -> dict[str, DetectionWalkStep]:
     """Each reached flaw's step under the latest version that decided it, in order of first
     reach."""
-    governing: dict[str, DrawWalkStep] = {}
+    governing: dict[str, DetectionWalkStep] = {}
     for step in draw.walk:
         current = governing.get(step.identifier, step)
         governing[step.identifier] = max(current, step, key=_version_order)
@@ -255,7 +258,7 @@ def _unwalked_give_up_problems(draw: DrawRecord) -> list[str]:
 
 
 def _governing_give_up_problems(
-    give_ups: list[GiveUp], step: DrawWalkStep | None, card_flaws: set[str]
+    give_ups: list[GiveUp], step: DetectionWalkStep | None, card_flaws: set[str]
 ) -> list[str]:
     flaw, version = give_ups[0].flaw, give_ups[0].rule_version
     problems: list[str] = []
@@ -336,5 +339,5 @@ def _give_ups_by_flaw_and_version(draw: DrawRecord) -> dict[tuple[str, int | Non
     return grouped
 
 
-def _version_order(step: DrawWalkStep) -> int:
+def _version_order(step: DetectionWalkStep) -> int:
     return -1 if step.rule_version is None else step.rule_version

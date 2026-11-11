@@ -11,8 +11,8 @@ import hashlib
 from dataclasses import dataclass
 from datetime import date
 
-from evals.census_grouping import draw_order_flaws
-from evals.holdout_census import HoldoutCensus, draw_candidates
+from evals.cve.census.census import Census, draw_candidates
+from evals.cve.census.grouping import draw_order_flaws
 
 DRAW_SALT = "mcp-auditor-holdout:"
 
@@ -28,7 +28,7 @@ class DrawEntry:
     disclosure_date: date
 
 
-def draw_order(census: HoldoutCensus) -> list[DrawEntry]:
+def draw_order(census: Census) -> list[DrawEntry]:
     identifiers = draw_order_flaws(census.classifications, draw_candidates(census.flaws))
     disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
     entries = [

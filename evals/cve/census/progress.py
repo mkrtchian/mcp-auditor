@@ -11,28 +11,28 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import cached_property
 
-from evals.census_classification import Classification
-from evals.census_figures import compute_figures
-from evals.census_grouping import ProofJudgment, gap_population, known_gap
-from evals.census_identity import Flaw, disclosure_date, merge
-from evals.census_prefilter import INITIAL_TERMS, PrefilterTerm, matches
-from evals.census_sources import AdvisoryRecord, SourceName, SourceProvenance
-from evals.census_work import (
+from evals.cve.census.census import (
+    BOUND,
+    Census,
+    CensusFlaw,
+    Discovery,
+    TermHits,
+    census_flaw,
+    date_mismatches,
+    draw_candidates,
+)
+from evals.cve.census.classification import Classification
+from evals.cve.census.figures import compute_figures
+from evals.cve.census.grouping import ProofJudgment, gap_population, known_gap
+from evals.cve.census.identity import Flaw, disclosure_date, merge
+from evals.cve.census.prefilter import INITIAL_TERMS, PrefilterTerm, matches
+from evals.cve.census.sources import AdvisoryRecord, SourceName, SourceProvenance
+from evals.cve.census.work import (
     AgentRecord,
     Gap,
     HitDecision,
     RecallFinding,
     VulnerableMcpEntry,
-)
-from evals.holdout_census import (
-    BOUND,
-    CensusFlaw,
-    Discovery,
-    HoldoutCensus,
-    TermHits,
-    census_flaw,
-    date_mismatches,
-    draw_candidates,
 )
 
 
@@ -123,11 +123,11 @@ class Collection:
                 members.append((flaw, [each for each in Discovery if each in discoveries]))
         return members
 
-    def census(self, inputs: AssemblyInputs) -> HoldoutCensus:
+    def census(self, inputs: AssemblyInputs) -> Census:
         flaws = [flaw for _, flaw in self.census_members()]
         dates = {flaw.identifier: flaw.disclosure_date for flaw in flaws}
         withdrawn = {flaw.identifier for flaw in flaws if flaw.withdrawn}
-        return HoldoutCensus(
+        return Census(
             sources=inputs.sources,
             agents=inputs.agents,
             prefilter=self.term_hits(),

@@ -5,14 +5,15 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import tests.unit.support.test_census_draw_given as given
-import tests.unit.support.test_holdout_census_given as census
-from evals.census_draw import GiveUp, GiveUpReason, KeptPlace
-from evals.census_work import AgentRole
+import tests.unit.support.test_census_given as census
+import tests.unit.support.test_detection_draw_record_given as given
+from evals.cve.census.census import load_census
+from evals.cve.census.classification import Criterion
+from evals.cve.census.work import AgentRole
+from evals.cve.detection.draw_record import GiveUp, GiveUpReason, KeptPlace, Settlement
 from evals.fixture_provenance import SoftwareRelease
-from evals.holdout_census import load_census
 from evals.run_census import CENSUS_PATH
-from tests.unit.support.test_census_draw_given import A_DRAWN_FLAW, A_TWICE_GIVEN_UP_FLAW
+from tests.unit.support.test_detection_draw_record_given import A_DRAWN_FLAW, A_TWICE_GIVEN_UP_FLAW
 
 
 def test_a_well_formed_draw_loads(tmp_path: Path):
@@ -27,6 +28,18 @@ def test_the_committed_census_draw_validates_clean():
     # load_census runs draw_problems on a present draw and raises on any problem, so a clean load
     # with the draw present is the committed draw validating.
     assert load_census(CENSUS_PATH).draw is not None
+
+
+def test_a_settlement_is_written_and_read_back_under_its_committed_key():
+    settlement = Settlement(
+        flaw=A_DRAWN_FLAW, criterion=Criterion.PINNABLE, ruling=True, reason="the maintainer"
+    )
+
+    written = settlement.model_dump_json()
+
+    assert json.loads(written)["verdict"] is True
+    assert "ruling" not in json.loads(written)
+    assert Settlement.model_validate_json(written) == settlement
 
 
 def test_a_card_citing_an_unknown_place_id_fails(tmp_path: Path):
@@ -101,7 +114,7 @@ def test_thirty_drawn_flaws_disclosed_after_one_date_load(tmp_path: Path):
 def test_a_give_up_reason_outside_the_closed_set_fails_at_deserialization(tmp_path: Path):
     raw = json.loads(given.a_census_with_draw(given.a_draw()).model_dump_json())
     raw["draw"]["give_ups"][0]["reason"] = "banana"
-    path = tmp_path / "holdout_census.json"
+    path = tmp_path / "census.json"
     path.write_text(json.dumps(raw))
 
     with pytest.raises(ValidationError, match="banana"):

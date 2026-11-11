@@ -5,8 +5,8 @@ import pytest
 
 import tests.unit.support.test_census_identity_given as given
 import tests.unit.support.test_census_sources_given as sources
-from evals.census_identity import census_identifier, disclosure_date, merge
-from evals.census_sources import read_osv
+from evals.cve.census.identity import disclosure_date, flaw_id_of, merge
+from evals.cve.census.sources import read_osv
 
 
 def test_a_ghsa_its_nvd_record_and_an_osv_record_are_one_flaw_identified_by_the_cve():
@@ -43,7 +43,7 @@ def test_without_a_cve_the_earliest_published_ghsa_is_kept():
     earlier = given.a_ghsa("GHSA-zzzz-zzzz-zzzz", published=date(2025, 6, 1))
     ids = {"GHSA-aaaa-aaaa-aaaa", "GHSA-zzzz-zzzz-zzzz"}
 
-    assert census_identifier(ids, [later, earlier]) == "GHSA-zzzz-zzzz-zzzz"
+    assert flaw_id_of(ids, [later, earlier]) == "GHSA-zzzz-zzzz-zzzz"
 
 
 def test_ghsa_ids_published_the_same_day_are_ordered_by_string():

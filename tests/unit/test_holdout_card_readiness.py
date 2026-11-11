@@ -1,10 +1,10 @@
 import pytest
 from pydantic import ValidationError
 
-import tests.unit.support.test_census_draw_given as given
-from evals.census_draw import CardCheck, DrawRecord
+import tests.unit.support.test_detection_draw_record_given as given
+from evals.cve.detection.draw_record import CardCheck, DrawRecord
 from evals.holdout_card_readiness import unready_cards
-from tests.unit.support.test_census_draw_given import A_DRAWN_FLAW
+from tests.unit.support.test_detection_draw_record_given import A_DRAWN_FLAW
 
 
 def _with_check_version(draw: DrawRecord, version: int) -> DrawRecord:

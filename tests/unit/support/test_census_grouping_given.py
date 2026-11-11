@@ -1,8 +1,8 @@
 from typing import Any
 
 import tests.unit.support.test_census_figures_given as figures
-from evals.census_classification import Classification, Criterion
-from evals.census_grouping import NO_PROOF_GROUP, ProofJudgment
+from evals.cve.census.classification import Classification, Criterion
+from evals.cve.census.grouping import NO_PROOF_GROUP, ProofJudgment
 
 OUTSIDE_THE_GRAMMAR: dict[str, Any] = {
     "effect_class": "authorization_bypass",

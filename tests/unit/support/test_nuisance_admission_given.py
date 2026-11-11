@@ -3,17 +3,17 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
-import tests.unit.support.test_census_draw_given as draw_given
-import tests.unit.support.test_holdout_census_given as census_given
+import tests.unit.support.test_census_given as census_given
+import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import cve_baseline
 from evals.backend_lifecycle import BackendLifecycle
-from evals.census_classification import Classification
-from evals.census_work import AgentRecord, AgentRole
+from evals.cve.census.census import CLASSIFIERS, Census
+from evals.cve.census.classification import Classification
+from evals.cve.census.work import AgentRecord, AgentRole
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, PublicNames, SymbolicUser
-from evals.holdout_census import CLASSIFIERS, HoldoutCensus
 from evals.nuisance_admission import (
     AdmissionSettlement,
     AdmittedServer,
@@ -38,8 +38,8 @@ SECOND_FLAW = census_given.OSV_ONLY_FLAW
 PATCHED_VERSION = "1.2.0"
 
 
-def a_census() -> HoldoutCensus:
-    """The holdout census whose walk reaches SERVER_PACKAGE through FIRST_FLAW. Its other flaws
+def a_census() -> Census:
+    """The census whose detection walk reaches SERVER_PACKAGE through FIRST_FLAW. Its other flaws
     of the package then add nothing to the queue."""
     return draw_given.with_a_walk_skipping(census_given.a_census(), FIRST_FLAW)
 
@@ -383,7 +383,7 @@ ACCEPTANCE_FLAW = walk_given.A_CURRENT_TARGET_FLAW
 ACCEPTANCE_PACKAGE = "npm:an-acceptance-server"
 
 
-def a_census_with_an_acceptance_server() -> HoldoutCensus:
+def a_census_with_an_acceptance_server() -> Census:
     """A census that also classifies the benchmark flaw ACCEPTANCE_FLAW, outside the draw order,
     under ACCEPTANCE_PACKAGE."""
     with_target = census_given.with_a_cve_of(
