@@ -1,7 +1,7 @@
 import io
 import zipfile
 
-from evals.nuisance_fix_checks.excel_witness_workbook import workbook_holding
+from evals.cve.nuisance.fix_checks.excel_witness_workbook import workbook_holding
 
 
 def test_the_workbook_holds_the_nonce_in_the_first_cell_of_the_named_sheet():

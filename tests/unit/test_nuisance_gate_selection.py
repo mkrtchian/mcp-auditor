@@ -1,8 +1,8 @@
 """Which admitted servers the nuisance gate audits, and which it names as left out."""
 
 import tests.unit.support.test_nuisance_gate_selection_given as given
-from evals.nuisance_gate_session import gate_servers, not_admitted, outside_gate
-from evals.nuisance_results import FigureExit
+from evals.cve.nuisance.gate_session import gate_servers, not_admitted, outside_gate
+from evals.cve.nuisance.results import ServerExit
 from tests.unit.support.test_nuisance_admission_edits_given import without_stdio
 from tests.unit.support.test_nuisance_gate_session_given import FILESYSTEM, KUBERNETES
 
@@ -22,7 +22,7 @@ def test_a_current_server_that_does_not_run_over_stdio_is_outside_the_gate_namin
     no_stdio = without_stdio(given.admitting(KUBERNETES, FILESYSTEM), KUBERNETES.server_package)
 
     assert outside_gate(no_stdio, CURRENT) == [
-        FigureExit(KUBERNETES.server_package, "does not run over stdio")
+        ServerExit(KUBERNETES.server_package, "does not run over stdio")
     ]
 
 

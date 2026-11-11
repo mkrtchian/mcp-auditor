@@ -3,12 +3,12 @@ from typing import Any
 import pytest
 import yaml
 
-from evals import nuisance_images
 from evals.cve.detection.targets import image_tag
 from evals.cve.images import COMPOSE_FILE
+from evals.cve.nuisance import images as nuisance_images
+from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve_planting_base import STAND_IN_SERVICE
 from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_backends import BACKENDS
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 COMPOSE_SERVICES: dict[str, Any] = yaml.safe_load(COMPOSE_FILE.read_text())["services"]

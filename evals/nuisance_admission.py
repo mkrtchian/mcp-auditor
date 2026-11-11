@@ -2,11 +2,11 @@
 its own (`evals/nuisance_admission.json`), distinct from the census.
 
 The schema is filled by the two blind admission agents and the maintainer who settles their
-disagreements, on the model of the draw record of `evals/cve/detection/draw_record.py`. Every
-list is empty until the admission session. `admission_problems` holds the load validation,
-raised joined by `load_admission`, so a crafted admission can be checked without a file. The
-file is absent until the session, and `load_admission` says so. The fields defaulting to `None`
-are those rule v3 or v4 added and not yet recorded, which `nuisance_unrecorded` refuses at run.
+disagreements, on the model of the draw record of `evals/cve/detection/draw_record.py`. Every list
+is empty until the admission session. `admission_problems` holds the load validation, raised joined
+by `load_admission`, so a crafted admission can be checked without a file. The file is absent until
+the session, and `load_admission` says so. The fields defaulting to `None` are those rule v3 or v4
+added and not yet recorded, which `evals/cve/nuisance/unrecorded.py` refuses at run.
 """
 
 from collections.abc import Mapping
@@ -15,18 +15,20 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from evals import nuisance_backends, nuisance_images, nuisance_walk
 from evals.cve.census.work import AgentRecord
 from evals.cve.detection import baseline as detection_baseline
 from evals.cve.detection.draw_record import LaunchOption
 from evals.cve.fixture_provenance import SoftwareRelease, StandInRecord
+from evals.cve.nuisance import backend_registry
+from evals.cve.nuisance import images as nuisance_images
+from evals.cve.nuisance import walk as nuisance_walk
+from evals.cve.nuisance.admission_records import RealSoftwareRecord, SeedRecord, record_problems
+from evals.cve.nuisance.admission_walk import walk_problems
+from evals.cve.nuisance.walk_record import WalkInputs
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost
 from evals.honeypots import REPO_ROOT
-from evals.nuisance_admission_records import RealSoftwareRecord, SeedRecord, record_problems
-from evals.nuisance_admission_walk import walk_problems
 from evals.nuisance_counting import counted_flaws, counted_tools
-from evals.nuisance_walk_record import NuisanceCensus
 
 ADMISSION_PATH = REPO_ROOT / "evals" / "nuisance_admission.json"
 
@@ -125,7 +127,7 @@ class NuisanceAdmission(BaseModel):
     servers: list[AdmittedServer]
 
 
-def load_admission(path: Path, nuisance_census: NuisanceCensus) -> NuisanceAdmission:
+def load_admission(path: Path, walk_inputs: WalkInputs) -> NuisanceAdmission:
     if not path.exists():
         raise FileNotFoundError(
             f"no admission at {path}: the admission session has not been committed"
@@ -133,9 +135,9 @@ def load_admission(path: Path, nuisance_census: NuisanceCensus) -> NuisanceAdmis
     admission = NuisanceAdmission.model_validate_json(path.read_text())
     problems = admission_problems(
         admission,
-        nuisance_census,
+        walk_inputs,
         detection_baseline.grammar_fingerprint(),
-        nuisance_backends.BACKENDS,
+        backend_registry.BACKENDS,
     )
     if problems:
         raise ValueError(f"invalid nuisance admission {path}: {'; '.join(problems)}")
@@ -144,23 +146,23 @@ def load_admission(path: Path, nuisance_census: NuisanceCensus) -> NuisanceAdmis
 
 def admission_problems(
     admission: NuisanceAdmission,
-    nuisance_census: NuisanceCensus,
+    walk_inputs: WalkInputs,
     grammar_fingerprint: str,
-    backends: Mapping[str, nuisance_backends.RegisteredBackend],
+    backends: Mapping[str, backend_registry.RegisteredBackend],
 ) -> list[str]:
     problems = _fingerprint_problems(admission, grammar_fingerprint)
     problems += nuisance_images.namespace_problems(admission)
     for server in admission.servers:
         problems += _unsettled_disagreements(server)
-        problems += _foreign_flaws(server, nuisance_census)
+        problems += _foreign_flaws(server, walk_inputs)
         problems += _tool_record_problems(server)
         problems += _counted_tool_problems(server)
         problems += _benign_call_problems(server)
         problems += _patched_version_problems(server)
         problems += _network_problems(server)
-        problems += nuisance_backends.backend_problems(server, backends)
+        problems += backend_registry.backend_problems(server, backends)
         problems += record_problems(server)
-    return problems + walk_problems(admission, nuisance_census)
+    return problems + walk_problems(admission, walk_inputs)
 
 
 def _fingerprint_problems(admission: NuisanceAdmission, grammar_fingerprint: str) -> list[str]:
@@ -204,9 +206,9 @@ def _is_settled(server: AdmittedServer, agreement: FieldAgreement) -> bool:
     )
 
 
-def _foreign_flaws(server: AdmittedServer, nuisance_census: NuisanceCensus) -> list[str]:
-    census_flaws = set(nuisance_walk.census_flaws_of(server.server_package, nuisance_census))
-    all_census_flaws = {flaw.identifier for flaw in nuisance_census.census.flaws}
+def _foreign_flaws(server: AdmittedServer, walk_inputs: WalkInputs) -> list[str]:
+    census_flaws = set(nuisance_walk.census_flaws_of(server.server_package, walk_inputs))
+    all_census_flaws = {flaw.identifier for flaw in walk_inputs.census.flaws}
     return [
         f"{server.server_package}: flaw {flaw.flaw} is not a census flaw of the server"
         for flaw in server.flaws

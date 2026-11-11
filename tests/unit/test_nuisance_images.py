@@ -2,9 +2,9 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as given
-from evals import nuisance_images
 from evals.cve.detection import targets as detection_targets
 from evals.cve.kit import launch as kit_launch
+from evals.cve.nuisance import images as nuisance_images
 from evals.nuisance_admission import NuisanceAdmission
 
 

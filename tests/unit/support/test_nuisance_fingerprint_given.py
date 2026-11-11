@@ -4,11 +4,11 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals import nuisance_fingerprint
+from evals.cve.nuisance import fingerprint as nuisance_fingerprint
+from evals.cve.nuisance.backend_registry import RegisteredBackend
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, PublicNames
 from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_backends import RegisteredBackend
 
 SERVICE = admission_given.a_server([]).service
 SERVED_CHANGES = [

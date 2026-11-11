@@ -2,15 +2,15 @@ import pytest
 
 import tests.unit.support.test_nuisance_gate_recording_given as given
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.gate import RetestRule
-from evals.nuisance_gate import ServerOutcome
-from evals.nuisance_gate_baseline import NuisanceServerBaseline
-from evals.nuisance_gate_recording import (
+from evals.cve.nuisance.gate import ServerOutcome
+from evals.cve.nuisance.gate_baseline import NuisanceServerBaseline
+from evals.cve.nuisance.gate_recording import (
     ServerRecording,
     decide_recording,
     decide_recordings,
     leaves_gated_set,
 )
+from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
 
@@ -31,7 +31,7 @@ def test_no_file_gives_an_exploratory_baseline_of_the_recording():
         status=BaselineStatus.UNCONFIRMED,
         conditions=recording.conditions,
         fixture_fingerprint=recording.fixture_fingerprint,
-        replay_rule=RetestRule(),
+        retest_rule=RetestRule(),
         commit=recording.commit,
         recorded_at=recording.recorded_at,
         runs=recording.runs,
@@ -111,7 +111,7 @@ def test_a_confirmed_file_is_not_recorded_over_a_regression():
     assert any("ADR 016" in reason for reason in decision.reasons)
 
 
-@pytest.mark.parametrize("outcome", [ServerOutcome.PENDING_REPLAY, ServerOutcome.INCOMPLETE, None])
+@pytest.mark.parametrize("outcome", [ServerOutcome.PENDING_RETEST, ServerOutcome.INCOMPLETE, None])
 def test_a_confirmed_file_is_not_recorded_over_an_unsettled_comparison(
     outcome: ServerOutcome | None,
 ):

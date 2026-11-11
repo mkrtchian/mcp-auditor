@@ -7,12 +7,12 @@ import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_fingerprint_given as given
 from evals import cve_planting_base, nuisance_confinement
 from evals.cve.fixture_provenance import StandInRecord
+from evals.cve.nuisance.admission_records import SeedRecord
+from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
 from evals.nuisance_admission import AdmissionSettlement, BackendFixture, ToolCall
-from evals.nuisance_admission_records import SeedRecord
-from evals.nuisance_backends import BACKENDS
-from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
 
 FAKE_BACKEND = BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
 

@@ -5,14 +5,11 @@ from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
 
 import tests.unit.support.test_eval_display_given as display_given
 import tests.unit.support.test_nuisance_audit_once_given as given
-from evals import nuisance_audit as nuisance_audit_module
 from evals.cve import launch_audit
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.failure_text import TYPES_ONLY
-from evals.cve.provider_errors import ProviderFatal
-from evals.cve.server_health import ServerHealth
-from evals.cve_environments import Launch
-from evals.nuisance_audit import (
+from evals.cve.nuisance import audit as nuisance_audit_module
+from evals.cve.nuisance.audit import (
     LaunchFailed,
     NuisanceAudit,
     ProviderError,
@@ -20,6 +17,9 @@ from evals.nuisance_audit import (
     nuisance_audit,
     nuisance_environment,
 )
+from evals.cve.provider_errors import ProviderFatal
+from evals.cve.server_health import ServerHealth
+from evals.cve_environments import Launch
 from evals.nuisance_confinement import single_container_run_args
 from mcp_auditor.domain.models import MissCause, ProviderUsage
 from tests.unit.support import test_cve_grammar_given as grammar

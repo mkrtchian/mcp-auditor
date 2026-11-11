@@ -1,8 +1,8 @@
 from datetime import date
 
 from evals.cve.holdout_statistic import Side
-from evals.nuisance_results import NuisanceRunStatus, NuisanceServerResult
-from evals.nuisance_statistic import SideStatistic, split_by_side
+from evals.cve.nuisance.results import NuisanceRunStatus, NuisanceServerResult
+from evals.cve.nuisance.statistic import SideStatistic, split_by_side
 
 RUN_CUTOFF = date(2026, 5, 18)
 _PRE_DATE = date(2026, 1, 1)
@@ -31,7 +31,7 @@ def a_server_result(
             declared_function_fail_count=1 if index < declared_function_fail_runs else 0,
             non_protocol_lines=0,
             lost_connection_responses=0,
-            miss_causes=[],
+            missed_call_causes=[],
         )
         for index in range(runs)
     )

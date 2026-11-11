@@ -2,12 +2,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from evals.apify_backend import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
+from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.fix_checks import cve_2026_19956_facebook_ads as facebook_ads
+from evals.cve.nuisance.fix_checks import cve_2026_46341_apify as apify
+from evals.cve.nuisance.fix_checks import cve_2026_61462_gitlab as gitlab
+from evals.cve.nuisance.fix_checks import cve_2026_77252_atlassian as atlassian
 from evals.facebook_ads_backend import FACEBOOK_ADS_BENIGN_HOST, FACEBOOK_ADS_RESPONDER_IP
-from evals.nuisance_backends import BACKENDS
-from evals.nuisance_fix_checks import cve_2026_19956_facebook_ads as facebook_ads
-from evals.nuisance_fix_checks import cve_2026_46341_apify as apify
-from evals.nuisance_fix_checks import cve_2026_61462_gitlab as gitlab
-from evals.nuisance_fix_checks import cve_2026_77252_atlassian as atlassian
 
 RESPONDER_ADDRESS = "198.18.9.77"
 
@@ -35,7 +35,7 @@ class ResponderFixCheck:
 
 RESPONDER_FIX_CHECKS = [
     ResponderFixCheck(
-        apify.TARGET.flaw,
+        apify.FIXTURE.flaw,
         "apify",
         apify.responder_args,
         apify.server_args,
@@ -44,7 +44,7 @@ RESPONDER_FIX_CHECKS = [
         image=APIFY_RESPONDER_IMAGE,
     ),
     ResponderFixCheck(
-        atlassian.TARGET.flaw,
+        atlassian.FIXTURE.flaw,
         "atlassian",
         atlassian.responder_args,
         atlassian.server_args,
@@ -52,7 +52,7 @@ RESPONDER_FIX_CHECKS = [
         "DEMO_SUMMARY",
     ),
     ResponderFixCheck(
-        facebook_ads.TARGET.flaw,
+        facebook_ads.FIXTURE.flaw,
         "facebook_ads",
         facebook_ads.sentinel_args,
         facebook_ads.server_args,
@@ -64,7 +64,7 @@ RESPONDER_FIX_CHECKS = [
         image=facebook_ads.SENTINEL_IMAGE,
     ),
     ResponderFixCheck(
-        gitlab.TARGET.flaw,
+        gitlab.FIXTURE.flaw,
         "gitlab",
         gitlab.responder_args,
         gitlab.server_args,

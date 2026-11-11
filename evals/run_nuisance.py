@@ -1,19 +1,17 @@
 """Nuisance-specific commands, kept out of run_census, run_detection and run_detection_holdout.
 
-`walk` prints the servers the walk reached, the holdout walk's then the addition's, each with the
-draw position of its reaching flaw and the flaws that set its version, for the maintainer to
-admit, and how many of the addition's servers the admission counts in the figure (no LLM, no
-network). `nuisance-dossier` writes
-the isolated admission dossier for one server (no LLM; the fix-check driver it ships needs
-Docker), copying a backend's kit builder and lifecycle under `--backend <key>`, or under
-`--readmission` the re-admission dossier of an admitted server, with its record, its run, fix-check
-and backend sources and the benign probe. `calibrate`
-rebuilds and reproduces each fix-check fixture against the admission (Docker, no LLM). `run`
-audits the admitted servers on their patched images and reports the figure, so it needs Docker and
-an LLM key. `gate` audits the admitted acceptance servers with a current target and compares each
-to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM key. `vet` rebuilds
-the run's images and makes each audited server's benign calls on the run's launch path (Docker,
-no LLM).
+`walk` prints the servers the nuisance walk reached, the detection walk's then the addition's, each
+with the draw position of its reaching flaw and the flaws that may count, for the maintainer to
+admit, and how many of the addition's servers the admission counts in the nuisance holdout layer (no
+LLM, no network). `nuisance-dossier` writes the isolated admission dossier for one server (no LLM;
+the fix-check driver it ships needs Docker), copying a backend's kit builder and lifecycle under
+`--backend <key>`, or under `--re-admission` the re-admission dossier of an admitted server, with
+its record, its run, fix-check and backend sources and the benign probe. `fix-check` rebuilds each
+fix-check fixture's images and reproduces its flaw against the admission (Docker, no LLM). `run`
+audits the admitted servers on their patched images and reports the holdout nuisance rate, so it
+needs Docker and an LLM key. `gate` audits each admitted nuisance acceptance server and compares it
+to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM key. `vet` rebuilds the
+run's images and makes each audited server's benign calls on the run's launch path (Docker, no LLM).
 """
 
 import argparse
@@ -34,34 +32,30 @@ from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord, governing_steps
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
-from evals.cve.provider_errors import ProviderFatal, describe_provider_error
-from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
-from evals.cve_places import HOLDOUT_PLACES, load_places
-from evals.eval_session import Refused, last_commit
-from evals.honeypot.runs import tracing_enabled
-from evals.metrics import quiet_throttle_waits
-from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer
-from evals.nuisance_admission_walk import addition_entries
-from evals.nuisance_calibrate_command import add_calibrate_arguments
-from evals.nuisance_commands import (
+from evals.cve.nuisance.admission_walk import addition_entries
+from evals.cve.nuisance.commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
     REFUSED_EXIT,
     WALK_RECORD_PATH,
     committed_admission,
-    committed_nuisance_census,
+    committed_walk_inputs,
     malformed_input_refused,
     write_report,
 )
-from evals.nuisance_dossier import write_dossier
-from evals.nuisance_gate_command import add_gate_arguments
-from evals.nuisance_holdout_copies import copy_targets, stale_holdout_copies
-from evals.nuisance_markdown import render_markdown
-from evals.nuisance_population import RunPopulation, run_population
-from evals.nuisance_readmission_dossier import write_readmission_dossier
-from evals.nuisance_report import build_report
-from evals.nuisance_results import NuisanceRunResult
-from evals.nuisance_run import (
+from evals.cve.nuisance.dossier import write_dossier
+from evals.cve.nuisance.fix_check_command import add_fix_check_arguments
+from evals.cve.nuisance.gate_command import add_gate_arguments
+from evals.cve.nuisance.holdout_calibration_copies import (
+    copy_targets,
+    stale_holdout_calibration_copies,
+)
+from evals.cve.nuisance.holdout_servers import RunPopulation, run_population
+from evals.cve.nuisance.markdown import render_markdown
+from evals.cve.nuisance.re_admission_dossier import write_re_admission_dossier
+from evals.cve.nuisance.report import build_report
+from evals.cve.nuisance.results import NuisanceRunResult
+from evals.cve.nuisance.run import (
     NUISANCE_CONCURRENCY,
     NUISANCE_RUNS,
     NuisanceDeps,
@@ -70,10 +64,17 @@ from evals.nuisance_run import (
     nuisance_overrides,
     run_nuisance,
 )
-from evals.nuisance_unrecorded import refuse_unrecorded
-from evals.nuisance_vet_command import add_vet_arguments
-from evals.nuisance_walk import NuisanceServer, acceptance_servers, nuisance_population
-from evals.nuisance_walk_record import NuisanceCensus
+from evals.cve.nuisance.unrecorded import refuse_unrecorded
+from evals.cve.nuisance.vet_command import add_vet_arguments
+from evals.cve.nuisance.walk import NuisanceServer, acceptance_target_servers, nuisance_population
+from evals.cve.nuisance.walk_record import WalkInputs
+from evals.cve.provider_errors import ProviderFatal, describe_provider_error
+from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
+from evals.cve_places import HOLDOUT_PLACES, load_places
+from evals.eval_session import Refused, last_commit
+from evals.honeypot.runs import tracing_enabled
+from evals.metrics import quiet_throttle_waits
+from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
@@ -100,7 +101,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Nuisance admission commands.")
     commands = parser.add_subparsers(required=True)
-    walk = commands.add_parser("walk", help="print the servers the walk reached to admit")
+    walk = commands.add_parser("walk", help="print the servers the nuisance walk reached to admit")
     walk.set_defaults(command=_walk)
     walk.add_argument("--census", type=Path, default=CENSUS_PATH)
     walk.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
@@ -117,10 +118,12 @@ def _parser() -> argparse.ArgumentParser:
         "--backend", default=None, help="copy the kit builder and lifecycle of this backend (doris)"
     )
     dossier.add_argument(
-        "--readmission", action="store_true", help="write the re-admission dossier instead"
+        "--re-admission", action="store_true", help="write the re-admission dossier instead"
     )
     dossier.add_argument("--admission", type=Path, default=ADMISSION_PATH)
-    run = commands.add_parser("run", help="audit the admitted servers and report the figure")
+    run = commands.add_parser(
+        "run", help="audit the admitted servers and report the holdout nuisance rate"
+    )
     run.set_defaults(command=_run)
     run.add_argument("--report", type=Path, default=Path(DEFAULT_REPORT_PATH))
     run.add_argument("--runs", type=positive_int, default=None, help="default 3, lowerable to 1")
@@ -128,13 +131,14 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--census", type=Path, default=CENSUS_PATH)
     run.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
     run.add_argument("--admission", type=Path, default=ADMISSION_PATH)
-    add_calibrate_arguments(
+    add_fix_check_arguments(
         commands.add_parser(
-            "calibrate", help="rebuild and reproduce each fix-check fixture against the admission"
+            "fix-check", help="rebuild and reproduce each fix-check fixture against the admission"
         )
     )
     gate = commands.add_parser(
-        "gate", help="audit the admitted acceptance servers and compare them to their baselines"
+        "gate",
+        help="audit the admitted nuisance acceptance servers and compare them to their baselines",
     )
     add_gate_arguments(gate)
     add_vet_arguments(
@@ -147,10 +151,10 @@ def _parser() -> argparse.ArgumentParser:
 
 def _walk(args: argparse.Namespace) -> int:
     with malformed_input_refused():
-        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
-        population = nuisance_population(nuisance_census)
-        admission = committed_admission(args.admission, nuisance_census)
-    draw = nuisance_census.census.draw
+        walk_inputs = committed_walk_inputs(args.census, args.walk_record)
+        population = nuisance_population(walk_inputs)
+        admission = committed_admission(args.admission, walk_inputs)
+    draw = walk_inputs.census.draw
     governing = governing_steps(draw) if draw else {}
     outcomes = {identifier: step.outcome for identifier, step in governing.items()}
     print(f"{len(population)} servers reached by the walk:")
@@ -158,8 +162,11 @@ def _walk(args: argparse.Namespace) -> int:
         print(_walk_line(server, outcomes))
     if admission is not None:
         admitted = len(addition_entries(admission, population))
-        size = nuisance_census.record.addition.size
-        print(f"{admitted} of {size} servers of the addition admitted and in the figure")
+        size = walk_inputs.record.addition.size
+        print(
+            f"{admitted} of {size} servers of the addition admitted"
+            " and in the nuisance holdout layer"
+        )
     return 0
 
 
@@ -168,7 +175,7 @@ def _walk_line(server: NuisanceServer, outcomes: dict[str, str]) -> str:
     line = (
         f"  #{server.reaching_position} {server.server_package}"
         f"  reached by {server.reaching_flaw} ({how})"
-        f"  may set version, pending the admission's class: {', '.join(server.version_setting)}"
+        f"  may count, pending the admission's class: {', '.join(server.candidate_counted_flaws)}"
     )
     if server.mark is not None:
         line += f"  [{server.mark.value}]"
@@ -176,16 +183,16 @@ def _walk_line(server: NuisanceServer, outcomes: dict[str, str]) -> str:
 
 
 def _nuisance_dossier(args: argparse.Namespace) -> int:
-    if args.readmission:
-        return _readmission_dossier(args)
+    if args.re_admission:
+        return _re_admission_dossier(args)
     with malformed_input_refused():
-        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
-    write_dossier(nuisance_census, args.server, args.out, args.backend)
+        walk_inputs = committed_walk_inputs(args.census, args.walk_record)
+    write_dossier(walk_inputs, args.server, args.out, args.backend)
     print(f"Admission dossier for {args.server} written to {args.out}")
     return 0
 
 
-def _readmission_dossier(args: argparse.Namespace) -> int:
+def _re_admission_dossier(args: argparse.Namespace) -> int:
     if args.backend is not None:
         raise Refused(
             "nuisance dossier refused",
@@ -195,11 +202,11 @@ def _readmission_dossier(args: argparse.Namespace) -> int:
             ],
         )
     with malformed_input_refused():
-        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
-        admission = committed_admission(args.admission, nuisance_census)
+        walk_inputs = committed_walk_inputs(args.census, args.walk_record)
+        admission = committed_admission(args.admission, walk_inputs)
     if admission is None:
         raise Refused("nuisance dossier refused", [f"no admission at {args.admission}"])
-    write_readmission_dossier(nuisance_census, admission, args.server, args.out)
+    write_re_admission_dossier(walk_inputs, admission, args.server, args.out)
     print(f"Re-admission dossier for {args.server} written to {args.out}")
     return 0
 
@@ -209,22 +216,20 @@ def _run(args: argparse.Namespace) -> int:
     refuse_existing_report(args.report, "nuisance run refused")
     conditions = load_conditions(CONDITIONS_PATH)
     with malformed_input_refused():
-        nuisance_census = committed_nuisance_census(args.census, args.walk_record)
-        admission = committed_admission(args.admission, nuisance_census)
+        walk_inputs = committed_walk_inputs(args.census, args.walk_record)
+        admission = committed_admission(args.admission, walk_inputs)
         if admission is None or not admission.servers:
             print("no server is admitted")
             return 0
         population = run_population(
-            nuisance_population(nuisance_census), admission, acceptance_servers(nuisance_census)
+            nuisance_population(walk_inputs), admission, acceptance_target_servers(walk_inputs)
         )
     refuse_unrecorded(population.audited, "nuisance run refused")
-    _refuse_stale_holdout_copies(population.audited, nuisance_census.census.draw)
+    _refuse_stale_holdout_calibration_copies(population.audited, walk_inputs.census.draw)
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    run = _audit_admitted_servers(
-        args, _ReadyRun(nuisance_census, population, conditions, settings)
-    )
+    run = _audit_admitted_servers(args, _ReadyRun(walk_inputs, population, conditions, settings))
     write_result(args.report, run)
     report = build_report(run)
     markdown = render_markdown(report)
@@ -238,7 +243,7 @@ def _run(args: argparse.Namespace) -> int:
 class _ReadyRun:
     """What a nuisance run reads, once its conditions are checked ready for its models."""
 
-    nuisance_census: NuisanceCensus
+    walk_inputs: WalkInputs
     population: RunPopulation
     conditions: HoldoutConditions
     settings: Settings
@@ -250,7 +255,7 @@ def _audit_admitted_servers(args: argparse.Namespace, ready: _ReadyRun) -> Nuisa
         return asyncio.run(
             run_nuisance(
                 ready.population,
-                draw_order(ready.nuisance_census.census),
+                draw_order(ready.walk_inputs.census),
                 ready.conditions,
                 ready.settings,
                 RunProvenance(last_commit(args.census), last_commit(args.walk_record)),
@@ -267,7 +272,7 @@ def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
     )
 
 
-def _refuse_stale_holdout_copies(
+def _refuse_stale_holdout_calibration_copies(
     servers: Sequence[AdmittedServer], draw: DrawRecord | None
 ) -> None:
     places = load_places(HOLDOUT_PLACES)
@@ -276,10 +281,11 @@ def _refuse_stale_holdout_copies(
     }
     resolution = copy_targets([target.flaw_id for target in HOLDOUT_TARGETS], draw)
     current = {copy: fingerprints[drawn] for copy, drawn in resolution.items()}
-    stale = stale_holdout_copies(servers, current)
+    stale = stale_holdout_calibration_copies(servers, current)
     if stale:
         reason = (
-            "holdout calibrations copied from a fixture that has since changed or left the holdout"
+            "holdout calibration copies taken from a fixture that has since changed"
+            " or left the detection holdout layer"
         )
         raise Refused("nuisance run refused", [reason, *stale])
 

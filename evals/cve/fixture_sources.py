@@ -9,7 +9,7 @@ from collections.abc import Collection, Sequence
 from pathlib import Path
 
 from evals.cve.fixture_provenance import StandInRecord
-from evals.nuisance_admission_records import SeedRecord
+from evals.cve.nuisance.admission_records import SeedRecord
 
 _HTTP_CHECKSUM = re.compile(r"--checksum=sha256:[0-9a-f]{64}")
 _GIT_CHECKSUM = re.compile(r"--checksum=[0-9a-f]{40}")

@@ -8,11 +8,11 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from evals import nuisance_results
 from evals.cve.detection import holdout_results
 from evals.cve.detection.holdout_results import HoldoutRunResult
+from evals.cve.nuisance import results as nuisance_results
+from evals.cve.nuisance.results import NuisanceRunResult
 from evals.eval_session import Refused
-from evals.nuisance_results import NuisanceRunResult
 
 
 def refuse_existing_report(report: Path, title: str) -> None:

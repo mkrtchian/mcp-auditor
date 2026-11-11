@@ -12,6 +12,9 @@ from evals.cve.census.census import CLASSIFIERS, Census
 from evals.cve.census.classification import Classification
 from evals.cve.census.work import AgentRecord, AgentRole
 from evals.cve.detection import baseline as detection_baseline
+from evals.cve.nuisance.admission_records import RealSoftwareRecord
+from evals.cve.nuisance.backend_registry import RegisteredBackend
+from evals.cve.nuisance.walk_record import WalkInputs
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, PublicNames, SymbolicUser
 from evals.nuisance_admission import (
@@ -26,9 +29,6 @@ from evals.nuisance_admission import (
     ToolRecord,
     admission_problems,
 )
-from evals.nuisance_admission_records import RealSoftwareRecord
-from evals.nuisance_backends import RegisteredBackend
-from evals.nuisance_walk_record import NuisanceCensus
 
 OTHER_PACKAGE = "PyPI:context-forge"
 
@@ -44,8 +44,8 @@ def a_census() -> Census:
     return draw_given.with_a_walk_skipping(census_given.a_census(), FIRST_FLAW)
 
 
-def a_nuisance_census() -> NuisanceCensus:
-    return walk_given.a_nuisance_census(a_census())
+def walk_inputs_of() -> WalkInputs:
+    return walk_given.walk_inputs_of(a_census())
 
 
 def an_admission() -> NuisanceAdmission:
@@ -185,10 +185,10 @@ def a_backend_registry(lifecycle: BackendLifecycle | None = None) -> dict[str, R
     }
 
 
-def problems_of(admission: NuisanceAdmission, census: NuisanceCensus | None = None) -> list[str]:
+def problems_of(admission: NuisanceAdmission, census: WalkInputs | None = None) -> list[str]:
     return admission_problems(
         admission,
-        census if census is not None else a_nuisance_census(),
+        census if census is not None else walk_inputs_of(),
         detection_baseline.grammar_fingerprint(),
         a_backend_registry(),
     )
@@ -330,7 +330,7 @@ def with_a_counted_tool_missing_its_benign_call(admission: NuisanceAdmission) ->
     )
 
 
-def a_nuisance_census_with_the_second_flaw_under_another_package() -> NuisanceCensus:
+def walk_inputs_with_the_second_flaw_under_another_package() -> WalkInputs:
     census = a_census()
 
     def relabel(own: list[Classification]) -> list[Classification]:
@@ -345,7 +345,7 @@ def a_nuisance_census_with_the_second_flaw_under_another_package() -> NuisanceCe
         classifier: relabel(census.classifications[classifier]) for classifier in CLASSIFIERS
     }
     relabeled = census.model_copy(update={"classifications": classifications})
-    return walk_given.a_nuisance_census(relabeled)
+    return walk_given.walk_inputs_of(relabeled)
 
 
 def with_the_second_flaw_settled_here(admission: NuisanceAdmission) -> NuisanceAdmission:
@@ -380,7 +380,7 @@ def admitting_the_server_of(flaw: str, server_package: str, service: str) -> Nui
 
 
 ACCEPTANCE_FLAW = walk_given.A_CURRENT_TARGET_FLAW
-ACCEPTANCE_PACKAGE = "npm:an-acceptance-server"
+ACCEPTANCE_PACKAGE = "npm:an-acceptance-target-server"
 
 
 def a_census_with_an_acceptance_server() -> Census:

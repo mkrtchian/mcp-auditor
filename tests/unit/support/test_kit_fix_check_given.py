@@ -2,7 +2,7 @@
 
 The verdict is a pure function of the exchanges each version records, so these helpers build
 `Exercised` values directly: an exploit that surfaces the witness nonce, one that stays clean,
-one that errors, and a `FixCheckTarget` whose builder is never entered in a unit test.
+one that errors, and a `FixCheckFixture` whose builder is never entered in a unit test.
 """
 
 import re
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from contextlib import AbstractContextManager
 
 from evals.cve.kit.client import KitResponse
-from evals.cve.kit.fix_check import Exchange, Exercised, FixCheckTarget
+from evals.cve.kit.fix_check import Exchange, Exercised, FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, PlantKind
@@ -59,14 +59,14 @@ def an_exercise(
     )
 
 
-def a_fix_check_target(
+def a_fix_check_fixture(
     server_patched_service: str | None = None,
     working_directory: str = "/srv",
     witness_path: str = "/tmp/witness",
-) -> FixCheckTarget:
-    return FixCheckTarget(
+) -> FixCheckFixture:
+    return FixCheckFixture(
         flaw="CVE-2025-0001",
-        mechanism=MechanismClass.READ_OUTSIDE_SCOPE,
+        effect_class=MechanismClass.READ_OUTSIDE_SCOPE,
         aim=AIM,
         witness=a_witness(witness_path),
         planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, working_directory, has_network=False),

@@ -1,6 +1,6 @@
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_benign_call_given as given
-from evals.nuisance_benign_call import benign_call_failure
+from evals.cve.nuisance.benign_call import benign_call_failure
 from mcp_auditor.domain import ToolResponse
 from tests.unit.support.test_nuisance_benign_call_given import (
     FIRST_TOOL,

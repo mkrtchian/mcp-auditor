@@ -1,9 +1,9 @@
 import itertools
 
-from evals.nuisance_gate import NuisanceGateResult, ServerComparison, ServerOutcome, judge
-from evals.nuisance_gate_report import NuisanceGateReport, server_lines
-from evals.nuisance_gate_session_model import GateAudit, NuisanceGateSession
-from evals.nuisance_results import FigureExit
+from evals.cve.nuisance.gate import NuisanceGateResult, ServerComparison, ServerOutcome, decide
+from evals.cve.nuisance.gate_report import NuisanceGateReport, server_lines
+from evals.cve.nuisance.gate_session_model import GateAudit, NuisanceGateSession
+from evals.cve.nuisance.results import ServerExit
 from tests.unit.support.test_nuisance_gate_baseline_given import conditions
 from tests.unit.support.test_nuisance_gate_session_given import (
     FILESYSTEM,
@@ -12,13 +12,13 @@ from tests.unit.support.test_nuisance_gate_session_given import (
 )
 
 NOT_ADMITTED = "npm:mcp-fetch-server"
-OUTSIDE = FigureExit("PyPI:mcp-server-git", "does not run over stdio")
+OUTSIDE = ServerExit("PyPI:mcp-server-git", "does not run over stdio")
 
 
 def a_held_server_beside_a_regression() -> NuisanceGateSession:
     held = [False, False, False]
     regression = [True, False, False]
-    gate = judge(
+    gate = decide(
         [
             ServerComparison(
                 server_package=FILESYSTEM.server_package,
@@ -31,7 +31,7 @@ def a_held_server_beside_a_regression() -> NuisanceGateSession:
                 outcome=ServerOutcome.REGRESSION,
                 candidate_runs=regression,
                 baseline_runs=[False] * 6,
-                replays=[False, True, True, True, True],
+                retests=[False, True, True, True, True],
             ),
         ],
         [],
@@ -54,7 +54,7 @@ def a_not_gated_server_with_an_alarm() -> NuisanceGateSession:
         baseline_runs=[False] * 5 + [True],
         detail=FLAGGED_IN_BASELINE,
     )
-    return _session(_audits(KUBERNETES.server_package, runs), judge([comparison], []))
+    return _session(_audits(KUBERNETES.server_package, runs), decide([comparison], []))
 
 
 FLAGGED_IN_BASELINE = "flagged in 1 of 6 baseline runs"

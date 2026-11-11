@@ -12,9 +12,9 @@ from evals.cve.detection.holdout_report import (
     MethodLine,
     RunCutoffModel,
 )
-from evals.nuisance_markdown import render_markdown
-from evals.nuisance_report import (
-    FigureExitLine,
+from evals.cve.nuisance.markdown import render_markdown
+from evals.cve.nuisance.report import (
+    ExitLine,
     NotRunLine,
     NuisanceReport,
     ServerLine,
@@ -22,18 +22,18 @@ from evals.nuisance_report import (
     SideLine,
     build_report,
 )
-from evals.nuisance_results import (
+from evals.cve.nuisance.results import (
     DROPPED_RUN_REASONS,
-    FigureExit,
     NotRunCause,
     NotRunServer,
+    ServerExit,
 )
 from tests.unit.support.test_nuisance_statistic_given import a_server_result
 
 PROOF_WORDS = {"evidence", "justification", "response", "payload", "verdict"}
 
 
-def test_the_figure_is_published_as_an_upper_bound():
+def test_the_holdout_nuisance_rate_is_published_as_an_upper_bound():
     run = given.a_run(
         [
             a_server_result("A", flagged_runs=3),
@@ -44,7 +44,7 @@ def test_the_figure_is_published_as_an_upper_bound():
 
     markdown = render_markdown(build_report(run))
 
-    assert "Figure: at most 0.667 (95% Wilson " in markdown
+    assert "Holdout nuisance rate: at most 0.667 (95% Wilson " in markdown
 
 
 def test_a_server_row_shows_its_status_per_run_in_order():
@@ -59,27 +59,26 @@ def test_a_server_row_shows_its_status_per_run_in_order():
     assert "counted tools 1 of 4" in markdown
 
 
-def test_outside_figure_rows_are_grouped_by_reason():
+def test_exit_rows_are_grouped_by_reason():
     run = given.a_run(
         [a_server_result("A")],
-        outside_figure=[
-            FigureExit("npm:excluded-one", "an excluded server"),
-            FigureExit("npm:excluded-two", "an excluded server"),
+        exits=[
+            ServerExit("npm:excluded-one", "an excluded server"),
+            ServerExit("npm:excluded-two", "an excluded server"),
         ],
     )
 
     markdown = render_markdown(build_report(run))
 
     assert (
-        "## Outside the figure\n"
-        "- an excluded server: 2 server(s): npm:excluded-one, npm:excluded-two\n"
+        "## Exits\n- an excluded server: 2 server(s): npm:excluded-one, npm:excluded-two\n"
     ) in markdown
 
 
 def test_no_exit_reads_none_in_both_sections():
     markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
 
-    assert "## Outside the figure\n- none\n" in markdown
+    assert "## Exits\n- none\n" in markdown
     assert "## Not run\n- none\n" in markdown
 
 
@@ -146,7 +145,7 @@ def test_a_server_line_sums_its_health_and_counts_its_incomplete_runs_by_cause()
     assert (line.non_protocol_lines, line.lost_connection_responses) == (2, 1)
     assert line.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
     assert line.per_run[0].non_protocol_lines == 2
-    assert line.per_run[1].miss_causes == ["provider_refusal", "unreadable_answer"]
+    assert line.per_run[1].missed_call_causes == ["provider_refusal", "unreadable_answer"]
     assert report.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
 
 
@@ -163,7 +162,7 @@ def test_the_markdown_splits_the_incomplete_runs_by_cause():
     markdown = render_markdown(build_report(given.a_run_with_incidents()))
 
     assert (
-        "Incomplete runs (a step refused or unreadable): 1 (A)\n"
+        "Incomplete runs (a model call refused or unreadable): 1 (A)\n"
         "- provider_refusal: 1 run(s)\n"
         "- unreadable_answer: 1 run(s)\n"
     ) in markdown
@@ -236,7 +235,7 @@ def test_the_throttled_requests_follow_the_incomplete_runs_line_with_the_concurr
 
     assert (report.throttled_requests, report.concurrency) == (12, 4)
     assert (
-        "Incomplete runs (a step refused or unreadable): 1 (A)\n"
+        "Incomplete runs (a model call refused or unreadable): 1 (A)\n"
         "Throttled by the model provider: 12 requests at concurrency 4\n"
     ) in markdown
 
@@ -245,6 +244,17 @@ def test_no_throttled_line_when_nothing_was_throttled():
     markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
 
     assert "Throttled" not in markdown
+
+
+def test_the_report_writes_the_holdout_nuisance_rate_and_the_exits_under_the_glossary_keys():
+    run = given.a_run(
+        [a_server_result("A")], exits=[ServerExit("npm:excluded", "an excluded server")]
+    )
+
+    dumped = build_report(run).model_dump(mode="json")
+
+    assert {"holdout_nuisance_rate", "exits"} <= dumped.keys()
+    assert dumped["exits"] == [{"server_package": "npm:excluded", "reason": "an excluded server"}]
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():
@@ -262,7 +272,7 @@ def test_the_report_holds_no_proof_text():
         ServerRunLine,
         SideLine,
         NotRunLine,
-        FigureExitLine,
+        ExitLine,
         MethodLine,
         ConclusionLine,
         CutoffModel,
@@ -272,7 +282,7 @@ def test_the_report_holds_no_proof_text():
     run = given.a_run(
         [given.with_incidents(a_server_result("A", flagged_runs=1))],
         not_run=[NotRunServer("npm:b", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED)],
-        outside_figure=[FigureExit("npm:c", "an acceptance server")],
+        exits=[ServerExit("npm:c", "the server of a current or dropped acceptance target")],
     )
 
     markdown = render_markdown(build_report(run)).lower()

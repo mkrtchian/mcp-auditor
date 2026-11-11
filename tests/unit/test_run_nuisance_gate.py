@@ -24,7 +24,7 @@ def test_gate_without_an_admission_exits_zero_and_says_so(
     )
 
     assert exit_code == 0
-    assert "no acceptance server is admitted" in capsys.readouterr().out
+    assert "no nuisance acceptance server is admitted" in capsys.readouterr().out
 
 
 def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
@@ -41,7 +41,7 @@ def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
     )
 
     assert exit_code == 0
-    assert "no acceptance server is admitted" in capsys.readouterr().out
+    assert "no nuisance acceptance server is admitted" in capsys.readouterr().out
 
 
 def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
@@ -60,8 +60,8 @@ def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
 
     out = capsys.readouterr().out
     assert exit_code == 0
-    assert "no acceptance server is admitted" not in out
-    assert "no admitted acceptance server can run in the gate" in out
+    assert "no nuisance acceptance server is admitted" not in out
+    assert "no admitted nuisance acceptance server can run in the gate" in out
     assert f"{given.GATE_SERVER}: does not run over stdio" in out
 
 

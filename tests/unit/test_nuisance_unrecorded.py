@@ -3,9 +3,9 @@ from collections.abc import Callable
 import pytest
 
 import tests.unit.support.test_nuisance_unrecorded_given as given
+from evals.cve.nuisance.unrecorded import refuse_unrecorded, unrecorded_fields
 from evals.eval_session import Refused
 from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_unrecorded import refuse_unrecorded, unrecorded_fields
 
 
 def test_a_recorded_server_has_no_gap():
@@ -66,7 +66,7 @@ def test_refusal_lists_the_gaps():
 
     assert refusal.value.title == "nuisance run refused"
     assert refusal.value.reasons == [
-        "fields rule v3 or v4 adds are not yet recorded",
+        "fields nuisance suite rule v3 or v4 adds are not yet recorded",
         f"{given.SERVER}: seeds",
     ]
 

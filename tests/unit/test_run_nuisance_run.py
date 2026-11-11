@@ -9,11 +9,11 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_admission_records_given as records_given
-import tests.unit.support.test_nuisance_holdout_copies_given as copies_given
+import tests.unit.support.test_nuisance_holdout_calibration_copies_given as copies_given
 import tests.unit.support.test_run_nuisance_run_given as given
 from evals import run_nuisance
+from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
-from evals.nuisance_results import RunInterrupted
 from tests.unit.support.test_run_detection_holdout_run_given import PROOF_FIELDS, result_keys
 
 
@@ -46,7 +46,7 @@ def test_run_refuses_a_server_with_an_unrecorded_field_before_its_settings(
     assert not (tmp_path / "nuisance_report.json").with_suffix(".result.json").exists()
 
 
-def test_run_refuses_a_holdout_copy_whose_flaw_left_the_holdout_before_its_settings(
+def test_run_refuses_a_holdout_calibration_copy_whose_flaw_left_the_layer_before_its_settings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     given.a_run_refused_before_its_settings(monkeypatch)
@@ -57,7 +57,9 @@ def test_run_refuses_a_holdout_copy_whose_flaw_left_the_holdout_before_its_setti
 
     words = " ".join(capsys.readouterr().out.replace("│", " ").split())
     assert exit_code == run_nuisance.REFUSED_EXIT
-    assert "copied from a fixture that has since changed or left the holdout" in words
+    assert (
+        "taken from a fixture that has since changed or left the detection holdout layer" in words
+    )
     assert f"{copies_given.COPIED_FLAW} is no longer a drawn holdout target" in words
     assert not (tmp_path / "nuisance_report.json").with_suffix(".result.json").exists()
 

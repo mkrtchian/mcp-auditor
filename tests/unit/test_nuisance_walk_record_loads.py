@@ -1,10 +1,10 @@
 import pytest
 
 from evals.cve.census.census import Census, load_census
+from evals.cve.nuisance.commands import WALK_RECORD_PATH
+from evals.cve.nuisance.walk import NuisanceServer, nuisance_population
+from evals.cve.nuisance.walk_record import WalkInputs, load_walk_record
 from evals.nuisance_admission import ADMISSION_PATH, load_admission
-from evals.nuisance_commands import WALK_RECORD_PATH
-from evals.nuisance_walk import NuisanceServer, nuisance_population
-from evals.nuisance_walk_record import NuisanceCensus, load_walk_record
 from evals.run_census import CENSUS_PATH
 
 
@@ -14,25 +14,25 @@ def census() -> Census:
 
 
 @pytest.fixture(scope="module")
-def nuisance_census(census: Census) -> NuisanceCensus:
+def walk_inputs(census: Census) -> WalkInputs:
     return load_walk_record(WALK_RECORD_PATH, census)
 
 
 @pytest.fixture(scope="module")
-def population(nuisance_census: NuisanceCensus) -> list[NuisanceServer]:
-    return nuisance_population(nuisance_census)
+def population(walk_inputs: WalkInputs) -> list[NuisanceServer]:
+    return nuisance_population(walk_inputs)
 
 
-def test_the_committed_walk_record_loads(nuisance_census: NuisanceCensus):
-    assert nuisance_census.record.addition.size > 0
+def test_the_committed_walk_record_loads(walk_inputs: WalkInputs):
+    assert walk_inputs.record.addition.size > 0
 
 
-def test_the_record_takes_no_server_out_of_the_holdout_walk_part(
-    census: Census, nuisance_census: NuisanceCensus, population: list[NuisanceServer]
+def test_the_record_takes_no_server_out_of_the_detection_walk_part(
+    census: Census, walk_inputs: WalkInputs, population: list[NuisanceServer]
 ):
-    bare = NuisanceCensus(
+    bare = WalkInputs(
         census=census,
-        record=nuisance_census.record.model_copy(update={"settlements": [], "identities": []}),
+        record=walk_inputs.record.model_copy(update={"settlements": [], "identities": []}),
     )
     before = [s.server_package for s in nuisance_population(bare) if not s.in_addition]
     after = [s.server_package for s in population if not s.in_addition]
@@ -51,9 +51,9 @@ def test_the_identities_merge_the_duplicate_spellings(population: list[NuisanceS
 
 
 def test_the_admitted_queue_servers_enter_through_the_addition(
-    nuisance_census: NuisanceCensus, population: list[NuisanceServer]
+    walk_inputs: WalkInputs, population: list[NuisanceServer]
 ):
-    admission = load_admission(ADMISSION_PATH, nuisance_census)
+    admission = load_admission(ADMISSION_PATH, walk_inputs)
     in_addition = {s.server_package for s in population if s.in_addition}
     admitted = {server.server_package for server in admission.servers}
 

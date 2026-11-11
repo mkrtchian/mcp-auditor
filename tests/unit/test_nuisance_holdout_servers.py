@@ -1,0 +1,92 @@
+"""The partition of the admitted servers by the rule's standing exits. Pure, no Docker, no LLM."""
+
+import tests.unit.support.test_nuisance_admission_given as admission
+import tests.unit.support.test_nuisance_run_given as given
+from evals.cve.nuisance.holdout_servers import run_population
+from evals.cve.nuisance.results import ServerExit
+from evals.cve.nuisance.walk import NuisanceServer, ServerMark
+from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
+
+
+def test_each_standing_exit_keeps_its_server_outside_the_figure():
+    walked = [
+        _walked("npm:excluded", ServerMark.EXCLUDED),
+        _walked("npm:accepted", ServerMark.ACCEPTANCE_TARGET_SERVER),
+    ]
+    admitted = _admitting(
+        _admitted("npm:no-stdio", runs_over_stdio=False),
+        _admitted("npm:no-docker", runs_under_docker=False),
+    )
+
+    population = run_population(walked, admitted, set())
+
+    assert population.audited == []
+    assert sorted(population.exits, key=lambda row: row.server_package) == [
+        ServerExit("npm:accepted", "the server of a current or dropped acceptance target"),
+        ServerExit("npm:excluded", "an excluded server"),
+        ServerExit("npm:no-docker", "its patched version does not run under Docker"),
+        ServerExit("npm:no-stdio", "does not run over stdio"),
+    ]
+
+
+def test_an_unmarked_stdio_server_under_docker_is_audited():
+    kept = _admitted("npm:kept")
+
+    population = run_population([_walked("npm:kept", None)], _admitting(kept), set())
+
+    assert population.audited == [kept]
+    assert population.exits == []
+
+
+def test_an_admitted_server_marked_by_the_walk_is_outside_the_figure_once():
+    marked = _admitted("npm:marked", runs_over_stdio=False)
+
+    population = run_population(
+        [_walked("npm:marked", ServerMark.EXCLUDED)], _admitting(marked), set()
+    )
+
+    assert population.audited == []
+    assert population.exits == [ServerExit("npm:marked", "an excluded server")]
+
+
+def test_an_admitted_acceptance_server_the_walk_did_not_mark_is_never_audited():
+    accepted = _admitted("npm:accepted")
+
+    population = run_population([], _admitting(accepted), {"npm:accepted"})
+
+    assert population.audited == []
+    assert population.exits == [
+        ServerExit("npm:accepted", "the server of a current or dropped acceptance target")
+    ]
+
+
+def test_an_acceptance_server_also_marked_by_the_walk_is_outside_the_figure_once():
+    accepted = _admitted("npm:accepted")
+    walked = [_walked("npm:accepted", ServerMark.ACCEPTANCE_TARGET_SERVER)]
+
+    population = run_population(walked, _admitting(accepted), {"npm:accepted"})
+
+    assert population.audited == []
+    assert population.exits == [
+        ServerExit("npm:accepted", "the server of a current or dropped acceptance target")
+    ]
+
+
+def _walked(package: str, mark: ServerMark | None) -> NuisanceServer:
+    return NuisanceServer(
+        server_package=package,
+        reaching_flaw=given.FIRST_FLAW,
+        reaching_position=1,
+        in_addition=False,
+        flaws=(given.FIRST_FLAW,),
+        candidate_counted_flaws=(given.FIRST_FLAW,),
+        mark=mark,
+    )
+
+
+def _admitted(package: str, **update: bool) -> AdmittedServer:
+    return given.a_server(package).model_copy(update=update)
+
+
+def _admitting(*servers: AdmittedServer) -> NuisanceAdmission:
+    return admission.an_admission().model_copy(update={"servers": list(servers)})

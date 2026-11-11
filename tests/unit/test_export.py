@@ -5,13 +5,13 @@ import pytest
 import tests.unit.support.test_export_given as given
 import tests.unit.support.test_export_then as then
 from evals.cve.detection.session_model import DetectionAudit
+from evals.cve.nuisance.gate_session_model import GateAudit
 from evals.export import (
     export_detection_judged_cases,
     export_judged_cases,
     export_nuisance_gate_judged_cases,
 )
 from evals.ground_truth import GroundTruth
-from evals.nuisance_gate_session_model import GateAudit
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 

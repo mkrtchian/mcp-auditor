@@ -10,7 +10,7 @@ from evals.cve.fixture_sources import (
     unserved_captures,
     unsourced_copies,
 )
-from evals.nuisance_admission_records import SeedRecord
+from evals.cve.nuisance.admission_records import SeedRecord
 
 _SHA256 = "a" * 64
 _COMMIT = "0123456789abcdef0123456789abcdef01234567"

@@ -1,6 +1,6 @@
-"""The nuisance aggregation over per-server results: the figure, the cutoff-side split on the
-split flaw, the contrast and the conclusion check. Reference values are the direct interval calls
-on the crafted counts; nothing is fetched."""
+"""The nuisance aggregation over per-server results: the holdout nuisance rate, the cutoff-side
+split on the split flaw, the contrast and the conclusion check. Reference values are the direct
+interval calls on the crafted counts; nothing is fetched."""
 
 import math
 from datetime import date
@@ -8,14 +8,14 @@ from datetime import date
 from evals.cve.holdout_hierarchical import GammaPrior, hierarchical_interval
 from evals.cve.holdout_intervals import clopper_pearson, jeffreys, newcombe, wilson
 from evals.cve.holdout_statistic import Placement, Side
-from evals.nuisance_statistic import (
+from evals.cve.nuisance.statistic import (
     check_conclusion,
     cited_interval,
     contrast,
-    figure,
+    holdout_nuisance_rate,
     incomplete_as_flagged,
+    nuisance_rate_controls,
     observed,
-    primary_controls,
     split_by_side,
 )
 from tests.unit.support.test_nuisance_statistic_given import RUN_CUTOFF, a_server_result, sides_of
@@ -29,7 +29,7 @@ def test_figure_is_the_mean_flagged_share():
         a_server_result("B", flagged_runs=1),
         a_server_result("C", flagged_runs=0),
     ]
-    assert math.isclose(figure(results), 4 / 9)
+    assert math.isclose(holdout_nuisance_rate(results), 4 / 9)
 
 
 def test_cited_interval_is_wilson_on_the_sum_of_flagged_shares():
@@ -114,7 +114,7 @@ def test_incomplete_as_flagged_adds_the_incomplete_unflagged_runs_to_the_split_f
 
 def test_primary_controls_are_the_five_intervals_on_the_flagged_shares():
     results = [a_server_result("A", flagged_runs=3), a_server_result("B", flagged_runs=1)]
-    assert primary_controls(results, RUNS) == {
+    assert nuisance_rate_controls(results, RUNS) == {
         "jeffreys": jeffreys(4 / 3, 2),
         "clopper_pearson": clopper_pearson(4 / 3, 2),
         "hierarchical_gamma_1_1": hierarchical_interval([3, 1], RUNS, GammaPrior(1.0, 1.0)),
@@ -125,6 +125,6 @@ def test_primary_controls_are_the_five_intervals_on_the_flagged_shares():
 
 def test_incomplete_as_flagged_control_counts_the_incomplete_unflagged_runs_as_flagged():
     results = [a_server_result("A", flagged_runs=0, incomplete_unflagged_runs=2)]
-    bound = primary_controls(results, RUNS)["incomplete_as_flagged_wilson"]
+    bound = nuisance_rate_controls(results, RUNS)["incomplete_as_flagged_wilson"]
     assert bound == wilson(2 / 3, 1)
     assert bound != cited_interval(results)

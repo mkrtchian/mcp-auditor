@@ -2,15 +2,15 @@ import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.census.census import Census
 from evals.cve.census.classification import Criterion
 from evals.cve.detection.draw_record import Settlement
-from evals.nuisance_walk_record import (
+from evals.cve.nuisance.walk_record import (
     IdentitySettlement,
-    NuisanceCensus,
     NuisanceWalkRecord,
+    WalkInputs,
 )
 
 
 def a_census() -> Census:
-    """`walked` is reached by the holdout walk, `queued` is a draw-order flaw past it, and
+    """`walked` is reached by the detection walk, `queued` is a draw-order flaw past it, and
     `unpinnable` is a census flaw outside the draw order."""
     return walk_given.a_census_walking(
         [("walked", "drawn", "npm:srv1")],
@@ -68,8 +68,8 @@ def a_record_identifying(*flaws: str) -> NuisanceWalkRecord:
     )
 
 
-def paired(census: Census, record: NuisanceWalkRecord) -> NuisanceCensus:
-    return NuisanceCensus(census=census, record=record)
+def paired(census: Census, record: NuisanceWalkRecord) -> WalkInputs:
+    return WalkInputs(census=census, record=record)
 
 
 written = walk_given.written_record

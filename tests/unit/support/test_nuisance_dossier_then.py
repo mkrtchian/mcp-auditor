@@ -2,10 +2,10 @@ from pathlib import Path
 
 from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve.detection.targets import Target
+from evals.cve.nuisance.holdout_target_reference import holdout_fixture_file
+from evals.cve.nuisance.unrecorded import unrecorded_fields
 from evals.docker_paths import image_dockerfile
 from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_holdout_reference import holdout_fixture_file
-from evals.nuisance_unrecorded import unrecorded_fields
 
 
 def unrecorded_field_names(server: AdmittedServer) -> list[str]:

@@ -1,4 +1,4 @@
-from evals.nuisance_fix_checks import cve_2026_35402_neo4j_cypher as neo4j_cypher
+from evals.cve.nuisance.fix_checks import cve_2026_35402_neo4j_cypher as neo4j_cypher
 from tests.unit.support.docker_argv import environment, value_after
 
 

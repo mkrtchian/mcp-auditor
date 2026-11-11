@@ -13,9 +13,9 @@ import tests.unit.support.test_nuisance_gate_session_given as gate_given
 import tests.unit.support.test_nuisance_run_backends_given as backends
 import tests.unit.support.test_nuisance_run_given as run_given
 import tests.unit.support.test_nuisance_vet_given as vet_given
+from evals.cve.nuisance.gate_session import run_gate
+from evals.cve.nuisance.vet_command import vet_servers
 from evals.eval_session import Refused
-from evals.nuisance_gate_session import run_gate
-from evals.nuisance_vet_command import vet_servers
 
 
 async def test_a_nuisance_run_refuses_before_any_rebuild():

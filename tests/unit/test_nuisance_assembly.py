@@ -1,4 +1,4 @@
-"""One server's figure assembled from its audits, and its split flaw read from the draw order."""
+"""One server's result assembled from its audits, and its split flaw read from the draw order."""
 
 from datetime import date
 
@@ -6,10 +6,10 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_assembly_given as given
+from evals.cve.nuisance.assembly import assemble_server, split_flaw_of
+from evals.cve.nuisance.results import NuisanceRunStatus
 from evals.cve.server_health import ServerHealth
 from evals.cve_grammar import MechanismClass
-from evals.nuisance_assembly import assemble_server, split_flaw_of
-from evals.nuisance_results import NuisanceRunStatus
 from evals.probe.analysis import call_cost
 from mcp_auditor.domain.models import MissCause, ProviderUsage
 
@@ -78,7 +78,7 @@ def test_a_server_is_assembled_from_its_audits_in_run_order():
     assert (result.split_flaw, result.split_disclosure_date) == (given.FIRST_FLAW, _EARLY)
 
 
-def test_each_run_status_carries_its_server_health_and_miss_causes():
+def test_each_run_status_carries_its_server_health_and_missed_call_causes():
     audits = [
         given.an_audit(False, health=ServerHealth(2, 1)),
         given.an_audit(False, missed=MissCause.PROVIDER_REFUSAL, health=ServerHealth(0, 3)),
@@ -112,7 +112,7 @@ def test_a_throttled_step_is_not_a_miss_cause_of_a_run():
 
     result = assemble_server(given.a_server(), audits, given.draw_entries(), _PRICES)
 
-    assert result.statuses[0].miss_causes == []
+    assert result.statuses[0].missed_call_causes == []
     assert result.incomplete_runs_by_cause == {}
 
 

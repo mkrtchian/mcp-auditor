@@ -7,9 +7,10 @@ import pytest
 
 import tests.unit.support.test_census_given as given
 import tests.unit.support.test_census_identity_given as identity
-from evals import nuisance_commands, run_census, run_detection_holdout
+from evals import run_census, run_detection_holdout
 from evals.cve.census.census import Census, DateMismatch, load_census
 from evals.cve.census.work import HitDecision, read_jsonl
+from evals.cve.nuisance import commands as nuisance_commands
 from evals.honeypots import REPO_ROOT
 
 

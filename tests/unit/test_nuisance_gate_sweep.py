@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_gate_session_given as given
-from evals.nuisance_backends import built_backend_tags
-from evals.nuisance_gate_session import run_gate
-from evals.nuisance_images import image_tag
+from evals.cve.nuisance.backend_registry import built_backend_tags
+from evals.cve.nuisance.gate_session import run_gate
+from evals.cve.nuisance.images import image_tag
 from tests.fakes import FakeContainerSweep
 from tests.unit.support.test_nuisance_admission_edits_given import on_the_ckan_backend
 

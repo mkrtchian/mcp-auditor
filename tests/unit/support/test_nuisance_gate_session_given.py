@@ -3,17 +3,17 @@ from dataclasses import replace
 from pathlib import Path
 
 import tests.unit.support.test_nuisance_run_given as run_given
-from evals.eval_session import TreeState
-from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_audit import GateRun
-from evals.nuisance_fingerprint import nuisance_fixture_fingerprint
-from evals.nuisance_gate_baseline import (
+from evals.cve.nuisance.audit import GateRun
+from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
+from evals.cve.nuisance.gate_baseline import (
     NuisanceGateConditions,
     NuisanceServerBaseline,
     baseline_file_name,
     write_baseline,
 )
-from evals.nuisance_gate_session_model import NuisanceGateHarness, NuisanceGateOptions
+from evals.cve.nuisance.gate_session_model import NuisanceGateHarness, NuisanceGateOptions
+from evals.eval_session import TreeState
+from evals.nuisance_admission import AdmittedServer
 from tests.fakes import FakeContainerSweep
 from tests.unit.support.test_nuisance_gate_baseline_given import (
     a_confirmed_baseline,

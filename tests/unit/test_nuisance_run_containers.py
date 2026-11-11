@@ -7,6 +7,7 @@ import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_run_backends_given as backends_given
 import tests.unit.support.test_nuisance_run_given as run_given
+from evals.cve.nuisance.run_containers import remove_backend_containers, run_images
 from evals.cve_planting_base import (
     SENTINEL_SERVICE,
     STAND_IN_SERVICE,
@@ -15,7 +16,6 @@ from evals.cve_planting_base import (
     SymbolicUser,
 )
 from evals.doris_backend import DORIS_CONTAINER
-from evals.nuisance_run_containers import remove_backend_containers, run_images
 
 SERVED = PlantingHost(
     SymbolicUser.UNPRIVILEGED, "/", False, PublicNames(stand_ins=("example.com",))

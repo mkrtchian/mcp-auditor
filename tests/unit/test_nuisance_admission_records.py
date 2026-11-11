@@ -23,8 +23,8 @@ _MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] =
     (given.with_a_silent_tool_without_a_cause, "does not answer and lacks its cause or evidence"),
     (given.with_a_silent_tool_without_evidence, "does not answer and lacks its cause or evidence"),
     (given.with_an_answering_tool_carrying_a_cause, "answers but records a cause or evidence"),
-    (given.with_a_tool_recorded_on_one_flaw_only, "has differing real_software verdicts"),
-    (given.with_a_tool_given_two_verdicts, "has differing real_software verdicts"),
+    (given.with_a_tool_recorded_on_one_flaw_only, "has differing real_software records"),
+    (given.with_a_tool_given_two_verdicts, "has differing real_software records"),
     (given.with_an_empty_expected_text, "expects an empty text"),
     (
         given.with_an_expected_text_quoting_the_arguments,

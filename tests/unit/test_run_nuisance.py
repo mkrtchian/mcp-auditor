@@ -5,7 +5,7 @@ import pytest
 import tests.unit.support.test_census_given as given
 import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_given as admission
-import tests.unit.support.test_nuisance_readmission_dossier_given as readmission
+import tests.unit.support.test_nuisance_re_admission_dossier_given as re_admission
 import tests.unit.support.test_nuisance_walk_given as walk_given
 import tests.unit.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
@@ -44,7 +44,7 @@ def test_walk_marks_a_queue_server_and_counts_the_admitted_ones(
     out = capsys.readouterr().out
     assert exit_code == 0
     assert f"{run_given.QUEUE_SERVER}  reached by {run_given.QUEUE_FLAW} (addition)" in out
-    assert "1 of 1 servers of the addition admitted and in the figure" in out
+    assert "1 of 1 servers of the addition admitted and in the nuisance holdout layer" in out
 
 
 def test_walk_without_an_admission_prints_no_count_line(
@@ -189,18 +189,18 @@ def test_nuisance_dossier_on_an_unknown_server_exits_three(
     assert "no census flaw names the server npm:ghost" in capsys.readouterr().out
 
 
-def test_a_readmission_dossier_with_a_backend_exits_three(
+def test_a_re_admission_dossier_with_a_backend_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     out = tmp_path / "dossier"
-    server = readmission.a_committed_server_with_fix_checks().server_package
+    server = re_admission.a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
             "--server",
             server,
-            "--readmission",
+            "--re-admission",
             "--backend",
             "doris",
             "--out",
@@ -213,14 +213,14 @@ def test_a_readmission_dossier_with_a_backend_exits_three(
     assert "--backend is for a first admission" in capsys.readouterr().out
 
 
-def test_a_readmission_dossier_of_an_admitted_server_exits_zero(
+def test_a_re_admission_dossier_of_an_admitted_server_exits_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     out = tmp_path / "dossier"
-    server = readmission.a_committed_server_with_fix_checks().server_package
+    server = re_admission.a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
-        ["nuisance-dossier", "--server", server, "--readmission", "--out", str(out)]
+        ["nuisance-dossier", "--server", server, "--re-admission", "--out", str(out)]
     )
 
     assert exit_code == 0
@@ -228,19 +228,19 @@ def test_a_readmission_dossier_of_an_admitted_server_exits_zero(
     assert f"Re-admission dossier for {server} written to {out}" in capsys.readouterr().out
 
 
-def test_a_readmission_dossier_without_an_admission_exits_three(
+def test_a_re_admission_dossier_without_an_admission_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     out = tmp_path / "dossier"
     missing = tmp_path / "absent.json"
-    server = readmission.a_committed_server_with_fix_checks().server_package
+    server = re_admission.a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
             "--server",
             server,
-            "--readmission",
+            "--re-admission",
             "--admission",
             str(missing),
             "--out",
@@ -250,6 +250,22 @@ def test_a_readmission_dossier_without_an_admission_exits_three(
 
     assert exit_code == 3
     assert not out.exists()
+
+
+@pytest.mark.parametrize(
+    "old_command",
+    [
+        ["calibrate"],
+        ["fix-check", "--cve", "CVE-2099-9999"],
+        ["nuisance-dossier", "--server", "npm:x", "--out", "out", "--readmission"],
+    ],
+    ids=["calibrate", "--cve", "--readmission"],
+)
+def test_an_old_command_or_flag_is_refused_by_the_parser(old_command: list[str]):
+    with pytest.raises(SystemExit) as refused:
+        run_nuisance.main(old_command)
+
+    assert refused.value.code == 2
 
 
 def test_run_without_an_admission_exits_zero_and_says_so(

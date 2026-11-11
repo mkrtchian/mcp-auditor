@@ -1,6 +1,6 @@
-"""The nuisance admission dossier mirrors the holdout calibration kit: a self-contained tree,
-free of any mcp_auditor import, but with the fix-check driver instead of the holdout list and
-layout. These pins are the twin of test_calibration_dossier_writes_an_isolated_kit."""
+"""The nuisance admission dossier mirrors the calibration kit of a holdout target: a self-contained
+tree, free of any mcp_auditor import, but with the fix-check driver instead of the holdout list and
+layout. These pins are the counterpart of test_calibration_dossier_writes_an_isolated_kit."""
 
 import re
 import tomllib
@@ -16,10 +16,10 @@ import tests.unit.support.test_nuisance_dossier_then as then
 import tests.unit.support.test_nuisance_unrecorded_given as unrecorded_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.detection.calibration_dossier import acceptance_services, write_kit
-from evals.cve.kit.fix_check import FixCheckTarget
+from evals.cve.kit.fix_check import FixCheckFixture
+from evals.cve.nuisance.dossier import NUISANCE_RULE, write_dossier
+from evals.cve.nuisance.re_admission_docs import admission_confinement_text
 from evals.eval_session import Refused
-from evals.nuisance_dossier import NUISANCE_RULE, write_dossier
-from evals.nuisance_readmission_docs import admission_confinement_text
 
 
 def test_writes_the_isolated_admission_dossier(tmp_path: Path):
@@ -81,7 +81,7 @@ def test_an_unknown_backend_is_refused(tmp_path: Path):
     out = tmp_path / "dossier"
     with pytest.raises(Refused):
         write_dossier(
-            walk_given.a_nuisance_census(census_given.a_census()),
+            walk_given.walk_inputs_of(census_given.a_census()),
             given.SERVER,
             out,
             backend="ghost",
@@ -90,9 +90,9 @@ def test_an_unknown_backend_is_refused(tmp_path: Path):
 
 
 def test_the_shared_kit_carries_no_worked_exploit(tmp_path: Path):
-    # A worked exploit named by its CVE in the shared launch module would reach the admitting
-    # agent through the copied kit and pre-answer the flaw it is meant to re-derive. Such a
-    # builder belongs with its fixture (evals/nuisance_fix_checks), which the dossier never copies.
+    # A worked exploit named by its CVE in the shared launch module would reach the admitting agent
+    # through the copied kit and pre-answer the flaw it is meant to re-derive. Such a builder
+    # belongs with its fixture (evals/cve/nuisance/fix_checks), which the dossier never copies.
     out = given.a_written_dossier(tmp_path)
 
     kit = (out / "evals" / "cve" / "kit" / "launch.py").read_text()
@@ -115,12 +115,12 @@ def test_the_written_dossier_imports_nothing_from_mcp_auditor(tmp_path: Path):
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
 
 
-def test_a_holdout_twin_dossier_carries_the_holdout_reference_of_each_of_its_targets(
+def test_a_detection_holdout_server_dossier_carries_the_holdout_reference_of_each_target(
     tmp_path: Path,
 ):
-    server = given.a_twin_with_its_own_fix_check()
+    server = given.a_detection_holdout_server_with_its_own_fix_check()
 
-    out = given.a_written_twin_dossier(tmp_path, server)
+    out = given.a_written_dossier_of(tmp_path, server)
 
     for target in given.its_holdout_targets(server):
         then.it_carries_the_holdout_reference_of(out, target)
@@ -183,7 +183,7 @@ def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Pat
 def test_an_unknown_server_is_refused(tmp_path: Path):
     out = tmp_path / "dossier"
     with pytest.raises(Refused):
-        write_dossier(walk_given.a_nuisance_census(census_given.a_census()), "npm:nonexistent", out)
+        write_dossier(walk_given.walk_inputs_of(census_given.a_census()), "npm:nonexistent", out)
     assert not out.exists()
 
 
@@ -199,6 +199,6 @@ def test_the_fixture_format_names_every_field_the_run_refuses_unrecorded(tmp_pat
 def test_the_fixture_format_names_every_fix_check_target_field(tmp_path: Path):
     fixture_format = (given.a_written_dossier(tmp_path) / "fixture_format.md").read_text()
 
-    section = fixture_format.split("## FixCheckTarget fields")[1].split("\n## ")[0]
-    for field in fields(FixCheckTarget):
+    section = fixture_format.split("## FixCheckFixture fields")[1].split("\n## ")[0]
+    for field in fields(FixCheckFixture):
         assert f"`{field.name}`" in section, field.name

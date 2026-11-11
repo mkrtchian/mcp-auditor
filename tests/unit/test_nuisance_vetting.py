@@ -3,7 +3,7 @@
 import pytest
 
 import tests.unit.support.test_nuisance_vetting_given as given
-from evals.nuisance_vetting import benign_call
+from evals.cve.nuisance.vetting import benign_call
 from mcp_auditor.domain.models import ToolResponse
 
 

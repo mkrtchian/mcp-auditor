@@ -1,7 +1,7 @@
 import re
 
+from evals.cve.nuisance.fix_checks import mcp_ssh_fix_check as fix_check
 from evals.mcp_ssh_sshd_backend import SSHD_ALIAS, SSHD_IMAGE
-from evals.nuisance_fix_checks import mcp_ssh_fix_check as fix_check
 
 
 def test_the_sshd_joins_the_per_launch_network_under_the_run_host_alias():

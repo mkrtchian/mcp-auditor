@@ -1,6 +1,7 @@
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals.cve.fixture_provenance import SoftwareRelease, StandInOutput, StandInRecord
+from evals.cve.nuisance.admission_records import RealSoftwareRecord, SeedRecord
 from evals.nuisance_admission import (
     AdmittedServer,
     FlawRecord,
@@ -8,7 +9,6 @@ from evals.nuisance_admission import (
     ToolCall,
     ToolRecord,
 )
-from evals.nuisance_admission_records import RealSoftwareRecord, SeedRecord
 
 
 def with_a_removed_tool_carrying_a_real_software_record(

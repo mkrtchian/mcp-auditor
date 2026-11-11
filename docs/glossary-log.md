@@ -14,6 +14,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | acceptance layer (ADR 015, ADR 024, plans: the detection acceptance layer alone) | detection acceptance layer. "Acceptance layer" now names a role of both suites. | moved meaning | 2026-11-11 |
 | acceptance layer, acceptance test (plans of 2026-07: the manual check of a plan step against the real images) | no successor: a manual verification step, not a layer of a suite | retired | 2026-11-11 |
 | acceptance server (nuisance rule, ADR 033: the server of a current or past acceptance target) | nuisance acceptance server for a current target, the server of a dropped acceptance target for a past one. "Acceptance server" is now always qualified by its suite. | moved meaning | 2026-11-11 |
+| `acceptance_servers()`, `ServerMark.ACCEPTANCE` (the servers of current and dropped acceptance targets) | `acceptance_target_servers()`, `ServerMark.ACCEPTANCE_TARGET_SERVER`, the current-target subset is `nuisance_acceptance_servers()` | rename | 2026-11-11 |
 | acceptance twin, in-repo twin (kit docstrings, plans) | no successor: the module of the repository that a kit module copies | retired | 2026-11-11 |
 | admission (plans of 2026-10-14 and 2026-10-15, holdout log, `admission_calibration.py`: a target admitted through its calibration and its layout and route checks) | calibration check, layout check, route check. "Admission" now names the nuisance admission. | moved meaning | 2026-11-11 |
 | admission, admission bars, admission probe (ADR 019, plans of 2026-09-24 and 2026-09-25: a candidate model clearing the probe's bars) | no successor: ADR 021 chooses a model on a written judgment, and the model probe reports defects | retired | 2026-09-26 |
@@ -53,6 +54,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | `evals/holdout_fixtures/` | `evals/cve/detection/holdout_fixtures/` | rename | 2026-11-11 |
 | `evals/holdout_kit/` | kit (`evals/cve/kit/`) | rename | 2026-11-11 |
 | `evals/holdout_places.json` | `evals/detection_places.json` | rename | 2026-11-11 |
+| `evals/nuisance_fix_checks/` | `evals/cve/nuisance/fix_checks/` | rename | 2026-11-11 |
 | `evals.run_cve_benchmark` | `evals.run_detection` | rename | 2026-11-11 |
 | `evals.run_evals` | `evals.run_honeypot_suite` | rename | 2026-11-11 |
 | `evals.run_holdout` | `evals.run_detection_holdout`, its `draw-order` moved to `evals.run_census` | rename | 2026-11-11 |
@@ -60,6 +62,8 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | exploratory (status of a baseline) | unconfirmed. "Exploratory" now names only the status of a number. | moved meaning | 2026-11-11 |
 | figure (the set of servers counted) | nuisance holdout layer | rename | 2026-11-11 |
 | figure (the number) | holdout nuisance rate | rename | 2026-11-11 |
+| `figure`, `outside_figure` (nuisance report keys) | `holdout_nuisance_rate`, `exits` | rename | 2026-11-11 |
+| `FixCheckTarget` | `FixCheckFixture` (the nuisance fixture of a fix check) | rename | 2026-11-11 |
 | fixed (honeypot grid tag) | `improved`. "Fixed" now names a patched version where no exploit surfaces. | moved meaning | 2026-11-11 |
 | flaw that sets the version, version-setting flaw | counted flaw | rename | 2026-11-11 |
 | fresh targets (ADR 015, ADR 028, README) | holdout targets | rename | 2026-11-11 |
@@ -81,8 +85,10 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | known gap of the holdout | known gap | rename | 2026-11-11 |
 | location id | place id | rename | 2026-11-11 |
 | `MCP_AUDITOR_OPENROUTER_HOSTS` | `MCP_AUDITOR_OPENROUTER_PROVIDERS` | rename | 2026-11-11 |
+| `miss_causes` | `missed_call_causes` | rename | 2026-11-11 |
 | missed step, refused step, `missed_steps` | missed model call (`missed_model_calls`) | rename | 2026-11-11 |
 | `not_run_conditions` | `not_run_reasons` | rename | 2026-11-11 |
+| `NuisanceCensus` (the census with the walk record) | `WalkInputs` | rename | 2026-11-11 |
 | nuisance rule (`docs/nuisance-rule.md`), nuisance log (`docs/nuisance-log.md`) | nuisance suite rule (`docs/nuisance-suite-rule.md`), nuisance suite log (`docs/nuisance-suite-log.md`) | rename | 2026-11-11 |
 | oracle (ADR 015, CLAUDE.md: the grader of any instrument, the ground truth on the honeypot suite) | grader: the ground truth, the labels. "Oracle" now names only the detection suite's grader. | moved meaning | 2026-11-11 |
 | oracle version (ADR 016, ADR 020: on the honeypot suite) | ground truth fingerprint | rename | 2026-09-25 |
@@ -97,6 +103,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | planting layer | planting code | rename | 2026-11-11 |
 | `primary_number`, primary number (detection suite rule v11) | holdout detection rate (`holdout_detection_rate`) | rename | 2026-11-11 |
 | readmission | re-admission | rename | 2026-11-11 |
+| `--readmission` | `--re-admission` | rename | 2026-11-11 |
 | `RecordingClient`, `KitRecorder`, `RecordingLLM` | `ExchangeLog`, `KitExchangeLog`, `CapturingLLM` ("recording" names only a baseline recording) | rename | 2026-11-11 |
 | refused credit | struck credit | rename | 2026-11-11 |
 | `relayed_variables` | redacted variables (`redacted_variables`) | rename | 2026-11-11 |
@@ -114,9 +121,11 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | sentinel (the planted value, ADR 014 to ADR 024, plans before 2026-10-11, and the witness in nuisance plans: "sentinel nonce") | nonce, or witness in a fix check. "Sentinel" now names only the sidecar container. | moved meaning | 2026-10-11 |
 | sentinel route | no successor: the responder route that serves a witness | retired | 2026-11-11 |
 | server under audit | audited server | rename | 2026-11-11 |
+| `settle` (in the gates) | `apply_retests` ("settle" names only a settlement) | rename | 2026-11-11 |
 | stub | stand-in, or the real software | rename | 2026-11-02 |
 | target (the audited server, its command) | audited server, server command. "Target" now names the unit of the detection suite. | moved meaning | 2026-11-11 |
 | target (an HTTP request's target in a stand-in route, the `target` key of `evals/stand_ins/*.json`) | request target (`request_target`) | moved meaning | 2026-11-11 |
 | twin (bare twin, replayed twins, nuisance twin) | no successor: the bare repository, the units a replay pairs, the nuisance counterpart of a module or a test | retired | 2026-11-11 |
 | `--ungated` | `--no-baseline` | rename | 2026-11-11 |
 | unread targets (ADR 015, three targets not yet read in 2026-09) | no successor: acceptance targets not yet read. They were never the holdout layer. | retired | 2026-11-11 |
+| `version_setting` | `candidate_counted_flaws` | rename | 2026-11-11 |

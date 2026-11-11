@@ -8,10 +8,11 @@ import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_run_given as nuisance_run_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals import nuisance_images, nuisance_vet_command
 from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.nuisance import images as nuisance_images
+from evals.cve.nuisance import vet_command as nuisance_vet_command
+from evals.cve.nuisance.vet_command import VetDeps
 from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_vet_command import VetDeps
 from tests.unit.support.test_nuisance_run_backends_given import DockerHost
 
 SERVER = admission_given.SERVER_PACKAGE
@@ -70,7 +71,8 @@ def a_failing_rebuild(services: Sequence[str]) -> None:
 
 
 def a_vet_of_one_server_beside_the_acceptance_one(tmp_path: Path) -> list[str]:
-    """The `vet` arguments of an admission of SERVER and of the acceptance server ACCEPTANCE."""
+    """The `vet` arguments of an admission of SERVER and of the nuisance acceptance server
+    ACCEPTANCE."""
     census = admission_given.a_census_with_an_acceptance_server()
     one = admission_given.an_admission()
     acceptance = admission_given.admitting_the_acceptance_server()

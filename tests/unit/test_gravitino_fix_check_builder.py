@@ -1,5 +1,5 @@
+from evals.cve.nuisance.fix_checks import cve_2026_41041_gravitino as gravitino
 from evals.gravitino_backend import GRAVITINO_PORT
-from evals.nuisance_fix_checks import cve_2026_41041_gravitino as gravitino
 
 
 def test_the_server_points_at_the_per_launch_stack_not_the_run_singleton():

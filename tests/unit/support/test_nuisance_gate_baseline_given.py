@@ -1,9 +1,9 @@
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import grammar_fingerprint
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.nuisance.gate_baseline import NuisanceGateConditions, NuisanceServerBaseline
 from evals.gate import RetestRule
 from evals.nuisance_counter import counter_fingerprint
-from evals.nuisance_gate_baseline import NuisanceGateConditions, NuisanceServerBaseline
 
 SERVER_PACKAGE = "npm:@modelcontextprotocol/server-filesystem"
 FIXTURE = "fixture"
@@ -49,7 +49,7 @@ def an_exploratory_baseline(
         status=BaselineStatus.UNCONFIRMED,
         conditions=conditions(),
         fixture_fingerprint=FIXTURE,
-        replay_rule=RetestRule(),
+        retest_rule=RetestRule(),
         commit=commit,
         recorded_at="2026-10-22T10:00:00+00:00",
         runs=runs if runs is not None else [False] * 3,

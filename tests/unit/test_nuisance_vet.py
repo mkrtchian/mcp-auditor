@@ -12,9 +12,9 @@ import tests.unit.support.test_nuisance_run_given as run_given
 import tests.unit.support.test_nuisance_vet_given as given
 import tests.unit.support.test_run_nuisance_given as walk_given
 from evals import run_nuisance
+from evals.cve.nuisance.commands import UNKNOWN_SERVER_EXIT
+from evals.cve.nuisance.vet_command import VetDeps, vet_servers
 from evals.eval_session import Refused
-from evals.nuisance_commands import UNKNOWN_SERVER_EXIT
-from evals.nuisance_vet_command import VetDeps, vet_servers
 from tests.fakes import FakeContainerSweep
 
 

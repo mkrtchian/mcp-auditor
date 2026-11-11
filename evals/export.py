@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Any
 
 from evals.cve.detection.session_model import DetectionAudit
+from evals.cve.nuisance.gate_session_model import GateAudit
 from evals.ground_truth import GroundTruth
-from evals.nuisance_gate_session_model import GateAudit
 from mcp_auditor.domain.models import AttackChain, AuditReport, TestCase
 
 

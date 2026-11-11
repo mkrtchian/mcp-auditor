@@ -4,8 +4,8 @@ cancelled and the finished ones are kept in a partial result. No Docker, no LLM.
 import pytest
 
 import tests.unit.support.test_nuisance_run_given as given
+from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
-from evals.nuisance_results import RunInterrupted
 
 
 async def test_a_fatal_provider_error_keeps_the_finished_server_in_a_partial_result():

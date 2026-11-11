@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_kit_benign_probe_given as given
-from evals import nuisance_audit
 from evals.cve.kit.benign_probe import (
     ProbeCall,
     ProbeOutcome,
@@ -16,7 +15,8 @@ from evals.cve.kit.benign_probe import (
     single_container_launch,
 )
 from evals.cve.kit.client import KitTool
-from evals.nuisance_images import image_tag
+from evals.cve.nuisance import audit as nuisance_audit
+from evals.cve.nuisance.images import image_tag
 from tests.fakes import FakeKitClient
 
 

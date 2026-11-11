@@ -1,8 +1,8 @@
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.census.draw_order import draw_digest
+from evals.cve.nuisance.walk_record import WalkInputs
 from evals.nuisance_admission import NuisanceAdmission
-from evals.nuisance_walk_record import NuisanceCensus
 
 
 def admitting_another_package_outside_the_walk() -> NuisanceAdmission:
@@ -22,11 +22,11 @@ def with_the_second_flaw_reaching(admission: NuisanceAdmission) -> NuisanceAdmis
 _QUEUE_CENSUS_FLAWS = ["CVE-2025-1001", "CVE-2025-1002", "CVE-2025-1003"]
 
 
-def a_nuisance_census_with_two_queue_servers(addition_size: int) -> NuisanceCensus:
-    """Each flaw its own server, `npm:<flaw>`: the holdout walk reaches the first by draw order,
+def walk_inputs_with_two_queue_servers(addition_size: int) -> WalkInputs:
+    """Each flaw its own server, `npm:<flaw>`: the detection walk reaches the first by draw order,
     the queue the other two, the servers of `the_queue_packages`."""
     census = walk_given.a_census_walking_the_first(1, of=_QUEUE_CENSUS_FLAWS)
-    return NuisanceCensus(census=census, record=walk_given.an_empty_record(addition_size))
+    return WalkInputs(census=census, record=walk_given.an_empty_record(addition_size))
 
 
 def the_queue_packages() -> list[str]:

@@ -1,7 +1,7 @@
 import dataclasses
 
 import tests.unit.support.test_nuisance_gate_report_given as given
-from evals.nuisance_gate_report import GATE_LEGEND, render_markdown, server_lines
+from evals.cve.nuisance.gate_report import GATE_LEGEND, render_markdown, server_lines
 from tests.unit.support.test_nuisance_gate_session_given import FILESYSTEM, KUBERNETES
 from tests.unit.support.test_nuisance_run_given import COUNTED_TOOL
 
@@ -12,7 +12,7 @@ def test_the_markdown_carries_the_verdict_the_runs_the_flagged_tools_and_the_lis
     markdown = render_markdown(given.a_report_of(session))
 
     assert "red" in markdown
-    assert "npm:mcp-server-kubernetes: regression, the alarm reproduced in 4 of 5 replays" in (
+    assert "npm:mcp-server-kubernetes: regression, the alarm reproduced in 4 of 5 retests" in (
         markdown
     )
     held_row = given.row_of(markdown, FILESYSTEM.server_package)
@@ -31,7 +31,7 @@ def test_the_markdown_carries_the_verdict_the_runs_the_flagged_tools_and_the_lis
 def test_the_servers_table_shows_the_baseline_runs_beside_the_runs_with_a_legend():
     markdown = render_markdown(given.a_report_of(given.a_held_server_beside_a_regression()))
 
-    assert "| Server | Outcome | Baseline | Runs | Replays | Detail |" in markdown
+    assert "| Server | Outcome | Baseline | Runs | Retests | Detail |" in markdown
     held_row = given.row_of(markdown, FILESYSTEM.server_package)
     assert held_row.startswith(f"| {FILESYSTEM.server_package} | held | ...... | ... | - |")
     assert GATE_LEGEND in markdown

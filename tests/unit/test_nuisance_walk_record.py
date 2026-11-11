@@ -4,13 +4,13 @@ import pytest
 
 import tests.unit.support.test_nuisance_walk_record_given as given
 from evals.cve.census.classification import Criterion
-from evals.nuisance_walk_record import load_walk_record, walk_record_problems
+from evals.cve.nuisance.walk_record import load_walk_record, walk_record_problems
 
 
 def test_an_empty_record_has_no_problem():
-    nuisance_census = given.paired(given.a_census(), given.an_empty_record())
+    walk_inputs = given.paired(given.a_census(), given.an_empty_record())
 
-    assert walk_record_problems(nuisance_census) == []
+    assert walk_record_problems(walk_inputs) == []
 
 
 def test_refuses_a_settlement_on_a_flaw_outside_the_draw_order():
@@ -99,7 +99,7 @@ def test_leaves_a_queue_disagreement_on_the_grammar_class_to_the_admission():
     assert walk_record_problems(given.paired(census, given.an_empty_record())) == []
 
 
-def test_leaves_a_disagreement_on_a_holdout_walked_flaw_to_the_draw():
+def test_leaves_a_disagreement_on_a_flaw_of_the_detection_walk_to_the_draw():
     census = given.a_census_split_on_the_effect_of("walked")
 
     assert walk_record_problems(given.paired(census, given.an_empty_record())) == []
@@ -145,6 +145,6 @@ def test_load_pairs_the_census_and_the_record(tmp_path: Path):
     census = given.a_census()
     record = given.a_record_settling(("queued", Criterion.PINNABLE, True))
 
-    nuisance_census = load_walk_record(given.written(tmp_path, record), census)
+    walk_inputs = load_walk_record(given.written(tmp_path, record), census)
 
-    assert nuisance_census == given.paired(census, record)
+    assert walk_inputs == given.paired(census, record)

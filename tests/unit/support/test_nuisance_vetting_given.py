@@ -4,7 +4,7 @@ from typing import IO
 
 import pytest
 
-from evals import nuisance_vetting
+from evals.cve.nuisance import vetting as nuisance_vetting
 from evals.cve_environments import Launch
 from evals.nuisance_admission import AdmittedServer
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse

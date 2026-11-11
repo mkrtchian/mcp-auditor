@@ -6,9 +6,8 @@ import pytest
 import tests.unit.support.test_nuisance_gate_baseline_given as given
 import tests.unit.support.test_nuisance_run_given as run_given
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
-from evals.eval_session import Refused
-from evals.nuisance_counter import counter_fingerprint
-from evals.nuisance_gate_baseline import (
+from evals.cve.nuisance.gate_baseline import (
+    NUISANCE_GATE_BASELINE_DIRECTORY,
     baseline_file_name,
     baseline_integrity,
     condition_mismatches,
@@ -16,6 +15,15 @@ from evals.nuisance_gate_baseline import (
     load_baselines,
     write_baseline,
 )
+from evals.eval_session import Refused
+from evals.honeypots import REPO_ROOT
+from evals.nuisance_counter import counter_fingerprint
+
+
+def test_the_baselines_live_under_evals_baselines_nuisance():
+    assert (
+        NUISANCE_GATE_BASELINE_DIRECTORY.resolve() == REPO_ROOT / "evals" / "baselines" / "nuisance"
+    )
 
 
 def test_a_scoped_npm_package_names_a_portable_file():

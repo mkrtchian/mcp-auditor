@@ -38,9 +38,9 @@ FixCheckExploit = Callable[[Places, KitClient], Awaitable[None]]
 
 
 @dataclass(frozen=True)
-class FixCheckTarget:
+class FixCheckFixture:
     flaw: str
-    mechanism: MechanismClass | None
+    effect_class: MechanismClass | None
     aim: re.Pattern[str]
     witness: Place
     planting_host: PlantingHost
@@ -78,17 +78,17 @@ class FixCheckResult:
         return json.dumps(asdict(self), indent=2)
 
 
-async def check_fix(target: FixCheckTarget) -> FixCheckResult:
+async def check_fix(fixture: FixCheckFixture) -> FixCheckResult:
     """Reproduce the flaw on each version and build the record. A launch failure has no result,
     so it raises rather than reading as a fixed flaw."""
-    vulnerable = await _exercise_shown(target, target.vulnerable_service)
-    patched = await _exercise_shown(target, target.patched_service)
+    vulnerable = await _exercise_shown(fixture, fixture.vulnerable_service)
+    patched = await _exercise_shown(fixture, fixture.patched_service)
     server_patched = (
         None
-        if target.server_patched_service is None
-        else await _exercise_shown(target, target.server_patched_service)
+        if fixture.server_patched_service is None
+        else await _exercise_shown(fixture, fixture.server_patched_service)
     )
-    return fix_check_result(target, vulnerable, patched, server_patched)
+    return fix_check_result(fixture, vulnerable, patched, server_patched)
 
 
 def benign_transcript(flaw: str, service: str, exercise: Exercised) -> str:
@@ -100,19 +100,19 @@ def benign_transcript(flaw: str, service: str, exercise: Exercised) -> str:
 
 
 def fix_check_result(
-    target: FixCheckTarget,
+    fixture: FixCheckFixture,
     vulnerable: Exercised,
     patched: Exercised,
     server_patched: Exercised | None,
 ) -> FixCheckResult:
     return FixCheckResult(
         source="fix_check",
-        witness=vulnerable.nonces[target.witness.id],
+        witness=vulnerable.nonces[fixture.witness.id],
         exploit_calls=_exploit_calls(vulnerable),
-        vulnerable_surfaces=_surfaces(target, vulnerable),
-        patched_surfaces=_surfaces(target, patched),
+        vulnerable_surfaces=_surfaces(fixture, vulnerable),
+        patched_surfaces=_surfaces(fixture, patched),
         server_patched_surfaces=(
-            None if server_patched is None else _surfaces(target, server_patched)
+            None if server_patched is None else _surfaces(fixture, server_patched)
         ),
         patched_benign_errored=(
             _benign_errored(patched)
@@ -121,21 +121,21 @@ def fix_check_result(
     )
 
 
-async def _exercise_shown(target: FixCheckTarget, service: str) -> Exercised:
+async def _exercise_shown(fixture: FixCheckFixture, service: str) -> Exercised:
     # One print per version, so concurrent fix checks do not interleave within a transcript.
-    exercise = await _exercise(target, service)
+    exercise = await _exercise(fixture, service)
     if exercise.benign:
-        print(benign_transcript(target.flaw, service, exercise))
+        print(benign_transcript(fixture.flaw, service, exercise))
     return exercise
 
 
-async def _exercise(target: FixCheckTarget, service: str) -> Exercised:
-    spec = target.planting_spec()
-    places: Places = {target.witness.id: target.witness}
+async def _exercise(fixture: FixCheckFixture, service: str) -> Exercised:
+    spec = fixture.planting_spec()
+    places: Places = {fixture.witness.id: fixture.witness}
     connected = False
     with tempfile.TemporaryFile("w+") as server_stderr:
         try:
-            with target.builder(image_tag(service), spec, LaunchShape.NORMAL) as launch:
+            with fixture.builder(image_tag(service), spec, LaunchShape.NORMAL) as launch:
                 async with KitMCPClient.connect(
                     launch.command,
                     launch.args,
@@ -144,13 +144,13 @@ async def _exercise(target: FixCheckTarget, service: str) -> Exercised:
                 ) as client:
                     connected = True
                     benign = KitExchangeLog(client)
-                    for benign_call in target.benign_calls:
+                    for benign_call in fixture.benign_calls:
                         await benign_call(places, benign)
                     exploits: list[KitExchangeLog] = []
-                    for exploit in target.exploits:
-                        recorder = KitExchangeLog(client)
-                        await exploit(places, recorder)
-                        exploits.append(recorder)
+                    for exploit in fixture.exploits:
+                        exploit_log = KitExchangeLog(client)
+                        await exploit(places, exploit_log)
+                        exploits.append(exploit_log)
         except Exception as exc:
             # Only a launch or connection failure reads as "did not launch"; an exploit that
             # raises once the client is up is the agent's bug and propagates as itself.
@@ -160,13 +160,13 @@ async def _exercise(target: FixCheckTarget, service: str) -> Exercised:
     return Exercised(spec.nonces, [r.exchanges for r in exploits], benign.exchanges)
 
 
-def _surfaces(target: FixCheckTarget, exercise: Exercised) -> bool:
+def _surfaces(fixture: FixCheckFixture, exercise: Exercised) -> bool:
     mechanisms: frozenset[MechanismClass] = (
-        frozenset() if target.mechanism is None else frozenset({target.mechanism})
+        frozenset() if fixture.effect_class is None else frozenset({fixture.effect_class})
     )
-    planted = PlantedTarget(mechanisms, target.aim, exercise.nonces)
+    planted = PlantedTarget(mechanisms, fixture.aim, exercise.nonces)
     return any(
-        is_aimed(unit, target.aim) and bool(proofs_in(unit, planted))
+        is_aimed(unit, fixture.aim) and bool(proofs_in(unit, planted))
         for unit in (unit_of(exchanges) for exchanges in exercise.exploits)
     )
 

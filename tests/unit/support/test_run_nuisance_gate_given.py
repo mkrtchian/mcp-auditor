@@ -10,19 +10,20 @@ import tests.unit.support.test_eval_display_given as display_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals import nuisance_gate_command, nuisance_gate_console
 from evals.baseline import BaselineStatus
 from evals.cve.census.census import Census
-from evals.gate_outcome import GateOutcome
-from evals.nuisance_admission import NuisanceAdmission
-from evals.nuisance_gate import NuisanceGateResult
-from evals.nuisance_gate_baseline import NuisanceGateConditions
-from evals.nuisance_gate_session_model import (
+from evals.cve.nuisance import gate_command as nuisance_gate_command
+from evals.cve.nuisance import gate_console as nuisance_gate_console
+from evals.cve.nuisance.gate import NuisanceGateResult
+from evals.cve.nuisance.gate_baseline import NuisanceGateConditions
+from evals.cve.nuisance.gate_session_model import (
     NuisanceGateHarness,
     NuisanceGateOptions,
     NuisanceGateSession,
     WrittenBaseline,
 )
+from evals.gate_outcome import GateOutcome
+from evals.nuisance_admission import NuisanceAdmission
 from tests.unit.support.test_nuisance_gate_baseline_given import conditions
 from tests.unit.support.test_nuisance_gate_session_given import a_harness, scripted
 
@@ -61,7 +62,7 @@ OTHER_GATE_SERVER = "npm:other-acceptance"
 
 def a_gate_set_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
     """The arguments of a gate of GATE_SERVER, fully recorded, and OTHER_GATE_SERVER, whose
-    admission predates the fields rule v3 adds."""
+    admission predates the fields nuisance suite rule v3 adds."""
     census = draw_given.with_a_walk_skipping(
         census_given.with_a_cve_of(
             census_given.with_a_cve_of(
@@ -121,7 +122,7 @@ def a_green_recording_writing(
         seen.received.append(options)
         return NuisanceGateSession(
             audits=[],
-            gate=NuisanceGateResult(verdict=GateOutcome.GREEN, reasons=[], servers=[]),
+            gate=NuisanceGateResult(outcome=GateOutcome.GREEN, reasons=[], servers=[]),
             not_run={},
             orphans=[],
             written=[WrittenBaseline(GATE_SERVER, status, leaves_gated_set=False)],

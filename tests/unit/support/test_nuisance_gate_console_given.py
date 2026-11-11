@@ -3,8 +3,8 @@ from io import StringIO
 import pytest
 
 import tests.unit.support.test_eval_display_given as display_given
-from evals import nuisance_gate_console
-from evals.nuisance_gate_report import NuisanceGateReport
+from evals.cve.nuisance import gate_console as nuisance_gate_console
+from evals.cve.nuisance.gate_report import NuisanceGateReport
 from tests.unit.support.test_nuisance_gate_report_given import (
     a_held_server_beside_a_regression,
     a_not_gated_server_with_an_alarm,

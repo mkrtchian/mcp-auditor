@@ -1,4 +1,4 @@
-from evals.nuisance_audit import ProviderError
+from evals.cve.nuisance.audit import ProviderError
 
 PROVIDER_ERROR = ProviderError("ModelAPIError, status 500")
 

@@ -3,12 +3,12 @@ from collections.abc import Sequence
 from datetime import date
 
 from evals.cve.holdout_conditions import Cutoff
-from evals.nuisance_report import ServerRunLine
-from evals.nuisance_results import (
-    FigureExit,
+from evals.cve.nuisance.report import ServerRunLine
+from evals.cve.nuisance.results import (
     NotRunServer,
     NuisanceRunResult,
     NuisanceServerResult,
+    ServerExit,
 )
 from tests.unit.support.test_nuisance_statistic_given import a_server_result
 
@@ -23,7 +23,7 @@ def a_run(
     servers: Sequence[NuisanceServerResult],
     *,
     not_run: Sequence[NotRunServer] = (),
-    outside_figure: Sequence[FigureExit] = (),
+    exits: Sequence[ServerExit] = (),
     cutoffs: dict[str, Cutoff] | None = None,
     throttled_requests: int = 0,
     concurrency: int = 6,
@@ -50,7 +50,7 @@ def a_run(
         recorded_at=RECORDED_AT,
         servers=tuple(servers),
         not_run=tuple(not_run),
-        outside_figure=tuple(outside_figure),
+        exits=tuple(exits),
         incomplete_run_count=sum(server.incomplete_runs for server in servers),
         total_cost=0.06,
         prices_as_of=date(2026, 10, 15),
@@ -66,7 +66,7 @@ def a_clean_run_line(*, flagged: bool, incomplete: bool) -> ServerRunLine:
         incomplete=incomplete,
         non_protocol_lines=0,
         lost_connection_responses=0,
-        miss_causes=[],
+        missed_call_causes=[],
     )
 
 
@@ -77,7 +77,9 @@ def with_incidents(server: NuisanceServerResult) -> NuisanceServerResult:
         statuses=(
             dataclasses.replace(lost, non_protocol_lines=2, lost_connection_responses=1),
             dataclasses.replace(
-                refused, incomplete=True, miss_causes=["provider_refusal", "unreadable_answer"]
+                refused,
+                incomplete=True,
+                missed_call_causes=["provider_refusal", "unreadable_answer"],
             ),
             clean,
         ),

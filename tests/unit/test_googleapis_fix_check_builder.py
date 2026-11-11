@@ -1,5 +1,5 @@
+from evals.cve.nuisance.fix_checks import cve_2026_11720_googleapis as googleapis
 from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
-from evals.nuisance_fix_checks import cve_2026_11720_googleapis as googleapis
 from tests.unit.support.docker_argv import values_after
 
 LAUNCH_HOST = 123

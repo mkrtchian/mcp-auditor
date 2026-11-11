@@ -16,7 +16,7 @@ def a_walk_with_a_queue_server(
     """The census and walk record arguments of a walk whose holdout part reaches
     `npm:@acme/files` and whose queue reaches QUEUE_SERVER through QUEUE_FLAW, with the admission
     of both servers when `admitted`, else a missing admission path. QUEUE_SERVER's admission
-    predates the fields rule v3 adds when `queue_server_unrecorded`."""
+    predates the fields nuisance suite rule v3 adds when `queue_server_unrecorded`."""
     census = draw_given.with_a_walk_skipping(
         census_given.with_a_cve_of(census_given.a_census(), QUEUE_FLAW, QUEUE_SERVER),
         admission_given.FIRST_FLAW,

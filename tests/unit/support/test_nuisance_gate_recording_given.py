@@ -1,5 +1,5 @@
-from evals.nuisance_gate_baseline import NuisanceGateConditions
-from evals.nuisance_gate_recording import ServerRecording
+from evals.cve.nuisance.gate_baseline import NuisanceGateConditions
+from evals.cve.nuisance.gate_recording import ServerRecording
 from tests.unit.support.test_nuisance_gate_baseline_given import (
     FIXTURE,
     RECORDED_COMMIT,

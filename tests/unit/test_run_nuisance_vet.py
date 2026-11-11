@@ -8,8 +8,8 @@ import tests.unit.support.test_nuisance_run_backends_given as backends
 import tests.unit.support.test_nuisance_vet_given as given
 import tests.unit.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
+from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
 from evals.cve_environments import TOOL_CALL_TIMEOUT
-from evals.nuisance_run import NUISANCE_CONCURRENCY
 
 
 def test_vet_builds_its_deps_with_the_run_conditions_timeout_and_concurrency(
@@ -61,8 +61,8 @@ def test_vet_counts_the_servers_with_unrecorded_fields_and_keeps_its_exit_code(
     assert run_nuisance.main(["vet", *arguments]) == 0
 
     assert (
-        "1 of 2 servers have fields rule v3 or v4 adds not yet recorded (run and gate refuse them)"
-        in capsys.readouterr().out
+        "1 of 2 servers have fields nuisance suite rule v3 or v4 adds not yet recorded"
+        " (run and gate refuse them)" in capsys.readouterr().out
     )
 
 

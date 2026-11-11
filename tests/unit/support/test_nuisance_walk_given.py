@@ -12,11 +12,11 @@ from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVER
 from evals.cve.census.sources import SourceName, SourceRecord
 from evals.cve.detection.draw_record import DetectionWalkStep, DrawRecord, Settlement
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.nuisance_walk_record import (
+from evals.cve.nuisance.walk_record import (
     Addition,
     IdentitySettlement,
-    NuisanceCensus,
     NuisanceWalkRecord,
+    WalkInputs,
 )
 
 Outcome = Literal["drawn", "skipped", "given_up", "excluded"]
@@ -29,7 +29,7 @@ OVER_HTTP: dict[str, Any] = {"transport": Transport.HTTP}
 
 # `min`, since a frozenset's order varies between processes.
 A_CURRENT_TARGET_FLAW = ACCEPTANCE_TARGETS[0].flaw_id
-A_DROPPED_BENCHMARK_FLAW = min(
+A_DROPPED_ACCEPTANCE_TARGET_FLAW = min(
     ACCEPTANCE_TARGET_FLAWS - {target.flaw_id for target in ACCEPTANCE_TARGETS}
 )
 AN_EXCLUDED_SERVER = min(EXCLUDED_SERVERS)
@@ -84,7 +84,7 @@ def a_census_walking(
 
 
 def a_census_walking_the_first(walked: int, of: list[str]) -> Census:
-    """Each flaw its own server, `npm:<flaw>`. The holdout walk takes the first `walked` flaws
+    """Each flaw its own server, `npm:<flaw>`. The detection walk takes the first `walked` flaws
     of the draw order (the salted digest order, not the order written), the queue the rest."""
     ordered = sorted(of, key=draw_digest)
     return a_census_walking(
@@ -115,25 +115,23 @@ def with_a_settlement(census: Census, flaw: str, criterion: Criterion, ruling: b
 
 
 def with_a_record_settlement(
-    nuisance_census: NuisanceCensus, flaw: str, criterion: Criterion, ruling: bool
-) -> NuisanceCensus:
-    record = nuisance_census.record
+    walk_inputs: WalkInputs, flaw: str, criterion: Criterion, ruling: bool
+) -> WalkInputs:
+    record = walk_inputs.record
     settlement = Settlement(flaw=flaw, criterion=criterion, ruling=ruling, reason="the record")
     settled = record.model_copy(update={"settlements": [*record.settlements, settlement]})
-    return NuisanceCensus(census=nuisance_census.census, record=settled)
+    return WalkInputs(census=walk_inputs.census, record=settled)
 
 
-def with_an_identity(
-    nuisance_census: NuisanceCensus, flaw: str, server_package: str
-) -> NuisanceCensus:
-    record = nuisance_census.record
+def with_an_identity(walk_inputs: WalkInputs, flaw: str, server_package: str) -> WalkInputs:
+    record = walk_inputs.record
     identity = IdentitySettlement(flaw=flaw, server_package=server_package, reason="one project")
     identified = record.model_copy(update={"identities": [*record.identities, identity]})
-    return NuisanceCensus(census=nuisance_census.census, record=identified)
+    return WalkInputs(census=walk_inputs.census, record=identified)
 
 
-def a_nuisance_census(census: Census) -> NuisanceCensus:
-    return NuisanceCensus(census=census, record=an_empty_record())
+def walk_inputs_of(census: Census) -> WalkInputs:
+    return WalkInputs(census=census, record=an_empty_record())
 
 
 def an_empty_record(size: int = 1) -> NuisanceWalkRecord:

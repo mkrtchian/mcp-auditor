@@ -11,9 +11,9 @@ import tests.unit.support.test_nuisance_report_given as report_given
 import tests.unit.support.test_nuisance_run_given as run_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import run_nuisance
+from evals.cve.nuisance.results import NuisanceRunResult
+from evals.cve.nuisance.run import NuisanceDeps, RunProvenance
 from evals.nuisance_admission import NuisanceAdmission
-from evals.nuisance_results import NuisanceRunResult
-from evals.nuisance_run import NuisanceDeps, RunProvenance
 from tests.unit.support.test_nuisance_statistic_given import a_server_result
 
 
@@ -82,7 +82,7 @@ def a_run_reaching_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
         raise AssertionError("the run was reached")
 
     a_ready_run(monkeypatch)
-    for name in ("load_conditions", "committed_nuisance_census", "default_deps", "run_nuisance"):
+    for name in ("load_conditions", "committed_walk_inputs", "default_deps", "run_nuisance"):
         monkeypatch.setattr(run_nuisance, name, unreached)
 
 

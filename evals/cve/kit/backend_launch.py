@@ -1,9 +1,9 @@
 """The server launch of a nuisance server with a backend, from that backend's lifecycle record.
 
-Parity note: it mirrors nuisance_provisioners, whose provisioners build the same argv from the
-same backend functions. A test pins every registered backend's launch here equal to its
-provisioner's. The backend containers `ensure` brings up are shared and persistent: they serve
-every launch and stay running once the launch ends, only the server container is removed.
+Parity note: it mirrors evals/cve/nuisance/provisioners.py, whose provisioners build the same argv
+from the same backend functions. A test pins every registered backend's launch here equal to its
+provisioner's. The backend containers `ensure` brings up are shared and persistent: they serve every
+launch and stay running once the launch ends, only the server container is removed.
 """
 
 import importlib

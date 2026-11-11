@@ -1,4 +1,4 @@
-from evals.nuisance_fix_checks import n8n_redirect_stand_in as n8n
+from evals.cve.nuisance.fix_checks import n8n_redirect_stand_in as n8n
 
 
 def test_server_env_points_the_api_url_at_the_stand_in():
