@@ -1,4 +1,4 @@
-"""Nuisance-specific commands, kept out of run_census, run_detection and run_holdout.
+"""Nuisance-specific commands, kept out of run_census, run_detection and run_detection_holdout.
 
 `walk` prints the servers the walk reached, the holdout walk's then the addition's, each with the
 draw position of its reaching flaw and the flaws that set its version, for the maintainer to
@@ -32,11 +32,12 @@ from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.draw_order import draw_order
 from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord, governing_steps
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
+from evals.cve.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
+from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
 from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.eval_session import Refused, last_commit
-from evals.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
-from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import quiet_throttle_waits
 from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer
@@ -73,7 +74,6 @@ from evals.nuisance_unrecorded import refuse_unrecorded
 from evals.nuisance_vet_command import add_vet_arguments
 from evals.nuisance_walk import NuisanceServer, acceptance_servers, nuisance_population
 from evals.nuisance_walk_record import NuisanceCensus
-from evals.run_files import partial_result_kept, refuse_existing_report, write_result
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 

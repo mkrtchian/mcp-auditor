@@ -3,8 +3,8 @@ from pathlib import Path
 import tests.unit.support.test_census_figures_given as figures
 import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
-from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_dossier import write_dossier
 from tests.unit.support.test_nuisance_committed_admission_given import (

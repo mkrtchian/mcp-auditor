@@ -8,7 +8,7 @@ import pytest
 
 import tests.unit.support.test_closed_network_refusal_given as given
 import tests.unit.support.test_closed_network_refusal_then as then
-import tests.unit.support.test_holdout_run_given as holdout_given
+import tests.unit.support.test_detection_holdout_run_given as holdout_given
 import tests.unit.support.test_nuisance_gate_session_given as gate_given
 import tests.unit.support.test_nuisance_run_backends_given as backends
 import tests.unit.support.test_nuisance_run_given as run_given

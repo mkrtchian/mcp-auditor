@@ -9,7 +9,7 @@ server_patched_service is None: vulnerable_service 1.3.4, patched_service the ru
 
 import re
 
-from evals.holdout_kit.fix_check import FixCheckTarget
+from evals.cve.kit.fix_check import FixCheckTarget
 from evals.nuisance_fix_checks.mcp_ssh_fix_check import option_injection, target
 
 # An exploit is aimed when the hostAlias supplies an ssh option (`-oProxyCommand=`); the benign

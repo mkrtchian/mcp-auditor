@@ -3,11 +3,12 @@ under evals/nuisance_fix_checks/.
 
 Each FixCheckTarget is what the fix check plants and reproduces on the vulnerable and patched
 images, with its exploits and benign calls committed beside the admission. This module is the
-thin aggregator, as evals/holdout_targets.py aggregates evals/holdout_fixtures/; the per-flaw
-modules hold the callables and keep the kit's import closure.
+thin aggregator, as evals/cve/detection/holdout_targets.py aggregates
+evals/cve/detection/holdout_fixtures/; the per-flaw modules hold the callables and keep the kit's
+import closure.
 """
 
-from evals.holdout_kit.fix_check import FixCheckTarget
+from evals.cve.kit.fix_check import FixCheckTarget
 from evals.nuisance_fix_checks import (
     cve_2025_5277_aws_cli,
     cve_2025_9654_mcp_ssh,

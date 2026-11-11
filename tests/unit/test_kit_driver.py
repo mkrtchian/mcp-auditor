@@ -1,13 +1,13 @@
 import pytest
 
 import tests.unit.support.test_kit_driver_given as given
-from evals.holdout_kit.kit_driver import TargetVersion, launch_user_condition, options_before_image
+from evals.cve.kit.driver import TargetVersion, launch_user_condition, options_before_image
 
 VULNERABLE = TargetVersion.VULNERABLE
 
 
 @pytest.mark.parametrize("value", ["1000:1000", "0:0"])
-def test_a_launch_running_as_another_account_is_a_dead_condition(value: str):
+def test_a_launch_running_as_another_account_is_an_out_of_calibration_reason(value: str):
     options = given.options_running_as("--user", value)
 
     assert launch_user_condition(VULNERABLE, options, given.a_spec()) == (
@@ -15,7 +15,7 @@ def test_a_launch_running_as_another_account_is_a_dead_condition(value: str):
     )
 
 
-def test_a_launch_setting_no_user_is_a_dead_condition():
+def test_a_launch_setting_no_user_is_an_out_of_calibration_reason():
     condition = launch_user_condition(
         TargetVersion.PATCHED, given.options_running_as(), given.a_spec()
     )

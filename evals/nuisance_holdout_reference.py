@@ -12,13 +12,13 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 from evals.cve.census.census import Census
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
 from evals.docker_paths import image_dockerfile
 from evals.eval_session import Refused
-from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.honeypots import REPO_ROOT
 
-HOLDOUT_FIXTURES = REPO_ROOT / "evals" / "holdout_fixtures"
+HOLDOUT_FIXTURES = REPO_ROOT / "evals" / "cve" / "detection" / "holdout_fixtures"
 
 
 def holdout_targets_among(identifiers: Iterable[str]) -> list[Target]:
@@ -65,6 +65,6 @@ def holdout_fixture_file(identifier: str) -> Path:
     if len(matches) != 1:
         raise Refused(
             f"Refused: the holdout flaw {identifier} matches {len(matches)} fixture modules.",
-            [f"evals/holdout_fixtures/{slug}_*.py must match exactly one module"],
+            [f"evals/cve/detection/holdout_fixtures/{slug}_*.py must match exactly one module"],
         )
     return matches[0]

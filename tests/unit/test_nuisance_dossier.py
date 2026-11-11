@@ -9,15 +9,15 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.support.holdout_kit_isolation as iso
+import tests.unit.support.kit_isolation as iso
 import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_nuisance_dossier_given as given
 import tests.unit.support.test_nuisance_dossier_then as then
 import tests.unit.support.test_nuisance_unrecorded_given as unrecorded_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals.calibration_dossier import CLEAN_MODULES, acceptance_services, write_kit
+from evals.cve.detection.calibration_dossier import acceptance_services, write_kit
+from evals.cve.kit.fix_check import FixCheckTarget
 from evals.eval_session import Refused
-from evals.holdout_kit.fix_check import FixCheckTarget
 from evals.nuisance_dossier import NUISANCE_RULE, write_dossier
 from evals.nuisance_readmission_docs import admission_confinement_text
 
@@ -28,9 +28,13 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
     for relative in (
         f"advisories/{census_given.FLAW_WITH_A_CVE}.json",
         "evals/__init__.py",
-        *(f"evals/{module}.py" for module in CLEAN_MODULES),
-        "evals/holdout_kit/fix_check.py",
-        "evals/holdout_kit/kit_driver.py",
+        "evals/cve/__init__.py",
+        "evals/cve/kit/__init__.py",
+        "evals/cve_grammar.py",
+        "evals/cve_places.py",
+        "evals/cve_planting.py",
+        "evals/cve/kit/fix_check.py",
+        "evals/cve/kit/driver.py",
         "docker/Dockerfile.sentinel",
         "docker/Dockerfile.stand-in",
         "evals/stand_ins/example.com.json",
@@ -40,7 +44,7 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
         "grammar_classes.md",
         "nuisance-rule.md",
         "confinement.md",
-        "evals/holdout_kit/benign_probe.py",
+        "evals/cve/kit/benign_probe.py",
         "evals/capture_stand_in.py",
     ):
         assert (out / relative).exists(), relative
@@ -49,7 +53,7 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
     assert not (out / "reference").exists()
     assert not (out / "evals" / "holdout_places.json").exists()
     assert not (out / "layout.md").exists()
-    assert not (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
+    assert not (out / "evals" / "cve" / "kit" / "backends.py").exists()
     assert not (out / "evals" / "doris_backend.py").exists()
     assert "doris" not in (out / "fixture_format.md").read_text()
 
@@ -63,11 +67,11 @@ def test_the_grammar_classes_send_a_flaw_outside_them_to_null(tmp_path: Path):
 def test_a_backend_dossier_imports_closed(tmp_path: Path):
     out = given.a_written_dossier(tmp_path, backend="doris")
 
-    assert (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
+    assert (out / "evals" / "cve" / "kit" / "backends.py").exists()
     assert (out / "evals" / "doris_backend.py").exists()
     assert (out / "evals" / "nuisance_confinement.py").exists()
     fixture_format = (out / "fixture_format.md").read_text()
-    assert "kit_backends.doris_backend_env" in fixture_format
+    assert "backends.doris_backend_env" in fixture_format
     assert "169.254.0.0/16" in fixture_format
     assert "DORIS_SERVER_LAUNCH" in fixture_format
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
@@ -91,7 +95,7 @@ def test_the_shared_kit_carries_no_worked_exploit(tmp_path: Path):
     # builder belongs with its fixture (evals/nuisance_fix_checks), which the dossier never copies.
     out = given.a_written_dossier(tmp_path)
 
-    kit = (out / "evals" / "holdout_kit" / "kit_launch.py").read_text()
+    kit = (out / "evals" / "cve" / "kit" / "launch.py").read_text()
     assert "CVE-" not in kit
     names = (
         "redirect_ssrf_env",
@@ -132,7 +136,7 @@ def test_the_readme_lists_the_rule_confinement_probe_capture_tool_and_reference(
     for named in (
         "`nuisance-rule.md`",
         "`confinement.md`",
-        "evals.holdout_kit.benign_probe",
+        "evals.cve.kit.benign_probe",
         "evals.capture_stand_in",
         "`reference/cards/<id>.json`",
         "`reference/holdout_fixtures/`",

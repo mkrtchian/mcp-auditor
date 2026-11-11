@@ -10,18 +10,18 @@ from pathlib import Path
 import pytest
 
 import evals.nuisance_readmission_dossier as readmission
-import tests.unit.support.holdout_kit_isolation as iso
+import tests.unit.support.kit_isolation as iso
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_dossier_given as dossier_given
 import tests.unit.support.test_nuisance_dossier_then as dossier_then
 import tests.unit.support.test_nuisance_readmission_dossier_given as given
+from evals.cve.dossier_closure import import_closure
+from evals.cve.kit import benign_probe
+from evals.cve.kit.fix_check import check_fix
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.docker_paths import image_dockerfile
-from evals.dossier_closure import import_closure
 from evals.eval_session import Refused
-from evals.holdout_kit import benign_probe
-from evals.holdout_kit.fix_check import check_fix
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import nuisance_confinement_args, user_args
@@ -92,8 +92,8 @@ def test_a_fix_check_dossier_carries_its_record_rule_dockerfiles_and_fix_checks(
         assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service
     for module in (
         *fix_check_modules(server),
-        "evals.holdout_kit.benign_probe",
-        "evals.holdout_kit.kit_backend_launch",
+        "evals.cve.kit.benign_probe",
+        "evals.cve.kit.backend_launch",
     ):
         relative = f"{module.replace('.', '/')}.py"
         assert (out / relative).exists(), relative

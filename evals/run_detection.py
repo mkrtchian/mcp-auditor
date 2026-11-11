@@ -50,13 +50,13 @@ from evals.cve.detection.targets import (
     Target,
     image_tag,
 )
+from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep, sweep_containers, target_services
 from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.detection_preflight import preflight_ok
 from evals.eval_display import console
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
 from evals.export import export_detection_judged_cases
-from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.metrics import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import load_settings

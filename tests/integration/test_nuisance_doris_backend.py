@@ -15,10 +15,10 @@ import pytest
 
 from evals.cve.detection import targets as detection_targets
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve.kit.backends import doris_backend_env
+from evals.cve.kit.client import KitMCPClient, docker_client_env
 from evals.cve_planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
 from evals.doris_backend import DORIS_DB
-from evals.holdout_kit.kit_backends import doris_backend_env
-from evals.holdout_kit.kit_client import KitMCPClient, docker_client_env
 
 _SERVICE = "holdout-2025-66335-doris-patched"
 

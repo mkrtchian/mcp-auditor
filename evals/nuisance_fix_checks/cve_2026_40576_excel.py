@@ -22,13 +22,13 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, NamedTuple
 
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckExploit, FixCheckTarget
+from evals.cve.kit.launch import Launch, LaunchShape, image_tag
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser, confinement_args
 from evals.cve_planting_base import no_network_args, unprivileged_user_args
-from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
-from evals.holdout_kit.kit_launch import Launch, LaunchShape, image_tag
 from evals.nuisance_fix_checks.excel_witness_workbook import workbook_holding
 
 WITNESS_ID = "outside_workbook"

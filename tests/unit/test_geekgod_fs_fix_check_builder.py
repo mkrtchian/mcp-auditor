@@ -1,8 +1,8 @@
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from evals.cve.kit.client import KitClient
 from evals.cve_places import Places
-from evals.holdout_kit.kit_client import KitClient
 from evals.nuisance_fix_checks import cve_2026_7400_geekgod_fs as geekgod_fs
 from tests.fakes import FakeKitClient
 

@@ -15,12 +15,12 @@ server_patched_service is None.
 
 import re
 
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckTarget
+from evals.cve.kit.launch import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
-from evals.holdout_kit.kit_launch import command_injection_env
 
 WITNESS = Place(
     id="aws-cmd-exec",

@@ -13,6 +13,7 @@ from pathlib import Path
 
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
+from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.run_images import (
     rebuild_images,
     refuse_without_closed_networks,
@@ -21,7 +22,6 @@ from evals.cve.run_images import (
 )
 from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_session import Refused
-from evals.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer
 from evals.nuisance_commands import (
     CENSUS_PATH,

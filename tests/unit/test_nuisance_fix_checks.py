@@ -4,13 +4,13 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_fix_checks_given as given
+from evals.cve.kit.driver import unit_of
+from evals.cve.kit.fix_check import FixCheckTarget
 from evals.cve_proofs import is_aimed
 from evals.docker_paths import image_dockerfile
-from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.holdout_kit.kit_driver import unit_of
 from evals.nuisance_counting import counted_flaws
 from evals.nuisance_fixtures import FIX_CHECK_TARGETS
-from tests.unit.support.holdout_kit_isolation import scan_tree
+from tests.unit.support.kit_isolation import scan_tree
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 _FIX_CHECK_DIR = Path(__file__).resolve().parents[2] / "evals" / "nuisance_fix_checks"

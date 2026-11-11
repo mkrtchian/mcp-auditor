@@ -17,9 +17,9 @@ from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import grammar_fingerprint
+from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.holdout_conditions import HoldoutConditions
 from evals.gate import RetestRule
-from evals.holdout_conditions import HoldoutConditions
-from evals.holdout_run import HOLDOUT_BUDGET
 from evals.nuisance_counter import counter_fingerprint
 from mcp_auditor.config import Settings
 

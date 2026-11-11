@@ -9,13 +9,13 @@ import tests.unit.support.test_nuisance_calibrate_command_given as given
 from evals import nuisance_calibrate_command, run_nuisance
 from evals.closed_network import ClosedNetworkUnsupported
 from evals.cve.detection import targets as detection_targets
-from evals.holdout_kit import kit_launch
+from evals.cve.kit import launch as kit_launch
 from evals.nuisance_admission import NuisanceAdmission
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_calibrate_command import calibrate_fixtures, fix_check_mismatches
 from evals.nuisance_commands import CRASHED_EXIT
 from tests.fakes import FakeContainerSweep
-from tests.unit.support.test_fix_check_given import a_fix_check_target
+from tests.unit.support.test_kit_fix_check_given import a_fix_check_target
 from tests.unit.support.test_nuisance_admission_given import a_passing_fix_check, an_admission
 
 TARGET = a_fix_check_target(server_patched_service="server-patched")

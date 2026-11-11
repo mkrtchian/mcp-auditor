@@ -30,6 +30,9 @@ from contextlib import contextmanager
 from typing import Any
 
 from evals.closed_network import ensure_closed_network
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckTarget
+from evals.cve.kit.launch import Launch, LaunchShape
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import (
@@ -40,9 +43,6 @@ from evals.cve_planting import (
     unprivileged_user_args,
 )
 from evals.cve_planting_base import LABEL, own_network_args
-from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
-from evals.holdout_kit.kit_launch import Launch, LaunchShape
 from evals.jenkins_backend import (
     JENKINS_BRIDGE,
     JENKINS_LAUNCH_LOCK,

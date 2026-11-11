@@ -1,0 +1,169 @@
+"""The result value objects of a holdout run, defined here so the statistic, the report and the
+orchestrator all import them without a cycle (holdout_run imports the statistic and the report,
+which both consume these, so they cannot live in holdout_run as the plan's prose placed them).
+The per-run facts of a target live in its run statuses and the aggregates are computed from them,
+so no two fields can disagree."""
+
+from collections import Counter
+from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import date
+from enum import StrEnum
+
+from evals.cve.holdout_conditions import Cutoff
+
+
+@dataclass(frozen=True)
+class HoldoutRunStatus:
+    detected: bool
+    detected_if_unchecked_missed: bool
+    surfaced_places: list[str]  # place ids only, empty on an incomplete run
+    struck_places: list[str]  # the credits the replay struck, ids only
+    unchecked_places: list[str]  # the credits the replay could not check, ids only
+    aimed: bool
+    fail_without_proof: bool
+    incomplete: bool
+    non_protocol_lines: int  # report-only, as every field below
+    lost_connection_responses: int
+    unchecked_reason: str | None  # set on a graded run whose replay was left unchecked
+    replay_attempt_failures: list[str]  # in attempt order, empty on an incomplete run
+    missed_call_causes: list[str]  # an incomplete run's missed model call causes, sorted
+
+
+@dataclass(frozen=True)
+class HoldoutTargetResult:
+    flaw_id: str
+    disclosure_date: date
+    class_labels: tuple[str, ...]  # sorted, empty for no class
+    tools_count: int
+    ran_in_fallback: bool
+    statuses: tuple[HoldoutRunStatus, ...]
+    run_cost: float  # dollars over its runs, incomplete runs included
+
+    @property
+    def runs(self) -> int:
+        return len(self.statuses)
+
+    @property
+    def detected_runs(self) -> int:
+        return sum(status.detected for status in self.statuses)
+
+    @property
+    def detection_share(self) -> float:
+        return self.detected_runs / self.runs
+
+    @property
+    def detected_runs_if_unchecked_missed(self) -> int:
+        return sum(status.detected_if_unchecked_missed for status in self.statuses)
+
+    @property
+    def surfaced_places(self) -> list[list[str]]:
+        return [status.surfaced_places for status in self.statuses]
+
+    @property
+    def struck_places(self) -> list[list[str]]:
+        return [status.struck_places for status in self.statuses]
+
+    @property
+    def unchecked_places(self) -> list[list[str]]:
+        return [status.unchecked_places for status in self.statuses]
+
+    @property
+    def aimed_runs(self) -> int:
+        return sum(status.aimed for status in self.statuses)
+
+    @property
+    def fail_without_proof_runs(self) -> int:
+        return sum(status.fail_without_proof for status in self.statuses)
+
+    @property
+    def incomplete_runs(self) -> int:
+        return sum(status.incomplete for status in self.statuses)
+
+    @property
+    def non_protocol_lines(self) -> int:
+        return sum(status.non_protocol_lines for status in self.statuses)
+
+    @property
+    def lost_connection_responses(self) -> int:
+        return sum(status.lost_connection_responses for status in self.statuses)
+
+    @property
+    def unchecked_runs_by_reason(self) -> dict[str, int]:
+        return dict(
+            Counter(status.unchecked_reason for status in self.statuses if status.unchecked_reason)
+        )
+
+    @property
+    def replay_attempt_failures_by_cause(self) -> dict[str, int]:
+        return dict(
+            Counter(cause for status in self.statuses for cause in status.replay_attempt_failures)
+        )
+
+    @property
+    def incomplete_runs_by_cause(self) -> dict[str, int]:
+        """A run missing model calls of two causes counts under both."""
+        return dict(
+            Counter(cause for status in self.statuses for cause in status.missed_call_causes)
+        )
+
+
+class NotRunCause(StrEnum):
+    PRE_RUN_CHECK = "pre_run_check"
+    LAUNCH_FAILURE = "launch_failure"
+    THROTTLED = "throttled"
+    PROVIDER_ERROR = "provider_error"
+
+
+# The reasons of a target dropped during the run, one per cause, so the report counts them.
+DROPPED_RUN_REASONS = {
+    NotRunCause.LAUNCH_FAILURE: "a run failed to launch after retries",
+    NotRunCause.THROTTLED: "throttled by the model provider past every retry",
+    NotRunCause.PROVIDER_ERROR: "a run hit a provider error past every retry",
+}
+
+
+@dataclass(frozen=True)
+class NotRunTarget:
+    flaw_id: str
+    reason: str
+    cause: NotRunCause
+
+
+@dataclass(frozen=True)
+class HoldoutRunResult:
+    runs: int
+    budget: int
+    provider: str
+    model: str
+    judge_model: str
+    reasoning: str | None
+    judge_reasoning: str | None
+    cutoffs: dict[str, Cutoff]
+    chain_budget: int | None
+    max_chain_steps: int | None
+    tool_call_timeout: int | None
+    grammar_fingerprint: str
+    fixture_fingerprints: dict[str, str]
+    commit: str
+    census_commit: str
+    image_ids: dict[str, str]
+    recorded_at: str  # ISO timestamp: a model can change behind one identifier
+    targets: Sequence[HoldoutTargetResult]
+    not_run: Sequence[NotRunTarget]
+    incomplete_run_count: int
+    total_cost: float
+    prices_as_of: date
+    concurrency: int
+    throttled_requests: int
+    partial: bool = False  # a run stopped by an exception, its finished entries only
+    second_pass: Sequence[str] = ()  # run only because their solo second pre-run pass was clean
+
+
+class RunInterrupted(Exception):
+    """A run stopped by an exception out of one of its audits, with what had finished."""
+
+    def __init__(self, partial: HoldoutRunResult, cause: BaseException) -> None:
+        super().__init__(f"the run stopped on {type(cause).__name__}")
+        self.partial = partial
+        self.cause = cause

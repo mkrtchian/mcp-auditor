@@ -1,4 +1,4 @@
-# The CVE fixtures build their own `docker run` argv from the planting arguments. This pins
+# The detection fixtures build their own `docker run` argv from the planting arguments. This pins
 # the invariant that `ServerLaunch.declared_container` accepts them, the per-host mount mode,
 # and the layout's hand-over and removal, without Docker or the built images: every builder is
 # given the fake port, and an empty spec on a no-network host plants nothing, so no builder
@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_cve_launches_given as given
+from evals.cve.kit import launch as kit_launch
 from evals.cve_environments import (
     Launch,
     LaunchShape,
@@ -30,7 +31,6 @@ from evals.holdout_environments import (
     mysql_db_env,
     ssrf_redirect_env,
 )
-from evals.holdout_kit import kit_launch
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ExecutionRegime
 from tests.fakes.planting_docker import FakePlantingDocker

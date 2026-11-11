@@ -5,9 +5,9 @@ on the crafted counts; nothing is fetched."""
 import math
 from datetime import date
 
-from evals.holdout_hierarchical import GammaPrior, hierarchical_interval
-from evals.holdout_intervals import clopper_pearson, jeffreys, newcombe, wilson
-from evals.holdout_statistic import Placement, Side
+from evals.cve.holdout_hierarchical import GammaPrior, hierarchical_interval
+from evals.cve.holdout_intervals import clopper_pearson, jeffreys, newcombe, wilson
+from evals.cve.holdout_statistic import Placement, Side
 from evals.nuisance_statistic import (
     check_conclusion,
     cited_interval,

@@ -2,7 +2,7 @@ import pytest
 
 from evals.cve.detection.calibration_check_exit import run_calibration_check
 from evals.cve_places import HOLDOUT_PLACES, load_places
-from tests.unit.support import test_holdout_run_given as run_given
+from tests.unit.support import test_detection_holdout_run_given as run_given
 from tests.unit.support.test_detection_calibration_check_exit_given import deps_with
 
 TARGETS = [run_given.a_target(run_given.FILESYSTEM)]

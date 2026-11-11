@@ -1,0 +1,132 @@
+"""The holdout `run` command around its orchestrator: the report refusal, the result file written
+before the report, and a run stopped by an exception. No Docker, no LLM."""
+
+import dataclasses
+import json
+from pathlib import Path
+
+import pytest
+
+import tests.unit.support.test_run_detection_holdout_run_given as given
+from evals import run_detection_holdout
+from evals.cve.detection.holdout_results import RunInterrupted
+from evals.cve.provider_errors import ProviderFatal
+
+
+@pytest.mark.parametrize("suffix", [".json", ".md", ".result.json"])
+def test_run_refuses_an_existing_report_file_before_any_dep(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], suffix: str
+):
+    given.a_run_reaching_nothing(monkeypatch)
+    report = tmp_path / "holdout_report.json"
+    report.with_suffix(suffix).write_text("kept")
+
+    exit_code = run_detection_holdout.main(["run", "--report", str(report)])
+
+    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    assert "--report" in capsys.readouterr().out
+
+
+def test_run_refuses_a_drawn_target_whose_card_is_not_ready(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.a_drawn_run_ending_in(monkeypatch, given.a_run_result())
+    gap = "CVE-2025-0001: card check rule version unset"
+    given.cards_reporting(monkeypatch, [gap])
+    report = tmp_path / "holdout_report.json"
+
+    exit_code = run_detection_holdout.main(["run", "--report", str(report)])
+
+    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    out = capsys.readouterr().out
+    assert gap in out
+    assert "not ready under detection suite rule v11" in out
+    assert not report.with_suffix(".result.json").exists()
+
+
+def test_run_writes_the_report_beside_its_result(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    given.a_drawn_run_ending_in(monkeypatch, given.a_run_result())
+    report = tmp_path / "holdout_report.json"
+
+    assert run_detection_holdout.main(["run", "--report", str(report)]) == 0
+
+    assert report.exists()
+    assert report.with_suffix(".md").exists()
+    assert not json.loads(report.with_suffix(".result.json").read_text())["partial"]
+
+
+def test_the_result_and_the_report_carry_the_glossary_keys(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    given.a_drawn_run_ending_in(monkeypatch, given.a_run_result())
+    report = tmp_path / "holdout_report.json"
+
+    run_detection_holdout.main(["run", "--report", str(report)])
+
+    result_keys = given.result_keys(report.with_suffix(".result.json"))
+    report_keys = given.result_keys(report)
+    assert {"flaw_id", "class_labels", "missed_call_causes"} <= result_keys
+    assert {
+        "holdout_detection_rate",
+        "flaw_id",
+        "class_labels",
+        "missed_call_causes",
+    } <= report_keys
+    assert (result_keys | report_keys).isdisjoint(given.RETIRED_KEYS)
+
+
+def test_run_writes_its_result_before_the_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    given.a_drawn_run_ending_in(monkeypatch, given.a_run_result())
+
+    def failing_report(*_: object) -> object:
+        raise RuntimeError("the report failed to build")
+
+    monkeypatch.setattr(run_detection_holdout, "build_report", failing_report)
+    report = tmp_path / "holdout_report.json"
+
+    with pytest.raises(RuntimeError, match="the report failed to build"):
+        run_detection_holdout.main(["run", "--report", str(report)])
+
+    result = report.with_suffix(".result.json")
+    assert given.result_keys(result).isdisjoint(given.PROOF_FIELDS)
+    assert not report.exists()
+
+
+def test_a_fatal_provider_error_exits_four_keeping_the_partial_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    partial = dataclasses.replace(given.a_run_result(), partial=True)
+    fatal = ProviderFatal(PermissionError("the key sk-secret was revoked"))
+    given.a_drawn_run_ending_in(monkeypatch, RunInterrupted(partial, fatal))
+    report = tmp_path / "holdout_report.json"
+
+    exit_code = run_detection_holdout.main(["run", "--report", str(report)])
+
+    out = capsys.readouterr().out
+    assert exit_code == run_detection_holdout.CRASHED_EXIT
+    assert "PermissionError" in out
+    assert "sk-secret" not in out
+    assert json.loads(report.with_suffix(".result.json").read_text())["partial"]
+    assert not report.exists()
+
+
+def test_any_other_interruption_is_raised_keeping_the_partial_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    partial = dataclasses.replace(given.a_run_result(), partial=True)
+    given.a_drawn_run_ending_in(monkeypatch, RunInterrupted(partial, KeyError("a bug")))
+    report = tmp_path / "holdout_report.json"
+
+    with pytest.raises(KeyError):
+        run_detection_holdout.main(["run", "--report", str(report)])
+
+    assert json.loads(report.with_suffix(".result.json").read_text())["partial"]
+
+
+def test_a_value_error_out_of_the_run_is_no_malformed_census(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    given.a_drawn_run_ending_in(monkeypatch, ValueError("a bug in the run"))
+
+    with pytest.raises(ValueError, match="a bug in the run"):
+        run_detection_holdout.main(["run", "--report", str(tmp_path / "holdout_report.json")])

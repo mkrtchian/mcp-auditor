@@ -5,8 +5,8 @@ from pathlib import Path
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.nuisance_backends import BACKENDS
 from evals.public_stand_ins import STAND_INS_DIRECTORY
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission

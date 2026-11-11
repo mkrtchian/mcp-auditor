@@ -9,7 +9,7 @@ import subprocess
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from evals import calibration_dossier
+from evals.cve.detection import calibration_dossier
 
 if TYPE_CHECKING:
     from evals.nuisance_admission import NuisanceAdmission

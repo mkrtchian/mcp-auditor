@@ -17,10 +17,10 @@ request per counted tool, which the stand-in answers as an n8n instance does.
 
 import re
 
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckExploit, FixCheckTarget
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
-from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
 from evals.nuisance_fix_checks.n8n_redirect_stand_in import (
     AUDIT_MARKER,
     HOST,

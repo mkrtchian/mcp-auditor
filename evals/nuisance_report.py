@@ -7,7 +7,7 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from evals.holdout_report import (
+from evals.cve.detection.holdout_report import (
     ConclusionLine,
     CutoffModel,
     IntervalModel,
@@ -15,7 +15,7 @@ from evals.holdout_report import (
     RunCutoffModel,
     run_cutoff,
 )
-from evals.holdout_statistic import Side
+from evals.cve.holdout_statistic import Side
 from evals.nuisance_results import (
     FigureExit,
     NotRunCause,

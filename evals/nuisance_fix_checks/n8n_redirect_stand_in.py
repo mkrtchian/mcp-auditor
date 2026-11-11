@@ -18,6 +18,7 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
+from evals.cve.kit.launch import Launch, LaunchShape
 from evals.cve_places import Coordinates, Place, PlantKind
 from evals.cve_planting import (
     SENTINEL_IMAGE,
@@ -28,7 +29,6 @@ from evals.cve_planting import (
     unprivileged_user_args,
 )
 from evals.cve_planting_base import no_network_args
-from evals.holdout_kit.kit_launch import Launch, LaunchShape
 
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 

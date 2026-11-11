@@ -140,7 +140,7 @@ def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     )
 
     assert exit_code == 0
-    assert (out / "evals" / "holdout_kit" / "kit_backends.py").exists()
+    assert (out / "evals" / "cve" / "kit" / "backends.py").exists()
 
 
 def test_nuisance_dossier_with_an_unknown_backend_exits_three(

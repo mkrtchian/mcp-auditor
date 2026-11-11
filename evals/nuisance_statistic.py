@@ -10,16 +10,16 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from evals.holdout_hierarchical import GammaPrior, hierarchical_interval
-from evals.holdout_intervals import (
+from evals.cve.holdout_hierarchical import GammaPrior, hierarchical_interval
+from evals.cve.holdout_intervals import (
     Interval,
     clopper_pearson,
     jeffreys,
     newcombe,
     wilson,
 )
-from evals.holdout_statistic import (
-    ConclusionVerdict,
+from evals.cve.holdout_statistic import (
+    Conclusion,
     Contrast,
     Reading,
     Side,
@@ -98,9 +98,7 @@ def primary_controls(results: Sequence[NuisanceServerResult], runs: int) -> dict
     }
 
 
-def check_conclusion(
-    side_a: SideStatistic, side_b: SideStatistic, runs: int
-) -> ConclusionVerdict | None:
+def check_conclusion(side_a: SideStatistic, side_b: SideStatistic, runs: int) -> Conclusion | None:
     if side_a.servers < _MIN_SIDE or side_b.servers < _MIN_SIDE:
         return None
     cited, *others = [

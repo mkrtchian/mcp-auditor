@@ -14,7 +14,7 @@ import tests.unit.support.test_run_nuisance_run_given as given
 from evals import run_nuisance
 from evals.cve.provider_errors import ProviderFatal
 from evals.nuisance_results import RunInterrupted
-from tests.unit.support.test_run_holdout_run_given import PROOF_FIELDS, result_keys
+from tests.unit.support.test_run_detection_holdout_run_given import PROOF_FIELDS, result_keys
 
 
 @pytest.mark.parametrize("suffix", [".json", ".md", ".result.json"])

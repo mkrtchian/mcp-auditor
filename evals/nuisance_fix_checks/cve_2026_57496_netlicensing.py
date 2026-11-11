@@ -23,14 +23,14 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckTarget
+from evals.cve.kit.launch import Launch, LaunchShape
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, PlantingSpec, confinement_args, planted
 from evals.cve_planting_base import PublicNames, SymbolicUser
 from evals.cve_planting_docker import DOCKER_PLANTING
-from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
-from evals.holdout_kit.kit_launch import Launch, LaunchShape
 from evals.public_stand_ins import STAND_INS_DIRECTORY
 
 HOST_NAME = "go.netlicensing.io"

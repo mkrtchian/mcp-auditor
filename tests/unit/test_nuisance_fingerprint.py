@@ -6,9 +6,9 @@ import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_fingerprint_given as given
 from evals import cve_planting_base, nuisance_confinement
+from evals.cve.fixture_provenance import StandInRecord
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.fixture_provenance import StandInRecord
 from evals.nuisance_admission import AdmissionSettlement, BackendFixture, ToolCall
 from evals.nuisance_admission_records import SeedRecord
 from evals.nuisance_backends import BACKENDS

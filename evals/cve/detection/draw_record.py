@@ -16,13 +16,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from evals.cve.census.classification import Criterion
 from evals.cve.census.work import AgentRecord, AgentRole
-from evals.cve_places import REACHABLE_BY
-from evals.fixture_provenance import (
+from evals.cve.fixture_provenance import (
     SoftwareRelease,
     StandInRecord,
     software_release_problems,
     stand_in_problems,
 )
+from evals.cve_places import REACHABLE_BY
 
 
 class KeptPlace(BaseModel):

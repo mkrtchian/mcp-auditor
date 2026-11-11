@@ -1,8 +1,8 @@
 from evals.cve.images import dockerfile_instructions
+from evals.cve.kit.client import KitTool
+from evals.cve.kit.driver import Exchange, KitExchangeLog
+from evals.cve.kit.fix_check import FixCheckExploit, FixCheckTarget
 from evals.docker_paths import image_dockerfile
-from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
-from evals.holdout_kit.kit_client import KitTool
-from evals.holdout_kit.kit_driver import Exchange, KitRecorder
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_counting import flaw_counted_tools, flaw_tools
 from tests.fakes import FakeKitClient
@@ -43,7 +43,7 @@ async def recorded(target: FixCheckTarget, *calls: FixCheckExploit) -> list[Exch
         KitTool(name=tool, description=f"seeded {target.witness.id}", input_schema={})
         for tool in reached_tools(target)
     ]
-    recorder = KitRecorder(FakeKitClient(tools))
+    recorder = KitExchangeLog(FakeKitClient(tools))
     places = {target.witness.id: target.witness}
     for call in calls:
         await call(places, recorder)

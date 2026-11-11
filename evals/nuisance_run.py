@@ -1,11 +1,11 @@
 """The nuisance run orchestrator: audit every admitted server on its patched image at one commit
 under the holdout's run conditions, keep no per-case trace, and assemble the run result.
 
-A sibling of `holdout_run.run_holdout`. The servers are passed in, so the tests hand it crafted
-ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the unit tests and built from the live
-settings by `default_deps`. The pre-run check is `nuisance_vetting`'s, the container hygiene
-`nuisance_run_containers`', the per-server assembly `nuisance_assembly`'s, the retry policy
-`nuisance_audit`'s.
+A sibling of `holdout_run.run_holdout_targets`. The servers are passed in, so the tests hand it
+crafted ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the unit tests and built from
+the live settings by `default_deps`. The pre-run check is `nuisance_vetting`'s, the container
+hygiene `nuisance_run_containers`', the per-server assembly `nuisance_assembly`'s, the retry
+policy `nuisance_audit`'s.
 """
 
 import dataclasses
@@ -20,17 +20,18 @@ from evals.concurrency import bounded
 from evals.cve.census.draw_order import DrawEntry
 from evals.cve.detection.audit import RunOverrides, build_auditor
 from evals.cve.detection.baseline import grammar_fingerprint, image_ids
+from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.failure_text import TYPES_ONLY
+from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.run_images import (
     rebuild_images,
     refuse_without_closed_networks,
     remove_containers,
     running_containers,
 )
+from evals.cve.run_interruption import sibling_runs
 from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_session import Refused, TreeState, read_tree
-from evals.holdout_conditions import HoldoutConditions
-from evals.holdout_run import HOLDOUT_BUDGET
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import SessionThrottles
 from evals.nuisance_admission import AdmittedServer
@@ -63,7 +64,6 @@ from evals.nuisance_run_containers import (
 from evals.nuisance_solo import first_failure_then_alone, played_alone
 from evals.nuisance_vetting import benign_call, vet_all
 from evals.probe.candidates import Prices
-from evals.run_interruption import sibling_runs
 from mcp_auditor.config import Settings
 
 NUISANCE_RUNS = 2  # set in docs/nuisance-log.md, a --runs flag lowers it

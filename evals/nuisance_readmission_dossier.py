@@ -17,13 +17,14 @@ import shutil
 from collections.abc import Mapping
 from pathlib import Path
 
-from evals import dossier_closure, nuisance_fix_checks, nuisance_readmission_docs
+from evals import nuisance_fix_checks, nuisance_readmission_docs
+from evals.cve import dossier_closure
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
+from evals.cve.kit.fix_check import FixCheckTarget
 from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.docker_paths import image_dockerfile
 from evals.eval_session import Refused
-from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.holdout_targets import HOLDOUT_TARGETS
 from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_dossier import write_dossier
@@ -111,8 +112,8 @@ def fix_check_modules(server: AdmittedServer) -> list[str]:
 def closure_roots(server: AdmittedServer) -> list[str]:
     roots = [
         *fix_check_modules(server),
-        "evals.holdout_kit.benign_probe",
-        "evals.holdout_kit.kit_backend_launch",
+        "evals.cve.kit.benign_probe",
+        "evals.cve.kit.backend_launch",
     ]
     if server.backend is not None:
         roots.append(f"evals.{server.backend.provisioner}_backend")

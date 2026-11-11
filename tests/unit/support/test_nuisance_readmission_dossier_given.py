@@ -2,7 +2,7 @@ import hashlib
 from pathlib import Path
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals.holdout_targets import HOLDOUT_TARGETS
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.nuisance_holdout_copies import copy_targets

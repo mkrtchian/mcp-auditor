@@ -21,6 +21,9 @@ import re
 from collections.abc import Generator
 from contextlib import contextmanager
 
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckTarget
+from evals.cve.kit.launch import Launch, LaunchShape
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import (
@@ -33,9 +36,6 @@ from evals.cve_planting import (
 )
 from evals.cve_planting_base import PublicNames
 from evals.cve_planting_docker import DockerPlanting
-from evals.holdout_kit.fix_check import FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
-from evals.holdout_kit.kit_launch import Launch, LaunchShape
 
 WITNESS = Place(
     id="figma-15061-witness",

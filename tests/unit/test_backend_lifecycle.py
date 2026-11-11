@@ -10,8 +10,8 @@ from evals import (
     jenkins_backend,
     mcp_ssh_sshd_backend,
 )
+from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve_planting_base import LABEL, resolver_args
-from evals.holdout_kit.kit_backend_launch import backend_launch, lifecycle_of
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import MEMORY_BOUND, memory_bound_args
 from evals.nuisance_images import image_tag

@@ -8,9 +8,9 @@ from dataclasses import replace
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals import cve_environments
 from evals.backend_lifecycle import BackendLifecycle
+from evals.cve.kit import launch as kit_launch
+from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.holdout_kit import kit_launch
-from evals.holdout_kit.kit_backend_launch import backend_launch, lifecycle_of
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_provisioners import provisioner_of
 from evals.responder_backend import Responder

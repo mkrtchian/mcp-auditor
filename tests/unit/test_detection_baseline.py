@@ -13,11 +13,11 @@ from evals.cve.detection.baseline import (
     planting_host_parts,
     write_baseline,
 )
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve_grammar import CVEStatus
 from evals.cve_places import LayoutAnchor
 from evals.cve_planting_base import STAND_IN_SERVICE, PlantingHost, SymbolicUser
-from evals.holdout_targets import HOLDOUT_TARGETS
 
 DETECTED = CVEStatus.DETECTED
 MISSED = CVEStatus.MISSED

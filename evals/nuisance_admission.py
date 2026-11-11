@@ -19,9 +19,9 @@ from evals import nuisance_backends, nuisance_images, nuisance_walk
 from evals.cve.census.work import AgentRecord
 from evals.cve.detection import baseline as detection_baseline
 from evals.cve.detection.draw_record import LaunchOption
+from evals.cve.fixture_provenance import SoftwareRelease, StandInRecord
 from evals.cve_grammar import MechanismClass
 from evals.cve_planting_base import PlantingHost
-from evals.fixture_provenance import SoftwareRelease, StandInRecord
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission_records import RealSoftwareRecord, SeedRecord, record_problems
 from evals.nuisance_admission_walk import walk_problems

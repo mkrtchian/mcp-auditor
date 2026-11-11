@@ -7,7 +7,7 @@ import pytest
 
 import tests.unit.support.test_census_given as given
 import tests.unit.support.test_census_identity_given as identity
-from evals import nuisance_commands, run_census, run_holdout
+from evals import nuisance_commands, run_census, run_detection_holdout
 from evals.cve.census.census import Census, DateMismatch, load_census
 from evals.cve.census.work import HitDecision, read_jsonl
 from evals.honeypots import REPO_ROOT
@@ -23,8 +23,8 @@ def test_a_well_formed_census_loads(tmp_path: Path):
 
 @pytest.mark.parametrize(
     "default_path",
-    [run_census.CENSUS_PATH, run_holdout.CENSUS_PATH, nuisance_commands.CENSUS_PATH],
-    ids=["run_census", "run_holdout", "nuisance_commands"],
+    [run_census.CENSUS_PATH, run_detection_holdout.CENSUS_PATH, nuisance_commands.CENSUS_PATH],
+    ids=["run_census", "run_detection_holdout", "nuisance_commands"],
 )
 def test_every_command_reads_the_committed_census_by_default(default_path: Path):
     assert default_path == REPO_ROOT / "evals" / "census.json"

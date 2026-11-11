@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel
 
-from evals.fixture_provenance import software_release_problems, stand_in_problems
+from evals.cve.fixture_provenance import software_release_problems, stand_in_problems
 from evals.nuisance_counting import counted_flaws
 
 if TYPE_CHECKING:

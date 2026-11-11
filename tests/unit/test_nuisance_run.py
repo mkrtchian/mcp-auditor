@@ -7,8 +7,8 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_run_given as given
+from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.eval_session import Refused, TreeState
-from evals.holdout_run import HOLDOUT_BUDGET
 from evals.nuisance_admission import BackendFixture
 from evals.nuisance_audit import DroppedRun
 from evals.nuisance_counter import counter_fingerprint

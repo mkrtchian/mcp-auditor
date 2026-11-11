@@ -6,7 +6,7 @@ from collections.abc import Sequence
 import pytest
 
 import tests.unit.support.test_cve_run_images_given as given
-import tests.unit.support.test_holdout_run_given as targets
+import tests.unit.support.test_detection_holdout_run_given as targets
 from evals.cve.run_images import (
     rebuild_images,
     remove_containers,

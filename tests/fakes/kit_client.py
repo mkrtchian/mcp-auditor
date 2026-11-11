@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from evals.holdout_kit.kit_client import KitResponse, KitTool
+from evals.cve.kit.client import KitResponse, KitTool
 
 
 class FakeKitClient:

@@ -14,10 +14,10 @@ redirect.
 
 import re
 
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckExploit, FixCheckTarget
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Places
-from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
 from evals.nuisance_fix_checks.n8n_redirect_stand_in import HOST, http_place, ssrf_redirect_env
 
 _WORKFLOW_ID = "9i3iDZf5MpjlJ2sh"

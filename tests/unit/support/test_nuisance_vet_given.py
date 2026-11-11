@@ -9,7 +9,7 @@ import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_run_given as nuisance_run_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals import nuisance_images, nuisance_vet_command
-from evals.holdout_conditions import HoldoutConditions
+from evals.cve.holdout_conditions import HoldoutConditions
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_vet_command import VetDeps
 from tests.unit.support.test_nuisance_run_backends_given import DockerHost

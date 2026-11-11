@@ -3,8 +3,8 @@
 The twin of `calibration_dossier.write_kit` for the nuisance admission: the two blind agents
 develop a fix-check fixture from the advisories, the fixture format and the grammar, with no
 access to the auditor's code, so the exported tree imports nothing from `mcp_auditor`. Where the
-holdout kit ships the frozen list and the deployment layout, the admission dossier ships the
-fix-check driver (`evals/holdout_kit/fix_check.py`) and no `holdout_places.json`: the fix check
+calibration kit ships the frozen list and the deployment layout, the admission dossier ships the
+fix-check driver (`evals/cve/kit/fix_check.py`) and no `holdout_places.json`: the fix check
 plants the flaw's own witness at its own coordinate, free of any catalogue place.
 
 The dossier is rebuilt from the committed census (`CensusFlaw` fields alone), one advisory per
@@ -17,9 +17,15 @@ import json
 import shutil
 from pathlib import Path
 
-from evals import calibration_dossier, dossier_closure, nuisance_holdout_reference, nuisance_walk
-from evals.calibration_dossier import KIT_MODULES, acceptance_services, copy_clean_sources
+from evals import nuisance_holdout_reference, nuisance_walk
+from evals.cve import dossier_closure
 from evals.cve.census.census import Census
+from evals.cve.detection import calibration_dossier
+from evals.cve.detection.calibration_dossier import (
+    KIT_ROOTS,
+    acceptance_services,
+    copy_kit_sources,
+)
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
 from evals.nuisance_admission import AdmittedServer, FlawRecord
@@ -46,10 +52,10 @@ def write_dossier(
     _refuse_unknown_backend(backend)
     out.mkdir(parents=True, exist_ok=True)
     _write_advisories(nuisance_census.census, identifiers, out)
-    copy_clean_sources(out, (*KIT_MODULES, "fix_check"))
+    copy_kit_sources(out, (*KIT_ROOTS, "evals.cve.kit.fix_check"))
     if backend == "doris":
-        dossier_closure.copy_closure(out, ["evals.holdout_kit.kit_backends"])
-    dossier_closure.copy_closure(out, ["evals.holdout_kit.benign_probe", "evals.capture_stand_in"])
+        dossier_closure.copy_closure(out, ["evals.cve.kit.backends"])
+    dossier_closure.copy_closure(out, ["evals.cve.kit.benign_probe", "evals.capture_stand_in"])
     nuisance_holdout_reference.write_holdout_references(
         out,
         nuisance_census.census,
@@ -110,7 +116,7 @@ none of these three classes gets `effect_class` `null`.
 _FIXTURE_FORMAT = """\
 # The fixture format
 
-Author a `FixCheckTarget` (`evals/holdout_kit/fix_check.py`) and run it through `check_fix`. The
+Author a `FixCheckTarget` (`evals/cve/kit/fix_check.py`) and run it through `check_fix`. The
 fixture never leaves the kit: unlike a holdout `KitTarget`, it is not transplanted into the
 repository, so the vulnerable Dockerfile and the exploits are committed beside the admission as
 `FixCheckTarget` fixtures and the auditor never sees them.
@@ -124,7 +130,7 @@ repository, so the vulnerable Dockerfile and the exploits are committed beside t
 - `witness`: the `Place` the exploit surfaces (an id of its own, a `PlantKind` and
   `Coordinates`). The fix check plants it at the flaw's own coordinate, with no catalogue list.
 - `planting_host`: the `PlantingHost` the witness plants into.
-- `builder`: a context manager yielding a `kit_launch.Launch`.
+- `builder`: a context manager yielding a `launch.Launch` (`evals/cve/kit/launch.py`).
 - `exploits`: `async (Places, KitClient) -> None`, both agents' exploits. The witness counts
   when either surfaces it.
 - `benign_calls`: `async (Places, KitClient) -> None`, one per tool, read from the tool
@@ -236,19 +242,19 @@ _DORIS_BUILDER_PARAGRAPH = """
 ## The Doris backend builder
 
 This server records the `doris` backend. Its `FixCheckTarget.builder` is
-`kit_backends.doris_backend_env`, which ensures the persistent Doris cluster and yields the server
-launch wired to the backend's network. A fetch-class witness host must be a literal IP in
-`169.254.0.0/16`: the sentinel is stood with `--ip` on the link-local network, so a DNS name or an
-out-of-range IP fails `docker run` opaquely. `DORIS_SERVER_LAUNCH` is the holdout fixture's launch
-the agents may start from, not a value to copy.
+`backends.doris_backend_env` (`evals/cve/kit/backends.py`), which ensures the persistent Doris
+cluster and yields the server launch wired to the backend's network. A fetch-class witness host
+must be a literal IP in `169.254.0.0/16`: the sentinel is stood with `--ip` on the link-local
+network, so a DNS name or an out-of-range IP fails `docker run` opaquely. `DORIS_SERVER_LAUNCH`
+is the holdout target's launch the agents may start from, not a value to copy.
 """
 
 _README = """\
 # Isolated admission dossier
 
-A self-contained workshop for admitting one nuisance server, free of any `mcp_auditor` import.
+A self-contained kit for admitting one nuisance server, free of any `mcp_auditor` import.
 Run it from this directory with this directory on the Python path (its `evals/` package resolves
-the copied clean modules). It needs Docker Engine 28.0 or later but no LLM and no repository
+the copied modules). It needs Docker Engine 28.0 or later but no LLM and no repository
 checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 
 ## Procedure
@@ -267,8 +273,9 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 
 3. For each flaw, write its two Dockerfiles into `docker/`: `Dockerfile.<service>` (the
    vulnerable version) and `Dockerfile.<service>-patched` (the fixed version).
-   `kit_launch.build_images` builds each as `mcp-auditor-kit-<service>:local`. The service name
-   must differ from every acceptance service: {acceptance_services}.
+   `launch.build_images` (`evals/cve/kit/launch.py`) builds each as
+   `mcp-auditor-kit-<service>:local`. The service name must differ from every acceptance service:
+   {acceptance_services}.
 
    For a server that needs a backend to answer its benign calls: a pulled backend is recorded in
    the `backend` field (the provisioner key, the pinned image tag, the network), not written as a
@@ -289,7 +296,7 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 - `nuisance-rule.md`: the admission rule the record is checked against.
 - `confinement.md`: the container options every nuisance server runs with, and the shape of the
   run's argv.
-- The benign probe, `python -m evals.holdout_kit.benign_probe --record <record.json> --image
+- The benign probe, `python -m evals.cve.kit.benign_probe --record <record.json> --image
   <tag>`: it launches the image under the run's confinement and makes each benign call of a
   record in the `AdmittedServer` shape (`fixture_format.md`), each `before` call first, and exits
   0 when every call answers without error and every set `expect` is found.

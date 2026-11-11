@@ -6,8 +6,8 @@ tools."""
 import shlex
 from collections.abc import Sequence
 
+from evals.cve.kit.backend_launch import lifecycle_of
 from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.holdout_kit.kit_backend_launch import lifecycle_of
 from evals.nuisance_admission import AdmittedServer
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_confinement import (
@@ -154,8 +154,8 @@ Pick a prefix of your own, so two agents on one machine never share an image. Co
 ```
 python - <<'EOF'
 from pathlib import Path
-from evals.holdout_kit import kit_launch
-kit_launch.build_images(Path("docker"), ["<prefix>-{service}"])
+from evals.cve.kit import launch
+launch.build_images(Path("docker"), ["<prefix>-{service}"])
 EOF
 ```
 
@@ -165,7 +165,7 @@ built the same way from a Dockerfile of your own.
 ### Probe the benign calls
 
 ```
-python -m evals.holdout_kit.benign_probe --record admission_record.json \\
+python -m evals.cve.kit.benign_probe --record admission_record.json \\
   --image mcp-auditor-kit-<prefix>-{service}:local [--calls calls.json]
 ```
 
@@ -182,12 +182,12 @@ This server's fix-check modules: {fix_checks}.
 
 Copy each Dockerfile the fix check names (`vulnerable_service`, `patched_service`,
 `server_patched_service`) from `evals/docker/` to `docker/Dockerfile.<prefix>-<service>`, build
-them with `kit_launch.build_images`, then:
+them with `launch.build_images`, then:
 
 ```
 python - <<'EOF'
 import asyncio, dataclasses
-from evals.holdout_kit.fix_check import check_fix
+from evals.cve.kit.fix_check import check_fix
 from evals.nuisance_fix_checks.<module> import TARGETS
 target = dataclasses.replace(
     TARGETS[0],

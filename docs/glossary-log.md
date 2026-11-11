@@ -50,7 +50,8 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | `evals.cve_preflight` | `evals.detection_preflight` | rename | 2026-11-11 |
 | `evals/holdout_census.json` | `evals/census.json` | rename | 2026-11-11 |
 | `evals/holdout_census_method.md` | `evals/census_method.md` | rename | 2026-11-11 |
-| `evals/holdout_kit/` | kit | rename | 2026-11-11 |
+| `evals/holdout_fixtures/` | `evals/cve/detection/holdout_fixtures/` | rename | 2026-11-11 |
+| `evals/holdout_kit/` | kit (`evals/cve/kit/`) | rename | 2026-11-11 |
 | `evals/holdout_places.json` | `evals/detection_places.json` | rename | 2026-11-11 |
 | `evals.run_cve_benchmark` | `evals.run_detection` | rename | 2026-11-11 |
 | `evals.run_evals` | `evals.run_honeypot_suite` | rename | 2026-11-11 |
@@ -89,11 +90,14 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | `output/cve_judged_cases.jsonl`, `output/cve_report.json` | `output/detection_judged_cases.jsonl`, `output/detection_report.json` | rename | 2026-11-11 |
 | `output/eval_report.json` | `output/honeypot_report.json` | rename | 2026-11-11 |
 | `output/holdout_census/` | `output/census/` | rename | 2026-11-11 |
+| `output/holdout_report.json` | `output/detection_holdout_report.json` | rename | 2026-11-11 |
 | patched twin, vulnerable twin, git twin (ADR 030, ADR 031, labeling log, plans) | patched image, vulnerable image | rename | 2026-11-11 |
 | `payload` (the key of a judge result in the JSON report, the "Payload" line of the Markdown report: the arguments only) | arguments (`arguments`). "Payload" now names the whole generated test input. | moved meaning | 2026-11-11 |
 | `pending_replay`, `replay_observations`, `replay_rule` | `pending_retest`, `retest_observations`, `retest_rule`, the two committed baselines keeping `replay_rule` until their next re-recording | rename | 2026-11-11 |
 | planting layer | planting code | rename | 2026-11-11 |
+| `primary_number`, primary number (detection suite rule v11) | holdout detection rate (`holdout_detection_rate`) | rename | 2026-11-11 |
 | readmission | re-admission | rename | 2026-11-11 |
+| `RecordingClient`, `KitRecorder`, `RecordingLLM` | `ExchangeLog`, `KitExchangeLog`, `CapturingLLM` ("recording" names only a baseline recording) | rename | 2026-11-11 |
 | refused credit | struck credit | rename | 2026-11-11 |
 | `relayed_variables` | redacted variables (`redacted_variables`) | rename | 2026-11-11 |
 | replay (re-auditing a gated cell, case, target or server that flipped, missed or raised an alarm: ADR 016, ADR 024, nuisance rule v1 to v4) | retest. "Replay" now names only the resend of ADR 030. | moved meaning | 2026-11-11 |

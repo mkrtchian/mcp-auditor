@@ -18,7 +18,7 @@ from evals.cve.detection.draw_record import (
     GiveUp,
     GiveUpReason,
 )
-from evals.fixture_provenance import (
+from evals.cve.fixture_provenance import (
     SoftwareRelease,
     SourceKind,
     StandInOutput,

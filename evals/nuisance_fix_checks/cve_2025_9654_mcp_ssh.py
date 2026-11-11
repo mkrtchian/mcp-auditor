@@ -9,7 +9,7 @@ vulnerable_service 1.0.3, patched_service 1.0.4, server_patched_service the run 
 
 import re
 
-from evals.holdout_kit.fix_check import FixCheckTarget
+from evals.cve.kit.fix_check import FixCheckTarget
 from evals.nuisance_fix_checks.mcp_ssh_fix_check import shell_injection, target
 
 # An exploit is aimed when the hostAlias closes the ssh host string (`";`); the benign hostAlias

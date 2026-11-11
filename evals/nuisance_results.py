@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 
-from evals.holdout_conditions import Cutoff
+from evals.cve.holdout_conditions import Cutoff
 
 
 @dataclass(frozen=True)

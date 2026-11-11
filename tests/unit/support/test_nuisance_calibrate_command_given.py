@@ -6,7 +6,7 @@ import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget
+from evals.cve.kit.fix_check import FixCheckResult, FixCheckTarget
 from evals.nuisance_admission import BackendFixture, FixCheckRecord, NuisanceAdmission
 from evals.nuisance_backends import BACKENDS
 from evals.nuisance_calibrate_command import FixCheckCalibrationDeps

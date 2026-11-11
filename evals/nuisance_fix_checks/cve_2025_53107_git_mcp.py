@@ -30,12 +30,12 @@ whose arguments differ read the tool's schema and send the form it declares.
 import re
 from typing import Any
 
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckExploit, FixCheckTarget
+from evals.cve.kit.launch import command_injection_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
-from evals.holdout_kit.kit_launch import command_injection_env
 
 # The unprivileged account owns the /srv checkout and the seeded trees the git operations run in.
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)

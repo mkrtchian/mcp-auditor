@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from evals.concurrency import non_negative_int, positive_int
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.detection.costs import CostPricing
+from evals.cve.holdout_conditions import HoldoutConditions
 from evals.eval_session import Refused
-from evals.holdout_conditions import HoldoutConditions
 from evals.probe.candidates import Prices
 
 MEASUREMENT_NEEDS_NO_BASELINE = "a measurement run reads no baseline: run it with --no-baseline"

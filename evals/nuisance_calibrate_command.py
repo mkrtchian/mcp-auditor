@@ -11,10 +11,10 @@ from pathlib import Path
 
 from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
+from evals.cve.kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
+from evals.cve.kit.launch import build_images, image_tag
 from evals.cve.run_images import DOCKER_SWEEP, refuse_without_closed_networks, sweep_containers
 from evals.docker_paths import DOCKER_DIRECTORY
-from evals.holdout_kit.fix_check import FixCheckResult, FixCheckTarget, check_fix
-from evals.holdout_kit.kit_launch import build_images, image_tag
 from evals.nuisance_admission import ADMISSION_PATH, FixCheckRecord
 from evals.nuisance_backends import built_backend_tags
 from evals.nuisance_commands import (

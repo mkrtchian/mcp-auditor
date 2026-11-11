@@ -1,6 +1,6 @@
 from datetime import date
 
-from evals.holdout_statistic import Side
+from evals.cve.holdout_statistic import Side
 from evals.nuisance_results import NuisanceRunStatus, NuisanceServerResult
 from evals.nuisance_statistic import SideStatistic, split_by_side
 

@@ -38,6 +38,9 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckExploit, FixCheckTarget
+from evals.cve.kit.launch import Launch, LaunchShape, command_injection_env, ssrf_env
 from evals.cve_grammar import MechanismClass
 from evals.cve_places import Coordinates, Place, Places, PlantKind
 from evals.cve_planting import (
@@ -49,9 +52,6 @@ from evals.cve_planting import (
     unprivileged_user_args,
 )
 from evals.cve_planting_base import no_network_args
-from evals.holdout_kit.fix_check import FixCheckExploit, FixCheckTarget
-from evals.holdout_kit.kit_client import KitClient
-from evals.holdout_kit.kit_launch import Launch, LaunchShape, command_injection_env, ssrf_env
 
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 
