@@ -171,7 +171,7 @@ def _answers_a_query(database: str) -> bool:
 
 def _remove(*names: str) -> None:
     for name in names:
-        subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+        subprocess.run(["docker", "rm", "-f", "-v", name], capture_output=True)
 
 
 def _run(

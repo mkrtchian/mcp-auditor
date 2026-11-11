@@ -16,7 +16,8 @@ argument. `doris_server_args` assembles that launch's `docker run` arguments.
 
 The persistent cluster and its two networks are left running on purpose (reused across
 exercises); the generic orphan sweep documented in `cve_environments` reaps anything labelled
-`mcp-auditor-cve`, the sentinels included.
+`mcp-auditor-cve`, the sentinels included. `doris_rm` runs `docker rm -f -v`: no container reads
+a removed one's anonymous volumes, the cluster standing again from its image and its seed.
 """
 
 import secrets
@@ -226,7 +227,7 @@ def _doris_run(
 
 def doris_rm(name: str) -> None:
     with suppress(subprocess.SubprocessError, OSError):
-        _doris_run("docker", "rm", "-f", name, check=False)
+        _doris_run("docker", "rm", "-f", "-v", name, check=False)
 
 
 LIFECYCLE = BackendLifecycle("doris", DORIS_LAUNCH_LOCK, ensure_doris, doris_server_args, doris_rm)

@@ -5,6 +5,7 @@ import pytest
 import tests.unit.support.test_closed_network_given as given
 import tests.unit.support.test_closed_network_then as then
 from evals.closed_network import (
+    DOCKER_NETWORKS,
     ClosedNetworkUnsupported,
     ForeignNetwork,
     NetworkFacts,
@@ -14,6 +15,7 @@ from evals.closed_network import (
     network_facts,
 )
 from tests.fakes.network_docker import FakeNetworkDocker
+from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_an_absent_network_is_created_closed():
@@ -112,3 +114,13 @@ def test_the_support_check_leaves_no_network_behind_on_failure(docker: FakeNetwo
 )
 def test_a_recorded_inspect_output_is_read_into_its_facts(recorded: str, expected: NetworkFacts):
     assert network_facts(recorded) == expected
+
+
+def test_the_containers_of_an_open_network_go_with_their_anonymous_volumes(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    commands = recorded_commands(monkeypatch)
+
+    DOCKER_NETWORKS.remove_containers(["mcp-auditor-cve-backend"])
+
+    assert commands == [["docker", "rm", "-f", "-v", "mcp-auditor-cve-backend"]]

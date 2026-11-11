@@ -7,8 +7,8 @@ network or the Internet. An IPv6 gateway would reopen the host, hence IPv6 off.
 
 Every creation inspects what it made, since a daemon could accept the option and ignore it, and
 never falls back to an open network. A persistent network of our name left open by an older run
-is recreated closed, its containers removed first. One with no `mcp-auditor-cve` label is not
-ours and is never touched.
+is recreated closed, its containers removed first by `docker rm -f -v`, their anonymous volumes
+with them. One with no `mcp-auditor-cve` label is not ours and is never touched.
 
 Clean: copied into the calibration and nuisance dossiers, it imports nothing from `mcp_auditor`.
 """
@@ -92,7 +92,7 @@ class _DockerNetworks:
 
     def remove_containers(self, names: Sequence[str]) -> None:
         if names:
-            _checked("rm", "-f", *names)
+            _checked("rm", "-f", "-v", *names)
 
 
 def _docker(*arguments: str) -> subprocess.CompletedProcess[str]:

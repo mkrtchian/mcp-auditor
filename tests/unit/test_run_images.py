@@ -7,7 +7,8 @@ import pytest
 
 import tests.unit.support.test_holdout_run_given as targets
 import tests.unit.support.test_run_images_given as given
-from evals.run_images import rebuild_images, sweep_containers, target_services
+from evals.run_images import rebuild_images, remove_containers, sweep_containers, target_services
+from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_target_services_dedups_images_and_patched_twins():
@@ -67,3 +68,13 @@ def test_a_sweep_removes_the_listed_containers_and_says_how_many(
 
     assert removed == ["a", "b"]
     assert "removed 2 containers of the run's images left running" in capsys.readouterr().out
+
+
+def test_the_sweep_removes_the_containers_with_their_anonymous_volumes(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    commands = recorded_commands(monkeypatch)
+
+    remove_containers(["a", "b"])
+
+    assert commands == [["docker", "rm", "-f", "-v", "a", "b"]]

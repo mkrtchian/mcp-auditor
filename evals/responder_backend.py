@@ -1,8 +1,9 @@
-"""The lifecycle shared by the light HTTP responder backends (Atlassian, Jenkins, ...).
+"""The lifecycle shared by the light HTTP responder backends (Atlassian, GitLab, ...).
 
 A responder is a singleton container on a fixed public-range IP of its own closed labeled bridge
 (no route to the host or the Internet), stood once and reused across a server's concurrent nuisance
-runs, reaped by the generic orphan sweep.
+runs, reaped by the generic orphan sweep. `remove`, which every built backend's lifecycle shares,
+runs `docker rm -f -v`: a container goes with its anonymous volumes, never a bind mount.
 
 The server argv and the singleton both carry the nuisance confinement, memory bound included (the
 singleton also when a fix check ensures it), while a fix check's own per-launch responder container
@@ -99,7 +100,7 @@ class Responder:
 
 def remove(name: str) -> None:
     with suppress(subprocess.SubprocessError, OSError):
-        _run("docker", "rm", "-f", name, check=False)
+        _run("docker", "rm", "-f", "-v", name, check=False)
 
 
 def _run(

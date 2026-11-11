@@ -18,6 +18,7 @@ from evals.nuisance_images import image_tag
 from evals.nuisance_provisioners import provisioner_of
 from evals.responder_backend import Responder
 from tests.unit.support.docker_argv import carries, count, value_after
+from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
@@ -47,6 +48,18 @@ def test_the_kit_backend_launch_is_the_provisioner_launch(key: str):
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_the_registry_and_the_kit_read_one_lifecycle(key: str):
     assert BACKENDS[key].lifecycle is lifecycle_of(key)
+
+
+# A backend recreated at every command would otherwise leave its image's anonymous volumes behind.
+@pytest.mark.parametrize("key", sorted(BACKENDS))
+def test_every_backend_removes_a_container_with_its_anonymous_volumes(
+    key: str, monkeypatch: pytest.MonkeyPatch
+):
+    commands = recorded_commands(monkeypatch)
+
+    lifecycle_of(key).remove("a-container")
+
+    assert commands == [["docker", "rm", "-f", "-v", "a-container"]]
 
 
 LAUNCHERS = [

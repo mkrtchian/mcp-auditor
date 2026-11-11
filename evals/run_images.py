@@ -1,5 +1,6 @@
 """The image rebuild both run orchestrators share, the compose services of the targets, and the
-containers of the run's images: refused when running before a run, swept at its end."""
+containers of the run's images: refused when running before a run, swept at its end with
+`docker rm -f -v`, so a container's anonymous volumes go with it."""
 
 import subprocess
 from collections.abc import Callable, Sequence
@@ -66,7 +67,7 @@ def running_containers(tags: Sequence[str]) -> list[str]:
 def remove_containers(names: Sequence[str]) -> None:
     # Unchecked: a container that exits between the listing and its removal fails `docker rm`,
     # and an error raised from the run's `finally` would replace the run result it guards.
-    subprocess.run(["docker", "rm", "-f", *names], capture_output=True, check=False)
+    subprocess.run(["docker", "rm", "-f", "-v", *names], capture_output=True, check=False)
 
 
 @dataclass(frozen=True)

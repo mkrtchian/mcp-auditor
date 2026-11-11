@@ -175,7 +175,7 @@ def _run_detached(name: str, tail: list[str]) -> None:
 
 def _remove(*names: str) -> None:
     for name in names:
-        subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+        subprocess.run(["docker", "rm", "-f", "-v", name], capture_output=True)
 
 
 def _add_public_address(holder: str) -> None:
