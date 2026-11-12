@@ -14,14 +14,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN npm install -g @salesforce/cli@2.157.8
 
-# One org authenticated with fixture (fake) credentials the way the sf documentation prescribes
+# One org authenticated with fixed fixture credentials the way the sf documentation prescribes
 # (`sf org login sfdx-url`). Salesforce is not reachable under the closed fixture network, so the
 # login runs against a throwaway loopback endpoint, written, started and stopped within this one
 # instruction, that answers the OAuth token, userinfo and REST calls the login makes. The stored
 # auth file's plaintext instanceUrl is then rewritten to the org's real My Domain host, which the
 # fixture's stand-in serves at launch. The auth state (encrypted tokens plus their key) belongs to
 # the account the server runs under (uid/gid 60123), the key file at the 0600 mode sf requires,
-# and nothing else the login writes under /tmp is kept.
+# and nothing else the login writes under /tmp is kept, sf's dated log and the update-check cache
+# its oclif plugin fills from the npm registry on the build day included.
 RUN <<'LOGIN'
 set -e
 cat > /tmp/authmock.mjs <<'MOCK'
@@ -34,7 +35,7 @@ const send = (res, obj, code = 200) => { const b = JSON.stringify(obj); res.writ
 https.createServer(opts, (req, res) => {
   const u = req.url;
   if (req.method === "POST" && u.startsWith("/services/oauth2/token"))
-    return send(res, { access_token: "00Dxx!AQfakeAccessToken", instance_url: `https://${HOST}`, id: `https://login.salesforce.com/id/${ORGID}/${USERID}`, token_type: "Bearer", issued_at: "1700000000000", signature: "fakesig=" });
+    return send(res, { access_token: "00Dxx0000000000!AQEAQN0x7Lw2mP4sK9dR3tV6yB1cF8hJ5nQ", instance_url: `https://${HOST}`, id: `https://login.salesforce.com/id/${ORGID}/${USERID}`, token_type: "Bearer", issued_at: "1700000000000", signature: "q3Vx0bJm7cTz2Lk9Wd4RfY8sNh6Pe1Ag5Ju3Xo0Ci2E=" });
   if (u.startsWith("/services/oauth2/userinfo"))
     return send(res, { sub: `https://login.salesforce.com/id/${ORGID}/${USERID}`, user_id: USERID, organization_id: ORGID, preferred_username: USERNAME, urls: { rest: `https://${HOST}/services/data/v{version}/` } });
   if (u.includes("/sobjects/User/")) return send(res, { Id: USERID, Username: USERNAME });
@@ -51,13 +52,13 @@ for attempt in $(seq 50); do
     curl -sk -o /dev/null https://127.0.0.1/services/data && break
     sleep 0.2
 done
-printf 'force://PlatformCLI::5Aep861fakerefreshtoken@127.0.0.1\n' > /tmp/authurl.txt
+printf 'force://PlatformCLI::5Aep8610000000000000000000000000000000000000000000000000000000000000000000000000000000@127.0.0.1\n' > /tmp/authurl.txt
 HOME=/tmp NODE_TLS_REJECT_UNAUTHORIZED=0 sf org login sfdx-url --sfdx-url-file /tmp/authurl.txt --alias playground --json
 kill "$MOCK_PID"
 wait "$MOCK_PID" || true
 sed -i "s#https://127.0.0.1#https://example-org.my.salesforce.com#g" /tmp/.sfdx/*.json
 rm -rf /tmp/authurl.txt /tmp/mock-key.pem /tmp/mock-cert.pem /tmp/authmock.mjs \
-    /tmp/node-compile-cache /tmp/sf-telemetry
+    /tmp/node-compile-cache /tmp/sf-telemetry /tmp/.cache/sf/version /tmp/.sf/*.log
 chown -R 60123:60123 /tmp/.sfdx /tmp/.sf /tmp/.cache
 chmod 700 /tmp/.sfdx
 chmod 600 /tmp/.sfdx/key.json

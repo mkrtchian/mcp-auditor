@@ -149194,8 +149194,8 @@
             "used_by_default_by": []
           },
           {
-            "item": "the authenticated Salesforce org baked into the server image: sf's auth files under /tmp/.sfdx (the org auth file carrying fixture, encrypted OAuth client/refresh/access tokens and its AES key.json), plus /tmp/.sf and /tmp/.cache/sf (sf's config and usage-acknowledgement state), owned by the account the server runs under (uid/gid 60123), key.json at mode 0600",
-            "reason": "the real sf runs only against an authenticated org, as its documentation's deployment requires. The org is authenticated with fixture (fake) credentials via `sf org login sfdx-url` exactly as sf documents, within one build instruction against a throwaway loopback endpoint started and stopped in it; the stored plaintext instanceUrl is then the org's real My Domain host, which the stand-in serves at launch. The fake org name/alias/host are fixture values, not machine values.",
+            "item": "the authenticated Salesforce org baked into the server image: sf's auth files under /tmp/.sfdx (the org auth file carrying fixture, encrypted OAuth client/refresh/access tokens and its AES key.json), plus /tmp/.sf (empty) and /tmp/.cache/sf (sf's usage-acknowledgement state and the random CLI id it generates), owned by the account the server runs under (uid/gid 60123), key.json at mode 0600",
+            "reason": "the real sf runs only against an authenticated org, as its documentation's deployment requires. The org is authenticated with fixed fixture credentials via `sf org login sfdx-url` exactly as sf documents, within one build instruction against a throwaway loopback endpoint started and stopped in it; the stored plaintext instanceUrl is then the org's real My Domain host, which the stand-in serves at launch. The org name, alias and host are fixture values, not machine values. Three identifiers of the login are each replaced with a fixed value of the fixture, the values of the nuisance image's login (evals/docker/Dockerfile.sf-mcp) and of the stand-in's token route: the access token the loopback endpoint returns (00Dxx0000000000!AQEAQN0x7Lw2mP4sK9dR3tV6yB1cF8hJ5nQ), its signature (q3Vx0bJm7cTz2Lk9Wd4RfY8sNh6Pe1Ag5Ju3Xo0Ci2E=), and the refresh token of the sfdx URL the login reads (5Aep861 followed by 79 zeros), in place of values that spelled words about the fixture (2026-11-12). The same instruction removes sf's dated log (/tmp/.sf/sf-<build day>.log) and the update-check cache /tmp/.cache/sf/version, which the CLI's @oclif/plugin-warn-if-update-available (4.0.5, the version @salesforce/cli 2.157.8 ships) fills with the npm registry's dist-tags of the build day; its README (How it works) has it warn when that version file shows a newer release, and a fresh installation carries no such file, so the image carries no value of the build day and the CLI prints no update warning at run time (2026-11-12).",
             "returned_by": [
               "list_connected_salesforce_orgs"
             ],
@@ -149237,9 +149237,10 @@
                   "replacements": []
                 },
                 {
-                  "request": "GET /services/data returns the supported API version list.",
-                  "source": "software_sources",
-                  "citation": "Salesforce REST API Developer Guide, Versions resource: an array of {\"version\",\"label\",\"url\"}; the current version is listed.",
+                  "request": "GET /services/data returns the supported API version list (not reached at run time, sf reads instanceApiVersion from the auth file).",
+                  "source": "invented",
+                  "citation": "one entry for the current release, version 68.0 labelled Winter '27, kept from the committed capture; the doc's own example lists older versions and copying it would move sf away from the v68.0 routes the build-time login also produces.",
+                  "form_source": "Salesforce REST API Developer Guide, List Available REST API Versions, an array of {label, url, version}.",
                   "replacements": []
                 },
                 {
@@ -149251,8 +149252,8 @@
                 {
                   "request": "POST /services/oauth2/token refresh-token grant; a defensive route not reached at run time (the baked access token is used), returning a token response.",
                   "source": "invented",
-                  "citation": "the token-response values are fixed fixture fakes containing no part of the request; no live capture is possible offline.",
-                  "form_source": "Salesforce OAuth 2.0 refresh-token flow response: access_token, instance_url, id, token_type, issued_at, signature.",
+                  "citation": "values written for the org, containing no part of the request: the access_token and signature changed from the committed capture, whose values spelled words about the fixture; the ids and instance_url as committed.",
+                  "form_source": "Salesforce OAuth 2.0 refresh-token flow response (access_token, signature, scope, instance_url, id, token_type, issued_at).",
                   "replacements": []
                 }
               ]

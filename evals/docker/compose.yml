@@ -599,7 +599,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-26029-sf-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "c2baddd9401dc22d0421b171943f90835dc9af15d20be18d4e46f3a9684b0726"
+        org.mcp-auditor.dockerfile-fingerprint: "c870cdf7e7ec233633391972b78a825b4e43ba03a0f667f62bba519d739ec741"
     image: mcp-auditor-cve-holdout-2026-26029-sf-mcp:local
 
   holdout-2026-26029-sf-mcp-patched:
@@ -607,7 +607,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-26029-sf-mcp-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "b1d29b6594c7c851d33c12fd8deaac77882cd4a4b49c51497b5d5c3fc1d29dab"
+        org.mcp-auditor.dockerfile-fingerprint: "c9cbce9907a4ba3a4ec68a5ee50dc075569acaebb4fd26eda8f3995ce8425807"
     image: mcp-auditor-cve-holdout-2026-26029-sf-mcp-patched:local
 
   holdout-2026-3484-nmap:
