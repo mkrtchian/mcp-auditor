@@ -1022,7 +1022,7 @@ services:
       context: .
       dockerfile: Dockerfile.houtini
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a0d7363cc9314acf042b2d873605c9fa3497173ad558f2ec5a3295716bc02225"
+        org.mcp-auditor.dockerfile-fingerprint: "8a9b1f6811cd57e2337a1c978722e04467fb4d84d198d73883cecc8c7660157f"
     image: mcp-auditor-nuisance-houtini:local
     profiles: ["nuisance"]
 
