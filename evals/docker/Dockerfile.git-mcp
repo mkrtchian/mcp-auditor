@@ -7,12 +7,10 @@ FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
-# Give the build-time commits an identity so git has an author/committer. These are git's own
-# configuration, not values the server returns through a flaw.
-RUN git config --system user.name 'River Stone' \
- && git config --system user.email 'river@example.invalid' \
- && git config --system init.defaultBranch main \
- && git config --system core.fileMode false
+# The commits git_commit and git_cherry_pick create at run time need an author and committer: the
+# identity of Pro Git's first-time setup (1.6), git's own configuration and no real person's.
+RUN git config --system user.name 'John Doe' \
+ && git config --system user.email 'johndoe@example.com'
 RUN npm install -g @cyanheads/git-mcp-server@2.15.3 \
  && npm cache clean --force \
  && mkdir -p /usr/local/lib/node_modules/@cyanheads/git-mcp-server/logs \
@@ -24,41 +22,31 @@ ENV MCP_TRANSPORT_TYPE=stdio \
     LOGS_DIR=/tmp \
     NODE_NO_WARNINGS=1 \
     GIT_SIGN_COMMITS=false
-# Git working trees the tool calls read and write. Every repo, branch, tag, remote and file here
-# is produced by `git` itself at build time or is a neutral written name; none carries a value
-# from the build host or a reserved word. The trees belong to the run's unprivileged account
-# (65534), and git trusts these directories only (git-config(1), safe.directory).
+# Git working trees the tool calls read and write: each is the "simplegit" sample of Pro Git (2.3
+# Viewing the Commit History), cloned whole and reset to its pinned commit on master, and the bare
+# remote is a `git clone --bare` of it (4.2 Getting Git on a Server), the remote tree cloned from
+# it so git writes its origin and upstream. Branch and tag names are Pro Git's: iss53 and hotfix
+# (3.2 Basic Branching and Merging), experiment (3.6 Rebasing), the lightweight tag v1.4-lw (2.6
+# Tagging). Every branch sits on master, so a merge or rebase onto master reports up to date, and
+# the cherry-pick tree's master is reset one commit back so the sample's head commit, still on
+# origin/master, replays onto it. The trees belong to the run's unprivileged account (65534), and
+# git trusts these directories only (git-config(1), safe.directory).
 RUN set -eux; \
-  mkrepo() { \
-    d="$1"; git init -q -b main "$d"; \
-    printf '# Repository\n\nTracked content.\n' > "$d/README.md"; \
-    git -C "$d" add README.md; \
-    git -C "$d" commit -q -m 'Initial import'; \
-  }; \
+  sample=https://github.com/schacon/simplegit-progit; \
+  head=ca82a6dff817ec66f44342007202690a93763949; \
+  clone() { git clone -q "$sample" "$1"; git -C "$1" reset -q --hard "$head"; }; \
   # Main tree: read-only queries plus add/diff/commit/reset on it.
-  mkrepo /tmp/repo-main; \
-  printf 'untracked line\n' > /tmp/repo-main/note.txt; \
-  printf '# Repository\n\nTracked content, edited.\n' > /tmp/repo-main/README.md; \
-  git -C /tmp/repo-main branch feature; \
-  git -C /tmp/repo-main tag v1; \
-  # Merge tree: feature points at the same commit, so a merge reports up to date.
-  mkrepo /tmp/repo-merge; git -C /tmp/repo-merge branch feature; \
-  # Rebase tree: upstream points at the same commit, so a rebase reports up to date.
-  mkrepo /tmp/repo-rebase; git -C /tmp/repo-rebase branch upstream; \
-  # Checkout tree: a second branch to switch onto.
-  mkrepo /tmp/repo-checkout; git -C /tmp/repo-checkout branch feature; \
-  # Cherry-pick tree: a feature branch holds one extra commit to replay onto main.
-  mkrepo /tmp/repo-cp; \
-  git -C /tmp/repo-cp checkout -q -b feature; \
-  printf 'feature content\n' > /tmp/repo-cp/feature.txt; \
-  git -C /tmp/repo-cp add feature.txt; \
-  git -C /tmp/repo-cp commit -q -m 'Add feature file'; \
-  git -C /tmp/repo-cp checkout -q main; \
+  clone /tmp/repo-main; \
+  git -C /tmp/repo-main branch iss53; \
+  git -C /tmp/repo-main tag v1.4-lw; \
+  clone /tmp/repo-merge; git -C /tmp/repo-merge branch hotfix; \
+  clone /tmp/repo-rebase; git -C /tmp/repo-rebase checkout -q -b experiment; \
+  clone /tmp/repo-checkout; git -C /tmp/repo-checkout branch iss53; \
+  clone /tmp/repo-cp; git -C /tmp/repo-cp reset -q --hard 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7; \
   # Remote tree: a local bare remote so fetch/pull/push run with no network.
-  git init -q --bare /tmp/origin.git; \
-  mkrepo /tmp/repo-remote; \
-  git -C /tmp/repo-remote remote add origin /tmp/origin.git; \
-  git -C /tmp/repo-remote push -q -u origin main; \
+  git clone -q --bare "$sample" /tmp/origin.git; \
+  git -C /tmp/origin.git update-ref refs/heads/master "$head"; \
+  git clone -q /tmp/origin.git /tmp/repo-remote; \
   for d in repo-main repo-merge repo-rebase repo-checkout repo-cp repo-remote origin.git; do \
     chown -R 65534:65534 "/tmp/$d"; \
     git config --system --add safe.directory "/tmp/$d"; \

@@ -22076,7 +22076,7 @@
               "arguments": {
                 "path": "/tmp/repo-main",
                 "paths": [
-                  "note.txt"
+                  "README"
                 ]
               },
               "expect": "totalFiles",
@@ -22095,7 +22095,7 @@
               "tool": "git_checkout",
               "arguments": {
                 "path": "/tmp/repo-checkout",
-                "target": "feature"
+                "target": "iss53"
               },
               "expect": "branchCreated",
               "before": []
@@ -22105,7 +22105,7 @@
               "arguments": {
                 "path": "/tmp/repo-cp",
                 "commits": [
-                  "feature"
+                  "ca82a6dff817ec66f44342007202690a93763949"
                 ]
               },
               "expect": "conflictedFiles",
@@ -22176,7 +22176,7 @@
               "tool": "git_merge",
               "arguments": {
                 "path": "/tmp/repo-merge",
-                "branch": "feature"
+                "branch": "hotfix"
               },
               "expect": "mergedFiles",
               "before": []
@@ -22186,7 +22186,7 @@
               "arguments": {
                 "path": "/tmp/repo-remote",
                 "remote": "origin",
-                "branch": "main"
+                "branch": "master"
               },
               "expect": "conflictedFiles",
               "before": []
@@ -22196,7 +22196,7 @@
               "arguments": {
                 "path": "/tmp/repo-remote",
                 "remote": "origin",
-                "branch": "main",
+                "branch": "master",
                 "dryRun": true
               },
               "expect": "pushedRefs",
@@ -22207,7 +22207,7 @@
               "arguments": {
                 "path": "/tmp/repo-rebase",
                 "mode": "start",
-                "upstream": "upstream"
+                "upstream": "master"
               },
               "expect": "rebasedCommits",
               "before": []
@@ -22545,15 +22545,15 @@
           "server_package": "npm:@cyanheads/git-mcp-server",
           "flaw": null,
           "field": "benign_calls",
-          "value": "record A's, one call per tool on the seeded trees",
-          "reason": "both records wrote a call for each of the 23 tools; record B's git_cherry_pick call had no commit to pick in its one-commit seed and expected nothing, where record A's trees give each call the state it needs (a feature branch to merge or cherry-pick, an upstream to rebase onto, a bare remote to fetch, pull and push) and each answers with a key of the tool's output. The calls the first admission made on /tmp/benignrepo, whose name and contents were written for the fixture, move to /tmp/repo-main"
+          "value": "record A's, one call per tool on the trees cloned from the sample",
+          "reason": "both records wrote a call for each of the 23 tools; record B's git_cherry_pick call had no commit to pick in its one-commit seed and expected nothing, where record A's trees give each call the state it needs and each answers with a key of the tool's output. The calls the first admission made on /tmp/benignrepo, whose name and contents were written for the fixture, move to /tmp/repo-main. With the trees cloned from the simplegit sample, the calls name its objects: git_add stages the sample's README on the clean main tree, git_checkout switches to iss53, git_cherry_pick replays the sample's head commit ca82a6dff817ec66f44342007202690a93763949 onto the cherry-pick tree's master, git_merge merges hotfix, git_rebase rebases experiment onto master, and git_pull and git_push name master; the three calls CVE-2026-85626 shares and every expect are unchanged"
         },
         {
           "server_package": "npm:@cyanheads/git-mcp-server",
           "flaw": null,
           "field": "seeds",
-          "value": "record A's git working trees generated at image build",
-          "reason": "neither git nor the server publishes a sample with the branches, tags and remote the calls need; record A generates seven trees and a bare remote with git itself, record B one repository with one commit, in which git_cherry_pick, merge and rebase have nothing to act on. Record A's trees are kept, the only conforming seed under which every counted tool answers"
+          "value": "the simplegit sample of git's book, cloned whole into each working tree and as the bare remote, with Pro Git's branch, tag and identity names",
+          "reason": "Record A generated seven trees and a bare remote with git itself, each holding a written file, commit and identity, record B one written repository with one commit, in which git_cherry_pick, merge and rebase have nothing to act on. Neither conforms: the rule seeds the sample the software the fixture seeds data into publishes before anything generated at build time or written for the fixture, and git's book (Pro Git, 2.3 Viewing the Commit History) gives simplegit as the project its examples work in. Record A's tree layout is kept, so every counted tool has the state its call needs, and each tree is that sample cloned whole and reset to its pinned commit on master; the bare remote is a git clone --bare of it (Pro Git 4.2) and the remote tree is cloned from it, so git writes the origin and upstream. The branch, tag and identity names are Pro Git's (iss53 and hotfix in 3.2, experiment in 3.6, v1.4-lw in 2.6, John Doe <johndoe@example.com> in 1.6), the main tree carries no working-tree edit and no untracked file, and the one written state left is the cherry-pick tree's master, reset one commit back so the sample's head commit replays onto it"
         },
         {
           "server_package": "npm:@cyanheads/git-mcp-server",
@@ -22567,15 +22567,51 @@
       "stand_ins": [],
       "seeds": [
         {
-          "item": "the git working trees /tmp/repo-main, /tmp/repo-merge, /tmp/repo-rebase, /tmp/repo-checkout, /tmp/repo-cp and /tmp/repo-remote and the bare remote /tmp/origin.git, owned by the run's unprivileged account",
+          "item": "the simplegit sample project (github.com/schacon/simplegit-progit), cloned whole into every git working tree and as the bare remote, each reset to its pinned commit on master",
+          "kind": "published_sample",
+          "citation": "git's book, Pro Git (git-scm.com/book/en/v2/Git-Basics-Viewing-the-Commit-History): 'These examples use a very simple project called \"simplegit\". To get the project, run: git clone https://github.com/schacon/simplegit-progit'",
+          "pin": "ca82a6dff817ec66f44342007202690a93763949"
+        },
+        {
+          "item": "the clones of the sample, their branches iss53 (main and checkout trees), hotfix (merge tree) and experiment (rebase tree, checked out), the lightweight tag v1.4-lw (main tree), the bare remote /tmp/origin.git and the remote tree cloned from it, whose origin and upstream git writes, all owned by the run's unprivileged account",
           "kind": "generated",
-          "citation": "created by git init, add, commit, branch, tag, remote and push at image build, by the git 2.39.5 the base image ships (Debian bookworm package 1:2.39.5-0+deb12u3)",
+          "citation": "created by git clone, git clone --bare, branch, checkout -b and tag at image build, by the git 2.39.5 the base image ships (Debian bookworm package 1:2.39.5-0+deb12u3); every branch and the tag sit on the sample's pinned commit, so no commit is made at build",
           "pin": "node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da"
         },
         {
-          "item": "the written seed values: file names (README.md, note.txt, feature.txt) and their contents, commit messages (Initial import, Add feature file), branch names (main, feature, upstream), tag v1, remote origin, and the build-time git identity River Stone <river@example.invalid>",
+          "item": "the run-time git identity John Doe <johndoe@example.com>, set at --system for the commits git_commit and git_cherry_pick create",
+          "kind": "project_document",
+          "citation": "Pro Git 1.6 First-Time Git Setup, https://github.com/progit/progit2/blob/a013e3230a1207cfa5ae94d28ba7d2021063c337/book/01-introduction/sections/first-time-setup.asc lines 41-42: '$ git config --global user.name \"John Doe\"', '$ git config --global user.email johndoe@example.com'",
+          "pin": null
+        },
+        {
+          "item": "the branch names iss53 and hotfix",
+          "kind": "project_document",
+          "citation": "Pro Git 3.2 Basic Branching and Merging, https://github.com/progit/progit2/blob/a013e3230a1207cfa5ae94d28ba7d2021063c337/book/03-git-branching/sections/basic-branching-and-merging.asc line 32 '$ git checkout -b iss53' and line 83 '$ git checkout -b hotfix'",
+          "pin": null
+        },
+        {
+          "item": "the branch name experiment, rebased onto master",
+          "kind": "project_document",
+          "citation": "Pro Git 3.6 Rebasing, https://github.com/progit/progit2/blob/a013e3230a1207cfa5ae94d28ba7d2021063c337/book/03-git-branching/sections/rebasing.asc line 26: 'you would check out the `experiment` branch, and then rebase it onto the `master` branch'",
+          "pin": null
+        },
+        {
+          "item": "the lightweight tag v1.4-lw",
+          "kind": "project_document",
+          "citation": "Pro Git 2.6 Tagging, https://github.com/progit/progit2/blob/a013e3230a1207cfa5ae94d28ba7d2021063c337/book/02-git-basics/sections/tagging.asc line 108: '$ git tag v1.4-lw'",
+          "pin": null
+        },
+        {
+          "item": "the bare remote made with git clone --bare of the sample",
+          "kind": "project_document",
+          "citation": "Pro Git 4.2 Getting Git on a Server, https://github.com/progit/progit2/blob/a013e3230a1207cfa5ae94d28ba7d2021063c337/book/04-git-server/sections/git-on-a-server.asc line 19: '$ git clone --bare my_project my_project.git'",
+          "pin": null
+        },
+        {
+          "item": "the tree paths /tmp/repo-main, /tmp/repo-merge, /tmp/repo-rebase, /tmp/repo-checkout, /tmp/repo-cp, /tmp/repo-remote and /tmp/origin.git, and the cherry-pick tree's master reset one commit back to 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7 so the sample's head commit, still on origin/master, replays onto it",
           "kind": "written",
-          "citation": "chosen for the fixture: neutral values carrying no host value, witness or reserved word, since neither git nor the server publishes a sample repository",
+          "citation": "chosen for the fixture: the committed fixture's paths, kept so the benign calls' arguments stand, and the reset position, the one state Pro Git does not give in which git_cherry_pick has a commit of the sample to replay",
           "pin": null
         }
       ],

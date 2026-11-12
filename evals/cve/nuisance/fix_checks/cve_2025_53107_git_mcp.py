@@ -22,7 +22,8 @@ it, so those two exploits are aimed without surfacing. 2.15.3 refuses a ref star
 The server ships 2.15.3, so CVE-2026-85626's server_patched_service is None, and CVE-2025-53107's
 is the run image, confirming the exploits stay refused past the server's own shipped version too.
 
-The benign calls run on the trees every image seeds under /tmp (/srv/app is mounted read-only).
+The benign calls run on the trees every image seeds under /tmp, clones of the simplegit sample of
+Pro Git (/srv/app is mounted read-only).
 2.1.x and 2.15.x name some arguments differently and 2.15.x refuses an unknown key, so the calls
 whose arguments differ read the tool's schema and send the form it declares.
 """
@@ -126,6 +127,9 @@ _EXPLOITS_53107: tuple[FixCheckExploit, ...] = (
     _exploit_stored_working_directory,
 )
 
+# The sample's own head commit, which the cherry-pick tree's master sits one commit behind.
+_SAMPLE_HEAD = "ca82a6dff817ec66f44342007202690a93763949"
+
 _BENIGN_DIFF = _call("git_diff", {"path": "/tmp/repo-main"})
 _BENIGN_LOG = _call("git_log", {"path": "/tmp/repo-main"})
 _BENIGN_SHOW = _by_version(
@@ -135,17 +139,17 @@ _BENIGN_SHOW = _by_version(
 )
 
 _BENIGN_53107: tuple[FixCheckExploit, ...] = (
-    _call("git_add", {"path": "/tmp/repo-main", "paths": ["note.txt"]}),
+    _call("git_add", {"path": "/tmp/repo-main", "paths": ["README"]}),
     _call("git_branch", {"path": "/tmp/repo-main", "mode": "list"}),
     _by_version(
         "git_checkout",
-        {"path": "/tmp/repo-checkout", "target": "feature"},
-        {"path": "/tmp/repo-checkout", "branchOrPath": "feature"},
+        {"path": "/tmp/repo-checkout", "target": "iss53"},
+        {"path": "/tmp/repo-checkout", "branchOrPath": "iss53"},
     ),
     _by_version(
         "git_cherry_pick",
-        {"path": "/tmp/repo-cp", "commits": ["feature"]},
-        {"path": "/tmp/repo-cp", "commitRef": "feature"},
+        {"path": "/tmp/repo-cp", "commits": [_SAMPLE_HEAD]},
+        {"path": "/tmp/repo-cp", "commitRef": _SAMPLE_HEAD},
     ),
     _call("git_clean", {"path": "/tmp/repo-main", "dryRun": True, "force": True}),
     _by_version(
@@ -161,13 +165,13 @@ _BENIGN_53107: tuple[FixCheckExploit, ...] = (
     _call("git_fetch", {"path": "/tmp/repo-remote", "remote": "origin"}),
     _call("git_init", {"path": "/tmp/init-dst"}),
     _BENIGN_LOG,
-    _call("git_merge", {"path": "/tmp/repo-merge", "branch": "feature"}),
-    _call("git_pull", {"path": "/tmp/repo-remote", "remote": "origin", "branch": "main"}),
+    _call("git_merge", {"path": "/tmp/repo-merge", "branch": "hotfix"}),
+    _call("git_pull", {"path": "/tmp/repo-remote", "remote": "origin", "branch": "master"}),
     _call(
         "git_push",
-        {"path": "/tmp/repo-remote", "remote": "origin", "branch": "main", "dryRun": True},
+        {"path": "/tmp/repo-remote", "remote": "origin", "branch": "master", "dryRun": True},
     ),
-    _call("git_rebase", {"path": "/tmp/repo-rebase", "mode": "start", "upstream": "upstream"}),
+    _call("git_rebase", {"path": "/tmp/repo-rebase", "mode": "start", "upstream": "master"}),
     _call("git_remote", {"path": "/tmp/repo-remote", "mode": "list"}),
     _call("git_reset", {"path": "/tmp/repo-main", "mode": "soft", "target": "HEAD"}),
     _call("git_set_working_dir", {"path": "/tmp/repo-main"}),

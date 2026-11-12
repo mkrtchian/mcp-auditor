@@ -328,7 +328,7 @@ ALLOWLIST = (
     AllowedLine(
         "evals/cve/nuisance/fix_checks/cve_2025_53107_git_mcp.py",
         "target-product",
-        '"target": "feature"',
+        '"target": "iss53"',
         "the `target` argument of the git checkout tool, named by the audited server",
     ),
     AllowedLine(
