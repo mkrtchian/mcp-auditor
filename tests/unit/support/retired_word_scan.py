@@ -5,8 +5,8 @@ CLAUDE.md, CONTRIBUTING.md, `.env.example`, the `[Unreleased]` section of CHANGE
 glossary, the two rules, the preambles of the three logs and `.github/workflows/`. Everything
 else is historical and never read: ADRs, plans, the glossary log, the published CHANGELOG
 sections, the dated log entries, and the committed records (every JSON file under the code
-roots), key files and binaries. The modules that hold the patterns and the exemptions, and the
-glossary test, are skipped too.
+roots), key files and binaries. The glossary test, its given module and the modules that hold
+the patterns and the exemptions are skipped too.
 """
 
 import bisect
