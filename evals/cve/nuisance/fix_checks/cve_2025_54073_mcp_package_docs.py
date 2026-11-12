@@ -17,10 +17,11 @@ the program handed to `python3 -c`, so the patched release stays open to the sam
 them and a finding there would not be a false alarm. They are therefore not exercised here.
 
 describe_swift_package reaches its shell string only when isSwiftPackageInstalledLocally finds a
-Package.swift naming the package, so both images bake a minimal Package.swift at /opt/swift-project
-and the exploit passes that directory as projectPath; the swift binary is absent, so the vulnerable
-build's shell still runs the injected command and reflects /flag, while the patched build's
-execFile only fails to spawn swift.
+Package.swift naming the package, so both fix-check images bake a minimal Package.swift at
+/opt/swift-project and the exploit passes that directory as projectPath. The run image carries no
+Swift project, so the patched arm runs on mcp-package-docs-patched, the run image with that file
+added. The swift binary is absent, so the vulnerable build's shell still runs the injected command
+and reflects /flag, while the patched build's execFile only fails to spawn swift.
 
 The witness and aim follow the command-injection convention the kanban pilot established: a /flag
 file read by `cat /flag`, so each exploit's argument carries the aim and the benign calls (real Go
@@ -109,7 +110,7 @@ FIXTURE = FixCheckFixture(
         _benign_describe_swift_package,
     ),
     vulnerable_service="mcp-package-docs-vuln",
-    patched_service="mcp-package-docs",
+    patched_service="mcp-package-docs-patched",
     server_patched_service=None,
 )
 

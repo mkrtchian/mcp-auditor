@@ -1211,7 +1211,7 @@ services:
       context: .
       dockerfile: Dockerfile.mcp-package-docs
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "5cde30e65ab26f2f0072ef8f5fc9f6fe188f207d9c99e5238b11dc9b2924dce8"
+        org.mcp-auditor.dockerfile-fingerprint: "6d329997957b2c1cda06f5d95ae691df1b5c17fde2cfc0f968a5412c83873763"
     image: mcp-auditor-nuisance-mcp-package-docs:local
     profiles: ["nuisance"]
 

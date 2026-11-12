@@ -17,10 +17,8 @@
 # because 0.1.28 imports it from rust-docs-integration.js but omits it from its own dependencies.
 # Every other dependency floats.
 #
-# A minimal Package.swift is baked at /opt/swift-project so describe_swift_package reaches its
-# local Swift documentation path (isSwiftPackageInstalledLocally needs a Package.swift naming the
-# package); no Swift toolchain is installed, the tool's normal remote path serving its benign call.
-# No COPY/ADD from the build context.
+# No Swift toolchain is installed, the tool's normal remote path serving its benign call. No
+# COPY/ADD from the build context.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl xz-utils build-essential \
@@ -47,6 +45,4 @@ RUN npm init -y >/dev/null 2>&1 \
     && npm pkg set overrides.vscode-languageserver-protocol=3.17.5 \
     && npm install --omit=dev --no-audit --no-fund mcp-package-docs@0.1.28 turndown \
     && npm cache clean --force
-RUN mkdir -p /opt/swift-project \
-    && printf '// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: "fixture")\n' > /opt/swift-project/Package.swift
 ENTRYPOINT ["node", "/app/node_modules/mcp-package-docs/build/index.js"]

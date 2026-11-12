@@ -12,7 +12,9 @@
 # release, the latest stable releases on the day of the re-admission, with no Go or Python
 # environment variable beyond the PATH entry the Go install page gives. 0.1.23 does not import
 # `turndown`, so it is not added. A minimal Package.swift is baked at /opt/swift-project so
-# describe_swift_package reaches its local Swift documentation path (no Swift toolchain installed).
+# describe_swift_package reaches its local Swift documentation path (no Swift toolchain installed),
+# as in the fix check's patched image (Dockerfile.mcp-package-docs-patched); the run image carries
+# none.
 #
 # vscode-languageserver-protocol is held at 3.17.5 (the version resolved at the package's release
 # time): its 3.18.x line drops the `./node.js` subpath export the server imports at load time,
