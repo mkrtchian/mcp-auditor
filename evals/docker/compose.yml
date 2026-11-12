@@ -950,7 +950,7 @@ services:
       context: .
       dockerfile: Dockerfile.frogman
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a5bfed1c77f6841912a0fd094d20224da8d996c302f0270064b2142637b65ab7"
+        org.mcp-auditor.dockerfile-fingerprint: "66f8f1867b474eab8674b8082fa91af559f43655b5ac2a07ef85432b10313384"
     image: mcp-auditor-nuisance-frogman:local
     profiles: ["nuisance"]
 
