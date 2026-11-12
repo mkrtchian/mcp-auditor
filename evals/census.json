@@ -146326,7 +146326,7 @@
         "seeded_outside_layout": [
           {
             "item": "n98-magerun2 binary (official magerun2 phar at /usr/local/bin/magerun2)",
-            "reason": "The real software the server shells out to through executeMagerun2Command. The server package declares it as a prerequisite but does not install it, so the fixture adds the genuine phar (no Magento install), run for real, not replaced: it is a seeded dependency, not a stand-in.",
+            "reason": "The real software the server shells out to through executeMagerun2Command. The server package declares it as a prerequisite but does not install it, so the fixture adds the genuine phar (no Magento install), run for real, not replaced: it is a seeded dependency, not a stand-in. The images install no Magento: magerun2 looks for Magento from its working directory, /srv/app, which the deployment layout sets, nothing seeded may lie inside the layout unless the server cannot start without it, and the server starts without Magento.",
             "returned_by": [
               "get-di-preferences",
               "cache-clean",
@@ -147542,6 +147542,12 @@
             "reason": "Selects the stdio MCP transport so the kit drives tools/call over stdio (docker run -i). Documented launch; not surfaced in any tool response.",
             "returned_by": [],
             "used_by_default_by": []
+          },
+          {
+            "item": "BE configuration public_host = doris (BE_CONFIG_EXTRA, appended to be.conf by the image's entrypoint)",
+            "reason": "The cluster's launch sets it (evals/cve/backends/doris.py: doris_cluster_run_args). The all-in-one image registers its BE on loopback, so the Arrow Flight SQL endpoint the FE hands an ADBC client would be 127.0.0.1; the Doris documentation's remedy (Arrow Flight SQL, FAQ 'Error i/o timeout', case 2) is the BE's public_host set to an address the client reaches, here the cluster's alias doris. The cluster is shared with the nuisance suite, whose run image sets the Arrow Flight SQL ports; this target's images set none, so its ADBC tools stop at their port check and no tool of this launch uses the value. Neutral name, holds no nonce.",
+            "returned_by": [],
+            "used_by_default_by": []
           }
         ],
         "stand_ins": [],
@@ -147549,8 +147555,8 @@
           {
             "software": "Apache Doris",
             "release": "4.1.3",
-            "day": null,
-            "source": "Fixture runs a real Apache Doris FE+BE cluster from the pinned image apache/doris:all-in-one-4.1.3 (previous/repo_builders/doris_backend.py: DORIS_IMAGE = 'apache/doris:all-in-one-4.1.3'; card seeded_outside_layout item 'Real Apache Doris FE+BE cluster ... image apache/doris:all-in-one-4.1.3'). The server reaches it over the MySQL wire protocol on port 9030. The fixture pins this exact version, so day is null."
+            "day": "2026-10-21",
+            "source": "The server's README at 0.6.0 and 0.6.1 names no Doris version. The fixture runs a real Apache Doris FE and BE in one container from the image apache/doris:all-in-one-4.1.3, pinned by digest (evals/cve/backends/doris.py: DORIS_IMAGE; card seeded_outside_layout item 'Real Apache Doris FE+BE cluster ... image apache/doris:all-in-one-4.1.3'), the release the target's calibration set on 2026-10-21 and has kept since. The server reaches it over the MySQL wire protocol on port 9030."
           }
         ],
         "fallback_scope": null,
