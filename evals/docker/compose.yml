@@ -1031,7 +1031,7 @@ services:
       context: .
       dockerfile: Dockerfile.memory-keeper
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ee7291a79079823756b951e8d389c0bdb65fcef3eabc5ab114120d521313b22d"
+        org.mcp-auditor.dockerfile-fingerprint: "344928f1cf49a3bcaf1c0735895f60fea4af68038aa99db80d7656b3a16bb3de"
     image: mcp-auditor-nuisance-memory-keeper:local
     profiles: ["nuisance"]
 

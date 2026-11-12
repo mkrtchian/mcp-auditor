@@ -26192,7 +26192,7 @@
             {
               "tool": "context_import",
               "arguments": {
-                "filePath": "project-context.json"
+                "filePath": "backup.json"
               },
               "expect": "Import successful!",
               "before": []
@@ -26323,15 +26323,15 @@
           "server_package": "npm:mcp-memory-keeper",
           "flaw": "CVE-2026-54561",
           "field": "benign_calls",
-          "value": "the one call of record A, filePath 'project-context.json'",
-          "reason": "Both records import the export their image seeds in the exports directory and expect the server's success line, 'Import successful!', which no argument carries. They differ only by the seeded file's name, and the file belongs to the seed, which record A's is kept for."
+          "value": "the one call of record A, with filePath 'backup.json'",
+          "reason": "Both records import the export their image seeds in the exports directory and expect the server's success line, 'Import successful!', which no argument carries. They differ only by the seeded file's name, and the file belongs to the seed. The seed is now the export the server generates at image build, named backup.json, the name the README's import example gives, so the call imports that file."
         },
         {
           "server_package": "npm:mcp-memory-keeper",
           "flaw": null,
           "field": "seeds",
-          "value": "record A's written export, project-context.json, at the documented default data directory",
-          "reason": "Record A seeds one export with fixed neutral values, labelled written because it is authored to the export format the server's handler writes and no published sample exists. Record B seeds an export it labels generated although its item text and names are authored, and sets two environment variables for the data and export directories that the server does not need, its documented default directory serving as is. Record A is kept, with the default data directory made writable by the unprivileged account in the image."
+          "value": "the export mcp-memory-keeper 0.13.0 generates at image build from the README's Complete Workflow Example, named backup.json, at the documented default data directory",
+          "reason": "Record A seeded one export written to the format the server's handler writes, with fixed neutral values, record B an export it labelled generated although its item text and names were authored, with two environment variables for the data and export directories that the server does not need. Neither conforms: the project publishes no sample (examples/ at v0.13.0 holds a profile configuration and a guide), and the rule seeds what the software generates before anything written for the fixture. So the installed server generates the export at build: a client on its own MCP SDK dependency plays the session start and the three saves of the README's Complete Workflow Example, then context_export, and the export takes the name the README's import example gives, backup.json. The store is deleted after the export, so the image holds one export and no session, and the documented default data directory serves as is, made writable by the unprivileged account in the image."
         },
         {
           "server_package": "npm:mcp-memory-keeper",
@@ -26345,10 +26345,22 @@
       "stand_ins": [],
       "seeds": [
         {
-          "item": "exports/project-context.json, one memory-keeper JSON export (version 0.4.0 shape) holding a single context item (key 'language', value 'TypeScript'), baked at /tmp/mcp-data/memory-keeper/exports so the benign context_import has a valid file inside the exports directory",
-          "kind": "written",
-          "citation": "authored to the export JSON shape the context_export handler writes in src/index.ts (mcp-memory-keeper 0.13.0, format==='json' branch: {version, exported, session, contextItems, fileCache, checkpoints, metadata}); no published sample dataset and no build-time generator available, so written, with neutral fixed values carrying no machine value, no witness-format value and no audit word",
+          "item": "exports/backup.json at /tmp/mcp-data/memory-keeper/exports, the one export in the image: the JSON file context_export writes at image build for the session the README's Complete Workflow Example starts, renamed from memory-keeper-export-<session id prefix>.json, with the store (context.db and any -wal and -shm) deleted after it, so the benign context_import has a valid file inside the exports directory; the fix check's vulnerable image copies the same file from a 0.13.0 build stage, since 0.12.2 exports to the OS temp directory",
+          "kind": "generated",
+          "citation": "the context_export handler of mcp-memory-keeper 0.13.0 (format 'json', its default: writes memory-keeper-export-${targetSessionId.substring(0, 8)}.json into the exports directory, <DATA_DIR>/exports), run once over stdio at image build by a client on the server's own @modelcontextprotocol/sdk dependency that waits for each reply, Dockerfile.memory-keeper",
           "pin": "mcp-memory-keeper@0.13.0"
+        },
+        {
+          "item": "the exported session and items: context_session_start with name 'Settings Refactor' and description 'Refactoring settings module for better performance', then context_save of main_task ('Refactor Settings.Context to use behaviors', task, high), architecture_decision ('Split settings into read/write modules', decision, high) and progress_1 ('Completed behavior definition, 5 modules remaining', progress, normal); the example's file caching step is left out, since the README gives no file content",
+          "kind": "project_document",
+          "citation": "README.md of mcp-memory-keeper at v0.13.0, as shipped in the npm package mcp-memory-keeper@0.13.0: Usage, Complete Workflow Example, lines 548-594 (steps 1, 2, 4 and 5)",
+          "pin": "mcp-memory-keeper@0.13.0"
+        },
+        {
+          "item": "the export's file name, backup.json",
+          "kind": "project_document",
+          "citation": "README.md of mcp-memory-keeper at v0.13.0, as shipped in the npm package mcp-memory-keeper@0.13.0: Usage, Export/Import (Phase 3), lines 835-838, mcp_context_import({ filePath: 'backup.json', merge: true })",
+          "pin": null
         }
       ],
       "software_releases": []

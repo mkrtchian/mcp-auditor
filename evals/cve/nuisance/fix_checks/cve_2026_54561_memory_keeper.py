@@ -7,8 +7,8 @@ exports directory (`<data dir>/exports`) and rejects one outside it.
 The witness is a valid memory-keeper export planted outside the exports directory: the vulnerable
 version imports it and `context_get` returns the planted value, so the exploit is an import then a
 read of the imported key, by an absolute path and by a traversal. The value comes back by the
-server's own read, parse and store path, so no stand-in relays it. The benign call imports the
-export the image seeds inside the exports directory.
+server's own read, parse and store path, so no stand-in relays it. The benign call imports
+`backup.json`, the export the patched server generated inside its exports directory at image build.
 """
 
 import json
@@ -103,7 +103,7 @@ async def _exploit_traversal(places: Places, client: KitClient) -> None:
 
 
 async def _benign_import(places: Places, client: KitClient) -> None:
-    await client.call_tool("context_import", {"filePath": "project-context.json"})
+    await client.call_tool("context_import", {"filePath": "backup.json"})
 
 
 FIXTURE = FixCheckFixture(
